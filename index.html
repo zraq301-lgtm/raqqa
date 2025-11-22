@@ -1,47 +1,181 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>رِقّة - تطبيق المرأة</title>
 
-    <meta name="description" content="Dualite Alpha Generated Project" />
-    <meta name="author" content="Dulaite Alpha" />
+<style>
+  body { margin:0; font-family: Arial,sans-serif; background:#fff7fa; color:#333; }
+  header { background:#ffb7d9; padding:12px; text-align:center; font-size:22px; font-weight:bold; color:white; position:sticky; top:0; z-index:1000; }
+  .search-bar { margin-top:8px; display:flex; justify-content:center; }
+  .search-bar input { width:80%; padding:8px; border-radius:8px; border:none; outline:none; }
 
-    <meta property="og:title" content="vite + react + ts" />
-    <meta property="og:description" content="Dualite Alpha Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://alpha.dualite.dev" />
-    <meta property="og:image" content="https://ibb.co/67X3xfSV" />
-    <meta property="og:image:width" content="960" />
-    <meta property="og:image:height" content="600" />
-    <meta property="og:image:alt" content="Screenshot of the Alpha Generated Project" />
+  .side-menu { position:fixed; left:0; top:60px; width:220px; height:calc(100% - 60px); background:#ffe1ee; padding:12px; box-shadow:2px 0 5px rgba(0,0,0,0.1); }
+  .side-menu h4 { margin-top:0; }
+  .side-menu a { display:block; margin:6px 0; text-decoration:none; color:#d74e8a; font-weight:bold; }
 
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="vite + react + ts" />
-    <meta name="twitter:description" content="Dualite Alpha Generated Project" />
-    <meta name="twitter:site" content="@dualitedev" />
-    <meta name="twitter:image" content="https://ibb.co/67X3xfSV" />
+  .main { margin-left:240px; padding:12px; }
 
-    <link rel="canonical" href="https://alpha.dualite.dev" />
-    <link rel="icon" type="image/png" sizes="16x16" href="https://i.ibb.co/HLfD5wgf/dualite-favicon.png" />
+  .bottom-nav { position:fixed; bottom:0; width:100%; background:#ffe1ee; display:flex; justify-content:space-around; padding:10px 0; border-top:2px solid #ffc7dd; }
+  .bottom-nav button { background:none; border:none; font-size:16px; color:#d74e8a; font-weight:bold; cursor:pointer; }
 
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "AlphaProject",
-        "url": "https://alpha.dualite.dev",
-        "description": "Dualite Alpha Generated Project",
-        "publisher": {
-          "@type": "Organization",
-          "name": "Dualite Alpha"
-        }
-      }
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+  .section { display:none; }
+  .active { display:block; }
+
+  .post { background:#fff; padding:12px; border-radius:8px; margin-bottom:12px; box-shadow:0 1px 3px rgba(0,0,0,0.1); }
+  .post button { margin-right:6px; cursor:pointer; }
+
+  .admin-panel { display:none; background:#ffe1ee; padding:12px; border-radius:8px; margin-bottom:12px; }
+  .admin-panel input, .admin-panel button { padding:6px; margin:4px 0; }
+
+  .mini-bouh { background:#ffddee; padding:8px; margin:6px 0; border-radius:6px; font-size:14px; }
+
+  @media(max-width:768px) { .side-menu{display:none;} .main{margin-left:0;} }
+</style>
+
+<script>
+  // عرض الأقسام
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(sec=>sec.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // التفاعل مع البوستات
+  function likePost(el){ const span=el.querySelector('span'); span.textContent=Number(span.textContent)+1; }
+  function commentPost(){ const text=prompt("اكتب تعليقك:"); if(text) alert("تم إضافة تعليق: "+text); }
+  function sharePost(title, content){ if(navigator.share){ navigator.share({title,text:content}); } else { alert("نسخ الرابط وشاركه يدوياً"); } }
+
+  // بيانات admin
+  const ADMIN_USER = "zazo";
+  const ADMIN_PASS = "zazo010988";
+
+  function loginAdmin() {
+    const user = prompt("اسم المستخدم:");
+    const pass = prompt("كلمة المرور:");
+    if(user===ADMIN_USER && pass===ADMIN_PASS){
+      document.getElementById("admin-panel").style.display="block";
+      alert("تم الدخول للوحة الادمن");
+    } else { alert("خطأ في بيانات الدخول"); }
+  }
+
+  // جلب محتوى ذكاء صناعي تجريبي
+  function fetchAIContent(sectionId) {
+    const content = "هذا نص تجريبي من الذكاء الصناعي لقسم "+sectionId;
+    const mini = document.createElement("div");
+    mini.className = "mini-bouh";
+    mini.textContent = content;
+    document.getElementById(sectionId).prepend(mini);
+  }
+
+  function uploadContent() {
+    alert("رفع محتوى تجريبي (نص، صور، فيديو، بوست، شعر، مقالات)");
+  }
+
+  // متابعة الصحة تجريبية
+  function healthTrack(type){
+    alert("تنبيه تجريبي: متابعة "+type);
+  }
+</script>
+</head>
+
+<body>
+
+<header>
+  رِقّة
+  <div class="search-bar">
+    <input type="text" placeholder="ابحث هنا...">
+  </div>
+</header>
+
+<div class="side-menu">
+  <h4>القائمة</h4>
+  <a href="privacy.html">شروط الخصوصية</a>
+  <a href="#" onclick="loginAdmin()">لوحة الادمن</a>
+</div>
+
+<div class="main">
+
+  <div id="feelings" class="section active">
+    <h2>قسم المشاعر</h2>
+    <button onclick="fetchAIContent('feelings')">بوح الأسبوع</button>
+    <div class="post">
+      <h3>مقال تجريبي</h3>
+      <p>هذا محتوى تجريبي لقسم المشاعر.</p>
+      <button onclick="likePost(this)">إعجاب (<span>0</span>)</button>
+      <button onclick="commentPost()">تعليق</button>
+      <button onclick="sharePost('مشاعر','هذا محتوى تجريبي لقسم المشاعر')">مشاركة</button>
+    </div>
+  </div>
+
+  <div id="fiqh" class="section">
+    <h2>فقه المرأة</h2>
+    <button onclick="fetchAIContent('fiqh')">بوح الأسبوع</button>
+    <div class="post">
+      <h3>مقال تجريبي</h3>
+      <p>محتوى تجريبي لفقه المرأة.</p>
+      <button onclick="likePost(this)">إعجاب (<span>0</span>)</button>
+      <button onclick="commentPost()">تعليق</button>
+      <button onclick="sharePost('فقه المرأة','محتوى تجريبي')">مشاركة</button>
+    </div>
+  </div>
+
+  <div id="relations" class="section">
+    <h2>العلاقات الحميمية</h2>
+    <button onclick="fetchAIContent('relations')">بوح الأسبوع</button>
+    <div class="post">
+      <h3>مقال تجريبي</h3>
+      <p>محتوى تجريبي للعلاقات الحميمية.</p>
+      <button onclick="likePost(this)">إعجاب (<span>0</span>)</button>
+      <button onclick="commentPost()">تعليق</button>
+      <button onclick="sharePost('العلاقات الحميمية','محتوى تجريبي')">مشاركة</button>
+    </div>
+  </div>
+
+  <div id="health" class="section">
+    <h2>الصحة</h2>
+    <button onclick="fetchAIContent('health')">بوح الأسبوع</button>
+    <div class="post">
+      <h3>متابعة الحيض</h3>
+      <button onclick="healthTrack('الحيض')">تنبيه متابعة الحيض</button>
+    </div>
+    <div class="post">
+      <h3>متابعة الحمل</h3>
+      <button onclick="healthTrack('الحمل')">تنبيه متابعة الحمل</button>
+    </div>
+    <div class="post">
+      <h3>متابعة الرضاعة</h3>
+      <button onclick="healthTrack('الرضاعة')">تنبيه متابعة الرضاعة</button>
+    </div>
+  </div>
+
+  <div id="community" class="section">
+    <h2>المجتمع</h2>
+    <button onclick="fetchAIContent('community')">بوح الأسبوع</button>
+    <div class="post">
+      <h3>قصص نجاح</h3>
+      <p>قصص وتجارب ملهمة لحل مشاكل المجتمع.</p>
+      <button onclick="likePost(this)">إعجاب (<span>0</span>)</button>
+      <button onclick="commentPost()">تعليق</button>
+      <button onclick="sharePost('المجتمع','قصص وتجارب ملهمة')">مشاركة</button>
+    </div>
+  </div>
+
+  <div id="admin-panel" class="admin-panel">
+    <h3>لوحة الادمن</h3>
+    <button onclick="fetchAIContent('feelings')">حلب محتوى ذكاء</button>
+    <button onclick="uploadContent()">رفع محتوى</button>
+  </div>
+
+</div>
+
+<div class="bottom-nav">
+  <button onclick="showSection('feelings')">المشاعر</button>
+  <button onclick="showSection('fiqh')">فقه المرأة</button>
+  <button onclick="showSection('relations')">العلاقات الحميمية</button>
+  <button onclick="showSection('health')">الصحة</button>
+  <button onclick="showSection('community')">المجتمع</button>
+</div>
+
+</body>
 </html>
