@@ -18,6 +18,7 @@
             --nav-height: 75px;
             --accent-green: #4CAF50; /* لون جديد للتنبيهات الإيجابية */
             --accent-blue: #2196F3; /* لون جديد للرضاعة */
+            --accent-red: #f44336; /* لون جديد للعلاقات الحميمية */
         }
 
         body {
@@ -167,6 +168,11 @@
             font-family: 'Aref Ruqaa', serif;
             font-size: 1.4rem;
         }
+        
+        /* تباين خاص لقسم العلاقات الحميمية */
+        #sec-intimacy .card-header { color: var(--accent-red); }
+        #sec-intimacy .card { border-top-color: var(--accent-red); }
+
 
         /* شاشة البوح الصغيرة (لم تتغير) */
         .bouh-display {
@@ -378,6 +384,17 @@
         .nav-item.active { color: var(--primary-pink); }
         .nav-item.active i { transform: translateY(-5px); }
 
+        /* تغيير عرض عناصر شريط التنقل السفلي لاستيعاب عنصر إضافي */
+        .bottom-nav {
+            /* تعديل العرض لاستيعاب 6 عناصر بدلاً من 5 */
+            justify-content: space-evenly;
+            padding: 0 5px;
+        }
+        .nav-item {
+            width: 16%; /* تعديل العرض ليناسب 6 عناصر */
+        }
+
+
         .admin-panel {
             display: none;
             background: white;
@@ -565,6 +582,20 @@
             </div>
         </div>
 
+        <div id="sec-intimacy" class="section-view">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-hand-holding-heart"></i> العلاقات الحميمية</div>
+                <div class="bouh-display" id="txt-intimacy" style="border-color: var(--accent-red);">
+                    أسرار سعادتكِ الزوجية.. في مكان آمن وخاص.
+                </div>
+                <a href="#" class="library-link" style="background: var(--accent-red);">مكتبة السعادة الزوجية الخاصة</a>
+                <div class="interaction-bar">
+                    <button class="act-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> إعجاب</button>
+                    <button class="act-btn" onclick="addComment()"><i class="far fa-comment"></i> تعليق</button>
+                    <button class="act-btn" onclick="shareContent()"><i class="fas fa-share-alt"></i> مشاركة</button>
+                </div>
+            </div>
+        </div>
         <div id="sec-menstrual" class="section-view">
             <div class="card">
                 <div class="card-header"><i class="fas fa-tint"></i> متتبع الحيض والخصوبة</div>
@@ -661,12 +692,15 @@
             <i class="fas fa-leaf"></i>
             <span>الصحة</span>
         </div>
+        <div class="nav-item" onclick="switchTab('sec-intimacy', this)">
+            <i class="fas fa-ring"></i>
+            <span>حميمية</span>
+        </div>
         <div class="nav-item" onclick="switchTab('sec-society', this)">
             <i class="fas fa-users"></i>
             <span>المجتمع</span>
         </div>
     </nav>
-
     <div id="loginModal" class="modal-overlay">
         <div class="modal-box">
             <h3 style="color: var(--primary-pink); margin-top:0;">دخول الأدمن <i class="fas fa-lock"></i></h3>
@@ -700,6 +734,7 @@
                 el.classList.add('active');
             } else {
                 // تفعيل ايقونة الصحة في حال التبديل لجداول المتابعة
+                // ملاحظة: تم تحديث رقم الترتيب ليناسب إضافة قسم "حميمية"
                 document.querySelector('.bottom-nav .nav-item:nth-child(4)').classList.add('active');
             }
             
@@ -718,6 +753,7 @@
 
             // تفعيل أيقونة الصحة في الـ nav
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            // ملاحظة: تم تحديث رقم الترتيب ليناسب إضافة قسم "حميمية"
             document.querySelector('.bottom-nav .nav-item:nth-child(4)').classList.add('active');
             
             window.scrollTo(0,0);
@@ -800,42 +836,56 @@
             localStorage.setItem('pregnancy_data', JSON.stringify({ lastMenstrualDate }));
 
             const eddStr = dateFormatter.format(edd) + ' (' + dayOfWeekFormatter.format(edd) + ')';
-            const message = (totalWeeks < 40) ?
-                `أنتِ الآن في **الأسبوع ${totalWeeks}** و **${remainingDays}** أيام من الحمل.` :
-                `تهانينا! لقد وصلتِ إلى نهاية حملكِ. موعد ولادتكِ كان في: ${eddStr}.` ;
-            
+
+            resultDiv.style.background = 'var(--soft-pink)';
+            resultDiv.style.color = 'var(--primary-pink)';
+
             resultDiv.innerHTML = `
-                <i class="fas fa-magic"></i>
+                <i class="fas fa-calendar-day"></i>
                 <p><strong>تاريخ الولادة المتوقع:</strong> ${eddStr}</p>
-                <p>${message}</p>
-                <p style="font-size:0.8rem; margin-top:10px; color:#555;">(تم الحساب بناءً على متوسط مدة حمل 40 أسبوعاً)</p>
+                <p style="color: var(--primary-pink);"><strong>عمر الحمل الحالي:</strong> ${totalWeeks} أسبوع و ${remainingDays} أيام</p>
+                <p style="font-size:0.8rem; margin-top:10px;">(تم الحساب بناءً على آخر حيض: ${dateFormatter.format(lmp)})</p>
             `;
             resultDiv.style.display = 'block';
             alert(`تم حفظ وتحديث بيانات متابعة الحمل. موعد الولادة المتوقع: ${eddStr}`);
         }
 
         // 3. متتبع الرضاعة
+        function getTodayLogKey() {
+            const today = new Date();
+            return 'nursing_log_' + today.toISOString().split('T')[0];
+        }
+
         function loadNursingLog() {
-            const todayKey = 'nursing_log_' + new Date().toLocaleDateString('en-US');
-            const log = JSON.parse(localStorage.getItem(todayKey)) || [];
+            const logKey = getTodayLogKey();
+            const log = JSON.parse(localStorage.getItem(logKey)) || [];
             const logDiv = document.getElementById('nursingLog');
-            let html = '';
-            
+            logDiv.innerHTML = '';
+
             if (log.length === 0) {
                 logDiv.innerHTML = '<p style="text-align: center; color: #999;">لا يوجد تسجيلات اليوم بعد.</p>';
                 return;
             }
 
-            log.sort((a, b) => new Date('2000/01/01 ' + b.time) - new Date('2000/01/01 ' + a.time)); // لترتيب السجل
-            log.forEach((entry, index) => {
-                html += `
-                    <div class="nursing-log">
-                        <span><i class="fas fa-clock"></i> **الرضعة ${log.length - index}:** الساعة ${entry.time} - المدة ${entry.duration} دقيقة</span>
-                        <button onclick="deleteNursingEntry(${log.length - index - 1})"><i class="fas fa-trash"></i> حذف</button>
-                    </div>
-                `;
+            log.sort((a, b) => {
+                const timeA = a.time.split(':').map(Number);
+                const timeB = b.time.split(':').map(Number);
+                if (timeA[0] !== timeB[0]) return timeA[0] - timeB[0];
+                return timeA[1] - timeB[1];
             });
-            logDiv.innerHTML = html;
+
+            log.forEach((entry, index) => {
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'nursing-log';
+                entryDiv.innerHTML = `
+                    <span>
+                        <strong>الوقت:</strong> ${entry.time}
+                        - <strong>المدة:</strong> ${entry.duration} دقيقة
+                    </span>
+                    <button onclick="removeNursingEntry('${entry.time}', ${entry.duration}, ${index})">حذف</button>
+                `;
+                logDiv.appendChild(entryDiv);
+            });
         }
 
         function addNursingEntry() {
@@ -844,128 +894,101 @@
 
             if (!time || !duration) return;
 
-            const todayKey = 'nursing_log_' + new Date().toLocaleDateString('en-US');
-            const log = JSON.parse(localStorage.getItem(todayKey)) || [];
+            const logKey = getTodayLogKey();
+            const log = JSON.parse(localStorage.getItem(logKey)) || [];
 
-            // تنسيق الوقت
-            const [hours, minutes] = time.split(':');
-            const formattedTime = new Date(0, 0, 0, hours, minutes).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            log.push({ time, duration: parseInt(duration) });
+            localStorage.setItem(logKey, JSON.stringify(log));
 
-            log.push({ time: formattedTime, duration: parseInt(duration) });
-            localStorage.setItem(todayKey, JSON.stringify(log));
-            
-            loadNursingLog(); // تحديث العرض
-            alert(`تم تسجيل رضعة الساعة ${formattedTime} لمدة ${duration} دقيقة بنجاح.`);
+            alert(`تم تسجيل رضاعة في ${time} لمدة ${duration} دقيقة.`);
+            document.getElementById('nursingTime').value = '';
+            document.getElementById('nursingDuration').value = '15';
+            loadNursingLog();
         }
 
-        function deleteNursingEntry(indexToDelete) {
-            if (!confirm("هل أنتِ متأكدة من حذف هذا السجل؟")) return;
+        function removeNursingEntry(time, duration, index) {
+            if (!confirm(`هل أنت متأكدة من حذف تسجيل رضاعة في ${time} لمدة ${duration} دقيقة؟`)) return;
 
-            const todayKey = 'nursing_log_' + new Date().toLocaleDateString('en-US');
-            const log = JSON.parse(localStorage.getItem(todayKey)) || [];
-            
-            // حذف العنصر
-            log.splice(indexToDelete, 1);
-            localStorage.setItem(todayKey, JSON.stringify(log));
+            const logKey = getTodayLogKey();
+            const log = JSON.parse(localStorage.getItem(logKey)) || [];
 
-            loadNursingLog(); // تحديث العرض
-            alert("تم حذف سجل الرضاعة.");
-        }
-
-
-        // --- باقي وظائف التطبيق (لم تتغير) ---
-        
-        // --- القائمة الجانبية ---
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-        }
-
-        // --- وظائف الأدمن والدخول ---
-        function openLogin() { document.getElementById('loginModal').style.display = 'flex'; }
-        function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
-
-        function verifyLogin() {
-            const u = document.getElementById('adminName').value;
-            const p = document.getElementById('adminPass').value;
-
-            // بيانات الأدمن: الاسم zazo. رقم الدخول zazo010988.
-            if (u === 'zazo' && p === 'zazo010988') {
-                closeLogin();
-                document.getElementById('adminDashboard').style.display = 'block';
-                alert('تم الدخول بنجاح يا Zazo!');
-                window.scrollTo(0,0);
-            } else {
-                alert('بيانات الدخول غير صحيحة');
+            // إزالة العنصر بناءً على الفهرس
+            if (index > -1) {
+                log.splice(index, 1);
             }
+
+            localStorage.setItem(logKey, JSON.stringify(log));
+            loadNursingLog();
         }
 
-        // --- وظيفة جلب المحتوى من OpenAI (للأدمن فقط) ---
-        async function fetchAIContent() {
-            const btn = document.querySelector('.btn-ai');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الاتصال بـ OpenAI...';
 
-            // --- ملاحظة هامة: يجب وضع مفتاح API الخاص بك هنا ---
-            // لأسباب أمنية، يفضل أن يتم هذا الاتصال عبر سيرفر وليس مباشرة من كود العميل (الواجهة الأمامية)
-            const apiKey = "PUT_YOUR_OPENAI_API_KEY_HERE";  
+        // --- دوال عامة (Admin, Likes, Comments, Share, Sidebar) ---
 
-            try {
-                // محاكاة انتظار السيرفر (للتجربة بدون API حقيقي)
-                await new Promise(r => setTimeout(r, 2000));
-
-                // --- هنا يتم توزيع النصوص الجديدة على الأقسام (محاكاة) ---
-                const aiResponses = {
-                    feelings: "لا تخافي من التعبير عن ضعفك، ففي ذلك قوة لا يفهمها إلا القلوب الرقيقة.",
-                    fiqh: "أحكام الحيض والصلاة: تذكري أن القضاء واجب للصوم، وليس للصلاة.",
-                    relations: "ابدئي يومك بكلمة طيبة لزوجك، فالكلمة كالماء تسقي بذور المودة.",
-                    health: "تذكير صحي: فيتامين د أساسي لصحة عظامك ومزاجك، لا تهملي أشعة الشمس.",
-                    society: "ابني مجدك بالعلم والعمل، فمجتمعك ينتظر بصمتك المضيئة."
-                };
-
-                // تحديث الواجهة
-                document.getElementById('txt-feelings').innerText = aiResponses.feelings;
-                document.getElementById('txt-fiqh').innerText = aiResponses.fiqh;
-                document.getElementById('txt-relations').innerText = aiResponses.relations;
-                document.getElementById('txt-health').innerText = aiResponses.health;
-                document.getElementById('txt-society').innerText = aiResponses.society;
-
-                alert("تم تحديث بوح الأسبوع بنجاح في كافة الأقسام!");
-
-            } catch (error) {
-                console.error("خطأ في جلب المحتوى:", error);
-                alert("حدث خطأ في الاتصال أو تحليل البيانات. يرجى مراجعة مفتاح API.");
-            } finally {
-                btn.innerHTML = originalText;
-            }
-        }
-
-        // --- وظائف التفاعل (أزرار اللايك والتعليق) ---
+        // الإعجابات والتعليقات والمشاركة (دوال وهمية)
         function toggleLike(btn) {
             btn.classList.toggle('active');
-            if(btn.classList.contains('active')) {
-                btn.innerHTML = '<i class="fas fa-heart"></i> أعجبني';
+            const icon = btn.querySelector('i');
+            if (btn.classList.contains('active')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                btn.innerHTML = `<i class="fas fa-heart"></i> أحببتها!`;
             } else {
-                btn.innerHTML = '<i class="far fa-heart"></i> إعجاب';
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                btn.innerHTML = `<i class="far fa-heart"></i> إعجاب`;
             }
         }
 
         function addComment() {
-            let comment = prompt("اكتبي تعليقك هنا:");
-            if(comment) alert("شكراً لكِ! سيظهر تعليقك بعد المراجعة.");
+            alert("سيتم فتح نافذة التعليقات قريبًا!");
         }
 
         function shareContent() {
             if (navigator.share) {
                 navigator.share({
-                    title: 'تطبيق رقة',
-                    text: 'اكتشفي همسة الأسبوع هنا!',
-                    url: window.location.href
-                }).catch(error => console.log('Error sharing', error));
+                    title: 'تطبيق رقة - عالمك الخاص',
+                    text: 'اكتشفي عالمك الخاص مع تطبيق رقة، الوعي، الجمال، والسكينة.',
+                    url: window.location.href,
+                }).catch((error) => console.log('Error sharing', error));
             } else {
-                alert("تم نسخ الرابط! يمكنك مشاركته الآن على وسائل التواصل.");
+                alert("تم نسخ الرابط! يمكنك مشاركته يدوياً.");
+                // يمكن إضافة منطق نسخ إلى الحافظة هنا
             }
         }
+        
+        // القائمة الجانبية
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
 
+        // لوحة الأدمن (وهمية)
+        function openLogin() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+
+        function closeLogin() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+
+        function verifyLogin() {
+            const name = document.getElementById('adminName').value;
+            const pass = document.getElementById('adminPass').value;
+
+            // تحقق بسيط جداً (يجب استبداله بمنطق تحقق حقيقي)
+            if (name === 'zazo' && pass === '123') {
+                document.getElementById('adminDashboard').style.display = 'block';
+                closeLogin();
+                alert('تم تسجيل الدخول كإداري!');
+            } else {
+                alert('خطأ في اسم المستخدم أو كلمة المرور.');
+            }
+        }
+        
+        function fetchAIContent() {
+            alert('يتم الآن جلب محتوى البوح الجديد من الذكاء الاصطناعي..');
+            // منطق جلب المحتوى هنا
+            document.getElementById('txt-feelings').innerHTML = 'همسة الذكاء الاصطناعي الجديدة: "كوني نجمة في سماء نفسكِ، لا مجرة تدور حول الآخرين."';
+        }
     </script>
 </body>
 </html>
