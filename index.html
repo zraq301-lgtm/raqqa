@@ -192,6 +192,7 @@
             margin-bottom: 20px;
             border-top: 4px solid var(--primary-pink);
             transition: box-shadow 0.3s;
+            position: relative; /* مهم لزر الحذف */
         }
 
         .card-header {
@@ -249,6 +250,42 @@
             0% { box-shadow: 0 0 5px var(--accent-green); }
             50% { box-shadow: 0 0 15px var(--accent-green); }
             100% { box-shadow: 0 0 5px var(--accent-green); }
+        }
+
+        /* --- تنسيقات زر الحذف (جديد) --- */
+        .delete-overlay-btn {
+            display: none; /* مخفي افتراضياً */
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            width: 35px;
+            height: 35px;
+            background: #ff1744;
+            color: white;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            z-index: 999;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            animation: popIn 0.3s ease-out;
+        }
+        
+        /* عندما يكون وضع الحذف مفعلاً في الـ body */
+        body.delete-mode-active .delete-overlay-btn {
+            display: flex;
+        }
+        
+        body.delete-mode-active .card, 
+        body.delete-mode-active .bouh-display {
+            border: 2px dashed #ff1744 !important; /* حدود حمراء عند التفعيل */
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
         }
 
         .health-subs {
@@ -654,7 +691,7 @@
                 <div class="up-btn" onclick="openUploadPostModal('الشعر')"><i class="fas fa-magic"></i> **الشعر**</div>
                 <div class="up-btn" onclick="openUploadPostModal('المقالات')"><i class="fas fa-scroll"></i> **المقالات**</div>
                 <div class="up-btn" onclick="openUploadPostModal('الأبحاث')"><i class="fas fa-book-reader"></i> **الأبحاث**</div>
-                <div class="up-btn" style="opacity:0.6; cursor:default;"><i class="fas fa-layer-group"></i> المزيد قريباً</div>
+                <div class="up-btn" onclick="toggleDeleteMode()" style="background:#ffebee; color:#c62828; border-color:#ef9a9a;"><i class="fas fa-trash-alt"></i> **حذف محتوى**</div>
             </div>
             <button class="btn-primary" onclick="adminLogout()" style="background:var(--accent-red);">تسجيل الخروج</button>
         </div>
@@ -831,7 +868,6 @@
 
     </div>
 
-    <!-- نافذة منبثقة لتسجيل التعليق -->
     <div id="commentModal" class="modal-overlay" onclick="closeCommentModal(event)">
         <div class="modal-box" onclick="event.stopPropagation()">
             <h3 style="color: var(--primary-pink);"><i class="fas fa-comment-dots"></i> أضفي تعليقكِ</h3>
@@ -845,7 +881,6 @@
         </div>
     </div>
     
-    <!-- نافذة منبثقة لتوليد الذكاء الاصطناعي (Admin) -->
     <div id="aiGeneratorModal" class="modal-overlay" onclick="closeModal(event, 'aiGeneratorModal')">
         <div class="modal-box" onclick="event.stopPropagation()">
             <h3 style="color: #673ab7;"><i class="fas fa-magic"></i> توليد بالذكاء الاصطناعي</h3>
@@ -858,7 +893,6 @@
             
             <textarea id="aiPrompt" placeholder="أكتبي طلبك أو فكرتك هنا..." style="min-height: 100px;"></textarea>
             
-            <!-- إضافة اختيار القسم للتوجيه المباشر -->
             <select id="aiTargetSection" class="select-field" style="margin-top:10px;">
                 <option value="">(اختياري) اختر القسم للنشر المباشر</option>
                 <option value="sec-feelings">المشاعر</option>
@@ -882,7 +916,6 @@
         </div>
     </div>
 
-    <!-- نافذة منبثقة لرفع المحتوى (Admin) -->
     <div id="uploadPostModal" class="modal-overlay" onclick="closeModal(event, 'uploadPostModal')">
         <div class="modal-box" onclick="event.stopPropagation()">
             <h3 style="color: var(--primary-pink);"><i class="fas fa-upload"></i> رفع محتوى جديد</h3>
@@ -907,7 +940,6 @@
         </div>
     </div>
 
-    <!-- شريط التنقل السفلي -->
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchTab('homeView')">
             <i class="fas fa-home"></i> <span>الرئيسية</span>
@@ -930,14 +962,12 @@
     </nav>
     
     <script>
-        // بيانات دخول الادمن
         const ADMIN_USERNAME = "zazo";
         const ADMIN_PASSWORD = "zazo010988";
         let isAdminLoggedIn = false;
         let currentActiveSection = 'homeView';
         let currentAIType = 'bouh';
 
-        // دالة وهمية لتسجيل الدخول
         function adminLogin(event) {
             event.preventDefault();
             const username = document.getElementById('adminUsername').value;
@@ -955,7 +985,6 @@
             }
         }
         
-        // التحقق عند تحميل الصفحة
         window.onload = function() {
             if (localStorage.getItem('isAdminLoggedIn') === 'true') {
                 isAdminLoggedIn = true;
@@ -972,7 +1001,6 @@
             switchTab(storedTab);
         }
 
-        // دالة لتبديل عرض لوحة تحكم الأدمن أو تسجيل الدخول
         function toggleAdminPanel() {
             const adminLoginPanel = document.getElementById('adminLogin');
             const adminDashboard = document.getElementById('adminDashboard');
@@ -992,6 +1020,10 @@
             document.getElementById('adminDashboard').style.display = 'none';
             document.getElementById('adminLogin').style.display = 'block';
             document.getElementById('adminToggleBtn').style.backgroundColor = 'var(--primary-pink)';
+            
+            // إزالة وضع الحذف إذا كان مفعلاً
+            document.body.classList.remove('delete-mode-active');
+            
             alert('تم تسجيل الخروج.');
             document.getElementById('adminUsername').value = '';
             document.getElementById('adminPassword').value = '';
@@ -1023,6 +1055,38 @@
                 if (healthNav) {
                     healthNav.classList.add('active');
                 }
+            }
+        }
+        
+        // --- دالة وضع الحذف الجديدة ---
+        function toggleDeleteMode() {
+            if (!isAdminLoggedIn) return;
+            
+            const body = document.body;
+            body.classList.toggle('delete-mode-active');
+            
+            if (body.classList.contains('delete-mode-active')) {
+                alert('⚠️ تم تفعيل وضع الحذف.\nاضغط على أيقونة (X) الحمراء التي ستظهر فوق المحتوى لحذفه.');
+                
+                // إضافة أزرار الحذف لكل الكروت والمحتويات
+                document.querySelectorAll('.card, .bouh-display').forEach(item => {
+                    // نتأكد من عدم إضافة الزر مرتين
+                    if (!item.querySelector('.delete-overlay-btn')) {
+                        const btn = document.createElement('div');
+                        btn.className = 'delete-overlay-btn';
+                        btn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                        btn.onclick = function(e) {
+                            e.stopPropagation();
+                            if(confirm('هل أنت متأكد من حذف هذا المحتوى نهائياً؟')) {
+                                item.remove();
+                            }
+                        };
+                        item.style.position = 'relative'; // لضمان عمل absolute positioning للزر
+                        item.appendChild(btn);
+                    }
+                });
+            } else {
+                alert('تم إيقاف وضع الحذف.');
             }
         }
         
@@ -1139,13 +1203,26 @@
                 return;
             }
 
-            // محاكاة إضافة المحتوى للقسم
             const sectionDiv = document.getElementById(targetSection);
             const newContentDiv = document.createElement('div');
             newContentDiv.className = 'bouh-display newly-added';
             newContentDiv.innerHTML = `<strong>(محتوى ذكاء صناعي)</strong><br>${outputText}`;
             
-            // إضافة بعد الهيدر مباشرة
+            // إضافة زر الحذف للعنصر الجديد فور إنشائه (إذا كان وضع الحذف مفعلاً)
+            if (document.body.classList.contains('delete-mode-active')) {
+                 const btn = document.createElement('div');
+                 btn.className = 'delete-overlay-btn';
+                 btn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                 btn.onclick = function(e) {
+                     e.stopPropagation();
+                     if(confirm('هل أنت متأكد من حذف هذا المحتوى نهائياً؟')) {
+                         newContentDiv.remove();
+                     }
+                 };
+                 newContentDiv.style.position = 'relative';
+                 newContentDiv.appendChild(btn);
+            }
+            
             const header = sectionDiv.querySelector('.card-header');
             if(header && header.nextSibling) {
                 sectionDiv.querySelector('.card').insertBefore(newContentDiv, header.nextSibling);
@@ -1153,7 +1230,6 @@
                 sectionDiv.querySelector('.card').appendChild(newContentDiv);
             }
 
-            // التوجيه المباشر
             document.getElementById('aiGeneratorModal').style.display = 'none';
             switchTab(targetSection);
             alert('تم النشر بنجاح! يتم توجيهك للقسم...');
@@ -1182,13 +1258,26 @@
                 return;
             }
             
-            // محاكاة إضافة المحتوى للقسم
             const sectionDiv = document.getElementById(section);
             const newContentDiv = document.createElement('div');
             newContentDiv.className = 'bouh-display newly-added';
             newContentDiv.innerHTML = `<strong>${title}</strong><br>${content}`;
             
-            // إضافة المحتوى
+            // إضافة زر الحذف للعنصر الجديد فور إنشائه
+            if (document.body.classList.contains('delete-mode-active')) {
+                 const btn = document.createElement('div');
+                 btn.className = 'delete-overlay-btn';
+                 btn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                 btn.onclick = function(e) {
+                     e.stopPropagation();
+                     if(confirm('هل أنت متأكد من حذف هذا المحتوى نهائياً؟')) {
+                         newContentDiv.remove();
+                     }
+                 };
+                 newContentDiv.style.position = 'relative';
+                 newContentDiv.appendChild(btn);
+            }
+            
             const header = sectionDiv.querySelector('.card-header');
             if(header && header.nextSibling) {
                 sectionDiv.querySelector('.card').insertBefore(newContentDiv, header.nextSibling);
@@ -1196,13 +1285,11 @@
                 sectionDiv.querySelector('.card').appendChild(newContentDiv);
             }
 
-            // التوجيه المباشر
             document.getElementById('uploadPostModal').style.display = 'none';
             switchTab(section);
             alert('تم الرفع بنجاح! يتم توجيهك للقسم...');
         }
         
-        // دوال التتبع الوهمية
         function calculateMenstrualCycle() {
             const lastPeriodDateInput = document.getElementById('lastPeriodDate').value;
             const cycleLength = parseInt(document.getElementById('cycleLength').value);
