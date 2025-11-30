@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "ragga-vercel-app",
+  "build": {
+    "env": {
+      "NODE_VERSION": "20"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/gemini",
+      "dest": "/api/gemini.js",
+      "methods": ["POST"]
+    }
+  ]
+}
