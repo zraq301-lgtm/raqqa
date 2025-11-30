@@ -1,15 +1,22 @@
 {
   "name": "ragga-vercel-app",
   "version": "1.0.0",
-  "description": "Ragga App deployed on Vercel with Gemini AI Function",
+  "description": "Ragga App deployed on Vercel with Gemini AI Function for content generation.",
+  
   "main": "api/gemini.js",
+  
+  "type": "module",
+  
   "scripts": {
-    "start": "vercel dev"
+    "start": "vercel dev",
+    "deploy": "vercel --prod"
   },
+  
   "dependencies": {
-    "@google/genai": "^0.15.0",
-    "express": "^4.19.2"
+    "@google/genai": "^0.15.0"
+    // يجب إزالة 'express' إذا كنت تستخدم Vercel Functions بشكل خام
+  },
+  "devDependencies": {
+    "vercel": "^35.0.0"
   }
-  // قد تحتاج إلى إضافة "type": "module" إذا كنت تواجه مشاكل في الاستيراد (Import)
-  // "type": "module"
 }
