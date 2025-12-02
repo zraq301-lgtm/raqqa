@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "vercel dev",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "build": "vite build"  // <--- تمت إضافة أمر البناء هنا
   },
   "dependencies": {
     "@google/genai": "^0.15.0",
