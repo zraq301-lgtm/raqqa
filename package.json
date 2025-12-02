@@ -9,12 +9,8 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    // مكتبة Gemini AI (تم الاحتفاظ بها لإنشاء المحتوى)
     "@google/genai": "^0.15.0",
-    
-    // مكتبة Supabase للاتصال بقاعدة البيانات (مضافة حديثاً)
-    "@supabase/supabase-js": "^2.39.3", 
-    
+    "@supabase/supabase-js": "^2.39.3",
     "lru-cache": "^10.0.0"
   },
   "devDependencies": {
