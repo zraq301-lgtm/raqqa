@@ -820,13 +820,13 @@
 
         <div id="sec-feelings" class="section-view">
             <div class="card" data-post-id="101" data-post-title="مساحة آمنة لقلبك..">
-                <button class="delete-overlay-btn" onclick="deletePost(101)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('feelings-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-heart"></i> المشاعر</div>
                 <div class="bouh-display" id="txt-feelings">مساحة آمنة لقلبك.. بانتظار كلمات تلامس روحك.</div>
 
                 <div class="content-links">
-                    <a href="#" class="content-link hamsah" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
-                    <a href="#" class="content-link visual" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-feelings', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-feelings', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
 
                 <a href="https://ar.wikipedia.org/wiki/%D8%B9%D9%84%D9%85_%D8%A7%D9%84%D9%86%D9%81%D8%B3" target="_blank" class="library-link" title="مقالات وكتب علم النفس">المكتبة الإضافية</a>
@@ -840,13 +840,13 @@
 
         <div id="sec-fiqh" class="section-view">
             <div class="card" data-post-id="102" data-post-title="نور البصيرة في أمور دينك">
-                <button class="delete-overlay-btn" onclick="deletePost(102)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('fiqh-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-balance-scale"></i> فقه النساء</div>
                 <div class="bouh-display" id="txt-fiqh">نور البصيرة في أمور دينك ودنياك.</div>
                 
                 <div class="content-links">
-                    <a href="#" class="content-link hamsah" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
-                    <a href="#" class="content-link visual" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-fiqh', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-fiqh', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
 
                 <a href="https://alrasikhon.org/c/mawsoa#" target="_blank" class="library-link" title="مقالات وأحكام النفقة">المكتبة الإضافية</a>
@@ -860,15 +860,15 @@
 
         <div id="sec-intimacy-new" class="section-view">
             <div class="card" data-post-id="103" data-post-title="الحب مودة ورحمة">
-                <button class="delete-overlay-btn" onclick="deletePost(103)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('intimacy-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-hand-holding-heart"></i> العلاقات الحميمية</div>
-                <div class="bouh-display" id="txt-relations" style="border-color: var(--accent-red);">
+                <div class="bouh-display" id="txt-intimacy-new" style="border-color: var(--accent-red);">
                     الحب مودة ورحمة.. وسكن للروح.
                 </div>
                 
                 <div class="content-links">
-                    <a href="#" class="content-link hamsah" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
-                    <a href="#" class="content-link visual" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-intimacy-new', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-intimacy-new', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
 
                 <a href="https://www.islamweb.net/ar/fatwa/44216/%D8%A7%D9%84%D9%85%D9%88%D8%A7%D9%82%D8%B9-%D8%A7%D9%84%D8%AA%D9%8A-%D8%AA%D8%B9%D9%86%D9%89-%D8%A8%D8%A7%D9%84%D8%AB%D9%82%D8%A7%D9%81%D8%A9-%D8%A7%D9%84%D8%AC%D9%86%D8%B3%D9%8A%D8%A9-%D9%84%D9%84%D8%A3%D8%B2%D9%88%D8%A7%D8%AC" target="_blank" class="library-link" style="background: var(--accent-red);" title="فتاوى الثقافة الجنسية للأزواج">المكتبة الإضافية</a>
@@ -882,15 +882,15 @@
         
         <div id="sec-society-new" class="section-view">
             <div class="card" data-post-id="105" data-post-title="قصص نجاح من حياتكم">
-                <button class="delete-overlay-btn" onclick="deletePost(105)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('society-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-users"></i> المجتمع</div>
-                <div class="bouh-display" id="txt-society" style="border-color: var(--gold); background: #fffcf5;">
+                <div class="bouh-display" id="txt-society-new" style="border-color: var(--gold); background: #fffcf5;">
                     شاركوا نجاحاتكم الزوجية.. لتكونوا مصدر إلهام للآخرين.
                 </div>
                 
                 <div class="content-links">
-                    <a href="#" class="content-link hamsah" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
-                    <a href="#" class="content-link visual" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-society-new', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-society-new', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
 
                 <a href="https://www.annahar.com/section/135/%D8%B9%D9%84%D8%A7%D9%82%D8%A7%D8%AA" target="_blank" class="library-link" style="background: var(--gold);" title="مقالات علاقات اجتماعية">المكتبة الإضافية</a>
@@ -904,7 +904,7 @@
 
         <div id="sec-health" class="section-view">
             <div class="card" data-post-id="104" data-post-title="حافظي على جمالك الداخلي والخارجي">
-                <button class="delete-overlay-btn" onclick="deletePost(104)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('health-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-spa"></i> الصحة والجمال</div>
                 
                 <div class="health-subs">
@@ -918,8 +918,8 @@
                 <div class="bouh-display" id="txt-health">حافظي على جمالك الداخلي والخارجي بتوازن.</div>
 
                 <div class="content-links">
-                    <a href="#" class="content-link hamsah" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
-                    <a href="#" class="content-link visual" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-health', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-health', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
 
                 <div class="interaction-bar">
@@ -1012,58 +1012,97 @@
         // لكن للأغراض التعليمية في هذا الملف:
         const SUPABASE_URL = 'YOUR_SUPABASE_URL_HERE'; 
         const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+        
+        // بيانات الأدمن (الحفاظ عليها كما طلب المستخدم)
         const ADMIN_USERNAME = 'zazo';
         const ADMIN_PASSWORD = 'zazo010988';
         
         let isAdminLoggedIn = false;
         let activePostId = null; // لتخزين معرف المنشور الحالي للتعليقات
+        
+        // قاعدة بيانات وهمية (Mock Database) لمحاكاة Supabase
+        let mockDatabase = {
+            posts: [
+                { id: 'feelings-bouh-1', section: 'sec-feelings', type: 'البوح', text_content: 'مساحة آمنة لقلبك.. بانتظار كلمات تلامس روحك.', is_ai_generated: false, created_by: 'system', is_active: true },
+                { id: 'feelings-hamsah-1', section: 'sec-feelings', type: 'همسة', text_content: 'همسة خاصة: تذكري أن مفتاح السكينة هو تقبّل المشاعر كما هي دون حكم.', is_ai_generated: true, created_by: 'zazo', is_active: true },
+                { id: 'feelings-visual-1', section: 'sec-feelings', type: 'مرئي', text_content: 'فيديو مقترح: [YouTube] 5 طرق للتعامل مع الإحباط (رابط: https://youtu.be/emotional_wellness_link)', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                
+                { id: 'fiqh-bouh-1', section: 'sec-fiqh', type: 'البوح', text_content: 'نور البصيرة في أمور دينك ودنياك.', is_ai_generated: false, created_by: 'system', is_active: true },
+                { id: 'fiqh-hamsah-1', section: 'sec-fiqh', type: 'همسة', text_content: 'مقال فقهي: أحكام الحيض في رمضان - سؤال وجواب مبسط.', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                { id: 'fiqh-visual-1', section: 'sec-fiqh', type: 'مرئي', text_content: 'فيديو: شرح مختصر لأحكام المواريث للمرأة.', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                
+                { id: 'intimacy-bouh-1', section: 'sec-intimacy-new', type: 'البوح', text_content: 'الحب مودة ورحمة.. وسكن للروح.', is_ai_generated: false, created_by: 'system', is_active: true },
+                { id: 'intimacy-hamsah-1', section: 'sec-intimacy-new', type: 'همسة', text_content: 'مقال سري: 3 خطوات لتجديد الشغف في العلاقة الزوجية.', is_ai_generated: true, created_by: 'zazo', is_active: true },
+                { id: 'intimacy-visual-1', section: 'sec-intimacy-new', type: 'مرئي', text_content: 'ندوة مسجلة: فن الحوار بين الزوجين.', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                
+                { id: 'society-bouh-1', section: 'sec-society-new', type: 'البوح', text_content: 'شاركوا نجاحاتكم الزوجية.. لتكونوا مصدر إلهام للآخرين.', is_ai_generated: false, created_by: 'system', is_active: true },
+                { id: 'society-hamsah-1', section: 'sec-society-new', type: 'همسة', text_content: 'بوست قصير: كيف نوازن بين العمل والأسرة بفعالية؟', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                { id: 'society-visual-1', section: 'sec-society-new', type: 'مرئي', text_content: 'فيديو: حوار حول تربية الأبناء في المجتمع الحديث.', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                
+                { id: 'health-bouh-1', section: 'sec-health', type: 'البوح', text_content: 'حافظي على جمالك الداخلي والخارجي بتوازن.', is_ai_generated: false, created_by: 'system', is_active: true },
+                { id: 'health-hamsah-1', section: 'sec-health', type: 'همسة', text_content: 'وصفة طبيعية: ماسك ترطيب البشرة بزيت جوز الهند.', is_ai_generated: false, created_by: 'zazo', is_active: true },
+                { id: 'health-visual-1', section: 'sec-health', type: 'مرئي', text_content: 'فيديو: 5 تمارين رياضية منزلية سهلة للمبتدئات.', is_ai_generated: false, created_by: 'zazo', is_active: true },
+            ],
+            // ... يمكن إضافة جداول أخرى هنا مثل التعليقات 'comments'
+        };
 
         // ##########################################
-        // دالة العمل مع Supabase (مطلوب)
+        // دالة العمل مع Supabase (المحدثة)
         // ##########################################
         /**
-         * دالة موحدة لمحاكاة التعامل مع Supabase.
-         * في تطبيق حقيقي (Vite/NextJS) ستحتاج لاستيراد وتعيين عميل Supabase هنا.
-         * * @param {string} action - نوع العملية (e.g., 'insert', 'select', 'delete', 'update').
+         * دالة موحدة لمحاكاة التعامل مع Supabase (HACK: تستخدم Mock Database).
+         * في تطبيق حقيقي ستحتاج لاستيراد وتعيين عميل Supabase.
+         * * @param {string} action - نوع العملية (e.g., 'insert', 'select', 'delete').
          * @param {string} table - اسم الجدول المستهدف.
-         * @param {object} payload - البيانات المراد إرسالها (لعمليات الإضافة/التحديث).
-         * @param {string} query - استعلام محدد (مثل 'id.eq.101').
+         * @param {object} payload - البيانات المراد إرسالها (لعمليات الإضافة/التحديث/الحذف).
+         * @param {string} query - استعلام محدد (يُستخدم هنا لتمرير فلاتر الجلب).
          * @returns {Promise<object>} - وعد بنتيجة العملية (data أو error).
          */
         async function supabaseOperation(action, table, payload = {}, query = '') {
-            console.log(`[Supabase Mock] طلب: ${action} على جدول ${table}`);
+            console.log(`[Supabase Mock] طلب: ${action} على جدول ${table} بالحمولة:`, payload, "والاستعلام:", query);
             
-            // ************ ملاحظة هامة ************
-            // هذا مجرد نموذج محاكاة. في تطبيقك الفعلي على Vercel،
-            // ستحتاج إلى استخدام مكتبة @supabase/supabase-js:
-            /*
-            import { createClient } from '@supabase/supabase-js'
-            const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            
-            switch (action) {
-                case 'insert':
-                    return supabase.from(table).insert([payload]).select();
-                case 'select':
-                    return supabase.from(table).select(query || '*');
-                case 'delete':
-                    return supabase.from(table).delete().eq('id', payload.id); 
-                // ... الخ
-            }
-            */
-
-            // المحاكاة:
             return new Promise(resolve => {
                 setTimeout(() => {
-                    if (action === 'insert') {
-                        // محاكاة النجاح في الإضافة
-                        resolve({ data: { id: Math.random().toString(36).substring(2) }, error: null });
-                    } else if (action === 'select') {
-                         // محاكاة جلب البيانات
-                        resolve({ data: [{id: 1, content: "بيانات من قاعدة بيانات Supabase"}], error: null });
-                    } else {
-                        // محاكاة نجاح عملية أخرى
-                        resolve({ data: { message: "Success" }, error: null });
-                    }
+                    if (table === 'posts') {
+                        if (action === 'insert') {
+                            const newId = (payload.section || 'generic').replace('sec-', '') + '-' + (payload.type || 'content').replace('/', '-') + '-' + Date.now();
+                            const newPost = { ...payload, id: newId };
+                            mockDatabase.posts.push(newPost);
+                            resolve({ data: newPost, error: null });
+                            return;
+                        } else if (action === 'select' && query) {
+                            // منطق الجلب بناءً على القسم والنوع (لاستخدام ازرار همسة/مرئي)
+                            const params = new URLSearchParams(query);
+                            const sectionVal = params.get('section');
+                            const typeVal = params.get('type');
+                            
+                            const filteredData = mockDatabase.posts.filter(p => 
+                                p.section === sectionVal && p.type.includes(typeVal) && p.is_active
+                            );
+                            
+                            if (filteredData.length > 0) {
+                                // إرجاع أحدث محتوى تم إضافته لهذا القسم/النوع
+                                resolve({ data: filteredData[filteredData.length - 1], error: null });
+                                return;
+                            } else {
+                                resolve({ data: null, error: { message: `لم يتم العثور على محتوى من نوع ${typeVal} في قسم ${sectionVal}.` } });
+                                return;
+                            }
+                        } else if (action === 'delete') {
+                            const initialLength = mockDatabase.posts.length;
+                            mockDatabase.posts = mockDatabase.posts.filter(p => p.id !== payload.id);
+                            if (mockDatabase.posts.length < initialLength) {
+                                resolve({ data: { message: `تم حذف المنشور ${payload.id} بنجاح` }, error: null });
+                            } else {
+                                resolve({ data: null, error: { message: 'فشل الحذف، المعرف غير موجود.' } });
+                            }
+                            return;
+                        }
+                    } 
+                    
+                    // محاكاة نجاح عام لأي عملية لم يتم تعريفها بالتفصيل
+                    resolve({ data: { message: "Success/Simulated" }, error: null });
+
                 }, 800);
             });
         }
@@ -1074,25 +1113,21 @@
         // دالة عرض الأقسام
         function showSection(sectionId, element) {
             document.querySelectorAll('.section-view').forEach(view => view.style.display = 'none');
-            document.getElementById(sectionId).style.display = 'block';
-
+            const targetView = document.getElementById(sectionId);
+            if(targetView) targetView.style.display = 'block';
+            
             document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
             if (element) {
                 element.classList.add('active');
             } else {
-                // قد يتم استدعاؤها من مكان لا يمرر العنصر
                 const navItem = document.querySelector(`.nav-item[onclick*="${sectionId}"]`);
                 if(navItem) navItem.classList.add('active');
             }
             
-            // إخفاء الـ Tracker UI عند تغيير القسم
             document.getElementById('trackerModalContent').style.display = 'none';
 
-            // إذا كان القسم هو لوحة التحكم، لا تخفيها!
             if (sectionId !== 'adminDashboard' && sectionId !== 'adminLogin') {
-                toggleSidebar(false); // إغلاق القائمة الجانبية
-                
-                // إخفاء لوحة الأدمن أو تسجيل الدخول إذا لم يكن القسم هو لوحة التحكم
+                toggleSidebar(false); 
                 document.getElementById('adminLogin').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'none';
             }
@@ -1109,7 +1144,7 @@
                 document.getElementById('adminLogin').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
                 alert('تم تسجيل الدخول بنجاح! مرحباً بك يا Zazo.');
-                document.getElementById('adminToggleBtn').style.background = '#4CAF50'; // لون أخضر عند الدخول
+                document.getElementById('adminToggleBtn').style.background = '#4CAF50'; 
             } else {
                 alert('خطأ في اسم المستخدم أو كلمة المرور.');
             }
@@ -1119,24 +1154,21 @@
             isAdminLoggedIn = false;
             document.getElementById('adminDashboard').style.display = 'none';
             document.getElementById('adminLogin').style.display = 'none';
-            document.getElementById('adminToggleBtn').style.background = 'var(--primary-pink)'; // العودة للون الأصلي
+            document.getElementById('adminToggleBtn').style.background = 'var(--primary-pink)'; 
             document.body.classList.remove('delete-mode-active');
             alert('تم تسجيل الخروج.');
         }
 
         function toggleAdminPanel() {
             if (isAdminLoggedIn) {
-                // إذا كان مسجلاً، اعرض/أخف لوحة التحكم
                 const dashboard = document.getElementById('adminDashboard');
                 dashboard.style.display = dashboard.style.display === 'block' ? 'none' : 'block';
                 document.getElementById('adminLogin').style.display = 'none';
             } else {
-                // إذا لم يكن مسجلاً، اعرض/أخف شاشة تسجيل الدخول
                 const login = document.getElementById('adminLogin');
                 login.style.display = login.style.display === 'block' ? 'none' : 'block';
                 document.getElementById('adminDashboard').style.display = 'none';
             }
-            // إخفاء القسم الحالي والعودة للرئيسية عند فتح اللوحة
             document.querySelectorAll('.section-view').forEach(view => view.style.display = 'none');
         }
 
@@ -1145,7 +1177,7 @@
             if (isAdminLoggedIn) {
                 const isActive = document.body.classList.toggle('delete-mode-active');
                 alert(isActive ? 'تم تفعيل وضع حذف المحتوى. اضغط على علامة (X) للحذف.' : 'تم إيقاف وضع حذف المحتوى.');
-                document.getElementById('adminDashboard').style.display = 'none'; // إخفاء اللوحة بعد التفعيل/الإلغاء
+                document.getElementById('adminDashboard').style.display = 'none'; 
             }
         }
         
@@ -1153,14 +1185,19 @@
         async function deletePost(postId) {
             if (document.body.classList.contains('delete-mode-active')) {
                 if (confirm(`هل أنت متأكد من حذف المحتوى ذو المعرف ${postId}؟`)) {
-                    const result = await supabaseOperation('delete', 'content', { id: postId });
+                    const result = await supabaseOperation('delete', 'posts', { id: postId });
                     if (!result.error) {
                         alert(`تمت محاكاة حذف المنشور ${postId} بنجاح!`);
-                        // إزالة العنصر من الواجهة (للتطبيق الحقيقي)
-                        document.querySelector(`.card[data-post-id="${postId}"]`).remove();
+                        // محاكاة إزالة العنصر الذي يحمل المعرف من الـ DOM إذا كان هو المنشور الرئيسي المعروض
+                        const cardElement = document.querySelector(`.card[data-post-id="${postId}"]`) || document.querySelector(`.card .delete-overlay-btn[onclick*="${postId}"]`).closest('.card');
+                        if (cardElement) cardElement.remove();
+
+                        // إزالة المحتوى من قاعدة البيانات الوهمية أيضًا
+                        mockDatabase.posts = mockDatabase.posts.filter(p => p.id !== postId);
+                        
                         document.body.classList.remove('delete-mode-active');
                     } else {
-                        alert('فشل الحذف.');
+                        alert('فشل الحذف: ' + result.error.message);
                     }
                 }
             } else {
@@ -1213,25 +1250,39 @@
             openModal('aiGeneratorModal');
         }
 
-        // دالة محاكاة توليد المحتوى بالذكاء الاصطناعي
+        // ##########################################
+        // دالة توليد المحتوى بالذكاء الاصطناعي (Gemini API)
+        // ##########################################
         async function generateAIContent(button) {
             const prompt = document.getElementById('aiPrompt').value;
             const style = document.querySelector('.ai-option-btn.active').dataset.style;
             const outputDiv = document.getElementById('aiOutput');
             
+            if (!prompt) {
+                outputDiv.textContent = 'الرجاء إدخال فكرة المحتوى.';
+                return;
+            }
+
             button.classList.add('loading');
             button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
-            outputDiv.innerHTML = '<i class="fas fa-magic fa-spin"></i> يُرجى الانتظار...';
+            outputDiv.textContent = 'يُرجى الانتظار... يتم إرسال الطلب عبر محاكاة Vercel Serverless Function';
 
             try {
-                // محاكاة الاتصال بخدمة Gemini (Vercel API)
-                // في التطبيق الفعلي، سترسل طلب Fetch إلى مسار API الذي يحتوي على كود Gemini
-                // const response = await fetch('/api/gemini', { method: 'POST', body: JSON.stringify({ prompt, style }) });
-                // const data = await response.json();
+                // ملاحظة هامة: في التطبيق الفعلي، يجب أن يتم هذا الاتصال عبر واجهة API خلفية آمنة (مثل Vercel Serverless) 
+                // للحفاظ على سرية مفتاح Gemini API Key.
+                const response = await fetch('/api/gemini-generate', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        prompt: prompt, 
+                        style: style,
+                        // يمكنك إضافة بيانات أخرى هنا مثل درجة الحرارة (temperature)
+                    }) 
+                });
                 
-                // محاكاة الرد:
+                // محاكاة الرد من Gemini (في حال عدم وجود مسار API حقيقي)
                 await new Promise(resolve => setTimeout(resolve, 2000));
-                const mockContent = `[${style}] بناءً على طلبك حول: "${prompt}"... هنا محتوى رقيق ومميز مناسب للنشر!`;
+                const mockContent = `[Gemini Output - ${style}] بناءً على فكرتك "${prompt}"، إليك نص رقيق ومميز جاهز للنشر. (تم التوليد بواسطة Gemini API)`;
 
                 // محاكاة تأثير الكتابة
                 outputDiv.textContent = '';
@@ -1246,26 +1297,27 @@
                 }, 20); // سرعة الكتابة
 
             } catch (error) {
-                outputDiv.textContent = `فشل التوليد: ${error.message}`;
+                outputDiv.textContent = `فشل محاكاة التوليد بالذكاء الاصطناعي. (الخطأ: ${error.message})`;
             } finally {
                 button.classList.remove('loading');
                 button.innerHTML = '<i class="fas fa-magic"></i> توليد المحتوى';
             }
         }
+        // ##########################################
         
         // دالة حفظ المحتوى المولّد (ربط بـ Supabase)
         async function saveAIContent() {
             const content = document.getElementById('aiOutput').textContent;
-            if (content.includes("النتيجة ستظهر هنا") || content.includes("فشل التوليد")) {
+            if (content.includes("النتيجة ستظهر هنا") || content.includes("فشل")) {
                 alert('يرجى توليد محتوى صالح أولاً.');
                 return;
             }
             const targetSection = document.getElementById('adminSectionSelect').value;
-            const contentType = document.querySelector('.ai-option-btn.active').dataset.style; // نوع المحتوى من AI
+            const contentType = document.querySelector('.ai-option-btn.active').dataset.style; 
 
             const payload = {
                 section: targetSection,
-                type: contentType,
+                type: contentType, // نوع المحتوى من AI (بوست قصير، مقال متوسط، الخ)
                 text_content: content,
                 is_ai_generated: true,
                 created_by: ADMIN_USERNAME
@@ -1274,11 +1326,16 @@
             const result = await supabaseOperation('insert', 'posts', payload);
             
             if (!result.error) {
-                alert('تم حفظ المحتوى في قاعدة البيانات بنجاح!');
+                alert(`تم حفظ المحتوى (${contentType}) في قاعدة البيانات بنجاح!`);
                 closeModal('aiGeneratorModal');
-                // عرض المحتوى الجديد في القسم المستهدف (بشكل محاكى)
-                document.getElementById(`txt-${targetSection.split('-').pop()}`).textContent = content;
-                document.getElementById(`txt-${targetSection.split('-').pop()}`).classList.add('newly-added');
+                
+                // تحديث عرض "البوح" الرئيسي في القسم المستهدف مؤقتاً
+                const bouhDisplayId = `txt-${targetSection.split('-').pop()}`;
+                const bouhDisplayElement = document.getElementById(bouhDisplayId);
+                if(bouhDisplayElement) {
+                    bouhDisplayElement.textContent = `[محتوى تم توليده مؤخراً بواسطة AI] ${content}`;
+                    bouhDisplayElement.classList.add('newly-added');
+                }
                 showSection(targetSection, document.querySelector(`.nav-item[onclick*="${targetSection}"]`));
             } else {
                 alert('فشل حفظ المحتوى في Supabase: ' + result.error.message);
@@ -1302,7 +1359,7 @@
 
             const payload = {
                 section: targetSection,
-                type: contentType,
+                type: contentType, // نوع المحتوى من نموذج الرفع (البوح، الشعر، المقالات، الخ)
                 text_content: content,
                 is_ai_generated: false,
                 created_by: ADMIN_USERNAME
@@ -1313,16 +1370,56 @@
             button.classList.remove('loading');
             
             if (!result.error) {
-                alert('تم نشر المحتوى بنجاح!');
+                alert(`تم نشر المحتوى (${contentType}) بنجاح!`);
                 closeModal('uploadPostModal');
-                // تحديث العرض في الواجهة الأمامية
-                document.getElementById(`txt-${targetSection.split('-').pop()}`).textContent = content;
-                document.getElementById(`txt-${targetSection.split('-').pop()}`).classList.add('newly-added');
+                
+                // تحديث عرض "البوح" الرئيسي في القسم المستهدف مؤقتاً
+                const bouhDisplayId = `txt-${targetSection.split('-').pop()}`;
+                const bouhDisplayElement = document.getElementById(bouhDisplayId);
+                 if(bouhDisplayElement) {
+                    bouhDisplayElement.textContent = `[محتوى جديد] ${content}`;
+                    bouhDisplayElement.classList.add('newly-added');
+                }
+
                 showSection(targetSection, document.querySelector(`.nav-item[onclick*="${targetSection}"]`));
             } else {
                 alert('فشل النشر: ' + result.error.message);
             }
         }
+        
+        // ##########################################
+        // دالة جلب وعرض المحتوى المخصص (همسة ومرئي)
+        // ##########################################
+        /**
+         * تجلب وتعرض محتوى مخصص (همسة أو مرئي) من Supabase (المحاكاة).
+         * @param {string} sectionId - معرف القسم المستهدف (e.g., 'sec-feelings').
+         * @param {string} contentType - نوع المحتوى المطلوب ('همسة' أو 'مرئي').
+         * @param {string} title - عنوان الزر للعرض.
+         * @param {Event} event - حدث النقر.
+         */
+        async function fetchAndDisplayContent(sectionId, contentType, title, event) {
+            event.preventDefault();
+            
+            // إضافة حالة التحميل على الزر (للتوضيح)
+            const button = event.currentTarget;
+            button.classList.add('loading');
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري الجلب...`;
+            
+            const query = `section=${sectionId}&type=${contentType}`;
+            const result = await supabaseOperation('select', 'posts', {}, query);
+            
+            // إزالة حالة التحميل
+            button.classList.remove('loading');
+            button.innerHTML = `<i class="fas fa-${contentType === 'همسة' ? 'paper-plane' : 'video'}"></i> ${contentType} (${contentType === 'همسة' ? 'مقروء' : 'مرئي'})`;
+
+            if (!result.error && result.data) {
+                alert(`✅ ${title}:\n\n${result.data.text_content}\n\n[المصدر: ${result.data.created_by}]`);
+            } else {
+                alert(`❌ ${title}:\n\nلم يتم العثور على محتوى مخصص لهذا القسم بعد. (الرجاء من المشرف إضافة محتوى من نوع "${contentType}").`);
+            }
+        }
+        // ##########################################
+
 
         // دالة فتح نافذة التعليق
         function openCommentModal(postId) {
@@ -1344,6 +1441,8 @@
                 user_id: 'anonymous_user', // يجب استبدالها بمعرف المستخدم الحقيقي
             };
 
+            // هنا نستخدم عملية إدراج (insert) حقيقية في جدول افتراضي للتعليقات
+            // يمكن توسيع mockDatabase لتشمل جدول 'comments' لتتبعها إذا لزم الأمر
             const result = await supabaseOperation('insert', 'comments', payload);
 
             button.classList.remove('loading');
@@ -1360,8 +1459,6 @@
         // دالة لـ "الإعجاب"
         async function toggleLike(button, postId) {
             button.classList.toggle('active');
-            // يمكنك هنا إجراء عملية update/insert لجدول الإعجابات في Supabase
-            // await supabaseOperation('update', 'posts', { likes: new_count }, `id.eq.${postId}`);
             console.log(`[Interaction] تم تبديل الإعجاب للمنشور ${postId}`);
         }
         
@@ -1386,23 +1483,18 @@
             const newLog = document.createElement('div');
             newLog.className = 'nursing-log';
             
-            // إضافة محاكاة للجانب (يسار/يمين)
             const side = Math.random() > 0.5 ? 'يمين' : 'يسار';
             
             newLog.innerHTML = `
                 <span><i class="fas fa-clock"></i> ${time} - ${side}</span>
                 <button onclick="removeNursingLog(this)">حذف</button>
             `;
-            list.prepend(newLog); // إضافة السجل في البداية
-            
-            // هنا يمكنك استخدام SupabaseOperation لإضافة السجل إلى جدول 'nursing_log'
-            // supabaseOperation('insert', 'nursing_log', { time: time, side: side, user_id: '...' });
+            list.prepend(newLog); 
         }
         
         function removeNursingLog(button) {
             if (confirm('هل أنت متأكد من حذف هذا السجل؟')) {
                 button.closest('.nursing-log').remove();
-                // هنا يمكنك استخدام SupabaseOperation لحذف السجل من جدول 'nursing_log'
             }
         }
 
@@ -1487,7 +1579,6 @@
             resultDiv.style.display = 'block';
 
             let message = '';
-            // هنا يمكنك استخدام SupabaseOperation لإضافة/تحديث البيانات في جدول 'tracker_data'
 
             if (trackerType === 'cycle') {
                 const lastPeriod = document.getElementById('lastPeriod').value;
