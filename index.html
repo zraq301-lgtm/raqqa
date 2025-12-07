@@ -857,231 +857,294 @@
         </div>
 
         <div id="sec-intimacy-new" class="section-view">
-            <div class="card" data-post-id="103" data-post-title="حديث القلب للروح..">
+            <div class="card" data-post-id="103" data-post-title="حياة زوجية هانئة">
                 <button class="delete-overlay-btn" onclick="deletePost('intimacy-bouh-1')"><i class="fas fa-times"></i></button>
-                <div class="card-header"><i class="fas fa-hand-holding-heart"></i> العلاقات الحميمية</div>
-                <div class="bouh-display" id="txt-intimacy-new">حديث القلب للروح.. لبناء علاقة زوجية صحية ومستدامة.</div>
+                <div class="card-header"><i class="fas fa-fire-alt"></i> العلاقات الحميمية</div>
+                <div class="bouh-display" id="txt-intimacy-new">تعلمي كيف تكون حياتك الزوجية أكثر هناءً وسعادة.</div>
                 <div class="content-links">
                     <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-intimacy-new', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
                     <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-intimacy-new', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
-                <a href="https://www.google.com/search?q=%D9%83%D8%AA%D8%A8+%D8%B9%D9%84%D8%A7%D9%82%D8%A7%D8%AA+%D8%B2%D9%88%D8%AC%D9%8A%D8%A9" target="_blank" class="library-link" title="مكتبة العلاقات">المكتبة الإضافية</a>
+                <a href="#" target="_blank" class="library-link" title="كتب عن العلاقات">المكتبة الإضافية</a>
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 103)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(103)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(103, 'حديث القلب للروح..')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(103, 'حياة زوجية هانئة')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
 
         <div id="sec-society-new" class="section-view">
-            <div class="card" data-post-id="104" data-post-title="مجتمعك الخاص">
+            <div class="card" data-post-id="104" data-post-title="كيف تحققين التوازن">
                 <button class="delete-overlay-btn" onclick="deletePost('society-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-users"></i> المجتمع</div>
-                <div class="bouh-display" id="txt-society-new">شاركينا تجاربك، واسمعي من غيرك في بيئة آمنة.</div>
+                <div class="bouh-display" id="txt-society-new">محتوى عن دورك في المجتمع وكيف تحققين التوازن بين العمل والمنزل.</div>
                 <div class="content-links">
-                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-society-new', 'همسة', this.title, event)" title="قصص، تجارب، نقاشات"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
-                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-society-new', 'مرئي', this.title, event)" title="لقاءات وتجارب مصورة"><i class="fas fa-video"></i> محتوى مرئي</a>
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-society-new', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-society-new', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
-                <a href="#" class="library-link" title="فعاليات المجتمع">المكتبة الإضافية</a>
+                <a href="#" target="_blank" class="library-link" title="مقالات اجتماعية">المكتبة الإضافية</a>
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 104)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(104)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(104, 'مجتمعك الخاص')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(104, 'كيف تحققين التوازن')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
 
         <div id="sec-health" class="section-view">
-            <div class="health-subs">
-                <a class="h-link" onclick="toggleTracker('period')">الدورة الشهرية</a>
-                <a class="h-link" onclick="toggleTracker('bmi')">الوزن المثالي</a>
-                <a class="h-link" onclick="toggleTracker('water')">شرب الماء</a>
-                <a class="h-link tracker pregnancy-tracker" onclick="toggleTracker('pregnancy')"><i class="fas fa-baby"></i> متابعة الحمل</a>
-            </div>
+            <div class="card" data-post-id="105" data-post-title="صحتك أولاً">
+                <button class="delete-overlay-btn" onclick="deletePost('health-bouh-1')"><i class="fas fa-times"></i></button>
+                <div class="card-header"><i class="fas fa-stethoscope"></i> الصحة والجمال</div>
+                <div class="bouh-display" id="txt-health">معلومات ونصائح للحفاظ على صحتك البدنية والنفسية وجمالك.</div>
+                
+                <div class="health-subs">
+                    <a class="h-link pregnancy-tracker" onclick="showTracker('pregnancyTrackerUI')"><i class="fas fa-baby"></i> حاسبة الحمل</a>
+                    <a class="h-link tracker" onclick="showTracker('nursingTrackerUI')"><i class="fas fa-tint"></i> تتبع الرضاعة</a>
+                </div>
 
-            <div id="periodTracker" class="tracker-ui">
-                <h4><i class="fas fa-calendar-alt"></i> حاسبة الدورة الشهرية</h4>
-                <div class="tracker-form">
-                    <label>تاريخ آخر دورة:</label>
-                    <input type="date" id="lastPeriod">
-                    <label>مدة الدورة (بالأيام):</label>
-                    <input type="number" id="cycleLength" value="28">
-                    <button onclick="calculatePeriod()">احسبي موعدك</button>
-                    <div id="periodResult" class="tracker-result" style="display:none;"></div>
+                <div id="pregnancyTrackerUI" class="tracker-ui" style="background: #fdf6ff; border-color: #d8b7e2;">
+                    <h4><i class="fas fa-calendar-check"></i> حاسبة موعد الولادة</h4>
+                    <div class="tracker-form">
+                        <label for="lastPeriodDate">تاريخ أول يوم لآخر دورة شهرية:</label>
+                        <input type="date" id="lastPeriodDate">
+                        <button onclick="calculatePregnancy()" style="background: #ab47bc;"><i class="fas fa-calculator"></i> احسبي الآن</button>
+                    </div>
+                    <div id="pregnancyResult" class="tracker-result">
+                        <i class="fas fa-lightbulb"></i> أدخلي التاريخ للحساب
+                    </div>
+                </div>
+
+                <div id="nursingTrackerUI" class="tracker-ui">
+                    <h4><i class="fas fa-stopwatch"></i> تسجيل جلسة رضاعة</h4>
+                    <div class="tracker-form" onsubmit="event.preventDefault(); saveNursingLog();">
+                        <label for="nursingSide">الجانب:</label>
+                        <select id="nursingSide" required>
+                            <option value="left">اليسار</option>
+                            <option value="right">اليمين</option>
+                        </select>
+                        <label for="nursingDuration">المدة (بالدقائق):</label>
+                        <input type="number" id="nursingDuration" value="10" min="1" required>
+                        <label for="nursingTime">الوقت:</label>
+                        <input type="time" id="nursingTime" value="10:00" required>
+                        <button onclick="saveNursingLog()"><i class="fas fa-save"></i> حفظ الجلسة</button>
+                    </div>
+                    <h4 style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">سجل الرضاعة:</h4>
+                    <div id="nursingLogDisplay">
+                        </div>
+                </div>
+                <div class="content-links">
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-health', 'همسة', this.title, event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-health', 'مرئي', this.title, event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                </div>
+                <a href="https://www.who.int/ar/health-topics" target="_blank" class="library-link" title="الموقع الرسمي لمنظمة الصحة العالمية">المكتبة الإضافية</a>
+                <div class="interaction-bar">
+                    <button class="act-btn like-btn" onclick="toggleLike(this, 105)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
+                    <button class="act-btn" onclick="openCommentModal(105)"><i class="far fa-comment"></i> <span>تعليق</span></button>
+                    <button class="act-btn" onclick="shareContent(105, 'صحتك أولاً')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
-
-             <div id="bmiTracker" class="tracker-ui">
-                <h4><i class="fas fa-weight"></i> مؤشر كتلة الجسم (BMI)</h4>
-                <div class="tracker-form">
-                    <label>الوزن (كجم):</label>
-                    <input type="number" id="weight">
-                    <label>الطول (سم):</label>
-                    <input type="number" id="height">
-                    <button onclick="calculateBMI()">احسبي رشاقتك</button>
-                    <div id="bmiResult" class="tracker-result" style="display:none;"></div>
-                </div>
-            </div>
         </div>
-
+        
     </div>
 
-    <div id="uploadPostModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 id="modalTitle" style="color: var(--primary-pink); margin-top:0;">رفع محتوى جديد</h3>
-            <textarea id="postContent" class="inp-field" placeholder="اكتبي المحتوى هنا..." rows="4"></textarea>
-            <input type="file" id="postImage" class="file-field" accept="image/*">
-            <div style="display:flex; gap:10px;">
-                <button class="btn-primary" onclick="submitPostToVercel()">نشر وحفظ</button>
-                <button class="btn-primary" style="background:#ccc; color:#333;" onclick="closeModal('uploadPostModal')">إلغاء</button>
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('homeView', this)"><i class="fas fa-home"></i> <span>الرئيسية</span></div>
+        <div class="nav-item" onclick="showSection('sec-feelings', this)"><i class="fas fa-heart-pulse"></i> <span>المشاعر</span></div>
+        <div class="nav-item" onclick="showSection('sec-fiqh', this)"><i class="fas fa-balance-scale"></i> <span>فقه</span></div>
+        <div class="nav-item" onclick="showSection('sec-intimacy-new', this)"><i class="fas fa-fire-alt"></i> <span>علاقات</span></div>
+        <div class="nav-item" onclick="showSection('sec-society-new', this)"><i class="fas fa-users"></i> <span>مجتمع</span></div>
+        <div class="nav-item" onclick="showSection('sec-health', this)"><i class="fas fa-stethoscope"></i> <span>صحة</span></div>
+    </div>
+
+
+    <div id="uploadPostModal" class="modal-overlay" onclick="closeModal('uploadPostModal')">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 id="uploadModalTitle" style="color: var(--primary-pink);"><i class="fas fa-pen-nib"></i> رفع محتوى جديد</h3>
+            <textarea id="postContent" class="modal-box textarea" placeholder="اكتب محتوى المنشور هنا..." rows="8"></textarea>
+            <button class="btn-primary" onclick="submitPostToVercel()">حفظ وإرسال إلى Neon/Vercel</button>
+        </div>
+    </div>
+    
+    <div id="aiGeneratorModal" class="modal-overlay" onclick="closeModal('aiGeneratorModal')">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="color: #673ab7;"><i class="fas fa-robot"></i> مولد المحتوى بالذكاء الاصطناعي</h3>
+            <textarea id="aiPrompt" class="modal-box textarea" placeholder="اكتب طلبك للذكاء الاصطناعي (مثال: قصيدة عن الأمومة)" rows="4"></textarea>
+            <div class="ai-options">
+                <button class="ai-option-btn active" onclick="setCurrentAIType(this, 'post')" data-type="post">بوست</button>
+                <button class="ai-option-btn" onclick="setCurrentAIType(this, 'poem')" data-type="poem">شعر</button>
+                <button class="ai-option-btn" onclick="setCurrentAIType(this, 'article')" data-type="article">مقال</button>
+            </div>
+            <button class="btn-primary btn-ai" onclick="generateContent()"><i class="fas fa-magic"></i> توليد</button>
+            <div id="aiOutput" class="ai-output"><i class="fas fa-brain"></i> سيظهر المحتوى المُولد هنا...</div>
+            <button class="btn-primary" style="background: var(--accent-green); margin-top: 15px;" onclick="copyAIToPost()"><i class="fas fa-copy"></i> نسخ للمنشور</button>
+        </div>
+    </div>
+    
+    <div id="commentModal" class="modal-overlay" onclick="closeModal('commentModal')">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3 style="color: var(--accent-green);"><i class="far fa-comment-dots"></i> إضافة تعليق</h3>
+            <div id="commentsList" style="text-align: right; max-height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #eee; margin-bottom: 15px; border-radius: 8px;">
+                <p style="font-size: 0.85rem; color: #999;">لا توجد تعليقات حتى الآن.</p>
+            </div>
+            <div class="comment-input-area">
+                <textarea id="newCommentText" placeholder="اكتب تعليقك هنا..." rows="3"></textarea>
+                <button class="btn-primary" onclick="addComment()"><i class="fas fa-paper-plane"></i> إرسال</button>
             </div>
         </div>
     </div>
-
-    <div id="commentModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3>التعليقات</h3>
-            <div id="commentsList" style="text-align: right; max-height: 200px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #eee; padding: 5px;">
-                <p style="color:#999; font-size:0.8rem;">لا توجد تعليقات بعد.</p>
-            </div>
-            <textarea id="newCommentText" class="inp-field" placeholder="أضف تعليقاً..." rows="2"></textarea>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-primary" onclick="addComment()">إرسال</button>
-                <button class="btn-primary" style="background:#ccc; color:#333;" onclick="closeModal('commentModal')">إغلاق</button>
-            </div>
-        </div>
-    </div>
-
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="showSection('homeView', this)"><i class="fas fa-home"></i>الرئيسية</div>
-        <div class="nav-item" onclick="showSection('sec-feelings', this)"><i class="fas fa-heart"></i>المشاعر</div>
-        <div class="nav-item" onclick="showSection('sec-fiqh', this)"><i class="fas fa-book-open"></i>الفقه</div>
-        <div class="nav-item" onclick="showSection('sec-intimacy-new', this)"><i class="fas fa-hand-holding-heart"></i>حميمية</div>
-        <div class="nav-item" onclick="showSection('sec-society-new', this)"><i class="fas fa-users"></i>المجتمع</div>
-        <div class="nav-item" onclick="showSection('sec-health', this)"><i class="fas fa-female"></i>الصحة</div>
-    </nav>
 
     <script>
-        // --- 1. إعداد الاتصال بقاعدة البيانات (Neon/Vercel Postgres) ---
-        
-        // ملاحظة مهمة: يتم الآن التعامل مع الاتصال بقاعدة البيانات (مثل Neon) 
-        // عبر API Routes/Server Components في Next.js.
-        // لا نحتاج لتعريف متغيرات URL/Key في كود الـ Frontend (هذا الملف HTML)
-        // لأنها تقرأ تلقائياً من متغيرات بيئة Vercel (DATABASE_URL/POSTGRES_URL).
-        
-        let isDbConnected = false; // يتم تعيينها افتراضياً
-        
-        function checkAndInitLibraries() {
-             // بما أننا في بيئة Vercel/Next.js، لا نحتاج لتثبيت مكتبة في الواجهة الأمامية.
-             // نعتبر الاتصال جاهزاً ليتم استخدامه في API Route مخصص عند النشر على Vercel.
-            isDbConnected = true; 
-            console.log('✅ Prepared for Vercel/Neon integration.');
-            console.log('💡 تأكد من ربط Neon بمشروعك في Vercel Marketplace وإضافة API Route لحفظ البيانات.');
-        }
+        // *** الثوابت (Admin Credentials) ***
+        const ADMIN_USERNAME = 'zazo';
+        const ADMIN_PASSWORD = 'zazo010988';
+        let isAdminLoggedIn = false;
+        let isDeleteModeActive = false;
+        let currentUploadType = 'بوست/منشور'; // لتخزين نوع المحتوى المراد رفعه
+        let currentAIType = 'post';
 
-        // استدعاء دالة التثبيت عند تحميل الصفحة
-        window.onload = function() {
-            checkAndInitLibraries();
-        };
-
-        // --- 2. التحكم في التنقل (Navigation) ---
-        function showSection(sectionId, btnElement) {
-            // إخفاء كل الأقسام
-            document.querySelectorAll('.section-view, .welcome-section').forEach(el => el.style.display = 'none');
-            // إظهار القسم المطلوب
-            document.getElementById(sectionId).style.display = 'block';
-            
-            // تحديث حالة الأزرار السفلية
-            if (btnElement) {
-                document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-                btnElement.classList.add('active');
-            }
-        }
-
+        // *** الدوال الأساسية للواجهة ***
+        
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
         }
 
-        // --- 3. نظام الأدمن (Admin Logic) ---
-        let isAdmin = false;
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+            if (isDeleteModeActive) {
+                toggleDeleteMode();
+            }
+        }
+        
+        function showSection(sectionId, element) {
+            // إخفاء جميع الأقسام
+            document.querySelectorAll('.section-view').forEach(view => {
+                view.style.display = 'none';
+            });
+            document.getElementById('homeView').style.display = 'none';
 
-        function toggleAdminPanel() {
-            if (!isAdmin) {
-                // إذا لم يسجل الدخول، أظهر فورم الدخول
-                const loginDiv = document.getElementById('adminLogin');
-                loginDiv.style.display = loginDiv.style.display === 'none' ? 'block' : 'none';
-                document.getElementById('adminDashboard').style.display = 'none';
+            // إظهار القسم المطلوب
+            document.getElementById(sectionId).style.display = 'block';
+
+            // تحديث شريط التنقل السفلي
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (element) {
+                element.classList.add('active');
+            }
+        }
+        
+        // دالة لتحديث عرض البوح في الواجهة
+        function appendNewPostToView(sectionId, content, type) {
+            const sectionView = document.getElementById(sectionId);
+            if (!sectionView) return;
+
+            // تحديد الـ bouh-display الموجودة مسبقًا
+            const bouhDisplay = sectionView.querySelector('.bouh-display');
+            
+            if (bouhDisplay) {
+                // إزالة فئة التأشير من القديم
+                bouhDisplay.classList.remove('newly-added');
+                
+                // تحديث المحتوى
+                bouhDisplay.innerHTML = content;
+                
+                // إضافة فئة التأشير للجديد
+                bouhDisplay.classList.add('newly-added');
             } else {
-                // إذا مسجل، أظهر لوحة التحكم
-                const dashDiv = document.getElementById('adminDashboard');
-                dashDiv.style.display = dashDiv.style.display === 'none' ? 'block' : 'none';
-                document.getElementById('adminLogin').style.display = 'none';
+                console.error("Could not find bouh-display in section: " + sectionId);
             }
         }
 
+        // *** دالة تسجيل دخول المشرف (Admin) ***
         function adminLogin(e) {
             e.preventDefault();
-            const u = document.getElementById('adminUsername').value;
-            const p = document.getElementById('adminPassword').value;
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
 
-            // البيانات الثابتة للأدمن (كما طلبت)
-            if (u === 'zazo' && p === 'zazo010988') {
-                isAdmin = true;
-                alert('✨ أهلاً بك zazo في لوحة التحكم');
+            // التحقق من بيانات الدخول (المطلوبة من المستخدم)
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                isAdminLoggedIn = true;
                 document.getElementById('adminLogin').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
-                // تصفير الحقول
-                document.getElementById('adminUsername').value = '';
-                document.getElementById('adminPassword').value = '';
+                document.getElementById('adminToggleBtn').style.background = 'var(--accent-green)'; // تغيير لون القلب للأخضر عند الدخول
+                alert('✅ مرحباً بك يا زازو! تم تسجيل الدخول بنجاح.');
             } else {
-                alert('❌ بيانات الدخول غير صحيحة');
+                alert('❌ اسم المستخدم أو كلمة المرور غير صحيحين.');
+                document.getElementById('adminPassword').value = ''; 
             }
         }
 
         function adminLogout() {
-            isAdmin = false;
+            isAdminLoggedIn = false;
             document.getElementById('adminDashboard').style.display = 'none';
-            document.body.classList.remove('delete-mode-active');
-            alert('تم تسجيل الخروج بنجاح');
+            document.getElementById('adminToggleBtn').style.background = 'var(--primary-pink)'; // إعادة لون القلب للوردي
+            document.getElementById('adminUsername').value = '';
+            document.getElementById('adminPassword').value = '';
+            if (isDeleteModeActive) {
+                toggleDeleteMode();
+            }
+            alert('تم تسجيل الخروج بنجاح.');
         }
 
-        function toggleDeleteMode() {
-            document.body.classList.toggle('delete-mode-active');
-            alert(document.body.classList.contains('delete-mode-active') ? 'وضع الحذف مفعل: اضغطي على X الحمراء للحذف' : 'تم إيقاف وضع الحذف');
-        }
-
-        function deletePost(postId) {
-            if(confirm('هل أنت متأكدة من حذف هذا المحتوى نهائياً؟')) {
-                // هنا يمكن إضافة كود لحذف البيانات عبر API Route في Vercel
-                // حالياً نحذف العنصر من الواجهة
-                const element = document.querySelector(`[onclick="deletePost('${postId}')"]`).closest('.card');
-                if(element) element.remove();
+        function toggleAdminPanel() {
+            const loginPanel = document.getElementById('adminLogin');
+            const dashboardPanel = document.getElementById('adminDashboard');
+            
+            if (isAdminLoggedIn) {
+                if (dashboardPanel.style.display === 'block') {
+                    dashboardPanel.style.display = 'none';
+                } else {
+                    dashboardPanel.style.display = 'block';
+                    loginPanel.style.display = 'none';
+                }
+            } else {
+                if (loginPanel.style.display === 'block') {
+                    loginPanel.style.display = 'none';
+                } else {
+                    loginPanel.style.display = 'block';
+                    dashboardPanel.style.display = 'none';
+                }
             }
         }
 
-        // --- 4. إدارة المحتوى و Neon (Content & Neon) ---
-        
-        let currentUploadType = '';
-
         function openUploadPostModal(type) {
+            if (!isAdminLoggedIn) {
+                alert('الرجاء تسجيل الدخول أولاً كـ "المشرف".');
+                toggleAdminPanel();
+                return;
+            }
             currentUploadType = type;
-            document.getElementById('modalTitle').innerText = 'رفع: ' + type;
+            document.getElementById('uploadModalTitle').innerHTML = `<i class="fas fa-pen-nib"></i> رفع محتوى (${type})`;
             document.getElementById('uploadPostModal').style.display = 'flex';
         }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
+        function openAIGeneratorModal() {
+            if (!isAdminLoggedIn) {
+                alert('الرجاء تسجيل الدخول أولاً كـ "المشرف".');
+                toggleAdminPanel();
+                return;
+            }
+            document.getElementById('aiGeneratorModal').style.display = 'flex';
+        }
+        
+        function setCurrentAIType(btn, type) {
+            document.querySelectorAll('.ai-option-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentAIType = type;
         }
 
-        // دالة الحفظ الجديدة في Vercel (تحاكي إرسال البيانات إلى API Route)
-        async function submitPostToVercel() {
-            if (!isDbConnected) { alert('الاتصال بقاعدة البيانات غير مهيأ (تأكد من الربط في Vercel)'); return; }
 
+        // *** دالة الحفظ الجديدة في Vercel (ترسل البيانات إلى API Route) ***
+        async function submitPostToVercel() {
             const content = document.getElementById('postContent').value;
             const section = document.getElementById('adminSectionSelect').value;
             
-            if (!content) { alert('الرجاء كتابة محتوى'); return; }
+            if (!content) { 
+                alert('الرجاء كتابة محتوى'); 
+                return; 
+            }
 
             // تجهيز البيانات
             const postData = {
@@ -1091,88 +1154,88 @@
                 created_at: new Date().toISOString()
             };
             
-            // 💡 ملاحظة: في مشروع Next.js حقيقي، هنا ترسل طلب `fetch` إلى 
-            // API Route (مثلاً /api/posts) الذي سيستخدم `sql` من `@vercel/postgres` للحفظ.
-            
+            // إضافة مؤشر التحميل
+            const saveButton = document.querySelector('#uploadPostModal .btn-primary');
+            saveButton.disabled = true;
+            saveButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+
             try {
-                // محاكاة الاتصال الناجح بـ Neon/Vercel Postgres
-                // يتم استبدال هذا الكود بـ `fetch('/api/posts', { method: 'POST', body: JSON.stringify(postData) })`
-                console.log('Attempting to save data to Vercel/Neon via API Route:', postData);
+                // إرسال طلب POST إلى الـ Serverless Function (api/save-post.js)
+                const apiResponse = await fetch('/api/save-post', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(postData)
+                });
                 
-                // بما أننا لا نستطيع تنفيذ كود الخادم (API) هنا، سنقوم بمحاكاة النتيجة:
-                
-                alert('✅ تم تجهيز البيانات للحفظ! (ملاحظة: تحتاج إلى إنشاء API Route في Next.js لربطها بـ Neon). تم الإضافة للواجهة مؤقتاً.');
-                
-                appendNewPostToView(section, content, currentUploadType);
-                closeModal('uploadPostModal');
-                document.getElementById('postContent').value = '';
+                const result = await apiResponse.json();
+
+                if (apiResponse.ok) {
+                    // النجاح في الحفظ
+                    alert('✅ تم حفظ المحتوى بنجاح في قاعدة بيانات Neon!');
+                    
+                    // تحديث الواجهة بعد التأكد من الحفظ
+                    appendNewPostToView(section, content, currentUploadType);
+                    closeModal('uploadPostModal');
+                    document.getElementById('postContent').value = '';
+                } else {
+                    // فشل في الحفظ (بسبب خطأ في السيرفر أو البيانات)
+                    console.error('API Error:', result.details || result.error);
+                    alert(`❌ فشل الحفظ. ${result.error || 'خطأ غير معروف.'}`);
+                }
 
             } catch (err) {
-                console.error('Vercel/Neon Save Error Simulation:', err);
-                alert('❌ حدث خطأ أثناء محاولة الحفظ. تأكد من إعداد API Route بشكل صحيح.');
+                console.error('Network Error:', err);
+                alert('❌ حدث خطأ في الاتصال بالخادم. تحقق من اتصالك بالإنترنت أو إعدادات Vercel.');
+            } finally {
+                // إزالة مؤشر التحميل وإعادة الزر للحالة الأصلية
+                saveButton.disabled = false;
+                saveButton.innerHTML = 'حفظ وإرسال إلى Neon/Vercel';
             }
         }
 
-        function appendNewPostToView(sectionId, text, type) {
-            const container = document.getElementById(sectionId);
-            const newCard = document.createElement('div');
-            newCard.className = 'card newly-added';
-            newCard.innerHTML = `
-                <div class="card-header"><i class="fas fa-star"></i> ${type} جديد</div>
-                <div class="bouh-display">${text}</div>
-                <div class="interaction-bar">
-                    <button class="act-btn"><i class="far fa-heart"></i> إعجاب</button>
-                    <button class="act-btn"><i class="far fa-comment"></i> تعليق</button>
-                </div>
-            `;
-            // إضافة في بداية القسم
-            if(container.firstChild) {
-                container.insertBefore(newCard, container.firstChild);
+
+        // *** دالة لتمكين/تعطيل وضع الحذف ***
+        function toggleDeleteMode() {
+            isDeleteModeActive = !isDeleteModeActive;
+            const deleteBtn = document.querySelector('.upload-grid .up-btn:last-child');
+            
+            if (isDeleteModeActive) {
+                document.body.classList.add('delete-mode-active');
+                deleteBtn.innerHTML = '<i class="fas fa-check-circle"></i> **إنهاء الحذف**';
+                deleteBtn.style.background = 'var(--accent-green)';
+                deleteBtn.style.color = 'white';
+                alert('⚠️ تم تفعيل وضع الحذف! انقري على علامة (X) لحذف المحتوى.');
             } else {
-                container.appendChild(newCard);
+                document.body.classList.remove('delete-mode-active');
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i> **حذف محتوى**';
+                deleteBtn.style.background = '#ffebee';
+                deleteBtn.style.color = '#c62828';
             }
         }
 
-        // --- 5. دوال الصحة (Health Functions) ---
-        function toggleTracker(type) {
-            document.querySelectorAll('.tracker-ui').forEach(el => el.style.display = 'none');
-            if (type === 'period') document.getElementById('periodTracker').style.display = 'block';
-            else if (type === 'bmi') document.getElementById('bmiTracker').style.display = 'block';
-            // باقي الأنواع يمكن إضافتها لاحقاً
-        }
-
-        function calculatePeriod() {
-            const lastDate = new Date(document.getElementById('lastPeriod').value);
-            const cycle = parseInt(document.getElementById('cycleLength').value);
-            if(!isNaN(lastDate) && cycle) {
-                lastDate.setDate(lastDate.getDate() + cycle);
-                const res = document.getElementById('periodResult');
-                res.style.display = 'block';
-                res.innerHTML = `موعد دورتك القادمة المتوقع: <br> ${lastDate.toLocaleDateString('ar-EG')}`;
-            }
-        }
-
-        function calculateBMI() {
-            const w = parseFloat(document.getElementById('weight').value);
-            const h = parseFloat(document.getElementById('height').value) / 100; // تحويل لمتر
-            if(w && h) {
-                const bmi = (w / (h * h)).toFixed(1);
-                let msg = '';
-                if(bmi < 18.5) msg = 'نحافة';
-                else if(bmi < 25) msg = 'وزن مثالي ✨';
-                else msg = 'وزن زائد';
+        // دالة وهمية للحذف
+        function deletePost(postId) {
+            if (isDeleteModeActive && confirm(`هل أنتِ متأكدة من حذف المنشور/البوح رقم ${postId}؟`)) {
+                // في الواقع يجب إرسال طلب حذف إلى الـ API
+                alert(`✅ تم حذف المنشور/البوح رقم ${postId} (وهمياً).`);
                 
-                const res = document.getElementById('bmiResult');
-                res.style.display = 'block';
-                res.innerHTML = `مؤشر كتلة جسمك: ${bmi} <br> (${msg})`;
+                // إخفاء العنصر المحذوف (للمحاكاة). يجب تعديل هذا ليخفي العنصر الأب في حالة الـ Bouh
+                const elementToDelete = document.querySelector(`.card[data-post-id="${postId}"]`) || document.getElementById(`txt-${postId.split('-')[0]}`)?.closest('.card');
+                if (elementToDelete) {
+                    elementToDelete.style.display = 'none';
+                }
+            } else if (!isDeleteModeActive) {
+                alert('الرجاء تفعيل "وضع الحذف" أولاً من لوحة المشرف.');
             }
         }
 
-        // --- 6. تفاعلات بسيطة ---
+        // *** الدوال المتعلقة بالتفاعل (Interaction) ***
         function toggleLike(btn, id) {
             btn.classList.toggle('active');
             const icon = btn.querySelector('i');
-            if(btn.classList.contains('active')) {
+            if (btn.classList.contains('active')) {
                 icon.classList.remove('far');
                 icon.classList.add('fas');
             } else {
@@ -1191,9 +1254,15 @@
                 const list = document.getElementById('commentsList');
                 const p = document.createElement('p');
                 p.style.background = '#f9f9f9';
-                p.style.padding = '5px';
+                p.style.padding = '8px';
+                p.style.borderRadius = '6px';
+                p.style.fontSize = '0.9rem';
+                p.style.margin = '5px 0';
                 p.innerText = 'أنتِ: ' + txt;
-                list.appendChild(p);
+                if (list.firstChild && list.firstChild.innerText.includes('لا توجد تعليقات')) {
+                    list.innerHTML = '';
+                }
+                list.prepend(p);
                 document.getElementById('newCommentText').value = '';
             }
         }
@@ -1210,15 +1279,145 @@
             }
         }
 
+        // دالة لجلب وعرض المحتوى المقروء/المرئي (وهمية حالياً)
         function fetchAndDisplayContent(section, type, title, e) {
             e.preventDefault();
             alert(`جاري تحميل ${type}: ${title} ... \n(هذه الميزة ستجلب البيانات من Neon/Vercel Postgres قريباً عبر API Route)`);
         }
         
-        // دالة وهمية للـ AI generator modal (موجودة في الزر)
-        function openAIGeneratorModal() {
-            alert('خاصية الذكاء الاصطناعي قيد التطوير...');
+        // دالة وهمية لتوليد المحتوى بالذكاء الاصطناعي (AI generator)
+        function generateContent() {
+             const prompt = document.getElementById('aiPrompt').value;
+             const type = currentAIType;
+             if (!prompt) {
+                 alert('الرجاء كتابة طلبك أولاً.');
+                 return;
+             }
+             const outputDiv = document.getElementById('aiOutput');
+             outputDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري التوليد...`;
+             
+             // محاكاة استدعاء Gemini API
+             setTimeout(() => {
+                 const generatedText = `هذا محتوى مولد بواسطة Gemini AI حول: "${prompt}". النوع: ${type}.`;
+                 outputDiv.innerHTML = `<i class="fas fa-brain"></i> ${generatedText}`;
+                 alert('✅ تم توليد المحتوى بنجاح (محاكاة)! يمكنك الآن نسخه إلى المنشور.');
+             }, 2000);
         }
+
+        function copyAIToPost() {
+            const aiOutput = document.getElementById('aiOutput').innerText.replace('🧠', '').trim();
+            if (aiOutput && !aiOutput.includes('سيظهر المحتوى المُولد هنا')) {
+                document.getElementById('postContent').value = aiOutput;
+                closeModal('aiGeneratorModal');
+                openUploadPostModal(currentUploadType); 
+                alert('✅ تم نسخ المحتوى بنجاح إلى حقل "رفع محتوى جديد".');
+            } else {
+                 alert('الرجاء توليد محتوى أولاً!');
+            }
+        }
+
+
+        // *** الدوال الخاصة بأدوات التتبع (Health/Tracker) ***
+        function showTracker(trackerId) {
+            document.querySelectorAll('.tracker-ui').forEach(ui => {
+                ui.style.display = 'none';
+            });
+            const tracker = document.getElementById(trackerId);
+            if (tracker) {
+                tracker.style.display = 'block';
+            }
+            document.querySelectorAll('.h-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`.h-link[onclick="showTracker('${trackerId}')"]`).classList.add('active');
+        }
+
+        function calculatePregnancy() {
+            const lastPeriodDate = document.getElementById('lastPeriodDate').value;
+            if (!lastPeriodDate) {
+                alert('الرجاء إدخال تاريخ آخر دورة شهرية.');
+                return;
+            }
+
+            const startDate = new Date(lastPeriodDate);
+            const today = new Date();
+            const timeDiff = today.getTime() - startDate.getTime();
+            const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24));
+            
+            const week = Math.floor(daysDiff / 7);
+            const remainingDays = daysDiff % 7;
+            const dueDate = new Date(startDate.getTime() + 280 * 24 * 60 * 60 * 1000);
+
+            const resultDiv = document.getElementById('pregnancyResult');
+            const dueDateStr = dueDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+
+            if (week < 0 || week > 40) {
+                resultDiv.style.background = '#ffcdd2';
+                resultDiv.style.color = 'var(--accent-red)';
+                resultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> الرجاء التأكد من التاريخ المُدخل (أو لم يتم الحمل بعد).';
+            } else {
+                resultDiv.style.background = '#e8f5e9';
+                resultDiv.style.color = 'var(--accent-green)';
+                resultDiv.innerHTML = `<i class="fas fa-baby"></i> أنتِ الآن في **الأسبوع ${week}** و ${remainingDays} أيام من الحمل.<br>تاريخ الولادة المتوقع هو: **${dueDateStr}**`;
+            }
+        }
+
+        let nursingLog = []; // سجل وهمي
+
+        function saveNursingLog() {
+            const side = document.getElementById('nursingSide').value;
+            const duration = document.getElementById('nursingDuration').value;
+            const time = document.getElementById('nursingTime').value;
+
+            if (!side || !duration || !time) {
+                alert('الرجاء ملء جميع حقول سجل الرضاعة.');
+                return;
+            }
+
+            const newEntry = {
+                id: Date.now(),
+                side: side === 'left' ? 'اليسار' : 'اليمين',
+                duration: `${duration} دقيقة`,
+                time: time,
+                timestamp: new Date().toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })
+            };
+
+            nursingLog.unshift(newEntry);
+            loadNursingLog();
+            alert('✅ تم تسجيل الرضاعة بنجاح.');
+            document.getElementById('nursingDuration').value = '10';
+        }
+
+        function loadNursingLog() {
+            const logDiv = document.getElementById('nursingLogDisplay');
+            logDiv.innerHTML = '';
+            if (nursingLog.length === 0) {
+                logDiv.innerHTML = '<p style="text-align: center; color: #999; margin-top: 15px;">لا يوجد سجلات حتى الآن.</p>';
+                return;
+            }
+            nursingLog.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'nursing-log';
+                div.innerHTML = `
+                    <span>**${entry.time}** - الجانب: ${entry.side} - المدة: ${entry.duration} (${entry.timestamp})</span>
+                    <button onclick="deleteNursingLogEntry(${entry.id})"><i class="fas fa-trash-alt"></i></button>
+                `;
+                logDiv.appendChild(div);
+            });
+        }
+
+        function deleteNursingLogEntry(id) {
+            nursingLog = nursingLog.filter(entry => entry.id !== id);
+            loadNursingLog();
+            alert('تم حذف السجل.');
+        }
+
+        // استدعاء الدوال عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', () => {
+             loadNursingLog();
+             // لضمان عرض محتوى "الرئيسية" عند التحميل
+             showSection('homeView', document.querySelector('.nav-item.active'));
+        });
     </script>
 </body>
 </html>
