@@ -12,8 +12,8 @@
   "dependencies": {
     "@google/genai": "^0.15.0",
     "@supabase/supabase-js": "^2.39.3",
-    "lru-cache": "^10.0.0",  // ❗ تأكدي من وجود الفاصلة هنا
-    "@vercel/postgres": "^0.9.0"  // 🆕 السطر الجديد
+    "lru-cache": "^10.0.0",
+    "@vercel/postgres": "^0.9.0"
   },
   "devDependencies": {
     "vercel": "^35.0.0",
