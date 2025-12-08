@@ -186,6 +186,29 @@
             to { opacity: 1; }
         }
 
+        /* شريط البحث (New Style) */
+        .search-bar-container {
+            padding: 0 0 15px 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .search-bar-container input {
+            width: 100%;
+            padding: 12px 15px 12px 45px; /* مساحة لزر البحث */
+            border: 2px solid var(--soft-pink);
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            font-family: 'Tajawal', sans-serif;
+            transition: all 0.3s;
+            background: var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23e91e63' d='M500.32 409.5L400.77 319.95C409.83 283.45 413.5 244.75 413.5 204.75C413.5 91.9 321.6 0 208 0C94.4 0 2.5 91.9 2.5 204.75C2.5 317.6 94.4 409.5 208 409.5C247.95 409.5 286.65 405.83 323.15 396.77L412.7 496.32C422.05 505.67 437.95 505.67 447.3 496.32L498.45 445.17C507.8 435.82 507.8 419.92 498.45 409.57L500.32 409.5zM208 344.5C129.5 344.5 64.5 279.5 64.5 204.75C64.5 130 129.5 65 208 65C286.5 65 351.5 130 351.5 204.75C351.5 279.5 286.5 344.5 208 344.5z'/%3E%3C/svg%3E") no-repeat calc(100% - 15px) center;
+            background-size: 20px;
+        }
+        .search-bar-container input:focus {
+            border-color: var(--primary-pink);
+            box-shadow: 0 0 5px rgba(233, 30, 99, 0.4);
+        }
+
         /* بطاقة المحتوى (Card) */
         .card {
             background: white;
@@ -747,6 +770,58 @@
             background: #388e3c;
         }
         
+        /* شاشة عرض المحتوى المستقلة (New Content View) */
+        .content-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 4000;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+            animation: slideInFromRight 0.4s ease-out;
+        }
+        @keyframes slideInFromRight {
+            from { transform: translateX(100%); opacity: 0.8; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .content-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--soft-pink);
+            position: sticky;
+            top: 0;
+            background: white;
+            z-index: 10;
+        }
+
+        .content-overlay h2 {
+            color: var(--primary-pink);
+            font-family: 'Aref Ruqaa', serif;
+            font-size: 1.8rem;
+            margin: 0;
+        }
+
+        .content-close-btn {
+            font-size: 2rem;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .content-body {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            color: var(--text-main);
+            padding-bottom: 50px;
+            font-size: 1.1rem;
+        }
+        
     </style>
 </head>
 <body>
@@ -783,7 +858,7 @@
             <p style="font-size:0.9rem">لوحة التحكم بالمحتوى والأدوات.</p>
             
             <button class="btn-primary btn-ai" onclick="openAIGeneratorModal()">
-                <i class="fas fa-robot"></i> **توليد محتوى جديد**
+                <i class="fas fa-robot"></i> **توليد محتوى جديد (AI)**
             </button>
             
             <label for="adminSectionSelect" style="display: block; margin-bottom: 8px; font-weight: bold; color: #777;">
@@ -797,7 +872,7 @@
                 <option value="sec-health">الصحة والجمال</option>
             </select>
             <p style="font-size: 0.8rem; color: #999; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                **ملاحظة:** تحديد القسم هنا سيحفظ البيانات في Neon/Vercel Postgres ضمن التصنيف المختار.
+                **ملاحظة:** تحديد القسم هنا سيحفظ بيانات الـ **بوح** والمنشورات الجديدة.
             </p>
 
             <div class="upload-grid">
@@ -820,6 +895,9 @@
         </div>
 
         <div id="sec-feelings" class="section-view">
+            <div class="search-bar-container">
+                <input type="text" onkeyup="filterContent(this.value, 'sec-feelings')" placeholder="ابحث عن منشور أو همسة..." />
+            </div>
             <div class="card" data-post-id="101" data-post-title="مساحة آمنة لقلبك..">
                 <button class="delete-overlay-btn" onclick="deletePost('feelings-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-heart"></i> المشاعر</div>
@@ -836,8 +914,10 @@
                 </div>
             </div>
         </div>
-
         <div id="sec-fiqh" class="section-view">
+             <div class="search-bar-container">
+                <input type="text" onkeyup="filterContent(this.value, 'sec-fiqh')" placeholder="ابحث عن حكم أو مقال..." />
+            </div>
             <div class="card" data-post-id="102" data-post-title="نور البصيرة في أمور دينك">
                 <button class="delete-overlay-btn" onclick="deletePost('fiqh-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-balance-scale"></i> فقه النساء</div>
@@ -854,8 +934,10 @@
                 </div>
             </div>
         </div>
-
         <div id="sec-intimacy-new" class="section-view">
+            <div class="search-bar-container">
+                <input type="text" onkeyup="filterContent(this.value, 'sec-intimacy-new')" placeholder="ابحث عن نصيحة زوجية..." />
+            </div>
             <div class="card" data-post-id="103" data-post-title="حياة زوجية هانئة">
                 <button class="delete-overlay-btn" onclick="deletePost('intimacy-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-fire-alt"></i> العلاقات الحميمية</div>
@@ -868,13 +950,15 @@
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 103)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(103)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(103, 'تعلمي كيف تكون حياتك الزوجية أكثر هناءً وسعادة.')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(103, 'رسالة في العلاقات الزوجية')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
-
         <div id="sec-society-new" class="section-view">
-            <div class="card" data-post-id="104" data-post-title="حياتك في المجتمع">
+            <div class="search-bar-container">
+                <input type="text" onkeyup="filterContent(this.value, 'sec-society-new')" placeholder="ابحث عن قضية مجتمعية..." />
+            </div>
+            <div class="card" data-post-id="104" data-post-title="نظرة على المجتمع من حولك">
                 <button class="delete-overlay-btn" onclick="deletePost('society-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-users"></i> المجتمع</div>
                 <div class="bouh-display" id="txt-society-new">جاري تحميل همسة الأسبوع...</div>
@@ -882,434 +966,533 @@
                     <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-society-new', 'همسة (مقروء)', 'المجتمع', event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
                     <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-society-new', 'محتوى مرئي', 'المجتمع', event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
                 </div>
-                <a href="#" target="_blank" class="library-link" title="كتب عن العلاقات الاجتماعية">المكتبة الإضافية</a>
+                <a href="#" target="_blank" class="library-link" title="كتب حول التنمية البشرية والمجتمع">المكتبة الإضافية</a>
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 104)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(104)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(104, 'حياتك في المجتمع.')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(104, 'نظرة على المجتمع من حولك')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
-        
         <div id="sec-health" class="section-view">
-            <div class="card">
-                <div class="card-header"><i class="fas fa-heartbeat"></i> الصحة والجمال</div>
-                
-                <div class="health-subs">
-                    <div class="h-link" onclick="openContentScreen('sec-health', 'وصفات الجمال', event)"><i class="fas fa-sparkles"></i> وصفات الجمال</div>
-                    <div class="h-link" onclick="openContentScreen('sec-health', 'اللياقة', event)"><i class="fas fa-dumbbell"></i> اللياقة</div>
-                    <div class="h-link" onclick="openContentScreen('sec-health', 'الصحة العامة', event)"><i class="fas fa-stethoscope"></i> الصحة العامة</div>
-                    <div class="h-link tracker" onclick="toggleTracker('period')"><i class="fas fa-calendar-alt"></i> تتبع الدورة</div>
-                    <div class="h-link tracker pregnancy-tracker" onclick="toggleTracker('pregnancy')"><i class="fas fa-baby"></i> تتبع الحمل</div>
-                </div>
+             <div class="search-bar-container">
+                <input type="text" onkeyup="filterContent(this.value, 'sec-health')" placeholder="ابحث عن وصفة أو معلومة صحية..." />
+            </div>
+            <div class="card-header"><i class="fas fa-stethoscope"></i> الصحة والجمال</div>
+            
+            <div class="health-subs">
+                <div class="h-link" onclick="toggleTracker('bmi-tracker')">حساب الوزن (BMI)</div>
+                <div class="h-link" onclick="toggleTracker('ovulation-tracker')">تتبع التبويض</div>
+                <div class="h-link pregnancy-tracker" onclick="toggleTracker('pregnancy-tracker')">متابعة الحمل</div>
+            </div>
 
-                <div id="periodTrackerUI" class="tracker-ui">
-                    <form class="tracker-form" onsubmit="calculatePeriod(event)">
-                        <label for="lastPeriodDate">تاريخ أول يوم لآخر دورة:</label>
-                        <input type="date" id="lastPeriodDate" required>
-                        
-                        <label for="cycleLength">طول الدورة (الأيام):</label>
-                        <input type="number" id="cycleLength" value="28" min="20" max="45" required>
-                        
-                        <button type="submit">احتساب <i class="fas fa-sync-alt"></i></button>
-                        
-                        <div id="periodResult" class="tracker-result" style="display: none;"></div>
-                    </form>
-                </div>
-                
-                <div id="pregnancyTrackerUI" class="tracker-ui">
-                    <form class="tracker-form" onsubmit="calculatePregnancy(event)">
-                        <label for="lastPeriodDatePregnancy">تاريخ أول يوم لآخر دورة شهرية:</label>
-                        <input type="date" id="lastPeriodDatePregnancy" required>
-                        
-                        <button type="submit">احتساب موعد الولادة <i class="fas fa-baby-carriage"></i></button>
-                        
-                        <div id="pregnancyResult" class="tracker-result" style="display: none;"></div>
-                    </form>
-                </div>
+            <div id="bmi-tracker" class="tracker-ui card">
+                <h4>حساب مؤشر كتلة الجسم (BMI)</h4>
+                <form class="tracker-form" onsubmit="calculateBMI(event)">
+                    <label for="bmiWeight">الوزن (كجم):</label>
+                    <input type="number" id="bmiWeight" required min="10" step="0.1">
+                    <label for="bmiHeight">الطول (سم):</label>
+                    <input type="number" id="bmiHeight" required min="50" step="0.1">
+                    <button type="submit">احسب المؤشر</button>
+                </form>
+                <div id="bmiResult" class="tracker-result" style="display: none; background: #fff3e0; color: #ff9800;">النتيجة ستظهر هنا.</div>
+            </div>
 
-
+            <div id="ovulation-tracker" class="tracker-ui card">
+                 <h4>تتبع التبويض والحمل</h4>
+                <form class="tracker-form" onsubmit="calculateOvulation(event)">
+                    <label for="lastPeriodDate">تاريخ أول يوم لآخر دورة شهرية:</label>
+                    <input type="date" id="lastPeriodDate" required>
+                    <label for="cycleLength">متوسط طول الدورة (يوم):</label>
+                    <input type="number" id="cycleLength" required min="20" max="45">
+                    <button type="submit">احسب</button>
+                </form>
+                 <div id="ovulationResult" class="tracker-result" style="display: none; background: #e3f2fd; color: #2196F3;">النتيجة ستظهر هنا.</div>
+            </div>
+            
+            <div id="pregnancy-tracker" class="tracker-ui card">
+                <h4>متابعة الحمل (حاسبة الحمل)</h4>
+                <form class="tracker-form" onsubmit="calculatePregnancy(event)">
+                    <label for="lmpDate">تاريخ أول يوم لآخر دورة شهرية:</label>
+                    <input type="date" id="lmpDate" required>
+                    <button type="submit">احسب مواعيد الحمل</button>
+                </form>
+                 <div id="pregnancyResult" class="tracker-result" style="display: none; background: #f3e5f5; color: #7b1fa2;">النتائج ستظهر هنا.</div>
+            </div>
+            
+             <div class="card" data-post-id="105" data-post-title="نصائح صحية هذا الأسبوع">
+                <button class="delete-overlay-btn" onclick="deletePost('health-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="bouh-display" id="txt-health">جاري تحميل همسة الأسبوع...</div>
-                
+                <div class="content-links">
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-health', 'همسة (مقروء)', 'الصحة والجمال', event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-health', 'محتوى مرئي', 'الصحة والجمال', event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                </div>
+                <a href="#" target="_blank" class="library-link" style="background: var(--accent-blue);" title="موسوعة طبية">المكتبة الإضافية</a>
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 105)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(105)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(105, 'صحتك وجمالك')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(105, 'نصائح صحية للحامل')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
             
-            <div class="card" id="sec-nursing">
-                <div class="card-header"><i class="fas fa-baby"></i> الأم والرضاعة</div>
+        </div>
+        <div id="sec-nursing" class="section-view">
+             <div class="search-bar-container">
+                <input type="text" onkeyup="filterContent(this.value, 'sec-nursing')" placeholder="ابحث في سجل الرضاعة..." />
+            </div>
+            <div class="card-header"><i class="fas fa-baby"></i> سجل الرضاعة</div>
+            <div class="card">
+                 <h4>إضافة سجل إرضاع</h4>
+                 <form class="tracker-form" onsubmit="addNursingLog(event)">
+                    <label for="nursingSide">الجانب:</label>
+                    <select id="nursingSide" required>
+                        <option value="يمين">الجانب الأيمن</option>
+                        <option value="يسار">الجانب الأيسر</option>
+                    </select>
+                    <label for="nursingDuration">المدة (دقيقة):</label>
+                    <input type="number" id="nursingDuration" required min="1" max="60" value="10">
+                    <label for="nursingTime">وقت البدء:</label>
+                    <input type="time" id="nursingTime" required>
+                    <button type="submit" style="background: var(--accent-blue);"><i class="fas fa-plus-circle"></i> إضافة سجل</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h4>سجلات اليوم <i class="fas fa-clipboard-list"></i></h4>
+                <div id="nursingLogDisplay">
+                    </div>
+            </div>
+            
+             <div class="card" data-post-id="106" data-post-title="نصائح الرضاعة">
+                <button class="delete-overlay-btn" onclick="deletePost('nursing-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="bouh-display" id="txt-nursing">جاري تحميل همسة الأسبوع...</div>
-
-                <div id="nursingTrackerUI" class="tracker-ui" style="display: block; border-color: #90caf9;">
-                    <form class="tracker-form" onsubmit="addNursingLog(event)">
-                        <label for="nursingSide">الجانب:</label>
-                        <select id="nursingSide" required>
-                            <option value="right">اليمين</option>
-                            <option value="left">اليسار</option>
-                        </select>
-                        
-                        <label for="nursingDuration">المدة بالدقائق:</label>
-                        <input type="number" id="nursingDuration" value="10" min="1" required>
-
-                        <label for="nursingTime">وقت البدء:</label>
-                        <input type="time" id="nursingTime" value="10:00" required>
-                        
-                        <button type="submit" style="background: var(--accent-blue);">إضافة سجل رضاعة <i class="fas fa-plus"></i></button>
-                    </form>
-                    
-                    <h4 style="margin-top: 20px; color: #555; border-bottom: 1px dashed #eee; padding-bottom: 10px;">سجل الرضاعة اليومي:</h4>
-                    <div id="nursingLogDisplay">
-                        </div>
+                <div class="content-links">
+                    <a href="#" class="content-link hamsah" onclick="fetchAndDisplayContent('sec-nursing', 'همسة (مقروء)', 'الرضاعة', event)" title="مقالات، بوستات، كتب"><i class="fas fa-paper-plane"></i> همسة (مقروء)</a>
+                    <a href="#" class="content-link visual" onclick="fetchAndDisplayContent('sec-nursing', 'محتوى مرئي', 'الرضاعة', event)" title="فيديوهات تعليمية وتوعوية"><i class="fas fa-video"></i> محتوى مرئي</a>
+                </div>
+                <a href="#" target="_blank" class="library-link" style="background: var(--accent-blue);" title="كتب حول الرضاعة">المكتبة الإضافية</a>
+                <div class="interaction-bar">
+                    <button class="act-btn like-btn" onclick="toggleLike(this, 106)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
+                    <button class="act-btn" onclick="openCommentModal(106)"><i class="far fa-comment"></i> <span>تعليق</span></button>
+                    <button class="act-btn" onclick="shareContent(106, 'نصائح هامة للرضاعة')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
-        
 
-    </div>
+    </div> <nav class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('homeView', this)">
+            <i class="fas fa-home"></i> الرئيسية
+        </div>
+        <div class="nav-item" onclick="showSection('sec-feelings', this)">
+            <i class="fas fa-heart"></i> المشاعر
+        </div>
+        <div class="nav-item" onclick="showSection('sec-fiqh', this)">
+            <i class="fas fa-balance-scale"></i> فقه
+        </div>
+        <div class="nav-item" onclick="showSection('sec-intimacy-new', this)">
+            <i class="fas fa-fire-alt"></i> حميمية
+        </div>
+        <div class="nav-item" onclick="showSection('sec-society-new', this)">
+            <i class="fas fa-users"></i> المجتمع
+        </div>
+        <div class="nav-item" onclick="showSection('sec-health', this)">
+            <i class="fas fa-stethoscope"></i> صحة
+        </div>
+    </nav>
 
-    <div id="uploadPostModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-box">
-            <h3 id="uploadModalTitle" style="color: var(--primary-pink);">رفع بوست/منشور جديد</h3>
-            <form onsubmit="savePost(event)">
-                <label for="postContent" style="display: block; text-align: right; margin-bottom: 5px;">محتوى المنشور:</label>
-                <textarea id="postContent" placeholder="اكتبي محتواك هنا..." required></textarea>
-                <p style="font-size: 0.8rem; color: #999; text-align: center; margin: 10px 0;">
-                    سيتم حفظ المحتوى في قسم: **<span id="selectedSectionDisplay">المشاعر</span>** (يمكن تغييره من لوحة التحكم)
-                </p>
-                <button type="submit" class="btn-primary" id="savePostBtn"><i class="fas fa-upload"></i> حفظ المحتوى (Neon)</button>
-            </form>
+    <div id="contentDisplayModal" class="content-overlay">
+        <div class="content-header-bar">
+            <h2 id="contentModalTitle"></h2>
+            <span class="content-close-btn" onclick="closeContentModal()">&times;</span>
+        </div>
+        <p id="contentModalSection" style="font-size: 0.9rem; color: #888; margin-top: -10px; margin-bottom: 20px;"><i class="fas fa-folder"></i></p>
+        <div id="contentModalBody" class="content-body">
+            <p style="text-align: center; color: #999; padding: 50px 0;">جاري تحميل المحتوى...</p>
         </div>
     </div>
     
-    <div id="aiGeneratorModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-box" style="max-width: 400px;">
-            <h3 style="color: #673ab7;"><i class="fas fa-magic"></i> توليد محتوى (AI)</h3>
-            <textarea id="aiPrompt" placeholder="اكتبي موضوعك أو سؤالك هنا..." style="min-height: 100px;" required></textarea>
-            
-            <div class="ai-options">
-                <button class="ai-option-btn active" data-type="post">بوست قصير</button>
-                <button class="ai-option-btn" data-type="article">مقال</button>
-            </div>
-            
-            <button class="btn-primary btn-ai" onclick="generateContent(event)">
-                <i class="fas fa-robot"></i> توليد
-            </button>
-            
-            <div id="aiOutput" class="ai-output">
-                <i class="fas fa-robot"></i> سيظهر المحتوى المُولد هنا...
-            </div>
+    <div id="uploadPostModal" class="modal-overlay" onclick="closeModalOnOverlayClick(event)">
+        <div class="modal-box" style="max-width: 400px; text-align: right;">
+            <h3 style="color: var(--primary-pink);">رفع محتوى: <span id="uploadTypeTitle"></span></h3>
+            <p style="font-size: 0.8rem; color: #999;">القسم المستهدف: <span id="targetSectionDisplay"></span></p>
+            <form onsubmit="savePost(event)">
+                <input type="text" id="postTitle" class="inp-field" placeholder="عنوان المنشور (اختياري)">
+                <textarea id="postContent" placeholder="اكتبي المحتوى هنا..." class="inp-field" rows="6" required></textarea>
+                
+                <button type="submit" class="btn-primary" style="background: var(--accent-green);"><i class="fas fa-upload"></i> رفع المنشور الآن</button>
+            </form>
+            <p style="margin-top: 10px; font-size: 0.8rem; color: var(--accent-red);">* في حال رفع محتوى "**البوح**"، سيتم **حذف** المنشور القديم.</p>
         </div>
     </div>
 
-    <div id="commentModal" class="modal-overlay" onclick="closeModal(event)">
-        <div class="modal-box">
-            <h3 style="color: var(--accent-green);"><i class="fas fa-comment"></i> إضافة تعليق</h3>
-            <div id="commentsList" style="text-align: right; max-height: 150px; overflow-y: auto; margin-bottom: 10px;">
-                <p style="text-align: center; color: #999;">لا توجد تعليقات بعد.</p>
+
+    <div id="commentModal" class="modal-overlay" onclick="closeModalOnOverlayClick(event)">
+        <div class="modal-box" style="text-align: right;">
+            <h3 style="color: var(--accent-blue);"><i class="far fa-comment-dots"></i> تعليقك يهمنا</h3>
+            <div id="commentsList" style="max-height: 200px; overflow-y: auto; padding: 5px; border-bottom: 1px solid #eee; margin-bottom: 15px;">
+                <p style="text-align: center; color: #999;">لا توجد تعليقات حتى الآن. كوني الأولى!</p>
             </div>
             <div class="comment-input-area">
-                <textarea id="newCommentText" placeholder="اكتبي تعليقك اللطيف..." required></textarea>
-                <button class="btn-primary" onclick="addComment()"><i class="fas fa-paper-plane"></i> إرسال</button>
+                 <textarea id="newCommentText" placeholder="اكتبي تعليقك هنا..." rows="3"></textarea>
+                 <button class="btn-primary" onclick="addComment()" style="background: var(--accent-green);"><i class="fas fa-paper-plane"></i> إرسال التعليق</button>
             </div>
         </div>
     </div>
 
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="showSection('homeView', this)"><i class="fas fa-home"></i> الرئيسية</div>
-        <div class="nav-item" onclick="showSection('sec-feelings', this)"><i class="fas fa-heart"></i> المشاعر</div>
-        <div class="nav-item" onclick="showSection('sec-fiqh', this)"><i class="fas fa-balance-scale"></i> فقه</div>
-        <div class="nav-item" onclick="showSection('sec-intimacy-new', this)"><i class="fas fa-fire-alt"></i> حميمية</div>
-        <div class="nav-item" onclick="showSection('sec-society-new', this)"><i class="fas fa-users"></i> مجتمع</div>
-        <div class="nav-item" onclick="showSection('sec-health', this)"><i class="fas fa-heartbeat"></i> صحة</div>
-    </nav>
+    <div id="aiGeneratorModal" class="modal-overlay" onclick="closeModalOnOverlayClick(event)">
+        <div class="modal-box" style="max-width: 450px; text-align: right;">
+            <h3 style="color: #673ab7;"><i class="fas fa-robot"></i> مولّد المحتوى الذكي (Gemini)</h3>
+            <p style="font-size: 0.9rem; color: #777;">اكتبي موضوعاً لتحصلي على محتوى جاهز.</p>
+
+            <label for="aiTopic" style="font-weight: bold; display: block; margin-top: 15px;">الموضوع:</label>
+            <input type="text" id="aiTopic" class="inp-field" placeholder="مثال: أهمية العناية بالبشرة">
+            
+            <div class="ai-options">
+                <button class="ai-option-btn active" data-style="بوست" onclick="setAIStyle(this, 'بوست')">بوست</button>
+                <button class="ai-option-btn" data-style="مقال" onclick="setAIStyle(this, 'مقال')">مقال</button>
+                <button class="ai-option-btn" data-style="شعر" onclick="setAIStyle(this, 'شعر')">شعر</button>
+            </div>
+
+            <button class="btn-primary btn-ai" onclick="generateContent()"><i class="fas fa-magic"></i> توليد المحتوى</button>
+            
+            <div id="aiOutput" class="ai-output">
+                <i class="fas fa-lightbulb"></i> سيظهر المحتوى المُولّد هنا...
+            </div>
+            
+        </div>
+    </div>
 
 
     <script>
-        // بيانات الأدمن
-        const ADMIN_USERNAME = "zazo";
-        const ADMIN_PASSWORD = "zazo010988";
-
-        // سجل الرضاعة (بيانات وهمية)
-        let nursingLog = [];
-        let nextNursingId = 1;
-
-        // حالة وضع الحذف
-        let deleteMode = false;
-
-        // دالة لعرض قسم معين وإخفاء الباقي
-        function showSection(viewId, element) {
-            document.querySelectorAll('.section-view').forEach(view => {
-                view.style.display = 'none';
-            });
-            document.getElementById(viewId).style.display = 'block';
-
-            // تحديث حالة الشريط السفلي
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            if(element) {
-                element.classList.add('active');
-            } else {
-                // إذا تم الاستدعاء دون عنصر (مثل عند التحميل)
-                document.querySelector('.nav-item[onclick*="' + viewId + '"]').classList.add('active');
-            }
-
-            // 💡 استدعاء دالة جلب محتوى البوح عند عرض القسم
-            if (viewId.startsWith('sec-')) {
-                fetchBouhContent(viewId);
-            }
-        }
+        // ###################### تعريف البيانات الأساسية والوهمية ######################
+        let isAdmin = localStorage.getItem('isAdmin') === 'true';
         
-        // **********************************************
-        // ********* دوال ارجاع المحتوي (جديدة) **********
-        // **********************************************
+        // سجل وهمي للبوح (يتم تحديثه عند رفع بوح جديد)
+        let currentBouhPosts = {
+            'sec-feelings': { content: "في زحام الحياة، لا تنسي أن هناك قلباً خلق ليكون مأواك الآمن، وهو قلبكِ أنتِ.", id: 'feelings-bouh-1' },
+            'sec-fiqh': { content: "جمال المرأة في حيائها، وكمالها في علمها بأمور دينها. استزيدي علماً ونوراً.", id: 'fiqh-bouh-1' },
+            'sec-intimacy-new': { content: "الحب في الزواج ليس وهجاً عابراً، بل هو سكينة يومية تُبنى بالكلمة الطيبة والاهتمام الصادق.", id: 'intimacy-bouh-1' },
+            'sec-society-new': { content: "أنتِ نصف المجتمع وأساسه. تمكينكِ يبدأ من وعيكِ بدوركِ وأهمية حضوركِ في كل محفل.", id: 'society-bouh-1' },
+            'sec-health': { content: "العناية بالجسد هي شكر للنعمة. دقائق معدودة من الحركة والماء الكافي هي استثمار في رقتكِ.", id: 'health-bouh-1' },
+            'sec-nursing': { content: "الرضاعة رحلة حب، ليست مجرد طعام. احتضني اللحظة واستمتعي برابطة فريدة مع صغيركِ.", id: 'nursing-bouh-1' },
+        };
+        let postIdCounter = 1000;
+        let nursingLog = []; // سجل وهمي للرضاعة
 
-        /**
-         * دالة لجلب أحدث "بوح" (منشور) لقسم معين من API وتحديث الواجهة الأمامية.
-         * هذه الدالة تستخدم الـ API route الجديد: api/get-posts.js
-         * @param {string} sectionId - معرف القسم (مثل: sec-feelings)
-         */
-        async function fetchBouhContent(sectionId) {
-            const displayId = sectionId.replace('sec-', 'txt-');
-            const displayElement = document.getElementById(displayId);
-            
-            if (!displayElement) return;
-
-            displayElement.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري تحميل همسة الأسبوع...`;
-
-            try {
-                // نطلب أحدث بوح (Post) لهذا القسم (limit=1)
-                // يجب أن تتطابق قيمة type مع ما يتم إدخاله في savePost
-                const type = 'البوح'; 
-                const response = await fetch(`/api/get-posts?section=${sectionId}&type=${encodeURIComponent(type)}&limit=1`);
-                
-                if (!response.ok) {
-                    throw new Error('فشل في جلب المحتوى من الخادم: ' + response.statusText);
-                }
-
-                const data = await response.json();
-                
-                if (data.posts && data.posts.length > 0) {
-                    const latestPost = data.posts[0];
-                    displayElement.innerHTML = latestPost.content;
-                    
-                    // إضافة مؤشر "جديد" إذا كان البوست حديثاً (خلال آخر ساعة)
-                    const ONE_HOUR = 60 * 60 * 1000;
-                    const postDate = new Date(latestPost.created_at);
-                    if (Date.now() - postDate.getTime() < ONE_HOUR) {
-                        displayElement.classList.add('newly-added');
-                        // إزالة الكلاس بعد 5 ثوانٍ
-                        setTimeout(() => displayElement.classList.remove('newly-added'), 5000); 
-                    } else {
-                        displayElement.classList.remove('newly-added');
-                    }
-                } else {
-                    displayElement.innerHTML = `مساحة آمنة لقلبك.. بانتظار كلمات تلامس روحك. <span style="font-size:0.8rem; color:#999;">(لا يوجد محتوى "بوح" حالياً)</span>`;
-                }
-
-            } catch (error) {
-                console.error("Fetch Content Error:", error);
-                displayElement.innerHTML = `⚠️ حدث خطأ أثناء تحميل المحتوى.`;
-            }
-        }
-
-        /**
-         * دالة لفتح شاشة المحتوى الفرعي (همسة/مرئي) - سيتم استدعاؤها لاحقاً لفتح صفحة جلب كل المنشورات
-         */
-        function fetchAndDisplayContent(section, type, title, e) {
-            e.preventDefault();
-            // هذه الوظيفة ستستخدم أيضاً api/get-posts ولكن بدون limit=1
-            alert(`جاري تحميل ${type} لـ ${title} ...\n(ستجلب هذه الميزة لاحقاً كل المنشورات من Neon عبر API Route /api/get-posts)`);
-        }
-
-        // **********************************************
-        // ************** دوال الأدمن (مُحدثة) **************
-        // **********************************************
-
+        // ###################### وظائف التنقل والعرض العامة ######################
+        
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
         }
 
-        function toggleAdminPanel() {
-            const dashboard = document.getElementById('adminDashboard');
-            const login = document.getElementById('adminLogin');
-            const isLoggedIn = localStorage.getItem('isAdminLoggedIn') === 'true';
+        function showSection(sectionId, element) {
+            // إخفاء جميع الأقسام
+            document.querySelectorAll('.section-view').forEach(view => {
+                view.style.display = 'none';
+            });
 
-            if (dashboard.style.display === 'block' || login.style.display === 'block') {
-                dashboard.style.display = 'none';
-                login.style.display = 'none';
-            } else {
-                if (isLoggedIn) {
-                    dashboard.style.display = 'block';
-                    login.style.display = 'none';
-                } else {
-                    dashboard.style.display = 'none';
-                    login.style.display = 'block';
-                }
+            // إظهار القسم المطلوب
+            document.getElementById(sectionId).style.display = 'block';
+
+            // تفعيل زر القائمة السفلية
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            if (element) {
+                element.classList.add('active');
             }
+            
+            // إغلاق القائمة الجانبية إذا كانت مفتوحة
+            toggleSidebar(false);
+            
+            // تحديث محتوى الـ bouh-display عند التنقل
+            if(currentBouhPosts[sectionId] && document.getElementById(`txt-${sectionId.split('-')[1]}`) ) {
+                 document.getElementById(`txt-${sectionId.split('-')[1]}`).innerHTML = currentBouhPosts[sectionId].content;
+                 document.getElementById(`txt-${sectionId.split('-')[1]}`).classList.remove('newly-added');
+            }
+            
+            // إخفاء وضع الحذف إذا كان مفعلاً
+            document.body.classList.remove('delete-mode-active');
+            
+            // إخفاء أدوات التتبع عند التنقل بين الأقسام الرئيسية
+             document.querySelectorAll('.tracker-ui').forEach(ui => ui.style.display = 'none');
+             
+             // التأكد من تحميل سجل الرضاعة إذا كان القسم هو الرضاعة
+             if(sectionId === 'sec-nursing') {
+                 loadNursingLog();
+             }
         }
+        
+        // دالة لعرض محتوى الهمسة/المرئي في شاشة مستقلة (محدثة)
+        function fetchAndDisplayContent(sectionId, contentType, sectionTitle, e) {
+            e.preventDefault();
+
+            const modal = document.getElementById('contentDisplayModal');
+            const titleElement = document.getElementById('contentModalTitle');
+            const sectionElement = document.getElementById('contentModalSection');
+            const bodyElement = document.getElementById('contentModalBody');
+            
+            // **محاكاة جلب المحتوى من الخلفية**
+            const contentKey = currentBouhPosts[sectionId]?.content || "محتوى وهمي افتراضي.";
+
+            const bodyText = `
+                ${contentKey}
+                
+                <hr style="margin: 30px 0; border-color: #fce4ec;">
+                
+                <p style="font-size: 0.9rem; color: #a94442; background-color: #f2dede; padding: 10px; border-radius: 5px;">
+                    **تنويه:** هذا المحتوى هو **محاكاة** لـ "${contentType}" في قسم "**${sectionTitle}**".
+                    في التطبيق الفعلي، سيتم جلب قائمة كاملة من المقالات (همسة مقروء) أو روابط الفيديوهات (محتوى مرئي) 
+                    من قاعدة البيانات الخاصة بالقسم المختار.
+                </p>
+                
+                ${contentType === 'محتوى مرئي' ? '<div style="margin-top: 20px; text-align: center;"><i class="fas fa-play-circle" style="font-size: 3rem; color: #2196F3;"></i><p>... مكان عرض الفيديو ...</p></div>' : ''}
+            `;
+
+            // تعيين المحتوى وعرض النافذة
+            titleElement.innerText = contentType;
+            sectionElement.innerHTML = `<i class="fas fa-folder"></i> ${sectionTitle}`;
+            bodyElement.innerHTML = bodyText;
+            modal.style.display = 'block';
+            modal.scrollTo(0, 0); // للبدء من الأعلى
+        }
+
+        function closeContentModal() {
+            document.getElementById('contentDisplayModal').style.display = 'none';
+        }
+
+        // دالة محاكاة للبحث والتصفية (New Feature)
+        function filterContent(searchTerm, sectionId) {
+            const cards = document.querySelectorAll(`#${sectionId} .card`);
+            const bouhDisplay = document.querySelector(`#${sectionId} .bouh-display`);
+            const regex = new RegExp(searchTerm.trim(), 'i');
+            let found = false;
+
+            // إخفاء/إظهار البطاقات بناءً على المطابقة
+            cards.forEach(card => {
+                const title = card.getAttribute('data-post-title') || '';
+                const cardContent = card.querySelector('.bouh-display') ? card.querySelector('.bouh-display').innerText : '';
+                const isMatch = regex.test(title) || regex.test(cardContent) || searchTerm.trim() === '';
+
+                card.style.display = isMatch ? 'block' : 'none';
+                if (isMatch) {
+                    found = true;
+                }
+            });
+            
+            // يمكن إضافة منطق إظهار رسالة "لا نتائج" هنا
+        }
+        
+        // ###################### وظائف الأدمن ######################
 
         function adminLogin(event) {
             event.preventDefault();
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
-
-            // بيانات الأدمن: zazo / zazo010988
-            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                localStorage.setItem('isAdminLoggedIn', 'true');
+            
+            // **الحفاظ على بيانات دخول الأدمن**
+            if (username === 'zazo' && password === 'zazo010988') {
+                isAdmin = true;
+                localStorage.setItem('isAdmin', 'true');
                 document.getElementById('adminLogin').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
-                alert('مرحباً بك يا Zazo! تم تسجيل الدخول.');
+                document.getElementById('adminToggleBtn').style.background = '#4CAF50'; // لون أخضر عند الدخول
+                alert('مرحباً بك Zazo! تم تسجيل الدخول بنجاح.');
             } else {
-                alert('خطأ في اسم المستخدم أو كلمة المرور.');
+                alert('بيانات الدخول غير صحيحة. يرجى التأكد من الاسم: zazo وكلمة المرور: zazo010988');
             }
         }
 
         function adminLogout() {
-            localStorage.removeItem('isAdminLoggedIn');
+            isAdmin = false;
+            localStorage.setItem('isAdmin', 'false');
             document.getElementById('adminDashboard').style.display = 'none';
-            document.getElementById('adminLogin').style.display = 'none';
-            document.body.classList.remove('delete-mode-active');
-            alert('تم تسجيل الخروج بنجاح.');
+            document.getElementById('adminToggleBtn').style.background = 'var(--primary-pink)';
+            document.getElementById('adminLogin').style.display = 'block';
+            alert('تم تسجيل الخروج.');
         }
 
-        function openUploadPostModal(postType) {
-            if (localStorage.getItem('isAdminLoggedIn') !== 'true') return alert('الرجاء تسجيل الدخول أولاً كمسؤول.');
-            
-            const selectedSection = document.getElementById('adminSectionSelect').value;
-            const sectionName = document.querySelector(`#adminSectionSelect option[value="${selectedSection}"]`).textContent;
-            
-            document.getElementById('uploadModalTitle').innerHTML = `رفع محتوى: **${postType}**`;
-            document.getElementById('selectedSectionDisplay').textContent = sectionName;
-            
-            document.getElementById('uploadPostModal').style.display = 'flex';
-            document.getElementById('postContent').setAttribute('data-post-type', postType); // لحفظ النوع في الدالة التالية
-        }
-
-        async function savePost(event) {
-            event.preventDefault();
-            const btn = document.getElementById('savePostBtn');
-            const originalText = btn.innerHTML;
-            
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...`;
-            btn.disabled = true;
-
-            const content = document.getElementById('postContent').value;
-            const section = document.getElementById('adminSectionSelect').value;
-            const type = document.getElementById('postContent').getAttribute('data-post-type');
-
-            const postData = {
-                content: content,
-                section: section,
-                type: type,
-                created_at: new Date().toISOString()
-            };
-
-            try {
-                const response = await fetch('/api/save-post', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(postData)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert(`✅ تم حفظ ${type} بنجاح في قسم ${section}!\nالرد: ${result.message}`);
-                    document.getElementById('postContent').value = ''; // مسح المحتوى
-                    closeModal();
-                    // تحديث محتوى البوح في القسم المحفوظ إذا كان "بوح"
-                    if (type === 'البوح') {
-                        fetchBouhContent(section); 
-                    }
+        function toggleAdminPanel() {
+            if (isAdmin) {
+                const dashboard = document.getElementById('adminDashboard');
+                if (dashboard.style.display === 'block') {
+                    dashboard.style.display = 'none';
                 } else {
-                    alert(`❌ فشل الحفظ: ${result.error || 'خطأ غير معروف'}`);
-                    console.error('API Error:', result);
+                    // إذا كان مسجل دخول، اعرض لوحة التحكم
+                    document.getElementById('adminLogin').style.display = 'none';
+                    dashboard.style.display = 'block';
                 }
-            } catch (error) {
-                alert('❌ حدث خطأ في الاتصال بالخادم. تأكد من أن API Route يعمل بشكل صحيح.');
-                console.error('Network Error:', error);
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+            } else {
+                // إذا لم يكن مسجل دخول، اعرض شاشة الدخول
+                const login = document.getElementById('adminLogin');
+                if (login.style.display === 'block') {
+                    login.style.display = 'none';
+                } else {
+                    document.getElementById('adminDashboard').style.display = 'none';
+                    login.style.display = 'block';
+                }
             }
         }
         
-        // باقي الدوال (المحاكاة)
+        // دالة إغلاق النافذة المنبثقة عند الضغط على الخلفية
+        function closeModalOnOverlayClick(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                event.target.style.display = 'none';
+                document.getElementById('aiGeneratorModal').style.display = 'none';
+                document.getElementById('commentModal').style.display = 'none';
+                document.getElementById('uploadPostModal').style.display = 'none';
+            }
+        }
         
+        // دالة فتح نموذج توليد المحتوى بالذكاء الاصطناعي
         function openAIGeneratorModal() {
-            if (localStorage.getItem('isAdminLoggedIn') !== 'true') return alert('الرجاء تسجيل الدخول أولاً كمسؤول.');
             document.getElementById('aiGeneratorModal').style.display = 'flex';
         }
-
-        function generateContent(e) {
-            e.preventDefault();
-            const outputElement = document.getElementById('aiOutput');
-            outputElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
-            // محاكاة استجابة من نموذج Gemini
+        
+        // دالة محاكاة توليد المحتوى
+        function generateContent() {
+            const topic = document.getElementById('aiTopic').value;
+            const style = document.querySelector('.ai-option-btn.active').getAttribute('data-style');
+            const outputDiv = document.getElementById('aiOutput');
+            
+            if (!topic) {
+                alert('الرجاء إدخال موضوع للتوليد.');
+                return;
+            }
+            
+            outputDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري توليد محتوى "${style}" عن: **${topic}**...`;
+            
+            // محاكاة تأخير جلب الرد من الـ AI
             setTimeout(() => {
-                const prompt = document.getElementById('aiPrompt').value;
-                const type = document.querySelector('.ai-option-btn.active').getAttribute('data-type');
-                outputElement.innerHTML = `<i class="fas fa-robot"></i> **تم التوليد بنجاح!**\n\n- النوع: ${type}\n- طلبك: ${prompt.substring(0, 50)}...\n\nهذا محتوى تجريبي تم توليده بواسطة الذكاء الاصطناعي (محاكاة): الهدوء النفسي هو أساس الحياة الزوجية السعيدة، ابدأي بخطوات صغيرة نحو السلام الداخلي.`;
+                const generatedText = `
+                    **العنوان:** ${topic} (${style})
+                    
+                    ${style === 'شعر' ? `
+                    في رقة النفسِ سرٌ لا يزولْ،
+                    وبالشغفِ نبني عالماً لا يميلْ.
+                    ${topic} هو الدربُ، وهو العشقُ الأصيلْ.
+                    ` : `
+                    **المحتوى:**
+                    لأنكِ تستحقين الأفضل، نقدم لكِ خلاصة هذا الموضوع.
+                    ${topic} يمثل جزءاً أساسياً من رحلة كل امرأة.
+                    إليكِ أهم النقاط التي يجب أن تتذكريها: [إضافة نص طويل وهمي هنا...]
+                    `}
+                    (المحتوى تم توليده بواسطة نموذج Gemini الذكي)
+                `;
+                outputDiv.innerHTML = generatedText;
             }, 2000);
         }
 
-        function toggleDeleteMode() {
-            if (localStorage.getItem('isAdminLoggedIn') !== 'true') return alert('الرجاء تسجيل الدخول أولاً كمسؤول.');
-            deleteMode = !deleteMode;
-            document.body.classList.toggle('delete-mode-active', deleteMode);
-            alert(deleteMode ? 'تم تفعيل وضع حذف المحتوى. اضغطي على ❌ لحذف أي عنصر.' : 'تم إلغاء وضع حذف المحتوى.');
+        function setAIStyle(btn, style) {
+            document.querySelectorAll('.ai-option-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         }
-
-        function deletePost(postId) {
-            if (!deleteMode) return;
-            const confirmed = confirm(`هل أنتِ متأكدة من حذف هذا المحتوى (${postId}) بشكل نهائي؟`);
-            if (confirmed) {
-                // هنا يجب إرسال طلب DELETE إلى API route (مثلاً: /api/delete-post)
-                alert(`تم محاكاة حذف المحتوى ID: ${postId}. (في التنفيذ الفعلي، سيتم إرسال طلب DELETE إلى الخادم).`);
-                // إخفاء العنصر المحذوف مؤقتاً
-                const elementToDelete = document.querySelector(`[onclick="deletePost('${postId}')"]`).closest('.card') || document.querySelector(`[onclick="deletePost('${postId}')"]`).closest('.bouh-display');
-                if (elementToDelete) {
-                    elementToDelete.style.display = 'none';
-                }
-                deleteMode = false; // تعطيل وضع الحذف بعد العملية
-                document.body.classList.remove('delete-mode-active');
-            }
-        }
-
-        function toggleLike(button, id) {
-            button.classList.toggle('active');
-            const icon = button.querySelector('i');
-            const span = button.querySelector('span');
+        
+        // دالة حفظ المنشور (محدثة لحذف القديم عند رفع "البوح")
+        function savePost(event) {
+            event.preventDefault();
             
-            if (button.classList.contains('active')) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                span.textContent = 'أعجبني';
-            } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                span.textContent = 'إعجاب';
+            const modal = document.getElementById('uploadPostModal');
+            const sectionId = modal.getAttribute('data-target-section');
+            const postType = modal.getAttribute('data-post-type');
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+            
+            if (!content) {
+                alert('الرجاء إدخال محتوى المنشور.');
+                return;
             }
-        }
 
-        function closeModal(event) {
-            if (event) {
-                if (event.target.classList.contains('modal-overlay')) {
-                    document.querySelectorAll('.modal-overlay').forEach(modal => {
-                        modal.style.display = 'none';
-                    });
+            postIdCounter++;
+            const newPostId = `dynamic-post-${postIdCounter}`;
+            
+            // **الجزء الخاص بحل مشكلة حذف المنشور القديم**
+            if (postType === 'البوح') {
+                const targetBouhDiv = document.querySelector(`#${sectionId} .bouh-display`);
+                
+                if (targetBouhDiv) {
+                    // 1. محاكاة حذف القديم (عبر الاستبدال)
+                    console.log(`[حذف] يتم استبدال محتوى البوح القديم (ID: ${currentBouhPosts[sectionId]?.id}) من القسم: ${sectionId}`);
+                    
+                    // 2. تحديث المحتوى الجديد
+                    targetBouhDiv.innerHTML = content;
+                    
+                    // 3. إضافة علامة "جديد"
+                    targetBouhDiv.classList.add('newly-added');
+                    targetBouhDiv.setAttribute('data-post-id', newPostId);
+                    
+                    // 4. تحديث سجل المحتوى الجاري عرضه
+                    currentBouhPosts[sectionId] = { content: content, id: newPostId };
+                    
+                    // تحديث البطاقة الرئيسية أيضاً لتنعكس البيانات الجديدة
+                    const mainCard = targetBouhDiv.closest('.card');
+                    if (mainCard) {
+                         mainCard.setAttribute('data-post-id', newPostId);
+                         mainCard.setAttribute('data-post-title', title || `بوح جديد في ${sectionId}`);
+                    }
+                    
+                    alert('تم نشر "البوح" بنجاح، وتم حذف المنشور القديم من العرض.');
+                    
+                } else {
+                    alert(`[خطأ] لا يمكن العثور على منطقة العرض للقسم ${sectionId}.`);
                 }
+                
             } else {
-                document.querySelectorAll('.modal-overlay').forEach(modal => {
-                    modal.style.display = 'none';
-                });
+                // منطق النشر العادي لباقي المحتويات
+                alert(`تم محاكاة رفع محتوى "${postType}" بنجاح في قسم: ${sectionId}\nالعنوان: ${title || 'بلا عنوان'}`);
+            }
+
+            // إغلاق المودال وتنظيف الحقول
+            modal.style.display = 'none';
+            document.getElementById('postTitle').value = '';
+            document.getElementById('postContent').value = '';
+        }
+        
+        // دالة تفعيل وضع الحذف
+        function toggleDeleteMode() {
+            document.body.classList.toggle('delete-mode-active');
+            if (document.body.classList.contains('delete-mode-active')) {
+                alert('تم تفعيل وضع حذف المحتوى. اضغطي على علامة (X) لحذف أي بطاقة أو بوح. اضغطي على زر الأدمن لإلغاء الوضع.');
+            } else {
+                alert('تم إلغاء وضع حذف المحتوى.');
             }
         }
         
+        // دالة محاكاة لحذف منشور
+        function deletePost(postId) {
+            if (confirm(`هل أنتِ متأكدة من حذف المنشور الذي يحمل المعرف: ${postId}؟`)) {
+                
+                // محاكاة إزالة الكارد أو البوح
+                const card = document.querySelector(`.card[data-post-id='${postId}']`) || document.getElementById(postId);
+                if (card) {
+                    // يمكن هنا إضافة منطق لتحديد المحتوى القديم الافتراضي إذا تم حذف البوح الحالي
+                    card.remove(); 
+                }
+                
+                alert('تم حذف المنشور/البوح بنجاح (محاكاة).');
+                document.body.classList.remove('delete-mode-active'); // إيقاف وضع الحذف بعد الحذف
+            }
+        }
+
+        // ###################### وظائف التفاعل ######################
+
+        function toggleLike(btn, id) {
+            btn.classList.toggle('active');
+            const span = btn.querySelector('span');
+            const icon = btn.querySelector('i');
+            
+            if (btn.classList.contains('active')) {
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+                span.innerText = 'أُعجبني';
+            } else {
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+                span.innerText = 'إعجاب';
+            }
+        }
+
         function openCommentModal(id) {
             document.getElementById('commentModal').style.display = 'flex';
         }
@@ -1322,17 +1505,18 @@
                 p.style.background = '#f9f9f9';
                 p.style.padding = '5px';
                 p.style.borderRadius = '8px';
-                p.style.marginTop = '8px';
-                p.innerHTML = `**أنتِ:** ${txt}`;
+                p.style.marginBottom = '8px';
+                p.style.borderRight = '4px solid var(--accent-green)';
+                p.innerText = 'أنتِ: ' + txt;
                 
-                // إزالة رسالة "لا توجد تعليقات" إذا كانت موجودة
-                if (list.querySelector('p').textContent.includes('لا توجد تعليقات')) {
+                // إزالة رسالة "لا توجد تعليقات" إن وجدت
+                if(list.querySelector('p').innerText.includes('لا توجد تعليقات')) {
                     list.innerHTML = '';
                 }
+                
                 list.appendChild(p);
-                list.scrollTop = list.scrollHeight; // التمرير إلى الأسفل
+                list.scrollTop = list.scrollHeight;
                 document.getElementById('newCommentText').value = '';
-                alert('تم إضافة التعليق بنجاح (محاكاة).');
             }
         }
 
@@ -1347,85 +1531,142 @@
                 alert('تم نسخ الرابط!');
             }
         }
-        
-        // دوال التتبع (محاكاة)
-        function toggleTracker(type) {
-            document.getElementById('periodTrackerUI').style.display = 'none';
-            document.getElementById('pregnancyTrackerUI').style.display = 'none';
 
-            if (type === 'period') {
-                document.getElementById('periodTrackerUI').style.display = 'block';
-            } else if (type === 'pregnancy') {
-                document.getElementById('pregnancyTrackerUI').style.display = 'block';
+        // ###################### وظائف تتبع الصحة ######################
+        
+        function toggleTracker(trackerId) {
+            const ui = document.getElementById(trackerId);
+            
+            // إخفاء كل أدوات التتبع الأخرى
+            document.querySelectorAll('.tracker-ui').forEach(item => {
+                 if (item.id !== trackerId) {
+                    item.style.display = 'none';
+                 }
+            });
+
+            // إظهار أو إخفاء الأداة المطلوبة
+            if (ui.style.display === 'block') {
+                ui.style.display = 'none';
+            } else {
+                ui.style.display = 'block';
             }
         }
 
-        function calculatePeriod(event) {
+        function calculateBMI(event) {
             event.preventDefault();
-            const lastDate = new Date(document.getElementById('lastPeriodDate').value);
-            const cycleLength = parseInt(document.getElementById('cycleLength').value, 10);
+            const w = parseFloat(document.getElementById('bmiWeight').value);
+            const h = parseFloat(document.getElementById('bmiHeight').value) / 100; // to meters
+            const resultDiv = document.getElementById('bmiResult');
             
-            if (isNaN(lastDate.getTime())) {
-                alert('الرجاء إدخال تاريخ صحيح.');
-                return;
+            if (w > 0 && h > 0) {
+                const bmi = w / (h * h);
+                let status = '';
+                let color = '';
+
+                if (bmi < 18.5) { status = 'نقص في الوزن'; color = '#ff9800'; }
+                else if (bmi >= 18.5 && bmi <= 24.9) { status = 'وزن صحي'; color = '#4CAF50'; }
+                else if (bmi >= 25 && bmi <= 29.9) { status = 'زيادة في الوزن'; color = '#ff5722'; }
+                else { status = 'سمنة'; color = '#f44336'; }
+
+                resultDiv.style.background = color + '22'; // خلفية شفافة
+                resultDiv.style.color = color;
+                resultDiv.innerHTML = `<i class="fas fa-chart-line"></i> مؤشر كتلة الجسم (BMI): **${bmi.toFixed(2)}**<br>النتيجة: **${status}**`;
+                resultDiv.style.display = 'block';
             }
-
-            const nextPeriodDate = new Date(lastDate);
-            nextPeriodDate.setDate(lastDate.getDate() + cycleLength);
-
-            const ovulationDate = new Date(nextPeriodDate);
-            ovulationDate.setDate(nextPeriodDate.getDate() - 14);
-
-            const resultDiv = document.getElementById('periodResult');
-            resultDiv.innerHTML = `
-                <i class="fas fa-check-circle"></i> 
-                موعد الدورة المتوقع: **${nextPeriodDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}**
-                <br>
-                أيام التبويض (الخصوبة): **${ovulationDate.toLocaleDateString('ar-EG', { month: 'long', day: 'numeric' })}** تقريباً
-            `;
-            resultDiv.style.display = 'block';
+        }
+        
+        function calculateOvulation(event) {
+            event.preventDefault();
+            const lmpDateStr = document.getElementById('lastPeriodDate').value;
+            const cycleLength = parseInt(document.getElementById('cycleLength').value);
+            const resultDiv = document.getElementById('ovulationResult');
+            
+            if (lmpDateStr && cycleLength) {
+                const lmpDate = new Date(lmpDateStr);
+                
+                // حساب يوم الإباضة المتوقع: LMP + (Cycle Length - 14)
+                const ovulationDay = cycleLength - 14;
+                const ovulationDate = new Date(lmpDate);
+                ovulationDate.setDate(lmpDate.getDate() + ovulationDay);
+                
+                // حساب فترة الخصوبة (5 أيام قبل الإباضة حتى يوم الإباضة)
+                const fertileStart = new Date(ovulationDate);
+                fertileStart.setDate(ovulationDate.getDate() - 5);
+                
+                // تنسيق التواريخ
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                const ovulationStr = ovulationDate.toLocaleDateString('ar-EG', options);
+                const fertileStartStr = fertileStart.toLocaleDateString('ar-EG', options);
+                
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#e3f2fd';
+                resultDiv.style.color = '#2196F3';
+                resultDiv.innerHTML = `<i class="fas fa-calendar-alt"></i> **توقعاتك:**<br>
+                                        يوم الإباضة المتوقع: **${ovulationStr}**<br>
+                                        فترة الخصوبة (فرصة الحمل العالية):<br>
+                                        من **${fertileStartStr}** إلى **${ovulationStr}**`;
+            }
         }
         
         function calculatePregnancy(event) {
             event.preventDefault();
-            const lastDate = new Date(document.getElementById('lastPeriodDatePregnancy').value);
-            
-            if (isNaN(lastDate.getTime())) {
-                alert('الرجاء إدخال تاريخ صحيح.');
-                return;
-            }
-
-            // قاعدة نيغل (Add 7 days to LMP, subtract 3 months, add 1 year)
-            const dueDate = new Date(lastDate);
-            dueDate.setDate(lastDate.getDate() + 7);
-            dueDate.setMonth(lastDate.getMonth() - 3);
-            dueDate.setFullYear(lastDate.getFullYear() + 1);
-
+            const lmpDateStr = document.getElementById('lmpDate').value;
             const resultDiv = document.getElementById('pregnancyResult');
-            resultDiv.innerHTML = `
-                <i class="fas fa-check-circle"></i> 
-                موعد الولادة المتوقع: **${dueDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}**
-            `;
-            resultDiv.style.display = 'block';
+            
+            if (lmpDateStr) {
+                const lmpDate = new Date(lmpDateStr);
+                
+                // حساب تاريخ الولادة المتوقع (EDD) باستخدام قاعدة نايجل: LMP - 3 أشهر + 7 أيام + سنة
+                const eddDate = new Date(lmpDate);
+                eddDate.setMonth(lmpDate.getMonth() + 9);
+                eddDate.setDate(lmpDate.getDate() + 7);
+                
+                // حساب عمر الحمل الحالي (بالأسابيع)
+                const today = new Date();
+                const diffTime = Math.abs(today - lmpDate);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                const weeks = Math.floor(diffDays / 7);
+                const days = diffDays % 7;
+                
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                const eddStr = eddDate.toLocaleDateString('ar-EG', options);
+                
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = '#f3e5f5';
+                resultDiv.style.color = '#7b1fa2';
+                resultDiv.innerHTML = `<i class="fas fa-baby-carriage"></i> **نتائج متابعة الحمل:**<br>
+                                        تاريخ الولادة المتوقع (EDD): **${eddStr}**<br>
+                                        أنتِ الآن في الأسبوع: **${weeks}** ويوم **${days}**`;
+            }
         }
-        
+
+        // ###################### وظائف سجل الرضاعة ######################
+
         function addNursingLog(event) {
             event.preventDefault();
             const side = document.getElementById('nursingSide').value;
             const duration = document.getElementById('nursingDuration').value;
             const time = document.getElementById('nursingTime').value;
+            
+            if (!time) {
+                alert('الرجاء اختيار وقت البدء.');
+                return;
+            }
+
             const now = new Date();
+            const timestamp = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
 
-            nursingLog.push({
-                id: nextNursingId++,
-                side: side === 'right' ? 'اليمين' : 'اليسار',
-                duration: `${duration} دقيقة`,
+            const newEntry = {
+                id: Date.now(),
                 time: time,
-                timestamp: now.toLocaleDateString() 
-            });
-
+                side: side,
+                duration: `${duration} دقيقة`,
+                timestamp: timestamp
+            };
+            
+            nursingLog.push(newEntry);
             loadNursingLog();
-            alert('تم تسجيل عملية الرضاعة بنجاح.');
+            alert('تم تسجيل الرضاعة بنجاح.');
             document.getElementById('nursingDuration').value = '10';
         }
 
@@ -1441,7 +1682,7 @@
                 div.className = 'nursing-log';
                 div.id = `nursing-entry-${entry.id}`;
                 div.innerHTML = `
-                    <span>**${entry.time}** - الجانب: ${entry.side} - المدة: ${entry.duration} (${entry.timestamp})</span>
+                    <span>**${entry.time}** - الجانب: ${entry.side} - المدة: ${entry.duration}</span>
                     <button onclick="deleteNursingLogEntry(${entry.id})"><i class="fas fa-trash-alt"></i></button>
                 `;
                 logDiv.appendChild(div);
@@ -1456,14 +1697,22 @@
 
         // استدعاء الدوال عند تحميل الصفحة
         document.addEventListener('DOMContentLoaded', () => {
+             // تحميل المحتويات الافتراضية
+             Object.keys(currentBouhPosts).forEach(sectionId => {
+                 const idParts = sectionId.split('-');
+                 const bouhDiv = document.getElementById(`txt-${idParts[idParts.length - 1]}`);
+                 if (bouhDiv) {
+                     bouhDiv.innerHTML = currentBouhPosts[sectionId].content;
+                 }
+             });
+             
              loadNursingLog();
              // لضمان عرض محتوى "الرئيسية" عند التحميل
              showSection('homeView', document.querySelector('.nav-item.active'));
 
-             // إذا كان الأدمن مسجل الدخول مسبقاً، أخفِ شاشة الدخول وأظهر لوحة التحكم
-             if (localStorage.getItem('isAdminLoggedIn') === 'true') {
-                document.getElementById('adminDashboard').style.display = 'block';
-                document.getElementById('adminLogin').style.display = 'none';
+             // إذا كان الأدمن مسجل الدخول مسبقاً، أظهر لوحة التحكم
+             if (isAdmin) {
+                 document.getElementById('adminToggleBtn').style.background = '#4CAF50';
              }
         });
         
