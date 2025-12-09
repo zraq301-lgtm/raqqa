@@ -8,9 +8,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-
     <style>
+        /* --- الأنماط العامة والمتغيرات --- */
         :root {
             --primary-pink: #e91e63;
             --soft-pink: #fce4ec;
@@ -32,7 +31,7 @@
             overflow-x: hidden;
         }
 
-        /* --- شاشة تسجيل الدخول (Splash/Login) --- */
+        /* --- شاشة تسجيل الدخول للمستخدم (Login Overlay) --- */
         .login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #fff 0%, #fff0f6 100%);
@@ -53,94 +52,74 @@
         .btn-google { background: #db4437; color: white; }
         .skip-login { margin-top: 15px; color: #999; cursor: pointer; text-decoration: underline; font-size: 0.9rem; }
 
-        /* --- الهيدر والقائمة --- */
+        /* --- الهيدر والأقسام الجانبية --- */
         header {
             background: var(--white); padding: 15px 20px; display: flex;
             justify-content: space-between; align-items: center;
             box-shadow: 0 2px 15px rgba(233, 30, 99, 0.1); position: sticky; top: 0; z-index: 1000;
         }
         .app-logo { font-family: 'Aref Ruqaa'; font-size: 2.4rem; color: var(--primary-pink); text-shadow: 2px 2px 0px #ffe0e9; }
-        
-        /* زر الأدمن */
         .admin-btn {
             background: var(--primary-pink); border: none; color: var(--white);
             width: 45px; height: 45px; border-radius: 50%; display: flex;
             justify-content: center; align-items: center; cursor: pointer;
             box-shadow: 0 4px 10px rgba(233, 30, 99, 0.5); transition: 0.3s;
         }
-        .admin-btn:hover { background: #c2185b; }
-
-        /* القائمة الجانبية */
-        .sidebar {
-            position: fixed; top: 0; right: -300px; width: 260px; height: 100%;
-            background: white; z-index: 2000; transition: 0.4s; padding: 25px;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column;
-        }
+        .sidebar { position: fixed; top: 0; right: -300px; width: 260px; height: 100%; background: white; z-index: 2000; transition: 0.4s; padding: 25px; box-shadow: -5px 0 15px rgba(0,0,0,0.1); }
         .sidebar.active { right: 0; }
-        .sidebar a { text-decoration: none; color: #555; padding: 15px; margin-bottom: 10px; border-radius: 10px; display: flex; align-items: center; gap: 10px; font-weight: bold; }
-        .sidebar a:hover { background: var(--soft-pink); color: var(--primary-pink); }
         .close-sidebar { position: absolute; top: 20px; left: 20px; font-size: 1.5rem; cursor: pointer; color: #999; }
 
-        /* --- المحتوى الأساسي --- */
         .main-container { padding: 20px; }
-        .welcome-section { text-align: center; padding: 30px; background: #fff; border-radius: 20px; margin-bottom: 20px; border: 1px solid #ffeef2; }
-        .section-view { display: none; animation: slideUp 0.4s ease-out; }
+        .section-view { display: none; animation: fadeIn 0.4s ease-out; }
         #homeView { display: block; }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
+        
         /* شريط البحث */
         .search-container { position: relative; margin-bottom: 20px; }
         .search-input {
             width: 100%; padding: 12px 40px 12px 15px; border-radius: 25px;
             border: 1px solid #ddd; outline: none; transition: 0.3s; font-family: 'Tajawal';
         }
-        .search-input:focus { border-color: var(--primary-pink); box-shadow: 0 0 8px rgba(233, 30, 99, 0.1); }
         .search-icon { position: absolute; right: 15px; top: 13px; color: #aaa; }
 
-        /* البطاقات (الرئيسية والفرعية) */
+        /* بطاقة القسم الأساسية */
         .card {
             background: white; border-radius: 20px; padding: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
             border-top: 4px solid var(--primary-pink); position: relative;
         }
-        /* تصميم "بوست" فيسبوك */
-        .feed-card {
-            border-top: none; margin-bottom: 15px; padding: 15px;
-            animation: fadeIn 0.5s; position: relative;
+        
+        /* منطقة العرض الثابتة (همسة الأسبوع) */
+        .bouh-display {
+            background: #fffdfd; border: 1px dashed #f48fb1; padding: 20px;
+            border-radius: 15px; margin-bottom: 20px; position: relative; color: #555; line-height: 1.7; white-space: pre-wrap;
         }
-        .feed-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .feed-avatar { width: 40px; height: 40px; background: var(--soft-pink); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-pink); }
-        .feed-info h4 { margin: 0; font-size: 0.95rem; color: #333; }
-        .feed-info span { font-size: 0.75rem; color: #999; }
-        .feed-body { color: #555; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap; margin-bottom: 15px; }
+        .bouh-display::before { 
+            content: "✨ همسة أسبوعية ثابتة"; position: absolute; top: -12px; right: 15px; 
+            background: var(--primary-pink); color: white; font-size: 0.7rem; 
+            padding: 4px 12px; border-radius: 20px; 
+        }
 
-        /* ألوان الأقسام */
-        #sec-intimacy-new .card { border-top-color: var(--accent-red); }
-        #sec-society-new .card { border-top-color: var(--gold); }
-        #sec-health .card { border-top-color: var(--accent-blue); }
-
-        /* الروابط والأزرار */
+        /* أزرار أرشيف المحتوى */
         .content-links { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; }
         .content-link {
             flex-grow: 1; padding: 12px; border-radius: 12px; text-align: center;
             font-weight: bold; font-size: 0.9rem; cursor: pointer; display: flex;
             flex-direction: column; align-items: center; gap: 5px; transition: 0.2s;
+            text-decoration: none;
         }
         .content-link.bouh { background: #ffe6ee; color: #c2185b; border: 1px solid #f8bbd0; }
         .content-link.visual { background: #e3f2fd; color: #1565c0; border: 1px solid #90caf9; }
         
-        .interaction-bar { border-top: 1px solid #eee; padding-top: 10px; display: flex; justify-content: space-around; }
-        .act-btn { background: none; border: none; color: #777; cursor: pointer; font-family: 'Tajawal'; font-size: 0.85rem; display: flex; gap: 5px; align-items: center; }
-        .act-btn:hover, .act-btn.active { color: var(--primary-pink); }
-
-        /* منطقة العرض الثابتة (همسة الأسبوع) */
-        .bouh-display {
-            background: #fffdfd; border: 1px dashed #f48fb1; padding: 20px;
-            border-radius: 15px; margin-bottom: 20px; position: relative; color: #555;
+        /* زر الحذف للأدمن فقط في البطاقات الرئيسية */
+        .delete-overlay-btn {
+            display: none; /* مخفي افتراضياً */
+            position: absolute; top: 10px; left: 10px;
+            background: #ff1744; color: white; border: none;
+            width: 30px; height: 30px; border-radius: 50%;
+            cursor: pointer; font-size: 0.8rem; z-index: 5;
         }
-        .bouh-display::before { content: "✨ همسة الأسبوع"; position: absolute; top: -12px; right: 15px; background: var(--primary-pink); color: white; font-size: 0.7rem; padding: 4px 12px; border-radius: 20px; }
 
-        /* شاشات العرض الكاملة (Overlay Screens) */
+        /* --- شاشات العرض الكاملة (Feed Overlay) - تصميم أنيق (Facebook-like) --- */
         .full-screen-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #faf9f9; z-index: 3000; overflow-y: auto;
@@ -155,32 +134,48 @@
         }
         .screen-title { font-family: 'Aref Ruqaa'; font-size: 1.5rem; color: var(--primary-pink); }
         .back-btn { font-size: 1.5rem; cursor: pointer; color: #555; }
-        
         .feed-container { padding: 15px; padding-bottom: 80px; }
 
-        /* زر الحذف */
+        /* تصميم البطاقة داخل الفيد (شكل فيسبوك) */
+        .feed-card {
+            background: white; border-radius: 15px; padding: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 15px;
+            position: relative; animation: fadeIn 0.5s;
+        }
+        .feed-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .feed-avatar { width: 40px; height: 40px; background: var(--soft-pink); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--primary-pink); }
+        .feed-info h4 { margin: 0; font-size: 0.95rem; color: #333; }
+        .feed-info span { font-size: 0.75rem; color: #999; }
+        .feed-body { color: #555; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap; margin-bottom: 15px; }
+
+        /* أزرار التفاعل */
+        .interaction-bar { border-top: 1px solid #eee; padding-top: 10px; display: flex; justify-content: space-around; }
+        .act-btn { background: none; border: none; color: #777; cursor: pointer; font-family: 'Tajawal'; font-size: 0.85rem; display: flex; gap: 5px; align-items: center; }
+        .act-btn:hover, .act-btn.active { color: var(--primary-pink); }
+        
+        /* زر الحذف في الفيد */
         .delete-btn {
             display: none; /* مخفي افتراضياً */
             color: #ff1744; background: #ffebee; border: 1px solid #ffcdd2;
             padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.8rem;
-            position: absolute; left: 15px; top: 15px;
+            position: absolute; left: 15px; top: 15px; z-index: 5;
         }
-        body.delete-mode-active .delete-btn { display: block; }
-        
-        /* شريط التنقل */
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
-            background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); display: flex;
-            justify-content: space-evenly; align-items: center; border-radius: 25px 25px 0 0; z-index: 1500;
-        }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #ccc; font-size: 0.75rem; cursor: pointer; }
-        .nav-item.active { color: var(--primary-pink); }
+        body.delete-mode-active .delete-btn,
+        body.delete-mode-active .delete-overlay-btn { display: flex; }
+        body.delete-mode-active .feed-card { border: 2px dashed #ff1744 !important; }
 
-        /* لوحة التحكم */
+        /* --- لوحة تحكم الأدمن والـ AI --- */
         .admin-panel { display: none; background: white; padding: 20px; margin: 20px 0; border-radius: 15px; border: 2px dashed var(--primary-pink); }
         .inp-field, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-family: 'Tajawal'; }
         .btn-primary { background: var(--primary-pink); color: white; border: none; padding: 12px; border-radius: 10px; width: 100%; cursor: pointer; }
+        .btn-ai { background: linear-gradient(135deg, #444, #000); margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
+        /* شريط التنقل */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height); background: white; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); display: flex; justify-content: space-evenly; align-items: center; border-radius: 25px 25px 0 0; z-index: 1500; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #ccc; font-size: 0.75rem; cursor: pointer; }
+        .nav-item.active { color: var(--primary-pink); }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -198,7 +193,7 @@
                 <i class="fab fa-google"></i> متابعة باستخدام Google
             </button>
 
-            <div class="skip-login" onclick="document.getElementById('loginOverlay').style.display='none'">تخطي والدخول كزائرة</div>
+            <div class="skip-login" onclick="skipLogin()">تخطي والدخول كزائرة</div>
         </div>
     </div>
 
@@ -212,8 +207,8 @@
         <span class="close-sidebar" onclick="document.getElementById('sidebar').classList.remove('active')">&times;</span>
         <h2 style="color:var(--primary-pink); font-family:'Aref Ruqaa'">رقة</h2>
         <a href="#"><i class="fas fa-user"></i> ملفي الشخصي</a>
+        <a href="#" onclick="adminLogout(); skipLogin();"><i class="fas fa-sign-in-alt"></i> تسجيل الخروج (المستخدم)</a>
         <a href="#"><i class="fas fa-cog"></i> الإعدادات</a>
-        <a href="#" onclick="document.getElementById('loginOverlay').style.display='flex'"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</a>
     </aside>
 
     <div class="main-container">
@@ -221,7 +216,7 @@
         <div id="adminLogin" class="admin-panel" style="display: none; border-color: #673ab7;">
             <h3 style="color: #673ab7;">مدخل المشرفين</h3>
             <form onsubmit="adminLogin(event)">
-                <input type="text" id="adminUsername" class="inp-field" placeholder="المستخدم" required>
+                <input type="text" id="adminUsername" class="inp-field" placeholder="اسم المستخدم" required>
                 <input type="password" id="adminPassword" class="inp-field" placeholder="كلمة المرور" required>
                 <button type="submit" class="btn-primary" style="background:#673ab7;">دخول</button>
             </form>
@@ -230,320 +225,533 @@
         <div id="adminDashboard" class="admin-panel" style="display: none;">
             <h3 style="color: var(--primary-pink);">لوحة التحكم (Zazo)</h3>
             
-            <div style="background:#f0f4f8; padding:10px; border-radius:10px; margin-bottom:15px;">
-                <h4 style="margin:0 0 10px 0; color:#673ab7;"><i class="fas fa-magic"></i> مساعد الذكاء الاصطناعي (Gemini)</h4>
-                <textarea id="aiPrompt" placeholder="اكتبي موضوعاً (مثلاً: نصيحة عن الصبر)..." style="height:60px;"></textarea>
-                <button class="btn-primary" style="background:#673ab7;" onclick="generateAIContent()">توليد محتوى</button>
-            </div>
+            <button class="btn-primary btn-ai" onclick="openAIGeneratorModal()">
+                <i class="fas fa-robot"></i> توليد محتوى **(Gemini API)**
+            </button>
 
-            <hr>
-
-            <h4 style="margin:10px 0;">رفع محتوى جديد</h4>
+            <label for="adminSectionSelect" style="display: block; margin-top: 15px; font-weight: bold; color: #777;">القسم المستهدف:</label>
             <select id="adminSectionSelect" class="inp-field">
                 <option value="sec-feelings">المشاعر</option>
                 <option value="sec-fiqh">فقه النساء</option>
-                <option value="sec-intimacy">العلاقات</option>
-                <option value="sec-society">المجتمع</option>
-                <option value="sec-health">الصحة</option>
+                <option value="sec-intimacy-new">العلاقات الحميمية</option>
+                <option value="sec-society-new">المجتمع</option>
+                <option value="sec-health">الصحة والجمال</option>
             </select>
-            <textarea id="postContent" placeholder="اكتبي المحتوى هنا..." style="height:100px;"></textarea>
+            
+            <textarea id="postContent" placeholder="اكتبي المحتوى أو رابط الفيديو هنا..." style="height:100px;"></textarea>
             
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="btn-primary" onclick="savePost('البوح')">نشر كـ بوح (نص)</button>
-                <button class="btn-primary" style="background:#2196F3;" onclick="savePost('مرئي')">نشر كـ فيديو</button>
-                <button class="btn-primary" style="background:#FF9800;" onclick="savePost('همسة_اسبوعية')">تحديث همسة الأسبوع</button>
+                <button class="btn-primary" onclick="savePost('البوح')" style="background: #c2185b;">نشر كـ **البوح المرفوع**</button>
+                <button class="btn-primary" style="background:#2196F3;" onclick="savePost('مرئي')">نشر كـ **محتوى مرئي**</button>
             </div>
+             <button class="btn-primary" style="background:#FF9800; margin-top:10px;" onclick="savePost('همسة_أسبوعية')">تحديث همسة الأسبوع الثابتة</button>
 
-            <button class="btn-primary" onclick="toggleDeleteMode()" style="background:#ff1744; margin-top:15px;">تفعيل/تعطيل الحذف</button>
-            <button class="btn-primary" onclick="adminLogout()" style="background:#333; margin-top:10px;">خروج</button>
+            <button class="btn-primary" onclick="toggleDeleteMode()" style="background:#ff1744; margin-top:15px;"><i class="fas fa-trash-alt"></i> تفعيل/تعطيل الحذف</button>
+            <button class="btn-primary" onclick="adminLogout()" style="background:#333; margin-top:10px;"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج (الأدمن)</button>
         </div>
 
-        <div id="homeView" class="section-view" style="display:block;">
-            <div class="welcome-section">
-                <h2>أهلاً بك في عالمك 🌸</h2>
-                <p>اختاري قسماً لتبدأي رحلتك</p>
+        <div id="homeView" class="section-view">
+            <div class="card" style="border-top: 4px solid var(--gold); text-align: center;">
+                <h2 style="color:var(--primary-pink); font-family:'Aref Ruqaa'">أهلاً بك في عالمك 🌸</h2>
+                <p>تصفحي أقسام "رقة" من شريط التنقل بالأسفل 👇</p>
             </div>
         </div>
 
         <div id="sec-feelings" class="section-view">
             <div class="search-container">
-                <input type="text" class="search-input" placeholder="ابحثي في المشاعر..." onkeyup="filterFeed('sec-feelings', this.value)">
+                <input type="text" id="search-sec-feelings" class="search-input" placeholder="ابحثي في المشاعر..." onkeyup="filterFeed('sec-feelings', this.value)">
                 <i class="fas fa-search search-icon"></i>
             </div>
             
-            <div class="card">
-                <button class="delete-btn" onclick="alert('حذف همسة الأسبوع غير متاح إلا بتحديثها')"><i class="fas fa-trash"></i></button>
-                <div style="color:var(--primary-pink); font-size:1.3rem; margin-bottom:15px; font-family:'Aref Ruqaa'"><i class="fas fa-heart"></i> المشاعر</div>
+            <div class="card" data-section="sec-feelings">
+                <button class="delete-overlay-btn" onclick="alert('حذف همسة الأسبوع يتم بتحديثها من لوحة الأدمن')"><i class="fas fa-times"></i></button>
+                <h3 style="color:var(--primary-pink); font-family:'Aref Ruqaa'"><i class="fas fa-heart"></i> المشاعر</h3>
                 
                 <div class="bouh-display" id="static-sec-feelings">جاري تحميل همسة الأسبوع...</div>
                 
                 <div class="interaction-bar">
-                    <button class="act-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> إعجاب</button>
-                    <button class="act-btn"><i class="far fa-comment"></i> تعليق</button>
-                    <button class="act-btn"><i class="fas fa-share"></i> مشاركة</button>
+                    <button class="act-btn like-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
+                    <button class="act-btn" onclick="alert('خاصية التعليق قيد التطوير')"><i class="far fa-comment"></i> <span>تعليق</span></button>
+                    <button class="act-btn" onclick="shareContent('static-sec-feelings')"><i class="fas fa-share"></i> <span>مشاركة</span></button>
                 </div>
 
                 <div class="content-links">
-                    <div class="content-link bouh" onclick="openFeed('sec-feelings', 'البوح')">
-                        <i class="fas fa-feather-alt"></i> <span>البوح (همسات)</span>
-                    </div>
-                    <div class="content-link visual" onclick="openFeed('sec-feelings', 'مرئي')">
+                    <a href="#" class="content-link bouh" onclick="openFeed('sec-feelings', 'البوح', event)">
+                        <i class="fas fa-feather-alt"></i> <span>البوح المرفوع</span>
+                    </a>
+                    <a href="#" class="content-link visual" onclick="openFeed('sec-feelings', 'مرئي', event)">
                         <i class="fas fa-video"></i> <span>محتوى مرئي</span>
-                    </div>
+                    </a>
                 </div>
             </div>
         </div>
 
         <div id="sec-fiqh" class="section-view">
-             <div class="search-container"><input type="text" class="search-input" placeholder="ابحثي في الفقه..." onkeyup="filterFeed('sec-fiqh', this.value)"><i class="fas fa-search search-icon"></i></div>
-             <div class="card">
-                <button class="delete-btn"><i class="fas fa-trash"></i></button>
-                <div style="color:var(--primary-pink); font-size:1.3rem; margin-bottom:15px; font-family:'Aref Ruqaa'"><i class="fas fa-balance-scale"></i> فقه النساء</div>
-                <div class="bouh-display" id="static-sec-fiqh">همسة فقهية أسبوعية...</div>
+             <div class="search-container">
+                <input type="text" id="search-sec-fiqh" class="search-input" placeholder="ابحثي في فقه النساء..." onkeyup="filterFeed('sec-fiqh', this.value)">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+             <div class="card" data-section="sec-fiqh" style="border-top-color: var(--accent-green);">
+                <button class="delete-overlay-btn" onclick="alert('حذف همسة الأسبوع يتم بتحديثها من لوحة الأدمن')"><i class="fas fa-times"></i></button>
+                <h3 style="color:var(--accent-green); font-family:'Aref Ruqaa'"><i class="fas fa-balance-scale"></i> فقه النساء</h3>
+                <div class="bouh-display" id="static-sec-fiqh">جاري تحميل همسة الأسبوع...</div>
+                <div class="interaction-bar"><button class="act-btn like-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> <span>إعجاب</span></button><button class="act-btn"><i class="far fa-comment"></i> <span>تعليق</span></button><button class="act-btn" onclick="shareContent('static-sec-fiqh')"><i class="fas fa-share"></i> <span>مشاركة</span></button></div>
                 <div class="content-links">
-                    <div class="content-link bouh" onclick="openFeed('sec-fiqh', 'البوح')"><i class="fas fa-book-open"></i> <span>فتاوى (مقروء)</span></div>
-                    <div class="content-link visual" onclick="openFeed('sec-fiqh', 'مرئي')"><i class="fas fa-video"></i> <span>دروس مرئية</span></div>
+                    <a href="#" class="content-link bouh" onclick="openFeed('sec-fiqh', 'البوح', event)" style="background:#e8f5e9; color:#388e3c; border-color:#a5d6a7;"><i class="fas fa-feather-alt"></i> <span>البوح المرفوع</span></a>
+                    <a href="#" class="content-link visual" onclick="openFeed('sec-fiqh', 'مرئي', event)"><i class="fas fa-video"></i> <span>محتوى مرئي</span></a>
                 </div>
             </div>
         </div>
         
+        <div id="sec-intimacy-new" class="section-view">
+             <div class="search-container">
+                <input type="text" id="search-sec-intimacy-new" class="search-input" placeholder="ابحثي في العلاقات الحميمية..." onkeyup="filterFeed('sec-intimacy-new', this.value)">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+             <div class="card" data-section="sec-intimacy-new" style="border-top-color: var(--accent-red);">
+                <button class="delete-overlay-btn" onclick="alert('حذف همسة الأسبوع يتم بتحديثها من لوحة الأدمن')"><i class="fas fa-times"></i></button>
+                <h3 style="color:var(--accent-red); font-family:'Aref Ruqaa'"><i class="fas fa-fire-alt"></i> العلاقات الحميمية</h3>
+                <div class="bouh-display" id="static-sec-intimacy-new">جاري تحميل همسة الأسبوع...</div>
+                <div class="interaction-bar"><button class="act-btn like-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> <span>إعجاب</span></button><button class="act-btn"><i class="far fa-comment"></i> <span>تعليق</span></button><button class="act-btn" onclick="shareContent('static-sec-intimacy-new')"><i class="fas fa-share"></i> <span>مشاركة</span></button></div>
+                <div class="content-links">
+                    <a href="#" class="content-link bouh" onclick="openFeed('sec-intimacy-new', 'البوح', event)" style="background:#fbe9e7; color:#d84315; border-color:#ffab91;"><i class="fas fa-feather-alt"></i> <span>البوح المرفوع</span></a>
+                    <a href="#" class="content-link visual" onclick="openFeed('sec-intimacy-new', 'مرئي', event)"><i class="fas fa-video"></i> <span>محتوى مرئي</span></a>
+                </div>
+            </div>
         </div>
+
+        <div id="sec-society-new" class="section-view">
+             <div class="search-container">
+                <input type="text" id="search-sec-society-new" class="search-input" placeholder="ابحثي في المجتمع..." onkeyup="filterFeed('sec-society-new', this.value)">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+             <div class="card" data-section="sec-society-new" style="border-top-color: var(--gold);">
+                <button class="delete-overlay-btn" onclick="alert('حذف همسة الأسبوع يتم بتحديثها من لوحة الأدمن')"><i class="fas fa-times"></i></button>
+                <h3 style="color:var(--gold); font-family:'Aref Ruqaa'"><i class="fas fa-users"></i> المجتمع</h3>
+                <div class="bouh-display" id="static-sec-society-new">جاري تحميل همسة الأسبوع...</div>
+                <div class="interaction-bar"><button class="act-btn like-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> <span>إعجاب</span></button><button class="act-btn"><i class="far fa-comment"></i> <span>تعليق</span></button><button class="act-btn" onclick="shareContent('static-sec-society-new')"><i class="fas fa-share"></i> <span>مشاركة</span></button></div>
+                <div class="content-links">
+                    <a href="#" class="content-link bouh" onclick="openFeed('sec-society-new', 'البوح', event)" style="background:#fffde7; color:#c0a02c; border-color:#f5e55e;"><i class="fas fa-feather-alt"></i> <span>البوح المرفوع</span></a>
+                    <a href="#" class="content-link visual" onclick="openFeed('sec-society-new', 'مرئي', event)"><i class="fas fa-video"></i> <span>محتوى مرئي</span></a>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-health" class="section-view">
+             <div class="search-container">
+                <input type="text" id="search-sec-health" class="search-input" placeholder="ابحثي في الصحة والجمال..." onkeyup="filterFeed('sec-health', this.value)">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+             <div class="card" data-section="sec-health" style="border-top-color: var(--accent-blue);">
+                <button class="delete-overlay-btn" onclick="alert('حذف همسة الأسبوع يتم بتحديثها من لوحة الأدمن')"><i class="fas fa-times"></i></button>
+                <h3 style="color:var(--accent-blue); font-family:'Aref Ruqaa'"><i class="fas fa-heartbeat"></i> الصحة والجمال</h3>
+                <div class="bouh-display" id="static-sec-health">جاري تحميل همسة الأسبوع...</div>
+                <div class="interaction-bar"><button class="act-btn like-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> <span>إعجاب</span></button><button class="act-btn"><i class="far fa-comment"></i> <span>تعليق</span></button><button class="act-btn" onclick="shareContent('static-sec-health')"><i class="fas fa-share"></i> <span>مشاركة</span></button></div>
+                <div class="content-links">
+                    <a href="#" class="content-link bouh" onclick="openFeed('sec-health', 'البوح', event)"><i class="fas fa-feather-alt"></i> <span>البوح المرفوع</span></a>
+                    <a href="#" class="content-link visual" onclick="openFeed('sec-health', 'مرئي', event)" style="background:#e0f7fa; color:#00bcd4; border-color:#80deea;"><i class="fas fa-video"></i> <span>محتوى مرئي</span></a>
+                </div>
+                </div>
+        </div>
+
+    </div>
 
     <div id="feedOverlay" class="full-screen-overlay">
         <div class="screen-header">
             <div class="back-btn" onclick="closeFeed()"><i class="fas fa-arrow-right"></i></div>
-            <div class="screen-title" id="feedTitle">العنوان</div>
+            <div class="screen-title" id="feedTitle">عرض المحتوى</div>
             <div style="width:24px;"></div> </div>
         <div class="feed-container" id="feedContent">
             <div style="text-align:center; padding:20px;">جاري التحميل...</div>
         </div>
     </div>
+    
+    <div id="aiGeneratorModal" class="modal-overlay" style="display: none;" onclick="closeModal(event)">
+        <div class="modal-box" style="max-width: 400px;">
+            <h3 style="color: #673ab7;"><i class="fas fa-magic"></i> توليد محتوى (Gemini AI)</h3>
+            <textarea id="aiPrompt" placeholder="اكتبي موضوعك أو سؤالك هنا..." style="min-height: 100px;" required></textarea>
+            
+            <button class="btn-primary btn-ai" onclick="generateAIContent()">
+                <i class="fas fa-robot"></i> توليد وإضافة إلى مربع النشر
+            </button>
+            
+            <div id="aiOutput" style="margin-top: 15px; padding: 15px; background: #f0f4f8; border-radius: 10px; min-height: 50px; text-align: right; font-size: 0.9rem;">
+                <i class="fas fa-robot"></i> سيظهر المحتوى المُولد هنا...
+            </div>
+        </div>
+    </div>
+
 
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="switchSection('homeView', this)"><i class="fas fa-home"></i> الرئيسية</div>
         <div class="nav-item" onclick="switchSection('sec-feelings', this)"><i class="fas fa-heart"></i> المشاعر</div>
         <div class="nav-item" onclick="switchSection('sec-fiqh', this)"><i class="fas fa-balance-scale"></i> فقه</div>
-        <div class="nav-item" onclick="switchSection('sec-intimacy', this)"><i class="fas fa-infinity"></i> علاقات</div>
-        </nav>
+        <div class="nav-item" onclick="switchSection('sec-intimacy-new', this)"><i class="fas fa-fire-alt"></i> حميمية</div>
+        <div class="nav-item" onclick="switchSection('sec-society-new', this)"><i class="fas fa-users"></i> مجتمع</div>
+        <div class="nav-item" onclick="switchSection('sec-health', this)"><i class="fas fa-heartbeat"></i> صحة</div>
+    </nav>
 
     <script>
-        // --- بيانات الادمن ---
+        // --- بيانات الأدمن الثابتة ---
         const ADMIN_USER = "zazo";
         const ADMIN_PASS = "zazo010988";
         let isDeleteMode = false;
-        let loadedPosts = []; // لتخزين البوستات المحملة للبحث
+        let loadedFeedPosts = []; // لتخزين البوستات المحملة للفيد
+        let currentFeedSection = '';
+        let currentFeedType = '';
 
         // --- إدارة تسجيل الدخول (مستخدم) ---
-        function userLogin(provider) {
-            // هنا يتم استدعاء SDK الحقيقي. للمحاكاة:
-            alert(`جاري تسجيل الدخول عبر ${provider}... (محاكاة)`);
-            document.getElementById('loginOverlay').style.display = 'none';
-            // حفظ الحالة
-            localStorage.setItem('userLoggedIn', 'true');
+        function skipLogin() {
+             document.getElementById('loginOverlay').style.display = 'none';
+             localStorage.setItem('userLoggedIn', 'true');
         }
 
-        // --- إدارة الادمن ---
+        function userLogin(provider) {
+            // Placeholder for actual Facebook/Google SDK integration
+            alert(`جاري محاولة تسجيل الدخول عبر ${provider}. في التطبيق الفعلي، سيتم استخدام Facebook/Google SDK.`);
+            skipLogin();
+        }
+
+        // --- إدارة الأدمن ---
         function toggleAdminPanel() {
-            if(localStorage.getItem('adminAuth') === 'true') {
-                document.getElementById('adminDashboard').style.display = 'block';
+            const isLoggedIn = localStorage.getItem('adminAuth') === 'true';
+            const dashboard = document.getElementById('adminDashboard');
+            const login = document.getElementById('adminLogin');
+
+            if (isLoggedIn) {
+                dashboard.style.display = (dashboard.style.display === 'block' ? 'none' : 'block');
+                login.style.display = 'none';
             } else {
-                document.getElementById('adminLogin').style.display = 'block';
+                login.style.display = (login.style.display === 'block' ? 'none' : 'block');
+                dashboard.style.display = 'none';
             }
         }
 
         function adminLogin(e) {
             e.preventDefault();
-            if(document.getElementById('adminUsername').value === ADMIN_USER && 
-               document.getElementById('adminPassword').value === ADMIN_PASS) {
+            const user = document.getElementById('adminUsername').value;
+            const pass = document.getElementById('adminPassword').value;
+            
+            if (user === ADMIN_USER && pass === ADMIN_PASS) {
                 localStorage.setItem('adminAuth', 'true');
                 document.getElementById('adminLogin').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
-                alert('مرحباً زازو!');
+                alert('مرحباً زازو! تم تسجيل الدخول.');
             } else {
-                alert('بيانات خاطئة');
+                alert('بيانات دخول خاطئة');
             }
         }
 
         function adminLogout() {
             localStorage.removeItem('adminAuth');
             document.getElementById('adminDashboard').style.display = 'none';
+            document.getElementById('adminLogin').style.display = 'none';
             document.body.classList.remove('delete-mode-active');
             isDeleteMode = false;
+            alert('تم تسجيل الخروج من وضع الأدمن.');
         }
 
         function toggleDeleteMode() {
-            if(localStorage.getItem('adminAuth') !== 'true') return;
+            if (localStorage.getItem('adminAuth') !== 'true') return;
             isDeleteMode = !isDeleteMode;
             document.body.classList.toggle('delete-mode-active', isDeleteMode);
-            alert(isDeleteMode ? "تم تفعيل وضع الحذف" : "تم تعطيل وضع الحذف");
+            alert(isDeleteMode ? "تم تفعيل وضع الحذف. يظهر الآن زر الحذف (X) على المحتوى." : "تم تعطيل وضع الحذف.");
         }
 
-        // --- التعامل مع المحتوى (API) ---
+        // --- دوال الـ API (محاكاة أو فعلية) ---
         
-        // حفظ منشور
+        // حفظ منشور (يجب أن ترسل لـ api/save-post.js)
         async function savePost(type) {
+            if (localStorage.getItem('adminAuth') !== 'true') return alert('غير مصرح لك بالنشر.');
+            
             const section = document.getElementById('adminSectionSelect').value;
             const content = document.getElementById('postContent').value;
-            if(!content) return alert('اكتبي محتوى!');
+            if (!content) return alert('يجب كتابة المحتوى أولاً!');
 
+            const postData = {
+                section: section,
+                content: content,
+                type: type, // 'البوح', 'مرئي', 'همسة_أسبوعية'
+                created_at: new Date().toISOString() // لضمان وجود قيمة created_at
+            };
+            
+            // محاكاة إرسال لـ /api/save-post
             try {
+                // يفترض هنا وجود API Route على Vercel/Neon
                 const res = await fetch('/api/save-post', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ section, content, type })
+                    body: JSON.stringify(postData)
                 });
+                
                 if(res.ok) {
-                    alert('تم النشر بنجاح!');
+                    alert(`✅ تم نشر المحتوى بنجاح كـ "${type}" في قسم "${section}".`);
                     document.getElementById('postContent').value = '';
-                    if(type === 'همسة_اسبوعية') loadStaticContent(section);
-                } else alert('فشل النشر');
-            } catch(e) { console.error(e); alert('خطأ في الاتصال'); }
+                    if(type === 'همسة_أسبوعية') loadStaticContent(section);
+                } else alert(`❌ فشل النشر. (خطأ في API/save-post)`);
+            } catch(e) { 
+                console.error(e); 
+                alert('خطأ في الاتصال بالخادم (API/save-post).'); 
+            }
         }
 
-        // تحميل المحتوى الثابت (همسة الأسبوع)
+        // جلب المحتوى الثابت (همسة أسبوعية) - يُجلب من api/get-posts.js بـ limit=1
         async function loadStaticContent(section) {
             const el = document.getElementById(`static-${section}`);
             if(!el) return;
+            el.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التحميل...';
+            
             try {
-                const res = await fetch(`/api/get-posts?section=${section}&type=همسة_اسبوعية&limit=1`);
+                // جلب أحدث منشور من نوع 'همسة_أسبوعية'
+                const res = await fetch(`/api/get-posts?section=${section}&type=همسة_أسبوعية&limit=1`);
                 const data = await res.json();
+
                 if(data.posts && data.posts.length > 0) {
                     el.innerText = data.posts[0].content;
                 } else {
-                    el.innerText = "لا توجد همسة أسبوعية بعد.";
+                    el.innerText = "مساحة آمنة... بانتظار همسة جديدة تلامس روحك.";
                 }
-            } catch(e) { el.innerText = "خطأ في التحميل"; }
+            } catch(e) { 
+                el.innerText = "⚠️ خطأ في تحميل همسة الأسبوع."; 
+            }
         }
+        
+        // فتح شاشة الأرشيف (Full Feed Overlay) - يُجلب من api/get-posts.js
+        async function openFeed(section, type, e) {
+            e.preventDefault();
+            
+            currentFeedSection = section;
+            currentFeedType = type;
 
-        // فتح شاشة الأرشيف (بوح / مرئي)
-        async function openFeed(section, type) {
             const overlay = document.getElementById('feedOverlay');
             const container = document.getElementById('feedContent');
             const title = document.getElementById('feedTitle');
             
             overlay.style.display = 'block';
-            title.innerText = type === 'البوح' ? 'همسات وبوح' : 'مكتبة الفيديو';
+            title.innerText = type === 'البوح' ? 'أرشيف البوح المرفوع' : 'أرشيف المحتوى المرئي';
             container.innerHTML = '<div style="text-align:center; margin-top:50px;"><i class="fas fa-spinner fa-spin"></i> جاري جلب المحتوى...</div>';
-
+            
+            // جلب البيانات من api/get-posts.js (كل المنشورات للقسم والنوع)
             try {
-                const res = await fetch(`/api/get-posts?section=${section}&type=${type}`);
+                const res = await fetch(`/api/get-posts?section=${section}&type=${encodeURIComponent(type)}`);
                 const data = await res.json();
-                loadedPosts = data.posts || [];
-                renderFeed(loadedPosts);
-            } catch(e) { container.innerText = 'خطأ في جلب البيانات'; }
+                
+                loadedFeedPosts = data.posts || [];
+                // إضافة شريط البحث في أعلى الفيد
+                const searchHtml = `<div class="search-container"><input type="text" id="feedSearchInput" class="search-input" placeholder="ابحث في هذا الأرشيف..." onkeyup="filterFeed(null, this.value)"><i class="fas fa-search search-icon"></i></div>`;
+                container.innerHTML = searchHtml;
+                
+                renderFeed(loadedFeedPosts);
+                
+            } catch(e) { container.innerHTML += '<div style="text-align:center; color:#ff1744;">حدث خطأ في جلب البيانات من الخادم.</div>'; }
         }
 
-        // رسم البطاقات (تصميم فيسبوك)
+        // رسم البطاقات داخل شاشة الأرشيف
         function renderFeed(posts) {
             const container = document.getElementById('feedContent');
-            container.innerHTML = '';
+            // ابدأ الرسم بعد شريط البحث
+            const existingSearch = container.querySelector('.search-container');
+            const postsContainer = document.createElement('div');
+            postsContainer.id = 'postsList';
+            
+            if (existingSearch) {
+                container.appendChild(postsContainer);
+            } else {
+                container.innerHTML = ''; // في حال استدعينا renderFeed مباشرة
+                container.appendChild(postsContainer);
+            }
             
             if(posts.length === 0) {
-                container.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">لا يوجد محتوى بعد.</div>';
+                postsContainer.innerHTML = '<div style="text-align:center; color:#999; margin-top:50px;">لا يوجد محتوى يتطابق مع البحث.</div>';
                 return;
             }
 
             posts.forEach(post => {
                 const card = document.createElement('div');
-                card.className = 'card feed-card';
+                card.className = 'feed-card';
                 
-                // زر الحذف (للأدمن)
+                // زر الحذف (يظهر فقط إذا كان الأدمن مفعلاً وضع الحذف)
                 const delBtn = `<button class="delete-btn" onclick="deletePost(${post.id})"><i class="fas fa-trash"></i> حذف</button>`;
 
-                // المحتوى (نص أو فيديو)
-                let bodyContent = post.content;
-                if(post.type === 'مرئي') {
-                    // افتراض أن المحتوى رابط فيديو
-                    bodyContent = `<div style="background:#000; color:#fff; padding:40px; text-align:center; border-radius:10px; margin-bottom:10px;">
-                        <i class="fas fa-play-circle" style="font-size:3rem;"></i><br>فيديو: ${post.content}
+                // تنسيق المحتوى
+                let bodyContent = `<div class="feed-body">${post.content}</div>`;
+                if(post.type === 'مرئي' && post.content.includes('http')) {
+                    // رابط فيديو
+                    bodyContent = `<div class="feed-body">
+                        <a href="${post.content}" target="_blank" style="color:var(--accent-blue); text-decoration:none;"><i class="fas fa-video"></i> اضغط لمشاهدة المحتوى المرئي</a>
+                        <p style="font-size:0.8rem; color:#777; margin-top:5px;">${post.content}</p>
                     </div>`;
                 }
 
                 card.innerHTML = `
                     ${delBtn}
                     <div class="feed-header">
-                        <div class="feed-avatar"><i class="fas fa-user"></i></div>
+                        <div class="feed-avatar"><i class="fas fa-user-tie"></i></div>
                         <div class="feed-info">
-                            <h4>ادمن رقة</h4>
-                            <span>${new Date(post.created_at).toLocaleDateString('ar-EG')}</span>
+                            <h4>${post.type === 'البوح' ? 'بوح رقة' : 'مرئي رقة'} <span style="font-size: 0.7rem; color: #999;">${new Date(post.created_at).toLocaleDateString('ar-EG')}</span></h4>
+                            
                         </div>
                     </div>
-                    <div class="feed-body">${bodyContent}</div>
+                    ${bodyContent}
                     <div class="interaction-bar">
-                        <button class="act-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> إعجاب</button>
-                        <button class="act-btn"><i class="far fa-comment"></i> تعليق</button>
-                        <button class="act-btn"><i class="fas fa-share"></i> مشاركة</button>
+                        <button class="act-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
+                        <button class="act-btn" onclick="alert('خاصية التعليق قيد التطوير')"><i class="far fa-comment"></i> <span>تعليق</span></button>
+                        <button class="act-btn" onclick="shareContent(null, post.content)"><i class="fas fa-share"></i> <span>مشاركة</span></button>
                     </div>
                 `;
-                container.appendChild(card);
+                postsContainer.appendChild(card);
             });
         }
-
-        // حذف منشور
+        
+        // دالة الحذف (تتطلب API/delete-post.js)
         async function deletePost(id) {
-            if(!confirm('هل أنت متأكدة من الحذف؟')) return;
-            // هنا يتم استدعاء API الحذف (سأضيف الكود الهيكلي)
-            alert(`تم حذف المنشور ${id} (محاكاة)`);
-            // إعادة تحميل القائمة...
-        }
+            if (!isDeleteMode || localStorage.getItem('adminAuth') !== 'true') return;
+            if (!confirm(`هل أنت متأكد من حذف المنشور رقم ${id} بشكل نهائي؟`)) return;
 
-        // بحث محلي داخل الـ Feed المحمل
-        function filterFeed(section, query) {
-            // هذه الوظيفة تعمل داخل الـ Overlay إذا كان مفتوحاً، أو يمكن تكييفها
-            // سأفعلها لفلترة القائمة المحملة حالياً
-            if(document.getElementById('feedOverlay').style.display === 'block') {
-                const filtered = loadedPosts.filter(p => p.content.includes(query));
-                renderFeed(filtered);
+            // محاكاة إرسال طلب DELETE لـ API route
+            try {
+                // يفترض هنا وجود API Route للحذف
+                const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
+                
+                if(res.ok) {
+                    alert(`✅ تم حذف المنشور ${id} بنجاح.`);
+                    // إعادة تحميل الفيد بعد الحذف
+                    const index = loadedFeedPosts.findIndex(p => p.id === id);
+                    if (index > -1) {
+                        loadedFeedPosts.splice(index, 1);
+                        renderFeed(loadedFeedPosts); // إعادة رسم الفيد
+                    }
+                } else alert(`❌ فشل الحذف. (خطأ في API/delete-post)`);
+            } catch(e) { 
+                alert('خطأ في الاتصال بالخادم (API/delete-post).'); 
             }
         }
-
+        
         // --- الذكاء الاصطناعي (Gemini) ---
+        function openAIGeneratorModal() {
+            if (localStorage.getItem('adminAuth') !== 'true') return;
+            document.getElementById('aiGeneratorModal').style.display = 'flex';
+        }
+
         async function generateAIContent() {
-            const prompt = document.getElementById('aiPrompt').value;
-            const btn = document.querySelector('#adminDashboard button'); // زر التوليد
+            if (localStorage.getItem('adminAuth') !== 'true') return;
             
-            btn.innerText = 'جاري التفكير...';
+            const prompt = document.getElementById('aiPrompt').value;
+            const outputElement = document.getElementById('aiOutput');
+            const btn = document.querySelector('#aiGeneratorModal .btn-ai');
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري التوليد...';
+            outputElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> يرجى الانتظار...';
+
             try {
+                // محاكاة استدعاء Gemini API عبر API Route /api/generate-ai
                 const res = await fetch('/api/generate-ai', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({ prompt: prompt })
                 });
+                
                 const data = await res.json();
-                document.getElementById('postContent').value = data.result;
-            } catch(e) { alert('خطأ في الـ AI'); }
-            btn.innerText = 'توليد محتوى';
+                
+                if (res.ok) {
+                    const generatedText = data.result || 'لم يتم توليد محتوى.';
+                    outputElement.innerHTML = `<i class="fas fa-robot"></i> ${generatedText}`;
+                    // وضع المحتوى المُولد في مربع النشر الخاص بالأدمن
+                    document.getElementById('postContent').value = generatedText;
+                } else {
+                    outputElement.innerHTML = `⚠️ خطأ في خدمة Gemini: ${data.error || 'فشل التوليد'}`;
+                }
+            } catch(e) { 
+                outputElement.innerHTML = '❌ خطأ في الاتصال بخدمة الذكاء الاصطناعي.'; 
+            }
+            btn.innerHTML = '<i class="fas fa-robot"></i> توليد وإضافة إلى مربع النشر';
         }
 
         // --- أدوات مساعدة ---
+        
+        // دالة التنقل بين الأقسام الرئيسية
         function switchSection(id, el) {
             document.querySelectorAll('.section-view').forEach(s => s.style.display='none');
             document.getElementById(id).style.display='block';
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            el.classList.add('active');
+            if (el) el.classList.add('active');
             
-            // تحميل الثابت عند الفتح
+            // جلب المحتوى الثابت (همسة الأسبوع)
             if(id.startsWith('sec-')) loadStaticContent(id);
+        }
+
+        // دالة فلترة المحتوى (البحث داخل الفيد المفتوح)
+        function filterFeed(section, query) {
+            // إذا كنا داخل شاشة الفيد المفتوحة
+            if(document.getElementById('feedOverlay').style.display === 'block') {
+                const postsList = document.getElementById('postsList');
+                if (postsList) {
+                    const filtered = loadedFeedPosts.filter(p => p.content.toLowerCase().includes(query.toLowerCase()));
+                    // إعادة الرسم فقط لجزء البوستات
+                    const tempDiv = document.createElement('div');
+                    renderFeed(filtered);
+                    postsList.innerHTML = tempDiv.querySelector('#postsList').innerHTML;
+                }
+            } else {
+                 // إذا كنا في الشاشة الرئيسية للقسم، يمكن إظهار تنبيه أو تجاهل البحث
+                 // يتم إظهار شريط البحث في الأقسام الرئيسية فقط لتلبية متطلبات المستخدم، لكن وظيفته الفعلية هي التصفية داخل الفيد المنبثق
+            }
         }
 
         function closeFeed() {
             document.getElementById('feedOverlay').style.display = 'none';
         }
+        
+        function closeModal(event) {
+            if (event.target.classList.contains('modal-overlay')) {
+                 document.getElementById('aiGeneratorModal').style.display = 'none';
+            }
+        }
 
         function toggleLike(btn) {
             btn.classList.toggle('active');
-            const i = btn.querySelector('i');
-            i.className = btn.classList.contains('active') ? 'fas fa-heart' : 'far fa-heart';
+            const icon = btn.querySelector('i');
+            icon.className = btn.classList.contains('active') ? 'fas fa-heart' : 'far fa-heart';
+            const span = btn.querySelector('span');
+            span.textContent = btn.classList.contains('active') ? 'أعجبني' : 'إعجاب';
+        }
+        
+        function shareContent(id, content) {
+            // إذا كان الـ ID موجوداً، فهو للهمسة الأسبوعية الثابتة
+            if (id) {
+                content = document.getElementById(id).innerText;
+            }
+            
+             if (navigator.share) {
+                navigator.share({
+                    title: 'همسة من تطبيق رقة',
+                    text: content.substring(0, 100) + '...',
+                    url: window.location.href,
+                }).catch(error => console.log('Error sharing', error));
+            } else {
+                navigator.clipboard.writeText(content).then(() => {
+                    alert('تم نسخ المحتوى إلى الحافظة.');
+                });
+            }
         }
 
-        // عند التحميل
-        window.onload = function() {
+        // --- عند تحميل الصفحة ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // شاشة دخول المستخدم (تظهر أولاً عند عدم تسجيل الدخول)
             if(!localStorage.getItem('userLoggedIn')) {
                 document.getElementById('loginOverlay').style.display = 'flex';
+            } else {
+                document.getElementById('loginOverlay').style.display = 'none';
             }
-            // تحميل مبدئي للرئيسية
-            loadStaticContent('sec-feelings'); // مثال
-        }
+            
+            // حالة الأدمن
+            if(localStorage.getItem('adminAuth') === 'true') {
+                document.getElementById('adminDashboard').style.display = 'block';
+            }
+
+            // تحميل المحتوى الثابت للقسم المعروض عند البداية
+            switchSection('sec-feelings', document.querySelector('.nav-item[onclick*="sec-feelings"]'));
+        });
 
     </script>
 </body>
