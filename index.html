@@ -1751,6 +1751,110 @@
          });
     });
 
+    </script> <script>
+    // ==========================================================
+    // 💖 كود تحديث وتجاوز وظيفة الذكاء الاصطناعي (Gemini Proxy)
+    // هذا الكود يتجاوز الدوال القديمة تماماً دون حذفها مادياً
+    // ==========================================================
+    
+    // 1. الدالة المساعدة لعرض المحتوى بتأثير الكتابة
+    // (قد تكون موجودة بالفعل، ولكن نعيد تعريفها للتأكيد)
+    function startTypingEffect(content, outputElement, useBtn) {
+        outputElement.innerHTML = '';
+        useBtn.disabled = true;
+        
+        let i = 0;
+        const typingInterval = setInterval(() => {
+            if (i < content.length) {
+                outputElement.innerHTML += content.charAt(i);
+                i++;
+            } else {
+                clearInterval(typingInterval);
+                const cursor = outputElement.querySelector('.typing-cursor');
+                if(cursor) cursor.remove();
+                useBtn.disabled = false;
+                useBtn.setAttribute('data-content', content.trim());
+            }
+        }, 30);
+        outputElement.innerHTML += '<span class="typing-cursor"></span>';
+    }
+
+    // 2. الدالة الجديدة: تحاكي جلب المحتوى من الباك إند (Gemini)
+    async function fetchGeminiContent(prompt, type) {
+        // 🚨 ملاحظة مهمة جداً: 🚨
+        // يجب عليك استبدال هذا المنطق لاحقاً بمنطق اتصال بدالة خادمة خاصة بك.
+        // لا تضع مفتاح API الخاص بك هنا.
+        
+        const apiEndpoint = 'https://your-serverless-function-url/gemini-proxy'; // ⬅️ استبدل هذا بعنوان URL الخاص بدالة الخادم
+        
+        try {
+            // محاكاة الاتصال الفعلي
+            const response = await fetch(apiEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    userPrompt: prompt, 
+                    contentType: type,
+                }),
+            });
+
+            if (!response.ok) {
+                // إذا فشل الاتصال بالدالة الخادمة
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'فشل في الاتصال بالخدمة الوسيطة.');
+            }
+            
+            const data = await response.json();
+            
+            // في حالة النجاح، يجب أن ترسل الدالة الخادمة النص المُولد في حقل 'content'
+            return data.content || "لم يتم استقبال محتوى من خدمة Gemini.";
+
+        } catch (error) {
+            console.error("Gemini Proxy Error:", error);
+            // رسالة إرشادية للمستخدم في حال وجود خطأ
+            return `عذراً، حدث خطأ في محاولة جلب المحتوى: ${error.message}. يرجى التحقق من اتصال الخادم.`;
+        }
+    }
+
+
+    // 3. 🛡️ الدالة المتجاوزة (Overridden Function):
+    // هذه الدالة تعيد تعريف الدالة القديمة وتتجاهل منطق المحاكاة القديم
+    async function generateAIContent() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const typeElement = document.querySelector('.ai-option-btn.active');
+        const type = typeElement ? typeElement.getAttribute('data-type') : 'general';
+        const outputElement = document.getElementById('aiOutput');
+        const useBtn = document.getElementById('useAIBtn');
+        
+        if (!prompt) {
+            alert('يرجى إدخال موضوع لتوليد المحتوى.');
+            return;
+        }
+
+        outputElement.innerHTML = `<i class="fas fa-robot fa-spin"></i> جاري استدعاء المحتوى الحقيقي (${type}) عن: **${prompt}**...`;
+        useBtn.disabled = true;
+
+        // استدعاء الدالة التي تجلب المحتوى الحقيقي (عبر الخادم الوسيط)
+        const generatedText = await fetchGeminiContent(prompt, type);
+        
+        // تشغيل تأثير الكتابة
+        startTypingEffect(generatedText, outputElement, useBtn);
+    }
+
+    // لضمان عمل زر "استخدم المحتوى" الجديد مع الـ data-content
+    function useAIContent() {
+        const useBtn = document.getElementById('useAIBtn');
+        const content = useBtn.getAttribute('data-content');
+        if (content) {
+            alert('تم نسخ المحتوى: ' + content);
+            // يمكنك هنا إضافة منطق لحفظ المحتوى أو إرساله إلى دالة أخرى
+        }
+    }
+
+    // 💡 الآن، عند استدعاء generateAIContent() سيتم تنفيذ الكود الجديد فقط.
     </script>
 </body>
 </html>
+
