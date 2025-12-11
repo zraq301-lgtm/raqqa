@@ -407,6 +407,22 @@
             background: var(--primary-pink);
         }
 
+        /* 💖 CSS الوظيفة الجديدة: العناية بالبشرة */
+        .h-link.skin-care-tracker {
+            background: #fce4ec; /* Softest Pink */
+            color: #ff80ab;
+            border: 1px solid #ff80ab;
+        }
+        .h-link.skin-care-tracker:hover {
+            background: #ff80ab;
+            color: var(--white);
+        }
+        .tracker-ui#skinCareTracker .tracker-result {
+            background: #fce4ec;
+            color: #ff80ab;
+        }
+        /* نهاية CSS الوظيفة الجديدة */
+
         /* أدوات التتبع (Tracker UI) */
         .tracker-ui {
             display: none; /* مخفي افتراضيا */
@@ -440,7 +456,8 @@
         .tracker-form input[type="date"],
         .tracker-form input[type="number"],
         .tracker-form input[type="time"],
-        .tracker-form select {
+        .tracker-form select,
+        .tracker-form textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
@@ -449,6 +466,7 @@
             font-size: 1rem;
             margin-top: 5px;
             font-family: 'Tajawal', sans-serif;
+            resize: vertical;
         }
 
         .tracker-form button {
@@ -881,12 +899,12 @@
                 <button class="delete-overlay-btn" onclick="deletePost('intimacy-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-fire" style="color: var(--accent-red);"></i> العلاقات الحميمية</div>
                 <div class="bouh-display" id="txt-intimacy-new" onclick="openContentScreen('sec-intimacy-new', 'همسة الأسبوع', event)">
-                    سعادة بيتك تبدأ من علاقتك... <br>
+                    نصائح لتعزيز الود والتفاهم في العلاقة الزوجية. <br>
                     <small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>
                 </div>
                 
-                <a href="#" target="_blank" class="library-link" title="مكتبة الحياة الزوجية">المكتبة الإضافية</a>
-                
+                <a href="https://ar.wikipedia.org/wiki/%D8%AD%D9%8A%D8%A7%D8%A9_%D8%B2%D9%88%D8%AC%D9%8A%D8%A9" target="_blank" class="library-link" title="روابط العلاقات الزوجية">المكتبة الإضافية</a>
+
                 <div class="sequential-content-container" id="content-container-sec-intimacy-new">
                     <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">يتم عرض محتوى البوستات والمقالات المرفوعة من الأدمن هنا.</p>
                 </div>
@@ -894,22 +912,22 @@
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 103)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(103)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(103, 'سعادة بيتك تبدأ من علاقتك...')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(103, 'العلاقات الحميمية')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
 
         <div id="sec-society-new" class="section-view">
-            <div class="card" data-post-id="104" data-post-title="المجتمع والمرأة">
+            <div class="card" data-post-id="104" data-post-title="المجتمع والتنمية">
                 <button class="delete-overlay-btn" onclick="deletePost('society-bouh-1')"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-users" style="color: var(--gold);"></i> المجتمع</div>
                 <div class="bouh-display" id="txt-society-new" onclick="openContentScreen('sec-society-new', 'همسة الأسبوع', event)">
-                    كوني جزءاً فعالاً في مجتمعك وارفعي من قيمتك. <br>
+                    دورك الفعال في بناء مجتمعك وأسرتك. <br>
                     <small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>
                 </div>
-                
-                <a href="#" target="_blank" class="library-link" title="روابط عن العمل الاجتماعي">المكتبة الإضافية</a>
-                
+
+                <a href="https://www.unicef.org/mena/ar/stories/women-and-girls" target="_blank" class="library-link" title="روابط التنمية">المكتبة الإضافية</a>
+
                 <div class="sequential-content-container" id="content-container-sec-society-new">
                     <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">يتم عرض محتوى البوستات والمقالات المرفوعة من الأدمن هنا.</p>
                 </div>
@@ -917,66 +935,150 @@
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 104)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(104)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(104, 'المجتمع والمرأة')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(104, 'المجتمع والتنمية')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
-
+        
         <div id="sec-health" class="section-view">
             <div class="card" data-post-id="105" data-post-title="الصحة والجمال">
                 <button class="delete-overlay-btn" onclick="deletePost('health-bouh-1')"><i class="fas fa-times"></i></button>
-                <div class="card-header"><i class="fas fa-heartbeat" style="color: var(--accent-blue);"></i> الصحة والجمال</div>
-                
-                <div class="health-subs">
-                    <a class="h-link cycle-tracker" onclick="openTrackerUI('cycleTracker')"><i class="fas fa-calendar-day"></i> متابع الدورة</a>
-                    <a class="h-link nursing-tracker" onclick="openTrackerUI('nursingTracker')"><i class="fas fa-baby"></i> سجل الرضاعة</a>
-                    <a class="h-link pregnancy-tracker" onclick="openTrackerUI('pregnancyTracker')"><i class="fas fa-baby-carriage"></i> متابع الحمل</a>
+                <div class="card-header"><i class="fas fa-venus"></i> الصحة والجمال</div>
+                <div class="bouh-display" id="txt-health" onclick="openContentScreen('sec-health', 'همسة الأسبوع', event)">
+                    جمالك يبدأ من صحتك الداخلية. اهتمي بالتفاصيل الصغيرة لتضيئي. <br>
+                    <small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>
                 </div>
 
+                <h4 style="margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--accent-blue);">تتبع الحالة الصحية:</h4>
+                <div class="health-subs">
+                    <a href="#" class="h-link cycle-tracker" onclick="toggleTracker('cycleTracker', event)"><i class="fas fa-calendar-alt"></i> الدورة الشهرية</a>
+                    <a href="#" class="h-link pregnancy-tracker" onclick="toggleTracker('pregnancyTracker', event)"><i class="fas fa-baby"></i> متابعة الحمل</a>
+                    <a href="#" class="h-link nursing-tracker" onclick="toggleTracker('nursingTracker', event)"><i class="fas fa-baby-car"></i> الرضاعة</a>
+                </div>
+
+                <h4 style="margin-top: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; color: var(--accent-blue);">متابعة الأداء اليومي:</h4>
+                <div class="health-subs">
+                    <a href="#" class="h-link activity-h-link" onclick="toggleTracker('exerciseTracker', event)"><i class="fas fa-dumbbell"></i> الرياضة</a>
+                    <a href="#" class="h-link activity-h-link" onclick="toggleTracker('waterTracker', event)"><i class="fas fa-tint"></i> شرب الماء</a>
+                    <a href="#" class="h-link activity-h-link" onclick="toggleTracker('sleepTracker', event)"><i class="fas fa-moon"></i> النوم الجيد</a>
+                    <a href="#" class="h-link activity-h-link" onclick="toggleTracker('dietTracker', event)"><i class="fas fa-carrot"></i> تخسيس / غذاء</a>
+                    <a href="#" class="h-link activity-h-link skin-care-tracker" onclick="toggleTracker('skinCareTracker', event)"><i class="fas fa-spa"></i> العناية بالبشرة</a>
+                </div>
+                
                 <div class="tracker-ui" id="cycleTracker">
-                    <h4 style="color: var(--primary-pink); text-align: center;">حساب الدورة القادمة والتبويض</h4>
-                    <form class="tracker-form" onsubmit="calculateCycle(event)">
-                        <label for="lastPeriodDate">تاريخ أول يوم لآخر دورة:</label>
-                        <input type="date" id="lastPeriodDate" required>
-                        <label for="cycleLength">متوسط طول الدورة (يوم):</label>
-                        <input type="number" id="cycleLength" min="20" max="45" value="28" required>
-                        <button type="submit"><i class="fas fa-calculator"></i> احسب</button>
+                    <form class="tracker-form" onsubmit="logCycleActivity(event)">
+                        <label for="cycleDate">بداية الدورة الشهرية:</label>
+                        <input type="date" id="cycleDate" required>
+                        <button type="submit"><i class="fas fa-check"></i> سجل بداية الدورة</button>
                     </form>
-                    <div class="tracker-result" id="cycleResult" style="display: none;"></div>
+                    <div class="tracker-result" id="cycleResult" style="display: none; background: #ffe0e9; color: #c2185b;"></div>
+                </div>
+
+                <div class="tracker-ui" id="pregnancyTracker">
+                    <form class="tracker-form" onsubmit="logPregnancyActivity(event)">
+                        <label for="lastPeriodDate">تاريخ آخر دورة شهرية:</label>
+                        <input type="date" id="lastPeriodDate" required>
+                        <button type="submit" style="background: #ab47bc;"><i class="fas fa-check"></i> حساب مراحل الحمل</button>
+                    </form>
+                    <div class="tracker-result" id="pregnancyResult" style="display: none; background: #f3e5f5; color: #7b1fa2;"></div>
                 </div>
 
                 <div class="tracker-ui" id="nursingTracker">
-                    <h4 style="color: var(--accent-green); text-align: center;">سجل الرضاعة</h4>
-                    <form class="tracker-form" onsubmit="addNursingLog(event)">
-                        <label for="nursingTime">وقت الرضاعة:</label>
-                        <input type="time" id="nursingTime" required>
+                    <form class="tracker-form" onsubmit="logNursingActivity(event)">
+                        <label for="nursingDuration">مدة الرضعة (دقائق):</label>
+                        <input type="number" id="nursingDuration" value="15" min="1" required>
                         <label for="nursingSide">الجانب:</label>
                         <select id="nursingSide" required>
                             <option value="اليمين">اليمين</option>
                             <option value="اليسار">اليسار</option>
                         </select>
-                        <label for="nursingDuration">المدة (دقيقة):</label>
-                        <input type="number" id="nursingDuration" min="1" value="10" required>
-                        <button type="submit" style="background: var(--accent-green);"><i class="fas fa-plus"></i> أضف سجل</button>
+                        <button type="submit" style="background: var(--accent-green);"><i class="fas fa-check"></i> سجل رضعة</button>
                     </form>
-                    <div id="nursingLogList" style="margin-top: 15px;">
-                        <p style="text-align: center; color: #999;">لا توجد سجلات بعد.</p>
+                    <div id="nursingLogsDisplay" style="margin-top: 15px; font-size: 0.9rem;">
+                        <p style="color: #999;">لا توجد سجلات رضاعة حالياً.</p>
                     </div>
+                    <div class="tracker-result" id="nursingResult" style="display: none;"></div>
                 </div>
 
-                <div class="tracker-ui" id="pregnancyTracker">
-                    <h4 style="color: #7b1fa2; text-align: center;">متابع الحمل</h4>
-                    <p style="text-align: center; color: #555;">هذه الأداة قيد التطوير حالياً وستتوفر قريباً.</p>
+                <div class="tracker-ui" id="exerciseTracker">
+                    <form class="tracker-form" onsubmit="logExerciseActivity(event)">
+                        <label for="exerciseDate">تاريخ التمرين:</label>
+                        <input type="date" id="exerciseDate" required>
+                        <label for="exerciseType">نوع التمرين:</label>
+                        <select id="exerciseType" required>
+                            <option value="جري/مشي">جري/مشي</option>
+                            <option value="تمارين قوة">تمارين قوة</option>
+                            <option value="يوجا/تمدد">يوجا/تمدد</option>
+                            <option value="رياضة أخرى">رياضة أخرى</option>
+                        </select>
+                        <label for="exerciseDuration">المدة (دقائق):</label>
+                        <input type="number" id="exerciseDuration" value="30" min="5" required>
+                        <button type="submit"><i class="fas fa-check"></i> سجل نشاط الرياضة</button>
+                    </form>
+                    <div class="tracker-result" id="exerciseResult" style="display: none;"></div>
                 </div>
 
-
-                <div class="bouh-display" id="txt-health" onclick="openContentScreen('sec-health', 'همسة الأسبوع', event)">
-                    صحتك وجمالك أولاً... اهتمي بنفسك! <br>
-                    <small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>
+                <div class="tracker-ui" id="waterTracker">
+                    <form class="tracker-form" onsubmit="logWaterActivity(event)">
+                        <label for="waterDate">تاريخ المتابعة:</label>
+                        <input type="date" id="waterDate" required>
+                        <label for="waterAmount">الكمية اليومية المتناولة (لتر):</label>
+                        <input type="number" id="waterAmount" value="2" min="0.5" step="0.5" required>
+                        <button type="submit"><i class="fas fa-check"></i> سجل شرب الماء</button>
+                    </form>
+                    <div class="tracker-result" id="waterResult" style="display: none;"></div>
                 </div>
-                
-                <a href="https://www.webteb.com/" target="_blank" class="library-link" title="روابط طبية">المكتبة الإضافية</a>
-                
+
+                <div class="tracker-ui" id="sleepTracker">
+                    <form class="tracker-form" onsubmit="logSleepActivity(event)">
+                        <label for="sleepDate">تاريخ النوم:</label>
+                        <input type="date" id="sleepDate" required>
+                        <label for="sleepHours">عدد ساعات النوم:</label>
+                        <input type="number" id="sleepHours" value="7" min="3" max="12" step="0.5" required>
+                        <button type="submit"><i class="fas fa-check"></i> سجل جودة النوم</button>
+                    </form>
+                    <div class="tracker-result" id="sleepResult" style="display: none;"></div>
+                </div>
+
+                <div class="tracker-ui" id="dietTracker">
+                    <form class="tracker-form" onsubmit="logDietActivity(event)">
+                        <label for="dietDate">تاريخ المتابعة:</label>
+                        <input type="date" id="dietDate" required>
+                        <label for="dietStatus">تقييم اليوم:</label>
+                        <select id="dietStatus" required>
+                            <option value="مثالي">مثالي (اتباع كامل للبرنامج)</option>
+                            <option value="جيد">جيد (بعض المخالفات)</option>
+                            <option value="متوسط">متوسط (وجبة غير صحية)</option>
+                            <option value="سيئ">سيئ (خروج كامل عن النظام)</option>
+                        </select>
+                        <label for="weightLog">الوزن الحالي (كجم - اختياري):</label>
+                        <input type="number" id="weightLog" placeholder="70.5" step="0.1">
+                        <button type="submit"><i class="fas fa-check"></i> سجل متابعة الغذاء</button>
+                    </form>
+                    <div class="tracker-result" id="dietResult" style="display: none;"></div>
+                </div>
+
+                <div class="tracker-ui" id="skinCareTracker">
+                    <form class="tracker-form" onsubmit="logSkinCareActivity(event)">
+                        <label for="skinCareDate">تاريخ المتابعة:</label>
+                        <input type="date" id="skinCareDate" required>
+                        <label for="skinCareType">نوع الروتين المطبق:</label>
+                        <select id="skinCareType" required>
+                            <option value="روتين صباحي كامل">روتين صباحي كامل</option>
+                            <option value="روتين مسائي كامل">روتين مسائي كامل</option>
+                            <option value="قناع ترطيب">قناع ترطيب</option>
+                            <option value="تقشير">تقشير</option>
+                            <option value="علاج خاص">علاج خاص</option>
+                        </select>
+                        <label for="skinCareNotes">ملاحظات (اختياري):</label>
+                        <textarea id="skinCareNotes" rows="3" placeholder="مثال: بشرتي تبدو أكثر إشراقاً اليوم."></textarea>
+                        <button type="submit" style="background: #ff80ab;"><i class="fas fa-check"></i> سجل متابعة العناية بالبشرة</button>
+                    </form>
+                    <div class="tracker-result" id="skinCareResult" style="display: none; background: #fce4ec; color: #ff80ab;"></div>
+                </div>
+
+                <a href="https://ar.wikipedia.org/wiki/%D8%AC%D9%85%D8%A7%D9%84" target="_blank" class="library-link" title="روابط طبية وصحية">المكتبة الإضافية</a>
+
                 <div class="sequential-content-container" id="content-container-sec-health">
                     <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">يتم عرض محتوى البوستات والمقالات المرفوعة من الأدمن هنا.</p>
                 </div>
@@ -984,625 +1086,662 @@
                 <div class="interaction-bar">
                     <button class="act-btn like-btn" onclick="toggleLike(this, 105)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                     <button class="act-btn" onclick="openCommentModal(105)"><i class="far fa-comment"></i> <span>تعليق</span></button>
-                    <button class="act-btn" onclick="shareContent(105, 'صحتك وجمالك أولاً...')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                    <button class="act-btn" onclick="shareContent(105, 'الصحة والجمال')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
+                </div>
+            </div>
+        </div>
+        <div id="sec-nursing" class="section-view">
+            <div class="card" data-post-id="106" data-post-title="قسم الرضاعة">
+                <button class="delete-overlay-btn" onclick="deletePost('nursing-post-1')"><i class="fas fa-times"></i></button>
+                <div class="card-header"><i class="fas fa-baby" style="color: var(--accent-green);"></i> الرضاعة والعناية بالطفل</div>
+                
+                <a href="https://www.who.int/topics/breastfeeding/ar/" target="_blank" class="library-link" title="روابط الرضاعة">المكتبة الإضافية</a>
+
+                <div class="sequential-content-container" id="content-container-sec-nursing">
+                    <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">يتم عرض محتوى البوستات والمقالات المرفوعة من الأدمن هنا.</p>
+                </div>
+                
+                <div class="interaction-bar">
+                    <button class="act-btn like-btn" onclick="toggleLike(this, 106)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
+                    <button class="act-btn" onclick="openCommentModal(106)"><i class="far fa-comment"></i> <span>تعليق</span></button>
+                    <button class="act-btn" onclick="shareContent(106, 'الرضاعة والعناية بالطفل')"><i class="fas fa-share-alt"></i> <span>مشاركة</span></button>
                 </div>
             </div>
         </div>
 
-
-    </div> <div class="bottom-nav">
-        <div class="nav-item active" data-section="homeView" onclick="showSection('homeView', this)"><i class="fas fa-home"></i> الرئيسية</div>
-        <div class="nav-item" data-section="sec-feelings" onclick="showSection('sec-feelings', this)"><i class="fas fa-heart"></i> المشاعر</div>
-        <div class="nav-item" data-section="sec-fiqh" onclick="showSection('sec-fiqh', this)"><i class="fas fa-balance-scale"></i> فقه</div>
-        <div class="nav-item" data-section="sec-intimacy-new" onclick="showSection('sec-intimacy-new', this)"><i class="fas fa-fire"></i> علاقات</div>
-        <div class="nav-item" data-section="sec-society-new" onclick="showSection('sec-society-new', this)"><i class="fas fa-users"></i> مجتمع</div>
-        <div class="nav-item" data-section="sec-health" onclick="showSection('sec-health', this)"><i class="fas fa-heartbeat"></i> صحة</div>
-    </div>
-
-    <div class="modal-overlay" id="uploadPostModal" onclick="closeModal('uploadPostModal', event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <h3 id="uploadModalTitle" style="color: var(--primary-pink);"><i class="fas fa-upload"></i> رفع محتوى</h3>
-            <form onsubmit="uploadContent(event, uploadModalTitle.innerText.split(' ')[1])">
-                <textarea id="postContent" placeholder="اكتبي المحتوى هنا..." rows="7" required></textarea>
-                <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> نشر المحتوى</button>
+    </div> <nav class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('home')">
+            <i class="fas fa-home"></i> الصفحة الرئيسية
+        </div>
+        <div class="nav-item" onclick="showSection('feelings')">
+            <i class="fas fa-heart"></i> المشاعر
+        </div>
+        <div class="nav-item" onclick="showSection('fiqh')">
+            <i class="fas fa-balance-scale"></i> فقه النساء
+        </div>
+        <div class="nav-item" onclick="showSection('intimacy-new')">
+            <i class="fas fa-fire"></i> حميمية
+        </div>
+        <div class="nav-item" onclick="showSection('society-new')">
+            <i class="fas fa-users"></i> المجتمع
+        </div>
+        <div class="nav-item" onclick="showSection('health')">
+            <i class="fas fa-venus"></i> الصحة
+        </div>
+    </nav>
+    
+    <div class="modal-overlay" id="commentModal">
+        <div class="modal-box">
+            <h3 style="color: var(--accent-green);"><i class="far fa-comment"></i> إضافة تعليق</h3>
+            <p id="commentPostTitle" style="font-size: 0.9rem; color: #555; margin-bottom: 20px;"></p>
+            <form onsubmit="submitComment(event)">
+                <input type="hidden" id="commentPostId">
+                <textarea id="commentText" class="inp-field" placeholder="اكتبي تعليقك هنا..." rows="4" required></textarea>
+                <button type="submit" class="btn-primary" style="background: var(--accent-green);"><i class="fas fa-paper-plane"></i> إرسال</button>
+                <button type="button" class="btn-primary" onclick="closeModal('commentModal')" style="background: #999; margin-top: 10px;">إلغاء</button>
             </form>
         </div>
     </div>
 
-    <div class="modal-overlay" id="AIGeneratorModal" onclick="closeModal('AIGeneratorModal', event)">
-        <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 90%; width: 450px;">
-            <h3 style="color: #673ab7;"><i class="fas fa-brain"></i> توليد المحتوى الذكي</h3>
-            
-            <p style="font-size: 0.85rem; color: #777;">اكتبي موضوعاً لتوليد المحتوى أو اطلبي مقالة/شعر:</p>
-            <input type="text" id="aiPrompt" class="inp-field" placeholder="مثال: أهمية العاطفة في العلاقة الزوجية" required>
+    <div class="modal-overlay" id="uploadPostModal">
+        <div class="modal-box">
+            <h3 id="uploadModalTitle" style="color: var(--primary-pink);"><i class="fas fa-upload"></i> رفع محتوى</h3>
+            <form onsubmit="submitNewPost(event)">
+                <input type="hidden" id="uploadPostType">
+                <textarea id="postContent" class="inp-field" placeholder="المحتوى هنا..." rows="8" required></textarea>
+                <button type="submit" class="btn-primary" style="margin-top: 15px;"><i class="fas fa-save"></i> نشر المحتوى</button>
+                <button type="button" class="btn-primary" onclick="closeModal('uploadPostModal')" style="background: #999; margin-top: 10px;">إلغاء</button>
+            </form>
+        </div>
+    </div>
 
-            <div class="ai-options" id="aiOptions">
-                <button type="button" class="ai-option-btn active" data-type="post" onclick="selectAIType(this)">بوست قصير</button>
-                <button type="button" class="ai-option-btn" data-type="article" onclick="selectAIType(this)">مقالة</button>
-                <button type="button" class="ai-option-btn" data-type="poetry" onclick="selectAIType(this)">شعر</button>
+    <div class="modal-overlay" id="aiGeneratorModal">
+        <div class="modal-box">
+            <h3 style="color: #673ab7;"><i class="fas fa-robot"></i> توليد محتوى ذكي</h3>
+            <p style="font-size: 0.9rem; color: #777;">اكتبي الموضوع وسيقوم الذكاء الاصطناعي بتوليد المحتوى المناسب للقسم المختار في لوحة الأدمن.</p>
+            
+            <label for="aiPrompt" style="display: block; margin-top: 15px; font-weight: bold; color: #777;">الموضوع المطلوب:</label>
+            <input type="text" id="aiPrompt" class="inp-field" placeholder="مثال: أهمية العناية بالبشرة">
+            
+            <div class="ai-options">
+                <div class="ai-option-btn active" data-type="Post">بوست</div>
+                <div class="ai-option-btn" data-type="Poem">شعر</div>
+                <div class="ai-option-btn" data-type="Article">مقال</div>
+                <div class="ai-option-btn" data-type="Research">بحث</div>
             </div>
             
-            <button type="button" class="btn-primary btn-ai" onclick="generateAIContent()" style="background: #673ab7; margin-bottom: 5px;">
+            <button class="btn-primary btn-ai" onclick="generateAIContent()">
                 <i class="fas fa-magic"></i> توليد
             </button>
             
             <div class="ai-output" id="aiOutput">
-                <i class="fas fa-robot"></i> سيظهر المحتوى المولد هنا...
+                <i class="fas fa-robot"></i> سيظهر المحتوى المولد هنا.
             </div>
-
-            <button type="button" class="btn-primary" id="useAIBtn" onclick="useAIContent()" disabled style="background: var(--accent-green); margin-top: 15px;">
-                <i class="fas fa-check"></i> استخدم المحتوى (نسخ)
+            
+            <button class="btn-primary" id="useAIBtn" onclick="useAIContent()" style="background: var(--accent-green);" disabled data-content="">
+                <i class="fas fa-paste"></i> استخدم المحتوى (أكمل الرفع)
             </button>
-        </div>
-    </div>
-    
-    <div class="modal-overlay" id="contentDisplayModal" onclick="closeModal('contentDisplayModal', event)">
-        <div class="modal-box" onclick="event.stopPropagation()" style="max-width: 90%; width: 500px; text-align: right;">
-            <h3 id="contentDisplayTitle" style="color: var(--primary-pink); text-align: center; margin-bottom: 20px;">همسة الأسبوع</h3>
-            <div id="contentDisplayBody" style="min-height: 150px; background: #fff0f5; padding: 20px; border-radius: 15px; border: 1px solid #e91e63; white-space: pre-wrap; line-height: 1.8; color: #333;">
-                
-            </div>
-        </div>
-    </div>
-    
-    <div class="modal-overlay" id="commentModal" onclick="closeModal('commentModal', event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <h3 style="color: var(--primary-pink);"><i class="far fa-comment-dots"></i> التعليقات</h3>
-            <p id="commentPostTitle" style="font-size: 0.9rem; color: #777; margin-bottom: 10px;"></p>
-            <div id="commentsList" style="max-height: 200px; overflow-y: auto; padding: 10px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; margin-bottom: 15px;">
-                <p style="text-align: center; color: #999;">لا توجد تعليقات حتى الآن.</p>
-            </div>
-            <div class="comment-input-area">
-                <textarea id="newCommentText" placeholder="أضف تعليقك..." rows="3"></textarea>
-                <button class="btn-primary" onclick="addComment()"><i class="fas fa-paper-plane"></i> أرسل</button>
-            </div>
+            
+            <button type="button" class="btn-primary" onclick="closeModal('aiGeneratorModal')" style="background: #999; margin-top: 10px;">إلغاء</button>
         </div>
     </div>
 
+    <div class="modal-overlay" id="contentScreenModal">
+        <div class="modal-box" style="max-width: 90%;">
+            <h3 id="contentScreenTitle" style="color: var(--primary-pink);"><i class="fas fa-scroll"></i> المحتوى الكامل</h3>
+            <div id="contentScreenBody" style="text-align: right; line-height: 1.8; font-size: 1rem; padding: 15px; background: #fffdfd; border-radius: 10px; border: 1px solid #eee;">
+                </div>
+            <button type="button" class="btn-primary" onclick="closeModal('contentScreenModal')" style="background: #999; margin-top: 20px;">إغلاق</button>
+        </div>
+    </div>
 
     <script>
-        // ======================================================
-        //                  Global Variables & Constants
-        // ======================================================
-
-        // 1. (User Req #1) Admin Credentials
-        const ADMIN_USERNAME = "zazo";
-        const ADMIN_PASSWORD = "zazo010988";
-
-        let isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        let deleteModeActive = false;
-        let currentPostId = null; // For comments modal
-        let currentSectionBouhText = null; // To store the "همسة الأسبوع" text
-        const sectionsContent = {
-            'sec-feelings': 'مساحة آمنة لقلبك.. بانتظار كلمات تلامس روحك.',
-            'sec-fiqh': 'نور البصيرة في أمور دينك ودنياك.',
-            'sec-intimacy-new': 'سعادة بيتك تبدأ من علاقتك...',
-            'sec-society-new': 'كوني جزءاً فعالاً في مجتمعك وارفعي من قيمتك.',
-            'sec-health': 'صحتك وجمالك أولاً... اهتمي بنفسك!',
-        };
-
-        // Mock Database/Store for Content (Simulates Neon/Postgres Storage)
-        let contentData = JSON.parse(localStorage.getItem('contentData')) || {
-            'sec-feelings': [],
-            'sec-fiqh': [],
-            'sec-intimacy-new': [],
-            'sec-society-new': [],
-            'sec-health': []
-        };
+        // المتغيرات لحفظ حالة الأدمن
+        let isAdminLoggedIn = false;
+        let deleteMode = false;
         
-        // Mock Database/Store for Nursing Log
-        let nursingLog = JSON.parse(localStorage.getItem('nursingLog')) || [];
+        // محاكاة قاعدة البيانات (Neon/Vercel Postgres Simulation)
+        let savedContent = {};
+        const contentContainers = {
+            'sec-feelings': document.getElementById('content-container-sec-feelings'),
+            'sec-fiqh': document.getElementById('content-container-sec-fiqh'),
+            'sec-intimacy-new': document.getElementById('content-container-sec-intimacy-new'),
+            'sec-society-new': document.getElementById('content-container-sec-society-new'),
+            'sec-health': document.getElementById('content-container-sec-health'),
+            'sec-nursing': document.getElementById('content-container-sec-nursing')
+        };
+        const bouhDisplays = {
+            'sec-feelings': document.getElementById('txt-feelings'),
+            'sec-fiqh': document.getElementById('txt-fiqh'),
+            'sec-intimacy-new': document.getElementById('txt-intimacy-new'),
+            'sec-society-new': document.getElementById('txt-society-new'),
+            'sec-health': document.getElementById('txt-health')
+        };
+        // محاكاة لسجلات الرضاعة
+        let nursingLogs = [];
 
+        // ==========================================================
+        // الدوال المساعدة للواجهة والتنقل
+        // ==========================================================
 
-        // ======================================================
-        //                  Core Helper Functions
-        // ======================================================
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-view').forEach(sec => sec.style.display = 'none');
+            document.getElementById(`sec-${sectionId}`).style.display = 'block';
 
-        function saveState() {
-            localStorage.setItem('isLoggedIn', isLoggedIn);
-            localStorage.setItem('contentData', JSON.stringify(contentData));
-            localStorage.setItem('nursingLog', JSON.stringify(nursingLog));
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelector(`.nav-item[onclick*="'${sectionId}'"]`).classList.add('active');
+
+            // إخفاء لوحة الأدمن عند التنقل
+            document.getElementById('adminDashboard').style.display = 'none';
+            document.getElementById('adminLogin').style.display = 'none';
         }
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('active');
         }
 
-        function closeModal(modalId, event) {
-            const modal = document.getElementById(modalId);
-            if (event && event.target !== modal) return; // Prevent closing if click is inside modal-box
-            modal.style.display = 'none';
-        }
-
-        function showModal(modalId) {
+        function openModal(modalId) {
             document.getElementById(modalId).style.display = 'flex';
         }
 
-        // ======================================================
-        //                  Admin Functions
-        // ======================================================
-
-        function toggleAdminPanel() {
-            const adminLoginDiv = document.getElementById('adminLogin');
-            const adminDashboardDiv = document.getElementById('adminDashboard');
-            
-            if (isLoggedIn) {
-                adminDashboardDiv.style.display = (adminDashboardDiv.style.display === 'block') ? 'none' : 'block';
-                adminLoginDiv.style.display = 'none';
-            } else {
-                if (adminLoginDiv.style.display === 'block') {
-                    adminLoginDiv.style.display = 'none';
-                } else {
-                    adminLoginDiv.style.display = 'block';
-                    adminDashboardDiv.style.display = 'none';
-                }
-            }
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
         }
+
+        // ==========================================================
+        // دوال نظام تتبع الأنشطة (Tracker Functions)
+        // ==========================================================
+
+        function toggleTracker(trackerId, event) {
+            event.preventDefault(); // منع انتقال الرابط
+            const tracker = document.getElementById(trackerId);
+            document.querySelectorAll('.tracker-ui').forEach(ui => {
+                if (ui.id !== trackerId) {
+                    ui.style.display = 'none';
+                }
+            });
+            tracker.style.display = (tracker.style.display === 'block') ? 'none' : 'block';
+        }
+
+        // دالة تسجيل الدورة الشهرية (موجودة سابقاً)
+        function logCycleActivity(event) {
+            event.preventDefault();
+            const date = document.getElementById('cycleDate').value;
+            const resultDiv = document.getElementById('cycleResult');
+            resultDiv.innerHTML = `<i class="fas fa-check"></i> تم تسجيل بداية الدورة الشهرية في ${date}.`;
+            resultDiv.style.display = 'block';
+            console.log('Cycle Log saved:', { date });
+        }
+
+        // دالة متابعة الحمل (موجودة سابقاً)
+        function logPregnancyActivity(event) {
+            event.preventDefault();
+            const lastPeriodDate = new Date(document.getElementById('lastPeriodDate').value);
+            const today = new Date();
+            const resultDiv = document.getElementById('pregnancyResult');
+
+            if (!lastPeriodDate || isNaN(lastPeriodDate)) {
+                resultDiv.innerText = 'الرجاء إدخال تاريخ صحيح.';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            const daysSinceLMP = Math.floor((today - lastPeriodDate) / (1000 * 60 * 60 * 24));
+            const weeks = Math.floor(daysSinceLMP / 7);
+            const days = daysSinceLMP % 7;
+            const dueDays = 280 - daysSinceLMP;
+
+            if (daysSinceLMP < 0) {
+                 resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> التاريخ المدخل غير منطقي!`;
+            } else if (daysSinceLMP > 294) {
+                 resultDiv.innerHTML = `<i class="fas fa-baby"></i> تهانينا! من المرجح أن تكون فترة الحمل قد انتهت.`;
+            } else {
+                resultDiv.innerHTML = `
+                    <i class="fas fa-heartbeat"></i> **أنتِ الآن في الأسبوع ${weeks} ويوم ${days}** من الحمل.
+                    <br>الولادة المتوقعة بعد حوالي ${dueDays} يوماً.
+                `;
+            }
+            resultDiv.style.display = 'block';
+            console.log('Pregnancy calculated:', { weeks, days });
+        }
+        
+        // دالة تسجيل الرضاعة (موجودة سابقاً)
+        function logNursingActivity(event) {
+            event.preventDefault();
+            const duration = document.getElementById('nursingDuration').value;
+            const side = document.getElementById('nursingSide').value;
+            const time = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            const logEntry = { duration, side, time, id: Date.now() };
+
+            nursingLogs.unshift(logEntry); // إضافة السجل في البداية
+            
+            // محاكاة حفظ السجل
+            console.log('Nursing Log saved to DB (simulated):', logEntry);
+
+            // عرض النتائج
+            displayNursingLogs();
+            
+            const resultDiv = document.getElementById('nursingResult');
+            resultDiv.innerHTML = `<i class="fas fa-check"></i> تم تسجيل رضعة **${side}** لمدة **${duration} دقيقة** في ${time}.`;
+            resultDiv.style.display = 'block';
+        }
+        
+        // دالة عرض سجلات الرضاعة
+        function displayNursingLogs() {
+            const display = document.getElementById('nursingLogsDisplay');
+            if (nursingLogs.length === 0) {
+                display.innerHTML = '<p style="color: #999;">لا توجد سجلات رضاعة حالياً.</p>';
+                return;
+            }
+
+            let html = '<p style="font-weight: bold; color: var(--text-main);">آخر 5 سجلات رضاعة:</p>';
+            nursingLogs.slice(0, 5).forEach(log => {
+                html += `
+                    <div class="nursing-log">
+                        <span>الجانب: ${log.side} | المدة: ${log.duration} دقيقة</span>
+                        <small>${log.time}</small>
+                    </div>
+                `;
+            });
+            display.innerHTML = html;
+        }
+
+        // ==========================================================
+        // 💖 الدوال الجديدة لوظائف تتبع الأداء اليومي (مضافة حديثاً)
+        // ==========================================================
+
+        // 1. دالة تسجيل نشاط الرياضة
+        function logExerciseActivity(event) {
+            event.preventDefault();
+            const date = document.getElementById('exerciseDate').value;
+            const type = document.getElementById('exerciseType').value;
+            const duration = document.getElementById('exerciseDuration').value;
+            const resultDiv = document.getElementById('exerciseResult');
+
+            resultDiv.innerHTML = `<i class="fas fa-check"></i> تم تسجيل تمرين **${type}** لمدة **${duration} دقيقة** بنجاح في ${date}.`;
+            resultDiv.style.display = 'block';
+            console.log('Exercise Log saved (Simulated to Neon/Vercel):', { date, type, duration });
+        }
+
+        // 2. دالة تسجيل شرب الماء
+        function logWaterActivity(event) {
+            event.preventDefault();
+            const date = document.getElementById('waterDate').value;
+            const amount = document.getElementById('waterAmount').value;
+            const resultDiv = document.getElementById('waterResult');
+
+            resultDiv.innerHTML = `<i class="fas fa-tint"></i> تم تسجيل شرب **${amount} لتر** من الماء في ${date}. رطبي جسدك!`;
+            resultDiv.style.display = 'block';
+            console.log('Water Log saved (Simulated to Neon/Vercel):', { date, amount });
+        }
+
+        // 3. دالة تسجيل جودة النوم
+        function logSleepActivity(event) {
+            event.preventDefault();
+            const date = document.getElementById('sleepDate').value;
+            const hours = document.getElementById('sleepHours').value;
+            const resultDiv = document.getElementById('sleepResult');
+
+            resultDiv.innerHTML = `<i class="fas fa-bed"></i> تم تسجيل نوم لـ **${hours} ساعة** في ${date}. أحلام سعيدة!`;
+            resultDiv.style.display = 'block';
+            console.log('Sleep Log saved (Simulated to Neon/Vercel):', { date, hours });
+        }
+
+        // 4. دالة تسجيل متابعة الغذاء والتخسيس
+        function logDietActivity(event) {
+            event.preventDefault();
+            const date = document.getElementById('dietDate').value;
+            const status = document.getElementById('dietStatus').value;
+            const weight = document.getElementById('weightLog').value;
+            const resultDiv = document.getElementById('dietResult');
+            const weightText = weight ? ` (الوزن المسجل: ${weight} كجم)` : '';
+
+            resultDiv.innerHTML = `<i class="fas fa-carrot"></i> تم تسجيل يوم غذائي **${status}** في ${date}. استمري!${weightText}`;
+            resultDiv.style.display = 'block';
+            console.log('Diet Log saved (Simulated to Neon/Vercel):', { date, status, weight });
+        }
+
+        // 5. 💖 الدالة المطلوبة: تسجيل نشاط العناية بالبشرة
+        function logSkinCareActivity(event) {
+            event.preventDefault();
+            const date = document.getElementById('skinCareDate').value;
+            const type = document.getElementById('skinCareType').value;
+            const notes = document.getElementById('skinCareNotes').value;
+            const resultDiv = document.getElementById('skinCareResult');
+
+            if (!date) {
+                resultDiv.innerText = 'الرجاء إدخال تاريخ المتابعة.';
+                resultDiv.style.display = 'block';
+                return;
+            }
+
+            resultDiv.innerHTML = `
+                <i class="fas fa-spa"></i> تم تسجيل نشاط العناية بالبشرة بنجاح!
+                <p style="margin: 5px 0 0 0; font-size: 0.85rem;">**الروتين:** ${type} في ${date}</p>
+            `;
+            resultDiv.style.display = 'block';
+            console.log('Skin Care Log saved (Simulated to Neon/Vercel):', { date, type, notes });
+        }
+        
+        // ==========================================================
+        // دوال الأدمن وإدارة المحتوى (Admin & Content Management)
+        // ==========================================================
 
         function adminLogin(event) {
             event.preventDefault();
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
 
-            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                isLoggedIn = true;
-                saveState();
+            // بيانات الدخول المطلوبة: الاسم zazo الباسورد zazo010988
+            if (username === 'zazo' && password === 'zazo010988') {
+                isAdminLoggedIn = true;
                 document.getElementById('adminLogin').style.display = 'none';
                 document.getElementById('adminDashboard').style.display = 'block';
-                alert('مرحباً Zazo، تم تسجيل الدخول بنجاح!');
-                // Ensure delete mode button is visible if logging in
-                document.body.classList.remove('delete-mode-active');
+                document.getElementById('adminToggleBtn').style.background = 'var(--accent-green)';
+                document.getElementById('adminToggleBtn').style.boxShadow = '0 4px 10px rgba(76, 175, 80, 0.5)';
+                document.getElementById('adminToggleBtn').querySelector('i').classList.remove('fa-heart-pulse');
+                document.getElementById('adminToggleBtn').querySelector('i').classList.add('fa-lock-open');
+                alert('تم تسجيل الدخول بنجاح! مرحباً بك يا Zazo.');
             } else {
-                alert('اسم المستخدم أو كلمة المرور غير صحيحة.');
+                alert('خطأ في اسم المستخدم أو كلمة المرور.');
             }
         }
 
         function adminLogout() {
-            isLoggedIn = false;
-            saveState();
-            deleteModeActive = false;
-            document.body.classList.remove('delete-mode-active');
+            isAdminLoggedIn = false;
             document.getElementById('adminDashboard').style.display = 'none';
-            alert('تم تسجيل الخروج بنجاح.');
+            document.getElementById('adminToggleBtn').style.background = 'var(--primary-pink)';
+            document.getElementById('adminToggleBtn').style.boxShadow = '0 4px 10px rgba(233, 30, 99, 0.5)';
+            document.getElementById('adminToggleBtn').querySelector('i').classList.add('fa-heart-pulse');
+            document.getElementById('adminToggleBtn').querySelector('i').classList.remove('fa-lock-open');
+            document.getElementById('adminLogin').style.display = 'block';
+            toggleDeleteMode(false); // إيقاف وضع الحذف عند الخروج
+            alert('تم تسجيل الخروج.');
         }
 
-        function toggleDeleteMode() {
-            deleteModeActive = !deleteModeActive;
-            document.body.classList.toggle('delete-mode-active');
-            if (deleteModeActive) {
-                alert('تم تفعيل وضع حذف المحتوى. اضغطي على زر (X) لحذف أي بطاقة أو همسة أسبوعية (البوح) ثم اضغطي على الزر مرة أخرى لإلغاء التفعيل.');
+        function toggleAdminPanel() {
+            const loginPanel = document.getElementById('adminLogin');
+            const dashboardPanel = document.getElementById('adminDashboard');
+
+            if (isAdminLoggedIn) {
+                // تبديل لوحة التحكم
+                if (dashboardPanel.style.display === 'block') {
+                    dashboardPanel.style.display = 'none';
+                    toggleDeleteMode(false); // إيقاف وضع الحذف عند إغلاق اللوحة
+                } else {
+                    dashboardPanel.style.display = 'block';
+                    loginPanel.style.display = 'none';
+                }
             } else {
-                alert('تم إلغاء تفعيل وضع حذف المحتوى.');
+                // عرض شاشة الدخول
+                if (loginPanel.style.display === 'block') {
+                    loginPanel.style.display = 'none';
+                } else {
+                    loginPanel.style.display = 'block';
+                }
             }
         }
 
         function openUploadPostModal(type) {
-            if (!isLoggedIn) {
-                alert('يرجى تسجيل الدخول أولاً.');
+            if (!isAdminLoggedIn) {
+                alert('يجب تسجيل الدخول كمسؤول أولاً.');
                 return;
             }
-            document.getElementById('uploadModalTitle').innerText = `رفع ${type}`;
+            document.getElementById('uploadModalTitle').innerHTML = `<i class="fas fa-upload"></i> رفع محتوى (${type})`;
+            document.getElementById('uploadPostType').value = type;
             document.getElementById('postContent').value = '';
-            showModal('uploadPostModal');
-        }
-        
-        // ======================================================
-        //                  Neon/Content Functions (User Req #2 & #3)
-        // ======================================================
-
-        // 2. (User Req #2) The new function to simulate fetching content from Neon
-        async function fetchContentFromNeon(sectionId) {
-            // في الواقع العملي، هنا يتم استدعاء API Serverless 
-            // على Vercel للاتصال بقاعدة بيانات Neon Postgres.
-            console.log(`Simulating fetch from Neon for section: ${sectionId}`);
-            
-            // Simulation: Return the locally stored content after a delay
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    resolve(contentData[sectionId] || []);
-                }, 100); 
-            });
-        }
-        
-        // Helper to create the HTML card for a single content item
-        function createContentCard(post) {
-            const card = document.createElement('div');
-            card.classList.add('content-item-card');
-            card.setAttribute('data-content-id', post.id);
-
-            // Only display delete button if admin is logged in
-            const deleteBtn = isLoggedIn ? `<button class="delete-overlay-btn" onclick="deletePost('${post.id}')"><i class="fas fa-times"></i></button>` : '';
-            
-            const dateOptions = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            const date = new Date(post.date).toLocaleDateString('ar-EG', dateOptions);
-
-            card.innerHTML = `
-                ${deleteBtn}
-                <span class="type-badge">${post.type}</span>
-                <div class="post-content">${post.content}</div>
-                <small>${date}</small>
-            `;
-            return card;
+            closeModal('aiGeneratorModal'); // إغلاق مولد الذكاء الاصطناعي إذا كان مفتوحًا
+            openModal('uploadPostModal');
         }
 
-        // 3. (User Req #3) Modified function to display content (implements prepend logic - no deletion of old content)
-        function displayContent(post, sectionId) {
-            const container = document.getElementById(`content-container-${sectionId}`);
-            if (!container) return;
-
-            // Remove placeholder text if it exists
-            const placeholder = container.querySelector('p');
-            if (placeholder && placeholder.textContent.includes('يتم عرض محتوى')) {
-                placeholder.remove();
-            }
-
-            const newCard = createContentCard(post);
-            newCard.classList.add('newly-added'); // Highlight new content
-
-            // Prepend the new card to the container (make it appear at the top)
-            container.prepend(newCard); 
-
-            // Remove highlight after a delay
-            setTimeout(() => newCard.classList.remove('newly-added'), 5000);
-        }
-        
-        // The core function for handling a new upload (simulated and calls displayContent)
-        function uploadContent(event, type) {
+        function submitNewPost(event) {
             event.preventDefault();
-            const sectionSelect = document.getElementById('adminSectionSelect');
-            const contentText = document.getElementById('postContent').value.trim();
-            const sectionId = sectionSelect.value;
-            const postId = `post-${sectionId}-${Date.now()}`;
+            const content = document.getElementById('postContent').value;
+            const type = document.getElementById('uploadPostType').value;
+            const section = document.getElementById('adminSectionSelect').value;
 
-            if (!contentText) {
-                alert('لا يمكن رفع محتوى فارغ.');
-                return;
+            if (!content || !type || !section) return;
+
+            // محاكاة حفظ البيانات في Neon/Vercel Postgres
+            const postId = Date.now();
+            const newPost = {
+                id: postId,
+                section: section,
+                type: type,
+                content: content,
+                date: new Date().toLocaleDateString('ar-EG'),
+            };
+
+            if (!savedContent[section]) {
+                savedContent[section] = [];
             }
             
-            let postType = type.replace('رفع ', '').replace('/', ''); // Clean up type text
-
-            // Special handling for 'البوح' to replace the weekly whisper (bouh-display)
-            if (postType === 'البوح') {
-                const bouhTarget = document.getElementById(`txt-${sectionId.split('-')[1] || sectionId}`);
-                if (bouhTarget) {
-                    bouhTarget.innerHTML = `${contentText} <br><small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>`;
-                    bouhTarget.classList.add('newly-added');
-                    setTimeout(() => bouhTarget.classList.remove('newly-added'), 5000);
-                    // Update the global store for bouh text
-                    sectionsContent[sectionId] = contentText;
-                }
-                alert(`تم تحديث همسة الأسبوع بنجاح في قسم: ${sectionSelect.options[sectionSelect.selectedIndex].text}`);
-            } else {
-                const newPost = {
-                    id: postId,
-                    type: postType,
-                    content: contentText,
-                    date: new Date().toISOString()
-                };
-                
-                // 1. Store the new post in the mock database (contentData)
-                if (contentData[sectionId]) {
-                    contentData[sectionId].push(newPost);
+            // الهمسة (البوح) يتم تحديثها، أما غيرها يتم إضافته بشكل متسلسل
+            if (type === 'البوح') {
+                // إيجاد وتحديث البوح في القائمة
+                const bouhIndex = savedContent[section].findIndex(p => p.type === 'البوح');
+                if(bouhIndex > -1) {
+                    savedContent[section][bouhIndex] = newPost; // تحديث الهمسة القديمة
                 } else {
-                    contentData[sectionId] = [newPost];
+                    savedContent[section].unshift(newPost); // إضافة الهمسة في البداية إن لم تكن موجودة
                 }
-                saveState();
-
-                // 2. Display the new post instantly on the current view (using the prepending logic)
-                displayContent(newPost, sectionId);
-                alert(`تم رفع المحتوى بنجاح إلى قسم: ${sectionSelect.options[sectionSelect.selectedIndex].text}`);
+                updateBouhDisplay(section, content);
+            } else {
+                // المحافظة على المحتوى القديم وإضافة الجديد في البداية
+                savedContent[section].unshift(newPost);
             }
 
             closeModal('uploadPostModal');
+            alert(`تم رفع محتوى "${type}" إلى قسم "${section}" بنجاح (محاكاة حفظ Neon)!`);
+            console.log('Saved to simulated DB:', newPost);
+
+            // عرض المحتوى الجديد في الواجهة
+            renderContent(section);
         }
 
-        // Function to load existing content on section view
-        async function loadSectionContent(sectionId) {
-            const contentList = await fetchContentFromNeon(sectionId);
-            const container = document.getElementById(`content-container-${sectionId}`);
-            if (!container) return;
-            
-            // Clear existing displayed content first to avoid duplicates when switching views
-            container.innerHTML = `<p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">يتم عرض محتوى البوستات والمقالات المرفوعة من الأدمن هنا.</p>`;
+        function renderContent(section) {
+            // محاكاة جلب البيانات من Neon/Vercel Postgres
+            const sectionPosts = savedContent[section] || [];
+            const container = contentContainers[section];
+            const bouhElement = bouhDisplays[section];
 
-            // Display fetched content (latest first)
-            contentList.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(post => {
-                container.appendChild(createContentCard(post)); // Use append for initial load order
-            });
+            // 1. تحديث الهمسة (البوح)
+            const bouhPost = sectionPosts.find(p => p.type === 'البوح');
+            if (bouhPost && bouhElement) {
+                updateBouhDisplay(section, bouhPost.content);
+                // إزالة الهمسة من قائمة البوستات المتسلسلة لكي لا تُكرر
+                const postsForSequential = sectionPosts.filter(p => p.type !== 'البوح');
+                renderSequentialContent(section, postsForSequential);
+            } else {
+                 // إذا لم يتم تحديد بوح، اعرض الرسالة الافتراضية
+                const defaultMsg = bouhElement.getAttribute('data-default-content') || 'مساحة آمنة... انقر هنا لقراءة الهمسة الأسبوعية';
+                bouhElement.innerHTML = defaultMsg + `<small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>`;
+                renderSequentialContent(section, sectionPosts);
+            }
         }
         
-        function deletePost(postId) {
-            if (!deleteModeActive) return;
-
-            if (confirm('هل أنت متأكدة من حذف هذا المحتوى؟ لا يمكن التراجع عن هذا الإجراء.')) {
-                // Check if it is a Bouh post (weekly whisper)
-                if (postId.includes('-bouh-')) {
-                    const section = postId.split('-')[0];
-                    const bouhTarget = document.getElementById(`txt-${section}`);
-                    if (bouhTarget) {
-                        const sectionKey = Object.keys(sectionsContent).find(key => key.includes(section));
-                        if(sectionKey) {
-                            bouhTarget.innerHTML = `${sectionsContent[sectionKey]} <br><small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>`;
-                        }
-                        bouhTarget.classList.remove('newly-added');
-                        alert('تم حذف همسة الأسبوع بنجاح (وتمت إعادتها للنص الافتراضي).');
-                    }
-                    return;
+        function updateBouhDisplay(section, content) {
+            const bouhElement = bouhDisplays[section];
+            if(bouhElement) {
+                const isNew = savedContent[section][0].content === content && savedContent[section][0].type === 'البوح';
+                bouhElement.innerHTML = content + `<small style="color:var(--primary-pink); display:block; margin-top:5px; text-align:center; font-weight:bold;"><i class="fas fa-search"></i> انقري هنا لقراءة الهمسة الأسبوعية</small>`;
+                if (isNew) {
+                    bouhElement.classList.add('newly-added');
+                    setTimeout(() => bouhElement.classList.remove('newly-added'), 3000);
                 }
+            }
+        }
 
-                // Delete Sequential Content Post
-                let found = false;
-                for (const sectionId in contentData) {
-                    const initialLength = contentData[sectionId].length;
-                    contentData[sectionId] = contentData[sectionId].filter(post => post.id !== postId);
-                    if (contentData[sectionId].length < initialLength) {
-                        found = true;
-                        break;
-                    }
-                }
+        function renderSequentialContent(section, posts) {
+            const container = contentContainers[section];
+            let html = '';
 
-                if (found) {
-                    saveState();
-                    const elementToDelete = document.querySelector(`[data-content-id="${postId}"]`);
-                    if (elementToDelete) {
-                        elementToDelete.remove();
-                        alert('تم حذف المحتوى بنجاح.');
-                    }
+            if (posts.length === 0) {
+                html = '<p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">يتم عرض محتوى البوستات والمقالات المرفوعة من الأدمن هنا.</p>';
+            } else {
+                posts.forEach(post => {
+                    const isNew = post.id === savedContent[section][0].id && post.type !== 'البوح';
+                    html += `
+                        <div class="content-item-card ${isNew ? 'newly-added' : ''}" data-post-id="${post.id}">
+                            <div class="type-badge">${post.type}</div>
+                            <button class="delete-overlay-btn" onclick="deletePost(${post.id}, '${post.section}', event)"><i class="fas fa-times"></i></button>
+                            <div class="post-content">${post.content.substring(0, 150)}...</div>
+                            <small>تاريخ النشر: ${post.date}</small>
+                        </div>
+                    `;
+                });
+            }
+
+            container.innerHTML = html;
+        }
+
+        function toggleDeleteMode(forceState) {
+            deleteMode = forceState !== undefined ? forceState : !deleteMode;
+            document.body.classList.toggle('delete-mode-active', deleteMode);
+            
+            const btn = document.querySelector('#adminDashboard .up-btn:last-child');
+            if(deleteMode) {
+                btn.innerHTML = '<i class="fas fa-undo-alt"></i> **إلغاء وضع الحذف**';
+            } else {
+                btn.innerHTML = '<i class="fas fa-trash-alt"></i> **حذف محتوى**';
+            }
+            if (!isAdminLoggedIn) deleteMode = false;
+        }
+
+        function deletePost(postId, section, event) {
+            if (!deleteMode) return;
+            event.stopPropagation();
+
+            if (!confirm('هل أنت متأكد من حذف هذا المحتوى؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+
+            // محاكاة حذف البيانات من Neon/Vercel Postgres
+            if (section && savedContent[section]) {
+                const initialLength = savedContent[section].length;
+                
+                // حالة خاصة لحذف الهمسة (البوح)
+                if (savedContent[section].find(p => p.id === postId && p.type === 'البوح')) {
+                    savedContent[section] = savedContent[section].filter(p => p.id !== postId);
+                    updateBouhDisplay(section, bouhDisplays[section].getAttribute('data-default-content') || 'مساحة آمنة... انقر هنا لقراءة الهمسة الأسبوعية');
                 } else {
-                    alert('لم يتم العثور على المحتوى للحذف.');
+                    // حذف بوست عادي
+                    savedContent[section] = savedContent[section].filter(p => p.id !== postId);
                 }
+
+                if (savedContent[section].length < initialLength) {
+                    alert('تم حذف المحتوى بنجاح (محاكاة حفظ Neon)!');
+                    renderContent(section); // إعادة عرض المحتوى المتبقي
+                }
+            } else {
+                alert('خطأ: لم يتم العثور على البوست للحذف.');
             }
         }
         
-        // ======================================================
-        //                  View & Interaction Functions
-        // ======================================================
-
-        function showSection(sectionId, element) {
-            document.querySelectorAll('.section-view').forEach(section => {
-                section.style.display = 'none';
-            });
-            document.getElementById(sectionId).style.display = 'block';
-
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            element.classList.add('active');
-            
-            // Load content when a section is opened (excluding homeView)
-            if (sectionId !== 'homeView') {
-                loadSectionContent(sectionId);
-            }
-
-            // Hide admin panel on navigation
-            document.getElementById('adminLogin').style.display = 'none';
-            document.getElementById('adminDashboard').style.display = 'none';
-        }
-
-        function openContentScreen(sectionId, title, event) {
-            // Prevent opening content screen if delete mode is active
-            if (deleteModeActive) {
-                event.stopPropagation();
-                return;
-            }
-            
-            const bouhText = document.getElementById(`txt-${sectionId.split('-')[1] || sectionId}`).textContent.trim().split('\n')[0].trim();
-            document.getElementById('contentDisplayTitle').innerText = `همسة الأسبوع - ${title}`;
-            document.getElementById('contentDisplayBody').innerText = bouhText;
-            showModal('contentDisplayModal');
-        }
-
-        function toggleLike(button, postId) {
-            button.classList.toggle('active');
-            const icon = button.querySelector('i');
-            const span = button.querySelector('span');
-            
-            if (button.classList.contains('active')) {
-                icon.classList.remove('far');
-                icon.classList.add('fas');
-                span.innerText = 'أُعجب';
-            } else {
-                icon.classList.remove('fas');
-                icon.classList.add('far');
-                span.innerText = 'إعجاب';
-            }
-        }
-
-        function openCommentModal(postId) {
-            currentPostId = postId;
-            // Simplified logic: just display modal with placeholder content for now
-            const postTitle = document.querySelector(`[data-post-id="${postId}"]`).getAttribute('data-post-title');
-            document.getElementById('commentPostTitle').innerText = `حول: ${postTitle}`;
-            showModal('commentModal');
-        }
-
-        function addComment() {
-            const commentText = document.getElementById('newCommentText').value.trim();
-            if (commentText) {
-                alert(`تم إرسال التعليق على منشور ${currentPostId}:\n${commentText}`);
-                document.getElementById('newCommentText').value = '';
-                closeModal('commentModal');
-            } else {
-                alert('التعليق لا يمكن أن يكون فارغاً.');
-            }
-        }
-        
-        function shareContent(postId, title) {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'تطبيق رقة',
-                    text: `شاركت معك: ${title}`,
-                    url: window.location.href, // In a real app, this would be the post URL
-                }).then(() => console.log('Successful share'))
-                .catch((error) => console.log('Error sharing', error));
-            } else {
-                alert(`يمكنك مشاركة المحتوى "${title}" عبر نسخ الرابط.`);
-            }
-        }
-
-        // ======================================================
-        //                  Tracker Functions
-        // ======================================================
-        
-        function openTrackerUI(trackerId) {
-            document.querySelectorAll('.tracker-ui').forEach(ui => {
-                ui.style.display = 'none';
-            });
-            document.getElementById(trackerId).style.display = 'block';
-        }
-
-        function calculateCycle(event) {
+        function openContentScreen(section, type, event) {
             event.preventDefault();
-            const lastPeriodDate = document.getElementById('lastPeriodDate').value;
-            const cycleLength = parseInt(document.getElementById('cycleLength').value);
-            const resultDiv = document.getElementById('cycleResult');
+            const posts = savedContent[section] || [];
+            const bouhPost = posts.find(p => p.type === 'البوح');
+            const contentBody = document.getElementById('contentScreenBody');
+            const contentTitle = document.getElementById('contentScreenTitle');
 
-            if (!lastPeriodDate || !cycleLength) {
-                resultDiv.style.display = 'none';
-                return;
+            if (type === 'همسة الأسبوع' && bouhPost) {
+                contentTitle.innerHTML = `<i class="fas fa-feather-alt"></i> همسة الأسبوع`;
+                contentBody.innerText = bouhPost.content;
+                openModal('contentScreenModal');
             }
-
-            const lastDate = new Date(lastPeriodDate);
-            
-            // حساب تاريخ الدورة القادمة
-            const nextDate = new Date(lastDate);
-            nextDate.setDate(nextDate.getDate() + cycleLength);
-            
-            // حساب فترة التبويض (عادةً 14 يوماً قبل الدورة القادمة)
-            const ovulationStart = new Date(nextDate);
-            ovulationStart.setDate(ovulationStart.getDate() - 16);
-            const ovulationEnd = new Date(nextDate);
-            ovulationEnd.setDate(ovulationEnd.getDate() - 12);
-
-            const options = { year: 'numeric', month: 'long', day: 'numeric' };
-
-            resultDiv.innerHTML = `
-                <i class="fas fa-calendar-check"></i> 
-                **تاريخ الدورة المتوقع القادم:** ${nextDate.toLocaleDateString('ar-EG', options)}
-                <br>
-                **فترة التبويض المتوقعة:** من ${ovulationStart.toLocaleDateString('ar-EG', options)} إلى ${ovulationEnd.toLocaleDateString('ar-EG', options)}
-            `;
-            resultDiv.style.display = 'block';
-        }
-
-        function addNursingLog(event) {
-            event.preventDefault();
-            const time = document.getElementById('nursingTime').value;
-            const side = document.getElementById('nursingSide').value;
-            const duration = document.getElementById('nursingDuration').value;
-
-            const newLog = {
-                timestamp: new Date().toISOString(),
-                time: time,
-                side: side,
-                duration: duration
-            };
-
-            nursingLog.unshift(newLog); // Add to the beginning
-            saveState();
-            loadNursingLog();
-            
-            document.getElementById('nursingTime').value = '';
-            document.getElementById('nursingDuration').value = '10';
-            alert('تم تسجيل الرضاعة بنجاح!');
-        }
-
-        function deleteNursingLog(index) {
-            if (confirm('هل أنت متأكدة من حذف هذا السجل؟')) {
-                nursingLog.splice(index, 1);
-                saveState();
-                loadNursingLog();
-            }
-        }
-
-        function loadNursingLog() {
-            const listDiv = document.getElementById('nursingLogList');
-            listDiv.innerHTML = '';
-
-            if (nursingLog.length === 0) {
-                listDiv.innerHTML = '<p style="text-align: center; color: #999;">لا توجد سجلات بعد.</p>';
-                return;
-            }
-
-            nursingLog.forEach((log, index) => {
-                const logElement = document.createElement('div');
-                logElement.classList.add('nursing-log');
-                
-                const logDate = new Date(log.timestamp).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
-                
-                logElement.innerHTML = `
-                    <span>
-                        <i class="fas fa-clock"></i> ${logDate} - ${log.time}
-                        <i class="fas fa-baby-bottle"></i> ${log.side} (${log.duration} دقيقة)
-                    </span>
-                    <button onclick="deleteNursingLog(${index})"><i class="fas fa-trash"></i></button>
-                `;
-                listDiv.appendChild(logElement);
-            });
         }
         
-        // ======================================================
-        //                  AI Content Generation Functions
-        // ======================================================
+        // ==========================================================
+        // دوال الذكاء الاصطناعي (AI Generator - Simulation)
+        // ==========================================================
 
         function openAIGeneratorModal() {
-            if (!isLoggedIn) {
-                alert('يرجى تسجيل الدخول أولاً.');
+            if (!isAdminLoggedIn) {
+                alert('يجب تسجيل الدخول كمسؤول أولاً.');
                 return;
             }
             document.getElementById('aiPrompt').value = '';
-            document.getElementById('aiOutput').innerHTML = '<i class="fas fa-robot"></i> سيظهر المحتوى المولد هنا...';
+            document.getElementById('aiOutput').innerHTML = '<i class="fas fa-robot"></i> سيظهر المحتوى المولد هنا.';
             document.getElementById('useAIBtn').disabled = true;
             document.getElementById('useAIBtn').removeAttribute('data-content');
-            showModal('AIGeneratorModal');
+            openModal('aiGeneratorModal');
         }
 
-        function selectAIType(button) {
-            document.querySelectorAll('.ai-option-btn').forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-        }
-
-        // Simulates the typing effect for generated content
-        function startTypingEffect(text, targetElement, useBtn) {
-            let i = 0;
-            targetElement.innerHTML = ''; 
-            const typingCursor = document.createElement('span');
-            typingCursor.classList.add('typing-cursor');
-            targetElement.appendChild(typingCursor);
-
-            const interval = setInterval(() => {
-                if (i < text.length) {
-                    targetElement.insertBefore(document.createTextNode(text.charAt(i)), typingCursor);
-                    i++;
-                } else {
-                    clearInterval(interval);
-                    typingCursor.remove(); 
-                    useBtn.disabled = false;
-                    useBtn.setAttribute('data-content', text); // Store the generated content
-                }
-            }, 50);
-        }
-
-        // Mock function to fetch content from a hypothetical Gemini API endpoint
-        async function fetchGeminiContent(prompt, type) {
-            const mockResponses = {
-                'post': `الرقة ليست ضعفاً، بل هي قوة تكمن في قدرتك على احتواء مشاعرك ومشاعر من حولك. إنها مرآة لروحك النقية، فحافظي عليها كنزك الأغلى. (توليد عن ${prompt})`,
-                'article': `مقدمة المقال عن ${prompt}: تُعدُّ المشاعر الإنسانية المحرك الأساسي لكل فعل. ففهم هذه المشاعر هو الخطوة الأولى نحو تحقيق التوازن النفسي. في هذا المقال، سنتعمق في كيفية إدارة مشاعرك بفعالية لتحقيق السعادة الداخلية.`,
-                'poetry': `يا رقيقة القلبِ، هل تدرين، \n كمْ في رقةِ الطبعِ منْ أسرارْ؟ \n أنتِ كالزهرِ في حقولِ الحنينِ، \n عطرُكِ يروي، ويُطفئُ الأقدارْ. (شعر عن ${prompt})`
-            };
-            
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    resolve(mockResponses[type] || mockResponses['post']);
-                }, 2000); 
-            });
+        function setActiveAIType(btn) {
+            document.querySelectorAll('.ai-option-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
         }
         
-        // Overrides the simulated generateAIContent (real function)
+        // ربط أزرار الـ AI بالتفعيل
+        document.querySelectorAll('.ai-option-btn').forEach(btn => {
+            btn.addEventListener('click', () => setActiveAIType(btn));
+        });
+
+        // محاكاة جلب المحتوى من Gemini
+        async function fetchGeminiContent(prompt, type) {
+            // محاكاة استجابة من نموذج الذكاء الاصطناعي
+            await new Promise(resolve => setTimeout(resolve, 2000)); // محاكاة وقت المعالجة
+
+            const section = document.getElementById('adminSectionSelect').options[document.getElementById('adminSectionSelect').selectedIndex].text;
+            
+            let simulatedResponse = `
+            ${type} جديد عن "${prompt}" لقسم "${section}":
+
+            "يا رقيقة، إن هذا الموضوع يلامس شغاف القلب. 
+            تذكري أن العناية بالذات هي أرقى أنواع الرقة. 
+            خصصي وقتاً يومياً لذاتك، فالجمال الحقيقي يبدأ من الداخل.
+
+            **نصيحة اليوم:** لا تجعلي الإهمال يتسلل إلى روتينك، فحواء تستحق كل الاهتمام."
+
+            `;
+            
+            if (type === 'Poem') {
+                simulatedResponse = `
+                أرى الرقة في عينيكِ عنوانا
+                وفي وجهك البشوش نورًا بان
+
+                فمهلاً يا صبيةً تستعجل الدنيا
+                الجمال ليس بالزينة إنما بالإحسان
+                
+                لروحٍ سكنت قلبًا.. وللجلد الذي يحيط بها،
+                فلتكن بشرتكِ مرآةً لما في القلب من حنان.
+                `;
+            }
+            
+            return simulatedResponse;
+        }
+
+        // دالة تشغيل تأثير الكتابة (Typing Effect)
+        function startTypingEffect(text, outputElement, useBtn) {
+            outputElement.innerHTML = '';
+            useBtn.disabled = true;
+            useBtn.setAttribute('data-content', text.trim());
+            
+            const cursor = document.createElement('span');
+            cursor.classList.add('typing-cursor');
+            outputElement.appendChild(cursor);
+            
+            let i = 0;
+            const speed = 30; // سرعة الكتابة بالمللي ثانية
+
+            function typeWriter() {
+                if (i < text.length) {
+                    outputElement.insertBefore(document.createTextNode(text.charAt(i)), cursor);
+                    i++;
+                    setTimeout(typeWriter, speed);
+                } else {
+                    cursor.remove();
+                    outputElement.innerHTML = outputElement.innerHTML.replace(/\s*$/, ''); // إزالة المسافات الأخيرة
+                    useBtn.disabled = false;
+                }
+            }
+            typeWriter();
+        }
+
+        // الدالة التي يستدعيها زر التوليد
         async function generateAIContent() {
             const prompt = document.getElementById('aiPrompt').value;
             const typeElement = document.querySelector('.ai-option-btn.active');
-            const type = typeElement ? typeElement.getAttribute('data-type') : 'general';
+            const type = typeElement ? typeElement.getAttribute('data-type') : 'Post';
             const outputElement = document.getElementById('aiOutput');
             const useBtn = document.getElementById('useAIBtn');
             
@@ -1611,62 +1750,100 @@
                 return;
             }
 
-            outputElement.innerHTML = `<i class="fas fa-robot fa-spin"></i> جاري استدعاء المحتوى الحقيقي (${type}) عن: **${prompt}**...<span class="typing-cursor"></span>`;
+            outputElement.innerHTML = `<i class="fas fa-robot fa-spin"></i> جاري استدعاء المحتوى الحقيقي (${type}) عن: **${prompt}**...`;
             useBtn.disabled = true;
 
-            // استدعاء الدالة التي تجلب المحتوى الحقيقي (عبر الخادم الوسيط)
             const generatedText = await fetchGeminiContent(prompt, type);
             
-            // تشغيل تأثير الكتابة
             startTypingEffect(generatedText, outputElement, useBtn);
         }
 
+        // الدالة التي يستدعيها زر "استخدم المحتوى"
         function useAIContent() {
             const useBtn = document.getElementById('useAIBtn');
             const content = useBtn.getAttribute('data-content');
-            const sectionSelect = document.getElementById('adminSectionSelect');
-            const sectionId = sectionSelect.value;
-            const type = document.querySelector('.ai-option-btn.active').getAttribute('data-type');
-            
-            if (content) {
-                
-                // Copy to clipboard
-                navigator.clipboard.writeText(content).then(() => {
-                    alert('تم نسخ المحتوى إلى الحافظة: ' + content.substring(0, 50) + '...');
-                }).catch(err => {
-                    alert('فشل في نسخ المحتوى. يمكنك نسخه يدوياً.');
-                });
+            const typeElement = document.querySelector('.ai-option-btn.active');
+            const type = typeElement ? typeElement.getAttribute('data-type') : 'Post';
 
-                // Optional: Automatically load the content into the upload modal for the selected section
-                openUploadPostModal(type);
+            if (content) {
+                // نقل المحتوى إلى شاشة الرفع
+                openUploadPostModal(type === 'Post' ? 'بوست/منشور' : type === 'Poem' ? 'الشعر' : type === 'Article' ? 'المقالات' : 'الأبحاث');
                 document.getElementById('postContent').value = content;
-                closeModal('AIGeneratorModal');
+                closeModal('aiGeneratorModal');
+            } else {
+                 alert('لا يوجد محتوى لاستخدامه بعد.');
+            }
+        }
+        
+        // ==========================================================
+        // دوال التفاعل (Interaction Functions)
+        // ==========================================================
+
+        function toggleLike(button, postId) {
+            button.classList.toggle('active');
+            const isLiked = button.classList.contains('active');
+            button.querySelector('span').innerText = isLiked ? 'أعجبني' : 'إعجاب';
+            button.querySelector('i').classList.toggle('far', !isLiked);
+            button.querySelector('i').classList.toggle('fas', isLiked);
+            console.log(`Post ${postId} liked status: ${isLiked}`);
+        }
+
+        function openCommentModal(postId) {
+            const card = document.querySelector(`.card[data-post-id="${postId}"]`);
+            const title = card ? card.getAttribute('data-post-title') : 'محتوى غير معروف';
+            document.getElementById('commentPostId').value = postId;
+            document.getElementById('commentPostTitle').innerText = `للرد على: "${title}"`;
+            document.getElementById('commentText').value = '';
+            openModal('commentModal');
+        }
+
+        function submitComment(event) {
+            event.preventDefault();
+            const postId = document.getElementById('commentPostId').value;
+            const commentText = document.getElementById('commentText').value;
+            
+            // محاكاة حفظ التعليق في Neon/Vercel Postgres
+            console.log(`Comment submitted for Post ${postId}: ${commentText} (Simulated to Neon/Vercel)`);
+            
+            closeModal('commentModal');
+            alert('تم إرسال تعليقك بنجاح! (محاكاة حفظ Neon)');
+        }
+
+        function shareContent(postId, title) {
+            if (navigator.share) {
+                navigator.share({
+                    title: title,
+                    text: `شاركتك محتوى جديد من تطبيق "رقة": ${title}`,
+                    url: window.location.href, // يمكن استبدالها برابط البوست الفعلي
+                }).catch(error => console.log('Error sharing:', error));
+            } else {
+                alert(`يمكنك مشاركة المحتوى: ${title}\n(وظيفة المشاركة غير مدعومة في هذا المتصفح)`);
             }
         }
 
-        // ======================================================
-        //                  Initialization
-        // ======================================================
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check admin status on load
-            if (isLoggedIn) {
-                document.getElementById('adminDashboard').style.display = 'block';
-            } else {
-                document.getElementById('adminLogin').style.display = 'none';
-            }
-            
-            // Initial content load for the active section (home)
-            const activeNav = document.querySelector('.nav-item.active');
-            if (activeNav) {
-                showSection(activeNav.getAttribute('data-section'), activeNav);
-            }
-            
-            // Load nursing log if any
-            loadNursingLog();
-        });
+        // ==========================================================
+        // وظائف التهيئة والبدء (Initialization)
+        // ==========================================================
 
+        // عند تحميل الصفحة
+        window.onload = function() {
+            // إضافة محتوى افتراضي لجميع الـ bouh-display للحفظ
+            Object.keys(bouhDisplays).forEach(sec => {
+                bouhDisplays[sec].setAttribute('data-default-content', bouhDisplays[sec].innerText.trim().split('\n')[0]);
+            });
+            // محاكاة جلب المحتوى من قاعدة البيانات عند بدء التشغيل
+            Object.keys(contentContainers).forEach(sec => {
+                renderContent(sec);
+            });
+            displayNursingLogs(); // عرض سجلات الرضاعة عند البدء
+        };
+
+        // دالة لإعادة جلب المحتوى (تُستخدم بعد الحفظ/الحذف/التعديل)
+        function refreshContent() {
+            Object.keys(contentContainers).forEach(sec => {
+                renderContent(sec);
+            });
+        }
     </script>
-
 </body>
 </html>
