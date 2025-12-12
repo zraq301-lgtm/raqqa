@@ -1,0 +1,87 @@
+/* tracker.css */
+
+/* التنسيق الأساسي لقسم المتابعة داخل بطاقة الصحة */
+#daily-habit-tracker-ui {
+    padding-top: 15px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 15px;
+    background-color: #ffffff; 
+    border-radius: 8px;
+}
+
+/* تنسيق العنوان */
+#daily-habit-tracker-ui h3 {
+    margin: 5px 0 15px 0;
+    color: #444;
+    font-size: 1.2rem;
+    border-bottom: 1px dashed #ddd;
+    padding-bottom: 8px;
+    text-align: right;
+}
+
+/* تنسيق قائمة العناصر */
+#daily-habit-tracker-ui .tracker-list {
+    margin-top: 10px;
+}
+
+/* تنسيق كل عنصر في القائمة */
+#daily-habit-tracker-ui .tracker-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 5px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+    cursor: pointer;
+}
+
+#daily-habit-tracker-ui .tracker-item:hover {
+    background-color: #fcfcfc;
+}
+
+#daily-habit-tracker-ui .tracker-item:last-child {
+    border-bottom: none;
+}
+
+/* معلومات النشاط (الأيقونة والاسم) */
+#daily-habit-tracker-ui .tracker-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#daily-habit-tracker-ui .tracker-icon {
+    font-size: 1.3rem;
+    width: 30px;
+    text-align: center;
+}
+
+#daily-habit-tracker-ui .tracker-name {
+    font-weight: 600;
+    color: var(--text-main, #4a4a4a);
+    font-size: 0.95rem;
+}
+
+/* زر/دائرة حالة الإنجاز */
+.tracker-status-habit {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.tracker-status-habit.completed {
+    border-color: var(--accent-green, #4CAF50);
+    background-color: var(--accent-green, #4CAF50);
+}
+
+.tracker-status-habit.completed i {
+    color: var(--white, #ffffff);
+    font-size: 1rem;
+}
