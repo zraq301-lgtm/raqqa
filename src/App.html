@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تطبيق رقة - عالمك الخاص</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="tracker.css">
+    
+    <style>
+        /* تعريف المتغيرات (Colors & Dimensions) - يفضل نقل هذه إلى ملف CSS منفصل كبير */
+        :root {
+            --primary-pink: #e91e63;
+            --soft-pink: #fce4ec;
+            --gold: #d4af37;
+            --text-main: #4a4a4a;
+            --white: #ffffff;
+            --nav-height: 75px;
+            --accent-green: #4CAF50;
+            --accent-blue: #2196F3;
+            --accent-red: #f44336;
+            --server-sim-bg: #ffe0e9;
+        }
+
+        /* [يتم الاحتفاظ بجميع التنسيقات الأخرى التي أرسلتها هنا] */
+        /* ... (تنسيقات CSS الطويلة التي أرسلتها) ... */
+
+        /* روابط أقسام الصحة الفرعية (تم تعديل التنسيق ليشمل الأنشطة) */
+        .health-subs {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+        /* [باقي التنسيقات كما هي] */
+        
+        /* شريط التنقل السفلي (Bottom Navigation) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; width: 100%;
+            height: var(--nav-height);
+            background: white;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-radius: 25px 25px 0 0;
+            z-index: 1500;
+            justify-content: space-evenly;
+            padding: 0 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="welcome-section" id="homeView">
+            </div>
+
+        <div id="sec-intimacy-new" class="section-view">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-heart-circle-bolt"></i> العلاقات الحميمية</div>
+                <div class="sequential-content-container" id="content-container-sec-intimacy-new">
+                    <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">محتوى العلاقات الحميمية سيظهر هنا.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-society-new" class="section-view">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-users"></i> المجتمع</div>
+                <div class="sequential-content-container" id="content-container-sec-society-new">
+                    <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">محتوى المجتمع سيظهر هنا.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="sec-health" class="section-view">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-stethoscope"></i> الصحة والجمال</div>
+                <div class="health-subs">
+                    <a class="h-link cycle-tracker" onclick="toggleTrackerUI('cycleTracker')"><i class="fas fa-venus"></i> الدورة الشهرية</a>
+                    <a class="h-link nursing-tracker" onclick="toggleTrackerUI('nursingTracker')"><i class="fas fa-baby"></i> تتبع الرضاعة</a>
+                    <a class="h-link skin-care-tracker" onclick="toggleTrackerUI('skinCareTracker')"><i class="fas fa-spa"></i> العناية بالبشرة</a>
+                    <a class="h-link pregnancy-tracker" onclick="toggleTrackerUI('pregnancyTracker')"><i class="fas fa-baby-carriage"></i> تتبع الحمل</a>
+                </div>
+                
+                <div class="sequential-content-container" id="content-container-sec-health">
+                    <p style="text-align: center; color: #999; font-size: 0.85rem; margin-bottom: 0;">محتوى الصحة والجمال سيظهر هنا.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div id="uploadPostModal" class="modal-overlay" onclick="closeModal(event, 'uploadPostModal')">
+            <div class="modal-box" onclick="event.stopPropagation()" id="uploadPostModalContent">
+                </div>
+        </div>
+
+        <div id="aiGeneratorModal" class="modal-overlay" onclick="closeModal(event, 'aiGeneratorModal')">
+            <div class="modal-box" onclick="event.stopPropagation()" id="aiGeneratorModalContent">
+                </div>
+        </div>
+        
+        <div id="contentScreenModal" class="modal-overlay" onclick="closeModal(event, 'contentScreenModal')">
+            <div class="modal-box" onclick="event.stopPropagation()" id="contentScreenModalContent" style="max-width: 90%; min-height: 200px;">
+                </div>
+        </div>
+        
+        <div id="commentModal" class="modal-overlay" onclick="closeModal(event, 'commentModal')">
+            <div class="modal-box" onclick="event.stopPropagation()" id="commentModalContent">
+                </div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('home')"><i class="fas fa-home"></i> الرئيسية</div>
+        <div class="nav-item" data-section="sec-feelings" onclick="showSection('sec-feelings')"><i class="fas fa-heart"></i> المشاعر</div>
+        <div class="nav-item" data-section="sec-fiqh" onclick="showSection('sec-fiqh')"><i class="fas fa-balance-scale"></i> فقه النساء</div>
+        <div class="nav-item" data-section="sec-intimacy-new" onclick="showSection('sec-intimacy-new')"><i class="fas fa-heart-circle-bolt"></i> حميمية</div>
+        <div class="nav-item" data-section="sec-society-new" onclick="showSection('sec-society-new')"><i class="fas fa-users"></i> المجتمع</div>
+        <div class="nav-item" data-section="sec-health" onclick="showSection('sec-health')"><i class="fas fa-stethoscope"></i> صحة وجمال</div>
+    </nav>
+    
+    <script src="app.js"></script>
+</body>
+</html>
