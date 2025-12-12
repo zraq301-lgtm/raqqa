@@ -859,7 +859,7 @@
 
         <div id="sec-feelings" class="section-view">
             <div class="card" data-post-id="101" data-post-title="مساحة آمنة لقلبك">
-                <button class="delete-overlay-btn" onclick="deletePost(101, 'sec-feelings', event)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('101', 'sec-feelings', event)"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-heart-pulse"></i> المشاعر</div>
                 <div class="bouh-display" id="txt-feelings" onclick="openContentScreen('sec-feelings', 'همسة الأسبوع', event)">
                     مساحة آمنة لقلبك، حيث تجدين التعبير والدعم.
@@ -880,7 +880,7 @@
 
         <div id="sec-fiqh" class="section-view">
             <div class="card" data-post-id="102" data-post-title="نور البصيرة في أمور دينك">
-                <button class="delete-overlay-btn" onclick="deletePost(102, 'sec-fiqh', event)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('102', 'sec-fiqh', event)"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-balance-scale"></i> فقه النساء</div>
                 <div class="bouh-display" id="txt-fiqh" onclick="openContentScreen('sec-fiqh', 'همسة الأسبوع', event)">
                     نور البصيرة في أمور دينك ودنياك.
@@ -901,7 +901,7 @@
 
         <div id="sec-intimacy-new" class="section-view">
             <div class="card" data-post-id="103" data-post-title="العلاقات الحميمية">
-                <button class="delete-overlay-btn" onclick="deletePost(103, 'sec-intimacy-new', event)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('103', 'sec-intimacy-new', event)"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-fire"></i> العلاقات الحميمية</div>
                 <div class="bouh-display" id="txt-intimacy-new" onclick="openContentScreen('sec-intimacy-new', 'همسة الأسبوع', event)" style="border-color:#f88;">
                     تقوية جسور المودة والتفاهم بين الزوجين.
@@ -922,7 +922,7 @@
 
         <div id="sec-society-new" class="section-view">
             <div class="card" data-post-id="104" data-post-title="المجتمع والتنمية">
-                <button class="delete-overlay-btn" onclick="deletePost(104, 'sec-society-new', event)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('104', 'sec-society-new', event)"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-users"></i> المجتمع والتنمية</div>
                 <div class="bouh-display" id="txt-society-new" onclick="openContentScreen('sec-society-new', 'همسة الأسبوع', event)" style="border-color:#d4af37;">
                     كوني جزءاً فاعلاً من مجتمعك ومصدر قوة.
@@ -943,7 +943,7 @@
 
         <div id="sec-health" class="section-view">
             <div class="card" data-post-id="105" data-post-title="الصحة والجمال">
-                <button class="delete-overlay-btn" onclick="deletePost(105, 'sec-health', event)"><i class="fas fa-times"></i></button>
+                <button class="delete-overlay-btn" onclick="deletePost('105', 'sec-health', event)"><i class="fas fa-times"></i></button>
                 <div class="card-header"><i class="fas fa-venus"></i> الصحة والجمال</div>
                 <div class="bouh-display" id="txt-health" onclick="openContentScreen('sec-health', 'همسة الأسبوع', event)">
                     جمالك يبدأ من صحتك الداخلية. اهتمي بالتفاصيل الصغيرة لتضيئي.
@@ -1173,8 +1173,13 @@
         // ==========================================================
         const ADMIN_USERNAME = 'zazo';
         const ADMIN_PASSWORD = 'zazo010988';
-        // الرابط الأساسي لـ Vercel API (يفترض أن لديك مجلد /api يحتوي على الدوال الخاصة بك)
+        // الرابط الأساسي لـ Vercel API
         const VERCEL_API_BASE_URL = window.location.origin + '/api'; 
+        
+        // الروابط المحددة التي زودتني بها للـ Backend
+        const API_GET_POSTS = VERCEL_API_BASE_URL + '/get-posts'; // -> api/get-posts.js
+        const API_SAVE_POSTS = VERCEL_API_BASE_URL + '/save-posts'; // -> api/save-posts.js
+        const API_DELETE_POST = VERCEL_API_BASE_URL + '/delete-post'; // افتراض وجود رابط للحذف
 
         // ==========================================================
         // متغيرات الحالة (State Variables)
@@ -1211,8 +1216,8 @@
         async function fetchFromNeonDB() {
             console.log('جاري جلب المحتوى من Vercel API...');
             try {
-                // افتراض أن endpoint "/api/posts" يرجع جميع المحتويات مصنفة وجاهزة (أحدث أولاً)
-                const response = await fetch(`${VERCEL_API_BASE_URL}/posts`); 
+                // 1. استخدام endpoint الجلب الخاص بك
+                const response = await fetch(API_GET_POSTS); 
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -1220,14 +1225,37 @@
                 
                 const data = await response.json();
                 
-                // تحديث محتوى الواجهة الرئيسي بالبيانات الجديدة
-                savedContent = data; 
+                // 2. معالجة البيانات: تحويل مصفوفة مسطحة إلى كائن مجمع حسب القسم
+                const fetchedPosts = data.posts || [];
+                const newSavedContent = {}; 
+                
+                fetchedPosts.forEach(post => {
+                    const sectionKey = post.section; // sec-feelings, sec-fiqh, etc.
+                    // التأكد من أن المفتاح موجود وصالح (للأمان)
+                    if (contentContainers.hasOwnProperty(sectionKey)) {
+                        if (!newSavedContent[sectionKey]) {
+                            newSavedContent[sectionKey] = [];
+                        }
+                        // إضافة البوست إلى المصفوفة الخاصة بقسمه
+                        newSavedContent[sectionKey].push({
+                            id: post.id, // ID المجلوب من Neon
+                            content: post.content,
+                            section: post.section,
+                            type: post.type,
+                            // تنسيق created_at ليناسب العرض
+                            date: new Date(post.created_at).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' })
+                        });
+                    }
+                });
+
+                // 3. تحديث حالة التطبيق وعرض المحتوى
+                savedContent = newSavedContent; 
                 refreshContent(); // تحديث الواجهة
 
-                // إضافة البيانات إلى localStorage كنسخة احتياطية للعرض الأولي (للسرعة في حال فشل الاتصال)
-                localStorage.setItem('reqa_app_content', JSON.stringify(data));
+                // حفظ نسخة احتياطية محلية
+                localStorage.setItem('reqa_app_content', JSON.stringify(savedContent));
                 
-                // تشغيل التحديث الدوري (كل 5 دقائق) لضمان جلب المحتوى الجديد بشكل مستمر
+                // تشغيل التحديث الدوري (كل 5 دقائق)
                 if (!window.refreshInterval) {
                     window.refreshInterval = setInterval(fetchFromNeonDB, 300000); // 5 دقائق
                     console.log('تم تفعيل التحديث الدوري للمحتوى.');
@@ -1254,26 +1282,34 @@
          */
         async function saveToNeonDB(section, postData) {
             
+            // إضافة created_at ليناسب الباك إند
+            const payload = {
+                ...postData,
+                created_at: new Date().toISOString() // يتم إرسال التاريخ بتنسيق ISO ليناسب قاعدة البيانات
+            };
+
             // 1. إرسال البيانات إلى Vercel API
             try {
-                const response = await fetch(`${VERCEL_API_BASE_URL}/posts`, { 
+                const response = await fetch(API_SAVE_POSTS, { 
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(postData),
+                    body: JSON.stringify(payload),
                 });
 
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorDetails = await response.json();
+                    throw new Error(`HTTP error! status: ${response.status}. Details: ${errorDetails.error}`);
                 }
 
-                // 2. بعد الحفظ الناجح، قم بجلب أحدث البيانات لتحديث الواجهة بالكامل (الأحدث أولاً)
+                // 2. بعد الحفظ الناجح، قم بجلب أحدث البيانات لتحديث الواجهة بالكامل
                 await fetchFromNeonDB(); 
                 
             } catch (error) {
                 console.error('Error saving to Neon/Vercel API:', error);
-                alert('❌ فشل في نشر المحتوى. يرجى التأكد من عمل Vercel API بشكل صحيح.');
+                alert('❌ فشل في نشر المحتوى. يرجى التأكد من عمل Vercel API بشكل صحيح: ' + error.message);
+                throw error;
             }
         }
 
@@ -1302,13 +1338,13 @@
                 // إضافة فئة 'newly-added' للبوست الأول فقط
                 const highlightClass = index === 0 ? 'newly-added' : '';
 
-                // نحتاج إلى تمرير الـ sectionID في دالة الحذف لضمان عملها بعد الجلب من الـ DB
+                // استخدام post.id المجلوب من Neon للحذف والتعليق
                 html += `
                     <div class="content-item-card ${highlightClass}" data-post-id="${post.id}" data-type="${post.type}" data-section="${section}">
                         ${isAdminLoggedIn ? `<button class="delete-overlay-btn" onclick="deletePost(${post.id}, '${section}', event)"><i class="fas fa-times"></i></button>` : ''}
                         <span class="type-badge">${post.type}</span>
                         <div class="post-content">${post.content}</div>
-                        <small>${post.date}</small>
+                        <small>نشر بتاريخ: ${post.date}</small>
                         <div class="interaction-bar">
                             <button class="act-btn like-btn" onclick="toggleLike(this, ${post.id})"><i class="far fa-heart"></i> <span>إعجاب</span></button>
                             <button class="act-btn" onclick="openCommentModal(${post.id})"><i class="far fa-comment"></i> <span>تعليق</span></button>
@@ -1357,6 +1393,9 @@
                 
                 // نمر على جميع العناصر المعروضة في كل حاوية
                 Array.from(container.children).forEach(item => {
+                    // تخطي رسالة "جاري التحميل" أو رسالة "لا يوجد محتوى"
+                    if (item.tagName !== 'DIV') return; 
+                    
                     const itemContent = item.querySelector('.post-content')?.innerText.toLowerCase() || "";
                     const itemType = item.querySelector('.type-badge')?.innerText.toLowerCase() || "";
                     
@@ -1436,36 +1475,32 @@
             if (!isAdminLoggedIn) deleteMode = false;
         }
 
-        function deletePost(postId, section, event) {
+        async function deletePost(postId, section, event) {
             if (!deleteMode || !isAdminLoggedIn) return;
             event.stopPropagation();
 
             if (!confirm('هل أنت متأكد من حذف هذا المحتوى؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
 
-            // 1. محاكاة حذف المحتوى عبر Vercel API
             try {
-                // يفترض أن لديك endpoint للحذف مثل /api/posts/delete
-                fetch(`${VERCEL_API_BASE_URL}/posts/delete`, {
-                    method: 'POST',
+                // إرسال طلب الحذف عبر Vercel API
+                // يفترض وجود endpoint للحذف مثل /api/delete-post
+                const response = await fetch(API_DELETE_POST, {
+                    method: 'POST', // يفترض أن API الحذف يستخدم POST أو DELETE
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: postId, section: section })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert('تم إرسال طلب الحذف بنجاح! سيتم تحديث المحتوى.');
-                        // 2. إعادة جلب المحتوى بعد الحذف لتحديث الواجهة
-                        fetchFromNeonDB();
-                    } else {
-                        alert('❌ فشل في إرسال طلب الحذف إلى Vercel API.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error deleting post:', error);
-                    alert('❌ حدث خطأ في الاتصال أثناء محاولة الحذف.');
+                    body: JSON.stringify({ id: postId, section: section }) // استخدام الـ ID المجلوب من DB
                 });
+                
+                if (response.ok) {
+                    alert('تم إرسال طلب الحذف بنجاح! سيتم تحديث المحتوى.');
+                    // إعادة جلب المحتوى بعد الحذف لتحديث الواجهة
+                    await fetchFromNeonDB();
+                } else {
+                    alert('❌ فشل في إرسال طلب الحذف إلى Vercel API. تحقق من الباك إند.');
+                }
 
             } catch (error) {
-                console.error('Error initiating delete request:', error);
+                console.error('Error deleting post:', error);
+                alert('❌ حدث خطأ في الاتصال أثناء محاولة الحذف.');
             }
         }
 
@@ -1482,25 +1517,26 @@
             openModal('uploadPostModal');
         }
 
-        function submitNewPost(event) {
+        async function submitNewPost(event) {
             event.preventDefault();
             const content = document.getElementById('postContent').value;
             const type = document.getElementById('uploadPostType').value;
             const section = document.getElementById('adminSectionSelect').value;
             if (!content || !type || !section) return;
 
-            // نترك للـ Backend تحديد الـ ID وتاريخ النشر
             const newPost = { 
                 section: section, 
                 type: type, 
                 content: content,
             };
 
-            // الحفظ إلى Neon DB (عبر الدالة المساعدة)
-            saveToNeonDB(section, newPost).then(() => {
+            try {
+                await saveToNeonDB(section, newPost);
                 closeModal('uploadPostModal');
                 alert(`تم رفع محتوى "${type}" إلى قسم "${section}" بنجاح! جاري التحديث.`);
-            });
+            } catch (error) {
+                // تم التعامل مع رسالة الخطأ في saveToNeonDB
+            }
         }
 
 
