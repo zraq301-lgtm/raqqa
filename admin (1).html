@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم رقة - الإدارة</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-pink: #e91e63;
+            --soft-pink: #fce4ec;
+            --gemini-blue: #2196F3;
+            --delete-red: #f44336;
+            --upload-green: #4CAF50;
+        }
+
+        body { font-family: 'Tajawal', sans-serif; background-color: #f4f4f9; color: #4a4a4a; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        h1 { color: var(--primary-pink); text-align: center; margin-bottom: 30px; font-size: 2rem; }
+        h2 { border-bottom: 3px solid var(--soft-pink); padding-bottom: 10px; margin-top: 40px; color: #6a6a6a; font-size: 1.4rem; }
+        label { display: block; margin-bottom: 8px; font-weight: 700; color: #6a6a6a; }
+        input[type="text"], input[type="password"], textarea, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus, textarea:focus, select:focus { border-color: var(--primary-pink); outline: none; }
+        
+        /* تنسيق الأزرار المشترك */
+        button {
+            color: white;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: background-color 0.3s, transform 0.2s;
+            margin-top: 10px;
+        }
+        button:active { transform: translateY(1px); }
+
+        /* تنسيقات الأزرار المخصصة */
+        .btn-login { background-color: var(--primary-pink); }
+        .btn-login:hover { background-color: #c2185b; }
+
+        .btn-save { background-color: #00bcd4; /* لون جديد للحفظ */ }
+        .btn-save:hover { background-color: #0097a7; }
+
+        .btn-gemini { background-color: var(--gemini-blue); }
+        .btn-gemini:hover { background-color: #1565c0; }
+
+        .btn-delete { background-color: var(--delete-red); }
+        .btn-delete:hover { background-color: #d32f2f; }
+        
+        /* الأزرار لرفع الملفات */
+        .upload-section button { background-color: var(--upload-green); margin-top: 0; }
+        .upload-section button:hover { background-color: #388e3c; }
+
+        /* الشبكات والتخطيط */
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .upload-item { background-color: #fce4ec; padding: 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .upload-item input[type="file"] { margin-bottom: 10px; }
+
+        /* الرسائل */
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+            font-weight: 700;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #cce5ff; color: #004085; border: 1px solid #b8daff; }
+        #admin-content { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1><i class="fas fa-user-shield"></i> لوحة تحكم رقة</h1>
+
+        <div id="login-form">
+            <h2>تسجيل الدخول</h2>
+            <label for="username">اسم المستخدم:</label>
+            <input type="text" id="username" placeholder="zazo" required>
+
+            <label for="password">كلمة المرور:</label>
+            <input type="password" id="password" placeholder="zazo010988" required>
+            
+            <button class="btn-login" onclick="checkCredentials()"><i class="fas fa-sign-in-alt"></i> دخول</button>
+            <p id="login-error" style="color: var(--delete-red); text-align: center; margin-top: 10px; display: none;">اسم المستخدم أو كلمة المرور غير صحيحة.</p>
+        </div>
+
+        <div id="admin-content">
+            
+            <h2><i class="fas fa-brain"></i> توليد محتوى ذكي (Gemini)</h2>
+            <form onsubmit="fetchGeminiContent(event)">
+                <label for="gemini-prompt">اطلب محتوى (اقتباس، نصيحة، شعر، مقال):</label>
+                <textarea id="gemini-prompt" rows="3" placeholder="اطلب نصيحة عن التعامل مع طفل رضيع أو اقتباس عن المشاعر الإيجابية..." required></textarea>
+                <button type="submit" class="btn-gemini"><i class="fas fa-magic"></i> جلب محتوى جديد</button>
+                <div id="gemini-result" class="message info"></div>
+            </form>
+            
+            <hr style="margin-top: 30px; border-color: #fce4ec;">
+
+            <h2><i class="fas fa-keyboard"></i> إضافة محتوى نصي يدوي / حفظ محتوى Gemini</h2>
+            <form id="postForm" onsubmit="savePost(event)">
+                
+                <label for="content">المحتوى النصي:</label>
+                <textarea id="content" rows="6" placeholder="الصق هنا النص الذي ولّده Gemini أو اكتب نصك الخاص..." required></textarea>
+
+                <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <label for="section">معرّف القسم في الواجهة الأمامية (Section ID):</label>
+                        <input type="text" id="section" placeholder="مثل: bouh-display-1" required>
+                    </div>
+                    <div>
+                        <label for="type">تصنيف المحتوى (Category):</label>
+                        <select id="type" required>
+                            <option value="">اختر نوع المحتوى</option>
+                            <option value="المشاعر">المشاعر</option>
+                            <option value="المجتمع">المجتمع</option>
+                            <option value="الصحة">الصحة</option>
+                            <option value="الفقه">الفقه</option>
+                            <option value="الحميمية">الحميمية</option>
+                            <option value="عام">عام</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-save"><i class="fas fa-database"></i> حفظ المنشور في Neon DB</button>
+            </form>
+            <div id="message" class="message success"></div>
+
+            <hr style="margin-top: 30px; border-color: #fce4ec;">
+
+            <h2><i class="fas fa-file-upload"></i> رفع ملفات الوسائط المتعددة (فيديو، صور، إلخ)</h2>
+            <div class="grid-container upload-section">
+                <div class="upload-item">
+                    <label for="media-file"><i class="fas fa-video"></i> فيديو / صورة / بوست</label>
+                    <input type="file" id="media-file" accept="image/*,video/*" style="width: auto;">
+                    <button onclick="handleFileUpload('media')">رفع وسائط</button>
+                </div>
+                <div class="upload-item">
+                    <label for="doc-file"><i class="fas fa-file-alt"></i> مقال / بحث / شعر (ملف)</label>
+                    <input type="file" id="doc-file" accept=".pdf,.doc,.docx,.txt" style="width: auto;">
+                    <button onclick="handleFileUpload('document')">رفع مستند</button>
+                </div>
+            </div>
+            <div id="upload-message" class="message error"></div>
+            
+            <hr style="margin-top: 30px; border-color: #fce4ec;">
+
+
+            <h2><i class="fas fa-eraser"></i> حذف محتوى من Neon DB</h2>
+            <form id="deleteForm" onsubmit="deletePost(event)">
+                <label for="deleteId">مُعرّف المنشور (ID):</label>
+                <input type="text" id="deleteId" placeholder="أدخل رقم ID المنشور المراد حذفه" required>
+                <button type="submit" class="btn-delete"><i class="fas fa-trash"></i> حذف المنشور</button>
+            </form>
+            <div id="delete-message" class="message error"></div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==========================================================
+        // إعدادات API وكلمة المرور - تم استخدام رابطك الفعلي
+        // ==========================================================
+        
+        const BASE_URL = 'https://raqqa-v6cd.vercel.app'; 
+        const API_SAVE_POST = BASE_URL + '/api/save-post'; 
+        const API_DELETE_POST = BASE_URL + '/api/delete-post'; 
+        // ⚠️ هذا هو الرابط لدالة Gemini التي يجب أن تقومي بتثبيتها وتعديلها
+        const API_GEMINI_GENERATE = BASE_URL + '/api/gemini'; 
+        
+        // بيانات الأدمن المطلوبة
+        const ADMIN_USERNAME = 'zazo'; 
+        const ADMIN_PASSWORD = 'zazo010988'; 
+
+        // ==========================================================
+        // وظائف تسجيل الدخول
+        // ==========================================================
+
+        function checkCredentials() {
+            const inputUsername = document.getElementById('username').value.trim();
+            const inputPassword = document.getElementById('password').value;
+            const errorMsg = document.getElementById('login-error');
+            
+            if (inputUsername === ADMIN_USERNAME && inputPassword === ADMIN_PASSWORD) {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('admin-content').style.display = 'block';
+                errorMsg.style.display = 'none';
+            } else {
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        // ==========================================================
+        // وظيفة جلب محتوى من Gemini API (توقع نص للإدخال اليدوي)
+        // ==========================================================
+        
+        async function fetchGeminiContent(event) {
+            event.preventDefault();
+            const prompt = document.getElementById('gemini-prompt').value.trim();
+            const resultDiv = document.getElementById('gemini-result');
+            const contentTextarea = document.getElementById('content');
+
+            if (!prompt) {
+                showMessage('الرجاء إدخال طلبك لتوليد المحتوى.', 'error', 'gemini-result');
+                return;
+            }
+            
+            // ⚠️ ملاحظة: كود الـ API الذي قدمتيه (api/gemini) يقوم بالحفظ في Supabase!
+            // تم تعديل الواجهة الأمامية هنا لتتوقع أن API Gemini سيعيد النص فقط
+            // ثم يمكنكِ حفظه يدوياً في Neon عبر نموذج الإضافة اليدوي.
+            
+            try {
+                showMessage(`جاري طلب المحتوى من الذكاء الاصطناعي...`, 'info', 'gemini-result');
+
+                const response = await fetch(API_GEMINI_GENERATE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    // يجب تمرير user_id حتى يعمل كود Gemini API الذي قدمتيه (افتراضياً 123)
+                    body: JSON.stringify({ prompt: prompt, user_id: '123' }) 
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.post && result.post.content) {
+                    // في حال نجاح الاستجابة، ننقل المحتوى لخانة الإدخال اليدوي
+                    contentTextarea.value = result.post.content; 
+                    showMessage(`✅ تم توليد المحتوى بنجاح! تم وضعه في خانة الإضافة اليدوية. (Post ID: ${result.post.id || 'N/A'})`, 'success', 'gemini-result');
+                    document.getElementById('gemini-prompt').value = ''; 
+                    // تنبيه: نتيجة هذا الطلب محفوظة في Supabase. يجب الآن حفظها في Neon يدوياً.
+                } else {
+                    showMessage(`❌ فشل توليد المحتوى. قد يكون هناك خطأ في الاتصال أو أن API Gemini الذي زودتينا به فشل في الحفظ في Supabase: ${result.error || 'خطأ غير معروف.'}`, 'error', 'gemini-result');
+                }
+
+            } catch (error) {
+                console.error('Gemini Fetch Error:', error);
+                showMessage('❌ فشل الاتصال بخادم توليد المحتوى (تأكدي من API Key و Supabase/Neon).', 'error', 'gemini-result');
+            }
+        }
+
+
+        // ==========================================================
+        // وظيفة رفع الملفات من الجهاز (محاكاة)
+        // ==========================================================
+        
+        function handleFileUpload(fileType) {
+            let fileInput;
+            let fileDescription;
+
+            if (fileType === 'media') {
+                fileInput = document.getElementById('media-file');
+                fileDescription = 'ملف الوسائط (فيديو/صورة)';
+            } else if (fileType === 'document') {
+                fileInput = document.getElementById('doc-file');
+                fileDescription = 'ملف المقالة/البحث';
+            }
+
+            if (!fileInput || fileInput.files.length === 0) {
+                showMessage(`الرجاء اختيار ${fileDescription} أولاً.`, 'error', 'upload-message');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            showMessage(`جاري رفع ${fileDescription}: ${file.name} بحجم ${Math.round(file.size / 1024)} KB...`, 'info', 'upload-message');
+
+            // ⚠️ تنبيه: هنا يجب أن يكون لديكِ دالة خادم (Upload API)
+            // تستقبل هذا الملف وترفعه إلى خدمة تخزين سحابي.
+            // لعدم وجود كود الـ API الخاص بالرفع، يتم محاكاة النجاح.
+
+            setTimeout(() => {
+                showMessage(`✅ تم محاكاة رفع ${fileDescription} بنجاح! (يجب إنشاء دالة خادم للرفع الحقيقي)`, 'success', 'upload-message');
+                fileInput.value = ''; 
+            }, 2000);
+        }
+
+        // ==========================================================
+        // وظيفة حفظ المنشور (POST) - ترسل لـ /api/save-post (Neon)
+        // ==========================================================
+
+        async function savePost(event) {
+            event.preventDefault();
+            
+            const postData = {
+                content: document.getElementById('content').value.trim(),
+                section: document.getElementById('section').value.trim(),
+                type: document.getElementById('type').value,
+                created_at: new Date().toISOString(),
+            };
+
+            if (!postData.content || !postData.section || !postData.type) {
+                showMessage('الرجاء تعبئة جميع حقول الإضافة اليدوية المطلوبة.', 'error', 'message');
+                return;
+            }
+
+            try {
+                showMessage('جاري حفظ المنشور في Neon...', 'info', 'message');
+                
+                const response = await fetch(API_SAVE_POST, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(postData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage('✅ تم حفظ المنشور بنجاح في Neon DB!', 'success', 'message');
+                    document.getElementById('postForm').reset(); 
+                    // إعادة تحميل محتوى الواجهة الأمامية بعد الحفظ (افتراضاً لديكِ دالة لذلك)
+                    if (window.parent && window.parent.refreshContent) {
+                        window.parent.refreshContent();
+                    }
+                } else {
+                    showMessage(`❌ فشل الحفظ: ${result.error || result.message}`, 'error', 'message');
+                }
+
+            } catch (error) {
+                console.error('Fetch Error:', error);
+                showMessage('❌ فشل الاتصال بخادم Vercel لحفظ البيانات.', 'error', 'message');
+            }
+        }
+
+        // ==========================================================
+        // وظيفة حذف المنشور (DELETE) - ترسل لـ /api/delete-post (Neon)
+        // ==========================================================
+
+        async function deletePost(event) {
+            event.preventDefault();
+            const deleteId = document.getElementById('deleteId').value.trim();
+            
+            if (!deleteId) {
+                showMessage('الرجاء إدخال مُعرّف المنشور (ID).', 'error', 'delete-message');
+                return;
+            }
+
+            if (!confirm(`هل أنت متأكد من حذف المنشور رقم ${deleteId}؟`)) {
+                return;
+            }
+
+            try {
+                showMessage('جاري الحذف...', 'info', 'delete-message');
+                
+                // استخدام Query Parameter كما في كود API الذي زودتيه
+                const response = await fetch(`${API_DELETE_POST}?id=${deleteId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showMessage(`🗑️ تم حذف المنشور رقم ${deleteId} بنجاح!`, 'success', 'delete-message');
+                    document.getElementById('deleteForm').reset(); 
+                    // إعادة تحميل محتوى الواجهة الأمامية بعد الحذف
+                    if (window.parent && window.parent.refreshContent) {
+                        window.parent.refreshContent();
+                    }
+                } else {
+                    showMessage(`❌ فشل الحذف: ${result.message || result.error}`, 'error', 'delete-message');
+                }
+
+            } catch (error) {
+                console.error('Delete Fetch Error:', error);
+                showMessage('❌ فشل الاتصال بخادم Vercel لحذف البيانات.', 'error', 'delete-message');
+            }
+        }
+
+
+        function showMessage(text, type, elementId) {
+            const messageDiv = document.getElementById(elementId);
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type}`; 
+            messageDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
