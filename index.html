@@ -3,45 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تطبيق رقة - عالمك الخاص (مُحدّث لـ Neon DB)</title>
+    <title>تطبيق رقة - عالمك الخاص</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* تعريف المتغيرات (Colors & Dimensions) */
+        /* ==================================== */
+        /* 1. لوحة الألوان الرقيقة والأنثوية الفاتحة */
+        /* ==================================== */
         :root {
-            --primary-pink: #e91e63;
-            --soft-pink: #fce4ec;
-            --gold: #d4af37;
-            --text-main: #4a4a4a;
-            --white: #ffffff;
+            --primary-rose: #f08080;         /* لون أساسي (Soft Coral/Rose) */
+            --soft-blush: #fef0f4;          /* خلفية العناصر الخفيفة (Very Light Blush) */
+            --rose-gold-accent: #c49b99;    /* لون عناوين وأسماء (Muted Rose Gold) */
+            --text-dark: #5d4037;           /* لون النص الداكن (Soft Brown) */
+            --background-cream: #ffffff;    /* لون الخلفية الرئيسية */
             --nav-height: 75px; 
-            --accent-green: #4CAF50;
-            --accent-blue: #2196F3;
-            --accent-red: #f44336;
+            --success-green: #81c784;    
+            --error-red: #e57373;        
         }
 
-        /* تنسيق الجسم الأساسي */
+        /* ==================================== */
+        /* 2. تنسيق الجسم والرأس */
+        /* ==================================== */
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #f7f7f7;
+            background-color: #fcfcfc; /* خلفية شبه بيضاء ناعمة */
+            color: var(--text-dark);
             margin: 0;
             padding-bottom: var(--nav-height); 
         }
 
         /* تنسيق الرأس (Header) */
         .app-header {
-            background-color: var(--primary-pink);
-            color: var(--white);
+            background-color: var(--primary-rose);
+            color: var(--background-cream);
             padding: 15px 20px;
             text-align: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 10px rgba(240, 128, 128, 0.3); /* ظل خفيف بلون الورد */
         }
         .app-header h1 {
             font-family: 'Aref Ruqaa', serif;
             font-size: 1.8rem;
             margin: 0;
+            letter-spacing: 1px;
         }
         .app-header p {
             font-size: 0.9rem;
@@ -49,15 +54,17 @@
             font-weight: 300;
         }
 
-        /* تنسيق شريط التنقل السفلي */
+        /* ==================================== */
+        /* 3. شريط التنقل السفلي */
+        /* ==================================== */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             height: var(--nav-height);
-            background-color: var(--white);
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            background-color: var(--background-cream);
+            box-shadow: 0 -2px 15px rgba(0,0,0,0.05);
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -74,258 +81,162 @@
             padding: 5px 0;
             transition: color 0.3s;
         }
-        .nav-item.active { color: var(--primary-pink); }
+        .nav-item.active { color: var(--primary-rose); }
         .nav-item i { font-size: 1.5rem; }
         .nav-item span { font-size: 0.7rem; margin-top: 4px; font-weight: 700; }
         
-        /* تنسيق الأقسام الرئيسية (Pages) */
+        /* ==================================== */
+        /* 4. الأقسام الرئيسية والمحتوى */
+        /* ==================================== */
         .page-content { padding: 20px 15px; }
         .page-section { display: none; }
         .page-section.active { display: block; }
         
         /* تنسيق بطاقات المحتوى الرئيسية (Bouh Display) */
         .bouh-display {
-            background-color: var(--white);
+            background-color: var(--background-cream);
             padding: 20px;
-            border-radius: 15px;
-            margin-top: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            border-radius: 12px;
+            margin-top: 20px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.05);
             text-align: center;
-            border-top: 5px solid var(--primary-pink);
+            border-top: 5px solid var(--rose-gold-accent); /* إطار بلون روز جولد */
         }
 
         .bouh-display h2 {
             font-family: 'Aref Ruqaa', serif;
-            color: var(--gold);
+            color: var(--rose-gold-accent);
             margin-top: 0;
             font-size: 1.5rem;
+            border-bottom: 1px solid var(--soft-blush);
+            padding-bottom: 10px;
         }
 
         .bouh-display p.content-text {
-            color: var(--text-main);
+            color: var(--text-dark);
             font-size: 1.1rem;
             line-height: 1.8;
             min-height: 50px; 
+            margin-bottom: 15px;
+        }
+        
+        /* الروابط الخارجية للمكتبات */
+        .library-link-container {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: var(--soft-blush); 
+            border-radius: 8px;
+            text-align: center;
+        }
+        .library-link-container a {
+            color: var(--primary-rose);
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 0.95rem;
+            transition: color 0.3s;
+        }
+        .library-link-container a:hover {
+            color: var(--rose-gold-accent);
         }
         
         /* شريط البحث */
-        .search-bar {
-            margin-bottom: 20px;
-            position: relative;
-        }
+        .search-bar { margin-bottom: 20px; position: relative; }
         .search-bar input {
             width: 100%;
-            padding: 10px 15px 10px 40px; 
-            border: 1px solid #ddd;
+            padding: 12px 15px 12px 40px; 
+            border: 1px solid #e0e0e0;
             border-radius: 25px;
             font-family: 'Tajawal', sans-serif;
             font-size: 1rem;
             box-sizing: border-box;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
         }
         .search-bar i {
             position: absolute;
             right: 15px;
             top: 50%;
             transform: translateY(-50%);
-            color: #aaa;
+            color: var(--rose-gold-accent);
         }
 
-        /* همسة أسبوعية */
+        /* همسة أسبوعية (Weekly Whisper) */
         .weekly-whisper {
-            background: linear-gradient(135deg, #fce4ec 0%, #ffc0cb 100%);
+            background-color: var(--soft-blush); 
             padding: 15px;
             border-radius: 15px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
             text-align: center;
-            border: 1px solid var(--primary-pink);
+            border: 1px solid var(--primary-rose);
+            border-left: 5px solid var(--primary-rose);
         }
         .weekly-whisper h3 {
             font-family: 'Aref Ruqaa', serif;
-            color: var(--primary-pink);
+            color: var(--primary-rose);
             margin-top: 0;
             font-size: 1.3rem;
         }
         .weekly-whisper p {
-            color: var(--text-main);
+            color: var(--text-dark);
             font-size: 1rem;
             line-height: 1.6;
         }
-
-        /* الروابط الخارجية للمكتبات */
-        .library-link-container {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #fff0f5; 
-            border-radius: 8px;
+        
+        /* تنسيق قسم الرئيسية الترحيبي */
+        .welcome-text-container {
+            height: calc(100vh - 180px); 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             text-align: center;
+            margin-top: -30px; 
         }
-        .library-link-container a {
-            color: var(--primary-pink);
+        .welcome-text-container h1 {
+            font-family: 'Aref Ruqaa', serif;
+            font-size: 4.5rem; /* حجم خط أكبر للمسة مبهرة */
+            color: var(--primary-rose);
+            margin: 0;
+            text-shadow: 0 0 15px rgba(240, 128, 128, 0.5);
+        }
+        .welcome-text-container p {
+            color: var(--rose-gold-accent);
+            font-size: 1.2rem;
+            margin-top: 10px;
             font-weight: 700;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 0.95rem;
         }
-
-        /* تنسيقات الإدارة */
-        .admin-controls {
-            background-color: var(--white);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-top: 15px;
-            border-top: 5px solid var(--accent-blue);
-        }
-        .admin-controls h2 {
-            color: var(--accent-blue);
-            margin-top: 0;
-        }
-        .admin-controls label, .admin-controls input, .admin-controls select, .admin-controls textarea, .admin-controls button {
-            display: block;
-            width: 100%;
-            margin-bottom: 10px;
-            font-family: 'Tajawal', sans-serif;
-            box-sizing: border-box;
-        }
-        .admin-controls input, .admin-controls select, .admin-controls textarea {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .admin-controls textarea {
-            min-height: 100px;
-        }
-        .admin-controls button {
-            background-color: var(--accent-blue);
-            color: var(--white);
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 700;
-            transition: background-color 0.3s;
-        }
-        .admin-controls button:hover {
-            background-color: #1565c0;
-        }
-        .admin-result {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            display: none;
-        }
-
 
         /* ==================================== */
         /* تنسيقات قسم الصحة (التعقب) - لم تتغير */
         /* ==================================== */
-
         .health-tracker-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 20px;
         }
-
-        .tracker-link {
-            text-align: center;
-            padding: 15px 5px;
-            background-color: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: all 0.2s;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-        .tracker-link:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .tracker-link.active {
-            border-bottom-color: var(--primary-pink);
-        }
-
-        .tracker-link i {
-            font-size: 1.5rem;
-            color: var(--primary-pink);
-            margin-bottom: 5px;
-        }
-        .tracker-link span {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        /* شاشات المتابعة الفرعية */
-        .tracker-screen {
-            display: none;
-            background-color: var(--white);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-top: 15px;
-        }
-        .tracker-screen.active {
-            display: block;
-        }
-
-        .tracker-screen h3 {
-            color: var(--primary-pink);
-            border-bottom: 2px solid var(--soft-pink);
-            padding-bottom: 10px;
-            margin-top: 0;
-            font-family: 'Tajawal', sans-serif;
-            font-weight: 700;
-            font-size: 1.3rem;
-        }
+        .tracker-link { border-bottom: 3px solid transparent; background-color: var(--background-cream); }
+        .tracker-link.active { border-bottom-color: var(--primary-rose); }
+        .tracker-link i { color: var(--rose-gold-accent); }
+        .tracker-link span { color: var(--text-dark); }
+        .tracker-screen { background-color: var(--background-cream); }
+        .tracker-screen h3 { color: var(--primary-rose); border-bottom: 2px solid var(--soft-blush); }
         
-        .tracker-screen label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--text-main);
-        }
-        .tracker-screen input, .tracker-screen select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-family: 'Tajawal', sans-serif;
-        }
         .tracker-screen button {
-            background-color: var(--primary-pink);
-            color: var(--white);
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: 'Tajawal', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-            width: 100%;
-            transition: background-color 0.3s;
+            background-color: var(--primary-rose);
+            color: var(--background-cream);
         }
         .tracker-screen button:hover {
-            background-color: #c2185b;
+            background-color: #e66a6a;
         }
         
-        /* نتائج المتابعة والتنبيهات */
         .log-result {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            display: none;
-            text-align: right;
             border-right: 5px solid;
             font-weight: 700;
+            display: none;
         }
+
     </style>
 </head>
 <body>
@@ -338,24 +249,11 @@
     <div class="page-content">
         
         <div class="page-section active" id="home">
-            <div class="weekly-whisper">
-                <h3><i class="fas fa-gem"></i> همسة أسبوعية</h3>
-                <p id="whisper-home"> "كوني كالوردة، تنشرين الجمال حتى لمن يريد اقتطافك. أنتِ رقيقة وقوية."</p>
+            <div class="welcome-text-container">
+                <h1>رقيقة</h1>
+                <p>مرحباً بكِ في عالمكِ الخاص، هنا تجدين السكينة والجمال.</p>
             </div>
-
-            <div class="search-bar">
-                <input type="text" placeholder="ابحثي عن موضوع في جميع الأقسام..." onkeyup="simulateSearch(event, 'home')">
-                <i class="fas fa-search"></i>
-            </div>
-
-            <div class="bouh-display" id="bouh-display-1">
-                <h2><i class="fas fa-heart"></i> محتوى المشاعر</h2>
-                <p class="content-text" id="content-bouh-display-1">جاري تحميل محتوى المشاعر...</p>
-                <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('المشاعر'); return false;"><i class="fas fa-external-link-alt"></i> اكتشف المزيد عن المشاعر (ويكيبيديا)</a>
-                </div>
-            </div>
-            </div>
+        </div>
 
         <div class="page-section" id="emotions">
             <div class="weekly-whisper">
@@ -515,10 +413,10 @@
                 </form>
             </div>
 
-            <div class="bouh-display" style="border-top: 5px solid #2196F3; margin-top: 20px;">
-                <h2 style="color: #2196F3;"><i class="fas fa-notes-medical"></i> محتوى صحي مُثرى</h2>
+            <div class="bouh-display" style="border-top: 5px solid var(--primary-rose); margin-top: 20px;">
+                <h2 style="color: var(--primary-rose);"><i class="fas fa-notes-medical"></i> محتوى صحي مُثرى</h2>
                 <p class="content-text" id="content-bouh-display-health">هذا الجزء يظهر محتوى مقروء يتم جلبه من قاعدة البيانات (Neon DB).</p>
-                <div class="library-link-container" style="background-color: #e3f2fd;">
+                <div class="library-link-container" style="background-color: #f7e6e6;">
                     <a href="#" onclick="openExternalLibrary('الصحة'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة الصحة (ويكيبيديا)</a>
                 </div>
             </div>
@@ -559,45 +457,6 @@
                 </div>
             </div>
         </div>
-        
-        <div class="page-section" id="admin">
-            <div class="admin-controls">
-                <h2><i class="fas fa-user-shield"></i> لوحة تحكم المحتوى (Neon DB)</h2>
-                
-                <form id="save-post-form" onsubmit="savePost(event)">
-                    <h3>حفظ/تحديث محتوى</h3>
-                    <label for="admin-section">القسم المستهدف:</label>
-                    <select id="admin-section" required>
-                        <option value="bouh-display-1">الرئيسية/مشاعر</option>
-                        <option value="bouh-display-2">مجتمع</option>
-                        <option value="bouh-display-3">صحة</option>
-                        <option value="bouh-display-4">فقه</option>
-                        <option value="bouh-display-5">حميمية</option>
-                    </select>
-                    
-                    <label for="admin-content">نص المحتوى (Post Content):</label>
-                    <textarea id="admin-content" required placeholder="اكتبي المحتوى الجديد المراد عرضه في هذا القسم..."></textarea>
-                    
-                    <label for="admin-post-id">معرّف المنشور (للتحديث):</label>
-                    <input type="number" id="admin-post-id" placeholder="اختياري - اتركيه فارغًا للإضافة، ضعي رقم المنشور للتحديث">
-                    
-                    <button type="submit"><i class="fas fa-save"></i> حفظ/تحديث المنشور في Neon DB</button>
-                    <div class="admin-result" id="save-result"></div>
-                </form>
-                
-                <hr style="margin: 20px 0; border-color: #eee;">
-                
-                <form id="delete-post-form" onsubmit="deletePost(event)">
-                    <h3>حذف محتوى</h3>
-                    <label for="delete-post-id">معرّف المنشور المراد حذفه:</label>
-                    <input type="number" id="delete-post-id" required placeholder="مثال: 5">
-                    
-                    <button type="submit" style="background-color: var(--accent-red);"><i class="fas fa-trash"></i> حذف المنشور من Neon DB</button>
-                    <div class="admin-result" id="delete-result" style="border-right: 5px solid var(--accent-red); background-color: #fce4e4; color: var(--accent-red);"></div>
-                </form>
-            </div>
-        </div>
-
     </div>
 
     <div class="bottom-nav">
@@ -619,9 +478,6 @@
         <a href="#" class="nav-item" onclick="showSection('intimacy', this); return false;">
             <i class="fas fa-venus-mars"></i> <span>حميمية</span>
         </a>
-        <a href="#" class="nav-item" onclick="showSection('admin', this); return false;">
-            <i class="fas fa-user-shield"></i> <span>إدارة</span>
-        </a>
     </div>
 
     <script>
@@ -630,23 +486,17 @@
         // ==========================================================
 
         const BASE_URL = 'https://raqqa-v6cd.vercel.app'; 
-        // مسارات API الجديدة (يجب تهيئتها في الواجهة الخلفية Vercel)
-        const API_GET_POSTS = BASE_URL + '/api/get-posts'; // جلب
-        const API_SAVE_POST = BASE_URL + '/api/save-post'; // حفظ/تحديث
-        const API_DELETE_POST = BASE_URL + '/api/delete-post'; // حذف
+        const API_GET_POSTS = BASE_URL + '/api/get-posts'; // مسار جلب المحتوى من Neon DB (عبر Vercel)
         
-        // الروابط الخارجية (لم تتغير)
         const EXTERNAL_LINKS = {
             'المشاعر': 'https://ar.wikipedia.org/wiki/%D8%B4%D8%B9%D9%88%D8%B1', 
             'المجتمع': 'https://ar.wikipedia.org/wiki/%D9%85%D8%AC%D8%AA%D9%85%D8%B9', 
             'الصحة': 'https://ar.wikipedia.org/wiki/%D8%B5%D8%AD%D8%AD%D8%A9', 
-            'الفقه': 'https://www.islamweb.net/ar/fatwa/47172/%D9%85%D9%86-%D9%81%D8%AA%D8%A7%D9%88%D9%89-%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%A9-%D8%A7%D9%84%D9%85%D8%B3%D9%84%D9%85%D8%a9',
+            'الفقه': 'https://www.islamweb.net/ar/fatwa/47172/%D9%85%D9%86-%D9%81%D8%AA%D8%a7%D9%88%D9%89-%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%a9-%D8%A7%D9%84%D9%85%D8%B3%D9%84%D9%85%D8%a9',
             'الحميمية': 'https://www.islamweb.net/ar/consults/3824/%D8%A7%D9%84%D8%B9%D9%84%D8%a7%D9%82%D8%a9-%D8%A7%D9%84%D8%B2%D9%88%D8%AC%D9%8A%D8%a9',
         };
 
-        // تعيين مفاتيح الأقسام (Section ID: HTML Content Element ID) - لم تتغير
         const HTML_CONTAINER_MAP = {
-            'home': 'content-bouh-display-1',
             'emotions': 'content-bouh-display-emotions',
             'society': 'content-bouh-display-society',
             'health': 'content-bouh-display-health',
@@ -654,9 +504,8 @@
             'intimacy': 'content-bouh-display-intimacy',
         };
 
-        // مفاتيح أقسام API (المفترض) لتوزيع البيانات
+        // مفاتيح أقسام API (المفترض) لربط البيانات بأقسام الواجهة
         const API_SECTION_KEYS = {
-            'home': 'bouh-display-1',
             'emotions': 'bouh-display-1', 
             'society': 'bouh-display-2',
             'health': 'bouh-display-3',
@@ -664,7 +513,6 @@
             'intimacy': 'bouh-display-5',
         };
         
-        // حاويات المحتوى المراد تحديثها من API
         const contentContainers = {};
         Object.keys(HTML_CONTAINER_MAP).forEach(key => {
             const element = document.getElementById(HTML_CONTAINER_MAP[key]);
@@ -674,9 +522,8 @@
         });
 
         let allPosts = []; 
-        let currentSection = 'home'; // القسم النشط حالياً
-
-        // بيانات وهمية (Mock Data) للاختبار - ستحل مكانها بيانات Neon
+        
+        // بيانات وهمية (Mock Data) للاختبار أو كخطة احتياطية
         const MOCK_POSTS = [
             { id: 1, section: 'bouh-display-1', content: 'المشاعر الإيجابية هي مفتاح الرقة والسلام الداخلي. خصصي وقتاً يومياً للامتنان.' },
             { id: 2, section: 'bouh-display-2', content: 'لتكوين مجتمع داعم، ابدئي بتقديم الدعم للآخرين. العطاء يمنحك القوة والتقدير.' },
@@ -687,22 +534,18 @@
 
 
         // ==========================================================
-        // وظائف التنقل (SPA) - لم تتغير
+        // وظائف التنقل (SPA)
         // ==========================================================
 
         function showSection(sectionId, element = null) {
-            // إخفاء كل الأقسام
             document.querySelectorAll('.page-section').forEach(section => {
                 section.classList.remove('active');
             });
-            // إظهار القسم المطلوب
             const targetSection = document.getElementById(sectionId);
             if (targetSection) {
                 targetSection.classList.add('active');
-                currentSection = sectionId;
             }
 
-            // تحديث الشريط السفلي
             document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
                 item.classList.remove('active');
             });
@@ -710,34 +553,22 @@
                 element.classList.add('active');
             }
             
-            // عند الانتقال إلى قسم الصحة، تأكد من عرض شاشة المتابعة الأولى
             if (sectionId === 'health') {
-                showTracker('tracker-menstruation', document.querySelector('.tracker-link'));
-            }
-            // عند الانتقال للإدارة، قم بالتأكد من عرض البيانات (اختياري)
-            if (sectionId === 'admin') {
-                // قد ترغب هنا بجلب قائمة المنشورات الحالية وعرضها للمشرف
-                console.log('Admin Section Loaded');
+                const firstTracker = document.querySelector('.health-tracker-grid .tracker-link');
+                if(firstTracker) showTracker('tracker-menstruation', firstTracker);
             }
         }
 
         // ==========================================================
-        // وظائف جلب المحتوى (GET) - مُحدثة لـ Neon DB
+        // وظائف جلب المحتوى (GET) من Neon DB - تمت المحافظة على منطقها
         // ==========================================================
 
         async function fetchFromNeonDB() {
-            // استخدام البيانات الوهمية كخطة احتياطية
-            allPosts = MOCK_POSTS.map(post => ({
-                id: post.id,
-                section: post.section,
-                content: post.content
-            }));
+            allPosts = MOCK_POSTS.slice(); 
             
-            // تحديث حالة التحميل المرئية
             Object.values(contentContainers).forEach(c => c.innerText = 'جاري تحميل المحتوى من Neon DB...');
             
             try {
-                
                 const response = await fetch(API_GET_POSTS);
                 
                 if (!response.ok) {
@@ -746,25 +577,22 @@
                 
                 const data = await response.json();
                 
-                // نفترض أن الـ API يرجع قائمة من المنشورات: { id, section, content }
                 if(Array.isArray(data.posts)) {
                     allPosts = data.posts; 
-                    console.log('Data fetched successfully from Neon DB via Vercel API.');
+                    console.log('Data fetched successfully from Neon DB.');
                 } else {
                      console.error("API response format error (expected array):", data);
                 }
                 
-                renderAllContent(); // عرض المحتوى المتاح
+                renderAllContent(); 
                 
             } catch (error) {
                 console.error("Fetch Data Failed (Neon DB/API Error):", error);
-                // العودة إلى البيانات الوهمية في حال الفشل
                 Object.values(contentContainers).forEach(c => c.innerText = 'تعذر تحميل المحتوى الحقيقي. (عرض المحتوى الافتراضي)');
                 renderAllContent();
             }
         }
         
-        // دالة لتوزيع المحتوى المجلوب على أقسام الواجهة
         function renderAllContent() {
             Object.keys(HTML_CONTAINER_MAP).forEach(key => {
                 const apiSectionKey = API_SECTION_KEYS[key]; 
@@ -772,7 +600,6 @@
 
                 if (!container) return; 
 
-                // البحث عن المحتوى المناسب
                 const sectionPost = allPosts.find(post => post.section === apiSectionKey);
                 
                 if (sectionPost) {
@@ -784,202 +611,83 @@
                 }
             });
         }
-
-        // ==========================================================
-        // وظائف إدارة المحتوى (POST/DELETE) - جديدة لـ Neon DB
-        // ==========================================================
-
-        // وظيفة الحفظ والتحديث
-        async function savePost(event) {
-            event.preventDefault();
-            const form = event.target;
-            const section = document.getElementById('admin-section').value;
-            const content = document.getElementById('admin-content').value;
-            const postId = document.getElementById('admin-post-id').value;
-            const resultDiv = document.getElementById('save-result');
-
-            const payload = {
-                section: section,
-                content: content,
-                ...(postId && { id: parseInt(postId) }) // إضافة الـ ID فقط في حالة التحديث
-            };
-
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري حفظ/تحديث المحتوى...';
-            resultDiv.style.backgroundColor = '#fff3cd';
-            resultDiv.style.color = '#856404';
-            resultDiv.style.borderColor = '#ffeeba';
-
-            try {
-                const response = await fetch(API_SAVE_POST, {
-                    method: 'POST', // أو PUT/PATCH حسب تصميم الـ Backend
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> تم الحفظ/التحديث بنجاح! ID: ${data.id || postId}`;
-                    resultDiv.style.backgroundColor = '#d4edda';
-                    resultDiv.style.color = '#155724';
-                    // إعادة جلب البيانات لعرض التغيير للمستخدمين
-                    await fetchFromNeonDB(); 
-                } else {
-                    throw new Error(data.message || 'فشل في حفظ المحتوى.');
-                }
-            } catch (error) {
-                console.error('Save Post Failed:', error);
-                resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> خطأ: ${error.message}. يُرجى التأكد من الـ Backend.`;
-                resultDiv.style.backgroundColor = '#f8d7da';
-                resultDiv.style.color = '#721c24';
-            }
-            setTimeout(() => { resultDiv.style.display = 'none'; }, 5000);
-        }
-
-        // وظيفة الحذف
-        async function deletePost(event) {
-            event.preventDefault();
-            const postId = document.getElementById('delete-post-id').value;
-            const resultDiv = document.getElementById('delete-result');
-
-            if (!postId) {
-                 resultDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> يجب إدخال معرّف المنشور.`;
-                 resultDiv.style.display = 'block';
-                 return;
-            }
-
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري حذف المحتوى...';
-
-            try {
-                const response = await fetch(API_DELETE_POST, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ id: parseInt(postId) }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    resultDiv.innerHTML = `<i class="fas fa-check-circle"></i> تم حذف المنشور بنجاح! ID: ${postId}`;
-                    resultDiv.style.backgroundColor = '#fce4e4';
-                    resultDiv.style.color = 'var(--accent-red)';
-                    // إعادة جلب البيانات
-                    await fetchFromNeonDB(); 
-                } else {
-                    throw new Error(data.message || 'فشل في حذف المحتوى.');
-                }
-            } catch (error) {
-                console.error('Delete Post Failed:', error);
-                resultDiv.innerHTML = `<i class="fas fa-times-circle"></i> خطأ: ${error.message}.`;
-            }
-             setTimeout(() => { resultDiv.style.display = 'none'; }, 5000);
-        }
         
         // ==========================================================
-        // وظائف قسم الصحة (Trackers) - لم تتغير
+        // وظائف قسم الصحة (Trackers)
         // ==========================================================
-
+        
         function showTracker(trackerId, element) {
-            // إخفاء جميع شاشات المتابعة الفرعية
             document.querySelectorAll('.tracker-screen').forEach(screen => {
                 screen.classList.remove('active');
             });
-            // إظهار الشاشة المطلوبة
             const targetScreen = document.getElementById(trackerId);
             if (targetScreen) {
                 targetScreen.classList.add('active');
             }
 
-            // تحديث رابط المتابعة النشط
             document.querySelectorAll('.health-tracker-grid .tracker-link').forEach(link => {
                 link.classList.remove('active');
             });
             element.classList.add('active');
         }
 
-        // دالة محاكاة لتسجيل بيانات المتابعة
         function logTracker(type, event) {
             event.preventDefault();
             const resultDiv = document.getElementById(`${type}-result`);
             let message = '';
             let isWarning = false;
 
-            // قيم الألوان الثابتة لتطبيقها في JS
-            const ACCENT_RED = '#f44336';
-            const ACCENT_GREEN = '#4CAF50';
+            const ACCENT_RED = 'var(--error-red)';
+            const ACCENT_GREEN = 'var(--success-green)';
 
-            // محاكاة معالجة البيانات وإظهار تنبيهات
+            // محاكاة بسيطة لعملية التسجيل
+            // (يفترض أن التسجيل الفعلي سيتم في قاعدة بيانات منفصلة)
             switch (type) {
                 case 'menstruation':
                     const date = document.getElementById('menstruation-date').value;
                     const flow = document.getElementById('menstruation-flow').value;
-                    message = `تم تسجيل بداية الدورة بتاريخ <strong>${date}</strong> وشدة <strong>${flow}</strong>.`;
-                    if (flow === 'كثيف') {
-                        isWarning = true;
-                        message = `<br>انتبهي: قد تحتاجين للراحة والترطيب الإضافي. ${message}`;
-                    }
+                    message = `تم تسجيل بداية الدورة بتاريخ <strong>${date}</strong>.`;
+                    if (flow === 'كثيف') { isWarning = true; message = `<br>تنبيه: ${message}`; }
                     break;
                 case 'pregnancy':
                     const status = document.getElementById('pregnancy-status').value;
-                    const time = document.getElementById('nursing-time').value;
                     message = `تم تسجيل الحالة <strong>${status}</strong>.`;
-                    if (status === 'مرضع' && time < 10 && time > 0) {
-                        isWarning = true;
-                        message = `<br>تنبيه: محاولة زيادة مدة الرضاعة اليومية قد تكون مفيدة لطفلك. ${message}`;
-                    }
                     break;
                 case 'sport':
-                    const sportType = document.getElementById('sport-type').value;
                     const duration = parseInt(document.getElementById('sport-duration').value);
-                    message = `تم تسجيل <strong>${sportType}</strong> لمدة <strong>${duration}</strong> دقيقة.`;
-                    if (duration < 30) {
-                        isWarning = true;
-                        message = `<br>هدفك اليومي هو 30 دقيقة! حاولي إكمال المدة المتبقية. ${message}`;
-                    }
+                    message = `تم تسجيل نشاط رياضي لمدة <strong>${duration}</strong> دقيقة.`;
+                    if (duration < 30) { isWarning = true; message = `<br>تنبيه: حاولي إكمال 30 دقيقة يومياً. ${message}`; }
                     break;
                 case 'nutrition':
                     const mealType = document.getElementById('meal-type').value;
-                    const mealDetails = document.getElementById('meal-details').value;
-                    message = `تم تسجيل وجبة <strong>${mealType}</strong>: <strong>${mealDetails}</strong>.`;
+                    message = `تم تسجيل وجبة <strong>${mealType}</strong>.`;
                     break;
                 case 'sleep':
                     const sleepHours = parseInt(document.getElementById('sleep-hours').value);
                     const waterCups = parseInt(document.getElementById('water-cups').value);
                     message = `تم تسجيل نوم <strong>${sleepHours}</strong> ساعات و شرب <strong>${waterCups}</strong> أكواب ماء.`;
-                    if (sleepHours < 7 || waterCups < 8) {
-                        isWarning = true;
-                        message = `<br>تنبيه: يُنصح بـ 7-9 ساعات نوم و 8 أكواب ماء على الأقل. ${message}`;
-                    }
+                    if (sleepHours < 7 || waterCups < 8) { isWarning = true; message = `<br>تنبيه: يُنصح بـ 7-9 ساعات نوم و 8 أكواب ماء. ${message}`; }
                     break;
                 case 'bodycare':
                     const careType = document.getElementById('care-type').value;
-                    // const careNotes = document.getElementById('care-notes').value; // غير مستخدم
                     message = `تم تسجيل <strong>${careType}</strong> بنجاح.`;
                     break;
             }
 
             resultDiv.innerHTML = isWarning ? 
-                `<i class="fas fa-exclamation-triangle"></i> <strong>تنبيه!</strong> يُرجى الانتباه: ${message}` : 
+                `<i class="fas fa-exclamation-triangle"></i> ${message}` : 
                 `<i class="fas fa-check-circle"></i> تم التسجيل بنجاح: ${message}`;
 
             resultDiv.style.display = 'block';
-            resultDiv.style.backgroundColor = isWarning ? '#ffebee' : '#e8f5e9';
+            resultDiv.style.backgroundColor = isWarning ? '#f8e8e8' : '#e8f5e9';
             resultDiv.style.color = isWarning ? ACCENT_RED : ACCENT_GREEN;
-            resultDiv.style.borderColor = isWarning ? ACCENT_RED : ACCENT_GREEN;
             resultDiv.style.borderRightColor = isWarning ? ACCENT_RED : ACCENT_GREEN;
             
-            // إخفاء النتيجة بعد 5 ثوانٍ
             setTimeout(() => { resultDiv.style.display = 'none'; }, 5000);
         }
-
+        
         // ==========================================================
-        // وظائف أخرى (روابط ومحاكاة البحث) - لم تتغير
+        // وظائف أخرى (روابط ومحاكاة البحث)
         // ==========================================================
 
         function openExternalLibrary(type) {
@@ -991,9 +699,7 @@
             }
         }
         
-        // دالة محاكاة البحث
         function simulateSearch(event, sectionId) {
-            // تنفيذ البحث عند الضغط على Enter
             if (event.type === 'keyup' && event.key !== 'Enter') return; 
 
             const input = document.querySelector(`#${sectionId} .search-bar input[type="text"]`);
@@ -1004,10 +710,8 @@
 
             if (!contentElement) return;
 
-            // الحصول على المحتوى الافتراضي المحفوظ
             let defaultContent = contentElement.getAttribute('data-default-content');
             if (!defaultContent) {
-                // حفظ المحتوى إذا لم يتم حفظه مسبقاً
                 defaultContent = contentElement.innerText;
                 contentElement.setAttribute('data-default-content', defaultContent);
             }
@@ -1015,32 +719,32 @@
             if (searchTerm.length > 0) {
                 // محاكاة ظهور نتائج البحث
                 contentElement.innerHTML = `
-                    <p style="color:var(--text-main); font-weight:700;">نتائج البحث عن: "<span style="color:var(--primary-pink);">${searchTerm}</span>"</p>
-                    <p style="color:#aaa;">تُظهر هذه الدالة محاكاة للبحث ضمن قسمك. عند اكتمال التطبيق، ستُعرض النتائج الحقيقية هنا.
-                    </p>
+                    <p style="color:var(--text-dark); font-weight:700;">نتائج البحث عن: "<span style="color:var(--primary-rose);">${searchTerm}</span>"</p>
+                    <p style="color:#aaa;">تُظهر هذه الدالة محاكاة للبحث ضمن قسمك. يُرجى انتظار الإطلاق الرسمي لـ Backend للبحث الفعلي.</p>
                 `;
-                contentElement.style.backgroundColor = '#fff8e1';
-                contentElement.style.borderTopColor = 'var(--gold)';
+                contentElement.style.backgroundColor = '#fcf8f2';
+                contentElement.style.borderTopColor = 'var(--rose-gold-accent)';
             } else {
                 // العودة إلى المحتوى الافتراضي
                 contentElement.innerText = defaultContent;
-                contentElement.style.backgroundColor = 'var(--white)'; 
-                contentElement.style.borderTopColor = 'var(--primary-pink)';
+                contentElement.style.backgroundColor = 'var(--background-cream)'; 
+                contentElement.style.borderTopColor = 'var(--rose-gold-accent)';
             }
         }
         
         // ==========================================================
-        // وظائف التهيئة والبدء (Initialization) - لم تتغير
+        // وظائف التهيئة والبدء (Initialization)
         // ==========================================================
 
         window.onload = function() {
-            // 1. جلب البيانات من Neon (عبر Vercel API)
+            // 1. جلب البيانات من Neon (عبر Vercel API أو البيانات الوهمية)
             fetchFromNeonDB();
             
             // 2. ضمان عرض الشاشة الأولى في قسم الصحة
-            showTracker('tracker-menstruation', document.querySelector('.health-tracker-grid .tracker-link'));
+            const firstTracker = document.querySelector('.health-tracker-grid .tracker-link');
+            if(firstTracker) showTracker('tracker-menstruation', firstTracker);
         };
         
     </script>
 </body>
-    </html>
+                </html>
