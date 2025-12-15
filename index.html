@@ -10,17 +10,19 @@
     
     <style>
         /* ==================================== */
-        /* 1. لوحة الألوان الرقيقة والأنثوية الفاتحة */
+        /* 1. لوحة الألوان المتدرجة والمبهرة */
         /* ==================================== */
         :root {
-            --primary-rose: #f08080;         /* لون أساسي (Soft Coral/Rose) */
-            --soft-blush: #fef0f4;          /* خلفية العناصر الخفيفة (Very Light Blush) */
-            --rose-gold-accent: #c49b99;    /* لون عناوين وأسماء (Muted Rose Gold) */
-            --text-dark: #5d4037;           /* لون النص الداكن (Soft Brown) */
-            --background-cream: #ffffff;    /* لون الخلفية الرئيسية */
-            --nav-height: 75px; 
-            --success-green: #81c784;    
-            --error-red: #e57373;        
+            --primary-vibrant: #ff6f61;        /* لون أساسي (Vibrant Coral) */
+            --accent-lavender: #b088f9;        /* لون ثانوي (Soft Lavender) */
+            --gradient-start: #ffb7b2;         /* بداية التدرج (Light Pink) */
+            --gradient-end: #ffb7b2;           /* نهاية التدرج (Light Rose) */
+            --text-dark: #4b0082;              /* لون النص الداكن (Deep Violet) */
+            --background-light: #fdf6ff;       /* لون الخلفية الرئيسية (Lavender Blush) */
+            --card-background: #ffffff;        /* خلفية البطاقات */
+            --nav-height: 75px;
+            --success-green: #68b368;
+            --error-red: #d9534f;
         }
 
         /* ==================================== */
@@ -28,19 +30,19 @@
         /* ==================================== */
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #fcfcfc; /* خلفية شبه بيضاء ناعمة */
+            background-color: var(--background-light); /* خلفية خفيفة */
             color: var(--text-dark);
             margin: 0;
             padding-bottom: var(--nav-height); 
         }
 
-        /* تنسيق الرأس (Header) */
+        /* تنسيق الرأس (Header) - تطبيق التدرج */
         .app-header {
-            background-color: var(--primary-rose);
-            color: var(--background-cream);
+            background: linear-gradient(135deg, var(--primary-vibrant) 0%, var(--accent-lavender) 100%);
+            color: var(--card-background);
             padding: 15px 20px;
             text-align: center;
-            box-shadow: 0 4px 10px rgba(240, 128, 128, 0.3); /* ظل خفيف بلون الورد */
+            box-shadow: 0 4px 15px rgba(176, 136, 249, 0.4); /* ظل بلون اللافندر */
         }
         .app-header h1 {
             font-family: 'Aref Ruqaa', serif;
@@ -55,7 +57,7 @@
         }
 
         /* ==================================== */
-        /* 3. شريط التنقل السفلي */
+        /* 3. شريط التنقل السفلي - يدعم 7 أقسام */
         /* ==================================== */
         .bottom-nav {
             position: fixed;
@@ -63,8 +65,8 @@
             left: 0;
             right: 0;
             height: var(--nav-height);
-            background-color: var(--background-cream);
-            box-shadow: 0 -2px 15px rgba(0,0,0,0.05);
+            background-color: var(--card-background);
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -79,11 +81,15 @@
             text-decoration: none;
             flex: 1;
             padding: 5px 0;
-            transition: color 0.3s;
+            transition: color 0.3s, background-color 0.3s;
         }
-        .nav-item.active { color: var(--primary-rose); }
-        .nav-item i { font-size: 1.5rem; }
-        .nav-item span { font-size: 0.7rem; margin-top: 4px; font-weight: 700; }
+        .nav-item.active { 
+            color: var(--primary-vibrant); 
+            background: linear-gradient(to top, var(--gradient-start) 5%, transparent 5%); /* تدرج خفيف للعنصر النشط */
+            border-radius: 5px;
+        }
+        .nav-item i { font-size: 1.4rem; } /* تصغير بسيط للأيقونة */
+        .nav-item span { font-size: 0.65rem; margin-top: 3px; font-weight: 700; } /* تصغير بسيط للنص */
         
         /* ==================================== */
         /* 4. الأقسام الرئيسية والمحتوى */
@@ -94,21 +100,21 @@
         
         /* تنسيق بطاقات المحتوى الرئيسية (Bouh Display) */
         .bouh-display {
-            background-color: var(--background-cream);
+            background-color: var(--card-background);
             padding: 20px;
             border-radius: 12px;
             margin-top: 20px;
             box-shadow: 0 6px 15px rgba(0,0,0,0.05);
             text-align: center;
-            border-top: 5px solid var(--rose-gold-accent); /* إطار بلون روز جولد */
+            border-top: 5px solid var(--primary-vibrant); /* إطار بلون أساسي جديد */
         }
 
         .bouh-display h2 {
             font-family: 'Aref Ruqaa', serif;
-            color: var(--rose-gold-accent);
+            color: var(--primary-vibrant);
             margin-top: 0;
             font-size: 1.5rem;
-            border-bottom: 1px solid var(--soft-blush);
+            border-bottom: 1px solid #f0e6ff; /* لون خفيف */
             padding-bottom: 10px;
         }
 
@@ -120,123 +126,110 @@
             margin-bottom: 15px;
         }
         
-        /* الروابط الخارجية للمكتبات */
-        .library-link-container {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: var(--soft-blush); 
-            border-radius: 8px;
-            text-align: center;
-        }
-        .library-link-container a {
-            color: var(--primary-rose);
-            font-weight: 700;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 0.95rem;
-            transition: color 0.3s;
-        }
-        .library-link-container a:hover {
-            color: var(--rose-gold-accent);
-        }
-        
         /* شريط البحث */
-        .search-bar { margin-bottom: 20px; position: relative; }
-        .search-bar input {
-            width: 100%;
-            padding: 12px 15px 12px 40px; 
-            border: 1px solid #e0e0e0;
-            border-radius: 25px;
-            font-family: 'Tajawal', sans-serif;
-            font-size: 1rem;
-            box-sizing: border-box;
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
-        }
         .search-bar i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--rose-gold-accent);
+            color: var(--accent-lavender);
         }
 
         /* همسة أسبوعية (Weekly Whisper) */
         .weekly-whisper {
-            background-color: var(--soft-blush); 
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-            text-align: center;
-            border: 1px solid var(--primary-rose);
-            border-left: 5px solid var(--primary-rose);
+            background-color: #fff9f9; /* لون خفيف */
+            /* ... rest of styles */
+            border: 1px solid var(--primary-vibrant);
+            border-left: 5px solid var(--primary-vibrant);
         }
         .weekly-whisper h3 {
-            font-family: 'Aref Ruqaa', serif;
-            color: var(--primary-rose);
-            margin-top: 0;
-            font-size: 1.3rem;
+            color: var(--primary-vibrant);
         }
-        .weekly-whisper p {
-            color: var(--text-dark);
-            font-size: 1rem;
-            line-height: 1.6;
-        }
-        
+
         /* تنسيق قسم الرئيسية الترحيبي */
-        .welcome-text-container {
-            height: calc(100vh - 180px); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            margin-top: -30px; 
-        }
         .welcome-text-container h1 {
-            font-family: 'Aref Ruqaa', serif;
-            font-size: 4.5rem; /* حجم خط أكبر للمسة مبهرة */
-            color: var(--primary-rose);
-            margin: 0;
-            text-shadow: 0 0 15px rgba(240, 128, 128, 0.5);
+            color: var(--primary-vibrant);
+            text-shadow: 0 0 15px rgba(255, 111, 97, 0.5);
         }
         .welcome-text-container p {
-            color: var(--rose-gold-accent);
-            font-size: 1.2rem;
-            margin-top: 10px;
-            font-weight: 700;
+            color: var(--accent-lavender);
         }
 
         /* ==================================== */
-        /* تنسيقات قسم الصحة (التعقب) - لم تتغير */
+        /* تنسيقات قسم الصحة (المصفوفة الأنيقة) */
         /* ==================================== */
         .health-tracker-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(2, 1fr); /* مصفوفة أنيقة بعمودين */
+            gap: 15px;
+            margin-bottom: 25px;
         }
-        .tracker-link { border-bottom: 3px solid transparent; background-color: var(--background-cream); }
-        .tracker-link.active { border-bottom-color: var(--primary-rose); }
-        .tracker-link i { color: var(--rose-gold-accent); }
-        .tracker-link span { color: var(--text-dark); }
-        .tracker-screen { background-color: var(--background-cream); }
-        .tracker-screen h3 { color: var(--primary-rose); border-bottom: 2px solid var(--soft-blush); }
-        
-        .tracker-screen button {
-            background-color: var(--primary-rose);
-            color: var(--background-cream);
+        .tracker-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            border-radius: 15px; /* حواف مستديرة */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid var(--card-background);
+            background-color: var(--card-background);
         }
-        .tracker-screen button:hover {
-            background-color: #e66a6a;
+        .tracker-link i {
+            font-size: 2.2rem; /* أيقونة أكبر */
+            margin-bottom: 8px;
+            color: var(--accent-lavender); /* لون الأيقونة */
         }
-        
-        .log-result {
-            border-right: 5px solid;
+        .tracker-link span {
+            font-size: 0.9rem;
             font-weight: 700;
-            display: none;
+            color: var(--text-dark);
+        }
+        .tracker-link.active {
+            /* تدرج مذهل للحالة النشطة */
+            background: linear-gradient(135deg, var(--primary-vibrant) 0%, #f7928b 100%);
+            color: var(--card-background);
+            border-color: var(--primary-vibrant);
+            box-shadow: 0 8px 20px rgba(255, 111, 97, 0.4);
+        }
+        .tracker-link.active i, .tracker-link.active span {
+            color: var(--card-background); /* أيقونة ونصوص بيضاء على التدرج */
         }
 
+        /* تنسيق الأزرار والنماذج داخل شاشات التتبع */
+        .tracker-screen h3 {
+             color: var(--primary-vibrant); 
+        }
+        .tracker-screen form label {
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+        .tracker-screen form input, .tracker-screen form select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .tracker-screen button {
+            background-color: var(--accent-lavender);
+            background: linear-gradient(90deg, var(--accent-lavender), #d39aff); /* تدرج زر التسجيل */
+            color: var(--card-background);
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+            font-weight: 700;
+            transition: opacity 0.3s;
+        }
+        .tracker-screen button:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -268,7 +261,7 @@
                 <h2><i class="fas fa-heart"></i> محتوى المشاعر</h2>
                 <p class="content-text" id="content-bouh-display-emotions">جاري تحميل محتوى المشاعر...</p>
                 <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('المشاعر'); return false;"><i class="fas fa-external-link-alt"></i> اكتشف المزيد عن المشاعر (ويكيبيديا)</a>
+                    <a href="#" onclick="openExternalLibrary('المشاعر'); return false;"><i class="fas fa-external-link-alt"></i> اكتشف المزيد عن المشاعر</a>
                 </div>
             </div>
         </div>
@@ -286,7 +279,7 @@
                 <h2><i class="fas fa-handshake"></i> محتوى المجتمع</h2>
                 <p class="content-text" id="content-bouh-display-society">جاري تحميل محتوى المجتمع...</p>
                 <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('المجتمع'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة المجتمع (ويكيبيديا)</a>
+                    <a href="#" onclick="openExternalLibrary('المجتمع'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة المجتمع</a>
                 </div>
             </div>
         </div>
@@ -413,11 +406,11 @@
                 </form>
             </div>
 
-            <div class="bouh-display" style="border-top: 5px solid var(--primary-rose); margin-top: 20px;">
-                <h2 style="color: var(--primary-rose);"><i class="fas fa-notes-medical"></i> محتوى صحي مُثرى</h2>
+            <div class="bouh-display" style="border-top: 5px solid var(--primary-vibrant); margin-top: 20px;">
+                <h2 style="color: var(--primary-vibrant);"><i class="fas fa-notes-medical"></i> محتوى صحي مُثرى</h2>
                 <p class="content-text" id="content-bouh-display-health">هذا الجزء يظهر محتوى مقروء يتم جلبه من قاعدة البيانات (Neon DB).</p>
                 <div class="library-link-container" style="background-color: #f7e6e6;">
-                    <a href="#" onclick="openExternalLibrary('الصحة'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة الصحة (ويكيبيديا)</a>
+                    <a href="#" onclick="openExternalLibrary('الصحة'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة الصحة</a>
                 </div>
             </div>
         </div>
@@ -435,7 +428,7 @@
                 <h2><i class="fas fa-book"></i> محتوى الفقه</h2>
                 <p class="content-text" id="content-bouh-display-fiqh">جاري تحميل محتوى الفقه...</p>
                 <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('الفقه'); return false;"><i class="fas fa-external-link-alt"></i> فتاوى المرأة المسلمة (إسلام ويب)</a>
+                    <a href="#" onclick="openExternalLibrary('الفقه'); return false;"><i class="fas fa-external-link-alt"></i> فتاوى المرأة المسلمة</a>
                 </div>
             </div>
         </div>
@@ -453,7 +446,24 @@
                 <h2><i class="fas fa-venus-mars"></i> محتوى الحميمية</h2>
                 <p class="content-text" id="content-bouh-display-intimacy">جاري تحميل محتوى الحميمية...</p>
                 <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('الحميمية'); return false;"><i class="fas fa-external-link-alt"></i> العلاقة الزوجية (إسلام ويب)</a>
+                    <a href="#" onclick="openExternalLibrary('الحميمية'); return false;"><i class="fas fa-external-link-alt"></i> العلاقة الزوجية</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-section" id="contact">
+            <div class="weekly-whisper" style="background-color: #f0e6ff; border-left: 5px solid var(--accent-lavender);">
+                <h3><i class="fas fa-headset" style="color: var(--accent-lavender);"></i> تواصل معنا</h3>
+                <p>يسعدنا تواصلكِ معنا. ابعثي لنا رسالة عبر صفحتنا الرسمية.</p>
+            </div>
+            <div class="bouh-display" style="border-top: 5px solid var(--accent-lavender); margin-top: 20px;">
+                <h2 style="color: var(--accent-lavender);"><i class="fab fa-facebook-f"></i> الفيسبوك</h2>
+                <p class="content-text">اضغطي على الرابط التالي للانتقال لصفحة الفيسبوك الخاصة بتطبيق رقة.</p>
+                <div class="library-link-container" style="background-color: var(--background-light); padding: 20px;">
+                    <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank" style="color: var(--primary-vibrant); font-size: 1.1rem; font-weight: 700;">
+                        <i class="fab fa-facebook-f" style="margin-left: 10px; font-size: 1.5rem;"></i>
+                        صفحة الفيسبوك الرسمية للتطبيق
+                    </a>
                 </div>
             </div>
         </div>
@@ -478,6 +488,9 @@
         <a href="#" class="nav-item" onclick="showSection('intimacy', this); return false;">
             <i class="fas fa-venus-mars"></i> <span>حميمية</span>
         </a>
+        <a href="#" class="nav-item" onclick="showSection('contact', this); return false;">
+            <i class="fas fa-headset"></i> <span>تواصل</span>
+        </a>
     </div>
 
     <script>
@@ -492,8 +505,8 @@
             'المشاعر': 'https://ar.wikipedia.org/wiki/%D8%B4%D8%B9%D9%88%D8%B1', 
             'المجتمع': 'https://ar.wikipedia.org/wiki/%D9%85%D8%AC%D8%AA%D9%85%D8%B9', 
             'الصحة': 'https://ar.wikipedia.org/wiki/%D8%B5%D8%AD%D8%AD%D8%A9', 
-            'الفقه': 'https://www.islamweb.net/ar/fatwa/47172/%D9%85%D9%86-%D9%81%D8%AA%D8%a7%D9%88%D9%89-%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%a9-%D8%A7%D9%84%D9%85%D8%B3%D9%84%D9%85%D8%a9',
-            'الحميمية': 'https://www.islamweb.net/ar/consults/3824/%D8%A7%D9%84%D8%B9%D9%84%D8%a7%D9%82%D8%a9-%D8%A7%D9%84%D8%B2%D9%88%D8%AC%D9%8A%D8%a9',
+            'الفقه': 'https://www.islamweb.net/ar/fatwa/47172/%D9%85%D9%86-%D9%81%D8%AA%D8%a7%D9%88%D9%89-%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%A9-%D8%A7%D9%84%D9%85%D8%B3%D9%84%D9%85%D8%A9',
+            'الحميمية': 'https://www.islamweb.net/ar/consults/3824/%D8%A7%D9%84%D8%B9%D9%84%D8%A7%D9%82%D8%A9-%D8%A7%D9%84%D8%B2%D9%88%D8%AC%D9%8A%D8%A9',
         };
 
         const HTML_CONTAINER_MAP = {
@@ -502,6 +515,7 @@
             'health': 'content-bouh-display-health',
             'fiqh': 'content-bouh-display-fiqh',
             'intimacy': 'content-bouh-display-intimacy',
+            // 'contact' لا يحتاج لمحتوى يتم جلبه
         };
 
         // مفاتيح أقسام API (المفترض) لربط البيانات بأقسام الواجهة
@@ -553,6 +567,7 @@
                 element.classList.add('active');
             }
             
+            // تهيئة شاشة متابعة الحيض عند الدخول لقسم الصحة
             if (sectionId === 'health') {
                 const firstTracker = document.querySelector('.health-tracker-grid .tracker-link');
                 if(firstTracker) showTracker('tracker-menstruation', firstTracker);
@@ -560,7 +575,7 @@
         }
 
         // ==========================================================
-        // وظائف جلب المحتوى (GET) من Neon DB - تمت المحافظة على منطقها
+        // وظائف جلب المحتوى (GET)
         // ==========================================================
 
         async function fetchFromNeonDB() {
@@ -604,6 +619,7 @@
                 
                 if (sectionPost) {
                     container.innerText = sectionPost.content; 
+                    // حفظ المحتوى الافتراضي لتجنب "حذف" المنشور الأساسي
                     container.setAttribute('data-default-content', sectionPost.content);
                 } else {
                     container.innerText = 'لا يوجد محتوى متاح حاليًا لهذا القسم.';
@@ -639,9 +655,8 @@
 
             const ACCENT_RED = 'var(--error-red)';
             const ACCENT_GREEN = 'var(--success-green)';
-
+            
             // محاكاة بسيطة لعملية التسجيل
-            // (يفترض أن التسجيل الفعلي سيتم في قاعدة بيانات منفصلة)
             switch (type) {
                 case 'menstruation':
                     const date = document.getElementById('menstruation-date').value;
@@ -687,48 +702,44 @@
         }
         
         // ==========================================================
-        // وظائف أخرى (روابط ومحاكاة البحث)
+        // وظائف البحث (Simulation) - مراجعة لمنع "حذف المنشور"
         // ==========================================================
 
-        function openExternalLibrary(type) {
-            const url = EXTERNAL_LINKS[type];
-            if (url) {
-                window.open(url, '_blank'); 
-            } else {
-                alert('لا يوجد رابط مكتبة متاح لهذا القسم.');
-            }
-        }
-        
         function simulateSearch(event, sectionId) {
-            if (event.type === 'keyup' && event.key !== 'Enter') return; 
-
-            const input = document.querySelector(`#${sectionId} .search-bar input[type="text"]`);
-            const searchTerm = input.value.trim();
-
-            const contentId = HTML_CONTAINER_MAP[sectionId];
-            const contentElement = document.getElementById(contentId);
+            const searchTerm = event.target.value.trim();
+            const bouhDisplayId = `bouh-display-${sectionId}`;
+            const contentElementId = HTML_CONTAINER_MAP[sectionId];
+            
+            const displayElement = document.getElementById(bouhDisplayId);
+            const contentElement = document.getElementById(contentElementId);
+            const defaultContent = contentElement.getAttribute('data-default-content') || 'لا يوجد محتوى أساسي.';
 
             if (!contentElement) return;
 
-            let defaultContent = contentElement.getAttribute('data-default-content');
-            if (!defaultContent) {
-                defaultContent = contentElement.innerText;
-                contentElement.setAttribute('data-default-content', defaultContent);
-            }
-            
             if (searchTerm.length > 0) {
-                // محاكاة ظهور نتائج البحث
+                // عرض نتائج البحث (المحاكاة)
+                // *هذا هو المنطق الذي يغير "المنشور" مؤقتاً لعرض نتائج البحث*
                 contentElement.innerHTML = `
-                    <p style="color:var(--text-dark); font-weight:700;">نتائج البحث عن: "<span style="color:var(--primary-rose);">${searchTerm}</span>"</p>
+                    <p style="color:var(--text-dark); font-weight:700;">نتائج البحث عن: "<span style="color:var(--primary-vibrant);">${searchTerm}</span>"</p>
                     <p style="color:#aaa;">تُظهر هذه الدالة محاكاة للبحث ضمن قسمك. يُرجى انتظار الإطلاق الرسمي لـ Backend للبحث الفعلي.</p>
                 `;
                 contentElement.style.backgroundColor = '#fcf8f2';
-                contentElement.style.borderTopColor = 'var(--rose-gold-accent)';
+                displayElement.style.borderTopColor = 'var(--accent-lavender)';
             } else {
-                // العودة إلى المحتوى الافتراضي
+                // العودة إلى المحتوى الافتراضي (المنشور الأساسي) عند مسح البحث
+                // **هذا يضمن عدم "حذف" المنشور الأساسي ويتم استعادته.**
                 contentElement.innerText = defaultContent;
-                contentElement.style.backgroundColor = 'var(--background-cream)'; 
-                contentElement.style.borderTopColor = 'var(--rose-gold-accent)';
+                contentElement.style.backgroundColor = 'var(--card-background)'; 
+                displayElement.style.borderTopColor = 'var(--primary-vibrant)';
+            }
+        }
+        
+        function openExternalLibrary(title) {
+            const url = EXTERNAL_LINKS[title];
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                alert('عفواً، لا يوجد رابط خارجي محدد لهذا القسم.');
             }
         }
         
@@ -743,8 +754,11 @@
             // 2. ضمان عرض الشاشة الأولى في قسم الصحة
             const firstTracker = document.querySelector('.health-tracker-grid .tracker-link');
             if(firstTracker) showTracker('tracker-menstruation', firstTracker);
+
+            // 3. عرض قسم الرئيسية عند التحميل
+            showSection('home', document.querySelector('.bottom-nav .nav-item.active'));
         };
         
     </script>
 </body>
-                </html>
+    </html>
