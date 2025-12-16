@@ -6,37 +6,51 @@ import { sql } from '@vercel/postgres';
 // دالة لمعالجة طلبات DELETE
 export default async function handler(request, response) {
     
-    // 1. التحقق من طريقة الطلب (يجب أن تكون DELETE)
+    // ==========================================================
+    // 1. **الحل المقترح:** إضافة معالجة طلب OPTIONS والسماح بـ DELETE
+    // ==========================================================
+    if (request.method === 'OPTIONS') {
+        // تعيين رؤوس CORS للسماح بالوصول من أي مصدر ولطرق DELETE و OPTIONS
+        response.setHeader('Access-Control-Allow-Origin', '*'); 
+        response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS'); // **تم إضافة DELETE**
+        response.setHeader('Access-Control-Allow-Headers', 'Content-Type'); 
+        response.status(200).end(); 
+        return;
+    }
+    
+    // تعيين رأس CORS لطلب DELETE الفعلي أيضاً
+    response.setHeader('Access-Control-Allow-Origin', '*');
+
+    // 2. التحقق من طريقة الطلب (يجب أن تكون DELETE)
     if (request.method !== 'DELETE') {
+        // هذا الشرط لن يتم تنفيذه في حالة مشكلة CORS
         return response.status(405).json({ error: 'Method Not Allowed, use DELETE' });
     }
 
     try {
-        // 2. استلام مُعرّف المنشور (ID) من خلال Query Parameter
-        // (الواجهة الأمامية ترسل الطلب بهذا الشكل: /api/delete-post?id=123)
+        // ... (باقي منطق الحذف)
         const { id } = request.query;
 
         if (!id) {
             return response.status(400).json({ error: 'Missing required field (id)' });
         }
         
-        // 3. تنفيذ استعلام الحذف (DELETE) باستخدام المُعرّف
+        // تنفيذ استعلام الحذف (DELETE)
         const result = await sql`
             DELETE FROM posts
             WHERE id = ${id};
         `;
         
-        // 4. التحقق من نجاح عملية الحذف
+        // التحقق من نجاح عملية الحذف
         if (result.rowCount === 0) {
-             // لم يتم العثور على أي صف للحذف
              return response.status(404).json({ message: `Post with ID ${id} not found or already deleted.` });
         }
 
-        // 5. إرسال استجابة نجاح
+        // إرسال استجابة نجاح
         return response.status(200).json({ message: `Post with ID ${id} successfully deleted from Neon.` });
 
     } catch (error) {
-        // 6. التعامل مع الأخطاء
+        // التعامل مع الأخطاء
         console.error('Database Delete Error:', error);
         return response.status(500).json({ error: 'Failed to delete post from database.', details: error.message });
     }
