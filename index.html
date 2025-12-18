@@ -46,6 +46,7 @@
             background: #fff; border: 1px dashed var(--primary-pink); 
             padding: 20px; border-radius: 15px; margin-bottom: 10px; 
             position: relative; line-height: 1.6; font-weight: 500;
+            min-height: 50px;
         }
         .bouh-display::before { content: "✨ همسة"; position: absolute; top: -10px; right: 10px; background: var(--primary-pink); color: white; font-size: 0.7rem; padding: 2px 10px; border-radius: 10px; }
 
@@ -57,7 +58,8 @@
 
         .sequential-content-container { 
             background: #f0f0f0; padding: 10px; border-radius: 20px; 
-            min-height: 200px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            min-height: 100px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05);
+            margin-top: 10px;
         }
 
         .content-item-card { 
@@ -75,22 +77,16 @@
         .interaction-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
         .interaction-btn.active { color: var(--primary-pink); }
 
-        /* تتبع الصحة - جداول المتابعة */
         .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .health-box { 
             background: white; padding: 10px; border-radius: 12px; text-align: center; 
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; border: 1px solid #f0f0f0; transition: 0.3s;
         }
-        .health-box:active { transform: scale(0.95); background: var(--soft-pink); }
         .health-box i { display: block; font-size: 1.2rem; color: var(--primary-pink); margin-bottom: 5px; }
         .health-box span { font-size: 0.7rem; font-weight: bold; }
 
-        /* شاشات المتابعة (Forms) */
         .tracker-panel { display: none; background: #fff; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--soft-pink); animation: slideDown 0.3s; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .tracker-panel h4 { margin: 0 0 10px 0; color: var(--primary-pink); font-size: 0.9rem; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-        .tracker-panel input, .tracker-panel select { width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; font-family: inherit; }
-        .tracker-panel button { width: 100%; background: var(--primary-pink); color: white; border: none; padding: 10px; border-radius: 8px; margin-top: 10px; cursor: pointer; }
 
         .upload-area { 
             background: white; padding: 15px; border-radius: 15px; 
@@ -99,13 +95,14 @@
         .upload-area textarea { width: 100%; border: none; outline: none; resize: none; font-family: inherit; min-height: 60px; }
 
         .section-view { display: none; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .bottom-nav { 
             position: fixed; bottom: 0; width: 100%; height: var(--nav-height); 
             background: white; display: flex; justify-content: space-around; 
             align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000;
         }
-        .nav-item { color: #bbb; text-align: center; font-size: 0.7rem; cursor: pointer; width: 20%; }
+        .nav-item { color: #bbb; text-align: center; font-size: 0.7rem; cursor: pointer; width: 18%; }
         .nav-item.active { color: var(--primary-pink); }
         .nav-item i { font-size: 1.2rem; display: block; margin-bottom: 2px; }
     </style>
@@ -119,7 +116,6 @@
     </header>
 
     <div class="main-container">
-        
         <div id="homeView" class="section-view" style="display:block; text-align:center; padding-top:40px;">
             <h2 style="font-family:'Aref Ruqaa'; color:var(--primary-pink); font-size:2.2rem;">أهلاً بكِ في رقة</h2>
             <p>مساحتكِ الخاصة للنمو والجمال</p>
@@ -133,13 +129,13 @@
 
         <div id="society" class="section-view">
             <div class="bouh-display" id="bouh-display-2">جاري تحميل همسة المجتمع...</div>
-            <a href="https://ar.wikipedia.org/wiki/تنمية_المرأة" target="_blank" class="library-link" style="background:var(--gold)">مكتبة التنمية الاجتماعية</a>
+            <a href="#" class="library-link" style="background:var(--gold)">مكتبة التنمية الاجتماعية</a>
             <div class="upload-area">
-                <textarea id="userStory" placeholder="شاركينا قصة نجاح أو صورة ملهمة..."></textarea>
+                <textarea id="userStory" placeholder="شاركينا قصة نجاح أو نصيحة ملهمة..."></textarea>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:5px;">
-                    <label for="fileInput"><i class="fas fa-image" style="color:var(--primary-pink); font-size:1.4rem;"></i></label>
-                    <input type="file" id="fileInput" hidden>
-                    <button class="btn-upload" onclick="uploadStory()" style="background:var(--primary-pink); color:white; border:none; padding:5px 15px; border-radius:15px;">نشر</button>
+                    <label for="fileInput"><i class="fas fa-image" style="color:var(--primary-pink); font-size:1.4rem; cursor:pointer;"></i></label>
+                    <input type="file" id="fileInput" hidden accept="image/*">
+                    <button id="postBtn" onclick="uploadStory()" style="background:var(--primary-pink); color:white; border:none; padding:5px 15px; border-radius:15px; cursor:pointer;">نشر بالمجتمع</button>
                 </div>
             </div>
             <div class="sequential-content-container" id="content-society"></div>
@@ -147,41 +143,16 @@
 
         <div id="health" class="section-view">
             <div class="bouh-display" id="bouh-display-3">جاري تحميل همسة الصحة...</div>
-            <a href="#" class="library-link" style="background:var(--accent-blue)">مكتبة الصحة والجمال</a>
-
             <div class="health-grid">
-                <div class="health-box" onclick="toggleTracker('cycleTrack')"><i class="fas fa-calendar-heart"></i><span>الدورة</span></div>
-                <div class="health-box" onclick="toggleTracker('doctorTrack')"><i class="fas fa-user-md"></i><span>الطبيب</span></div>
-                <div class="health-box" onclick="toggleTracker('sportTrack')"><i class="fas fa-running"></i><span>الرياضة</span></div>
-                <div class="health-box" onclick="toggleTracker('foodTrack')"><i class="fas fa-apple-alt"></i><span>التغذية</span></div>
-                <div class="health-box" onclick="toggleTracker('skinTrack')"><i class="fas fa-sparkles"></i><span>البشرة</span></div>
-                <div class="health-box" onclick="toggleTracker('bodyTrack')"><i class="fas fa-spa"></i><span>الجسم</span></div>
                 <div class="health-box" onclick="toggleTracker('waterTrack')"><i class="fas fa-tint"></i><span>الماء</span></div>
-                <div class="health-box" onclick="toggleTracker('sleepTrack')"><i class="fas fa-moon"></i><span>النوم</span></div>
-                <div class="health-box" onclick="toggleTracker('motherTrack')"><i class="fas fa-baby"></i><span>الأمومة</span></div>
+                <div class="health-box" onclick="toggleTracker('doctorTrack')"><i class="fas fa-user-md"></i><span>الطبيب</span></div>
+                <div class="health-box" onclick="toggleTracker('cycleTrack')"><i class="fas fa-calendar-alt"></i><span>الدورة</span></div>
             </div>
-
+            
             <div id="waterTrack" class="tracker-panel">
-                <h4><i class="fas fa-tint"></i> سجل شرب الماء اليومي</h4>
-                <div style="display:flex; gap:10px; justify-content:center;">
-                    <button onclick="addWater()" style="flex:1">+ 250 مل</button>
-                    <button onclick="resetWater()" style="flex:1; background:#999">إعادة تعيين</button>
-                </div>
-                <p id="waterLevel" style="text-align:center; margin-top:10px; font-weight:bold;">الكمية: 0 مل</p>
-            </div>
-
-            <div id="doctorTrack" class="tracker-panel">
-                <h4><i class="fas fa-user-md"></i> موعد الطبيب القادم</h4>
-                <input type="text" placeholder="اسم العيادة / التخصص">
-                <input type="datetime-local">
-                <button onclick="alert('تم حفظ الموعد')">حفظ الموعد</button>
-            </div>
-
-            <div id="cycleTrack" class="tracker-panel">
-                <h4><i class="fas fa-calendar-alt"></i> متتبع الدورة</h4>
-                <label>تاريخ آخر دورة:</label>
-                <input type="date">
-                <button onclick="alert('سيتم تذكيرك قبل الموعد القادم بـ 3 أيام')">تنشيط التنبيه</button>
+                <h4 style="color:var(--accent-blue)">سجل الماء اليومي</h4>
+                <button onclick="addWater()" style="width:100%; padding:10px; border-radius:10px; border:none; background:var(--accent-blue); color:white;">+ إضافة كوب (250 مل)</button>
+                <p id="waterCount" style="text-align:center; font-weight:bold; margin-top:10px;">الإجمالي: 0 مل</p>
             </div>
 
             <div class="sequential-content-container" id="content-health"></div>
@@ -198,23 +169,23 @@
             <a href="#" class="library-link" style="background:var(--accent-red)">مكتبة الثقافة الزوجية</a>
             <div class="sequential-content-container" id="content-intimacy"></div>
         </div>
-
     </div>
 
     <nav class="bottom-nav">
         <div class="nav-item active" onclick="showSection('homeView', this)"><i class="fas fa-home"></i><span>الرئيسية</span></div>
         <div class="nav-item" onclick="showSection('emotions', this)"><i class="fas fa-heart"></i><span>المشاعر</span></div>
         <div class="nav-item" onclick="showSection('society', this)"><i class="fas fa-users"></i><span>المجتمع</span></div>
-        <div class="nav-item" onclick="showSection('health', this)"><i class="fas fa-notes-medical"></i><span>الصحة</span></div>
+        <div class="nav-item" onclick="showSection('health', this)"><i class="fas fa-hand-holding-heart"></i><span>الصحة</span></div>
         <div class="nav-item" onclick="showSection('fiqh', this)"><i class="fas fa-book-open"></i><span>الفقه</span></div>
         <div class="nav-item" onclick="showSection('intimacy', this)"><i class="fas fa-fire"></i><span>الحميمية</span></div>
     </nav>
 
     <script>
-        // رابط API الموحد لجلب البيانات من Neon DB
-        const API_URL = 'https://reqqa-app.vercel.app/api/content'; 
+        // الروابط البرمجية المتوافقة مع ملف admin (3).html
+        const API_GET_CONTENT = 'https://reqqa-app.vercel.app/api/content';
+        const API_POST_CONTENT = 'https://reqqa-app.vercel.app/api/content';
 
-        // 1. التنقل بين الأقسام
+        // 1. التبديل بين الأقسام
         function showSection(id, el) {
             document.querySelectorAll('.section-view').forEach(s => s.style.display = 'none');
             document.getElementById(id).style.display = 'block';
@@ -223,82 +194,124 @@
             window.scrollTo(0,0);
         }
 
-        // 2. جلب المحتوى من Neon DB وتوزيعه حسب المفاتيح المطلوبة
-        async function loadContent() {
+        // 2. جلب المحتوى من السيرفر (Neon DB)
+        async function loadNeonContent() {
             try {
-                const res = await fetch(API_URL);
-                const data = await res.json();
+                const response = await fetch(API_GET_CONTENT);
+                const data = await response.json();
                 
-                const sections = {
-                    'emotions': { container: 'content-emotions', bouh: 'bouh-display-1' },
-                    'society': { container: 'content-society', bouh: 'bouh-display-2' },
-                    'health': { container: 'content-health', bouh: 'bouh-display-3' },
-                    'fiqh': { container: 'content-fiqh', bouh: 'bouh-display-4' },
-                    'intimacy': { container: 'content-intimacy', bouh: 'bouh-display-5' }
+                // تنظيف الحاويات قبل العرض
+                const containers = {
+                    'emotions': 'content-emotions',
+                    'society': 'content-society',
+                    'health': 'content-health',
+                    'fiqh': 'content-fiqh',
+                    'intimacy': 'content-intimacy'
+                };
+                const bouhIDs = {
+                    'emotions': 'bouh-display-1',
+                    'society': 'bouh-display-2',
+                    'health': 'bouh-display-3',
+                    'fiqh': 'bouh-display-4',
+                    'intimacy': 'bouh-display-5'
                 };
 
-                // تصفير الحاويات
-                Object.values(sections).forEach(s => document.getElementById(s.container).innerHTML = '');
+                Object.values(containers).forEach(id => document.getElementById(id).innerHTML = '');
 
                 data.forEach(item => {
-                    const sec = sections[item.section_key];
-                    if (!sec) return;
-
-                    if (item.type === 'البوح' || item.type === 'همسة') {
-                        document.getElementById(sec.bouh).innerText = item.content;
+                    // إذا كان المحتوى من نوع "همسة" أو "بوح" يوضع في الإطار العلوي
+                    if (item.type === 'همسة' || item.type === 'بوح') {
+                        const bId = bouhIDs[item.section_key];
+                        if(bId) document.getElementById(bId).innerText = item.content;
                     } else {
-                        const html = `
-                            <div class="content-item-card">
-                                <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.7rem;">
-                                    <span style="color:var(--primary-pink); font-weight:bold;"># ${item.type}</span>
-                                    <span style="color:#999;">${new Date(item.created_at || Date.now()).toLocaleDateString('ar-EG')}</span>
-                                </div>
-                                <div class="post-text">${item.content}</div>
-                                ${item.media ? `<img src="${item.media}" class="post-media">` : ''}
-                                <div class="interactions">
-                                    <button class="interaction-btn" onclick="this.classList.toggle('active')"><i class="fas fa-heart"></i> إعجاب</button>
-                                    <button class="interaction-btn" onclick="prompt('اكتبي تعليقكِ:')"><i class="fas fa-comment"></i> تعليق</button>
-                                    <button class="interaction-btn" onclick="sharePost('${item.content}')"><i class="fas fa-share-alt"></i> مشاركة</button>
-                                </div>
-                            </div>
-                        `;
-                        document.getElementById(sec.container).insertAdjacentHTML('afterbegin', html);
+                        // عرض كمنشور عادي
+                        const containerId = containers[item.section_key];
+                        if(containerId) renderCard(containerId, item);
                     }
                 });
-            } catch (err) {
-                console.error("DB Error:", err);
+            } catch (error) {
+                console.error('فشل جلب البيانات:', error);
             }
         }
 
-        // 3. تتبع الصحة
+        function renderCard(targetId, item) {
+            const card = `
+                <div class="content-item-card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-size:0.7rem; color:var(--primary-pink); font-weight:bold;"># ${item.type}</span>
+                        <span style="font-size:0.6rem; color:#999;">${new Date(item.created_at).toLocaleDateString('ar-EG')}</span>
+                    </div>
+                    <div class="post-text">${item.content}</div>
+                    ${item.media ? `<img src="${item.media}" class="post-media">` : ''}
+                    <div class="interactions">
+                        <button class="interaction-btn" onclick="this.classList.toggle('active')"><i class="fas fa-heart"></i></button>
+                        <button class="interaction-btn" onclick="alert('قريباً: التعليقات')"><i class="fas fa-comment"></i></button>
+                        <button class="interaction-btn" onclick="shareMe('${item.content}')"><i class="fas fa-share-alt"></i></button>
+                    </div>
+                </div>
+            `;
+            document.getElementById(targetId).insertAdjacentHTML('afterbegin', card);
+        }
+
+        // 3. إرسال محتوى جديد (منطقة المجتمع) - متوافق مع كود الأدمن
+        async function uploadStory() {
+            const content = document.getElementById('userStory').value;
+            const postBtn = document.getElementById('postBtn');
+
+            if (!content) return alert('يرجى كتابة نص أولاً');
+
+            const payload = {
+                section_key: 'society', // المفتاح المطلوب للإرسال كما طلبت
+                type: 'قصة نجاح',
+                content: content,
+                media: '' // يمكن تطويرها لرفع روابط صور لاحقاً
+            };
+
+            try {
+                postBtn.innerText = 'جاري النشر...';
+                postBtn.disabled = true;
+
+                const response = await fetch(API_POST_CONTENT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert('تم النشر بنجاح!');
+                    document.getElementById('userStory').value = '';
+                    loadNeonContent(); // تحديث المحتوى
+                } else {
+                    alert('فشل النشر، يرجى المحاولة لاحقاً');
+                }
+            } catch (error) {
+                console.error('Error posting:', error);
+            } finally {
+                postBtn.innerText = 'نشر بالمجتمع';
+                postBtn.disabled = false;
+            }
+        }
+
+        // وظائف إضافية
         function toggleTracker(id) {
             const panel = document.getElementById(id);
-            const isVisible = panel.style.display === 'block';
-            document.querySelectorAll('.tracker-panel').forEach(p => p.style.display = 'none');
-            panel.style.display = isVisible ? 'none' : 'block';
+            panel.style.display = (panel.style.display === 'block') ? 'none' : 'block';
         }
 
-        let waterTotal = 0;
+        let water = 0;
         function addWater() {
-            waterTotal += 250;
-            document.getElementById('waterLevel').innerText = `الكمية: ${waterTotal} مل`;
-        }
-        function resetWater() {
-            waterTotal = 0;
-            document.getElementById('waterLevel').innerText = `الكمية: 0 مل`;
+            water += 250;
+            document.getElementById('waterCount').innerText = `الإجمالي: ${water} مل`;
         }
 
-        // 4. المشاركة
-        function sharePost(text) {
+        function shareMe(text) {
             if (navigator.share) {
                 navigator.share({ title: 'تطبيق رقة', text: text, url: window.location.href });
-            } else {
-                alert('تم نسخ الرابط لمشاركته!');
             }
         }
 
-        // تشغيل الجلب عند التحميل
-        window.onload = loadContent;
+        // تشغيل الجلب عند فتح الصفحة
+        window.onload = loadNeonContent;
     </script>
 </body>
-                        </html> 
+                    </html>
