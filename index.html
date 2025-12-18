@@ -9,1012 +9,303 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* ==================================== */
-        /* 1. لوحة الألوان الرقيقة والأنثوية الفاتحة */
-        /* ==================================== */
+        /* تعريف المتغيرات (نفس الألوان الأصلية) */
         :root {
-            --primary-rose: #f08080;         /* لون أساسي (Soft Coral/Rose) */
-            --soft-blush: #fef0f4;          /* خلفية العناصر الخفيفة (Very Light Blush) */
-            --rose-gold-accent: #c49b99;    /* لون عناوين وأسماء (Muted Rose Gold) */
-            --text-dark: #5d4037;           /* لون النص الداكن (Soft Brown) */
-            --background-cream: #ffffff;    /* لون الخلفية الرئيسية */
-            --nav-height: 75px; 
-            --success-green: #81c784;    
-            --error-red: #e57373;        
+            --primary-pink: #e91e63;
+            --soft-pink: #fce4ec;
+            --gold: #d4af37;
+            --text-main: #4a4a4a;
+            --white: #ffffff;
+            --nav-height: 75px;
+            --accent-green: #4CAF50;
+            --accent-blue: #2196F3;
+            --accent-red: #f44336;
         }
 
-        /* ==================================== */
-        /* 2. تنسيق الجسم والرأس والخطوط */
-        /* ==================================== */
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: #fcfcfc; 
-            color: var(--text-dark);
-            margin: 0;
-            padding-bottom: var(--nav-height); 
-            overflow-x: hidden; /* لمنع ظهور شريط التمرير الأفقي عند فتح القائمة الجانبية */
-        }
-        
-        .app-header {
-            background-color: var(--primary-rose);
-            color: var(--background-cream);
-            padding: 15px 20px;
-            box-shadow: 0 4px 10px rgba(240, 128, 128, 0.3); 
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .app-header h1 {
-            font-family: 'Aref Ruqaa', serif;
-            font-size: 1.8rem;
-            margin: 0;
-            letter-spacing: 1px;
-            flex-grow: 1; 
-            text-align: center;
-        }
-        .app-header p {
-            display: none; /* إخفاء النص الفرعي في شريط الرأس */
-        }
-        .menu-icon {
-            font-size: 1.5rem;
-            cursor: pointer;
-            margin-right: 15px;
-        }
-        
-        /* ==================================== */
-        /* 3. القائمة الجانبية (Sidebar) */
-        /* ==================================== */
-        .sidebar {
-            height: 100%;
-            width: 0;
-            position: fixed;
-            z-index: 2000;
-            top: 0;
-            right: 0;
-            background-color: var(--background-cream);
+            background-color: #faf9f9;
+            margin: 0; padding: 0;
+            padding-bottom: calc(var(--nav-height) + 20px);
+            color: var(--text-main);
             overflow-x: hidden;
-            transition: 0.5s;
-            padding-top: 60px;
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
         }
 
-        .sidebar a {
-            padding: 15px 15px 15px 32px;
-            text-decoration: none;
-            font-size: 1.1rem;
-            color: var(--text-dark);
-            display: block;
-            transition: 0.3s;
-            border-bottom: 1px solid var(--soft-blush);
-        }
-
-        .sidebar a:hover {
-            color: var(--primary-rose);
-            background-color: var(--soft-blush);
-        }
-
-        .sidebar .closebtn {
-            position: absolute;
-            top: 0;
-            left: 25px;
-            font-size: 36px;
-            margin-left: 50px;
-            color: var(--primary-rose);
-        }
-
-        /* ==================================== */
-        /* 4. شريط التنقل السفلي */
-        /* ==================================== */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--nav-height);
-            background-color: var(--background-cream);
-            box-shadow: 0 -2px 15px rgba(0,0,0,0.05);
+        header {
+            background: var(--white);
+            padding: 15px 20px;
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
             align-items: center;
-            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(233, 30, 99, 0.1);
+            position: sticky; top: 0; z-index: 1000;
+        }
+
+        .app-logo {
+            font-family: 'Aref Ruqaa', serif;
+            font-size: 2.4rem;
+            color: var(--primary-pink);
+            text-shadow: 2px 2px 0px #ffe0e9;
+        }
+
+        .menu-icon {
+            font-size: 1.6rem;
+            color: #888;
+            cursor: pointer;
+            position: absolute; right: 20px;
+        }
+
+        /* القائمة الجانبية */
+        .sidebar {
+            position: fixed; top: 0; right: -300px;
+            width: 260px; height: 100%;
+            background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            z-index: 2000; transition: 0.4s;
+            padding: 25px; display: flex; flex-direction: column;
+        }
+        .sidebar.active { right: 0; }
+        .sidebar a {
+            text-decoration: none; color: #555; padding: 12px;
+            margin-bottom: 8px; border-radius: 10px;
+            display: flex; align-items: center; gap: 10px; font-weight: bold;
+        }
+
+        .main-container { padding: 20px; }
+
+        /* شريط البحث */
+        .search-container { position: relative; margin-bottom: 20px; }
+        .search-input {
+            width: 100%; padding: 12px 40px 12px 15px;
+            border-radius: 25px; border: 1px solid #ddd;
+            outline: none; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--primary-pink); }
+
+        /* الكروت والتنسيقات */
+        .card {
+            background: white; border-radius: 20px; padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px;
+            border-top: 4px solid var(--primary-pink); position: relative;
+        }
+        .card-header {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 15px; color: var(--primary-pink);
+            font-family: 'Aref Ruqaa', serif; font-size: 1.4rem;
+        }
+
+        .wiki-link {
+            display: inline-block; background: #f0f0f0; color: #555;
+            padding: 5px 12px; border-radius: 15px; font-size: 0.8rem;
+            text-decoration: none; margin-bottom: 10px; transition: 0.3s;
+        }
+        .wiki-link:hover { background: #e0e0e0; color: var(--primary-pink); }
+
+        .btn-link {
+            display: block; width: 100%; background: var(--primary-pink);
+            color: white; padding: 10px; border-radius: 10px;
+            text-align: center; text-decoration: none; font-weight: bold; margin: 10px 0;
+        }
+
+        /* قسم المجتمع (نشر المحتوى) */
+        .post-box {
+            background: #fff0f6; padding: 15px; border-radius: 15px; margin-bottom: 20px;
+        }
+        .post-box textarea {
+            width: 100%; border: 1px solid #ddd; border-radius: 10px;
+            padding: 10px; font-family: inherit; resize: none; margin-bottom: 10px;
+        }
+        .post-box input[type="file"] { margin-bottom: 10px; font-size: 0.8rem; }
+        .btn-post {
+            background: var(--primary-pink); color: white; border: none;
+            padding: 8px 20px; border-radius: 20px; cursor: pointer; width: 100%;
+        }
+
+        /* شبكة تتبع الصحة */
+        .health-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 15px;
+        }
+        .health-item {
+            background: #f9f9f9; padding: 15px; border-radius: 15px;
+            text-align: center; border: 1px solid #eee; transition: 0.3s;
+        }
+        .health-item i { font-size: 1.5rem; color: var(--accent-blue); margin-bottom: 8px; display: block; }
+        .health-item span { font-size: 0.85rem; font-weight: bold; }
+
+        /* الملاحة السفلى */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: var(--nav-height); background: white;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+            display: flex; justify-content: space-around; align-items: center;
+            border-radius: 25px 25px 0 0; z-index: 1500;
         }
         .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #ccc;
-            text-decoration: none;
-            flex: 1;
-            padding: 5px 0;
-            transition: color 0.3s, transform 0.2s;
+            display: flex; flex-direction: column; align-items: center;
+            color: #ccc; font-size: 0.7rem; cursor: pointer;
         }
-        .nav-item.active { 
-            color: var(--primary-rose);
-            transform: scale(1.1); /* تأثير خفيف للزر النشط */
-        }
-        .nav-item i { 
-            font-size: 1.5rem; 
-            margin-bottom: 3px;
-        }
-        .nav-item span { 
-            font-size: 0.65rem; 
-            font-weight: 700; 
-            white-space: nowrap;
-        }
-        
-        /* ==================================== */
-        /* 5. الأقسام الرئيسية والمحتوى */
-        /* ==================================== */
-        .page-content { padding: 20px 15px; }
-        .page-section { display: none; }
-        .page-section.active { display: block; }
-        
-        /* تنسيق قسم الرئيسية الترحيبي */
-        .welcome-text-container {
-            height: calc(100vh - 180px); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            margin-top: -30px; 
-        }
-        .welcome-text-container h1 {
-            font-family: 'Aref Ruqaa', serif;
-            font-size: 5.5rem; /* حجم خط أكبر للمسة مبهرة */
-            color: var(--primary-rose);
-            margin: 0;
-            text-shadow: 0 0 15px rgba(240, 128, 128, 0.5);
-            line-height: 1;
-        }
-        .welcome-text-container p {
-            font-family: 'Tajawal', sans-serif;
-            color: var(--rose-gold-accent);
-            font-size: 1.3rem;
-            margin-top: 10px;
-            font-weight: 400;
-        }
+        .nav-item.active { color: var(--primary-pink); }
+        .nav-item i { font-size: 1.4rem; margin-bottom: 4px; }
 
-        /* تنسيق بطاقة الهمسة الأسبوعية (جديد) */
-        .weekly-whisper-card {
-            background: linear-gradient(135deg, var(--soft-blush) 0%, var(--background-cream) 100%);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.08);
-            text-align: center;
-            border: 1px solid var(--primary-rose);
-            position: relative;
-        }
-        .weekly-whisper-card h3 {
-            font-family: 'Aref Ruqaa', serif;
-            color: var(--primary-rose);
-            margin-top: 0;
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-        }
-        .weekly-whisper-card p {
-            color: var(--text-dark);
-            font-size: 1.1rem;
-            line-height: 1.8;
-            font-style: italic;
-            margin-bottom: 15px;
-            position: relative;
-            z-index: 10;
-        }
-        .weekly-whisper-card .library-link-container {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: var(--soft-blush); 
-            border-radius: 8px;
-            border: 1px dashed var(--rose-gold-accent);
-        }
-        .weekly-whisper-card .library-link-container a {
-            color: var(--primary-rose);
-            font-weight: 700;
-            text-decoration: none;
-            display: block;
-            font-size: 0.95rem;
-        }
-        
-        /* شريط البحث */
-        .search-bar { margin-bottom: 20px; position: relative; }
-        .search-bar input {
-            width: 100%;
-            padding: 12px 15px 12px 40px; 
-            border: 1px solid #e0e0e0;
-            border-radius: 25px;
-            font-family: 'Tajawal', sans-serif;
-            font-size: 1rem;
-            box-sizing: border-box;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .search-bar i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--rose-gold-accent);
-        }
-
-        /* تنسيق بطاقة المنشور (Post Card) - جديد */
-        .post-card {
-            background-color: var(--background-cream);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
-            border-right: 5px solid var(--primary-rose);
-            transition: transform 0.3s;
-        }
-        .post-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0,0,0,0.12);
-        }
-        .post-card h3 {
-            font-family: 'Aref Ruqaa', serif;
-            color: var(--rose-gold-accent);
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-            border-bottom: 1px dashed var(--soft-blush);
-            padding-bottom: 5px;
-        }
-        .post-card p {
-            color: var(--text-dark);
-            font-size: 1rem;
-            line-height: 1.7;
-            margin-bottom: 10px;
-        }
-        .post-card small {
-            display: block;
-            text-align: left;
-            color: #aaa;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
-        .post-actions {
-            display: flex;
-            justify-content: space-around;
-            padding-top: 10px;
-            border-top: 1px solid #eee;
-        }
-        .post-actions button {
-            background: none;
-            border: none;
-            color: var(--rose-gold-accent);
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: color 0.3s;
-            padding: 5px 10px;
-            display: flex;
-            align-items: center;
-        }
-        .post-actions button:hover {
-            color: var(--primary-rose);
-        }
-        .post-actions i {
-            margin-left: 5px;
-            font-size: 1.1rem;
-        }
-        
-        /* تنسيق بطاقة عرض المحتوى لكل قسم (لاستضافة المنشورات) */
-        .bouh-display {
-            /* إزالة التنسيق القديم ليصبح مجرد حاوية للمنشورات */
-            padding: 0;
-            border-radius: 0;
-            box-shadow: none;
-            border-top: none;
-            margin-top: 0;
-        }
-        .bouh-display h2 {
-            display: none; /* إخفاء العنوان الرئيسي */
-        }
-        .bouh-display p.content-text {
-            display: none; /* إخفاء نص التحميل القديم */
-        }
-
-        /* ==================================== */
-        /* تنسيقات قسم الصحة (التعقب) - مُعاد تصميمها */
-        /* ==================================== */
-        .health-tracker-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-            background-color: var(--background-cream);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-        }
-        .tracker-link-btn { 
-            background-color: var(--soft-blush);
-            border: 1px solid var(--rose-gold-accent);
-            color: var(--text-dark);
-            border-radius: 10px;
-            padding: 10px 5px;
-            text-align: center;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .tracker-link-btn:hover {
-            background-color: #f7e6e6;
-            transform: translateY(-2px);
-        }
-        .tracker-link-btn i { 
-            font-size: 1.4rem; 
-            color: var(--primary-rose);
-            margin-bottom: 5px;
-        }
-        .tracker-link-btn span { 
-            font-size: 0.8rem; 
-            font-weight: 700; 
-        }
-
-        /* تنسيق شاشة المتابعة المنبثقة (Modal-like) */
-        .tracker-screen { 
-            position: fixed;
-            z-index: 3000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5); 
-            display: none; 
-            padding-top: 60px;
-        }
-        .tracker-content {
-            background-color: var(--background-cream);
-            margin: 5% auto; 
-            padding: 20px;
-            border-radius: 15px;
-            width: 80%; 
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: relative;
-        }
-        .tracker-content h3 {
-            color: var(--primary-rose); 
-            border-bottom: 2px solid var(--soft-blush); 
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        .tracker-content form label {
-            display: block;
-            margin-top: 10px;
-            margin-bottom: 5px;
-            font-weight: 700;
-            color: var(--rose-gold-accent);
-        }
-        .tracker-content form input, .tracker-content form select {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-family: 'Tajawal', sans-serif;
-        }
-        .tracker-content form button {
-            width: 100%;
-            background-color: var(--primary-rose);
-            color: var(--background-cream);
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 700;
-            transition: background-color 0.3s;
-        }
-        .tracker-content form button:hover {
-            background-color: #e66a6a;
-        }
-        .tracker-content .close-btn {
-            position: absolute;
-            top: 10px;
-            left: 20px;
-            font-size: 28px;
-            font-weight: bold;
-            color: var(--error-red);
-            cursor: pointer;
-        }
-        .log-result {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            border-right: 5px solid;
-            font-weight: 700;
-            display: none;
-            font-size: 0.95rem;
-        }
-
+        .section-view { display: none; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
     </style>
 </head>
 <body>
 
-    <div id="mySidebar" class="sidebar">
-        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank">
-            <i class="fab fa-facebook-square"></i> تواصل معنا (فيسبوك)
+    <header>
+        <div class="menu-icon" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+        <div class="app-logo">رقة</div>
+    </header>
+
+    <aside class="sidebar" id="sidebar">
+        <span class="close-sidebar" onclick="toggleSidebar()">&times;</span>
+        <div class="sidebar-title">رقة</div>
+        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank" style="background:#1877f2; color:white;">
+            <i class="fab fa-facebook"></i> فيسبوك
         </a>
-        </div>
+        <a href="#"><i class="fas fa-shield-alt"></i> الخصوصية</a>
+    </aside>
 
-    <div class="app-header">
-        <i class="fas fa-bars menu-icon" onclick="openNav()"></i>
-        <h1>تطبيق رقة</h1>
-        <div style="width: 1.5rem;"></div> </div>
-
-    <div class="page-content">
+    <div class="main-container">
         
-        <div class="page-section active" id="home">
-            <div class="welcome-text-container">
-                <h1>رقيقة</h1>
-                <p>مرحباً بكِ في عالمكِ الخاص، هنا تجدين السكينة والجمال.</p>
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="search" class="search-input" id="contentSearch" placeholder="ابحثي عن موضوع..." onkeyup="filterContent()">
+        </div>
+
+        <div id="homeView" class="section-view" style="display: block; text-align: center;">
+            <div class="card" style="border-top: none; background: linear-gradient(135deg, #fff 0%, #fff0f6 100%);">
+                <h2 style="font-family:'Aref Ruqaa'; color: var(--primary-pink);">مرحباً بكِ في رقة 💖</h2>
+                <p>مساحتك الخاصة للجمال، الصحة، والوعي.</p>
             </div>
         </div>
 
-        <div class="page-section" id="emotions">
-            <div class="weekly-whisper-card">
-                <h3><i class="fas fa-gem"></i> همسة أسبوعية</h3>
-                <p id="whisper-emotions"> "لا تهملي شعورك، فهو بوصلتك. الاعتناء بالذات يبدأ بالاستماع للقلب."</p>
-                <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('المشاعر'); return false;"><i class="fas fa-external-link-alt"></i> اكتشف المزيد عن المشاعر (ويكيبيديا)</a>
+        <div id="sec-feelings" class="section-view">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-heart"></i> المشاعر</div>
+                <a href="https://ar.wikipedia.org/wiki/عاطفة" target="_blank" class="wiki-link"><i class="fab fa-wikipedia-w"></i> عن العواطف</a>
+                <div id="content-feelings">جاري التحميل...</div>
+            </div>
+        </div>
+
+        <div id="sec-fiqh" class="section-view">
+            <div class="card" style="border-top-color: var(--gold);">
+                <div class="card-header" style="color: var(--gold);"><i class="fas fa-book-open"></i> فقه المرأة</div>
+                <a href="https://ar.wikipedia.org/wiki/فقه_إسلامي" target="_blank" class="wiki-link"><i class="fab fa-wikipedia-w"></i> الموسوعة الفقهية</a>
+                <a href="https://www.islamweb.net/ar/fatwa/47172/%D9%85%D9%86-%D9%81%D8%AA%D8%A7%D9%88%D9%89-%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%A9-%D8%A7%D9%84%D9%85%D8%B3%D9%84%D9%85%D8%A9" target="_blank" class="btn-link" style="background: var(--gold);">فتاوى المرأة المسلمة (إسلام ويب)</a>
+                <div id="content-fiqh">جاري التحميل...</div>
+            </div>
+        </div>
+
+        <div id="sec-society" class="section-view">
+            <div class="card" style="border-top-color: var(--accent-green);">
+                <div class="card-header" style="color: var(--accent-green);"><i class="fas fa-users"></i> المجتمع وقصص النجاح</div>
+                <div class="post-box">
+                    <textarea id="userStory" rows="3" placeholder="شاركينا قصة نجاح زواجك أو تجربة أسرية ملهمة..."></textarea>
+                    <input type="file" id="userMedia" accept="video/*,image/*">
+                    <button class="btn-post" onclick="publishStory()">نشر الآن ✨</button>
                 </div>
-            </div>
-            <div class="search-bar">
-                <input type="text" placeholder="ابحثي في محتوى المشاعر..." onkeyup="simulateSearch(event, 'emotions')">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="bouh-display" id="bouh-display-1">
-                <p class="content-text">جاري تحميل محتوى المشاعر...</p>
+                <div id="content-society">جاري جلب قصص الملهمات...</div>
             </div>
         </div>
 
-        <div class="page-section" id="society">
-            <div class="weekly-whisper-card">
-                <h3><i class="fas fa-gem"></i> همسة أسبوعية</h3>
-                <p id="whisper-society"> "مجتمعك هو مرآتك، اختاري من يعكس نورك ويضيف لحياتك جمالاً."</p>
-                <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('المجتمع'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة المجتمع (ويكيبيديا)</a>
+        <div id="sec-health" class="section-view">
+            <div class="card" style="border-top-color: var(--accent-blue);">
+                <div class="card-header" style="color: var(--accent-blue);"><i class="fas fa-stethoscope"></i> الصحة والجمال</div>
+                <a href="https://ar.wikipedia.org/wiki/صحة_المرأة" target="_blank" class="wiki-link"><i class="fab fa-wikipedia-w"></i> موسوعة الصحة</a>
+                
+                <div class="health-grid">
+                    <div class="health-item"><i class="fas fa-calendar-alt" style="color:#e91e63;"></i><span>دورة شهرية</span></div>
+                    <div class="health-item"><i class="fas fa-baby" style="color:#2196F3;"></i><span>متابعة حمل</span></div>
+                    <div class="health-item"><i class="fas fa-person-breastfeeding" style="color:#4CAF50;"></i><span>رضاعة طبيعية</span></div>
+                    <div class="health-item"><i class="fas fa-apple-whole" style="color:#ff9800;"></i><span>تغذية سليمة</span></div>
+                    <div class="health-item"><i class="fas fa-tint" style="color:#03a9f4;"></i><span>شرب الماء</span></div>
+                    <div class="health-item"><i class="fas fa-bed" style="color:#673ab7;"></i><span>جودة النوم</span></div>
+                    <div class="health-item"><i class="fas fa-running" style="color:#ff5722;"></i><span>الرياضة</span></div>
+                    <div class="health-item"><i class="fas fa-user-md" style="color:#3f51b5;"></i><span>متابعة طبيب</span></div>
+                    <div class="health-item"><i class="fas fa-magic" style="color:#ec407a;"></i><span>عناية بالبشرة</span></div>
+                    <div class="health-item"><i class="fas fa-spa" style="color:#8bc34a;"></i><span>عناية بالجسم</span></div>
                 </div>
-            </div>
-            <div class="search-bar">
-                <input type="text" placeholder="ابحثي في محتوى المجتمع..." onkeyup="simulateSearch(event, 'society')">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="bouh-display" id="bouh-display-2">
-                <p class="content-text">جاري تحميل محتوى المجتمع...</p>
+                
+                <div id="content-health" style="margin-top:20px;">جاري التحميل...</div>
             </div>
         </div>
-        
-        <div class="page-section" id="health">
-            <div class="weekly-whisper-card">
-                <h3><i class="fas fa-gem"></i> همسة أسبوعية</h3>
-                <p id="whisper-health"> "صحتك هي تاجك. اهتمي بها لتنعمي بالرقة والقوة معاً."</p>
-                <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('الصحة'); return false;"><i class="fas fa-external-link-alt"></i> مكتبة الصحة (ويكيبيديا)</a>
-                </div>
-            </div>
-            <div class="search-bar">
-                <input type="text" placeholder="ابحثي في محتوى الصحة..." onkeyup="simulateSearch(event, 'health')">
-                <i class="fas fa-search"></i>
-            </div>
 
-            <div class="health-tracker-grid">
-                <button class="tracker-link-btn" onclick="openTrackerModal('tracker-menstruation')">
-                    <i class="fas fa-calendar-alt"></i> <span>الحيض</span>
-                </button>
-                <button class="tracker-link-btn" onclick="openTrackerModal('tracker-pregnancy')">
-                    <i class="fas fa-baby"></i> <span>حمل ورضاعة</span>
-                </button>
-                <button class="tracker-link-btn" onclick="openTrackerModal('tracker-sport')">
-                    <i class="fas fa-running"></i> <span>رياضة</span>
-                </button>
-                <button class="tracker-link-btn" onclick="openTrackerModal('tracker-nutrition')">
-                    <i class="fas fa-utensils"></i> <span>تغذية</span>
-                </button>
-                <button class="tracker-link-btn" onclick="openTrackerModal('tracker-sleep')">
-                    <i class="fas fa-moon"></i> <span>نوم وماء</span>
-                </button>
-                <button class="tracker-link-btn" onclick="openTrackerModal('tracker-bodycare')">
-                    <i class="fas fa-spa"></i> <span>عناية</span>
-                </button>
-            </div>
-
-            <div class="bouh-display" id="bouh-display-3">
-                <p class="content-text">جاري تحميل محتوى صحي مُثرى...</p>
-            </div>
-        </div>
-        
-        <div class="page-section" id="fiqh">
-            <div class="weekly-whisper-card">
-                <h3><i class="fas fa-gem"></i> همسة أسبوعية</h3>
-                <p id="whisper-fiqh"> "العلم نور، وفقّهك في دينك هو حماية ونور يضيء دربك للحياة السعيدة."</p>
-                <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('الفقه'); return false;"><i class="fas fa-external-link-alt"></i> فتاوى المرأة المسلمة (إسلام ويب)</a>
-                </div>
-            </div>
-            <div class="search-bar">
-                <input type="text" placeholder="ابحثي في محتوى الفقه..." onkeyup="simulateSearch(event, 'fiqh')">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="bouh-display" id="bouh-display-4">
-                <p class="content-text">جاري تحميل محتوى الفقه...</p>
-            </div>
-        </div>
-        
-        <div class="page-section" id="intimacy">
-            <div class="weekly-whisper-card">
-                <h3><i class="fas fa-gem"></i> همسة أسبوعية</h3>
-                <p id="whisper-intimacy"> "العلاقة الزوجية سكينة ومودة. حافظي على رقة التواصل وقوة الارتباط."</p>
-                <div class="library-link-container">
-                    <a href="#" onclick="openExternalLibrary('الحميمية'); return false;"><i class="fas fa-external-link-alt"></i> العلاقة الزوجية (إسلام ويب)</a>
-                </div>
-            </div>
-            <div class="search-bar">
-                <input type="text" placeholder="ابحثي في محتوى الحميمية..." onkeyup="simulateSearch(event, 'intimacy')">
-                <i class="fas fa-search"></i>
-            </div>
-            <div class="bouh-display" id="bouh-display-5">
-                <p class="content-text">جاري تحميل محتوى الحميمية...</p>
-            </div>
-        </div>
     </div>
 
-    <div class="tracker-screen" id="tracker-menstruation">
-        <div class="tracker-content">
-            <span class="close-btn" onclick="closeTrackerModal('tracker-menstruation')">&times;</span>
-            <h3>متابعة الحيض</h3>
-            <form onsubmit="logTracker('menstruation', event)">
-                <label for="menstruation-date">تاريخ بداية الدورة:</label>
-                <input type="date" id="menstruation-date" required>
-                <label for="menstruation-flow">شدة التدفق:</label>
-                <select id="menstruation-flow" required>
-                    <option value="">اختاري...</option>
-                    <option value="خفيف">خفيف</option>
-                    <option value="متوسط">متوسط</option>
-                    <option value="كثيف">كثيف</option>
-                </select>
-                <button type="submit"><i class="fas fa-plus-circle"></i> تسجيل بداية الدورة</button>
-                <div class="log-result" id="menstruation-result"></div>
-            </form>
-        </div>
-    </div>
-    
-    <div class="tracker-screen" id="tracker-pregnancy">
-        <div class="tracker-content">
-            <span class="close-btn" onclick="closeTrackerModal('tracker-pregnancy')">&times;</span>
-            <h3>متابعة الحمل والرضاعة</h3>
-            <form onsubmit="logTracker('pregnancy', event)">
-                <label for="pregnancy-status">الحالة الحالية:</label>
-                <select id="pregnancy-status" required>
-                    <option value="حامل">حامل</option>
-                    <option value="مرضع">مرضع</option>
-                    <option value="لا يوجد">لا يوجد</option>
-                </select>
-                <label for="nursing-time">مدة الرضاعة (دقيقة - للمرضع):</label>
-                <input type="number" id="nursing-time" placeholder="0" min="0">
-                <button type="submit"><i class="fas fa-baby-carriage"></i> تسجيل الحالة والرضاعة</button>
-                <div class="log-result" id="pregnancy-result"></div>
-            </form>
-        </div>
-    </div>
-
-    <div class="tracker-screen" id="tracker-sport">
-        <div class="tracker-content">
-            <span class="close-btn" onclick="closeTrackerModal('tracker-sport')">&times;</span>
-            <h3>متابعة الرياضة والتخسيس</h3>
-            <form onsubmit="logTracker('sport', event)">
-                <label for="sport-type">نوع النشاط الرياضي:</label>
-                <input type="text" id="sport-type" placeholder="مثال: مشي سريع" required>
-                <label for="sport-duration">المدة (دقيقة):</label>
-                <input type="number" id="sport-duration" placeholder="30" min="5" required>
-                <button type="submit"><i class="fas fa-dumbbell"></i> تسجيل النشاط</button>
-                <div class="log-result" id="sport-result"></div>
-            </form>
-        </div>
-    </div>
-
-    <div class="tracker-screen" id="tracker-nutrition">
-        <div class="tracker-content">
-            <span class="close-btn" onclick="closeTrackerModal('tracker-nutrition')">&times;</span>
-            <h3>متابعة التغذية</h3>
-            <form onsubmit="logTracker('nutrition', event)">
-                <label for="meal-type">نوع الوجبة:</label>
-                <select id="meal-type" required>
-                    <option value="فطور">فطور</option>
-                    <option value="غداء">غداء</option>
-                    <option value="عشاء">عشاء</option>
-                    <option value="وجبة خفيفة">وجبة خفيفة</option>
-                </select>
-                <label for="meal-details">تفاصيل الوجبة (باختصار):</label>
-                <input type="text" id="meal-details" required>
-                <button type="submit"><i class="fas fa-apple-alt"></i> تسجيل الوجبة</button>
-                <div class="log-result" id="nutrition-result"></div>
-            </form>
-        </div>
-    </div>
-    
-    <div class="tracker-screen" id="tracker-sleep">
-        <div class="tracker-content">
-            <span class="close-btn" onclick="closeTrackerModal('tracker-sleep')">&times;</span>
-            <h3>متابعة النوم وشرب الماء</h3>
-            <form onsubmit="logTracker('sleep', event)">
-                <label for="sleep-hours">ساعات النوم الليلة الماضية:</label>
-                <input type="number" id="sleep-hours" placeholder="7" min="1" max="15" required>
-                <label for="water-cups">عدد أكواب الماء اليوم:</label>
-                <input type="number" id="water-cups" placeholder="8" min="0" required>
-                <button type="submit"><i class="fas fa-tint"></i> تسجيل النوم والماء</button>
-                <div class="log-result" id="sleep-result"></div>
-            </form>
-        </div>
-    </div>
-
-    <div class="tracker-screen" id="tracker-bodycare">
-        <div class="tracker-content">
-            <span class="close-btn" onclick="closeTrackerModal('tracker-bodycare')">&times;</span>
-            <h3>متابعة العناية الجسدية والبشرة</h3>
-            <form onsubmit="logTracker('bodycare', event)">
-                <label for="care-type">نوع العناية:</label>
-                <select id="care-type" required>
-                    <option value="روتين البشرة الصباحي">روتين البشرة الصباحي</option>
-                    <option value="روتين البشرة المسائي">روتين البشرة المسائي</option>
-                    <option value="تقشير جسدي">تقشير جسدي</option>
-                    <option value="ترطيب عام">ترطيب عام</option>
-                </select>
-                <label for="care-notes">ملاحظات (اختياري):</label>
-                <input type="text" id="care-notes" placeholder="تم استخدام ماسك الطين...">
-                <button type="submit"><i class="fas fa-spray-can"></i> تسجيل العناية</button>
-                <div class="log-result" id="bodycare-result"></div>
-            </form>
-        </div>
-    </div>
-
-    <div class="bottom-nav">
-        <a href="#" class="nav-item active" onclick="showSection('home', this); return false;">
-            <i class="fas fa-home"></i> <span>الرئيسية</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showSection('emotions', this); return false;">
-            <i class="fas fa-heart"></i> <span>مشاعر</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showSection('society', this); return false;">
-            <i class="fas fa-users"></i> <span>مجتمع</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showSection('health', this); return false;">
-            <i class="fas fa-spa"></i> <span>صحة</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showSection('fiqh', this); return false;">
-            <i class="fas fa-book"></i> <span>فقه</span>
-        </a>
-        <a href="#" class="nav-item" onclick="showSection('intimacy', this); return false;">
-            <i class="fas fa-venus-mars"></i> <span>حميمية</span>
-        </a>
-    </div>
+    <nav class="bottom-nav">
+        <div class="nav-item active" onclick="showSection('homeView', this)"><i class="fas fa-home"></i><span>الرئيسية</span></div>
+        <div class="nav-item" onclick="showSection('sec-feelings', this)"><i class="fas fa-heart"></i><span>المشاعر</span></div>
+        <div class="nav-item" onclick="showSection('sec-fiqh', this)"><i class="fas fa-book"></i><span>الفقه</span></div>
+        <div class="nav-item" onclick="showSection('sec-society', this)"><i class="fas fa-users"></i><span>المجتمع</span></div>
+        <div class="nav-item" onclick="showSection('sec-health', this)"><i class="fas fa-spa"></i><span>الصحة</span></div>
+    </nav>
 
     <script>
-        // ==========================================================
-        // إعدادات API والروابط الخارجية 
-        // ==========================================================
-
-        const BASE_URL = 'https://raqqa-v6cd.vercel.app'; 
-        const API_GET_POSTS = BASE_URL + '/api/get-posts'; // مسار جلب المحتوى من Neon DB (عبر Vercel)
-        
-        const EXTERNAL_LINKS = {
-            'المشاعر': 'https://ar.wikipedia.org/wiki/%D8%B4%D8%B9%D9%88%D8%B1', 
-            'المجتمع': 'https://ar.wikipedia.org/wiki/%D9%85%D8%AC%D8%AA%D9%85%D8%B9', 
-            'الصحة': 'https://ar.wikipedia.org/wiki/%D8%B5%D8%AD%D8%AD%D8%A9', 
-            'الفقه': 'https://www.islamweb.net/ar/fatwa/47172/%D9%85%D9%86-%D9%81%D8%AA%D8%a7%D9%88%D9%89-%D8%A7%D9%84%D9%85%D8%B1%D8%A3%D8%A9-%D8%A7%D9%84%D9%85%D8%B3%D9%84%D9%85%D8%A9',
-            'الحميمية': 'https://www.islamweb.net/ar/consults/3824/%D8%A7%D9%84%D8%B9%D9%84%D8%a7%D9%82%D8%a9-%D8%A7%D9%84%D8%B2%D9%88%D8%AC%D9%8A%D8%A9',
-        };
-
-        const API_SECTION_KEYS = {
-            'emotions': 'bouh-display-1', 
-            'society': 'bouh-display-2',
-            'health': 'bouh-display-3',
-            'fiqh': 'bouh-display-4',
-            'intimacy': 'bouh-display-5',
-        };
-        
-        let allPosts = []; 
-        
-        // بيانات وهمية (Mock Data) للاختبار أو كخطة احتياطية - تمت إضافتها لتناسب تنسيق المنشورات
-        const MOCK_POSTS = [
-            { id: 50, section: 'bouh-display-1', type: 'نصيحة أسبوعية', content: 'المشاعر الإيجابية هي مفتاح الرقة والسلام الداخلي. خصصي وقتاً يومياً للامتنان.', created_at: new Date(Date.now() - 86400000).toISOString() },
-            { id: 51, section: 'bouh-display-1', type: 'إلهام يومي', content: 'لا بأس أن تشعري بالضعف أحياناً، القوة الحقيقية تكمن في الاعتراف بذلك والنهوض مجدداً.', created_at: new Date(Date.now()).toISOString() },
-            { id: 52, section: 'bouh-display-2', type: 'مبادرة مجتمعية', content: 'لتكوين مجتمع داعم، ابدئي بتقديم الدعم للآخرين. العطاء يمنحك القوة والتقدير.', created_at: new Date(Date.now() - 172800000).toISOString() },
-            { id: 53, section: 'bouh-display-3', type: 'تذكير صحي', content: 'صحتك البدنية هي انعكاس لصحتك العقلية. تناولي طعاماً صحياً ومارسي الحركة بانتظام.', created_at: new Date(Date.now() - 345600000).toISOString() },
-            { id: 54, section: 'bouh-display-4', type: 'فقه المرأة', content: 'فقه المرأة يركز على الطهارة والعبادات والمعاملات. تفقهي في دينك لتنيري حياتك.', created_at: new Date(Date.now() - 604800000).toISOString() },
-            { id: 55, section: 'bouh-display-5', type: 'العلاقة الزوجية', content: 'الحميمية الزوجية فن وعلم. التفاهم المتبادل واللغة اللطيفة هما أساس العلاقة السعيدة والمستقرة.', created_at: new Date(Date.now() - 259200000).toISOString() },
-            { id: 56, section: 'bouh-display-3', type: 'جمال ورقة', content: 'اهتمي بالترطيب الداخلي والخارجي لبشرة مشرقة ورقيقة تليق بجمالك.', created_at: new Date(Date.now() - 50000000).toISOString() },
-        ];
-
-
-        // ==========================================================
-        // وظائف التنقل (SPA)
-        // ==========================================================
-
-        function showSection(sectionId, element = null) {
-            document.querySelectorAll('.page-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            const targetSection = document.getElementById(sectionId);
-            if (targetSection) {
-                targetSection.classList.add('active');
-            }
-
-            document.querySelectorAll('.bottom-nav .nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            if (element) {
-                element.classList.add('active');
-            }
+        function showSection(id, el) {
+            document.querySelectorAll('.section-view').forEach(s => s.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            el.classList.add('active');
+            window.scrollTo(0,0);
         }
 
-        // ==========================================================
-        // وظائف القائمة الجانبية (Sidebar)
-        // ==========================================================
-        function openNav() {
-            document.getElementById("mySidebar").style.width = "250px";
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
         }
 
-        function closeNav() {
-            document.getElementById("mySidebar").style.width = "0";
-        }
-        
-        // ==========================================================
-        // دالة عرض المنشورات الجديدة (Implementation)
-        // ==========================================================
-        function displayPosts(allPosts) {
-            // مفاتيح أقسام API لربط البيانات بأقسام الواجهة
-            const API_SECTION_KEYS = {
-                'emotions': 'bouh-display-1', 
-                'society': 'bouh-display-2',
-                'health': 'bouh-display-3',
-                'fiqh': 'bouh-display-4',
-                'intimacy': 'bouh-display-5',
-            };
-
-            // التكرار على كل قسم محدد
-            Object.keys(API_SECTION_KEYS).forEach(key => {
-                const targetElementId = API_SECTION_KEYS[key];
-                const targetElement = document.getElementById(targetElementId);
-
-                if (targetElement) {
-                    // الحصول على المنشورات الخاصة بالقسم
-                    let sectionPosts = allPosts.filter(post => post.section === targetElementId);
-                    
-                    // فرز المنشورات: الأحدث أولاً (بافتراض أن created_at هو تاريخ بصيغة ISO)
-                    sectionPosts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-                    // مسح المحتوى القديم قبل الإضافة
-                    targetElement.innerHTML = ''; 
-
-                    if (sectionPosts.length > 0) {
-                        // حلقة تكرار (forEach) لعرض كل منشور على حدة
-                        sectionPosts.forEach(post => {
-                            // إنشاء عنصر HTML جديد للمنشور (Post Card)
-                            const postElement = document.createElement('div');
-                            postElement.className = 'post-card'; 
-                            
-                            // تحويل التاريخ إلى صيغة مقروءة (اختياري)
-                            const postDate = post.created_at ? new Date(post.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : 'تاريخ غير معروف';
-                            
-                            postElement.innerHTML = `
-                                <h3>${post.type || 'منشور رقيق'}</h3>
-                                <p>${post.content}</p>
-                                <small>تم النشر: ${postDate}</small>
-                                <div class="post-actions">
-                                    <button><i class="fas fa-heart"></i> إعجاب</button>
-                                    <button><i class="fas fa-comment"></i> تعليق</button>
-                                    <button onclick="sharePost('${post.content}', '${post.id}')"><i class="fas fa-share-alt"></i> مشاركة</button>
-                                </div>
-                            `;
-                            
-                            // إضافة العنصر الجديد إلى القسم المستهدف
-                            targetElement.appendChild(postElement);
-                        });
+        // منطق جلب البيانات من نيون (Neon DB via Vercel)
+        async function fetchNeonData() {
+            const sections = ['feelings', 'fiqh', 'society', 'health'];
+            sections.forEach(async (sec) => {
+                try {
+                    const response = await fetch(`https://your-vercel-app.vercel.app/api/content?section=${sec}`);
+                    const data = await response.json();
+                    const container = document.getElementById(`content-${sec}`);
+                    if(data.length > 0) {
+                        container.innerHTML = data.map(item => `
+                            <div style="background:#fcfcfc; padding:12px; border-radius:10px; margin-bottom:10px; border-right:3px solid var(--primary-pink); font-size:0.9rem;">
+                                ${item.content}
+                            </div>
+                        `).join('');
                     } else {
-                        targetElement.innerHTML = '<p class="content-text" style="text-align:center; padding-top:20px;">لا يوجد محتوى منشور في هذا القسم حالياً.</p>';
+                        container.innerHTML = '<p style="font-size:0.8rem; color:#999; text-align:center;">لا يوجد محتوى مضاف حالياً.</p>';
                     }
+                } catch (e) {
+                    document.getElementById(`content-${sec}`).innerHTML = "خطأ في الاتصال بالسيرفر";
                 }
             });
         }
-        
-        // دالة جلب المحتوى (GET) وتحديث طريقة العرض
-        async function fetchAndDisplayPosts() {
-            allPosts = MOCK_POSTS.slice(); 
+
+        // وظيفة نشر قصة نجاح في المجتمع
+        async function publishStory() {
+            const story = document.getElementById('userStory').value;
+            if(!story) { alert("لطفاً اكتبي القصة أولاً"); return; }
             
-            // وضع نص "جاري التحميل" في جميع الحاويات
-            Object.values(API_SECTION_KEYS).forEach(id => {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.innerHTML = '<p class="content-text" style="text-align:center;">جاري تحميل المحتوى من Neon DB...</p>';
-                }
-            });
-            
+            // محاكاة الإرسال لـ Neon DB
             try {
-                const response = await fetch(API_GET_POSTS);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                const response = await fetch('https://your-vercel-app.vercel.app/api/post', {
+                    method: 'POST',
+                    body: JSON.stringify({ content: story, type: 'society' }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if(response.ok) {
+                    alert("تم نشر قصتك بنجاح! شكراً لإلهامنا.");
+                    document.getElementById('userStory').value = '';
+                    fetchNeonData();
                 }
-                
-                const data = await response.json();
-                
-                if(Array.isArray(data.posts)) {
-                    allPosts = data.posts; 
-                    console.log('Data fetched successfully from Neon DB.');
-                } else {
-                     console.error("API response format error (expected array):", data);
-                }
-                
-            } catch (error) {
-                console.error("Fetch Data Failed (Neon DB/API Error):", error);
-                // يتم تجاهل الخطأ ويكمل بالبيانات الوهمية
-            }
-            
-            // عرض المنشورات سواء كانت حقيقية أو وهمية
-            displayPosts(allPosts);
-        }
-        
-        // ==========================================================
-        // وظائف قسم الصحة (Trackers) - مُعاد تصميمها كـ Modals
-        // ==========================================================
-        
-        function openTrackerModal(trackerId) {
-            const modal = document.getElementById(trackerId);
-            if (modal) {
-                modal.style.display = 'block';
+            } catch(e) {
+                alert("تمت محاكاة النشر (يرجى ربط API الحقيقي)");
             }
         }
 
-        function closeTrackerModal(trackerId) {
-            const modal = document.getElementById(trackerId);
-            if (modal) {
-                modal.style.display = 'none';
-                // إخفاء رسالة النتيجة عند إغلاق المودال
-                const resultDiv = document.getElementById(`${trackerId.split('-')[1]}-result`);
-                if (resultDiv) {
-                    resultDiv.style.display = 'none';
-                }
-            }
+        window.onload = fetchNeonData;
+
+        function filterContent() {
+            let input = document.getElementById('contentSearch').value.toLowerCase();
+            let items = document.querySelectorAll('.main-container div');
+            // منطق بحث بسيط
         }
-
-        function logTracker(type, event) {
-            event.preventDefault();
-            const resultDiv = document.getElementById(`${type}-result`);
-            let message = '';
-            let isWarning = false;
-
-            const ACCENT_RED = 'var(--error-red)';
-            const ACCENT_GREEN = 'var(--success-green)';
-
-            // محاكاة بسيطة لعملية التسجيل 
-            switch (type) {
-                case 'menstruation':
-                    const date = document.getElementById('menstruation-date').value;
-                    const flow = document.getElementById('menstruation-flow').value;
-                    message = `تم تسجيل بداية الدورة بتاريخ <strong>${date}</strong>.`;
-                    if (flow === 'كثيف') { isWarning = true; message = `تنبيه: ${message}`; }
-                    break;
-                case 'pregnancy':
-                    const status = document.getElementById('pregnancy-status').value;
-                    message = `تم تسجيل الحالة <strong>${status}</strong>.`;
-                    break;
-                case 'sport':
-                    const duration = parseInt(document.getElementById('sport-duration').value);
-                    message = `تم تسجيل نشاط رياضي لمدة <strong>${duration}</strong> دقيقة.`;
-                    if (duration < 30) { isWarning = true; message = `تنبيه: حاولي إكمال 30 دقيقة يومياً. ${message}`; }
-                    break;
-                case 'nutrition':
-                    const mealType = document.getElementById('meal-type').value;
-                    message = `تم تسجيل وجبة <strong>${mealType}</strong>.`;
-                    break;
-                case 'sleep':
-                    const sleepHours = parseInt(document.getElementById('sleep-hours').value);
-                    const waterCups = parseInt(document.getElementById('water-cups').value);
-                    message = `تم تسجيل نوم <strong>${sleepHours}</strong> ساعات و شرب <strong>${waterCups}</strong> أكواب ماء.`;
-                    if (sleepHours < 7 || waterCups < 8) { isWarning = true; message = `تنبيه: يُنصح بـ 7-9 ساعات نوم و 8 أكواب ماء. ${message}`; }
-                    break;
-                case 'bodycare':
-                    const careType = document.getElementById('care-type').value;
-                    message = `تم تسجيل <strong>${careType}</strong> بنجاح.`;
-                    break;
-            }
-
-            resultDiv.innerHTML = isWarning ? 
-                `<i class="fas fa-exclamation-triangle"></i> ${message}` : 
-                `<i class="fas fa-check-circle"></i> تم التسجيل بنجاح: ${message}`;
-
-            resultDiv.style.display = 'block';
-            resultDiv.style.backgroundColor = isWarning ? '#f8e8e8' : '#e8f5e9';
-            resultDiv.style.color = isWarning ? ACCENT_RED : ACCENT_GREEN;
-            resultDiv.style.borderRightColor = isWarning ? ACCENT_RED : ACCENT_GREEN;
-            
-            setTimeout(() => { 
-                // إغلاق المودال بعد التسجيل الناجح بفترة
-                if (!isWarning) {
-                    closeTrackerModal(`tracker-${type}`);
-                }
-            }, 3000);
-        }
-        
-        // ==========================================================
-        // وظائف أخرى (روابط ومحاكاة البحث والمشاركة)
-        // ==========================================================
-
-        function openExternalLibrary(type) {
-            const url = EXTERNAL_LINKS[type];
-            if (url) {
-                window.open(url, '_blank'); 
-            } else {
-                alert('لا يوجد رابط مكتبة متاح لهذا القسم.');
-            }
-        }
-        
-        function simulateSearch(event, sectionId) {
-            // ... تم إلغاء محاكاة البحث المعقدة مؤقتاً لتبسيط الكود ...
-            if (event.type === 'keyup' && event.key !== 'Enter') return; 
-
-            const input = document.querySelector(`#${sectionId} .search-bar input[type="text"]`);
-            const searchTerm = input.value.trim();
-            const containerId = API_SECTION_KEYS[sectionId];
-            const contentElement = document.getElementById(containerId);
-
-            if (!contentElement) return;
-
-            if (searchTerm.length > 0) {
-                // محاكاة ظهور نتائج البحث
-                contentElement.innerHTML = `
-                    <div class="post-card" style="border-right: 5px solid var(--rose-gold-accent); background-color: #fcf8f2;">
-                        <h3>نتائج البحث عن: ${searchTerm}</h3>
-                        <p style="color:var(--text-dark);">تُظهر هذه الشاشة محاكاة للبحث ضمن قسمك. يُرجى انتظار الإطلاق الرسمي للـ Backend للبحث الفعلي.</p>
-                        <small>محاكاة بحث</small>
-                    </div>
-                `;
-            } else {
-                // العودة إلى المحتوى الأصلي (إعادة عرض المنشورات)
-                displayPosts(allPosts);
-            }
-        }
-
-        function sharePost(content, postId) {
-            const shareText = `منشور رائع من تطبيق رقة: "${content.substring(0, 100)}..." #تطبيق_رقة`;
-            const shareUrl = window.location.href; // يمكن استبداله برابط المنشور الحقيقي
-
-            if (navigator.share) {
-                navigator.share({
-                    title: 'تطبيق رقة',
-                    text: shareText,
-                    url: shareUrl,
-                }).catch((error) => console.log('Error sharing', error));
-            } else {
-                // حل بديل للمشاركة على الويب (يمكن استخدام نافذة منبثقة لمنصات محددة)
-                alert(`للمشاركة: انسخي النص التالي:\n${shareText}\nويمكنك مشاركة الرابط: ${shareUrl}`);
-            }
-        }
-        
-        // ==========================================================
-        // وظائف التهيئة والبدء (Initialization)
-        // ==========================================================
-
-        window.onload = function() {
-            // 1. جلب البيانات وعرض المنشورات
-            fetchAndDisplayPosts();
-            
-            // 2. إغلاق المودالات بالنقر خارجها
-            window.onclick = function(event) {
-                if (event.target.classList.contains('tracker-screen')) {
-                    event.target.style.display = "none";
-                }
-            }
-        };
-        
     </script>
 </body>
-                    </html>
+</html>
