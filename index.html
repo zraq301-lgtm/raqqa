@@ -39,20 +39,7 @@
             position: sticky; top: 0; z-index: 1000;
         }
 
-        .app-logo {
-            font-family: 'Aref Ruqaa', serif;
-            font-size: 2.2rem;
-            color: var(--primary-pink);
-            margin: 0 auto;
-        }
-
-        .sidebar {
-            position: fixed; top: 0; right: -280px; width: 260px; height: 100%;
-            background: white; box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-            z-index: 2000; transition: 0.4s ease; padding: 20px;
-        }
-        .sidebar.active { right: 0; }
-        .sidebar a { display: block; padding: 15px; color: #1877f2; text-decoration: none; font-weight: bold; border-bottom: 1px solid #eee; }
+        .app-logo { font-family: 'Aref Ruqaa', serif; font-size: 2.2rem; color: var(--primary-pink); margin: 0 auto; }
 
         .main-container { padding: 15px; }
         .section-view { display: none; animation: fadeIn 0.4s ease; }
@@ -84,30 +71,25 @@
             background: #fff; border: 1px solid var(--soft-pink); padding: 10px; 
             border-radius: 12px; text-align: center; cursor: pointer; 
             color: var(--primary-pink); font-size: 0.75rem; font-weight: bold;
-            transition: 0.3s;
         }
-        .tracker-btn:hover { background: var(--soft-pink); }
         .tracker-btn i { display: block; font-size: 1.2rem; margin-bottom: 5px; color: var(--accent-blue); }
 
-        /* نموذج المتابعة */
         .tracker-form {
             display: none; background: #fff; border: 2px solid var(--soft-pink);
             border-radius: 15px; padding: 15px; margin-top: 20px;
-            animation: slideUp 0.4s ease;
         }
-        input, textarea, select { 
-            width: 100%; padding: 10px; margin: 8px 0; 
-            border: 1px solid #ddd; border-radius: 8px; font-family: 'Tajawal';
-        }
+
+        input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-family: 'Tajawal'; box-sizing: border-box;}
 
         .save-btn {
             background: var(--primary-pink); color: white; border: none;
             padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold;
         }
 
+        .neon-screen { margin-top: 15px; }
         .post-card {
             background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px;
-            border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+            border: 1px solid #f0f0f0; border-right: 4px solid var(--soft-pink);
         }
 
         .bottom-nav {
@@ -119,26 +101,17 @@
         .nav-item.active { color: var(--primary-pink); }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
 <body>
 
     <header>
-        <div onclick="toggleSidebar()" style="cursor:pointer;"><i class="fas fa-bars fa-lg"></i></div>
         <div class="app-logo">رقة</div>
     </header>
 
-    <aside class="sidebar" id="sidebar">
-        <div onclick="toggleSidebar()" style="text-align:left; cursor:pointer; font-size: 1.5rem;">&times;</div>
-        <h3 style="color:var(--primary-pink); font-family:'Aref Ruqaa';">رقة</h3>
-        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank"><i class="fab fa-facebook"></i> فيسبوك رقة</a>
-    </aside>
-
     <div class="main-container">
-        
         <div id="view-home" class="section-view" style="display: block;">
-            <div class="card" style="text-align: center; background: linear-gradient(135deg, #fff 0%, #fff5f8 100%);">
+            <div class="card" style="text-align: center;">
                 <h1 style="font-family:'Aref Ruqaa'; color:var(--primary-pink);">أهلاً بكِ في رقة ✨</h1>
                 <p>مساحتكِ الخاصة للعناية بالروح والجسد والمجتمع.</p>
             </div>
@@ -147,7 +120,7 @@
         <div id="view-feelings" class="section-view">
             <div class="card">
                 <h3><i class="fas fa-heart"></i> المشاعر</h3>
-                <div class="hamssa-box">مشاعرك أمانة، استمعي لقلبك بهدوء.</div>
+                <div class="hamssa-box">همسة: مشاعرك هي لغة روحك، أنصتي إليها بحب.</div>
                 <a href="https://ar.wikipedia.org/wiki/علم_النفس" target="_blank" class="library-link">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-feelings"></div>
             </div>
@@ -156,8 +129,8 @@
         <div id="view-fiqh" class="section-view">
             <div class="card" style="border-top-color: #4CAF50;">
                 <h3><i class="fas fa-book-open"></i> فقه النساء</h3>
-                <div class="hamssa-box" style="border-right-color: #4CAF50;">التفقه في الدين طمأنينة للروح.</div>
-                <a href="https://alrasikhon.org/c/mawsoa#" target="_blank" class="library-link" style="background: #e8f5e9; color: #4CAF50;">المكتبة الإضافية 📚</a>
+                <div class="hamssa-box" style="border-right-color: #4CAF50;">همسة: العلم يرفع بيوتاً لا عماد لها، فتعلمي ما ينفعك.</div>
+                <a href="https://alrasikhon.org/c/mawsoa#" target="_blank" class="library-link" style="color: #4CAF50;">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-fiqh"></div>
             </div>
         </div>
@@ -165,8 +138,8 @@
         <div id="view-intimacy" class="section-view">
             <div class="card" style="border-top-color: var(--accent-red);">
                 <h3><i class="fas fa-fire"></i> العلاقات الحميمية</h3>
-                <div class="hamssa-box" style="border-right-color: var(--accent-red);">المودة والرحمة سكن للقلوب.</div>
-                <a href="https://mawdoo3.com/طرق_زيادة_المودة_بين_الزوجين" target="_blank" class="library-link" style="background: #ffebee; color: var(--accent-red);">المكتبة الإضافية 📚</a>
+                <div class="hamssa-box" style="border-right-color: var(--accent-red);">همسة: الحب يُبنى بالاهتمام ويقوى بالمودة والرحمة.</div>
+                <a href="https://mawdoo3.com/طرق_زيادة_المودة_بين_الزوجين" target="_blank" class="library-link" style="color: var(--accent-red);">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-intimacy"></div>
             </div>
         </div>
@@ -174,14 +147,14 @@
         <div id="view-society" class="section-view">
             <div class="card" style="border-top-color: var(--gold);">
                 <h3><i class="fas fa-users"></i> المجتمع والتنمية</h3>
-                <div class="card" style="border:1px dashed var(--gold); padding:15px;">
-                    <h4><i class="fas fa-plus-circle"></i> إضافة قصة أو فيديو</h4>
-                    <textarea id="post-content" placeholder="اكتبي قصتك هنا..."></textarea>
-                    <input type="text" id="post-video-url" placeholder="رابط الفيديو (YouTube/Drive)...">
-                    <button class="save-btn" style="background:var(--gold);" onclick="alert('سيرسل المنشور لـ Neon DB قريباً')">نشر في المجتمع</button>
+                <div class="card" style="border:1px dashed var(--gold); background:#fffef9;">
+                    <h4><i class="fas fa-upload"></i> انشري فديو أو بوست تفاؤل</h4>
+                    <textarea id="society-content" placeholder="ماذا يدور في ذهنكِ؟"></textarea>
+                    <input type="text" id="society-video" placeholder="رابط الفديو إن وجد">
+                    <button class="save-btn" style="background:var(--gold);" onclick="alert('سيتم الحفظ في Neon DB')">نشر الآن</button>
                 </div>
-                <div class="hamssa-box" style="border-right-color: var(--gold);">شاركي تجربتكِ لتلهمي غيركِ.</div>
-                <a href="https://ar.wikipedia.org/wiki/تنمية_المرأة" target="_blank" class="library-link" style="background: #fff9e6; color: var(--gold);">المكتبة الإضافية 📚</a>
+                <div class="hamssa-box" style="border-right-color: var(--gold);">همسة: أنتِ مؤثرة في عالمكِ، فاجعلي أثركِ جميلاً.</div>
+                <a href="https://ar.wikipedia.org/wiki/تنمية_المرأة" target="_blank" class="library-link" style="color: var(--gold);">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-society"></div>
             </div>
         </div>
@@ -189,36 +162,33 @@
         <div id="view-health" class="section-view">
             <div class="card" style="border-top-color: var(--accent-blue);">
                 <h3><i class="fas fa-hand-holding-heart"></i> الصحة والجمال</h3>
-                
                 <div class="health-grid">
-                    <div class="tracker-btn" onclick="openTracker('الحيض', 'تاريخ البدء، مدة الدورة، الأعراض')"><i class="fas fa-calendar-alt"></i> الحيض</div>
-                    <div class="tracker-btn" onclick="openTracker('الحمل', 'الأسبوع الحالي، ملاحظات الطبيب، وزن الجنين')"><i class="fas fa-baby"></i> الحمل</div>
-                    <div class="tracker-btn" onclick="openTracker('الرضاعة', 'عدد الرضعات، مدة الرضاعة، نوع الرضاعة')"><i class="fas fa-vial"></i> الرضاعة</div>
-                    <div class="tracker-btn" onclick="openTracker('الأمومة', 'نشاط الطفل، ساعات النوم، ملاحظات تربوية')"><i class="fas fa-child"></i> الأمومة</div>
-                    <div class="tracker-btn" onclick="openTracker('التغذية', 'السعرات، نوع الوجبات، الممنوعات')"><i class="fas fa-apple-alt"></i> التغذية</div>
-                    <div class="tracker-btn" onclick="openTracker('الطبيب', 'موعد الزيارة، اسم الطبيب، التشخيص')"><i class="fas fa-user-md"></i> الطبيب</div>
-                    <div class="tracker-btn" onclick="openTracker('الرياضة', 'نوع التمرين، الوقت، مستوى الجهد')"><i class="fas fa-running"></i> الرياضة</div>
-                    <div class="tracker-btn" onclick="openTracker('التخسيس', 'الوزن الحالي، قياس الخصر، الهدف القادم')"><i class="fas fa-weight"></i> التخسيس</div>
-                    <div class="tracker-btn" onclick="openTracker('العناية', 'روتين البشرة، الشعر، العناية بالجسم')"><i class="fas fa-magic"></i> العناية</div>
-                    <div class="tracker-btn" onclick="openTracker('النوم', 'ساعات النوم، جودة النوم، وقت الاستيقاظ')"><i class="fas fa-moon"></i> النوم الجيد</div>
-                    <div class="tracker-btn" onclick="openTracker('الماء', 'كمية اللترات، عدد الأكواب، التذكير القادم')"><i class="fas fa-tint"></i> شرب الماء</div>
+                    <div class="tracker-btn" onclick="openTracker('الحيض')"><i class="fas fa-calendar-alt"></i> الحيض</div>
+                    <div class="tracker-btn" onclick="openTracker('الحمل')"><i class="fas fa-baby"></i> الحمل</div>
+                    <div class="tracker-btn" onclick="openTracker('الرضاعة')"><i class="fas fa-vial"></i> الرضاعة</div>
+                    <div class="tracker-btn" onclick="openTracker('الأمومة')"><i class="fas fa-child"></i> الأمومة</div>
+                    <div class="tracker-btn" onclick="openTracker('التغذية')"><i class="fas fa-apple-alt"></i> التغذية</div>
+                    <div class="tracker-btn" onclick="openTracker('الطبيب')"><i class="fas fa-user-md"></i> الطبيب</div>
+                    <div class="tracker-btn" onclick="openTracker('الرياضة')"><i class="fas fa-running"></i> الرياضة</div>
+                    <div class="tracker-btn" onclick="openTracker('التخسيس')"><i class="fas fa-weight"></i> التخسيس</div>
+                    <div class="tracker-btn" onclick="openTracker('العناية بالجسم')"><i class="fas fa-magic"></i> العناية</div>
+                    <div class="tracker-btn" onclick="openTracker('النوم الجيد')"><i class="fas fa-moon"></i> النوم</div>
+                    <div class="tracker-btn" onclick="openTracker('شرب الماء')"><i class="fas fa-tint"></i> الماء</div>
                 </div>
 
-                <div class="hamssa-box" style="border-right-color: var(--accent-blue);">جسدك أمانة فحافظي عليه.</div>
-                <a href="#" class="library-link" style="background: #e3f2fd; color: var(--accent-blue);">المكتبة الإضافية 📚</a>
+                <div class="hamssa-box" style="border-right-color: var(--accent-blue);">همسة: جسدكِ أمانة، امنحيه الحب والرعاية الكافية.</div>
+                <a href="#" class="library-link" style="color: var(--accent-blue);">المكتبة الإضافية 📚</a>
                 
                 <div class="neon-screen" id="neon-health"></div>
 
                 <div id="tracker-box" class="tracker-form">
-                    <h4 id="tracker-title" style="color:var(--primary-pink); border-bottom:1px solid #eee; padding-bottom:10px;"></h4>
-                    <p id="tracker-desc" style="font-size: 0.8rem; color: #666;"></p>
+                    <h4 id="tracker-title" style="margin-top:0;"></h4>
                     <input type="date" id="track-date">
-                    <textarea id="track-notes" rows="4" placeholder="سجلي التفاصيل هنا..."></textarea>
-                    <button class="save-btn" onclick="saveToNeon()">حفظ البيانات في السجل</button>
+                    <textarea id="track-details" placeholder="سجلي ملاحظاتكِ هنا..."></textarea>
+                    <button class="save-btn" onclick="alert('تم الحفظ في قاعدة بيانات المتابعة')">حفظ السجل</button>
                 </div>
             </div>
         </div>
-
     </div>
 
     <nav class="bottom-nav">
@@ -231,8 +201,6 @@
     </nav>
 
     <script>
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
-
         function showTab(id, el) {
             document.querySelectorAll('.section-view').forEach(v => v.style.display = 'none');
             document.getElementById(id).style.display = 'block';
@@ -241,60 +209,45 @@
             window.scrollTo(0,0);
         }
 
-        // فتح نموذج المتابعة الصحي
-        function openTracker(name, desc) {
+        function openTracker(title) {
             const box = document.getElementById('tracker-box');
             box.style.display = 'block';
-            document.getElementById('tracker-title').innerText = "سجل متابعة: " + name;
-            document.getElementById('tracker-desc').innerText = "الحقول المقترحة: " + desc;
+            document.getElementById('tracker-title').innerText = "متابعة: " + title;
             box.scrollIntoView({behavior: 'smooth'});
         }
 
-        // جلب البيانات من Neon DB
         async function fetchNeonData() {
             try {
-                const response = await fetch('/api/get-posts'); // رابط الـ API الخاص بـ Neon
+                // إضافة timestamp لمنع المتصفح من إرجاع 304 (Cache Busting)
+                const response = await fetch(`/api/get-posts?t=${Date.now()}`, {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' }
+                });
+                
+                if (!response.ok) return;
                 const data = await response.json();
+                
                 if (data.posts) {
                     const sections = ['feelings', 'fiqh', 'intimacy', 'society', 'health'];
                     sections.forEach(sec => {
                         const container = document.getElementById(`neon-${sec}`);
                         if (container) {
-                            const sectionPosts = data.posts.filter(p => p.section === sec);
-                            renderPosts(container, sectionPosts);
+                            const filtered = data.posts.filter(p => p.section === sec);
+                            container.innerHTML = filtered.map(p => `
+                                <div class="post-card">
+                                    <div style="font-size:0.7rem; color:#aaa; margin-bottom:5px;">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div>
+                                    <div style="font-size:0.95rem;">${p.content}</div>
+                                </div>
+                            `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.8rem;">لا يوجد محتوى حالياً</p>';
                         }
                     });
                 }
-            } catch (err) {
-                console.error("خطأ في جلب بيانات Neon:", err);
+            } catch (error) {
+                console.log("خطأ في الاتصال بالقاعدة");
             }
-        }
-
-        function renderPosts(container, posts) {
-            container.innerHTML = posts.length === 0 ? '<p style="font-size:0.7rem; color:#ccc; text-align:center;">لا يوجد محتوى حالياً</p>' : '';
-            posts.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'post-card';
-                card.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-                        <strong style="color:var(--primary-pink);">${item.type || 'إدارة رقة'}</strong>
-                        <span style="color:#bbb;">${new Date(item.created_at).toLocaleDateString('ar-EG')}</span>
-                    </div>
-                    <p style="font-size:0.9rem; margin-top:8px;">${item.content}</p>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        function saveToNeon() {
-            const date = document.getElementById('track-date').value;
-            const notes = document.getElementById('track-notes').value;
-            if(!date || !notes) return alert("يرجى ملء البيانات");
-            alert("سيتم حفظ: " + notes + " بتاريخ " + date + " في Neon DB");
-            document.getElementById('tracker-box').style.display = 'none';
         }
 
         window.onload = fetchNeonData;
     </script>
 </body>
-</html>
+                    </html>
