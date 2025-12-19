@@ -17,7 +17,6 @@
             --white: #ffffff;
             --nav-height: 75px;
             --accent-blue: #2196F3;
-            --accent-red: #f44336;
         }
 
         body {
@@ -33,13 +32,13 @@
             background: var(--white);
             padding: 15px 20px;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             box-shadow: 0 2px 15px rgba(233, 30, 99, 0.1);
             position: sticky; top: 0; z-index: 1000;
         }
 
-        .app-logo { font-family: 'Aref Ruqaa', serif; font-size: 2.2rem; color: var(--primary-pink); margin: 0 auto; }
+        .app-logo { font-family: 'Aref Ruqaa', serif; font-size: 2.2rem; color: var(--primary-pink); }
 
         .main-container { padding: 15px; }
         .section-view { display: none; animation: fadeIn 0.4s ease; }
@@ -53,17 +52,17 @@
         .hamssa-box {
             background: linear-gradient(135deg, #fff5f8 0%, #ffffff 100%);
             border-right: 5px solid var(--primary-pink);
-            padding: 15px; border-radius: 12px; margin-bottom: 15px;
+            padding: 12px; border-radius: 10px; margin-bottom: 15px;
             font-style: italic; font-size: 0.9rem;
         }
 
         .library-link {
             display: inline-block; margin-bottom: 15px; color: var(--primary-pink);
-            font-weight: bold; text-decoration: none; font-size: 0.85rem;
+            font-weight: bold; text-decoration: none; font-size: 0.8rem;
             background: var(--soft-pink); padding: 5px 12px; border-radius: 15px;
         }
 
-        /* شبكة المتابعات الصحية الـ 11 */
+        /* المتابعات الصحية */
         .health-grid {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px;
         }
@@ -74,22 +73,16 @@
         }
         .tracker-btn i { display: block; font-size: 1.1rem; margin-bottom: 4px; color: var(--accent-blue); }
 
-        /* شاشة المتابعة السفلية */
         .tracker-form {
             display: none; background: #fff; border: 2px solid var(--soft-pink);
             border-radius: 15px; padding: 15px; margin-top: 15px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
         }
 
         textarea, input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-family: 'Tajawal'; box-sizing: border-box; }
         
-        .save-btn {
-            background: var(--primary-pink); color: white; border: none;
-            padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold;
-        }
+        .save-btn { background: var(--primary-pink); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
 
-        /* عرض المحتوى من قاعدة البيانات */
-        .neon-screen { margin-top: 10px; }
+        /* عرض البيانات من Neon */
         .post-card {
             background: #fff; border-radius: 12px; padding: 15px; margin-bottom: 12px;
             border: 1px solid #eee; border-right: 4px solid var(--primary-pink);
@@ -109,64 +102,60 @@
 </head>
 <body>
 
-    <header>
-        <div class="app-logo">رقة</div>
-    </header>
+    <header><div class="app-logo">رقة</div></header>
 
     <div class="main-container">
         
         <div id="view-home" class="section-view" style="display: block;">
             <div class="card" style="text-align: center;">
-                <h2 style="font-family:'Aref Ruqaa'; color:var(--primary-pink);">مرحباً بكِ في رقة</h2>
-                <p>مساحتكِ الآمنة لكل ما يخصكِ</p>
+                <h2 style="font-family:'Aref Ruqaa'; color:var(--primary-pink);">أهلاً بكِ في رقة ✨</h2>
+                <p>مساحتكِ الخاصة للعناية بالروح والجسد</p>
             </div>
         </div>
 
         <div id="view-feelings" class="section-view">
             <div class="card">
                 <h3><i class="fas fa-heart"></i> المشاعر</h3>
-                <div class="hamssa-box">همسة: مشاعركِ هي لغتكِ الخاصة، تعلمي كيف تنصتين إليها.</div>
+                <div class="hamssa-box">همسة: مشاعركِ هي بوصلتكِ الداخلية، لا تتجاهليها.</div>
                 <a href="https://ar.wikipedia.org/wiki/علم_النفس" target="_blank" class="library-link">المكتبة الإضافية 📚</a>
-                <div class="neon-screen" id="display-feelings"></div>
+                <div id="display-bouh-display-1"></div>
             </div>
         </div>
 
         <div id="view-fiqh" class="section-view">
             <div class="card" style="border-top-color: #4CAF50;">
                 <h3><i class="fas fa-book-open"></i> فقه النساء</h3>
-                <div class="hamssa-box" style="border-right-color: #4CAF50;">همسة: العلم نور، وتفقهكِ في دينكِ طمأنينة لقلبكِ.</div>
-                <a href="https://alrasikhon.org/c/mawsoa#" target="_blank" class="library-link" style="color:#4CAF50;">المكتبة الإضافية 📚</a>
-                <div class="neon-screen" id="display-fiqh"></div>
+                <div class="hamssa-box">همسة: العلم نور يضيء لكِ دروب الحياة.</div>
+                <a href="https://alrasikhon.org" target="_blank" class="library-link">المكتبة الإضافية 📚</a>
+                <div id="display-bouh-display-2"></div>
             </div>
         </div>
 
         <div id="view-intimacy" class="section-view">
-            <div class="card" style="border-top-color: var(--accent-red);">
-                <h3><i class="fas fa-fire"></i> العلاقات الحميمية</h3>
-                <div class="hamssa-box" style="border-right-color: var(--accent-red);">همسة: المودة والرحمة هما أساس السكينة في بيتكِ.</div>
-                <a href="https://mawdoo3.com/طرق_زيادة_المودة_بين_الزوجين" target="_blank" class="library-link" style="color:var(--accent-red);">المكتبة الإضافية 📚</a>
-                <div class="neon-screen" id="display-intimacy"></div>
+            <div class="card" style="border-top-color: #f44336;">
+                <h3><i class="fas fa-fire"></i> العلاقات</h3>
+                <div class="hamssa-box">همسة: المودة والرحمة هما سر السعادة الزوجية.</div>
+                <a href="#" class="library-link">المكتبة الإضافية 📚</a>
+                <div id="display-bouh-display-3"></div>
             </div>
         </div>
 
         <div id="view-society" class="section-view">
             <div class="card" style="border-top-color: var(--gold);">
                 <h3><i class="fas fa-users"></i> المجتمع والتنمية</h3>
-                <div class="card" style="border:1px dashed var(--gold); background:#fffef9; margin-bottom:15px;">
-                    <h4 style="margin:0 0 10px 0; font-size:0.9rem;">انشري بوست أو فديو تفاؤل ✨</h4>
-                    <textarea id="society-post" placeholder="اكتبي قصتكِ أو خاطرة ملهمة..."></textarea>
-                    <input type="text" id="society-link" placeholder="رابط فديو (اختياري)">
-                    <button class="save-btn" style="background:var(--gold);" onclick="alert('سيتم إرسالها لـ Neon قريباً')">نشر الآن</button>
+                <div class="card" style="border: 1px dashed var(--gold); background: #fffef9;">
+                    <h4 style="margin:0 0 10px 0; font-size:0.85rem;">شاركينا بوست أو فيديو ملهم ✨</h4>
+                    <textarea id="soc-text" placeholder="اكتبي قصتكِ هنا..."></textarea>
+                    <input type="text" id="soc-link" placeholder="رابط الفيديو (اختياري)">
+                    <button class="save-btn" style="background:var(--gold);" onclick="alert('سيرسل لـ Neon DB')">نشر الآن</button>
                 </div>
-                <div class="hamssa-box" style="border-right-color: var(--gold);">همسة: كوني أنتِ التغيير الذي تودين رؤيته في العالم.</div>
-                <a href="https://ar.wikipedia.org/wiki/تنمية_المرأة" target="_blank" class="library-link" style="color:var(--gold);">المكتبة الإضافية 📚</a>
-                <div class="neon-screen" id="display-society"></div>
+                <div id="display-bouh-display-4"></div>
             </div>
         </div>
 
         <div id="view-health" class="section-view">
             <div class="card" style="border-top-color: var(--accent-blue);">
-                <h3><i class="fas fa-medkit"></i> الصحة والجمال</h3>
+                <h3><i class="fas fa-hand-holding-heart"></i> الصحة والجمال</h3>
                 <div class="health-grid">
                     <div class="tracker-btn" onclick="openTracker('الحيض')"><i class="fas fa-calendar-alt"></i>الحيض</div>
                     <div class="tracker-btn" onclick="openTracker('الحمل')"><i class="fas fa-baby"></i>الحمل</div>
@@ -180,21 +169,15 @@
                     <div class="tracker-btn" onclick="openTracker('النوم الجيد')"><i class="fas fa-moon"></i>النوم</div>
                     <div class="tracker-btn" onclick="openTracker('شرب الماء')"><i class="fas fa-tint"></i>الماء</div>
                 </div>
-
-                <div class="hamssa-box" style="border-right-color: var(--accent-blue);">همسة: جسدكِ أمانة، فاعتني به ليدوم عطاؤكِ.</div>
-                <a href="#" class="library-link" style="color:var(--accent-blue);">المكتبة الصحية 📚</a>
-                
-                <div class="neon-screen" id="display-health"></div>
-
+                <div id="display-bouh-display-5"></div>
                 <div id="tracker-box" class="tracker-form">
                     <h4 id="tracker-title" style="margin-top:0; color:var(--primary-pink);"></h4>
-                    <input type="date" id="track-date">
-                    <textarea id="track-notes" placeholder="سجلي ملاحظاتكِ أو قياساتكِ هنا..."></textarea>
-                    <button class="save-btn" onclick="alert('تم الحفظ في سجلاتكِ الخاصة')">حفظ البيانات</button>
+                    <input type="date">
+                    <textarea placeholder="سجلي تفاصيل المتابعة هنا..."></textarea>
+                    <button class="save-btn">حفظ في السجل</button>
                 </div>
             </div>
         </div>
-
     </div>
 
     <nav class="bottom-nav">
@@ -203,11 +186,10 @@
         <div class="nav-item" onclick="showTab('view-fiqh', this)"><i class="fas fa-book"></i><span>الفقه</span></div>
         <div class="nav-item" onclick="showTab('view-intimacy', this)"><i class="fas fa-fire"></i><span>العلاقة</span></div>
         <div class="nav-item" onclick="showTab('view-society', this)"><i class="fas fa-users"></i><span>المجتمع</span></div>
-        <div class="nav-item" onclick="showTab('view-health', this)"><i class="fas fa-hand-holding-heart"></i><span>الصحة</span></div>
+        <div class="nav-item" onclick="showTab('view-health', this)"><i class="fas fa-medkit"></i><span>الصحة</span></div>
     </nav>
 
     <script>
-        // التنقل بين الأقسام
         function showTab(id, el) {
             document.querySelectorAll('.section-view').forEach(v => v.style.display = 'none');
             document.getElementById(id).style.display = 'block';
@@ -216,48 +198,37 @@
             window.scrollTo(0,0);
         }
 
-        // فتح نموذج المتابعة الصحية
         function openTracker(title) {
             const box = document.getElementById('tracker-box');
             box.style.display = 'block';
-            document.getElementById('tracker-title').innerText = "تسجيل: " + title;
+            document.getElementById('tracker-title').innerText = "متابعة: " + title;
             box.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // جلب البيانات من Neon API
         async function fetchPosts() {
             try {
-                // إضافة متغير t لمنع الكاش 304
                 const response = await fetch(`/api/get-posts?t=${Date.now()}`);
                 const data = await response.json();
-                
                 if (data.posts) {
-                    const sections = ['feelings', 'fiqh', 'intimacy', 'society', 'health'];
-                    
-                    sections.forEach(sec => {
-                        const container = document.getElementById(`display-${sec}`);
+                    const keys = ['bouh-display-1', 'bouh-display-2', 'bouh-display-3', 'bouh-display-4', 'bouh-display-5'];
+                    keys.forEach(key => {
+                        const container = document.getElementById(`display-${key}`);
                         if (container) {
-                            // تصفية المنشورات حسب القسم
-                            const filtered = data.posts.filter(p => p.section === sec);
-                            
+                            const filtered = data.posts.filter(p => p.section === key);
                             container.innerHTML = filtered.map(p => `
                                 <div class="post-card">
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.75rem;">
-                                        <strong style="color:var(--primary-pink);">${p.type || 'إدارة رقة'}</strong>
-                                        <span style="color:#aaa;">${new Date(p.created_at).toLocaleDateString('ar-EG')}</span>
+                                    <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#888; margin-bottom:5px;">
+                                        <strong>${p.type}</strong>
+                                        <span>${new Date(p.created_at).toLocaleDateString('ar-EG')}</span>
                                     </div>
-                                    <div style="font-size:0.9rem; line-height:1.5;">${p.content}</div>
+                                    <div style="font-size:0.9rem;">${p.content}</div>
                                 </div>
-                            `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.8rem;">لا يوجد محتوى متاح حالياً.</p>';
+                            `).join('') || '<p style="text-align:center; color:#ccc; font-size:0.8rem;">لا يوجد محتوى</p>';
                         }
                     });
                 }
-            } catch (error) {
-                console.error("خطأ في جلب البيانات:", error);
-            }
+            } catch (e) { console.log("Error fetching DB"); }
         }
-
-        // التشغيل عند تحميل الصفحة
         window.onload = fetchPosts;
     </script>
 </body>
