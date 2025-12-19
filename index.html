@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -63,7 +63,6 @@
             border-top: 4px solid var(--primary-pink);
         }
 
-        /* شاشة الهمسة الأنيقة */
         .hamssa-box {
             background: linear-gradient(135deg, #fff5f8 0%, #ffffff 100%);
             border-right: 5px solid var(--primary-pink);
@@ -87,7 +86,6 @@
             border-radius: 20px;
             transition: 0.3s;
         }
-        .library-link:hover { opacity: 0.8; }
 
         .health-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
         .tracker-btn {
@@ -96,20 +94,14 @@
         }
         .tracker-btn i { display: block; font-size: 1.3rem; margin-bottom: 5px; }
 
-        .tracker-form { display: none; background: #fdfdfd; border: 2px dashed var(--soft-pink); border-radius: 15px; padding: 15px; margin-top: 15px; }
-        input, textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: 'Tajawal'; }
-        .save-btn { background: var(--primary-pink); color: white; border: none; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; font-weight: bold; }
-
         .upload-area { background: #fff9fa; padding: 15px; border-radius: 15px; margin-bottom: 20px; border: 1px solid var(--soft-pink); }
 
-        .neon-screen { margin-top: 10px; }
         .post-card {
             background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px;
             border: 1px solid #f0f0f0; animation: slideUp 0.4s ease;
         }
         .post-footer { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; }
-        .post-footer span { cursor: pointer; color: #888; font-size: 0.85rem; transition: 0.3s; }
-        .post-footer span:hover { color: var(--primary-pink); }
+        .post-footer span { cursor: pointer; color: #888; font-size: 0.85rem; }
 
         .bottom-nav {
             position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height);
@@ -118,7 +110,6 @@
         }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #ccc; cursor: pointer; font-size: 0.7rem; }
         .nav-item.active { color: var(--primary-pink); }
-        .nav-item i { font-size: 1.4rem; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(15px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -149,7 +140,7 @@
         <div id="view-feelings" class="section-view">
             <div class="card">
                 <h3><i class="fas fa-heart"></i> المشاعر</h3>
-                <div class="hamssa-box"><i class="fas fa-quote-right"></i> مشاعرك هي بوصلتك الداخلية، اعتني بها كما تعتنين بحديقتك.</div>
+                <div class="hamssa-box"><i class="fas fa-quote-right"></i> مشاعرك هي بوصلتك الداخلية، اعتني بها جيداً.</div>
                 <a href="https://ar.wikipedia.org/wiki/علم_النفس" target="_blank" class="library-link">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-feelings"></div>
             </div>
@@ -158,7 +149,7 @@
         <div id="view-fiqh" class="section-view">
             <div class="card" style="border-top-color: #4CAF50;">
                 <h3><i class="fas fa-book-open"></i> فقه النساء</h3>
-                <div class="hamssa-box" style="border-right-color: #4CAF50;"><i class="fas fa-lightbulb"></i> العلم نور، والتفقه في الدين يمنحكِ الطمأنينة واليقين.</div>
+                <div class="hamssa-box" style="border-right-color: #4CAF50;"><i class="fas fa-lightbulb"></i> العلم نور، والتفقه في الدين يمنحكِ الطمأنينة.</div>
                 <a href="https://alrasikhon.org/c/mawsoa#" target="_blank" class="library-link" style="background: #e8f5e9; color: #4CAF50;">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-fiqh"></div>
             </div>
@@ -167,7 +158,7 @@
         <div id="view-intimacy" class="section-view">
             <div class="card" style="border-top-color: var(--accent-red);">
                 <h3><i class="fas fa-fire"></i> العلاقات الحميمية</h3>
-                <div class="hamssa-box" style="border-right-color: var(--accent-red);"><i class="fas fa-heartbeat"></i> المودة والرحمة هما أساس السكينة في بيتك.</div>
+                <div class="hamssa-box" style="border-right-color: var(--accent-red);"><i class="fas fa-heartbeat"></i> المودة والرحمة هما سر السعادة الزوجية.</div>
                 <a href="https://mawdoo3.com/طرق_زيادة_المودة_بين_الزوجين" target="_blank" class="library-link" style="background: #ffebee; color: var(--accent-red);">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-intimacy"></div>
             </div>
@@ -177,12 +168,10 @@
             <div class="card" style="border-top-color: var(--gold);">
                 <h3><i class="fas fa-users"></i> المجتمع والتنمية</h3>
                 <div class="upload-area">
-                    <h4 style="margin-top:0;">شاركينا قصة نجاح زواجك 💍</h4>
-                    <textarea id="post-text" placeholder="اكتبي قصتك أو بوست تفاؤل..."></textarea>
-                    <input type="text" id="post-media" placeholder="رابط فيديو أو صورة (اختياري)">
+                    <textarea id="post-text" placeholder="شاركينا قصة نجاح زواجك..."></textarea>
                     <button class="save-btn" style="background:var(--gold);" onclick="userPublish()">نشر الآن ✨</button>
                 </div>
-                <div class="hamssa-box" style="border-right-color: var(--gold);"><i class="fas fa-star"></i> أثرك الجميل في المجتمع يبدأ من تطوير ذاتك أولاً.</div>
+                <div class="hamssa-box" style="border-right-color: var(--gold);"><i class="fas fa-star"></i> أثرك الجميل يبدأ من تطوير ذاتك.</div>
                 <a href="https://ar.wikipedia.org/wiki/تنمية_المرأة" target="_blank" class="library-link" style="background: #fff9e6; color: var(--gold);">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-society"></div>
             </div>
@@ -194,22 +183,8 @@
                 <div class="health-grid">
                     <div class="tracker-btn" onclick="openTracker('الحيض')"><i class="fas fa-calendar-alt"></i> الحيض</div>
                     <div class="tracker-btn" onclick="openTracker('الحمل')"><i class="fas fa-baby"></i> الحمل</div>
-                    <div class="tracker-btn" onclick="openTracker('الرضاعة')"><i class="fas fa-vial"></i> الرضاعة</div>
-                    <div class="tracker-btn" onclick="openTracker('الأمومة')"><i class="fas fa-child"></i> الأمومة</div>
-                    <div class="tracker-btn" onclick="openTracker('الرياضة')"><i class="fas fa-running"></i> الرياضة</div>
-                    <div class="tracker-btn" onclick="openTracker('التغذية')"><i class="fas fa-apple-alt"></i> التغذية</div>
-                    <div class="tracker-btn" onclick="openTracker('شرب الماء')"><i class="fas fa-tint"></i> الماء</div>
-                    <div class="tracker-btn" onclick="openTracker('العناية')"><i class="fas fa-magic"></i> العناية</div>
                 </div>
-
-                <div id="tracker-box" class="tracker-form">
-                    <h4 id="tracker-title">متابعة</h4>
-                    <input type="date" id="track-date">
-                    <textarea id="track-notes" placeholder="سجلي البيانات هنا..."></textarea>
-                    <button class="save-btn" onclick="saveData()">حفظ في السجل</button>
-                </div>
-
-                <div class="hamssa-box" style="border-right-color: var(--accent-blue);"><i class="fas fa-spa"></i> جسدك أمانة، امنحيه الرعاية والحب الذي يستحقه.</div>
+                <div class="hamssa-box" style="border-right-color: var(--accent-blue);"><i class="fas fa-spa"></i> جسدك أمانة، امنحيه الرعاية التي يستحقها.</div>
                 <a href="#" class="library-link" style="background: #e3f2fd; color: var(--accent-blue);">المكتبة الإضافية 📚</a>
                 <div class="neon-screen" id="neon-health"></div>
             </div>
@@ -237,31 +212,18 @@
             window.scrollTo(0,0);
         }
 
-        function openTracker(name) {
-            const box = document.getElementById('tracker-box');
-            box.style.display = 'block';
-            document.getElementById('tracker-title').innerText = "جدول متابعة " + name;
-            box.scrollIntoView({behavior: 'smooth'});
-        }
-
-        function saveData() { alert("تم حفظ بياناتك بنجاح! ✨"); document.getElementById('tracker-box').style.display='none'; }
-
-        // ==========================================================
-        // ** منطق جلب المحتوى من نيون DB (عبر API) **
-        // ==========================================================
         async function fetchNeonData() {
             try {
-                // تعديل الرابط حسب الـ endpoint الخاص بك
-                const response = await fetch('/api/get-posts'); 
+                // استخدام مسار الـ API المباشر
+                const response = await fetch('/api/get-posts');
+                if (!response.ok) throw new Error('فشل جلب البيانات من السيرفر');
+                
                 const data = await response.json();
-
                 if (data.posts) {
                     const sections = ['feelings', 'fiqh', 'intimacy', 'society', 'health'];
-                    
                     sections.forEach(sec => {
                         const container = document.getElementById(`neon-${sec}`);
                         if (container) {
-                            // تصفية المنشورات حسب القسم
                             const sectionPosts = data.posts.filter(p => p.section === sec);
                             renderPosts(container, sectionPosts);
                         }
@@ -269,15 +231,13 @@
                 }
             } catch (error) {
                 console.error('Fetch Error:', error);
+                // عرض رسالة خطأ بسيطة للمستخدم في الأقسام
+                document.querySelectorAll('.neon-screen').forEach(el => el.innerHTML = '<p style="color:red; font-size:0.7rem;">تأكدي من ربط قاعدة البيانات في Vercel</p>');
             }
         }
 
         function renderPosts(container, posts) {
-            container.innerHTML = '';
-            if (posts.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#ccc; font-size:0.8rem;">لا يوجد محتوى متاح حالياً.</p>';
-                return;
-            }
+            container.innerHTML = posts.length === 0 ? '<p style="text-align:center; color:#ccc; font-size:0.8rem;">لا يوجد محتوى حالياً.</p>' : '';
             posts.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'post-card';
@@ -290,36 +250,13 @@
                     <div class="post-footer">
                         <span><i class="far fa-heart"></i> إعجاب</span>
                         <span><i class="far fa-comment"></i> تعليق</span>
-                        <span><i class="fas fa-share-alt"></i> مشاركة</span>
                     </div>
                 `;
                 container.appendChild(card);
             });
         }
 
-        function userPublish() {
-            const text = document.getElementById('post-text').value;
-            const media = document.getElementById('post-media').value;
-            if(!text) return;
-
-            const container = document.getElementById('neon-society');
-            const newPost = document.createElement('div');
-            newPost.className = 'post-card';
-            newPost.innerHTML = `
-                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                    <strong style="color:var(--gold);">رقيقة من المجتمع</strong>
-                    <small style="color:#bbb;">الآن</small>
-                </div>
-                <p>${text}</p>
-                ${media ? `<div style="background:#f0f0f0; padding:10px; border-radius:10px; font-size:0.8rem; margin-top:10px;">رابط الملحق: ${media}</div>` : ''}
-                <div class="post-footer"><span><i class="fas fa-heart" style="color:red;"></i> 1</span><span><i class="far fa-comment"></i> 0</span></div>
-            `;
-            container.prepend(newPost);
-            document.getElementById('post-text').value = '';
-            document.getElementById('post-media').value = '';
-        }
-
         window.onload = fetchNeonData;
     </script>
 </body>
-</html>  
+                                                                                </html>
