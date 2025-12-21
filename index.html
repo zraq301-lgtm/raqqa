@@ -2,262 +2,151 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تطبيق رقة - النسخة الاحترافية الكاملة</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - تطبيق رقة</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
         :root {
             --primary-pink: #e91e63;
             --soft-pink: #fce4ec;
-            --gold: #d4af37;
-            --accent-blue: #2196F3;
-            --accent-green: #4CAF50;
-            --accent-red: #c62828; /* لون قسم الحميمية */
-            --nav-height: 70px;
+            --facebook-blue: #1877F2;
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
-            background: #fdfcfc; margin: 0; padding-bottom: 90px;
-            color: #4a4a4a; overflow-x: hidden;
+            background: #fdfcfc;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
         }
 
-        /* الهيدر والفراشة النابضة */
-        header { background: #fff; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .butterfly-box { font-size: 2.5rem; color: #fff; animation: pulse 2s infinite; display: inline-block; margin-top: 10px; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 0.7; } 50% { transform: scale(1.3); opacity: 1; } 100% { transform: scale(1); opacity: 0.7; } }
+        .auth-card {
+            background: white;
+            border-radius: 30px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
+            text-align: center;
+        }
 
-        /* الأقسام والمحتوى */
-        .main-container { padding: 15px; }
-        .section-view { display: none; animation: fadeIn 0.4s ease; }
-        .card { background: white; border-radius: 25px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; border-right: 6px solid var(--primary-pink); position: relative; }
-        .hamssa { background: #fff9fb; border: 1px dashed var(--primary-pink); padding: 12px; border-radius: 12px; margin-bottom: 15px; color: var(--primary-pink); font-size: 0.85rem; }
-        .library-btn { display: inline-block; padding: 6px 15px; background: var(--soft-pink); color: var(--primary-pink); text-decoration: none; border-radius: 20px; font-size: 0.75rem; font-weight: bold; margin-bottom: 10px; }
+        .logo {
+            font-family: 'Aref Ruqaa', serif;
+            font-size: 3.5rem;
+            color: var(--primary-pink);
+            margin-bottom: 10px;
+        }
 
-        /* أيقونة الذكاء الاصطناعي (أيقونة صغيرة داخل القسم) */
-        .ai-fab { position: absolute; top: 15px; left: 15px; width: 40px; height: 40px; background: var(--primary-pink); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.1); z-index: 5; }
-        .ai-chat-window { display: none; background: #fff5f8; border: 1px solid var(--soft-pink); border-radius: 15px; padding: 10px; margin-top: 10px; }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
 
-        /* شبكة الصحة (11 متابعة) */
-        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .tracker-item { background: #fcfaff; padding: 10px; border-radius: 15px; text-align: center; cursor: pointer; border: 1px solid #eee; }
-        .tracker-item i { display: block; font-size: 1.3rem; color: var(--accent-blue); margin-bottom: 5px; }
-        .tracker-item span { font-size: 0.65rem; font-weight: bold; color: #555; }
-        .app-inner { display: none; background: #f0f7ff; border: 1px solid var(--accent-blue); border-radius: 20px; padding: 15px; margin-top: 15px; }
+        .social-btn {
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border-radius: 15px;
+            border: 1px solid #eee;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
 
-        /* نظام المعاينة قبل النشر */
-        .preview-zone { display: none; border: 2px solid #ddd; border-radius: 15px; overflow: hidden; margin-bottom: 10px; position: relative; }
-        .preview-zone img, .preview-zone video { width: 100%; max-height: 200px; object-fit: cover; }
+        .social-btn:active {
+            transform: scale(0.98);
+        }
 
-        /* التنقل */
-        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: var(--nav-height); background: white; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); z-index: 1000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #ccc; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
-        .nav-item.active { color: var(--primary-pink); }
+        .google-btn {
+            background: white;
+            color: #444;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
 
-        .btn-post { background: var(--primary-pink); color: white; border: none; padding: 12px; border-radius: 12px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 5px; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .facebook-btn {
+            background: var(--facebook-blue);
+            color: white;
+            border: none;
+        }
+
+        .footer-text {
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 25px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <div onclick="toggleSidebar()" style="cursor:pointer;"><i class="fas fa-bars"></i></div>
-        <div style="font-family:'Aref Ruqaa'; font-size: 2rem; color: var(--primary-pink);">رقة</div>
-        <div style="width:24px"></div>
-    </header>
+    <div class="auth-card">
+        <div class="logo">رقة</div>
+        <div class="subtitle">مرحباً بكِ في عالم الأنوثة والجمال</div>
 
-    <div class="main-container">
-        
-        <div id="view-home" class="section-view" style="display: block; text-align: center;">
-            <div class="card" style="background: linear-gradient(135deg, #e91e63, #ff80ab); color: white; border: none;">
-                <h2 style="font-family:'Aref Ruqaa'; margin:0;">أهلاً بكِ يا رقيقة ✨</h2>
-                <div class="butterfly-box"><i class="fas fa-butterfly"></i></div>
-                <p>مساحتكِ الآمنة لكل ما يخص أنوثتكِ</p>
-            </div>
-            <div id="neon-global-feed"></div>
-        </div>
+        <button class="social-btn google-btn" onclick="signIn('google')">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20" alt="Google">
+            الدخول بواسطة جوجل
+        </button>
 
-        <div id="view-feelings" class="section-view">
-            <div class="card">
-                <div class="ai-fab" onclick="toggleAI('chat-feelings')"><i class="fas fa-robot"></i></div>
-                <h3>المشاعر</h3>
-                <div class="hamssa">همسة رقة: قلبكِ يستحق الرعاية، عبري عما بداخلكِ.</div>
-                <a href="https://ar.wikipedia.org/wiki/مشاعر" target="_blank" class="library-btn">مكتبة المشاعر 📚</a>
-                
-                <div id="chat-feelings" class="ai-chat-window">
-                    <input type="text" id="ai-input-feel" placeholder="كيف تشعرين؟ رقة AI تسمعكِ...">
-                    <button class="btn-post" onclick="askGemini('ai-input-feel')">إرسال لـ AI</button>
-                </div>
-                <div id="bouh-display-1"></div>
-            </div>
-        </div>
+        <button class="social-btn facebook-btn" onclick="signIn('facebook')">
+            <i class="fab fa-facebook-f"></i>
+            الدخول بواسطة فيسبوك
+        </button>
 
-        <div id="view-fiqh" class="section-view">
-            <div class="card" style="border-right-color: var(--accent-green);">
-                <h3>فقه المرأة</h3>
-                <div class="hamssa" style="color:var(--accent-green); border-color:var(--accent-green)">همسة رقة: العلم نور يضيء لكِ دروب العبادة.</div>
-                <a href="https://www.islamweb.net/ar/fatwa/47172" target="_blank" class="library-btn" style="background:#e8f5e9; color:var(--accent-green)">مكتبة الفقه 📚</a>
-                <div id="bouh-display-2"></div>
-            </div>
-        </div>
-
-        <div id="view-society" class="section-view">
-            <div class="card" style="border-right-color: var(--gold);">
-                <h3>مجتمع رقة</h3>
-                <div class="hamssa" style="color:var(--gold); border-color:var(--gold)">همسة رقة: شاركينا قصتكِ لتعم الفائدة.</div>
-                
-                <textarea id="post-text" placeholder="اكتبي منشوركِ هنا..."></textarea>
-                
-                <div id="preview-container" class="preview-zone">
-                    <div id="preview-content"></div>
-                    <button onclick="removePreview()" style="position:absolute; top:5px; left:5px; background:red; color:white; border:none; border-radius:50%; width:25px; height:25px; cursor:pointer;">×</button>
-                </div>
-
-                <div style="display:flex; gap:10px;">
-                    <label style="flex:1; background:#f0f0f0; padding:10px; border-radius:12px; text-align:center; cursor:pointer;">
-                        <i class="fas fa-image"></i> صورة/فيديو <input type="file" id="media-input" hidden accept="image/*,video/*" onchange="previewMedia(event)">
-                    </label>
-                    <button class="btn-post" style="flex:1; background:var(--gold); margin:0;" onclick="publishPost()">نشر في نيون</button>
-                </div>
-                <div id="bouh-display-4" style="margin-top:20px;"></div>
-            </div>
-        </div>
-
-        <div id="view-intimacy" class="section-view">
-            <div class="card" style="border-right-color: var(--accent-red);">
-                <h3>الحميمية</h3>
-                <div class="hamssa" style="color:var(--accent-red); border-color:var(--accent-red)">همسة رقة: المودة والرحمة هما أساس السكن الزوجي.</div>
-                <a href="https://www.islamweb.net/ar/fatawa/2218/%D8%A7%D9%84%D9%86%D9%83%D8%A7%D8%AD" target="_blank" class="library-btn" style="background:#ffebee; color:var(--accent-red)">مكتبة الحميمية 📚</a>
-                <div id="bouh-display-3"></div> </div>
-        </div>
-
-        <div id="view-health" class="section-view">
-            <div class="card" style="border-right-color: var(--accent-blue);">
-                <div class="ai-fab" style="background:var(--accent-blue)" onclick="toggleAI('chat-health')"><i class="fas fa-robot"></i></div>
-                <h3>تطبيق رقة الصحي</h3>
-                <div class="hamssa" style="color:var(--accent-blue); border-color:var(--accent-blue)">همسة رقة: صحتكِ هي أغلى ما تملكين.</div>
-                
-                <div class="health-grid">
-                    <div class="tracker-item" onclick="openApp('الحيض')"><i class="fas fa-droplet"></i><span>الحيض</span></div>
-                    <div class="tracker-item" onclick="openApp('الحمل')"><i class="fas fa-baby"></i><span>الحمل</span></div>
-                    <div class="tracker-item" onclick="openApp('الرضاعة')"><i class="fas fa-vial"></i><span>الرضاعة</span></div>
-                    <div class="tracker-item" onclick="openApp('الأمومة')"><i class="fas fa-child"></i><span>الأمومة</span></div>
-                    <div class="tracker-item" onclick="openApp('التغذية')"><i class="fas fa-apple-alt"></i><span>التغذية</span></div>
-                    <div class="tracker-item" onclick="openApp('الطبيب')"><i class="fas fa-user-md"></i><span>الطبيب</span></div>
-                    <div class="tracker-item" onclick="openApp('الرياضة')"><i class="fas fa-running"></i><span>الرياضة</span></div>
-                    <div class="tracker-item" onclick="openApp('التخسيس')"><i class="fas fa-weight"></i><span>التخسيس</span></div>
-                    <div class="tracker-item" onclick="openApp('العناية')"><i class="fas fa-sparkles"></i><span>العناية</span></div>
-                    <div class="tracker-item" onclick="openApp('النوم')"><i class="fas fa-moon"></i><span>النوم</span></div>
-                    <div class="tracker-item" onclick="openApp('الماء')"><i class="fas fa-tint"></i><span>الماء</span></div>
-                </div>
-
-                <div id="health-app-view" class="app-inner">
-                    <h4 id="app-title" style="color:var(--accent-blue)"></h4>
-                    <div id="app-form"></div>
-                    <button class="btn-post" style="background:var(--accent-blue)" onclick="saveHealth()">حفظ في نيون</button>
-                </div>
-
-                <div id="chat-health" class="ai-chat-window" style="border-color:var(--accent-blue)">
-                    <input type="text" id="ai-input-health" placeholder="اسألي رقة AI عن صحتكِ...">
-                    <button class="btn-post" style="background:var(--accent-blue)" onclick="askGemini('ai-input-health')">استشارة طبية</button>
-                </div>
-            </div>
-        </div>
-
+        <p class="footer-text">
+            تسجيلك يعني موافقتك على شروط الخصوصية <br>
+            بإشراف تقني متكامل عبر Supabase & Vercel
+        </p>
     </div>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active" onclick="showTab('view-home', this)"><i class="fas fa-home"></i><span>الرئيسية</span></div>
-        <div class="nav-item" onclick="showTab('view-feelings', this)"><i class="fas fa-heart"></i><span>المشاعر</span></div>
-        <div class="nav-item" onclick="showTab('view-fiqh', this)"><i class="fas fa-book"></i><span>الفقه</span></div>
-        <div class="nav-item" onclick="showTab('view-society', this)"><i class="fas fa-users"></i><span>المجتمع</span></div>
-        <div class="nav-item" onclick="showTab('view-intimacy', this)"><i class="fas fa-venus"></i><span>حميمية</span></div>
-        <div class="nav-item" onclick="showTab('view-health', this)"><i class="fas fa-medkit"></i><span>الصحة</span></div>
-    </nav>
-
     <script>
-        // دالة جلب البيانات من Neon DB بناءً على صورة الجدول المرفوعة
-        async function loadNeonData() {
-            try {
-                const response = await fetch('/api/get-posts.js');
-                const data = await response.json();
-                if (data.posts) {
-                    data.posts.forEach(post => {
-                        const container = document.getElementById(post.section);
-                        if (container) {
-                            container.innerHTML += `
-                                <div class="card" style="border-right:none; border-bottom:1px solid #eee; border-radius:0; padding:15px 0;">
-                                    <p style="font-size:0.9rem;">${post.content}</p>
-                                    <div style="display:flex; gap:15px; color:#999; font-size:0.8rem;">
-                                        <span onclick="toggleLike(this)"><i class="fas fa-heart"></i> أعجبني</span>
-                                        <span onclick="alert('فتح التعليقات')"><i class="fas fa-comment"></i> تعليق</span>
-                                        <span onclick="alert('تم النسخ')"><i class="fas fa-share"></i> مشاركة</span>
-                                    </div>
-                                </div>`;
-                        }
-                    });
+        // --- إعدادات Supabase باستخدام بياناتك ---
+        
+        // الرابط الذي قدمتيه (تم استخراجه من رابط فيسبوك)
+        const SUPABASE_URL = "https://mdqveuisghriztgofssm.supabase.co"; 
+        
+        // المفتاح (Anon Key) الذي قدمتيه
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kcXZldWlzZ2hyaXp0Z29mc3NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjI0NzQsImV4cCI6MjA4MDE5ODQ3NH0.YBY7xjiH4ApnGgFbWw9I1elsbDpyhFKXHOmABW2t-F0";
+
+        // إنشاء عميل الاتصال
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // دالة تسجيل الدخول عبر المزودات (Google / Facebook)
+        async function signIn(provider) {
+            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    // سيتم العودة إلى الصفحة الرئيسية بعد نجاح الدخول
+                    redirectTo: window.location.origin 
                 }
-            } catch (e) { console.log("Database Sync Ready..."); }
-        }
+            });
 
-        function toggleLike(el) { el.style.color = (el.style.color === 'red') ? '#999' : 'red'; }
-
-        // نظام المعاينة قبل النشر
-        function previewMedia(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('preview-container').style.display = 'block';
-                const previewContent = document.getElementById('preview-content');
-                if (file.type.startsWith('image')) {
-                    previewContent.innerHTML = `<img src="${e.target.result}">`;
-                } else {
-                    previewContent.innerHTML = `<video src="${e.target.result}" controls></video>`;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-        function removePreview() { document.getElementById('preview-container').style.display = 'none'; }
-
-        // تطبيق الصحة
-        function openApp(name) {
-            const view = document.getElementById('health-app-view');
-            view.style.display = 'block';
-            document.getElementById('app-title').innerText = "سجل " + name;
-            document.getElementById('app-form').innerHTML = `<input type="date" value="${new Date().toISOString().split('T')[0]}" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
-            <input type="text" placeholder="سجلي ملاحظاتكِ هنا..." style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; margin-top:5px;">`;
-            view.scrollIntoView({behavior: 'smooth'});
-        }
-
-        // الذكاء الاصطناعي (منطق التخصص)
-        function toggleAI(id) {
-            const el = document.getElementById(id);
-            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
-        }
-
-        async function askGemini(inputId) {
-            const val = document.getElementById(inputId).value;
-            const keywords = ['حمل', 'دورة', 'تعب', 'حزن', 'زوجي', 'مشاعر', 'ألم', 'نوم', 'ماء'];
-            if (!keywords.some(k => val.includes(k))) {
-                alert("رقة AI: اعتذر يا رقيقة، أنا متخصصة في دعمكِ صحياً ونفسياً فقط لضمان سلامتكِ.");
-                return;
+            if (error) {
+                console.error("خطأ في تسجيل الدخول:", error.message);
+                alert("عذراً، حدث خطأ أثناء الاتصال بـ " + provider);
             }
-            alert("رقة AI: جاري تحليل استشارتكِ بناءً على العلم والأنوثة...");
         }
 
-        // التبديل بين الأقسام
-        function showTab(id, el) {
-            document.querySelectorAll('.section-view').forEach(v => v.style.display = 'none');
-            document.getElementById(id).style.display = 'block';
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            if(el) el.classList.add('active');
-            window.scrollTo(0,0);
-        }
-
-        window.onload = loadNeonData;
+        // التأكد من حالة المستخدم عند تحميل الصفحة
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session) {
+                console.log("تم تسجيل الدخول بنجاح:", session.user);
+                // هنا يمكنك توجيه المستخدم لصفحة التطبيق الرئيسية
+                // window.location.href = "/main.html"; 
+            }
+        });
     </script>
 </body>
-    </html>
+</html>
