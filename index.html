@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول - تطبيق رقة</title>
+    <title>تطبيق رقة - فراشة نابضة</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
@@ -11,142 +11,251 @@
     
     <style>
         :root {
-            --primary-pink: #e91e63;
-            --soft-pink: #fce4ec;
-            --facebook-blue: #1877F2;
+            --soft-rose: #fff5f7;
+            --deep-rose: #e91e63;
+            --feminine-grad: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 100%);
+            --glass: rgba(255, 255, 255, 0.8);
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
-            background: #fdfcfc;
+            background: var(--soft-rose);
             margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-
-        .auth-card {
-            background: white;
-            border-radius: 30px;
-            padding: 40px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            text-align: center;
-        }
-
-        .logo {
-            font-family: 'Aref Ruqaa', serif;
-            font-size: 3.5rem;
-            color: var(--primary-pink);
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 1.1rem;
-        }
-
-        .social-btn {
-            width: 100%;
-            padding: 14px;
-            margin: 12px 0;
-            border-radius: 15px;
-            border: 1px solid #eee;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            font-weight: 700;
-            font-size: 1rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .social-btn:active {
-            transform: scale(0.98);
-        }
-
-        .google-btn {
-            background: white;
             color: #444;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            overflow-x: hidden;
         }
 
-        .facebook-btn {
-            background: var(--facebook-blue);
-            color: white;
-            border: none;
+        /* القائمة الجانبية */
+        .sidebar {
+            position: fixed;
+            right: -280px;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            transition: 0.3s;
+            z-index: 1000;
+            padding: 30px 20px;
+        }
+        .sidebar.active { right: 0; }
+        .sidebar h3 { color: var(--deep-rose); border-bottom: 2px solid var(--soft-rose); padding-bottom: 10px; }
+        .sidebar a { display: block; padding: 15px; color: #555; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .sidebar a:hover { color: var(--deep-rose); background: var(--soft-rose); border-radius: 10px; }
+
+        /* شاشة الترحيب */
+        #welcome-screen {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--feminine-grad);
+            text-align: center;
+            padding: 20px;
+        }
+        .welcome-title { font-family: 'Aref Ruqaa', serif; font-size: 2.2rem; color: var(--deep-rose); margin-bottom: 5px; }
+        .welcome-subtitle { font-size: 1.3rem; color: #b01b50; font-weight: bold; letter-spacing: 1px; }
+
+        /* أزرار الدخول */
+        .auth-buttons { width: 100%; max-width: 320px; margin-top: 30px; }
+        .btn-auth {
+            width: 100%; padding: 14px; margin: 10px 0; border-radius: 15px; border: 1px solid #ddd;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: 0.3s;
+        }
+        .btn-google { background: white; color: #444; }
+        .btn-facebook { background: #1877F2; color: white; border: none; }
+
+        /* الواجهة الرئيسية */
+        #main-app { display: none; padding-bottom: 50px; }
+        header { 
+            padding: 15px 20px; background: var(--glass); backdrop-filter: blur(10px);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 900; box-shadow: 0 2px 10px rgba(0,0,0,0.03);
         }
 
-        .footer-text {
-            font-size: 0.8rem;
-            color: #999;
-            margin-top: 25px;
-            line-height: 1.5;
+        /* شبكة الأقسام */
+        .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+        .section-card {
+            background: white; border-radius: 25px; padding: 25px; text-align: center;
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.05); cursor: pointer; transition: 0.3s;
         }
+        .section-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(233, 30, 99, 0.1); }
+        .section-card i { font-size: 2.2rem; color: var(--deep-rose); margin-bottom: 12px; }
+        .section-card div { font-weight: bold; color: #555; }
+
+        /* شاشة المحتوى */
+        #content-display { display: none; padding: 20px; animation: fadeIn 0.5s; }
+        .post-card { background: white; border-radius: 25px; padding: 20px; margin-bottom: 20px; }
+        .hammssa-box { 
+            background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px;
+            border-right: 5px solid var(--deep-rose); font-style: italic; color: #666;
+        }
+
+        /* أزرار التفاعل الحقيقية */
+        .interaction-bar { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px; }
+        .int-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
+        .int-btn:hover { color: var(--deep-rose); }
+        .int-btn.liked { color: var(--deep-rose); }
+
+        /* قسم الصحة - التطبيق المصغر */
+        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+        .health-item { background: #fdf2f5; padding: 15px 5px; border-radius: 15px; text-align: center; font-size: 0.8rem; }
+        .health-item i { display: block; margin-bottom: 5px; color: var(--deep-rose); }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div class="auth-card">
-        <div class="logo">رقة</div>
-        <div class="subtitle">مرحباً بكِ في عالم الأنوثة والجمال</div>
+    <div id="sidebar" class="sidebar">
+        <h3>عالم رقة</h3>
+        <a href="#" onclick="toggleMenu()"><i class="fas fa-home"></i> الرئيسية</a>
+        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank">
+            <i class="fab fa-facebook"></i> تواصل معنا (فيسبوك)
+        </a>
+        <a href="#" onclick="alert('سيتم فتح المكتبة الشاملة قريباً')"><i class="fas fa-book"></i> مكتبة رقة</a>
+        <a href="#" onclick="signOut()" style="color: #999; margin-top: 50px;">تسجيل الخروج</a>
+    </div>
 
-        <button class="social-btn google-btn" onclick="signIn('google')">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20" alt="Google">
-            الدخول بواسطة جوجل
+    <div id="welcome-screen">
+        <div class="welcome-title">مرحبا بك يا رقيقة في عالم رقة</div>
+        <div class="welcome-subtitle">فراشة نابضة</div>
+        
+        <div class="auth-buttons">
+            <button class="btn-auth btn-google" onclick="signIn('google')">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" width="20">
+                الدخول بواسطة جوجل
+            </button>
+            <button class="btn-auth btn-facebook" onclick="signIn('facebook')">
+                <i class="fab fa-facebook-f"></i>
+                الدخول بواسطة فيسبوك
+            </button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <header>
+            <i class="fas fa-bars" style="font-size: 1.4rem; color: var(--deep-rose);" onclick="toggleMenu()"></i>
+            <span style="font-family: 'Aref Ruqaa'; font-size: 1.8rem; color: var(--deep-rose);">رقة</span>
+            <i class="fas fa-heart" style="color: var(--deep-rose);"></i>
+        </header>
+
+        <div class="grid-container">
+            <div class="section-card" onclick="loadNeon('bouh-display-1', 'المشاعر')"><i class="fas fa-face-smile-beam"></i><div>المشاعر</div></div>
+            <div class="section-card" onclick="loadNeon('bouh-display-4', 'المجتمع')"><i class="fas fa-comments"></i><div>المجتمع</div></div>
+            <div class="section-card" onclick="openHealth()"><i class="fas fa-notes-medical"></i><div>الصحة (11 متابعة)</div></div>
+            <div class="section-card" onclick="loadNeon('bouh-display-2', 'الفقه')"><i class="fas fa-book-open"></i><div>الفقه</div></div>
+            <div class="section-card" onclick="loadNeon('intimacy', 'الحميمية')"><i class="fas fa-spa"></i><div>الحميمية</div></div>
+        </div>
+    </div>
+
+    <div id="content-display">
+        <button onclick="goBack()" style="border: none; background: none; color: var(--deep-rose); font-weight: bold; cursor: pointer; margin-bottom: 20px;">
+            <i class="fas fa-arrow-right"></i> العودة للرئيسية
         </button>
-
-        <button class="social-btn facebook-btn" onclick="signIn('facebook')">
-            <i class="fab fa-facebook-f"></i>
-            الدخول بواسطة فيسبوك
-        </button>
-
-        <p class="footer-text">
-            تسجيلك يعني موافقتك على شروط الخصوصية <br>
-            بإشراف تقني متكامل عبر Supabase & Vercel
-        </p>
+        <div class="hammssa-box" id="hammssa-text">
+            الهمسة الثابتة: "أنتِ كالفراشة، رقتكِ هي مصدر قوتكِ."
+        </div>
+        <div id="neon-posts"></div>
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="#" style="color: var(--deep-rose); font-weight: bold;">رابط المكتبة الشاملة</a>
+        </div>
     </div>
 
     <script>
-        // --- إعدادات Supabase باستخدام بياناتك ---
-        
-        // الرابط الذي قدمتيه (تم استخراجه من رابط فيسبوك)
+        // إعدادات سوبابيس (بياناتك)
         const SUPABASE_URL = "https://mdqveuisghriztgofssm.supabase.co"; 
-        
-        // المفتاح (Anon Key) الذي قدمتيه
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kcXZldWlzZ2hyaXp0Z29mc3NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjI0NzQsImV4cCI6MjA4MDE5ODQ3NH0.YBY7xjiH4ApnGgFbWw9I1elsbDpyhFKXHOmABW2t-F0";
-
-        // إنشاء عميل الاتصال
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // دالة تسجيل الدخول عبر المزودات (Google / Facebook)
-        async function signIn(provider) {
-            const { data, error } = await supabaseClient.auth.signInWithOAuth({
-                provider: provider,
-                options: {
-                    // سيتم العودة إلى الصفحة الرئيسية بعد نجاح الدخول
-                    redirectTo: window.location.origin 
-                }
-            });
+        function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
 
-            if (error) {
-                console.error("خطأ في تسجيل الدخول:", error.message);
-                alert("عذراً، حدث خطأ أثناء الاتصال بـ " + provider);
+        // تسجيل الدخول بالرابط المخصص
+        async function signIn(provider) {
+            await supabaseClient.auth.signInWithOAuth({
+                provider: provider,
+                options: { redirectTo: 'https://raqqa-v6cd.vercel.app/auth/v1/callback' }
+            });
+        }
+
+        async function signOut() { await supabaseClient.auth.signOut(); location.reload(); }
+
+        // جلب المحتوى من Neon DB
+        async function loadNeon(displayId, title) {
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('content-display').style.display = 'block';
+            const postsArea = document.getElementById('neon-posts');
+            postsArea.innerHTML = '<p style="text-align:center;">جاري جلب نبض الفراشة...</p>';
+
+            const { data, error } = await supabaseClient
+                .from('posts') // تأكدي أن اسم الجدول في نيون هو posts
+                .select('*')
+                .eq('display_id', displayId);
+
+            postsArea.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(post => {
+                    postsArea.innerHTML += `
+                        <div class="post-card">
+                            <h3 style="color:var(--deep-rose)">${post.title}</h3>
+                            <p>${post.content}</p>
+                            <div class="interaction-bar">
+                                <button class="int-btn" onclick="this.classList.toggle('liked')"><i class="fas fa-heart"></i> إعجاب</button>
+                                <button class="int-btn" onclick="alert('سيفتح قسم التعليقات')"><i class="fas fa-comment"></i> تعليق</button>
+                                <button class="int-btn" onclick="shareApp()"><i class="fas fa-share-alt"></i> مشاركة</button>
+                            </div>
+                        </div>`;
+                });
+            } else {
+                postsArea.innerHTML = '<p style="text-align:center; color:#999;">لا يوجد محتوى متاح حالياً في هذا القسم.</p>';
             }
         }
 
-        // التأكد من حالة المستخدم عند تحميل الصفحة
+        // تطبيق الصحة (11 متابعة)
+        function openHealth() {
+            document.getElementById('main-app').style.display = 'none';
+            document.getElementById('content-display').style.display = 'block';
+            document.getElementById('neon-posts').innerHTML = `
+                <div class="post-card">
+                    <h3 style="text-align:center; color:var(--deep-rose)">برنامج المتابعة الصحي</h3>
+                    <div class="health-grid">
+                        <div class="health-item"><i class="fas fa-tint"></i> شرب الماء</div>
+                        <div class="health-item"><i class="fas fa-moon"></i> النوم</div>
+                        <div class="health-item"><i class="fas fa-walking"></i> الخطوات</div>
+                        <div class="health-item"><i class="fas fa-pills"></i> الفيتامينات</div>
+                        <div class="health-item"><i class="fas fa-utensils"></i> التغذية</div>
+                        <div class="health-item"><i class="fas fa-calendar-alt"></i> الدورة</div>
+                        <div class="health-item"><i class="fas fa-weight"></i> الوزن</div>
+                        <div class="health-item"><i class="fas fa-brain"></i> المزاج</div>
+                        <div class="health-item"><i class="fas fa-heartbeat"></i> النبض</div>
+                        <div class="health-item"><i class="fas fa-eye"></i> العناية</div>
+                        <div class="health-item"><i class="fas fa-leaf"></i> الاسترخاء</div>
+                    </div>
+                </div>`;
+        }
+
+        function goBack() {
+            document.getElementById('content-display').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+        }
+
+        function shareApp() {
+            if (navigator.share) {
+                navigator.share({ title: 'تطبيق رقة', text: 'انضمي إلي في عالم رقة', url: window.location.href });
+            } else {
+                alert('تم نسخ رابط التطبيق للمشاركة');
+            }
+        }
+
+        // مراقبة حالة المستخدم
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
-                console.log("تم تسجيل الدخول بنجاح:", session.user);
-                // هنا يمكنك توجيه المستخدم لصفحة التطبيق الرئيسية
-                // window.location.href = "/main.html"; 
+                document.getElementById('welcome-screen').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
             }
         });
     </script>
 </body>
-</html>
+    </html>
