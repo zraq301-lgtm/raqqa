@@ -13,8 +13,8 @@
         :root {
             --soft-rose: #fff5f7;
             --deep-rose: #e91e63;
-            --feminine-grad: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 100%);
-            --glass: rgba(255, 255, 255, 0.8);
+            --feminine-grad: linear-gradient(135deg, #fff1f2 0%, #fae8ff 100%);
+            --glass: rgba(255, 255, 255, 0.85);
         }
 
         body {
@@ -34,14 +34,14 @@
             height: 100%;
             background: white;
             box-shadow: -5px 0 15px rgba(0,0,0,0.1);
-            transition: 0.3s;
+            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
             padding: 30px 20px;
         }
         .sidebar.active { right: 0; }
-        .sidebar h3 { color: var(--deep-rose); border-bottom: 2px solid var(--soft-rose); padding-bottom: 10px; }
-        .sidebar a { display: block; padding: 15px; color: #555; text-decoration: none; font-weight: bold; transition: 0.3s; }
-        .sidebar a:hover { color: var(--deep-rose); background: var(--soft-rose); border-radius: 10px; }
+        .sidebar h3 { color: var(--deep-rose); font-family: 'Aref Ruqaa'; font-size: 1.8rem; margin-bottom: 20px; }
+        .sidebar a { display: flex; align-items: center; gap: 10px; padding: 15px; color: #555; text-decoration: none; font-weight: bold; transition: 0.3s; border-radius: 12px; }
+        .sidebar a:hover { background: var(--soft-rose); color: var(--deep-rose); }
 
         /* شاشة الترحيب */
         #welcome-screen {
@@ -54,72 +54,82 @@
             text-align: center;
             padding: 20px;
         }
-        .welcome-title { font-family: 'Aref Ruqaa', serif; font-size: 2.2rem; color: var(--deep-rose); margin-bottom: 5px; }
-        .welcome-subtitle { font-size: 1.3rem; color: #b01b50; font-weight: bold; letter-spacing: 1px; }
+        .butterfly-icon {
+            font-size: 5rem;
+            color: var(--deep-rose);
+            margin-bottom: 20px;
+            animation: flap 2s infinite ease-in-out;
+        }
+        @keyframes flap {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(10deg); }
+        }
+        .welcome-title { font-family: 'Aref Ruqaa', serif; font-size: 2.2rem; color: var(--deep-rose); margin: 10px 0; }
+        .welcome-subtitle { font-size: 1.4rem; color: #b01b50; font-weight: bold; }
 
         /* أزرار الدخول */
-        .auth-buttons { width: 100%; max-width: 320px; margin-top: 30px; }
+        .auth-buttons { width: 100%; max-width: 320px; margin-top: 35px; }
         .btn-auth {
-            width: 100%; padding: 14px; margin: 10px 0; border-radius: 15px; border: 1px solid #ddd;
-            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-            transition: 0.3s;
+            width: 100%; padding: 14px; margin: 10px 0; border-radius: 18px; border: 1px solid #eee;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02); transition: 0.3s;
         }
         .btn-google { background: white; color: #444; }
         .btn-facebook { background: #1877F2; color: white; border: none; }
 
         /* الواجهة الرئيسية */
-        #main-app { display: none; padding-bottom: 50px; }
+        #main-app { display: none; }
         header { 
             padding: 15px 20px; background: var(--glass); backdrop-filter: blur(10px);
             display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 900; box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            position: sticky; top: 0; z-index: 900; border-bottom: 1px solid rgba(233, 30, 99, 0.1);
         }
 
         /* شبكة الأقسام */
         .grid-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
         .section-card {
             background: white; border-radius: 25px; padding: 25px; text-align: center;
-            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.05); cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 20px rgba(233, 30, 99, 0.04); cursor: pointer; transition: 0.3s;
         }
-        .section-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(233, 30, 99, 0.1); }
-        .section-card i { font-size: 2.2rem; color: var(--deep-rose); margin-bottom: 12px; }
-        .section-card div { font-weight: bold; color: #555; }
+        .section-card:hover { transform: translateY(-8px); box-shadow: 0 10px 25px rgba(233, 30, 99, 0.1); }
+        .section-card i { font-size: 2.4rem; color: var(--deep-rose); margin-bottom: 12px; }
 
         /* شاشة المحتوى */
-        #content-display { display: none; padding: 20px; animation: fadeIn 0.5s; }
-        .post-card { background: white; border-radius: 25px; padding: 20px; margin-bottom: 20px; }
+        #content-display { display: none; padding: 20px; }
         .hammssa-box { 
-            background: white; padding: 15px; border-radius: 15px; margin-bottom: 20px;
-            border-right: 5px solid var(--deep-rose); font-style: italic; color: #666;
+            background: white; padding: 18px; border-radius: 20px; margin-bottom: 25px;
+            border-right: 6px solid var(--deep-rose); font-style: italic; color: #555; line-height: 1.6;
         }
+        .post-card { background: white; border-radius: 25px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
 
-        /* أزرار التفاعل الحقيقية */
-        .interaction-bar { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 15px; margin-top: 15px; }
-        .int-btn { background: none; border: none; color: #888; cursor: pointer; font-size: 0.9rem; transition: 0.2s; }
-        .int-btn:hover { color: var(--deep-rose); }
-        .int-btn.liked { color: var(--deep-rose); }
+        /* أزرار التفاعل */
+        .interaction-bar { display: flex; justify-content: space-around; border-top: 1px solid #f5f5f5; padding-top: 15px; margin-top: 15px; }
+        .int-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 0.95rem; display: flex; align-items: center; gap: 6px; }
+        .int-btn:hover, .int-btn.active { color: var(--deep-rose); }
 
-        /* قسم الصحة - التطبيق المصغر */
-        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
-        .health-item { background: #fdf2f5; padding: 15px 5px; border-radius: 15px; text-align: center; font-size: 0.8rem; }
-        .health-item i { display: block; margin-bottom: 5px; color: var(--deep-rose); }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* الصحة - 11 متابعة */
+        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; }
+        .health-item { background: #fffafb; border: 1px solid #fce4ec; padding: 15px 5px; border-radius: 20px; text-align: center; font-size: 0.85rem; transition: 0.2s; }
+        .health-item:active { background: var(--soft-pink); transform: scale(0.95); }
+        .health-item i { display: block; font-size: 1.5rem; margin-bottom: 8px; color: var(--deep-rose); }
     </style>
 </head>
 <body>
 
     <div id="sidebar" class="sidebar">
         <h3>عالم رقة</h3>
-        <a href="#" onclick="toggleMenu()"><i class="fas fa-home"></i> الرئيسية</a>
+        <a href="#" onclick="toggleMenu()"><i class="fas fa-th-large"></i> الأقسام الرئيسية</a>
         <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank">
             <i class="fab fa-facebook"></i> تواصل معنا (فيسبوك)
         </a>
-        <a href="#" onclick="alert('سيتم فتح المكتبة الشاملة قريباً')"><i class="fas fa-book"></i> مكتبة رقة</a>
-        <a href="#" onclick="signOut()" style="color: #999; margin-top: 50px;">تسجيل الخروج</a>
+        <a href="#" onclick="alert('سيتم توفير المكتبة قريباً')"><i class="fas fa-layer-group"></i> مكتبة رقة الشاملة</a>
+        <div style="margin-top: auto; padding-top: 50px;">
+            <a href="#" onclick="signOut()" style="color: #bbb;"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a>
+        </div>
     </div>
 
     <div id="welcome-screen">
+        <div class="butterfly-icon"><i class="fas fa-🦋"></i></div>
         <div class="welcome-title">مرحبا بك يا رقيقة في عالم رقة</div>
         <div class="welcome-subtitle">فراشة نابضة</div>
         
@@ -137,101 +147,101 @@
 
     <div id="main-app">
         <header>
-            <i class="fas fa-bars" style="font-size: 1.4rem; color: var(--deep-rose);" onclick="toggleMenu()"></i>
+            <i class="fas fa-align-right" style="font-size: 1.5rem; color: var(--deep-rose);" onclick="toggleMenu()"></i>
             <span style="font-family: 'Aref Ruqaa'; font-size: 1.8rem; color: var(--deep-rose);">رقة</span>
-            <i class="fas fa-heart" style="color: var(--deep-rose);"></i>
+            <div style="width: 24px;"></div>
         </header>
 
         <div class="grid-container">
-            <div class="section-card" onclick="loadNeon('bouh-display-1', 'المشاعر')"><i class="fas fa-face-smile-beam"></i><div>المشاعر</div></div>
-            <div class="section-card" onclick="loadNeon('bouh-display-4', 'المجتمع')"><i class="fas fa-comments"></i><div>المجتمع</div></div>
-            <div class="section-card" onclick="openHealth()"><i class="fas fa-notes-medical"></i><div>الصحة (11 متابعة)</div></div>
-            <div class="section-card" onclick="loadNeon('bouh-display-2', 'الفقه')"><i class="fas fa-book-open"></i><div>الفقه</div></div>
-            <div class="section-card" onclick="loadNeon('intimacy', 'الحميمية')"><i class="fas fa-spa"></i><div>الحميمية</div></div>
+            <div class="section-card" onclick="loadNeon('bouh-display-1', 'المشاعر')"><i class="fas fa-heart"></i><div>المشاعر</div></div>
+            <div class="section-card" onclick="loadNeon('bouh-display-4', 'المجتمع')"><i class="fas fa-users-bubble"></i><div>المجتمع</div></div>
+            <div class="section-card" onclick="openHealth()"><i class="fas fa-sparkles"></i><div>الصحة (11 متابعة)</div></div>
+            <div class="section-card" onclick="loadNeon('bouh-display-2', 'الفقه')"><i class="fas fa-kaaba"></i><div>الفقه</div></div>
+            <div class="section-card" onclick="loadNeon('intimacy', 'الحميمية')"><i class="fas fa-feather-pointed"></i><div>الحميمية</div></div>
         </div>
     </div>
 
     <div id="content-display">
-        <button onclick="goBack()" style="border: none; background: none; color: var(--deep-rose); font-weight: bold; cursor: pointer; margin-bottom: 20px;">
-            <i class="fas fa-arrow-right"></i> العودة للرئيسية
+        <button onclick="goBack()" style="border: none; background: none; color: var(--deep-rose); font-weight: bold; margin-bottom: 20px; cursor: pointer;">
+            <i class="fas fa-chevron-right"></i> العودة
         </button>
-        <div class="hammssa-box" id="hammssa-text">
-            الهمسة الثابتة: "أنتِ كالفراشة، رقتكِ هي مصدر قوتكِ."
+        <div class="hammssa-box">
+            <i class="fas fa-quote-right" style="opacity: 0.3;"></i><br>
+            <span id="hammssa-text">أنتِ فراشة رقيقة، تذكري دائماً أن جمالكِ ينبع من داخلكِ.</span>
         </div>
         <div id="neon-posts"></div>
-        <div style="text-align: center; margin-top: 30px;">
-            <a href="#" style="color: var(--deep-rose); font-weight: bold;">رابط المكتبة الشاملة</a>
+        <div style="text-align: center; margin: 40px 0;">
+            <a href="#" style="color: var(--deep-rose); font-weight: bold; text-decoration: underline;">زيارة مكتبة رقة الشاملة</a>
         </div>
     </div>
 
     <script>
-        // إعدادات سوبابيس (بياناتك)
         const SUPABASE_URL = "https://mdqveuisghriztgofssm.supabase.co"; 
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kcXZldWlzZ2hyaXp0Z29mc3NtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjI0NzQsImV4cCI6MjA4MDE5ODQ3NH0.YBY7xjiH4ApnGgFbWw9I1elsbDpyhFKXHOmABW2t-F0";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); }
 
-        // تسجيل الدخول بالرابط المخصص
+        // تعديل دالة الدخول لحل خطأ 404
         async function signIn(provider) {
             await supabaseClient.auth.signInWithOAuth({
                 provider: provider,
-                options: { redirectTo: 'https://raqqa-v6cd.vercel.app/auth/v1/callback' }
+                options: { 
+                    redirectTo: 'https://raqqa-v6cd.vercel.app' 
+                }
             });
         }
 
         async function signOut() { await supabaseClient.auth.signOut(); location.reload(); }
 
-        // جلب المحتوى من Neon DB
         async function loadNeon(displayId, title) {
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('content-display').style.display = 'block';
-            const postsArea = document.getElementById('neon-posts');
-            postsArea.innerHTML = '<p style="text-align:center;">جاري جلب نبض الفراشة...</p>';
+            const area = document.getElementById('neon-posts');
+            area.innerHTML = '<p style="text-align:center; padding:50px;">جاري تحضير المحتوى لعيونك...</p>';
 
             const { data, error } = await supabaseClient
-                .from('posts') // تأكدي أن اسم الجدول في نيون هو posts
+                .from('posts')
                 .select('*')
                 .eq('display_id', displayId);
 
-            postsArea.innerHTML = '';
+            area.innerHTML = '';
             if (data && data.length > 0) {
                 data.forEach(post => {
-                    postsArea.innerHTML += `
+                    area.innerHTML += `
                         <div class="post-card">
-                            <h3 style="color:var(--deep-rose)">${post.title}</h3>
-                            <p>${post.content}</p>
+                            <h3 style="color:var(--deep-rose); margin-top:0;">${post.title}</h3>
+                            <p style="line-height:1.6; color:#555;">${post.content}</p>
                             <div class="interaction-bar">
-                                <button class="int-btn" onclick="this.classList.toggle('liked')"><i class="fas fa-heart"></i> إعجاب</button>
-                                <button class="int-btn" onclick="alert('سيفتح قسم التعليقات')"><i class="fas fa-comment"></i> تعليق</button>
-                                <button class="int-btn" onclick="shareApp()"><i class="fas fa-share-alt"></i> مشاركة</button>
+                                <button class="int-btn" onclick="this.classList.toggle('active')"><i class="fas fa-heart"></i> إعجاب</button>
+                                <button class="int-btn"><i class="fas fa-comment"></i> تعليق</button>
+                                <button class="int-btn" onclick="share()"><i class="fas fa-share-alt"></i> مشاركة</button>
                             </div>
                         </div>`;
                 });
             } else {
-                postsArea.innerHTML = '<p style="text-align:center; color:#999;">لا يوجد محتوى متاح حالياً في هذا القسم.</p>';
+                area.innerHTML = '<p style="text-align:center; color:#999; padding:50px;">هذا القسم سيُزهر قريباً بالمحتوى.</p>';
             }
         }
 
-        // تطبيق الصحة (11 متابعة)
         function openHealth() {
             document.getElementById('main-app').style.display = 'none';
             document.getElementById('content-display').style.display = 'block';
             document.getElementById('neon-posts').innerHTML = `
                 <div class="post-card">
-                    <h3 style="text-align:center; color:var(--deep-rose)">برنامج المتابعة الصحي</h3>
+                    <h3 style="text-align:center; color:var(--deep-rose); margin-bottom:20px;">متابعاتكِ الصحية اليومية</h3>
                     <div class="health-grid">
-                        <div class="health-item"><i class="fas fa-tint"></i> شرب الماء</div>
-                        <div class="health-item"><i class="fas fa-moon"></i> النوم</div>
-                        <div class="health-item"><i class="fas fa-walking"></i> الخطوات</div>
-                        <div class="health-item"><i class="fas fa-pills"></i> الفيتامينات</div>
-                        <div class="health-item"><i class="fas fa-utensils"></i> التغذية</div>
-                        <div class="health-item"><i class="fas fa-calendar-alt"></i> الدورة</div>
-                        <div class="health-item"><i class="fas fa-weight"></i> الوزن</div>
-                        <div class="health-item"><i class="fas fa-brain"></i> المزاج</div>
-                        <div class="health-item"><i class="fas fa-heartbeat"></i> النبض</div>
-                        <div class="health-item"><i class="fas fa-eye"></i> العناية</div>
-                        <div class="health-item"><i class="fas fa-leaf"></i> الاسترخاء</div>
+                        <div class="health-item"><i class="fas fa-glass-water"></i> شرب الماء</div>
+                        <div class="health-item"><i class="fas fa-bed"></i> النوم</div>
+                        <div class="health-item"><i class="fas fa-person-walking"></i> رياضة</div>
+                        <div class="health-item"><i class="fas fa-capsules"></i> فيتامينات</div>
+                        <div class="health-item"><i class="fas fa-apple-whole"></i> تغذية</div>
+                        <div class="health-item"><i class="fas fa-calendar-check"></i> الدورة</div>
+                        <div class="health-item"><i class="fas fa-weight-scale"></i> الوزن</div>
+                        <div class="health-item"><i class="fas fa-face-smile"></i> مزاجي</div>
+                        <div class="health-item"><i class="fas fa-heart-pulse"></i> نبضي</div>
+                        <div class="health-item"><i class="fas fa-hand-holding-heart"></i> عنايتي</div>
+                        <div class="health-item"><i class="fas fa-wind"></i> استرخاء</div>
                     </div>
                 </div>`;
         }
@@ -241,15 +251,12 @@
             document.getElementById('main-app').style.display = 'block';
         }
 
-        function shareApp() {
+        function share() {
             if (navigator.share) {
-                navigator.share({ title: 'تطبيق رقة', text: 'انضمي إلي في عالم رقة', url: window.location.href });
-            } else {
-                alert('تم نسخ رابط التطبيق للمشاركة');
+                navigator.share({ title: 'تطبيق رقة', url: 'https://raqqa-v6cd.vercel.app' });
             }
         }
 
-        // مراقبة حالة المستخدم
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
                 document.getElementById('welcome-screen').style.display = 'none';
@@ -258,4 +265,4 @@
         });
     </script>
 </body>
-    </html>
+                </html>
