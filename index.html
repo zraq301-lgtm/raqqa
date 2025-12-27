@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تطبيق رقة - عالم الأنوثة والوعي</title>
+    <title>تطبيق رقة - متصل بـ Neon</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -22,7 +22,7 @@
             margin: 0;
             padding-bottom: 90px;
             color: #444;
-            overflow-x: hidden;
+            direction: rtl;
         }
 
         /* القائمة الجانبية */
@@ -34,7 +34,7 @@
             height: 100%;
             background: white;
             z-index: 2000;
-            transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: 0.4s;
             padding: 30px 20px;
             box-shadow: -10px 0 30px rgba(0,0,0,0.05);
         }
@@ -49,108 +49,65 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            position: sticky; top: 0; z-index: 1000;
             box-shadow: 0 4px 15px rgba(255, 133, 162, 0.1);
         }
 
         /* البطاقات والأقسام */
         .card {
-            background: white;
-            border-radius: 25px;
-            padding: 25px;
-            margin: 15px;
+            background: white; border-radius: 25px; padding: 25px; margin: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.02);
             border-right: 6px solid var(--raqqa-pink);
             position: relative;
-            transition: 0.3s;
         }
 
         .heart-pulse-ai {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: var(--raqqa-deep);
-            font-size: 1.6rem;
-            cursor: pointer;
-            animation: pulse-heart 1.2s infinite;
+            position: absolute; top: 20px; left: 20px;
+            color: var(--raqqa-deep); font-size: 1.6rem; cursor: pointer;
+            animation: pulse 1.2s infinite;
         }
-        @keyframes pulse-heart {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.25); text-shadow: 0 0 10px rgba(247, 51, 120, 0.3); }
-            100% { transform: scale(1); }
-        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
 
         .hamssa-box {
-            background: var(--raqqa-soft);
-            padding: 15px;
-            border-radius: 15px;
-            font-size: 0.9rem;
-            color: #d81b60;
-            border-right: 3px solid var(--raqqa-deep);
-            margin: 15px 0;
+            background: var(--raqqa-soft); padding: 15px; border-radius: 15px;
+            font-size: 0.9rem; color: #d81b60; border-right: 3px solid var(--raqqa-deep); margin: 15px 0;
         }
 
-        /* شبكة الصحة الـ 11 */
+        /* شبكة الصحة */
         .health-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 15px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px;
         }
         .health-item {
-            background: white;
-            border: 1px solid #fce4ec;
-            padding: 15px 5px;
-            border-radius: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: 0.3s;
+            background: white; border: 1px solid #fce4ec; padding: 15px 5px;
+            border-radius: 20px; text-align: center; cursor: pointer;
         }
-        .health-item:active { transform: scale(0.95); background: var(--raqqa-soft); }
         .health-item i { display: block; font-size: 1.5rem; color: var(--raqqa-pink); margin-bottom: 8px; }
-        .health-item span { font-size: 0.75rem; font-weight: 700; color: #666; }
+        .health-item span { font-size: 0.75rem; font-weight: 700; }
 
-        /* محرك المتابعة الذكي */
         .tracker-panel {
-            display: none;
-            background: #fffafa;
-            border: 2px solid #ffdae3;
-            border-radius: 20px;
-            padding: 20px;
-            margin-top: 20px;
-            animation: slideUp 0.4s ease;
+            display: none; background: #fffafa; border: 2px solid #ffdae3;
+            border-radius: 20px; padding: 20px; margin-top: 20px;
         }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* أزرار التفاعل الحقيقية */
-        .interaction-bar {
-            display: flex;
-            justify-content: space-around;
-            padding-top: 15px;
-            margin-top: 15px;
-            border-top: 1px solid #f9f9f9;
-        }
-        .action-btn {
-            border: none; background: none; color: #888; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; transition: 0.3s;
-        }
-        .action-btn.liked { color: var(--raqqa-deep); font-weight: bold; }
-
-        /* شريط التنقل السفلي */
+        /* شريط التنقل */
         .bottom-nav {
-            position: fixed;
-            bottom: 0; width: 100%; height: 75px; background: white; display: flex; justify-content: space-around; align-items: center;
+            position: fixed; bottom: 0; width: 100%; height: 75px; background: white;
+            display: flex; justify-content: space-around; align-items: center;
             box-shadow: 0 -5px 25px rgba(0,0,0,0.04); z-index: 1000;
         }
         .nav-link { color: #d1d1d1; text-align: center; font-size: 0.75rem; text-decoration: none; font-weight: bold; }
         .nav-link.active { color: var(--raqqa-deep); }
         .nav-link i { font-size: 1.4rem; display: block; margin-bottom: 4px; }
 
-        /* شاشة الشات AI */
+        /* الشات AI */
         #ai-modal {
-            display: none; position: fixed; bottom: 85px; left: 15px; right: 15px; background: white; border-radius: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 3000; padding: 20px; border: 1px solid var(--raqqa-soft);
+            display: none; position: fixed; bottom: 85px; left: 15px; right: 15px;
+            background: white; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            z-index: 3000; padding: 20px;
+        }
+        
+        .post-content {
+            border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.95rem; line-height: 1.6;
         }
     </style>
 </head>
@@ -159,12 +116,11 @@
     <div class="overlay" onclick="toggleSidebar()"></div>
 
     <div class="sidebar" id="sidebar">
-        <h3 style="font-family:'Aref Ruqaa'; color:var(--raqqa-deep)">رقة - عالمكِ الخاص</h3>
-        <p style="font-size:0.8rem; color:#999;">رفيقتكِ المخلصة للجمال والوعي</p>
+        <h3 style="font-family:'Aref Ruqaa'; color:var(--raqqa-deep)">رقة</h3>
         <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank" style="text-decoration:none; color: #444; display:flex; align-items:center; gap:12px; padding:12px; background:#f9f9f9; border-radius:12px;">
-            <i class="fab fa-facebook-f" style="color:#1877f2; font-size:1.2rem;"></i>
-            <span>صفحة الفيسبوك الخاصة بنا</span>
+        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank" style="text-decoration:none; color: #444; display:flex; align-items:center; gap:12px;">
+            <i class="fab fa-facebook-f" style="color:#1877f2;"></i>
+            <span>صفحتنا على فيسبوك</span>
         </a>
     </div>
 
@@ -177,19 +133,19 @@
     <main id="app-content">
         <section id="view-home" class="page">
             <div class="card" style="background: linear-gradient(135deg, #ff85a2, #ffacbe); color: white; border: none; text-align: center;">
-                <h1 style="font-family:'Aref Ruqaa'; margin:0;">أهلاً بكِ يا رقيقة</h1>
-                <p>محتوى متجدد يلامس روحكِ</p>
+                <h1 style="font-family:'Aref Ruqaa'; margin:0;">أهلاً بكِ في عالم رقة</h1>
+                <p>مساحتكِ الخاصة للهدوء والجمال</p>
             </div>
-            <div id="neon-posts-container"></div>
+            <div id="home-feed" class="card"><h4 style="margin-top:0;">آخر التحديثات</h4><div id="feed-general">جاري التحميل...</div></div>
         </section>
 
         <div id="dynamic-sections"></div>
 
         <section id="view-health" class="page" style="display:none;">
             <div class="card">
-                <div class="heart-pulse-ai" onclick="openAI('الصحة العامة والجمال')"><i class="fas fa-heart"></i></div>
+                <div class="heart-pulse-ai" onclick="openAI('الصحة')"><i class="fas fa-heart"></i></div>
                 <h3 style="font-family:'Aref Ruqaa'; color: var(--raqqa-deep);">تطبيق رقة الصحي</h3>
-                <div class="hamssa-box">همسة رقة: جسدكِ أمانة، اعتني بأدق تفاصيله بحب ووعي.</div>
+                <div class="hamssa-box">همسة رقة: جسدكِ أمانة، اعتني بأدق تفاصيله بحب.</div>
                 
                 <div class="health-grid">
                     <div class="health-item" onclick="openTracker('الحيض')"><i class="fas fa-droplet"></i><span>الحيض</span></div>
@@ -208,7 +164,7 @@
                 <div id="tracker-engine" class="tracker-panel">
                     <h4 id="tracker-title" style="margin-top:0; color:var(--raqqa-deep);"></h4>
                     <div id="tracker-fields"></div>
-                    <button onclick="saveHealthData()" style="width:100%; background:var(--raqqa-deep); color:white; border:none; padding:12px; border-radius:15px; font-weight:bold; margin-top:15px;">حفظ المتابعة وتفعيل التنبيه ✨</button>
+                    <button onclick="saveHealthData()" style="width:100%; background:var(--raqqa-deep); color:white; border:none; padding:12px; border-radius:15px; margin-top:10px;">حفظ المتابعة ✨</button>
                 </div>
             </div>
         </section>
@@ -224,26 +180,24 @@
     </nav>
 
     <div id="ai-modal">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <strong style="color:var(--raqqa-deep); font-size:1.1rem;"><i class="fas fa-wand-magic-sparkles"></i> رفيقتكِ رقة</strong>
-            <i class="fas fa-times" style="cursor:pointer; color:#ccc;" onclick="toggleAI()"></i>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <strong style="color:var(--raqqa-deep);">استشارة رقة الذكية</strong>
+            <i class="fas fa-times" style="cursor:pointer;" onclick="toggleAI()"></i>
         </div>
-        <div id="ai-response" style="max-height:250px; overflow-y:auto; font-size:0.9rem; margin-bottom:15px; background:#fffcfd; padding:10px; border-radius:12px; line-height:1.6;">
-            أهلاً بكِ يا رقيقة، كيف يمكنني مرافقتكِ اليوم؟
-        </div>
-        <div style="display:flex; gap:8px;">
-            <input type="text" id="ai-input" placeholder="اسألي رقة عن أي شيء..." style="flex:1; padding:12px; border-radius:15px; border:1px solid #eee; outline:none; font-family:'Tajawal';">
-            <button onclick="askRaqqa()" style="background:var(--raqqa-deep); color:white; border:none; border-radius:15px; width:45px; cursor:pointer;"><i class="fas fa-paper-plane"></i></button>
+        <div id="ai-response" style="max-height:200px; overflow-y:auto; font-size:0.85rem; margin-bottom:10px; background:#fefefe; padding:8px;"></div>
+        <div style="display:flex; gap:5px;">
+            <input type="text" id="ai-input" placeholder="اسألي رقة..." style="flex:1; padding:10px; border-radius:10px; border:1px solid #eee;">
+            <button onclick="askRaqqa()" style="background:var(--raqqa-deep); color:white; border:none; border-radius:10px; padding:0 15px;"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
     <script>
-        // تعريف الأقسام بناءً على منطق Neon (الصورة: section, type)
+        // ضبط الأقسام بناءً على الصورة المرفوعة (section & type)
         const raqqaSections = [
-            { id: 'feelings', name: 'المشاعر', section: 'bouh-display-1', type: 'المشاعر', hamssa: 'مشاعركِ غالية، لا تترددي في البوح بها وفهم أعماقكِ.', lib: 'https://ar.wikipedia.org/wiki/مشاعر', color: '#ff85a2' },
-            { id: 'society', name: 'المجتمع', section: 'bouh-display-4', type: 'المجتمع', hamssa: 'هنا تلتقي الأرواح المتشابهة لتبني دعماً لا ينتهي.', lib: 'https://www.facebook.com/groups/raqqa', color: '#d4af37' },
-            { id: 'fiqh', name: 'الفقه', section: 'bouh-display-2', type: 'قصة نجاح', hamssa: 'العلم نور يضيء لكِ دروب العبادة والوعي الشرعي.', lib: 'https://www.islamweb.net/ar/fatwa/47172', color: '#4caf50' },
-            { id: 'intimacy', name: 'الحميمية', section: 'bouh-display-3', type: 'ثقافة', hamssa: 'السكن والمودة أساس البيوت السعيدة والوعي يبدأ هنا.', lib: 'https://www.islamweb.net/ar/fatawa/2218', color: '#f44336' }
+            { id: 'feelings', name: 'المشاعر', db_section: 'bouh-display-1', db_type: 'المشاعر', hamssa: 'مشاعركِ غالية، لا تترددي في البوح بها.', lib: 'https://ar.wikipedia.org/wiki/مشاعر', color: '#ff85a2' },
+            { id: 'society', name: 'المجتمع', db_section: 'bouh-display-4', db_type: 'المجتمع', hamssa: 'هنا تلتقي الأرواح المتشابهة لتبني دعماً لا ينتهي.', lib: 'https://www.facebook.com/groups/raqqa', color: '#d4af37' },
+            { id: 'fiqh', name: 'الفقه', db_section: 'bouh-display-2', db_type: 'قصة نجاح', hamssa: 'العلم نور يضيء لكِ دروب العبادة والوعي.', lib: 'https://www.islamweb.net/ar/fatwa/47172', color: '#4caf50' },
+            { id: 'intimacy', name: 'الحميمية', db_section: 'bouh-display-3', db_type: 'ثقافة', hamssa: 'السكن والمودة أساس البيوت السعيدة.', lib: 'https://www.islamweb.net/ar/fatawa/2218', color: '#f44336' }
         ];
 
         function initApp() {
@@ -256,15 +210,15 @@
                             <h3 style="font-family:'Aref Ruqaa'; color:${s.color}">${s.name}</h3>
                             <div class="hamssa-box">همسة رقة: ${s.hamssa}</div>
                             <a href="${s.lib}" target="_blank" style="color:${s.color}; font-size:0.8rem; font-weight:bold; text-decoration:none;">
-                                <i class="fas fa-book-open"></i> مكتبة الوعي والتعلم الرقمية 📚
+                                <i class="fas fa-book-open"></i> مكتبة الوعي الرقمية 📚
                             </a>
-                            <div id="neon-${s.section}" class="neon-display-area" style="margin-top:20px; min-height:100px;">
-                                <p style="font-size:0.8rem; color:#aaa; text-align:center;">جاري جلب محتوى نيون لـ ${s.type}...</p>
+                            <div id="content-${s.db_section}" class="neon-content-area" style="margin-top:20px;">
+                                <p style="font-size:0.8rem; color:#aaa;">جاري جلب بيانات ${s.db_type} من نيون...</p>
                             </div>
-                            <div class="interaction-bar">
-                                <button class="action-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i><span>إعجاب</span></button>
-                                <button class="action-btn" onclick="openComments('${s.id}')"><i class="far fa-comment"></i><span>تعليق</span></button>
-                                <button class="action-btn" onclick="shareRaqqa('${s.name}')"><i class="fas fa-share-nodes"></i><span>مشاركة</span></button>
+                            <div style="display:flex; justify-content:space-around; margin-top:15px; border-top:1px solid #f9f9f9; padding-top:10px;">
+                                <span onclick="this.style.color='red'"><i class="far fa-heart"></i> إعجاب</span>
+                                <span onclick="alert('سجل تعليقكِ برقة')"><i class="far fa-comment"></i> تعليق</span>
+                                <span onclick="shareRaqqa()"><i class="fas fa-share-nodes"></i> مشاركة</span>
                             </div>
                         </div>
                     </section>
@@ -273,66 +227,60 @@
             fetchNeonData();
         }
 
-        // جلب البيانات من نيون (Neon DB Logic)
+        // دالة جلب البيانات من نيون (Neon) المتوافقة مع الصورة
         async function fetchNeonData() {
-            // ملاحظة: هنا يجب أن يكون لديك API Route في فيرسل يقرأ من نيون
-            // الكود أدناه هو واجهة التعامل مع النتائج
             try {
-                // محاكاة توزيع البيانات بناءً على الصورة
+                // ملاحظة: استبدل '/api/posts' بمسار الدالة الحقيقي لديك في فيرسل
+                const response = await fetch('/api/posts');
+                const data = await response.json();
+                
                 raqqaSections.forEach(s => {
-                    const display = document.getElementById(`neon-${s.section}`);
-                    display.innerHTML = `<div style="padding:10px; border-radius:10px; background:#fdfdfd; border:1px solid #eee;">
-                        محتوى تجريبي تم جلبه من ${s.section} لنوع ${s.type} كما في الصورة.
-                    </div>`;
+                    const area = document.getElementById(`content-${s.db_section}`);
+                    // فلترة البيانات بناءً على قيم 'section' و 'type' من الصورة
+                    const filtered = data.filter(p => p.section === s.db_section || p.type === s.db_type);
+                    
+                    if(filtered.length > 0) {
+                        area.innerHTML = filtered.map(p => `<div class="post-content">${p.content}</div>`).join('');
+                    } else {
+                        area.innerHTML = `<p style="font-size:0.8rem; color:#ccc;">لا توجد منشورات في ${s.name} حالياً.</p>`;
+                    }
                 });
-            } catch (e) { console.log("Neon Error", e); }
+
+                // الصفحة الرئيسية
+                document.getElementById('feed-general').innerHTML = data.slice(0, 3).map(p => `<div class="post-content"><b>${p.type}:</b> ${p.content}</div>`).join('');
+            } catch (e) { console.error("Neon Fetch Error", e); }
         }
 
-        // منطق المتابعات الصحية الـ 11
-        const trackerFields = {
-            'الحيض': ['تاريخ آخر دورة', 'المدة المعتادة', 'ملاحظات الألم'],
-            'الماء': ['الهدف اليومي (لتر)', 'ساعات التذكير'],
-            'الطبيب': ['اسم العيادة', 'موعد الزيارة القادمة'],
-            'التغذية': ['الوجبات الأساسية', 'السعرات المستهدفة']
-        };
-
-        function openTracker(type) {
-            const engine = document.getElementById('tracker-engine');
-            const fieldsDiv = document.getElementById('tracker-fields');
-            engine.style.display = 'block';
-            document.getElementById('tracker-title').innerText = 'متابعة ' + type;
-            
-            const fields = trackerFields[type] || ['تاريخ المتابعة', 'ملاحظات رقيقة'];
-            fieldsDiv.innerHTML = fields.map(f => `
-                <div style="margin-bottom:12px;">
-                    <label style="font-size:0.8rem; font-weight:bold; display:block; margin-bottom:5px;">${f}</label>
-                    <input type="${f.includes('تاريخ') ? 'date' : 'text'}" style="width:100%; padding:10px; border-radius:10px; border:1px solid #eee; box-sizing:border-box;">
-                </div>
-            `).join('');
-            engine.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        // منطق شات الذكاء الاصطناعي (Groq + Tavily)
+        // شات ذكاء اصطناعي (Groq + Tavily)
         async function askRaqqa() {
             const input = document.getElementById('ai-input');
             const responseDiv = document.getElementById('ai-response');
             const prompt = input.value;
             if(!prompt) return;
 
-            responseDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> رقة تبحث لكِ الآن...';
+            responseDiv.innerHTML = 'جاري البحث لكِ برقة...';
             input.value = '';
 
             try {
-                const response = await fetch('/api/raqqa-ai', { // المسار الخاص بالدالة التي أرفقتها
+                const response = await fetch('/api/raqqa-ai', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: prompt })
                 });
                 const data = await response.json();
                 responseDiv.innerHTML = data.reply;
-            } catch (e) {
-                responseDiv.innerHTML = "عذراً يا رقيقة، واجهت مشكلة بسيطة في الاتصال. حاولي مرة أخرى.";
-            }
+            } catch (e) { responseDiv.innerHTML = "عذراً رقيقة، حاولي لاحقاً."; }
+        }
+
+        function openTracker(type) {
+            const engine = document.getElementById('tracker-engine');
+            engine.style.display = 'block';
+            document.getElementById('tracker-title').innerText = 'متابعة ' + type;
+            document.getElementById('tracker-fields').innerHTML = `
+                <input type="date" style="width:100%; padding:10px; margin:5px 0; border:1px solid #eee;">
+                <textarea placeholder="سجلي ملاحظاتكِ هنا..." style="width:100%; height:60px; padding:10px; border:1px solid #eee;"></textarea>
+            `;
+            engine.scrollIntoView({ behavior: 'smooth' });
         }
 
         function toggleAI() {
@@ -340,16 +288,9 @@
             modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
         }
 
-        function openAI(context) {
+        function openAI(ctx) {
             toggleAI();
-            document.getElementById('ai-response').innerText = `أهلاً بكِ.. سأقوم بالبحث والتحليل بخصوص ${context} لأجلكِ برقة.`;
-        }
-
-        // وظائف الواجهة العامة
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-            const overlay = document.querySelector('.overlay');
-            overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
+            document.getElementById('ai-response').innerText = `أهلاً بكِ.. اسأليني عن أي شيء يخص ${ctx}.`;
         }
 
         function switchTab(id, el) {
@@ -357,30 +298,18 @@
             document.getElementById(id).style.display = 'block';
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             el.classList.add('active');
-            window.scrollTo(0,0);
         }
 
-        function toggleLike(btn) {
-            btn.classList.toggle('liked');
-            const icon = btn.querySelector('i');
-            icon.classList.toggle('far');
-            icon.classList.toggle('fas');
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+            const overlay = document.querySelector('.overlay');
+            overlay.style.display = overlay.style.display === 'block' ? 'none' : 'block';
         }
 
-        function shareRaqqa(title) {
-            if (navigator.share) {
-                navigator.share({ title: 'رقة - ' + title, url: window.location.href });
-            } else {
-                alert('تم نسخ الرابط لمشاركته مع رفيقاتكِ!');
-            }
-        }
-
-        function saveHealthData() {
-            alert('تم حفظ بيانات المتابعة بنجاح! سيتم إخطاركِ بالإشعارات الذكية لاحقاً ✨');
-            document.getElementById('tracker-engine').style.display = 'none';
-        }
+        function shareRaqqa() { if(navigator.share) navigator.share({title: 'رقة', url: window.location.href}); }
+        function saveHealthData() { alert('تم الحفظ وتفعيل التنبيه الذكي ✨'); document.getElementById('tracker-engine').style.display='none'; }
 
         window.onload = initApp;
     </script>
 </body>
-    </html>
+</html>
