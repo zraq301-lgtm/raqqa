@@ -1,7 +1,12 @@
 import { MixedbreadAIClient } from '@mixedbread-ai/sdk';
 
+// إعداد عميل Mixedbread باستخدام الأسماء الصحيحة من الصورة
+const mxbClient = process.env.MXBAI_API_KEY ? new MixedbreadAIClient({ 
+    apiKey: process.env.MXBAI_API_KEY 
+}) : null;
+
 export default async function handler(req, res) {
-    // 1. إعدادات CORS (لا غنى عنها لمنع أخطاء الاتصال)
+    // إعدادات CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,27 +16,24 @@ export default async function handler(req, res) {
 
     try {
         const { prompt } = req.body;
-        if (!prompt) return res.status(400).json({ reply: "لم أستلم سؤالكِ يا رقيقة." });
-
         let context = "";
 
-        // 2. محاولة جلب السياق من Mixedbread (محمية من الانهيار)
-        if (process.env.MXB_API_KEY) {
+        // 1. البحث في Mixedbread باستخدام الـ Store ID الخاص بكِ
+        if (mxbClient && process.env.MXBAI_STORE_ID) {
             try {
-                const mxbClient = new MixedbreadAIClient({ apiKey: process.env.MXB_API_KEY });
                 const searchResults = await mxbClient.search({
                     query: prompt,
                     model: 'mixedbread-ai/mxbai-embed-large-v1',
-                    topK: 2
+                    collectionId: process.env.MXBAI_STORE_ID, // استخدام Store ID من Vercel
+                    topK: 3
                 });
                 context = searchResults.hits.map(h => h.body).join('\n---\n');
-            } catch (searchError) {
-                console.error("Mixedbread Search Error:", searchError.message);
-                // نكمل العمل حتى لو فشل البحث
+            } catch (err) {
+                console.error("Mixedbread Search Error:", err.message);
             }
         }
 
-        // 3. طلب الرد من Groq (باستخدام fetch المدمج في Node 18+)
+        // 2. طلب الرد من Groq باستخدام المفتاح الصحيح
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -43,26 +45,26 @@ export default async function handler(req, res) {
                 messages: [
                     { 
                         role: "system", 
-                        content: `أنتِ رقة، مستشارة نسائية حنونة جداً. السياق المتوفر: ${context}` 
+                        content: `أنتِ رقة، مستشارة نسائية حنونة. استخدمي السياق التالي المستخرج من مستودعكِ للإجابة: ${context}` 
                     },
                     { role: "user", content: prompt }
-                ]
+                ],
+                temperature: 0.7
             })
         });
 
+        const data = await groqResponse.json();
+
         if (!groqResponse.ok) {
-            const errorData = await groqResponse.json();
-            throw new Error(`Groq API Error: ${errorData.error?.message || 'Unknown'}`);
+            throw new Error(data.error?.message || "Groq Error");
         }
 
-        const data = await groqResponse.json();
         return res.status(200).json({ reply: data.choices[0].message.content });
 
     } catch (error) {
-        console.error("Global API Error:", error.message);
-        // إرجاع رد JSON سليم حتى في حالة الخطأ لمنع الـ 500 العمياء
+        console.error("API Error:", error.message);
         return res.status(200).json({ 
-            reply: "عذراً يا رقيقة، واجهتُ مشكلة تقنية بسيطة في معالجة طلبكِ. تأكدي من إعدادات المفاتيح (API Keys)." 
+            reply: "عذراً يا رقيقة، واجهتُ مشكلة صغيرة. تأكدي من أن الـ Store ID والمفاتيح تعمل بشكل صحيح." 
         });
     }
-                     }
+}
