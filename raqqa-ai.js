@@ -2,35 +2,50 @@
 import { MixedbreadAIClient } from '@mixedbread-ai/sdk';
 
 // إعداد عملاء الخدمة عبر متغيرات البيئة في Vercel
-const mxbClient = new MixedbreadAIClient({ apiKey: process process.env.MXB_API_KEY });
+// ملاحظة: تم تصحيح الخطأ هنا (حذف process المكررة)
+const mxbClient = new MixedbreadAIClient({ 
+    apiKey: process.env.MXB_API_KEY 
+});
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 export default async function handler(req, res) {
-    // إضافة رؤوس CORS
+    // رؤوس CORS للسماح بالطلبات من الواجهة الأمامية
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'الطريقة غير مسموحة، استخدم POST' });
+    }
 
     const { prompt } = req.body;
 
+    if (!prompt) {
+        return res.status(400).json({ reply: "من فضلكِ اكتبي سؤالكِ أولاً." });
+    }
+
     try {
-        // 1. استخدام Mixedbread للبحث عن سياق (Context) من قاعدة بياناتك
-        // ملاحظة: نفترض أنك قمت بإنشاء Index في Mixedbread يحتوي على منشورات نيون
-        const searchResults = await mxbClient.search({
-            query: prompt,
-            model: 'mixedbread-ai/mxbai-embed-large-v1', // نموذج فهم اللغة العربية
-            topK: 3 // جلب أفضل 3 نتائج من محتواكِ
-        });
+        let context = "";
+        
+        // 1. محاولة جلب سياق من Mixedbread إذا كان مفعلاً
+        try {
+            const searchResults = await mxbClient.search({
+                query: prompt,
+                model: 'mixedbread-ai/mxbai-embed-large-v1',
+                topK: 3
+            });
+            context = searchResults.hits.map(hit => hit.body).join('\n---\n');
+        } catch (mxbError) {
+            console.warn('Mixedbread Search Skip:', mxbError.message);
+            // سنكمل حتى لو فشل Mixedbread ليعمل الـ AI بشكل طبيعي
+        }
 
-        // تحويل نتائج البحث إلى نص سياقي
-        const context = searchResults.hits
-            .map(hit => hit.body)
-            .join('\n---\n');
-
-        // 2. إرسال السؤال مع السياق إلى Groq (Llama 3) لإنشاء رد رقيق
+        // 2. إرسال الطلب إلى Groq
         const aiResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -42,9 +57,9 @@ export default async function handler(req, res) {
                 messages: [
                     {
                         role: "system", 
-                        content: `أنتِ "رقة"، مستشارة ذكية رقيقة تساعد النساء. 
-                        استخدمي المعلومات التالية للرد (إذا كانت مفيدة): ${context}.
-                        يجب أن يكون أسلوبكِ حنوناً، ملهماً، وباللغة العربية.`
+                        content: `أنتِ "رقة"، رفيقة ذكية حنونة تساعد النساء بوعي. 
+                        استخدمي هذا السياق إذا كان مفيداً: ${context}.
+                        أسلوبكِ: رقيق، داعم، وباللغة العربية.`
                     },
                     { role: "user", content: prompt }
                 ],
@@ -53,14 +68,18 @@ export default async function handler(req, res) {
         });
 
         const data = await aiResponse.json();
-        const reply = data.choices[0].message.content;
+        
+        if (!data.choices || data.choices.length === 0) {
+            throw new Error('فشل Groq في توليد رد');
+        }
 
+        const reply = data.choices[0].message.content;
         return res.status(200).json({ reply });
 
     } catch (error) {
         console.error('AI Logic Error:', error);
         return res.status(500).json({ 
-            reply: "عذراً يا رقيقة، واجهتُ صعوبة في التفكير الآن. هل يمكنكِ إعادة السؤال لاحقاً؟" 
+            reply: "عذراً يا رقيقة، يبدو أن هناك ضغطاً على النظام. حاولي مرة أخرى بعد قليل." 
         });
     }
 }
