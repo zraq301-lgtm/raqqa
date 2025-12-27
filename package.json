@@ -1,12 +1,12 @@
 {
   "name": "raqqa-vercel-app",
   "version": "1.0.1",
-  "description": "Raqqa App deployed on Vercel with Mixedbread AI and Neon integration.",
+  "description": "Raqqa App on Vercel",
   "main": "api/raqqa-ai.js",
   "type": "module",
   "scripts": {
-    "start": "vercel dev",
-    "deploy": "vercel --prod"
+    "build": "echo 'No build step needed'",
+    "install": "npm install"
   },
   "dependencies": {
     "@mixedbread-ai/sdk": "^1.0.0",
