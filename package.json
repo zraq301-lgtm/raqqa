@@ -1,19 +1,22 @@
 {
-  "name": "raqqa-vercel-app",
-  "version": "1.0.1",
+  "name": "raqqa-app-vite",
+  "private": true,
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
-    "build": "mkdir -p dist && cp index.html dist/ 2>/dev/null || true",
-    "start": "vercel dev"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@mixedbread-ai/sdk": "^1.2.0",
+    "@mixedbread-ai/sdk": "^1.0.0",
     "@google/genai": "^0.15.0",
     "@supabase/supabase-js": "^2.39.3",
     "@vercel/postgres": "^0.9.0",
     "node-fetch": "^3.3.0"
   },
   "devDependencies": {
+    "vite": "^5.0.0",
     "vercel": "^39.0.0"
   }
 }
