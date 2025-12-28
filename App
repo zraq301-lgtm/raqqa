@@ -1,4 +1,4 @@
-import { MixedbreadAIClient } from '@mixedbread-ai/sdk';
+app import { MixedbreadAIClient } from '@mixedbread-ai/sdk';
 
 const mxbClient = process.env.MXBAI_API_KEY ? new MixedbreadAIClient({ 
     apiKey: process.env.MXBAI_API_KEY 
