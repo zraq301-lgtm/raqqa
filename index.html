@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>تطبيق رقة - الإصدار النهائي</title>
+    <title>تطبيق رقة - الإصدار الاحترافي</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@300;400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -15,29 +15,31 @@
         header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(255, 133, 162, 0.1); }
         .card { background: white; border-radius: 25px; padding: 25px; margin: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.02); border-right: 6px solid var(--raqqa-pink); position: relative; }
         
-        /* تصميم الأقسام */
+        /* أيقونة القلب النابض للشات داخل الأقسام */
+        .heart-pulse-ai { position: absolute; top: 20px; left: 20px; color: var(--raqqa-deep); font-size: 1.6rem; cursor: pointer; animation: pulse 1.2s infinite; z-index: 10; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+
         .hamssa-box { background: var(--raqqa-soft); padding: 15px; border-radius: 15px; font-size: 0.9rem; color: #d81b60; border-right: 3px solid var(--raqqa-deep); margin: 15px 0; }
         
-        /* جداول المتابعة الصحية */
+        /* جداول المتابعة الصحية التفصيلية */
         .health-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
-        .health-item { background: var(--raqqa-soft); padding: 10px 5px; border-radius: 15px; text-align: center; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
-        .health-item i { display: block; font-size: 1.2rem; color: var(--raqqa-pink); margin-bottom: 5px; }
+        .health-item { background: var(--raqqa-soft); padding: 10px 5px; border-radius: 12px; text-align: center; cursor: pointer; font-size: 0.7rem; font-weight: bold; }
+        .health-item i { display: block; font-size: 1.1rem; color: var(--raqqa-pink); margin-bottom: 4px; }
+        .health-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.8rem; }
+        .health-table th { background: #fdf2f5; color: var(--raqqa-deep); padding: 8px; text-align: right; }
+        .health-table td { padding: 8px; border-bottom: 1px solid #eee; }
 
-        .health-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.85rem; }
-        .health-table th { background: var(--raqqa-soft); color: var(--raqqa-deep); padding: 10px; text-align: right; border-bottom: 2px solid #eee; }
-        .health-table td { padding: 10px; border-bottom: 1px solid #eee; }
-
-        /* شاشة الشات */
-        #chat-window { height: 200px; overflow-y: auto; background: #f9f9f9; padding: 10px; border-radius: 15px; margin-bottom: 10px; }
-        .msg { padding: 8px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.9rem; max-width: 80%; }
-        .user-msg { background: var(--raqqa-pink); color: white; align-self: flex-start; }
-        .raqqa-msg { background: white; border: 1px solid #eee; align-self: flex-end; }
+        /* نافذة الشات المنبثقة */
+        #ai-modal { display: none; position: fixed; bottom: 85px; left: 15px; right: 15px; background: white; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); z-index: 3000; padding: 20px; }
+        .chat-box { max-height: 200px; overflow-y: auto; margin-bottom: 10px; font-size: 0.9rem; line-height: 1.6; }
+        .msg-user { color: var(--raqqa-deep); font-weight: bold; margin-bottom: 5px; }
+        .msg-raqqa { background: var(--raqqa-soft); padding: 10px; border-radius: 10px; margin-bottom: 10px; }
 
         .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 75px; background: white; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -5px 25px rgba(0,0,0,0.04); z-index: 1000; }
-        .nav-link { color: #d1d1d1; text-align: center; font-size: 0.7rem; text-decoration: none; font-weight: bold; }
+        .nav-link { color: #d1d1d1; text-align: center; font-size: 0.65rem; text-decoration: none; font-weight: bold; flex: 1; }
         .nav-link.active { color: var(--raqqa-deep); }
-        .nav-link i { font-size: 1.3rem; display: block; margin-bottom: 4px; }
-
+        .nav-link i { font-size: 1.2rem; display: block; margin-bottom: 4px; }
+        
         .page { display: none; }
         .active-page { display: block; }
     </style>
@@ -45,24 +47,16 @@
 <body>
 
     <header>
-        <div style="font-family:'Aref Ruqaa'; font-size: 2.2rem; color: var(--raqqa-deep);">رقة</div>
-        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank"><i class="fab fa-facebook" style="color:#1877f2; font-size: 1.5rem;"></i></a>
+        <div style="font-family:'Aref Ruqaa'; font-size: 2rem; color: var(--raqqa-deep);">رقة</div>
+        <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank"><i class="fab fa-facebook" style="color:#1877f2; font-size: 1.4rem;"></i></a>
     </header>
 
     <main id="app-content">
         <section id="view-home" class="page active-page">
-            <div class="card" style="background: linear-gradient(135deg, #ff85a2, #ffacbe); color: white; border: none; text-align: center;">
-                <h2 style="font-family:'Aref Ruqaa'; margin:0;">أهلاً بكِ في عالمكِ</h2>
-                <p>استشارتكِ ومتابعتكِ الصحية في مكان واحد</p>
-            </div>
-            
-            <div class="card">
-                <h4 style="margin-top:0;">شات رقة الذكي</h4>
-                <div id="chat-window"></div>
-                <div style="display:flex; gap:8px;">
-                    <input type="text" id="chat-input" placeholder="اسألي رقة..." style="flex:1; padding:10px; border-radius:15px; border:1px solid #eee; outline:none;">
-                    <button onclick="sendMessage()" style="background:var(--raqqa-deep); color:white; border:none; border-radius:15px; padding:0 15px;"><i class="fas fa-paper-plane"></i></button>
-                </div>
+            <div class="card" style="background: linear-gradient(135deg, #ff85a2, #ffacbe); color: white; border: none; text-align: center; padding: 50px 20px;">
+                <h2 style="font-family:'Aref Ruqaa'; margin:0; font-size: 2.5rem;">أهلاً بكِ في رقة</h2>
+                <p style="margin-top:15px; font-size:1.1rem;">مساحتكِ الخاصة للوعي، الجمال، والراحة.</p>
+                <div style="margin-top:30px; font-size: 0.8rem; opacity: 0.9;">اختاري أحد الأقسام من الأسفل للبدء</div>
             </div>
         </section>
 
@@ -70,25 +64,17 @@
 
         <section id="view-health" class="page">
             <div class="card">
-                <h3 style="font-family:'Aref Ruqaa'; color:var(--raqqa-deep);">المتابعة الصحية الشاملة</h3>
-                <div class="hamssa-box">همسة: جسدكِ أمانة، وتدوين التفاصيل هو أول خطوة للرعاية.</div>
+                <div class="heart-pulse-ai" onclick="openAI('الصحة')"><i class="fas fa-heart"></i></div>
+                <h3 style="font-family:'Aref Ruqaa'; color:var(--raqqa-deep);">متابعة رقة الصحية</h3>
+                <div class="hamssa-box">همسة: جسدكِ محراب روحكِ، فاعتني به برقة.</div>
                 
-                <div class="health-grid">
-                    <div class="health-item" onclick="showTable('period', 'الحيض')"><i class="fas fa-droplet"></i>الحيض</div>
-                    <div class="health-item" onclick="showTable('preg', 'الحمل')"><i class="fas fa-baby"></i>الحمل</div>
-                    <div class="health-item" onclick="showTable('nurse', 'الرضاعة')"><i class="fas fa-vial"></i>الرضاعة</div>
-                    <div class="health-item" onclick="showTable('mom', 'الأمومة')"><i class="fas fa-child"></i>الأمومة</div>
-                    <div class="health-item" onclick="showTable('food', 'التغذية')"><i class="fas fa-apple-alt"></i>التغذية</div>
-                    <div class="health-item" onclick="showTable('doc', 'الطبيب')"><i class="fas fa-user-md"></i>الطبيب</div>
-                    <div class="health-item" onclick="showTable('sport', 'الرياضة')"><i class="fas fa-running"></i>الرياضة</div>
-                    <div class="health-item" onclick="showTable('water', 'الماء')"><i class="fas fa-tint"></i>الماء</div>
-                </div>
+                <div class="health-grid" id="healthGrid"></div>
 
                 <div id="health-detail-area" style="display:none; margin-top:20px;">
-                    <h4 id="table-title" style="color:var(--raqqa-deep)"></h4>
+                    <h4 id="table-title" style="color:var(--raqqa-deep); margin-bottom:10px;"></h4>
                     <div style="display:flex; gap:5px; margin-bottom:15px;">
-                        <input type="text" id="h-note" placeholder="الملاحظة..." style="flex:2; padding:8px; border-radius:10px; border:1px solid #eee;">
-                        <input type="text" id="h-val" placeholder="الحالة/الكمية" style="flex:1; padding:8px; border-radius:10px; border:1px solid #eee;">
+                        <input type="text" id="h-note" placeholder="ملاحظة..." style="flex:2; padding:8px; border-radius:10px; border:1px solid #eee; outline:none;">
+                        <input type="text" id="h-val" placeholder="الحالة" style="flex:1; padding:8px; border-radius:10px; border:1px solid #eee; outline:none;">
                         <button onclick="addEntry()" style="background:var(--raqqa-pink); color:white; border:none; border-radius:10px; padding:0 10px;">إضافة</button>
                     </div>
                     <table class="health-table">
@@ -100,20 +86,40 @@
         </section>
     </main>
 
+    <div id="ai-modal">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <strong id="ai-title" style="color:var(--raqqa-deep);">استشارة رقة</strong>
+            <i class="fas fa-times" onclick="closeAI()" style="cursor:pointer; color:#ccc;"></i>
+        </div>
+        <div id="chat-box" class="chat-box"></div>
+        <div style="display:flex; gap:8px;">
+            <input type="text" id="chat-input" placeholder="اكتبي سؤالكِ..." style="flex:1; padding:10px; border-radius:15px; border:1px solid #eee; outline:none;">
+            <button onclick="sendMessage()" style="background:var(--raqqa-deep); color:white; border:none; border-radius:15px; padding:0 15px;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <a href="javascript:void(0)" class="nav-link active" onclick="switchTab('view-home', this)"><i class="fas fa-home"></i>الرئيسية</a>
         <a href="javascript:void(0)" class="nav-link" onclick="switchTab('view-feelings', this)"><i class="fas fa-heart"></i>المشاعر</a>
         <a href="javascript:void(0)" class="nav-link" onclick="switchTab('view-society', this)"><i class="fas fa-users"></i>المجتمع</a>
         <a href="javascript:void(0)" class="nav-link" onclick="switchTab('view-fiqh', this)"><i class="fas fa-book-open"></i>الفقه</a>
+        <a href="javascript:void(0)" class="nav-link" onclick="switchTab('view-intimacy', this)"><i class="fas fa-leaf"></i>الحميمية</a>
         <a href="javascript:void(0)" class="nav-link" onclick="switchTab('view-health', this)"><i class="fas fa-medkit"></i>الصحة</a>
     </nav>
 
     <script>
-        // 1. إعداد الأقسام بناءً على صورة Neon (bouh-display-X)
+        // 1. الأقسام الخمسة كاملة (بناءً على Neon)
         const sections = [
-            { id: 'feelings', name: 'المشاعر', dbKey: 'bouh-display-1', color: '#ff85a2', hamssa: 'مشاعركِ لغتكِ الخاصة.' },
-            { id: 'fiqh', name: 'الفقه', dbKey: 'bouh-display-2', color: '#4caf50', hamssa: 'نور العلم ييسر العبادة.' },
-            { id: 'society', name: 'المجتمع', dbKey: 'bouh-display-4', color: '#d4af37', hamssa: 'أنتِ الأثر الجميل.' }
+            { id: 'feelings', name: 'المشاعر', dbKey: 'bouh-display-1', color: '#ff85a2', hamssa: 'مشاعركِ هي لغتكِ الخاصة، استمعي لها.' },
+            { id: 'society', name: 'المجتمع', dbKey: 'bouh-display-4', color: '#d4af37', hamssa: 'هنا نجتمع لنرتقي معاً في عالم رقة.' },
+            { id: 'fiqh', name: 'الفقه', dbKey: 'bouh-display-2', color: '#4caf50', hamssa: 'نور العلم يضيء لكِ طريق العبادة بيسر.' },
+            { id: 'intimacy', name: 'الحميمية', dbKey: 'bouh-display-3', color: '#f44336', hamssa: 'الوعي هو أساس العلاقة الناجحة والسكن الروحي.' }
+        ];
+
+        const healthModules = [
+            { n: 'الحيض', i: 'fa-droplet' }, { n: 'الحمل', i: 'fa-baby' }, { n: 'الرضاعة', i: 'fa-vial' },
+            { n: 'الأمومة', i: 'fa-child' }, { n: 'التغذية', i: 'fa-apple-alt' }, { n: 'الطبيب', i: 'fa-user-md' },
+            { n: 'الرياضة', i: 'fa-running' }, { n: 'الماء', i: 'fa-tint' }
         ];
 
         function initApp() {
@@ -122,21 +128,27 @@
                 container.innerHTML += `
                     <section id="view-${s.id}" class="page">
                         <div class="card" style="border-right-color: ${s.color}">
+                            <div class="heart-pulse-ai" onclick="openAI('${s.name}')"><i class="fas fa-heart"></i></div>
                             <h3 style="font-family:'Aref Ruqaa'; color:${s.color}">${s.name}</h3>
-                            <div class="hamssa-box">${s.hamssa}</div>
-                            <div id="content-${s.dbKey}">جاري جلب بيانات ${s.name}...</div>
+                            <div class="hamssa-box">همسة رقة: ${s.hamssa}</div>
+                            <div id="content-${s.dbKey}">جاري جلب بيانات ${s.name} من نيون...</div>
                         </div>
                     </section>`;
             });
+
+            const grid = document.getElementById('healthGrid');
+            healthModules.forEach(m => {
+                grid.innerHTML += `<div class="health-item" onclick="showHealthTable('${m.n}')"><i class="fas ${m.i}"></i>${m.n}</div>`;
+            });
         }
 
-        // 2. وظيفة الشات المطلوبة (تم الضبط للاتصال بـ Vercel)
+        // 2. نظام الشات (بناءً على الكود الخاص بكِ)
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             const message = input.value.trim();
             if (!message) return;
 
-            appendMessage('user', message);
+            appendMsg('user', message);
             input.value = '';
 
             try {
@@ -145,80 +157,69 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ prompt: message })
                 });
-
                 if (!response.ok) throw new Error("API_ERROR");
-
                 const data = await response.json();
-                appendMessage('raqqa', data.reply);
+                appendMsg('raqqa', data.reply);
             } catch (error) {
-                appendMessage('raqqa', "خطأ 404: تأكدي من رفع ملف api/raqqa-ai.js في المجلد الصحيح.");
+                appendMsg('raqqa', "خطأ 404: تأكدي من رفع ملف api/raqqa-ai.js في المجلد الصحيح.");
             }
         }
 
-        function appendMessage(sender, text) {
-            const win = document.getElementById('chat-window');
-            const div = document.createElement('div');
-            div.className = `msg ${sender === 'user' ? 'user-msg' : 'raqqa-msg'}`;
-            div.innerText = text;
-            win.appendChild(div);
-            win.scrollTop = win.scrollHeight;
+        function appendMsg(sender, text) {
+            const box = document.getElementById('chat-box');
+            box.innerHTML += `<div class="msg-${sender}">${sender === 'user' ? 'أنتِ: ' : ''}${text}</div>`;
+            box.scrollTop = box.scrollHeight;
         }
 
-        // 3. نظام الجداول الصحية التفصيلية
-        let activeModule = "";
-        function showTable(id, title) {
-            activeModule = id;
+        // 3. المتابعة الصحية الجدولية
+        let activeH = "";
+        function showHealthTable(name) {
+            activeH = name;
             document.getElementById('health-detail-area').style.display = 'block';
-            document.getElementById('table-title').innerText = 'سجل متابعة ' + title;
-            renderTable();
+            document.getElementById('table-title').innerText = 'سجل ' + name;
+            renderH();
         }
 
         function addEntry() {
             const val = document.getElementById('h-val').value;
             const note = document.getElementById('h-note').value;
             if(!val) return;
-            
-            const entry = { date: new Date().toLocaleDateString('ar-EG'), val, note };
-            let data = JSON.parse(localStorage.getItem('health_' + activeModule) || "[]");
-            data.unshift(entry);
-            localStorage.setItem('health_' + activeModule, JSON.stringify(data));
-            
-            document.getElementById('h-val').value = "";
-            document.getElementById('h-note').value = "";
-            renderTable();
+            let data = JSON.parse(localStorage.getItem('h_' + activeH) || "[]");
+            data.unshift({ d: new Date().toLocaleDateString('ar-EG'), v: val, n: note });
+            localStorage.setItem('h_' + activeH, JSON.stringify(data.slice(0, 10)));
+            document.getElementById('h-val').value = ""; document.getElementById('h-note').value = "";
+            renderH();
         }
 
-        function renderTable() {
-            const data = JSON.parse(localStorage.getItem('health_' + activeModule) || "[]");
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td>${item.date}</td>
-                    <td style="color:var(--raqqa-deep); font-weight:bold;">${item.val}</td>
-                    <td>${item.note}</td>
-                </tr>
-            `).join('');
+        function renderH() {
+            const data = JSON.parse(localStorage.getItem('h_' + activeH) || "[]");
+            document.getElementById('table-body').innerHTML = data.map(i => `<tr><td>${i.d}</td><td>${i.v}</td><td>${i.n}</td></tr>`).join('');
         }
 
-        // 4. التنقل بين الصفحات
+        // 4. وظائف التنقل
         function switchTab(viewId, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
             document.getElementById(viewId).classList.add('active-page');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             el.classList.add('active');
-            
-            const section = sections.find(s => 'view-'+s.id === viewId);
-            if(section) fetchNeonContent(section.dbKey);
+            const s = sections.find(x => 'view-'+x.id === viewId);
+            if(s) fetchNeon(s.dbKey);
         }
 
-        async function fetchNeonContent(dbKey) {
+        async function fetchNeon(dbKey) {
             const box = document.getElementById('content-' + dbKey);
             try {
                 const res = await fetch(`/api/get-posts?cat=${dbKey}`);
                 const data = await res.json();
-                box.innerHTML = data.posts ? data.posts.map(p => `<p style="border-bottom:1px solid #eee; padding:10px;">${p.content}</p>`).join('') : "لا يوجد محتوى حالياً.";
-            } catch { box.innerHTML = "تعذر الاتصال بالمكتبة."; }
+                box.innerHTML = data.posts ? data.posts.map(p => `<div style="padding:10px; border-bottom:1px solid #eee;">${p.content}</div>`).join('') : "لا يوجد محتوى حالياً.";
+            } catch { box.innerHTML = "تعذر الاتصال بـ نيون."; }
         }
+
+        function openAI(topic) { 
+            document.getElementById('ai-modal').style.display = 'block'; 
+            document.getElementById('ai-title').innerText = 'استشارة رقة - ' + topic;
+        }
+        function closeAI() { document.getElementById('ai-modal').style.display = 'none'; }
 
         window.onload = initApp;
     </script>
