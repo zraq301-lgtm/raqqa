@@ -14,22 +14,22 @@ export default async function handler(req, res) {
 
     try {
         const { prompt } = req.body;
-
         let context = "";
-        // البحث التلقائي في محتواكِ المرفوع
+
+        // 1. البحث في Mixedbread باستخدام Store ID الصحيح
         if (mxbClient && process.env.MXBAI_STORE_ID) {
             try {
                 const searchResults = await mxbClient.search({
                     query: prompt,
                     model: 'mixedbread-ai/mxbai-embed-large-v1',
-                    collectionId: process.env.MXBAI_STORE_ID, // الـ Store ID الخاص بكِ
+                    collectionId: process.env.MXBAI_STORE_ID,
                     topK: 3
                 });
                 context = searchResults.hits.map(h => h.body).join('\n---\n');
-            } catch (err) { console.error("Mixedbread Search Error:", err.message); }
+            } catch (err) { console.error("Search Error:", err.message); }
         }
 
-        // إرسال السؤال مع السياق (المحتوى المرفوع) إلى Groq
+        // 2. طلب الرد من Groq
         const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -41,7 +41,7 @@ export default async function handler(req, res) {
                 messages: [
                     { 
                         role: "system", 
-                        content: `أنتِ "رقة"، مستشارة نسائية. استخدمي هذا المحتوى المرفوع للإجابة بحنان: ${context || 'أجيبي بأسلوبك الرقيق العام'}` 
+                        content: `أنتِ رقة، مستشارة نسائية حنونة. استخدمي السياق المرفوع: ${context || 'معلوماتك العامة'}` 
                     },
                     { role: "user", content: prompt }
                 ]
@@ -49,9 +49,9 @@ export default async function handler(req, res) {
         });
 
         const data = await groqResponse.json();
-        res.status(200).json({ reply: data.choices[0].message.content });
+        return res.status(200).json({ reply: data.choices[0].message.content });
 
     } catch (error) {
-        res.status(200).json({ reply: "واجهتُ صعوبة في الوصول للمعلومات الآن، سأجيبكِ بناءً على معرفتي العامة." });
+        return res.status(200).json({ reply: "عذراً يا رقيقة، واجهتُ مشكلة تقنية بسيطة في الاتصال." });
     }
-}
+                    }
