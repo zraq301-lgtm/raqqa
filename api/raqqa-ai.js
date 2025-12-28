@@ -1,15 +1,10 @@
 export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ reply: 'الطريقة غير مسموحة' });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ reply: 'Method Not Allowed' });
 
     const { prompt } = req.body;
-    const apiKey = process.env.GROQ_API_KEY;
-
-    // فحص إذا كان المفتاح موجود أصلاً في إعدادات Vercel
-    if (!apiKey) {
-        return res.status(500).json({ reply: "المفتاح GROQ_API_KEY غير موجود في إعدادات Vercel." });
-    }
+    
+    // تم تغيير الاسم هنا ليطابق حروفاً جديدة اخترناها لكِ
+    const apiKey = process.env.RAQQA_SECRET_AI; 
 
     try {
         const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -19,12 +14,12 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "llama3-8b-8192", // نموذج سريع ومستقر
+                model: "llama-3.3-70b-versatile", 
                 messages: [
-                    { role: "system", content: "أنتِ رقة، مساعدة ذكية وصديقة وفية للنساء. أجيبي برقة واحترام وباللغة العربية." },
+                    { role: "system", content: "أنتِ 'رقة' - مساعدة ذكية للنساء. أسلوبك: دافئ، رقيق، ومختصر. لغتك: العربية." },
                     { role: "user", content: prompt }
                 ],
-                max_tokens: 500
+                temperature: 0.7
             })
         });
 
@@ -33,10 +28,10 @@ export default async function handler(req, res) {
         if (data.choices && data.choices[0]) {
             res.status(200).json({ reply: data.choices[0].message.content });
         } else {
-            // في حال وجود خطأ من Groq نفسه (مثل انتهاء الكوتا)
-            res.status(500).json({ reply: "عذراً، محرك الذكاء الاصطناعي لا يستجيب حالياً. تأكدي من صلاحية مفتاح GROQ." });
+            console.error("Error Detail:", data);
+            res.status(200).json({ reply: "عذراً رقيقة، يرجى التأكد من تطابق اسم المفتاح الجديد في Vercel." });
         }
     } catch (error) {
-        res.status(500).json({ reply: "حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً." });
+        res.status(500).json({ reply: "حدث خطأ في الشبكة، حاولي مرة أخرى." });
     }
 }
