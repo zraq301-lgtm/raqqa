@@ -6,30 +6,32 @@ export default async function handler(req, res) {
     // المفاتيح الخاصة بكِ من إعدادات Vercel
     const apiKey = process.env.RAQQA_SECRET_AI; 
     const mixedbreadKey = process.env.MIXEDBREAD_API_KEY;
+    // الـ ID الخاص بالـ Store الذي زودتني به
+    const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826";
 
     try {
-        // 1. جلب المحتوى المخصص من Mixedbread (البحث في بياناتك المرفوعة)
+        // 1. جلب المحتوى المخصص من Mixedbread (البحث في الملفات المرفوعة داخل الـ Store)
         let context = "";
         try {
-            const mxbResponse = await fetch('https://api.mixedbread.ai/v1/retrieval', {
+            const mxbResponse = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${mixedbreadKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: "mixedbread-ai/mxbai-embed-large-v1", // تأكدي من الموديل المستخدم في حسابك
                     query: prompt,
-                    top_k: 3 // جلب أكثر 3 فقرات صلة بسؤال المستخدمة
+                    top_k: 3 // جلب أكثر 3 فقرات صلة بسؤال المستخدمة من ملفاتك
                 })
             });
             const mxbData = await mxbResponse.json();
-            if (mxbData.data) {
-                context = mxbData.data.map(item => item.content).join("\n\n");
+            
+            // استخراج المحتوى من النتائج (hits)
+            if (mxbData.hits) {
+                context = mxbData.hits.map(item => item.content).join("\n\n");
             }
         } catch (e) {
             console.error("Mixedbread Error:", e);
-            // في حال فشل Mixedbread يستمر البرنامج للرد العام لضمان عدم توقف الشات
         }
 
         // 2. إرسال السياق المخصص إلى Groq للحصول على الرد النهائي
@@ -53,7 +55,7 @@ export default async function handler(req, res) {
                     },
                     { role: "user", content: prompt }
                 ],
-                temperature: 0.5 // تقليل الـ temperature لضمان الالتزام بالمحتوى المرفوع
+                temperature: 0.5 
             })
         });
 
@@ -68,4 +70,4 @@ export default async function handler(req, res) {
     } catch (error) {
         res.status(500).json({ reply: "حدث خطأ في الشبكة، حاولي مرة أخرى يا رفيقتي." });
     }
-                                            }
+    }
