@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم رقة - الإدارة المتكاملة</title>
+    <title>لوحة تحكم رقة - المطور</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -12,257 +12,224 @@
         :root {
             --primary-pink: #e91e63;
             --soft-pink: #fce4ec;
-            --ai-purple: #673ab7;
-            --delete-red: #f44336;
-            --upload-green: #4CAF50;
-            --neon-blue: #00bcd4;
+            --ai-color: #6200ea;
+            --save-color: #009688;
+            --delete-color: #f44336;
         }
 
-        body { font-family: 'Tajawal', sans-serif; background-color: #f8f9fa; color: #4a4a4a; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-        h1 { color: var(--primary-pink); text-align: center; margin-bottom: 30px; font-size: 2rem; border-bottom: 2px solid var(--soft-pink); padding-bottom: 15px; }
-        h2 { color: #555; font-size: 1.3rem; margin-top: 35px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f9f9f9; padding: 20px; color: #333; }
+        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 25px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
         
-        .card { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 12px; margin-bottom: 20px; transition: 0.3s; }
-        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: var(--primary-pink); margin-bottom: 30px; }
+        h2 { font-size: 1.2rem; border-right: 4px solid var(--primary-pink); padding-right: 10px; margin-top: 30px; color: #555; }
 
-        label { display: block; margin-bottom: 8px; font-weight: 700; color: #666; }
+        .card { border: 1px solid #eee; padding: 20px; border-radius: 12px; margin-bottom: 20px; background: #fff; }
+        
         input, textarea, select {
-            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: 'Tajawal';
+            width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-family: 'Tajawal';
+        }
+
+        button {
+            width: 100%; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.3s; color: #fff; margin-top: 5px;
         }
         
-        button {
-            color: white; padding: 12px 20px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-size: 1.1rem; font-weight: 700; transition: 0.3s;
-        }
-        button:disabled { background-color: #ccc; cursor: not-allowed; }
-
-        .btn-ai { background-color: var(--ai-purple); }
-        .btn-save { background-color: var(--neon-blue); }
-        .btn-upload { background-color: var(--upload-green); }
-        .btn-delete { background-color: var(--delete-red); }
-
-        .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .message { padding: 15px; border-radius: 8px; margin-top: 15px; display: none; text-align: center; font-weight: bold; }
-        .success { background: #d4edda; color: #155724; }
-        .error { background: #f8d7da; color: #721c24; }
-        .info { background: #d1ecf1; color: #0c5460; }
-
-        #admin-content { display: none; }
+        .btn-ai { background-color: var(--ai-color); }
+        .btn-save { background-color: var(--save-color); }
+        .btn-delete { background-color: var(--delete-color); }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .message { padding: 15px; border-radius: 8px; margin-top: 10px; display: none; text-align: center; font-size: 0.9rem; }
+        .success { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        
+        #admin-panel { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1><i class="fas fa-gem"></i> لوحة تحكم "رقة"</h1>
+<div class="container">
+    <h1>لوحة تحكم "رقة"</h1>
 
-        <div id="login-form" class="card">
-            <h2><i class="fas fa-key"></i> تسجيل الدخول</h2>
-            <input type="text" id="username" placeholder="اسم المستخدم">
-            <input type="password" id="password" placeholder="كلمة المرور">
-            <button class="btn-save" onclick="login()">دخول</button>
-        </div>
-
-        <div id="admin-content">
-            
-            <div class="card">
-                <h2><i class="fas fa-magic"></i> توليد محتوى ذكي (RAG System)</h2>
-                <textarea id="ai-prompt" rows="3" placeholder="اسألي 'رقة' أي شيء لاستخراج نص من مكتبتك المرفوعة..."></textarea>
-                <button id="ai-btn" class="btn-ai" onclick="generateAI()"><i class="fas fa-robot"></i> جلب الإجابة من المكتبة</button>
-                <div id="ai-msg" class="message"></div>
-            </div>
-
-            <form id="postForm" class="card" onsubmit="savePost(event)">
-                <h2><i class="fas fa-pen-fancy"></i> حفظ محتوى نصي في Neon</h2>
-                <label>النص:</label>
-                <textarea id="content" rows="6" placeholder="الصقي النص هنا..." required></textarea>
-                
-                <div class="section-grid">
-                    <div>
-                        <label>القسم (Section ID):</label>
-                        <select id="section" required>
-                            <option value="section-1">المشاعر</option>
-                            <option value="section-2">المجتمع</option>
-                            <option value="section-3">الصحة</option>
-                            <option value="section-4">الفقه</option>
-                            <option value="section-5">الحميمية</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>نوع المحتوى:</label>
-                        <input type="text" id="category" value="نصي" readonly>
-                    </div>
-                </div>
-                <button type="submit" class="btn-save"><i class="fas fa-database"></i> حفظ في Neon DB</button>
-                <div id="save-msg" class="message"></div>
-            </form>
-
-            <div class="card">
-                <h2><i class="fas fa-photo-video"></i> رفع وسائط إلى Neon</h2>
-                <input type="file" id="file-input" accept="image/*,video/*">
-                <div class="section-grid">
-                    <div>
-                        <label>القسم الموجه له:</label>
-                        <select id="file-section">
-                            <option value="section-1">المشاعر</option>
-                            <option value="section-2">المجتمع</option>
-                            <option value="section-3">الصحة</option>
-                            <option value="section-4">الفقه</option>
-                            <option value="section-5">الحميمية</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>وصف مختصر:</label>
-                        <input type="text" id="file-desc" placeholder="عنوان الميديا">
-                    </div>
-                </div>
-                <button class="btn-upload" onclick="uploadMedia()"><i class="fas fa-cloud-upload-alt"></i> رفع الميديا</button>
-                <div id="upload-msg" class="message"></div>
-            </div>
-
-            <div class="card">
-                <h2><i class="fas fa-trash-alt"></i> حذف محتوى</h2>
-                <input type="text" id="delete-id" placeholder="أدخلي رقم ID المنشور">
-                <button class="btn-delete" onclick="deleteItem()">حذف المنشور</button>
-                <div id="delete-msg" class="message"></div>
-            </div>
-
-        </div>
+    <div id="login-section" class="card">
+        <h2>تسجيل الدخول</h2>
+        <input type="password" id="admin-pass" placeholder="أدخلي كلمة مرور الإدارة">
+        <button class="btn-save" onclick="checkLogin()">دخول</button>
     </div>
 
-    <script>
-        const CONFIG = {
-            BASE: 'https://raqqa-v6cd.vercel.app',
-            AI: '/api/gemini', // تأكدي أن هذا المسار هو الذي يحتوي على كود Groq الذي أرفقتيه
-            SAVE: '/api/save-post',
-            DELETE: '/api/delete-post'
-        };
+    <div id="admin-panel">
+        
+        <div class="card">
+            <h2><i class="fas fa-robot"></i> توليد محتوى ذكي (Mixedbread + Groq)</h2>
+            <textarea id="ai-prompt" rows="3" placeholder="اكتبي سؤالاً لـ 'رقة' بخصوص مكتبتك..."></textarea>
+            <button class="btn-ai" onclick="fetchAIContent()"><i class="fas fa-magic"></i> جلب الإجابة</button>
+            <div id="ai-msg" class="message"></div>
+        </div>
 
-        function login() {
-            const u = document.getElementById('username').value;
-            const p = document.getElementById('password').value;
-            if(u === 'zazo' && p === 'zazo010988') {
-                document.getElementById('login-form').style.display = 'none';
-                document.getElementById('admin-content').style.display = 'block';
-            } else {
-                alert('البيانات غير صحيحة');
-            }
-        }
-
-        // 1. وظيفة الذكاء الاصطناعي (تطابق الكود الذي أرفقتيه)
-        async function generateAI() {
-            const prompt = document.getElementById('ai-prompt').value;
-            const btn = document.getElementById('ai-btn');
-            const msg = document.getElementById('ai-msg');
+        <div class="card">
+            <h2><i class="fas fa-plus-circle"></i> إضافة محتوى جديد إلى Neon</h2>
             
-            if(!prompt) return;
+            <label>المحتوى النصي (أو سيظهر هنا الرد المولد):</label>
+            <textarea id="main-content" rows="6" placeholder="اكتبي النص هنا..."></textarea>
             
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري البحث في مكتبتك...';
-            showMsg(msg, 'جاري معالجة البيانات من Mixedbread و Groq...', 'info');
+            <label>أو ارفعي (صورة/فيديو):</label>
+            <input type="file" id="media-file" accept="image/*,video/*">
 
-            try {
-                const response = await fetch(CONFIG.BASE + CONFIG.AI, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
-                });
-                
-                const data = await response.json();
-                
-                if(data.reply) {
-                    document.getElementById('content').value = data.reply;
-                    showMsg(msg, 'تم التوليد بنجاح! النص موجود في نموذج الحفظ أدناه.', 'success');
-                } else {
-                    showMsg(msg, 'لم أستطع الحصول على رد دقيق.', 'error');
-                }
-            } catch (e) {
-                showMsg(msg, 'فشل الاتصال بـ API الذكاء الاصطناعي.', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-robot"></i> جلب الإجابة من المكتبة';
-            }
+            <div class="grid">
+                <div>
+                    <label>القسم (Section):</label>
+                    <select id="post-section">
+                        <option value="section-1">المشاعر</option>
+                        <option value="section-2">المجتمع</option>
+                        <option value="section-3">الصحة</option>
+                        <option value="section-4">الفقه</option>
+                        <option value="section-5">الحميمية</option>
+                    </select>
+                </div>
+                <div>
+                    <label>النوع (Type):</label>
+                    <select id="post-type">
+                        <option value="نصي">نصي</option>
+                        <option value="صورة">صورة</option>
+                        <option value="فيديو">فيديو</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn-save" onclick="handleSave()"><i class="fas fa-cloud-upload-alt"></i> حفظ في قاعدة البيانات</button>
+            <div id="save-msg" class="message"></div>
+        </div>
+
+        <div class="card">
+            <h2><i class="fas fa-trash"></i> حذف منشور</h2>
+            <input type="number" id="delete-id" placeholder="أدخلي ID المنشور">
+            <button class="btn-delete" onclick="handleDelete()">حذف نهائي</button>
+            <div id="delete-msg" class="message"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // الإعدادات - تأكدي أن هذه الروابط صحيحة في Vercel
+    const API_AI = '/api/gemini'; // الملف الذي يحتوي على كود Groq + Mixedbread
+    const API_SAVE = '/api/save-post'; // الملف الذي يحتوي على كود SQL INSERT الذي أرفقتيه
+    const API_DELETE = '/api/delete-post';
+
+    function checkLogin() {
+        const pass = document.getElementById('admin-pass').value;
+        if(pass === 'zazo010988') {
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+        } else {
+            alert('كلمة المرور خاطئة');
         }
+    }
 
-        // 2. حفظ النص في Neon
-        async function savePost(e) {
-            e.preventDefault();
-            const msg = document.getElementById('save-msg');
-            const payload = {
-                content: document.getElementById('content').value,
-                section: document.getElementById('section').value,
-                type: 'نصي',
-                created_at: new Date().toISOString()
-            };
+    // 1. وظيفة الذكاء الاصطناعي
+    async function fetchAIContent() {
+        const prompt = document.getElementById('ai-prompt').value;
+        const msg = document.getElementById('ai-msg');
+        if(!prompt) return;
 
-            try {
-                const res = await fetch(CONFIG.BASE + CONFIG.SAVE, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if(res.ok) {
-                    showMsg(msg, 'تم الحفظ في قاعدة بيانات Neon بنجاح!', 'success');
-                    document.getElementById('postForm').reset();
-                }
-            } catch (e) {
-                showMsg(msg, 'خطأ في عملية الحفظ.', 'error');
+        showStatus(msg, 'جاري البحث في مكتبتك وتوليد الرد...', 'info');
+
+        try {
+            const res = await fetch(API_AI, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ prompt })
+            });
+            const data = await res.json();
+            if(data.reply) {
+                document.getElementById('main-content').value = data.reply;
+                document.getElementById('post-type').value = 'نصي';
+                showStatus(msg, 'تم التوليد بنجاح!', 'success');
             }
+        } catch (e) {
+            showStatus(msg, 'خطأ في جلب البيانات', 'error');
         }
+    }
 
-        // 3. رفع ميديا (صورة/فيديو) لـ Neon كـ Base64
-        async function uploadMedia() {
-            const fileInput = document.getElementById('file-input');
-            const msg = document.getElementById('upload-msg');
-            if(!fileInput.files[0]) return showMsg(msg, 'اختاري ملفاً أولاً', 'error');
+    // 2. وظيفة الحفظ الشاملة (نص + ميديا)
+    async function handleSave() {
+        const contentArea = document.getElementById('main-content');
+        const fileInput = document.getElementById('media-file');
+        const section = document.getElementById('post-section').value;
+        const type = document.getElementById('post-type').value;
+        const msg = document.getElementById('save-msg');
 
+        let finalContent = contentArea.value;
+
+        // إذا كان هناك ملف مرفوع، نعطيه الأولوية ونحوله لـ Base64
+        if (fileInput.files.length > 0) {
+            showStatus(msg, 'جاري معالجة الملف...', 'info');
             const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            showMsg(msg, 'جاري معالجة الملف للرفع...', 'info');
+            finalContent = await toBase64(file);
+        }
 
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const payload = {
-                    content: reader.result, // الملف محول لنص طويل (Base64)
-                    section: document.getElementById('file-section').value,
-                    type: file.type.includes('image') ? 'صورة' : 'فيديو',
+        if (!finalContent) return showStatus(msg, 'يرجى كتابة نص أو اختيار ملف', 'error');
+
+        showStatus(msg, 'جاري الحفظ في Neon...', 'info');
+
+        try {
+            const res = await fetch(API_SAVE, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    content: finalContent,
+                    section: section,
+                    type: type,
                     created_at: new Date().toISOString()
-                };
+                })
+            });
 
-                try {
-                    const res = await fetch(CONFIG.BASE + CONFIG.SAVE, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if(res.ok) showMsg(msg, 'تم رفع وحفظ الميديا بنجاح في Neon!', 'success');
-                } catch (e) {
-                    showMsg(msg, 'فشل رفع الميديا.', 'error');
-                }
-            };
-        }
-
-        // 4. حذف
-        async function deleteItem() {
-            const id = document.getElementById('delete-id').value;
-            const msg = document.getElementById('delete-msg');
-            if(!id) return;
-
-            try {
-                const res = await fetch(`${CONFIG.BASE}${CONFIG.DELETE}?id=${id}`, { method: 'DELETE' });
-                if(res.ok) showMsg(msg, 'تم الحذف بنجاح.', 'success');
-                else showMsg(msg, 'الرقم غير موجود.', 'error');
-            } catch (e) {
-                showMsg(msg, 'فشل الاتصال بالسيرفر.', 'error');
+            if (res.ok) {
+                showStatus(msg, '✅ تم الحفظ بنجاح في Neon!', 'success');
+                contentArea.value = '';
+                fileInput.value = '';
+            } else {
+                showStatus(msg, '❌ فشل الحفظ: تأكدي من إعدادات قاعدة البيانات', 'error');
             }
+        } catch (e) {
+            showStatus(msg, 'خطأ في الاتصال بالسيرفر', 'error');
         }
+    }
 
-        function showMsg(el, text, type) {
-            el.textContent = text;
-            el.className = `message ${type}`;
-            el.style.display = 'block';
-            if(type !== 'info') setTimeout(() => el.style.display = 'none', 5000);
+    // 3. وظيفة الحذف
+    async function handleDelete() {
+        const id = document.getElementById('delete-id').value;
+        const msg = document.getElementById('delete-msg');
+        if(!id) return;
+
+        if(!confirm('هل أنتِ متأكدة من حذف هذا المنشور؟')) return;
+
+        try {
+            const res = await fetch(`${API_DELETE}?id=${id}`, { method: 'DELETE' });
+            if(res.ok) {
+                showStatus(msg, 'تم الحذف بنجاح', 'success');
+            } else {
+                showStatus(msg, 'لم يتم العثور على ID', 'error');
+            }
+        } catch (e) {
+            showStatus(msg, 'خطأ في الاتصال', 'error');
         }
-    </script>
+    }
+
+    // محول الملفات لـ Base64
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    function showStatus(el, text, type) {
+        el.textContent = text;
+        el.style.display = 'block';
+        el.className = `message ${type === 'success' ? 'success' : (type === 'error' ? 'error' : '')}`;
+        if(type !== 'info') setTimeout(() => el.style.display = 'none', 5000);
+    }
+</script>
+
 </body>
- </html>
+    </html>
