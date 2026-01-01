@@ -3,363 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رقة - عالمكِ الخاص</title>
+    <title>رقة - عالمكِ الذكي</title>
     <link href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --raqqa-pink: #ad1457; --soft-bg: #fffafb; --text: #444; --light-pink: #fce4ec; }
-        body { font-family: 'Tajawal', sans-serif; background: var(--soft-bg); margin: 0; padding-bottom: 80px; color: var(--text); overflow-x: hidden; }
+        :root { --raqqa-pink: #ad1457; --soft-pink: #fce4ec; --bg: #fffafb; --text: #444; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; color: var(--text); }
         
-        /* شاشة الترحيب */
-        #welcome-screen { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(135deg, var(--raqqa-pink), #ff85a2);
-            z-index: 3000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; transition: 0.8s;
-        }
-        #welcome-screen h1 { font-family: 'Aref Ruqaa'; font-size: 3.5rem; margin-bottom: 10px; }
-        .start-btn { background: white; color: var(--raqqa-pink); border: none; padding: 15px 45px; border-radius: 30px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-
-        /* الهيدر */
         header { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 1000; }
-        .logo { font-family: 'Aref Ruqaa'; font-size: 1.8rem; color: var(--raqqa-pink); font-weight: bold; }
-        .fb-link { color: #1877f2; font-size: 1.8rem; transition: 0.3s; display: flex; align-items: center; }
-        .fb-link:hover { transform: scale(1.1); }
+        .logo { font-family: 'Aref Ruqaa'; font-size: 1.8rem; color: var(--raqqa-pink); }
+        .fb-link { color: #1877f2; font-size: 1.8rem; text-decoration: none; }
 
-        .page { display: none; padding: 15px; animation: fadeIn 0.4s ease; }
+        /* ترحيب الصفحة الرئيسية */
+        .welcome-hero { height: 80vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; background: radial-gradient(circle, #fff, var(--soft-pink)); }
+        .welcome-hero h1 { font-family: 'Aref Ruqaa'; font-size: 3rem; color: var(--raqqa-pink); margin: 0; }
+        .welcome-hero p { font-size: 1.2rem; color: #666; font-style: italic; max-width: 300px; line-height: 1.6; }
+
+        .page { display: none; padding: 15px; animation: fadeIn 0.5s ease; }
         .active-page { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .hamssa { background: white; border-right: 5px solid var(--raqqa-pink); padding: 15px; border-radius: 12px; margin-bottom: 20px; font-weight: bold; color: var(--raqqa-pink); box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+        /* همسة القسم */
+        .hamssa-box { background: white; border-right: 4px solid var(--raqqa-pink); padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: bold; color: var(--raqqa-pink); box-shadow: 0 4px 12px rgba(0,0,0,0.03); font-size: 0.9rem; }
 
-        /* شبكة المتابعات الذكية */
-        .trackers-section { background: white; padding: 20px 10px; border-radius: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
-        .section-title { text-align: center; color: var(--raqqa-pink); font-weight: bold; margin-bottom: 15px; font-size: 1.1rem; }
-        .trackers-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-        .tracker-item { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #fff; border: 1px solid #ffeef2; border-radius: 16px; padding: 15px 5px; 
-            transition: 0.3s; cursor: pointer; height: 80px;
-        }
-        .tracker-item:active { transform: scale(0.95); background: var(--light-pink); }
-        .tracker-item i { font-size: 1.6rem; color: var(--raqqa-pink); margin-bottom: 8px; }
-        .tracker-item span { font-size: 0.75rem; font-weight: bold; color: #555; }
+        /* المتابعات الذكية (11 متابعة) */
+        .health-dashboard { background: white; border-radius: 20px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .trackers-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .tracker-card { display: flex; flex-direction: column; align-items: center; background: #fff; border: 1px solid #ffeef2; border-radius: 12px; padding: 10px 5px; cursor: pointer; transition: 0.2s; position: relative; }
+        .tracker-card i { font-size: 1.3rem; color: var(--raqqa-pink); margin-bottom: 5px; }
+        .tracker-card span { font-size: 0.65rem; font-weight: bold; text-align: center; }
+        .status-dot { width: 8px; height: 8px; background: #ff4d4d; border-radius: 50%; position: absolute; top: 5px; right: 5px; display: none; }
+        .has-issue .status-dot { display: block; }
 
         /* أزرار الذكاء الاصطناعي */
-        .ai-action-btn { width: 100%; background: white; border: 2px solid var(--raqqa-pink); color: var(--raqqa-pink); padding: 15px; border-radius: 15px; margin-bottom: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.3s; }
-        .ai-action-btn:hover { background: var(--raqqa-pink); color: white; }
+        .ai-expert-btn { width: 100%; padding: 12px; margin: 10px 0; border-radius: 12px; border: none; background: linear-gradient(45deg, var(--raqqa-pink), #ff5a92); color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
 
-        /* عرض المحتوى */
-        .post-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; position: relative; }
-        .post-tag { position: absolute; top: 15px; left: 15px; font-size: 0.7rem; background: var(--light-pink); color: var(--raqqa-pink); padding: 3px 10px; border-radius: 10px; }
-        .post-date { font-size: 0.65rem; color: #aaa; margin-bottom: 10px; display: block; }
-        .post-actions { display: flex; justify-content: space-around; border-top: 1px solid #eee; margin-top: 10px; padding-top: 10px; }
-        .action-btn { background: none; border: none; color: #777; font-size: 0.9rem; cursor: pointer; display: flex; gap: 5px; align-items: center; }
+        /* المنشورات */
+        .post-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; border: 1px solid #eee; }
+        .post-media video, .post-media img { width: 100%; border-radius: 10px; margin-bottom: 10px; }
+        .post-actions { display: flex; justify-content: space-around; border-top: 1px solid #eee; padding-top: 10px; }
+        .action-btn { background: none; border: none; color: #777; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.3s; }
+        .action-btn.active { color: var(--raqqa-pink); }
 
-        /* شات الذكاء الاصطناعي */
-        #ai-chat-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2500; display: none; flex-direction: column; }
-        .chat-header { background: var(--raqqa-pink); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; background: #fffafb; scroll-behavior: smooth; }
-        .message { margin-bottom: 15px; max-width: 85%; line-height: 1.5; padding: 12px 16px; border-radius: 18px; font-size: 0.95rem; }
-        .user-msg { background: #eee; color: #333; margin-right: auto; border-bottom-left-radius: 2px; }
-        .ai-msg { background: var(--light-pink); color: var(--raqqa-pink); margin-left: auto; border-bottom-right-radius: 2px; border-left: 4px solid var(--raqqa-pink); }
-        .input-area { padding: 15px; border-top: 1px solid #eee; background: white; display: flex; gap: 10px; }
-        .input-area input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
-        .send-btn { background: var(--raqqa-pink); color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-
-        /* الناف بار */
-        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); z-index: 1000; height: 60px; }
-        .nav-link { color: #ccc; text-align: center; font-size: 0.65rem; cursor: pointer; text-decoration: none; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -5px 15px rgba(0,0,0,0.05); z-index: 1000; }
+        .nav-link { color: #ccc; text-align: center; font-size: 0.65rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
         .nav-link.active-nav { color: var(--raqqa-pink); font-weight: bold; }
         .nav-link i { font-size: 1.4rem; margin-bottom: 4px; }
     </style>
 </head>
 <body>
 
-<div id="welcome-screen">
-    <h1>رقة</h1>
-    <p>صحتكِ، مشاعركِ، وعالمكِ في مكان واحد</p>
-    <button class="start-btn" onclick="startApp()">ابدئي الآن</button>
-</div>
-
 <header>
-    <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank" class="fb-link">
-        <i class="fab fa-facebook"></i>
-    </a>
+    <a href="https://www.facebook.com/profile.php?id=61571056531349" target="_blank" class="fb-link"><i class="fab fa-facebook"></i></a>
     <div class="logo">رقة</div>
-    <div style="width: 25px;"></div> </header>
+    <div style="width: 32px;"></div>
+</header>
 
 <main>
-    <section id="feelings" class="page">
-        <div class="hamssa">"لا بأس أن تكوني متعبة اليوم، غداً ستشرقين من جديد."</div>
-        <button class="ai-action-btn" onclick="openAIAssistant('feelings')">
-            <i class="fas fa-brain"></i> تحدثي مع محلل المشاعر
-        </button>
-        <div id="display-feelings" class="content-container"></div>
+    <section id="home" class="page active-page">
+        <div class="welcome-hero">
+            <h1>رقة</h1>
+            <p>"أهلاً بكِ في عالمكِ الخاص، أنتِ اليوم أجمل.. نحن هنا لنرافقكِ في كل تفاصيلكِ."</p>
+        </div>
+    </section>
+
+    <section id="emotions" class="page">
+        <div class="hamssa-box">همسة المشاعر: "قلبكِ يستحق الراحة، عبري عن ما بداخلكِ فكلماتكِ شفاء."</div>
+        <button class="ai-expert-btn" onclick="askAI('حللي حالتي المزاجية بناءً على تاريخي اليوم')"><i class="fas fa-brain"></i> محلل السعادة والذكاء الوجداني</button>
+        <div id="display-emotions"></div>
     </section>
 
     <section id="society" class="page">
-        <div class="hamssa">"قصتكِ قد تكون النور الذي تبحث عنه أخت أخرى."</div>
-        <button class="ai-action-btn" onclick="openAIAssistant('society')" style="background:#ad1457; color:white;">
-            <i class="fas fa-pen-nib"></i> شاركي قصتكِ أو مشكلتكِ
-        </button>
-        <div id="display-society" class="content-container"></div>
+        <div class="hamssa-box">همسة المجتمع: "كوني ملهمة، كوني قوية، فالمجتمع يزهر بوجودكِ المؤثر."</div>
+        <button class="ai-expert-btn" onclick="askAI('كيف أتعامل مع الضغوط الاجتماعية الحالية؟')"><i class="fas fa-users"></i> مستشار العلاقات الذكي</button>
+        <div id="display-society"></div>
     </section>
 
-    <section id="health" class="page active-page">
-        <div class="trackers-section">
-            <div class="section-title">متابعاتكِ الصحية اليومية</div>
-            <div class="trackers-grid" id="trackersGrid">
-                </div>
+    <section id="health" class="page">
+        <div class="hamssa-box">همسة الصحة: "جسدكِ أمانة، اعتني به ليزهر شبابكِ دائماً."</div>
+        <div class="health-dashboard">
+            <h4 style="text-align: center; color: var(--raqqa-pink); margin-top: 0;">نظام المتابعة العالمي (11 مؤشر)</h4>
+            <div class="trackers-grid" id="trackersGrid"></div>
         </div>
-        
-        <div class="hamssa">"جسدكِ أمانة، استمعي لرسائله جيداً."</div>
-        <button class="ai-action-btn" onclick="openAIAssistant('health')">
-            <i class="fas fa-user-md"></i> استشارة طبية شاملة
-        </button>
-        <div id="display-health" class="content-container"></div>
+        <button class="ai-expert-btn" onclick="askAI('حلل مؤشراتي الصحية الحالية وأعطني نصيحة طبية')"><i class="fas fa-stethoscope"></i> طبيب رقة الافتراضي</button>
+        <div id="display-health"></div>
     </section>
 
     <section id="fiqh" class="page">
-        <div class="hamssa">"الدين يسر، اسألي لتطمئني."</div>
-        <button class="ai-action-btn" onclick="openAIAssistant('fiqh')">
-            <i class="fas fa-book-quran"></i> المساعد الفقهي
-        </button>
-        <div id="display-fiqh" class="content-container"></div>
+        <div class="hamssa-box">همسة الفقه: "العلم نور، والتفقه في الدين رفعة لكِ في الدنيا والآخرة."</div>
+        <button class="ai-expert-btn" onclick="askAI('أبحث في ملفات الفقه عن إجابة لمسألتي')"><i class="fas fa-book-open"></i> الباحث الفقهي الذكي</button>
+        <div id="display-fiqh"></div>
     </section>
 
     <section id="intimacy" class="page">
-        <div class="hamssa">"الوعي هو مفتاح السعادة الزوجية والصحة الإنجابية."</div>
-        <button class="ai-action-btn" onclick="openAIAssistant('intimacy')">
-            <i class="fas fa-venus-mars"></i> مستشار الوعي الحميمي
-        </button>
-        <div id="display-intimacy" class="content-container"></div>
+        <div class="hamssa-box">همسة الحميمية: "السعادة الزوجية تبدأ من الوعي والاهتمام بأدق التفاصيل."</div>
+        <button class="ai-expert-btn" onclick="askAI('نصيحة ذكية لتعزيز الروابط العاطفية')"><i class="fas fa-heart"></i> مرشد السعادة الحميمية</button>
+        <div id="display-intimacy"></div>
     </section>
 </main>
 
-<div id="ai-chat-screen">
-    <div class="chat-header">
-        <i class="fas fa-times" onclick="closeChat()" style="cursor:pointer; font-size:1.2rem;"></i>
-        <span id="chatTitle" style="font-weight:bold;">رقة AI</span>
-        <i class="fas fa-robot"></i>
-    </div>
-    <div class="chat-messages" id="chatBox"></div>
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="اكتبي هنا...">
-        <button class="send-btn" onclick="handleAISend()"><i class="fas fa-paper-plane"></i></button>
-    </div>
-</div>
-
 <nav>
-    <a onclick="switchTab('feelings', this)" class="nav-link"><i class="fas fa-heart"></i>المشاعر</a>
-    <a onclick="switchTab('society', this)" class="nav-link"><i class="fas fa-users"></i>المجتمع</a>
-    <a onclick="switchTab('health', this)" class="nav-link active-nav"><i class="fas fa-stethoscope"></i>الصحة</a>
-    <a onclick="switchTab('fiqh', this)" class="nav-link"><i class="fas fa-book-open"></i>الفقه</a>
-    <a onclick="switchTab('intimacy', this)" class="nav-link"><i class="fas fa-ring"></i>الحميمية</a>
+    <a onclick="switchTab('home', this)" class="nav-link active-nav"><i class="fas fa-house"></i>الرئيسية</a>
+    <a onclick="switchTab('emotions', this)" class="nav-link"><i class="fas fa-face-smile"></i>المشاعر</a>
+    <a onclick="switchTab('society', this)" class="nav-link"><i class="fas fa-users-viewfinder"></i>المجتمع</a>
+    <a onclick="switchTab('health', this)" class="nav-link"><i class="fas fa-heart-pulse"></i>الصحة</a>
+    <a onclick="switchTab('fiqh', this)" class="nav-link"><i class="fas fa-mosque"></i>الفقه</a>
+    <a onclick="switchTab('intimacy', this)" class="nav-link"><i class="fas fa-venus"></i>الحميمية</a>
 </nav>
 
 <script>
-    // ==========================================
-    // 1. تعريف المتابعات الذكية (Smart Trackers)
-    // ==========================================
+    // نظام الـ 11 متابعة (مع تفعيل حالة المشكلة بناءً على الذكاء)
     const trackers = [
-        { id: 'period', name: 'الحيض', icon: 'fa-droplet', question: 'هل بدأت دورتك اليوم؟ أو هل تلاحظين أعراضاً؟', type: 'text' },
-        { id: 'pregnancy', name: 'الحمل', icon: 'fa-baby', question: 'في أي أسبوع أنتِ الآن؟ وما هي الأعراض الجديدة؟', type: 'text' },
-        { id: 'mood', name: 'المزاج', icon: 'fa-smile', question: 'كيف تصفين مزاجكِ الآن بكلمة واحدة؟', type: 'text' },
-        { id: 'water', name: 'الماء', icon: 'fa-glass-water', question: 'كم كوباً من الماء شربتِ حتى الآن؟', type: 'number' },
-        { id: 'ovulation', name: 'التبويض', icon: 'fa-calendar-check', question: 'هل تلاحظين إفرازات التبويض اليوم؟', type: 'text' },
-        { id: 'doctor', name: 'الطبيب', icon: 'fa-user-nurse', question: 'هل لديكِ موعد طبي أو ملاحظة طبية؟', type: 'text' },
-        { id: 'sleep', name: 'النوم', icon: 'fa-moon', question: 'كم ساعة نمتِ الليلة الماضية؟', type: 'number' },
-        { id: 'sport', name: 'الرياضة', icon: 'fa-running', question: 'ما نوع النشاط البدني الذي قمتِ به وكم دقيقة؟', type: 'text' },
-        { id: 'skin', name: 'البشرة', icon: 'fa-spa', question: 'كيف تبدو بشرتك اليوم؟ (جافة، دهنية، حبوب..)', type: 'text' },
-        { id: 'pills', name: 'الأدوية', icon: 'fa-pills', question: 'هل أخذتِ أدويتكِ أو فيتاميناتكِ اليوم؟', type: 'text' },
-        { id: 'calories', name: 'السعرات', icon: 'fa-apple-whole', question: 'ما هي وجبتك الرئيسية اليوم؟', type: 'text' }
+        { id: 'cycle', name: 'الدورة', icon: 'fa-droplet', issue: true },
+        { id: 'water', name: 'الماء', icon: 'fa-glass-water', issue: false },
+        { id: 'sleep', name: 'النوم', icon: 'fa-bed', issue: true },
+        { id: 'mood', name: 'السعادة', icon: 'fa-face-laugh-beam', issue: false },
+        { id: 'weight', name: 'الوزن', icon: 'fa-weight-scale', issue: true },
+        { id: 'skin', name: 'البشرة', icon: 'fa-sparkles', issue: true },
+        { id: 'steps', name: 'الخطوات', icon: 'fa-shoe-prints', issue: false },
+        { id: 'pills', name: 'الفيتامين', icon: 'fa-pills', issue: true },
+        { id: 'preg', name: 'الحمل', icon: 'fa-baby', issue: false },
+        { id: 'mental', name: 'التوتر', icon: 'fa-brain', issue: true },
+        { id: 'heart', name: 'النبض', icon: 'fa-heart-pulse', issue: true }
     ];
 
     function initTrackers() {
         const grid = document.getElementById('trackersGrid');
         grid.innerHTML = trackers.map(t => `
-            <div class="tracker-item" onclick="handleTrackerClick('${t.id}')">
+            <div class="tracker-card ${t.issue ? 'has-issue' : ''}" onclick="openTracker('${t.name}')">
+                <div class="status-dot"></div>
                 <i class="fas ${t.icon}"></i>
                 <span>${t.name}</span>
             </div>
         `).join('');
     }
 
-    // ==========================================
-    // 2. منطق التفاعل الذكي للمتابعات
-    // ==========================================
-    async function handleTrackerClick(trackerId) {
-        const tracker = trackers.find(t => t.id === trackerId);
-        
-        // نافذة منبثقة تفاعلية (مثل التطبيقات العالمية)
-        const { value: answer } = await Swal.fire({
-            title: tracker.name,
-            text: tracker.question,
-            input: tracker.type,
-            inputPlaceholder: 'اكتبي هنا...',
-            confirmButtonText: 'حفظ وتحليل',
-            confirmButtonColor: '#ad1457',
-            showCancelButton: true,
-            cancelButtonText: 'إلغاء'
+    async function openTracker(name) {
+        const { value: val } = await Swal.fire({
+            title: `متابعة ${name}`,
+            input: 'text',
+            inputPlaceholder: 'أدخلي القيمة أو الحالة...',
+            confirmButtonText: 'تحليل ذكي',
+            confirmButtonColor: '#ad1457'
         });
-
-        if (answer) {
-            // إرسال البيانات للذكاء الاصطناعي لتحليلها فوراً
-            openAIAssistant('health'); // فتح الشات
-            const analysisPrompt = `المستخدمة قامت بتحديث متابعة "${tracker.name}". القيمة المدخلة: "${answer}". حللي هذا طبياً أو صحياً وقدمي نصيحة قصيرة جداً ومفيدة.`;
-            
-            // محاكاة إرسال المستخدم
-            const chatBox = document.getElementById('chatBox');
-            chatBox.innerHTML += `<div class="message user-msg">تم تحديث ${tracker.name}: ${answer}</div>`;
-            
-            // استدعاء الـ API
-            callRaqqaAI(analysisPrompt);
-        }
+        if (val) askAI(`مؤشر ${name} لدي هو ${val}، هل هذا طبيعي؟`);
     }
 
-    // ==========================================
-    // 3. التكامل مع الـ Backend (AI & DB)
-    // ==========================================
-    let currentContext = 'health';
-
-    function openAIAssistant(context) {
-        currentContext = context;
-        document.getElementById('ai-chat-screen').style.display = 'flex';
-        const titles = {
-            feelings: 'محلل المشاعر', health: 'المستشار الطبي', 
-            fiqh: 'المفتي الرقمي', society: 'مجتمع رقة', intimacy: 'مستشار الوعي'
-        };
-        document.getElementById('chatTitle').innerText = titles[context] || 'رقة AI';
-    }
-
-    function closeChat() { document.getElementById('ai-chat-screen').style.display = 'none'; }
-
-    async function handleAISend() {
-        const input = document.getElementById('userInput');
-        const text = input.value;
-        if (!text) return;
-
-        const chatBox = document.getElementById('chatBox');
-        chatBox.innerHTML += `<div class="message user-msg">${text}</div>`;
-        input.value = '';
-        chatBox.scrollTop = chatBox.scrollHeight;
-
-        // تجهيز البرومبت مع السياق
-        const contextPrompts = {
-            feelings: "أنتِ خبيرة نفسية ومحللة مشاعر. ",
-            health: "أنتِ طبيبة عامة وخبيرة صحة نسائية. ",
-            fiqh: "أنتِ مساعدة فقهية متخصصة في فقه النساء (حيض، نفاس، صلاة). ",
-            intimacy: "أنتِ مستشارة علاقات زوجية وصحة إنجابية محافظة وعلمية. ",
-            society: "أنتِ مشرفة مجتمع داعمة وإيجابية. "
-        };
-        
-        const fullPrompt = `${contextPrompts[currentContext] || ""} المستخدمة تسأل: ${text}`;
-        await callRaqqaAI(fullPrompt);
-    }
-
-    async function callRaqqaAI(promptText) {
-        const chatBox = document.getElementById('chatBox');
-        chatBox.innerHTML += `<div class="message ai-msg" id="loading-msg"><i class="fas fa-spinner fa-spin"></i> جاري التحليل...</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-
+    async function askAI(prompt) {
+        Swal.fire({ title: 'رقة تفكر...', didOpen: () => Swal.showLoading() });
         try {
             const res = await fetch('/api/raqqa-ai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: promptText })
+                body: JSON.stringify({ prompt })
             });
             const data = await res.json();
-            
-            // إزالة مؤشر التحميل
-            document.getElementById('loading-msg').remove();
-            
-            // عرض الرد
-            chatBox.innerHTML += `<div class="message ai-msg">${data.reply}</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-        } catch (e) {
-            document.getElementById('loading-msg').innerText = "عذراً، حدث خطأ في الاتصال.";
-        }
+            Swal.fire({ title: 'رقة تقول لكِ', text: data.reply, icon: 'info', confirmButtonColor: '#ad1457' });
+        } catch (e) { Swal.fire('خطأ', 'حاولي لاحقاً يا رقيقة', 'error'); }
     }
 
-    // ==========================================
-    // 4. جلب البيانات من Neon (طبقا للصورة)
-    // ==========================================
-    async function fetchNeonData(sectionKey, displayId) {
-        const container = document.getElementById(displayId);
-        container.innerHTML = '<div style="text-align:center; padding:20px; color:#aaa;"><i class="fas fa-circle-notch fa-spin"></i> جاري جلب المحتوى...</div>';
-        
+    async function loadNeonPosts(section, containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '<center><i class="fas fa-spinner fa-spin"></i> جاري التحميل...</center>';
         try {
             const res = await fetch('/api/get-posts');
             const data = await res.json();
+            // تصفية المحتوى بناءً على حقل section في نيون (bouh-display-1, bouh-display-2..)
+            const filtered = data.posts.filter(p => p.section === section);
             
-            // الفلترة بناءً على الـ Section Key الموجود في قاعدة البيانات (الصورة)
-            const filtered = data.posts.filter(p => p.section === sectionKey);
-            
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:#ccc; font-size:0.8rem;">لا يوجد محتوى حالياً في هذا القسم.</p>';
-                return;
-            }
-
             container.innerHTML = filtered.map(p => `
                 <div class="post-card">
-                    <span class="post-tag">${p.type || 'عام'}</span>
-                    <span class="post-date">${new Date(p.created_at).toLocaleDateString('ar-EG')}</span>
-                    <p style="margin-top:15px; line-height:1.6; color:#444;">${p.content}</p>
+                    <div class="post-media">${renderMedia(p.media_url || '')}</div>
+                    <p>${p.content}</p>
                     <div class="post-actions">
-                        <button class="action-btn"><i class="far fa-heart"></i> إعجاب</button>
-                        <button class="action-btn"><i class="far fa-comment"></i> تعليق</button>
-                        <button class="action-btn" onclick="sharePost('${encodeURIComponent(p.content)}')"><i class="fas fa-share-alt"></i> مشاركة</button>
+                        <button class="action-btn" onclick="toggleLike(this)"><i class="fas fa-heart"></i> إعجاب</button>
+                        <button class="action-btn" onclick="openComments('${p.id}')"><i class="fas fa-comment"></i> تعليق</button>
+                        <button class="action-btn" onclick="sharePost('${encodeURIComponent(p.content)}')"><i class="fas fa-share-nodes"></i> مشاركة</button>
                     </div>
                 </div>
             `).join('');
-        } catch (e) {
-            container.innerHTML = '<p style="text-align:center; color:red;">خطأ في تحميل البيانات.</p>';
-        }
+        } catch (e) { container.innerHTML = 'حدث خطأ في جلب البيانات'; }
+    }
+
+    function renderMedia(url) {
+        if (!url) return '';
+        if (url.includes('.mp4') || url.includes('video')) return `<video src="${url}" controls style="width:100%"></video>`;
+        return `<img src="${url}" style="width:100%">`;
+    }
+
+    function toggleLike(btn) { btn.classList.toggle('active'); }
+
+    function openComments(id) {
+        Swal.fire({
+            title: 'التعليقات',
+            input: 'textarea',
+            inputPlaceholder: 'اكتبي تعليقكِ الرقيق هنا...',
+            confirmButtonText: 'نشر',
+            footer: '<small>سيتم حفظ تعليقكِ في قاعدة البيانات</small>'
+        });
     }
 
     function sharePost(text) {
-        const url = window.location.href;
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`, '_blank');
-    }
-
-    // ==========================================
-    // 5. التنقل والتهيئة
-    // ==========================================
-    function switchTab(sectionId, el) {
-        // تغيير الواجهة
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
-        document.getElementById(sectionId).classList.add('active-page');
-        
-        // تغيير الناف بار
-        document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active-nav'));
-        el.classList.add('active-nav');
-        
-        // ربط المعرفات بقاعدة بيانات Neon (حسب الصورة)
-        const dbMap = {
-            'feelings': 'bouh-display-1',
-            'health': 'bouh-display-2',
-            'fiqh': 'bouh-display-3',
-            'society': 'bouh-display-4',
-            'intimacy': 'bouh-display-5'
-        };
-
-        if (dbMap[sectionId]) {
-            fetchNeonData(dbMap[sectionId], `display-${sectionId}`);
+        if (navigator.share) {
+            navigator.share({ title: 'من تطبيق رقة', text: decodeURIComponent(text), url: window.location.href });
+        } else {
+            Swal.fire('نسخ الرابط', 'تم نسخ المحتوى لمشاركته يدوياً', 'success');
         }
     }
 
-    function startApp() {
-        document.getElementById('welcome-screen').style.opacity = '0';
-        setTimeout(() => document.getElementById('welcome-screen').style.display = 'none', 800);
+    function switchTab(id, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active-page'));
+        document.getElementById(id).classList.add('active-page');
+        document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active-nav'));
+        el.classList.add('active-nav');
+
+        // الربط مع الصورة: 1=مشاعر، 4=مجتمع، 2=صحة
+        const map = { emotions: 'bouh-display-1', society: 'bouh-display-4', health: 'bouh-display-2', fiqh: 'bouh-display-3', intimacy: 'bouh-display-5' };
+        if (map[id]) loadNeonPosts(map[id], `display-${id}`);
     }
 
-    // التشغيل التلقائي
-    window.onload = () => {
-        initTrackers();
-        // تحميل قسم الصحة افتراضياً
-        fetchNeonData('bouh-display-2', 'display-health');
-    };
+    window.onload = initTrackers;
 </script>
 </body>
-</html>
+    </html>
