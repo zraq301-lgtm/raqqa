@@ -3,134 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم رقة - الإدارة المتطورة</title>
+    <title>إدارة رقة | رفع وحذف المحتوى</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --primary-pink: #e91e63; --soft-pink: #fce4ec; --ai-purple: #673ab7; --save-cyan: #00bcd4; --delete-red: #d32f2f; }
-        body { font-family: 'Tajawal', sans-serif; background-color: #f8f9fa; padding: 20px; direction: rtl; }
-        .container { max-width: 850px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
-        h1 { color: var(--primary-pink); text-align: center; font-family: 'Tajawal'; }
-        .card { background: #fff; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #eee; }
-        label { display: block; margin-bottom: 8px; font-weight: bold; }
-        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-        button { color: white; padding: 14px 20px; border: none; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; }
-        .btn-ai { background-color: var(--ai-purple); }
-        .btn-save { background-color: var(--save-cyan); }
-        .btn-delete { background-color: var(--delete-red); }
-        .message { padding: 15px; border-radius: 10px; display: none; margin-top: 10px; text-align: center; }
-        .success { background: #e6fffa; color: #2c7a7b; }
-        .error { background: #fff5f5; color: #c53030; }
-        #admin-content { display: none; }
+        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #f4f7f6; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); padding: 20px; direction: rtl; }
+        .admin-box { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        label { display: block; margin: 15px 0 5px; font-weight: bold; color: #555; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; font-family: 'Tajawal'; box-sizing: border-box; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; }
+        .btn-upload { background: var(--primary); }
+        .btn-delete { background: #333; }
+        .btn-ai { background: var(--secondary); }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+        #preview-area { margin-top: 10px; text-align: center; }
+        #preview-area video, #preview-area img { max-width: 100%; border-radius: 10px; max-height: 200px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1><i class="fas fa-heart"></i> لوحة تحكم رقة</h1>
+<div class="admin-box" id="auth-section">
+    <h2><i class="fas fa-lock"></i> تسجيل الدخول</h2>
+    <input type="password" id="pass" placeholder="كلمة المرور">
+    <button class="btn-upload" onclick="login()">دخول</button>
+</div>
 
-    <div id="login-form">
-        <input type="password" id="admin-password" placeholder="أدخلي كلمة مرور المطور">
-        <button class="btn-save" onclick="checkAuth()">دخول</button>
+<div class="admin-box" id="main-admin" style="display:none;">
+    <h2><i class="fas fa-magic"></i> إضافة محتوى (نص + فيديو/صور)</h2>
+    
+    <label>السؤال للمكتبة الذكية (اختياري):</label>
+    <textarea id="ai-q" rows="2" placeholder="اكتبي سؤالاً لجلب نص من ملفاتك..."></textarea>
+    <button class="btn-ai" onclick="callAI()"><i class="fas fa-robot"></i> جلب نص ذكي</button>
+
+    <hr style="margin: 25px 0; opacity: 0.2;">
+
+    <label>النص النهائي للمنشور:</label>
+    <textarea id="content" rows="4" placeholder="اكتبي النص هنا..."></textarea>
+
+    <label>اختاري ملف من جهازك (فيديو أو صورة):</label>
+    <input type="file" id="media-file" accept="video/*,image/*" onchange="previewMedia(this)">
+    <div id="preview-area"></div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+            <label>القسم الموجه له:</label>
+            <select id="section">
+                <option value="bouh-display-1">المشاعر</option>
+                <option value="bouh-display-4">المجتمع</option>
+                <option value="bouh-display-2">الصحة</option>
+                <option value="bouh-display-3">الفقه</option>
+                <option value="bouh-display-5">الحميمية</option>
+            </select>
+        </div>
+        <div>
+            <label>نوع الملف:</label>
+            <select id="type">
+                <option value="فيديو">فيديو</option>
+                <option value="صورة">صورة</option>
+                <option value="نصي">نصي فقط</option>
+            </select>
+        </div>
     </div>
 
-    <div id="admin-content">
-        <div class="card">
-            <h2><i class="fas fa-robot"></i> المكتبة الذكية (Mixedbread RAG)</h2>
-            <textarea id="ai-prompt" rows="2" placeholder="اسألي رقة لتوليد نص من ملفاتك..."></textarea>
-            <button class="btn-ai" onclick="generateAI()"><i class="fas fa-magic"></i> توليد نص ذكي</button>
-        </div>
+    <button class="btn-upload" style="width:100%; margin-top:20px;" onclick="uploadToNeon()">
+        <i class="fas fa-cloud-upload-alt"></i> رفع إلى قاعدة البيانات (Neon DB)
+    </button>
 
-        <div class="card">
-            <h2><i class="fas fa-paper-plane"></i> نشر محتوى جديد</h2>
-            
-            <label>النص البرمجي/المقال:</label>
-            <textarea id="main-content" rows="4" placeholder="اكتبي النص هنا..."></textarea>
-            
-            <label>رابط الوسائط (صورة أو فيديو):</label>
-            <input type="text" id="media-url" placeholder="الصقي رابط الفيديو أو الصورة هنا (أو استخدمي الرفع بالأسفل)">
-            
-            <input type="file" id="file-upload" accept="image/*,video/*">
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
-                    <label>القسم:</label>
-                    <select id="section-select">
-                        <option value="bouh-display-1">المشاعر</option>
-                        <option value="bouh-display-4">المجتمع</option>
-                        <option value="bouh-display-2">الصحة</option>
-                        <option value="bouh-display-3">الفقه</option>
-                        <option value="bouh-display-5">الحميمية</option>
-                    </select>
-                </div>
-                <div>
-                    <label>النوع:</label>
-                    <select id="type-select">
-                        <option value="نصي">نصي</option>
-                        <option value="صورة">صورة</option>
-                        <option value="فيديو">فيديو</option>
-                    </select>
-                </div>
-            </div>
-
-            <button class="btn-save" onclick="saveData()"><i class="fas fa-database"></i> حفظ في Neon DB</button>
-            <div id="msg" class="message"></div>
-        </div>
+    <div style="margin-top: 40px; border-top: 2px dashed #eee; padding-top: 20px;">
+        <h2><i class="fas fa-trash"></i> حذف محتوى</h2>
+        <label>أدخلي رقم الـ ID الخاص بالمنشور:</label>
+        <input type="number" id="delete-id" placeholder="مثلاً: 12">
+        <button class="btn-delete" style="width:100%; background: #d32f2f;" onclick="deleteContent()">
+            <i class="fas fa-eraser"></i> حذف نهائياً
+        </button>
     </div>
 </div>
 
 <script>
-    function checkAuth() {
-        if(document.getElementById('admin-password').value === 'zazo010988') {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('admin-content').style.display = 'block';
-        }
+    function login() {
+        if(document.getElementById('pass').value === 'zazo010988') {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('main-admin').style.display = 'block';
+        } else { alert('خطأ!'); }
     }
 
-    async function generateAI() {
-        const prompt = document.getElementById('ai-prompt').value;
-        const res = await fetch('/api/raqqa-ai', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ prompt })
-        });
-        const data = await res.json();
-        document.getElementById('main-content').value = data.reply;
-    }
-
-    async function saveData() {
-        const msg = document.getElementById('msg');
-        const fileInput = document.getElementById('file-upload');
-        let mediaUrl = document.getElementById('media-url').value;
-
-        // إذا كان هناك ملف مرفوع، نحوله لـ Base64 (أو يمكنك رفعه لـ Vercel Blob)
-        if (fileInput.files.length > 0) {
-            const file = fileInput.files[0];
-            mediaUrl = await toBase64(file);
-        }
-
-        const payload = {
-            content: document.getElementById('main-content').value,
-            media_url: mediaUrl, // هذا هو التعديل الجوهري لربط الفيديوهات
-            section: document.getElementById('section-select').value,
-            type: document.getElementById('type-select').value
-        };
-
-        try {
-            const res = await fetch('/api/save-post', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(payload)
-            });
-            if(res.ok) {
-                msg.textContent = "✅ تم النشر بنجاح!";
-                msg.className = "message success";
-                msg.style.display = "block";
+    function previewMedia(input) {
+        const area = document.getElementById('preview-area');
+        area.innerHTML = '';
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const url = URL.createObjectURL(file);
+            if(file.type.includes('video')) {
+                area.innerHTML = `<video src="${url}" controls></video>`;
+                document.getElementById('type').value = 'فيديو';
+            } else {
+                area.innerHTML = `<img src="${url}">`;
+                document.getElementById('type').value = 'صورة';
             }
-        } catch (e) {
-            msg.textContent = "❌ خطأ في الحفظ";
-            msg.className = "message error";
-            msg.style.display = "block";
         }
     }
 
@@ -140,6 +113,73 @@
         reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
     });
+
+    async function callAI() {
+        Swal.fire('جاري البحث في مكتبتك...');
+        const res = await fetch('/api/raqqa-ai', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ prompt: document.getElementById('ai-q').value })
+        });
+        const data = await res.json();
+        document.getElementById('content').value = data.reply;
+        Swal.close();
+    }
+
+    async function uploadToNeon() {
+        const fileInput = document.getElementById('media-file');
+        let mediaData = "";
+
+        Swal.fire({ title: 'جاري الرفع...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+        if (fileInput.files.length > 0) {
+            mediaData = await toBase64(fileInput.files[0]);
+        }
+
+        const body = {
+            content: document.getElementById('content').value,
+            section: document.getElementById('section').value,
+            type: document.getElementById('type').value,
+            media_url: mediaData // سيتم تخزين ملف الفيديو/الصورة كـ Base64
+        };
+
+        try {
+            const res = await fetch('/api/save-post', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            if(res.ok) {
+                Swal.fire('نجاح', 'تم رفع المحتوى بنجاح!', 'success');
+                document.getElementById('content').value = '';
+                fileInput.value = '';
+                document.getElementById('preview-area').innerHTML = '';
+            } else { throw new Error(); }
+        } catch (e) {
+            Swal.fire('فشل', 'حدث خطأ أثناء الرفع، تأكدي من حجم الملف.', 'error');
+        }
+    }
+
+    async function deleteContent() {
+        const id = document.getElementById('delete-id').value;
+        if(!id) return;
+
+        const confirm = await Swal.fire({
+            title: 'هل أنتِ متأكدة؟',
+            text: "لن يمكنكِ استعادة هذا المنشور!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'نعم، احذفي'
+        });
+
+        if(confirm.isConfirmed) {
+            try {
+                const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
+                if(res.ok) Swal.fire('تم الحذف!', '', 'success');
+                else Swal.fire('خطأ', 'الـ ID غير موجود', 'error');
+            } catch (e) { Swal.fire('خطأ في السيرفر', '', 'error'); }
+        }
+    }
 </script>
 </body>
-</html>
+        </html>
