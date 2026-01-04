@@ -38,8 +38,12 @@
         .post-card { background: #fff; border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid #f0f0f0; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
         .post-card img { width: 100%; border-radius: 15px; margin-top: 10px; }
         .post-actions { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid #fafafa; padding-top: 10px; }
-        .action-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 13px; font-family: 'Tajawal'; }
+        .action-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 13px; font-family: 'Tajawal'; transition: 0.3s; }
         .action-btn.active { color: var(--p2); font-weight: bold; }
+        
+        .comments-list { background: #fafafa; border-radius: 10px; padding: 10px; margin-top: 10px; font-size: 12px; }
+        .comment-item { border-bottom: 1px solid #eee; padding: 5px 0; }
+        .comment-item:last-child { border: none; }
 
         #ai-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; }
@@ -147,23 +151,17 @@
     <script>
         let activeSection = 'عام';
 
-        // 1. منطق جلب البيانات المتخصص: لا يجلب شيئاً للرئيسية ويصفي بالقسم للباقي
+        // 1. جلب المحتوى مع الإعجابات والتعليقات من Neon DB
         async function fetchContent(tab) {
             const feed = document.getElementById(tab + '-feed');
-            if (!feed) return; 
-            
-            if (tab === 'home') {
-                feed.innerHTML = ""; // الصفحة الرئيسية تبقى فارغة كما طلبتِ
-                return;
-            }
+            if (!feed || tab === 'home') return; 
 
-            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري تحميل محتوى القسم من Neon DB...</p>';
+            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري تحميل محتوى رقة...</p>';
             
             try {
                 const res = await fetch('/api/get-posts');
                 const data = await res.json();
                 
-                // التصفية بناءً على القسم في Neon DB (مثال: bouh-display-1 للمشاعر)
                 const mapping = {
                     'emotions': 'bouh-display-1',
                     'health': 'bouh-display-3',
@@ -175,20 +173,90 @@
                 const filtered = data.posts.filter(p => p.section === mapping[tab]);
 
                 feed.innerHTML = filtered.map(p => `
-                    <div class="post-card">
+                    <div class="post-card" id="post-${p.id}">
                         <p>${p.content}</p>
                         ${p.media_url ? `<img src="${p.media_url}">` : ''}
                         <div class="post-actions">
-                            <button class="action-btn" onclick="toggleLike(this)"><i class="fas fa-heart"></i> إعجاب</button>
-                            <button class="action-btn" onclick="commentUI()"><i class="fas fa-comment"></i> تعليق</button>
-                            <button class="action-btn" onclick="sharePost('${p.content}')"><i class="fas fa-share-alt"></i> مشاركة</button>
+                            <button class="action-btn ${p.is_liked ? 'active' : ''}" onclick="toggleLike(this, '${p.id}')">
+                                <i class="fas fa-heart"></i> <span class="like-count">${p.likes || 0}</span> إعجاب
+                            </button>
+                            <button class="action-btn" onclick="commentUI('${p.id}')">
+                                <i class="fas fa-comment"></i> تعليق
+                            </button>
+                            <button class="action-btn" onclick="sharePost('${p.content}')">
+                                <i class="fas fa-share-alt"></i> مشاركة
+                            </button>
+                        </div>
+                        <div class="comments-list" id="comments-container-${p.id}">
+                            ${p.comments ? p.comments.map(c => `
+                                <div class="comment-item"><b>زائرة:</b> ${c.text}</div>
+                            `).join('') : '<small style="color:#ccc">لا توجد تعليقات بعد..</small>'}
                         </div>
                     </div>
                 `).join('');
             } catch (e) { feed.innerHTML = '<p>تعذر جلب البيانات.</p>'; }
         }
 
-        // 2. مدخلات المتابعة المتخصصة لكل نوع
+        // 2. تفعيل زر الإعجاب والحفظ في Neon DB
+        async function toggleLike(btn, postId) {
+            btn.classList.toggle('active');
+            let countSpan = btn.querySelector('.like-count');
+            let currentLikes = parseInt(countSpan.innerText);
+            
+            // تحديث شكلي سريع
+            countSpan.innerText = btn.classList.contains('active') ? currentLikes + 1 : currentLikes - 1;
+
+            // إرسال لـ Neon DB
+            await fetch('/api/like-action', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ postId, action: btn.classList.contains('active') ? 'like' : 'unlike' })
+            });
+        }
+
+        // 3. تفعيل زر التعليق والحفظ في Neon DB
+        function commentUI(postId) {
+            Swal.fire({
+                title: 'أضيفي تعليقكِ الرقيق',
+                input: 'text',
+                inputPlaceholder: 'اكتبي هنا...',
+                showCancelButton: true,
+                confirmButtonText: 'إرسال',
+                confirmButtonColor: '#eb2f96'
+            }).then(async (result) => {
+                if (result.isConfirmed && result.value) {
+                    // إرسال لـ Neon DB
+                    const res = await fetch('/api/add-comment', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ postId, comment: result.value })
+                    });
+                    
+                    if(res.ok) {
+                        const container = document.getElementById(`comments-container-${postId}`);
+                        if(container.innerHTML.includes('لا توجد')) container.innerHTML = '';
+                        container.innerHTML += `<div class="comment-item"><b>أنتِ:</b> ${result.value}</div>`;
+                        Swal.fire({ icon: 'success', title: 'تم إضافة تعليقكِ', showConfirmButton: false, timer: 1500 });
+                    }
+                }
+            });
+        }
+
+        // 4. تفعيل المشاركة في كل المنصات
+        function sharePost(txt) {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'تطبيق رقة',
+                    text: txt,
+                    url: window.location.href
+                }).catch(() => { /* إلغاء المشاركة */ });
+            } else {
+                navigator.clipboard.writeText(txt);
+                Swal.fire('تم نسخ النص للمشاركة!');
+            }
+        }
+
+        // باقي الوظائف (بدون تغيير)
         function showHealthInput(type) {
             let config = {
                 'حيض': { html: '<input type="date" id="d1" class="swal2-input"> <select id="d2" class="swal2-input"><option value="خفيف">تدفق خفيف</option><option value="متوسط">متوسط</option><option value="غزير">غزير</option></select>', title: 'متابعة الدورة' },
@@ -196,9 +264,7 @@
                 'تخسيس': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الوزن الحالي (كجم)"> <input type="text" id="d2" class="swal2-input" placeholder="ماذا أكلتِ اليوم؟">', title: 'متابعة الوزن' },
                 'بشرة': { html: '<input type="text" id="d1" class="swal2-input" placeholder="المشكلة (حبوب، جفاف..)"> <input type="text" id="d2" class="swal2-input" placeholder="الروتين المستخدم">', title: 'جمالكِ' }
             };
-
             let current = config[type] || { html: '<input type="text" id="d1" class="swal2-input" placeholder="التفاصيل"> <input type="text" id="d2" class="swal2-input" placeholder="ملاحظات">', title: `متابعة ${type}` };
-
             Swal.fire({
                 title: current.title,
                 html: current.html,
@@ -208,14 +274,11 @@
                 if(r.isConfirmed) {
                     const val1 = document.getElementById('d1').value;
                     const val2 = document.getElementById('d2').value;
-                    
-                    // حفظ في Neon DB (افتراضياً عبر api الحفظ)
                     await fetch('/api/save-log', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ type, data: {val1, val2} })
                     });
-
                     openChat('الصحة');
                     document.getElementById('chat-input').value = `لقد سجلت بيانات ${type}: ${val1} و ${val2}. حلليها واقترحي نصيحة رقيقة.`;
                     sendAI();
@@ -259,4 +322,4 @@
         window.onload = () => fetchContent('home');
     </script>
 </body>
-        </html>
+                                                                                       </html>
