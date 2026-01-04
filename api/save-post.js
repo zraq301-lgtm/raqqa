@@ -1,77 +1,55 @@
 import { sql } from '@vercel/postgres';
 import { put } from '@vercel/blob';
 
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb', // زيادة حد حجم البيانات المسموح بها لرفع الفيديوهات
+    },
+  },
+};
+
 export default async function handler(request, response) {
-    
-    // 1. معالجة طلبات OPTIONS (لحل مشاكل CORS)
     if (request.method === 'OPTIONS') {
         response.setHeader('Access-Control-Allow-Origin', '*');
         response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
         response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
         return response.status(200).end();
     }
-    
-    // تعيين الرؤوس لطلب POST
-    response.setHeader('Access-Control-Allow-Origin', '*'); 
 
-    // 2. التحقق من أن الطريقة هي POST فقط
-    if (request.method !== 'POST') {
-        return response.status(405).json({ error: 'Method Not Allowed' });
-    }
+    if (request.method !== 'POST') return response.status(405).json({ error: 'Method Not Allowed' });
 
     try {
-        // قراءة البيانات من جسم الطلب
-        const { content, section, type, created_at, media_url } = request.body;
-
-        // التحقق من الحقول الأساسية
-        if (!content || !section || !type) {
-            return response.status(400).json({ error: 'Missing required fields' });
-        }
+        const { content, section, type, media_url } = request.body;
 
         let finalMediaUrl = null;
 
-        // 3. معالجة رفع الملف إلى Vercel Blob إذا كان موجوداً
-        // نتحقق إذا كانت القيمة المرسلة هي Base64 (تبدأ بـ data:)
+        // إذا وجد ملف Base64 نقوم برفعه إلى Vercel Blob
         if (media_url && media_url.startsWith('data:')) {
+            const contentType = media_url.split(';')[0].split(':')[1];
             const buffer = Buffer.from(media_url.split(',')[1], 'base64');
-            const fileName = `raqqa-${Date.now()}-${section}`;
-            
-            // رفع الملف فعلياً وتحديد نوع المحتوى (صورة أو فيديو)
+            const fileName = `raqqa-${Date.now()}`;
+
             const blob = await put(fileName, buffer, {
                 access: 'public',
-                contentType: type === 'فيديو' ? 'video/mp4' : 'image/jpeg'
+                contentType: contentType
             });
-            
-            finalMediaUrl = blob.url; // هذا هو الرابط النهائي للملف
-        } else {
-            // إذا كان الرابط مرسلاً كـ URL جاهز أو نص عادي
-            finalMediaUrl = media_url;
+            finalMediaUrl = blob.url;
         }
-        
-        // 4. حفظ البيانات كاملة في قاعدة بيانات نيون (Neon)
+
+        // الحفظ في نيون - تأكدي من أسماء الأعمدة (content, section, type, media_url)
         await sql`
             INSERT INTO posts (content, section, type, media_url, created_at)
-            VALUES (
-                ${content}, 
-                ${section}, 
-                ${type}, 
-                ${finalMediaUrl}, 
-                ${created_at || new Date().toISOString()}
-            );
+            VALUES (${content}, ${section}, ${type}, ${finalMediaUrl}, NOW());
         `;
 
-        // 5. إرسال رد النجاح
-        return response.status(200).json({ 
-            success: true, 
-            message: 'تم الحفظ في نيون ورفع الملف بنجاح!',
-            url: finalMediaUrl 
-        });
+        return response.status(200).json({ success: true, url: finalMediaUrl });
 
     } catch (error) {
-        console.error('Processing Error:', error);
+        console.error("Error details:", error);
         return response.status(500).json({ 
-            error: 'حدث خطأ أثناء المعالجة', 
+            error: 'حدث خطأ في السيرفر', 
             details: error.message 
         });
     }
-                           }
+}
