@@ -4,17 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تطبيق رقة | عالمكِ الخاص</title>
+    <link rel="manifest" href="/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; }
+        :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; --primary: #ff85c0; --secondary: #eb2f96; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
         /* تصميم بطاقة دعوة التثبيت PWA */
         #pwa-prompt {
             position: fixed; bottom: 100px; left: 20px; right: 20px;
-            background: white; border: 2px solid var(--p1);
+            background: white; border: 2px solid var(--primary);
             padding: 15px; border-radius: 20px; display: none;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 9999;
             text-align: center; animation: slideUp 0.5s ease;
@@ -51,8 +52,7 @@
         .action-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 13px; font-family: 'Tajawal'; transition: 0.3s; }
         .action-btn.active { color: var(--p2); font-weight: bold; }
 
-        .comments-section { background: #fafafa; border-radius: 12px; padding: 10px; margin-top: 10px; font-size: 12px; }
-        .comment-box { border-bottom: 1px solid #eee; padding: 5px 0; color: #555; }
+        .comment-display-area { background: #f9f9f9; margin-top: 10px; border-radius: 8px; padding: 8px; font-size: 12px; }
 
         #ai-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; }
@@ -76,9 +76,9 @@
     </header>
 
     <div id="pwa-prompt">
-        <p style="margin: 0 0 10px; font-weight: bold; color: var(--p2);">🌸 لتجربة أرقّ وأسرع..</p>
+        <p style="margin: 0 0 10px; font-weight: bold; color: var(--secondary);">🌸 لتجربة أرقّ وأسرع..</p>
         <p style="font-size: 13px; margin-bottom: 15px;">أضيفي "رقة" إلى شاشة هاتفك ليعمل كتطبيق متكامل دون الحاجة للمتصفح.</p>
-        <button onclick="installPWA()" style="background: var(--p2); color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-family: 'Tajawal';">إضافة للشاشة الرئيسية</button>
+        <button onclick="installPWA()" style="background: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: 12px; cursor: pointer; font-family: 'Tajawal';">إضافة للشاشة الرئيسية</button>
         <button onclick="closePWA()" style="background: none; border: none; color: #999; margin-right: 10px; cursor: pointer;">ليس الآن</button>
     </div>
 
@@ -166,18 +166,25 @@
         let activeSection = 'عام';
         let deferredPrompt;
 
-        // 1. رسالة الترحيب ومنطق PWA
-        window.addEventListener('load', () => {
-            if (!localStorage.getItem('welcomed')) {
-                Swal.fire({
-                    title: 'أهلاً بكِ في عالم رقة 🌸',
-                    text: 'أنتِ هنا لأنكِ مميزة، ورقة وجدت لتعطيكِ الاهتمام الذي تستحقين.',
-                    confirmButtonText: 'ابدئي رحلتكِ الرقيقة',
-                    confirmButtonColor: '#e91e63'
-                });
-                localStorage.setItem('welcomed', 'true');
-            }
-        });
+        // 1. تسجيل الـ Service Worker و رسالة الترحيب و PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('تم تسجيل Service Worker بنجاح'))
+                .catch(err => console.log('فشل تسجيل Service Worker', err));
+                
+                // رسالة الترحيب
+                if (!localStorage.getItem('welcomed')) {
+                    Swal.fire({
+                        title: 'أهلاً بكِ في عالم رقة 🌸',
+                        text: 'أنتِ هنا لأنكِ مميزة، ورقة وجدت لتعطيكِ الاهتمام الذي تستحقين. دعينا نعتني بكِ.',
+                        confirmButtonText: 'ابدئي رحلتكِ الرقيقة',
+                        confirmButtonColor: '#e91e63'
+                    });
+                    localStorage.setItem('welcomed', 'true');
+                }
+            });
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -191,7 +198,7 @@
                 deferredPrompt = null;
                 document.getElementById('pwa-prompt').style.display = 'none';
             } else {
-                Swal.fire({ title: 'خطوة أخيرة..', text: 'اضغطي على زر المشاركة ثم "إضافة للشاشة الرئيسية"', icon: 'info' });
+                Swal.fire({ title: 'خطوة أخيرة..', text: 'اضغطي على زر المشاركة ثم "إضافة إلى الشاشة الرئيسية"', icon: 'info' });
             }
         }
         function closePWA() { document.getElementById('pwa-prompt').style.display = 'none'; }
@@ -201,17 +208,15 @@
             const feed = document.getElementById(tab + '-feed');
             if (!feed || tab === 'home') return; 
 
-            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري التحميل...</p>';
+            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري تحميل محتوى القسم من Neon DB...</p>';
             
             try {
                 const res = await fetch('/api/get-posts');
                 const data = await res.json();
-                
                 const mapping = {
                     'emotions': 'bouh-display-1', 'health': 'bouh-display-3', 
                     'society': 'bouh-display-4', 'fiqh': 'bouh-display-5', 'intimacy': 'bouh-display-6'
                 };
-
                 const filtered = data.posts.filter(p => p.section === mapping[tab]);
 
                 feed.innerHTML = filtered.map(p => `
@@ -219,35 +224,42 @@
                         <p>${p.content}</p>
                         ${p.media_url ? `<img src="${p.media_url}">` : ''}
                         <div class="post-actions">
-                            <button class="action-btn" onclick="handleLike(this, '${p.id}')">
-                                <i class="fas fa-heart"></i> <span>${p.likes || 0}</span> إعجاب
-                            </button>
-                            <button class="action-btn" onclick="handleComment('${p.id}')">
-                                <i class="fas fa-comment"></i> تعليق
-                            </button>
-                            <button class="action-btn" onclick="shareToPlatform('${p.content}')">
-                                <i class="fas fa-share-alt"></i> مشاركة
-                            </button>
+                            <button class="action-btn" onclick="toggleLike(this, '${p.id}')"><i class="fas fa-heart"></i> <span class="like-count">${p.likes || 0}</span> إعجاب</button>
+                            <button class="action-btn" onclick="commentUI('${p.id}')"><i class="fas fa-comment"></i> تعليق</button>
+                            <button class="action-btn" onclick="sharePost('${p.content}')"><i class="fas fa-share-alt"></i> مشاركة</button>
                         </div>
-                        <div id="comments-${p.id}" class="comments-section">
-                            ${(p.comments || []).map(c => `<div class="comment-box"><b>زائرة:</b> ${c.text}</div>`).join('')}
+                        <div id="comments-${p.id}" class="comment-display-area">
+                            ${(p.comments_list || []).map(c => `<p style="margin:2px 0;"><b>زائرة:</b> ${c}</p>`).join('')}
                         </div>
                     </div>
                 `).join('');
-            } catch (e) { feed.innerHTML = '<p>تعذر الاتصال بالخادم.</p>'; }
+            } catch (e) { feed.innerHTML = '<p>تعذر جلب البيانات.</p>'; }
         }
 
-        async function handleLike(btn, postId) {
+        // 3. أفعال المشاركة، الإعجاب، والتعليق
+        function sharePost(text) {
+            if (navigator.share) {
+                navigator.share({ title: 'من تطبيق رقة', text: text, url: window.location.href });
+            } else {
+                navigator.clipboard.writeText(text);
+                Swal.fire('تم نسخ النص لمشاركته يدوياً');
+            }
+        }
+
+        async function toggleLike(btn, postId) {
             btn.classList.toggle('active');
+            const countSpan = btn.querySelector('.like-count');
+            let currentLikes = parseInt(countSpan.innerText);
+            countSpan.innerText = btn.classList.contains('active') ? currentLikes + 1 : currentLikes - 1;
+
             await fetch('/api/like-action', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ postId, action: btn.classList.contains('active') ? 'like' : 'unlike' })
             });
-            fetchContent(activeSection); // تحديث الجلب لرؤية الرقم الجديد
         }
 
-        function handleComment(postId) {
+        function commentUI(postId) {
             Swal.fire({
                 title: 'اكتبي تعليقكِ الرقيق',
                 input: 'text',
@@ -260,54 +272,35 @@
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ postId, comment: r.value })
                     });
-                    Swal.fire('تم إضافة تعليقكِ');
-                    fetchContent(activeSection);
+                    const area = document.getElementById(`comments-${postId}`);
+                    area.innerHTML += `<p style="margin:2px 0;"><b>أنتِ:</b> ${r.value}</p>`;
                 }
             });
         }
 
-        function shareToPlatform(text) {
-            if (navigator.share) {
-                navigator.share({ title: 'من تطبيق رقة', text: text, url: window.location.href });
-            } else {
-                navigator.clipboard.writeText(text);
-                Swal.fire('تم نسخ النص لمشاركته يدوياً');
-            }
-        }
-
-        // 3. المتابعات الصحية الـ 11 (كما في الكود الأصلي)
+        // 4. الـ 11 متابعة صحية (كما في طلبك)
         function showHealthInput(type) {
             let config = {
                 'حيض': { html: '<input type="date" id="d1" class="swal2-input"> <select id="d2" class="swal2-input"><option value="خفيف">تدفق خفيف</option><option value="متوسط">متوسط</option><option value="غزير">غزير</option></select>', title: 'متابعة الدورة' },
-                'حمل': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الأسبوع الحالي"> <input type="text" id="d2" class="swal2-input" placeholder="الأعراض (غثيان، أرَق..)">', title: 'متابعة الحمل' },
-                'تخسيس': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الوزن الحالي (كجم)"> <input type="text" id="d2" class="swal2-input" placeholder="ماذا أكلتِ اليوم؟">', title: 'متابعة الوزن' },
-                'بشرة': { html: '<input type="text" id="d1" class="swal2-input" placeholder="المشكلة (حبوب، جفاف..)"> <input type="text" id="d2" class="swal2-input" placeholder="الروتين المستخدم">', title: 'جمالكِ' }
+                'حمل': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الأسبوع الحالي"> <input type="text" id="d2" class="swal2-input" placeholder="الأعراض (غثيان..)">', title: 'متابعة الحمل' },
+                'تخسيس': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الوزن الحالي"> <input type="text" id="d2" class="swal2-input" placeholder="الوجبات اليومية">', title: 'متابعة الوزن' },
+                'بشرة': { html: '<input type="text" id="d1" class="swal2-input" placeholder="المشكلة"> <input type="text" id="d2" class="swal2-input" placeholder="الروتين">', title: 'جمالكِ' }
             };
-
             let current = config[type] || { html: '<input type="text" id="d1" class="swal2-input" placeholder="التفاصيل"> <input type="text" id="d2" class="swal2-input" placeholder="ملاحظات">', title: `متابعة ${type}` };
-
-            Swal.fire({
-                title: current.title,
-                html: current.html,
-                confirmButtonText: 'حفظ وتحليل ذكي',
-                confirmButtonColor: '#eb2f96'
-            }).then(async (r) => {
+            
+            Swal.fire({ title: current.title, html: current.html, confirmButtonText: 'حفظ وتحليل ذكي', confirmButtonColor: '#eb2f96' })
+            .then(async (r) => {
                 if(r.isConfirmed) {
                     const val1 = document.getElementById('d1').value;
                     const val2 = document.getElementById('d2').value;
-                    await fetch('/api/save-log', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ type, data: {val1, val2} })
-                    });
+                    await fetch('/api/save-log', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type, data: {val1, val2} }) });
                     openChat('الصحة');
-                    document.getElementById('chat-input').value = `سجلت ${type}: ${val1} و ${val2}. انصحيني.`;
+                    document.getElementById('chat-input').value = `لقد سجلت بيانات ${type}: ${val1} و ${val2}. حلليها واقترحي نصيحة.`;
                     sendAI();
                 }
             });
         }
 
-        // باقي الدوال
         function nav(pageId, el) {
             activeSection = pageId;
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -318,6 +311,7 @@
         }
 
         function openChat(section) {
+            activeSection = section;
             document.getElementById('chat-title').innerText = `رقة - ${section}`;
             document.getElementById('ai-overlay').style.display = 'flex';
         }
@@ -330,18 +324,14 @@
             const prompt = input.value;
             msgs.innerHTML += `<div style="text-align:left; color:#888; margin-bottom:10px;">أنتِ: ${prompt}</div>`;
             input.value = "";
-            const res = await fetch('/api/raqqa-ai', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ prompt: `[قسم ${activeSection}]: ${prompt}` })
-            });
+            const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prompt: `[قسم ${activeSection}]: ${prompt}` }) });
             const data = await res.json();
             msgs.innerHTML += `<div style="background:var(--soft); padding:12px; border-radius:15px; border-right:4px solid var(--p2); margin-bottom:15px;"><b>رقة:</b> ${data.reply}</div>`;
             msgs.scrollTop = msgs.scrollHeight;
         }
 
-        function moodTrack(m) { openChat('المشاعر'); document.getElementById('chat-input').value = `أشعر أنني ${m} اليوم.`; sendAI(); }
+        function moodTrack(m) { openChat('المشاعر'); document.getElementById('chat-input').value = `أشعر أنني ${m} اليوم، حللي مزاجي.`; sendAI(); }
         window.onload = () => fetchContent('home');
     </script>
 </body>
-                    </html>
+            </html>
