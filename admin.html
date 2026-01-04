@@ -1,182 +1,77 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة رقة - النظام المتكامل</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #f8f9fa; }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); padding: 20px; direction: rtl; }
-        .admin-container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        h1 { color: var(--primary); text-align: center; margin-bottom: 30px; }
-        .card { border: 1px solid #eee; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
-        label { display: block; margin: 15px 0 5px; font-weight: bold; color: #444; }
-        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; margin-bottom: 10px; font-family: 'Tajawal'; box-sizing: border-box; }
-        .btn { padding: 15px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; color: white; transition: 0.3s; width: 100%; }
-        .btn-upload { background: var(--primary); margin-top: 10px; }
-        .btn-ai { background: var(--secondary); margin-bottom: 10px; }
-        .btn-delete { background: #333; margin-top: 10px; }
-        #preview { margin: 15px 0; text-align: center; }
-        #preview video, #preview img { max-width: 100%; border-radius: 10px; max-height: 250px; border: 2px solid var(--primary); }
-        .progress-bar { height: 8px; background: #eee; border-radius: 4px; display: none; margin-top: 10px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.3s; }
-    </style>
-</head>
-<body>
+import { sql } from '@vercel/postgres';
+import { put } from '@vercel/blob';
 
-<div class="admin-container">
-    <h1><i class="fas fa-heart"></i> لوحة تحكم رقة الاحترافية</h1>
+export default async function handler(request, response) {
+    
+    // 1. معالجة طلبات OPTIONS (لحل مشاكل CORS)
+    if (request.method === 'OPTIONS') {
+        response.setHeader('Access-Control-Allow-Origin', '*');
+        response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        return response.status(200).end();
+    }
+    
+    // تعيين الرؤوس لطلب POST
+    response.setHeader('Access-Control-Allow-Origin', '*'); 
 
-    <div class="card">
-        <h3><i class="fas fa-robot"></i> توليد محتوى ذكي</h3>
-        <textarea id="ai-prompt" rows="2" placeholder="اسألي رقة لتوليد مقال أو رد فقهي من مكتبتك..."></textarea>
-        <button class="btn btn-ai" onclick="generateAI()"><i class="fas fa-sparkles"></i> جلب نص من المكتبة</button>
-    </div>
+    // 2. التحقق من أن الطريقة هي POST فقط
+    if (request.method !== 'POST') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
+    }
 
-    <div class="card">
-        <h3><i class="fas fa-cloud-arrow-up"></i> رفع محتوى جديد (نصوص + ملفات كبيرة)</h3>
-        
-        <label>النص (محتوى المنشور):</label>
-        <textarea id="main-content" rows="4" placeholder="اكتبي النص هنا..."></textarea>
+    try {
+        // قراءة البيانات من جسم الطلب
+        const { content, section, type, created_at, media_url } = request.body;
 
-        <label>اختاري فيديو أو صورة من جهازك (يدعم الملفات الكبيرة):</label>
-        <input type="file" id="file-input" accept="video/*,image/*" onchange="handlePreview(this)">
-        
-        <div id="preview"></div>
-        <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div>
-                <label>القسم:</label>
-                <select id="section-select">
-                    <option value="bouh-display-1">المشاعر</option>
-                    <option value="bouh-display-4">المجتمع</option>
-                    <option value="bouh-display-2">الصحة</option>
-                    <option value="bouh-display-3">الفقه</option>
-                    <option value="bouh-display-5">الحميمية</option>
-                </select>
-            </div>
-            <div>
-                <label>نوع المحتوى:</label>
-                <select id="type-select">
-                    <option value="فيديو">فيديو</option>
-                    <option value="صورة">صورة</option>
-                    <option value="نصي">نصي فقط</option>
-                </select>
-            </div>
-        </div>
-
-        <button class="btn btn-upload" onclick="startUpload()"><i class="fas fa-paper-plane"></i> نشر المحتوى الآن</button>
-    </div>
-
-    <div class="card" style="border-top: 3px solid #333;">
-        <h3><i class="fas fa-trash"></i> حذف منشور</h3>
-        <input type="number" id="delete-id" placeholder="أدخلي رقم الـ ID للمنشور">
-        <button class="btn btn-delete" onclick="deletePost()"><i class="fas fa-eraser"></i> حذف نهائياً</button>
-    </div>
-</div>
-
-<script>
-    // معاينة الملف قبل الرفع
-    function handlePreview(input) {
-        const preview = document.getElementById('preview');
-        preview.innerHTML = '';
-        if (input.files && input.files[0]) {
-            const file = input.files[0];
-            const url = URL.createObjectURL(file);
-            if (file.type.startsWith('video')) {
-                preview.innerHTML = `<video src="${url}" controls></video>`;
-                document.getElementById('type-select').value = 'فيديو';
-            } else {
-                preview.innerHTML = `<img src="${url}">`;
-                document.getElementById('type-select').value = 'صورة';
-            }
+        // التحقق من الحقول الأساسية
+        if (!content || !section || !type) {
+            return response.status(400).json({ error: 'Missing required fields' });
         }
-    }
 
-    // توليد نص بالذكاء الاصطناعي
-    async function generateAI() {
-        const prompt = document.getElementById('ai-prompt').value;
-        if(!prompt) return Swal.fire('تنبيه', 'اكتبي سؤالاً أولاً', 'warning');
-        
-        Swal.fire({title: 'رقة تفكر...', didOpen: () => Swal.showLoading()});
-        const res = await fetch('/api/raqqa-ai', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ prompt })
-        });
-        const data = await res.json();
-        document.getElementById('main-content').value = data.reply;
-        Swal.close();
-    }
+        let finalMediaUrl = null;
 
-    // عملية الرفع المزدوج (Blob + Neon)
-    async function startUpload() {
-        const fileInput = document.getElementById('file-input');
-        const content = document.getElementById('main-content').value;
-        const section = document.getElementById('section-select').value;
-        const type = document.getElementById('type-select').value;
-        const progress = document.getElementById('progress-bar');
-        const fill = document.getElementById('progress-fill');
-
-        if(!content && !fileInput.files[0]) return Swal.fire('خطأ', 'يجب إضافة نص أو ملف', 'error');
-
-        Swal.fire({title: 'جاري النشر...', text: 'يرجى عدم إغلاق الصفحة', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-        
-        let mediaUrl = "";
-
-        // 1. إذا كان هناك ملف، نرفعه لـ Vercel Blob أولاً
-        if (fileInput.files[0]) {
-            progress.style.display = 'block';
-            fill.style.width = '50%'; // محاكاة بداية الرفع
-
-            const file = fileInput.files[0];
-            // نرسل الملف للـ API الخاصة بالـ Blob
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const blobRes = await fetch(`/api/upload-blob?filename=${file.name}`, {
-                method: 'POST',
-                body: file, // إرسال الملف كـ Binary
+        // 3. معالجة رفع الملف إلى Vercel Blob إذا كان موجوداً
+        // نتحقق إذا كانت القيمة المرسلة هي Base64 (تبدأ بـ data:)
+        if (media_url && media_url.startsWith('data:')) {
+            const buffer = Buffer.from(media_url.split(',')[1], 'base64');
+            const fileName = `raqqa-${Date.now()}-${section}`;
+            
+            // رفع الملف فعلياً وتحديد نوع المحتوى (صورة أو فيديو)
+            const blob = await put(fileName, buffer, {
+                access: 'public',
+                contentType: type === 'فيديو' ? 'video/mp4' : 'image/jpeg'
             });
-            const blobData = await blobRes.json();
-            mediaUrl = blobData.url;
-            fill.style.width = '80%';
+            
+            finalMediaUrl = blob.url; // هذا هو الرابط النهائي للملف
+        } else {
+            // إذا كان الرابط مرسلاً كـ URL جاهز أو نص عادي
+            finalMediaUrl = media_url;
         }
+        
+        // 4. حفظ البيانات كاملة في قاعدة بيانات نيون (Neon)
+        await sql`
+            INSERT INTO posts (content, section, type, media_url, created_at)
+            VALUES (
+                ${content}, 
+                ${section}, 
+                ${type}, 
+                ${finalMediaUrl}, 
+                ${created_at || new Date().toISOString()}
+            );
+        `;
 
-        // 2. حفظ الرابط والنصوص في Neon DB
-        const saveRes = await fetch('/api/save-post', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ content, section, type, media_url: mediaUrl })
+        // 5. إرسال رد النجاح
+        return response.status(200).json({ 
+            success: true, 
+            message: 'تم الحفظ في نيون ورفع الملف بنجاح!',
+            url: finalMediaUrl 
         });
 
-        if (saveRes.ok) {
-            fill.style.width = '100%';
-            Swal.fire('تم بنجاح', 'تم نشر المحتوى في رقة', 'success');
-            resetForm();
-        } else {
-            Swal.fire('فشل', 'حدث خطأ في قاعدة البيانات', 'error');
-        }
+    } catch (error) {
+        console.error('Processing Error:', error);
+        return response.status(500).json({ 
+            error: 'حدث خطأ أثناء المعالجة', 
+            details: error.message 
+        });
     }
-
-    function resetForm() {
-        document.getElementById('main-content').value = '';
-        document.getElementById('file-input').value = '';
-        document.getElementById('preview').innerHTML = '';
-        document.getElementById('progress-bar').style.display = 'none';
-    }
-
-    async function deletePost() {
-        const id = document.getElementById('delete-id').value;
-        if(!id) return;
-        const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
-        if(res.ok) Swal.fire('تم الحذف', '', 'success');
-        else Swal.fire('خطأ', 'الـ ID غير موجود', 'error');
-    }
-</script>
-</body>
-    </html>
+}
