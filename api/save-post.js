@@ -1,5 +1,7 @@
 // نقوم باستيراد دالة 'sql' من حزمة @vercel/postgres
 import { sql } from '@vercel/postgres';
+// استيراد دالة الرفع إلى Blob
+import { put } from '@vercel/blob';
 
 export default async function handler(request, response) {
     
@@ -28,24 +30,43 @@ export default async function handler(request, response) {
 
     try {
         // قراءة البيانات المرسلة من الواجهة الأمامية (ملف admin.html)
-        const { content, section, type, created_at } = request.body;
+        // أضفنا media_url لاستقبال بيانات الـ Base64 من كود الإدارة
+        const { content, section, type, created_at, media_url } = request.body;
 
         // التحقق من وجود البيانات المطلوبة
         if (!content || !section || !type) {
             return response.status(400).json({ error: 'Missing required fields (content, section, type)' });
         }
+
+        let finalMediaUrl = null;
+
+        // **إضافة دالة الرفع إلى Blob**
+        // إذا كان هناك ملف مروفوع (Base64) نقوم بتحويله ورفعه لـ Blob
+        if (media_url && media_url.startsWith('data:')) {
+            const buffer = Buffer.from(media_url.split(',')[1], 'base64');
+            const fileName = `raqqa-${Date.now()}-${section}`;
+            
+            // رفع الملف إلى Vercel Blob
+            const blob = await put(fileName, buffer, {
+                access: 'public',
+                contentType: type === 'فيديو' ? 'video/mp4' : 'image/jpeg'
+            });
+            
+            finalMediaUrl = blob.url; // الرابط الذي سيتم حفظه في نيون
+        }
         
         // تنفيذ استعلام الإدخال (INSERT) إلى قاعدة بيانات Neon
         // ملاحظة: قمنا بإضافة قيمة افتراضية للتاريخ في حال لم يتم إرساله
+        // أضفنا عمود media_url في الاستعلام
         const result = await sql`
-            INSERT INTO posts (content, section, type, created_at)
-            VALUES (${content}, ${section}, ${type}, ${created_at || new Date().toISOString()});
+            INSERT INTO posts (content, section, type, created_at, media_url)
+            VALUES (${content}, ${section}, ${type}, ${created_at || new Date().toISOString()}, ${finalMediaUrl});
         `;
 
         // إرسال استجابة نجاح (201 Created)
         return response.status(201).json({ 
             message: 'Post successfully saved to Neon!', 
-            postData: { content, section, type } 
+            postData: { content, section, type, media_url: finalMediaUrl } 
         });
 
     } catch (error) {
@@ -53,4 +74,4 @@ export default async function handler(request, response) {
         console.error('Database Save Error:', error);
         return response.status(500).json({ error: 'Failed to save post to database.', details: error.message });
     }
-}
+                }
