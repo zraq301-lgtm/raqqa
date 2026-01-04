@@ -1,77 +1,179 @@
-import { sql } from '@vercel/postgres';
-import { put } from '@vercel/blob';
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة رقة - النظام المتكامل</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #fdf6f8; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); padding: 15px; direction: rtl; }
+        .admin-container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(233,30,99,0.1); border: 1px solid #fce4ec; }
+        h1 { color: var(--primary); text-align: center; font-size: 24px; margin-bottom: 25px; }
+        .card { background: #fff; border: 1px solid #f1f1f1; padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        label { display: block; margin: 12px 0 5px; font-weight: bold; color: #555; font-size: 14px; }
+        input, textarea, select { width: 100%; padding: 14px; border: 1.5px solid #eee; border-radius: 12px; margin-bottom: 10px; font-family: 'Tajawal'; box-sizing: border-box; outline: none; transition: 0.3s; }
+        input:focus, textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(233,30,99,0.05); }
+        .btn { padding: 16px; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; width: 100%; font-size: 16px; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-upload { background: linear-gradient(45deg, var(--primary), #ff4081); box-shadow: 0 5px 15px rgba(233,30,99,0.3); }
+        .btn-upload:active { transform: scale(0.98); }
+        #preview { margin: 15px 0; border-radius: 15px; overflow: hidden; background: #fafafa; min-height: 100px; display: flex; align-items: center; justify-content: center; border: 2px dashed #eee; }
+        #preview video, #preview img { max-width: 100%; max-height: 300px; border-radius: 12px; }
+        .progress-bar { height: 10px; background: #eee; border-radius: 20px; display: none; margin: 15px 0; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--primary); width: 0%; transition: 0.4s; }
+    </style>
+</head>
+<body>
 
-export default async function handler(request, response) {
-    
-    // 1. معالجة طلبات OPTIONS (لحل مشاكل CORS)
-    if (request.method === 'OPTIONS') {
-        response.setHeader('Access-Control-Allow-Origin', '*');
-        response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-        response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-        return response.status(200).end();
-    }
-    
-    // تعيين الرؤوس لطلب POST
-    response.setHeader('Access-Control-Allow-Origin', '*'); 
+<div class="admin-container">
+    <h1><i class="fas fa-magic"></i> لوحة تحكم رقة</h1>
 
-    // 2. التحقق من أن الطريقة هي POST فقط
-    if (request.method !== 'POST') {
-        return response.status(405).json({ error: 'Method Not Allowed' });
-    }
+    <div class="card">
+        <label>محتوى المنشور (النص):</label>
+        <textarea id="main-content" rows="5" placeholder="اكتبي محتواكِ الرقيق هنا..."></textarea>
 
-    try {
-        // قراءة البيانات من جسم الطلب
-        const { content, section, type, created_at, media_url } = request.body;
-
-        // التحقق من الحقول الأساسية
-        if (!content || !section || !type) {
-            return response.status(400).json({ error: 'Missing required fields' });
-        }
-
-        let finalMediaUrl = null;
-
-        // 3. معالجة رفع الملف إلى Vercel Blob إذا كان موجوداً
-        // نتحقق إذا كانت القيمة المرسلة هي Base64 (تبدأ بـ data:)
-        if (media_url && media_url.startsWith('data:')) {
-            const buffer = Buffer.from(media_url.split(',')[1], 'base64');
-            const fileName = `raqqa-${Date.now()}-${section}`;
-            
-            // رفع الملف فعلياً وتحديد نوع المحتوى (صورة أو فيديو)
-            const blob = await put(fileName, buffer, {
-                access: 'public',
-                contentType: type === 'فيديو' ? 'video/mp4' : 'image/jpeg'
-            });
-            
-            finalMediaUrl = blob.url; // هذا هو الرابط النهائي للملف
-        } else {
-            // إذا كان الرابط مرسلاً كـ URL جاهز أو نص عادي
-            finalMediaUrl = media_url;
-        }
+        <label>إرفاق وسائط (صورة أو فيديو):</label>
+        <input type="file" id="file-input" accept="video/*,image/*" onchange="handlePreview(this)">
         
-        // 4. حفظ البيانات كاملة في قاعدة بيانات نيون (Neon)
-        await sql`
-            INSERT INTO posts (content, section, type, media_url, created_at)
-            VALUES (
-                ${content}, 
-                ${section}, 
-                ${type}, 
-                ${finalMediaUrl}, 
-                ${created_at || new Date().toISOString()}
-            );
-        `;
+        <div id="preview"><span style="color: #ccc; font-size: 13px;">لا يوجد ملف مختار</span></div>
+        
+        <div class="progress-bar" id="progress-container">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
 
-        // 5. إرسال رد النجاح
-        return response.status(200).json({ 
-            success: true, 
-            message: 'تم الحفظ في نيون ورفع الملف بنجاح!',
-            url: finalMediaUrl 
-        });
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div>
+                <label>القسم الموجه له:</label>
+                <select id="section-select">
+                    <option value="bouh-display-1">المشاعر (Emotions)</option>
+                    <option value="bouh-display-4">المجتمع (Society)</option>
+                    <option value="bouh-display-2">الصحة (Health)</option>
+                    <option value="bouh-display-3">الفقه (Fiqh)</option>
+                    <option value="bouh-display-5">الحميمية (Intimacy)</option>
+                </select>
+            </div>
+            <div>
+                <label>نوع المنشور:</label>
+                <select id="type-select">
+                    <option value="نصي">نص فقط</option>
+                    <option value="صورة">صورة</option>
+                    <option value="فيديو">فيديو</option>
+                </select>
+            </div>
+        </div>
 
-    } catch (error) {
-        console.error('Processing Error:', error);
-        return response.status(500).json({ 
-            error: 'حدث خطأ أثناء المعالجة', 
-            details: error.message 
-        });
+        <button class="btn btn-upload" id="upload-btn" onclick="startUpload()">
+            <i class="fas fa-paper-plane"></i> نشر المحتوى الآن
+        </button>
+    </div>
+</div>
+
+<script>
+    // 1. معاينة الملف المختار
+    function handlePreview(input) {
+        const preview = document.getElementById('preview');
+        const typeSelect = document.getElementById('type-select');
+        preview.innerHTML = '';
+        
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const url = URL.createObjectURL(file);
+            
+            if (file.type.startsWith('video')) {
+                preview.innerHTML = `<video src="${url}" controls></video>`;
+                typeSelect.value = 'فيديو';
+            } else {
+                preview.innerHTML = `<img src="${url}">`;
+                typeSelect.value = 'صورة';
+            }
+        } else {
+            preview.innerHTML = '<span style="color: #ccc;">لا يوجد ملف مختار</span>';
+            typeSelect.value = 'نصي';
+        }
     }
-}
+
+    // 2. دالة الرفع والربط بالـ API
+    async function startUpload() {
+        const fileInput = document.getElementById('file-input');
+        const content = document.getElementById('main-content').value;
+        const section = document.getElementById('section-select').value;
+        const type = document.getElementById('type-select').value;
+        const fill = document.getElementById('progress-fill');
+        const progress = document.getElementById('progress-container');
+
+        if(!content && !fileInput.files[0]) {
+            return Swal.fire('تنبيه', 'من فضلكِ أضيفي نصاً أو ارفقي ملفاً', 'warning');
+        }
+
+        // إظهار حالة التحميل
+        Swal.fire({
+            title: 'جاري النشر...',
+            text: 'يرجى الانتظار، يتم الآن معالجة طلبكِ',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            let base64Data = null;
+
+            // تحويل الملف لـ Base64 إذا وجد
+            if (fileInput.files[0]) {
+                progress.style.display = 'block';
+                fill.style.width = '40%';
+                base64Data = await toBase64(fileInput.files[0]);
+                fill.style.width = '70%';
+            }
+
+            // إرسال البيانات للـ API الخاص بكِ على Vercel
+            const response = await fetch('/api/save-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: content,
+                    section: section,
+                    type: type,
+                    media_url: base64Data
+                })
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                fill.style.width = '100%';
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم النشر بنجاح',
+                    text: 'تم حفظ بياناتكِ في نيون ورفع الوسائط لـ Blob',
+                    confirmButtonColor: '#e91e63'
+                });
+                resetForm();
+            } else {
+                throw new Error(result.error || 'فشل في حفظ البيانات');
+            }
+
+        } catch (error) {
+            console.error('Upload Error:', error);
+            Swal.fire('حدث خطأ', error.message, 'error');
+        } finally {
+            setTimeout(() => { progress.style.display = 'none'; fill.style.width = '0%'; }, 2000);
+        }
+    }
+
+    // تحويل الملفات لصيغة Base64 لإرسالها في الطلب
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+
+    function resetForm() {
+        document.getElementById('main-content').value = '';
+        document.getElementById('file-input').value = '';
+        document.getElementById('preview').innerHTML = '<span style="color: #ccc;">لا يوجد ملف مختار</span>';
+    }
+</script>
+</body>
+        </html>
