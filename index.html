@@ -11,44 +11,36 @@
         :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; overflow-x: hidden; }
         
-        /* Header */
         .top-nav { background: #fff; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
         .fb-icon { color: #1877f2; font-size: 26px; text-decoration: none; }
         .logo-text { font-weight: bold; color: var(--p2); font-size: 24px; }
 
-        /* Welcome Card */
         .welcome-card { background: linear-gradient(135deg, #fff0f6, #ffd6e7); padding: 30px 20px; text-align: center; border-radius: 0 0 40px 40px; margin-bottom: 20px; border-bottom: 3px solid var(--p1); }
         .welcome-card h1 { color: var(--p2); margin: 0; font-size: 22px; }
 
-        /* Sections Management */
         .page { display: none; padding: 15px; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
 
-        /* Mood Analysis Table */
         .mood-table { width: 100%; background: #fff; border-radius: 15px; border-collapse: collapse; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
         .mood-table td { padding: 15px; text-align: center; border: 1px solid var(--soft); cursor: pointer; transition: 0.3s; }
         .mood-table td:hover { background: var(--soft); }
         .mood-emoji { font-size: 24px; display: block; }
         .mood-label { font-size: 11px; color: #666; }
 
-        /* AI Buttons - Now at the Top */
-        .ai-header-btn { background: linear-gradient(45deg, var(--p2), var(--purp)); color: white; border: none; width: 100%; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(114, 46, 209, 0.2); }
+        .ai-header-btn { background: linear-gradient(45deg, var(--p2), var(--purp)); color: white; border: none; width: 100%; padding: 15px; border-radius: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(114, 46, 209, 0.2); font-family: 'Tajawal'; }
 
-        /* 11 Health Trackers Grid */
         .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         .tracker-item { background: #fff; padding: 12px 5px; border-radius: 15px; text-align: center; border: 1px solid var(--soft); cursor: pointer; }
         .tracker-item i { font-size: 20px; color: var(--p2); margin-bottom: 5px; display: block; }
         .tracker-item span { font-size: 11px; color: #444; }
 
-        /* Content Cards */
         .post-card { background: #fff; border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid #f0f0f0; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
         .post-card img { width: 100%; border-radius: 15px; margin-top: 10px; }
         .post-actions { display: flex; justify-content: space-around; margin-top: 15px; border-top: 1px solid #fafafa; padding-top: 10px; }
         .action-btn { background: none; border: none; color: #999; cursor: pointer; font-size: 13px; font-family: 'Tajawal'; }
         .action-btn.active { color: var(--p2); font-weight: bold; }
 
-        /* Full Screen Chat */
         #ai-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; }
         .chat-history { background: #fdf2ff; padding: 10px; display: flex; gap: 8px; overflow-x: auto; border-bottom: 1px solid #eee; }
@@ -57,7 +49,6 @@
         .chat-footer { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
         .chat-footer input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ffd6e7; outline: none; }
 
-        /* Bottom Nav */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; border-top: 1px solid #eee; padding: 10px 0; z-index: 1000; }
         .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 10px; }
         .nav-link.active { color: var(--p2); font-weight: bold; }
@@ -77,12 +68,14 @@
             <h1>أهلاً بكِ في عالم رقة الأنيق 🌸</h1>
             <p style="font-size: 13px; color: var(--purp);">رفيقتكِ الذكية لكل ما يهم أنوثتكِ</p>
         </div>
-        <div id="home-feed"></div>
+        <div style="text-align: center; padding: 50px 20px; color: #ccc;">
+            <i class="fas fa-heart" style="font-size: 50px; margin-bottom: 15px;"></i>
+            <p>تصفحي الأقسام بالأسفل لتجربة كاملة</p>
+        </div>
     </div>
 
     <div id="page-emotions" class="page">
         <button class="ai-header-btn" onclick="openChat('المشاعر')"><i class="fas fa-magic"></i> همسة رقة للمشاعر</button>
-        
         <table class="mood-table">
             <tr>
                 <td onclick="moodTrack('سعيدة')"><span class="mood-emoji">🥰</span><span class="mood-label">سعيدة</span></td>
@@ -95,13 +88,11 @@
                 <td onclick="moodTrack('حزينة')"><span class="mood-emoji">😔</span><span class="mood-label">حزينة</span></td>
             </tr>
         </table>
-
         <div id="emotions-feed"></div>
     </div>
 
     <div id="page-health" class="page">
         <button class="ai-header-btn" onclick="openChat('الصحة')"><i class="fas fa-stethoscope"></i> طبيب رقة الافتراضي</button>
-        
         <div class="health-grid">
             <div class="tracker-item" onclick="showHealthInput('حيض')"><i class="fas fa-tint"></i><span>الحيض</span></div>
             <div class="tracker-item" onclick="showHealthInput('حمل')"><i class="fas fa-baby"></i><span>الحمل</span></div>
@@ -113,9 +104,8 @@
             <div class="tracker-item" onclick="showHealthInput('رياضة')"><i class="fas fa-running"></i><span>الرياضة</span></div>
             <div class="tracker-item" onclick="showHealthInput('بشرة')"><i class="fas fa-spa"></i><span>البشرة</span></div>
             <div class="tracker-item" onclick="showHealthInput('نوم')"><i class="fas fa-moon"></i><span>النوم</span></div>
-            <div class="tracker-item" onclick="showHealthInput('سعادة')"><i class="fas fa-smile-beam"></i><span>السعادة</span></div>
+            <div class="tracker-item" onclick="showHealthInput('سعادة')"><i class="fas fa-smile-beam"></i><span>سعادة</span></div>
         </div>
-
         <div id="health-feed"></div>
     </div>
 
@@ -157,23 +147,32 @@
     <script>
         let activeSection = 'عام';
 
-        // 1. منطق جلب البيانات المتخصص لكل قسم
+        // 1. منطق جلب البيانات المتخصص: لا يجلب شيئاً للرئيسية ويصفي بالقسم للباقي
         async function fetchContent(tab) {
-            const feed = document.getElementById(tab + '-feed') || document.getElementById('home-feed');
-            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري تحميل محتوى رقة...</p>';
+            const feed = document.getElementById(tab + '-feed');
+            if (!feed) return; 
+            
+            if (tab === 'home') {
+                feed.innerHTML = ""; // الصفحة الرئيسية تبقى فارغة كما طلبتِ
+                return;
+            }
+
+            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري تحميل محتوى القسم من Neon DB...</p>';
             
             try {
                 const res = await fetch('/api/get-posts');
                 const data = await res.json();
                 
-                // التصفية بناءً على القسم في Neon DB
-                const filtered = data.posts.filter(p => {
-                    if (tab === 'home') return true; // الرئيسية تعرض الكل أو الاحدث
-                    if (tab === 'emotions') return p.section === 'bouh-display-1';
-                    if (tab === 'health') return p.section === 'bouh-display-3';
-                    if (tab === 'society') return p.section === 'bouh-display-4';
-                    return p.section.includes(tab);
-                });
+                // التصفية بناءً على القسم في Neon DB (مثال: bouh-display-1 للمشاعر)
+                const mapping = {
+                    'emotions': 'bouh-display-1',
+                    'health': 'bouh-display-3',
+                    'society': 'bouh-display-4',
+                    'fiqh': 'bouh-display-5',
+                    'intimacy': 'bouh-display-6'
+                };
+
+                const filtered = data.posts.filter(p => p.section === mapping[tab]);
 
                 feed.innerHTML = filtered.map(p => `
                     <div class="post-card">
@@ -189,7 +188,41 @@
             } catch (e) { feed.innerHTML = '<p>تعذر جلب البيانات.</p>'; }
         }
 
-        // 2. التنقل بين الأقسام
+        // 2. مدخلات المتابعة المتخصصة لكل نوع
+        function showHealthInput(type) {
+            let config = {
+                'حيض': { html: '<input type="date" id="d1" class="swal2-input"> <select id="d2" class="swal2-input"><option value="خفيف">تدفق خفيف</option><option value="متوسط">متوسط</option><option value="غزير">غزير</option></select>', title: 'متابعة الدورة' },
+                'حمل': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الأسبوع الحالي"> <input type="text" id="d2" class="swal2-input" placeholder="الأعراض (غثيان، أرَق..)">', title: 'متابعة الحمل' },
+                'تخسيس': { html: '<input type="number" id="d1" class="swal2-input" placeholder="الوزن الحالي (كجم)"> <input type="text" id="d2" class="swal2-input" placeholder="ماذا أكلتِ اليوم؟">', title: 'متابعة الوزن' },
+                'بشرة': { html: '<input type="text" id="d1" class="swal2-input" placeholder="المشكلة (حبوب، جفاف..)"> <input type="text" id="d2" class="swal2-input" placeholder="الروتين المستخدم">', title: 'جمالكِ' }
+            };
+
+            let current = config[type] || { html: '<input type="text" id="d1" class="swal2-input" placeholder="التفاصيل"> <input type="text" id="d2" class="swal2-input" placeholder="ملاحظات">', title: `متابعة ${type}` };
+
+            Swal.fire({
+                title: current.title,
+                html: current.html,
+                confirmButtonText: 'حفظ وتحليل ذكي',
+                confirmButtonColor: '#eb2f96'
+            }).then(async (r) => {
+                if(r.isConfirmed) {
+                    const val1 = document.getElementById('d1').value;
+                    const val2 = document.getElementById('d2').value;
+                    
+                    // حفظ في Neon DB (افتراضياً عبر api الحفظ)
+                    await fetch('/api/save-log', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ type, data: {val1, val2} })
+                    });
+
+                    openChat('الصحة');
+                    document.getElementById('chat-input').value = `لقد سجلت بيانات ${type}: ${val1} و ${val2}. حلليها واقترحي نصيحة رقيقة.`;
+                    sendAI();
+                }
+            });
+        }
+
         function nav(pageId, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
@@ -198,27 +231,9 @@
             fetchContent(pageId);
         }
 
-        // 3. المتابعات الـ 11 والذكاء الاصطناعي
-        function showHealthInput(type) {
-            Swal.fire({
-                title: `متابعة ${type}`,
-                html: `<input type="date" id="h1" class="swal2-input" placeholder="التاريخ">
-                       <input type="text" id="h2" class="swal2-input" placeholder="التفاصيل الحالية">`,
-                confirmButtonText: 'تحليل ذكي',
-                confirmButtonColor: '#eb2f96'
-            }).then(r => {
-                if(r.isConfirmed) {
-                    openChat('الصحة');
-                    document.getElementById('chat-input').value = `بيانات متابعة ${type}: تاريخ ${document.getElementById('h1').value}, تفاصيل: ${document.getElementById('h2').value}. حلليها واقترحي نصيحة وتنبيه.`;
-                    sendAI();
-                }
-            });
-        }
-
-        // 4. الشات والذكاء الصناعي
         function openChat(section) {
             activeSection = section;
-            document.getElementById('chat-title').innerText = `رقة - تخصص ${section}`;
+            document.getElementById('chat-title').innerText = `رقة - ${section}`;
             document.getElementById('ai-overlay').style.display = 'flex';
         }
         function closeChat() { document.getElementById('ai-overlay').style.display = 'none'; }
@@ -226,33 +241,22 @@
         async function sendAI() {
             const input = document.getElementById('chat-input');
             const msgs = document.getElementById('chat-messages');
-            const history = document.getElementById('chat-history-bar');
             if(!input.value) return;
-
             const prompt = input.value;
             msgs.innerHTML += `<div style="text-align:left; color:#888; margin-bottom:10px;">أنتِ: ${prompt}</div>`;
             input.value = "";
-            history.innerHTML += `<div class="history-tag">${prompt.substring(0,10)}...</div>`;
-
             const res = await fetch('/api/raqqa-ai', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ prompt: `تخصص القسم ${activeSection}: ${prompt}` })
+                body: JSON.stringify({ prompt: `[قسم ${activeSection}]: ${prompt}` })
             });
             const data = await res.json();
             msgs.innerHTML += `<div style="background:var(--soft); padding:12px; border-radius:15px; border-right:4px solid var(--p2); margin-bottom:15px;"><b>رقة:</b> ${data.reply}</div>`;
             msgs.scrollTop = msgs.scrollHeight;
         }
 
-        // 5. وظائف التفاعل
-        function sharePost(txt) { 
-            if(navigator.share) navigator.share({ text: txt }); 
-            else Swal.fire('تم النسخ للمشاركة!');
-        }
-        function toggleLike(btn) { btn.classList.toggle('active'); }
-        function moodTrack(m) { openChat('المشاعر'); document.getElementById('chat-input').value = `أشعر أنني ${m} اليوم، ما النصيحة المناسبة؟`; sendAI(); }
-
+        function moodTrack(m) { openChat('المشاعر'); document.getElementById('chat-input').value = `أشعر أنني ${m} اليوم، حللي مزاجي.`; sendAI(); }
         window.onload = () => fetchContent('home');
     </script>
 </body>
-</html>
+        </html>
