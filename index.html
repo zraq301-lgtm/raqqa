@@ -35,8 +35,9 @@
         .tracker-item i { font-size: 20px; color: var(--p2); margin-bottom: 5px; display: block; }
         .tracker-item span { font-size: 11px; color: #444; }
 
-        /* تعديل عرض الميديا في المنشورات */
         .post-card { background: #fff; border-radius: 20px; padding: 18px; margin-bottom: 15px; border: 1px solid #f0f0f0; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+        
+        /* كود الضبط لعرض الفيديو والصور */
         .post-card video, .post-card img {
             max-width: 100%;
             height: auto;
@@ -158,6 +159,20 @@
     </nav>
 
     <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('تم تسجيل الـ Service Worker بنجاح:', registration.scope);
+            })
+            .catch(error => {
+              console.log('فشل تسجيل الـ Service Worker:', error);
+            });
+        });
+      }
+    </script>
+
+    <script>
         let activeSection = 'عام';
 
         async function fetchContent(tab) {
@@ -180,16 +195,15 @@
 
                 const filtered = data.posts.filter(p => p.section === mapping[tab]);
 
-                // دمج منطق عرض الفيديو والصور في العرض
                 feed.innerHTML = filtered.map(p => `
                     <div class="post-card" id="post-${p.id}">
                         <p>${p.content}</p>
                         
                         ${p.media_url ? 
-                          (p.type === 'فيديو' || p.media_url.includes('.mp4') ? 
-                            `<video src="${p.media_url}" controls></video>` : 
-                            `<img src="${p.media_url}">`
-                          ) : ''
+                            (p.media_url.includes('.mp4') || p.type === 'فيديو' ? 
+                                `<video src="${p.media_url}" controls></video>` : 
+                                `<img src="${p.media_url}">`
+                            ) : '' 
                         }
 
                         <div class="post-actions">
@@ -213,6 +227,7 @@
             } catch (e) { feed.innerHTML = '<p>تعذر جلب البيانات.</p>'; }
         }
 
+        // بقية الدوال تظل كما هي تماماً
         async function toggleLike(btn, postId) {
             btn.classList.toggle('active');
             let countSpan = btn.querySelector('.like-count');
@@ -241,7 +256,6 @@
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ postId, comment: result.value })
                     });
-                    
                     if(res.ok) {
                         const container = document.getElementById(`comments-container-${postId}`);
                         if(container.innerHTML.includes('لا توجد')) container.innerHTML = '';
@@ -254,11 +268,7 @@
 
         function sharePost(txt) {
             if (navigator.share) {
-                navigator.share({
-                    title: 'تطبيق رقة',
-                    text: txt,
-                    url: window.location.href
-                }).catch(() => { });
+                navigator.share({ title: 'تطبيق رقة', text: txt, url: window.location.href }).catch(() => {});
             } else {
                 navigator.clipboard.writeText(txt);
                 Swal.fire('تم نسخ النص للمشاركة!');
@@ -330,4 +340,4 @@
         window.onload = () => fetchContent('home');
     </script>
 </body>
-    </html>
+                    </html>           
