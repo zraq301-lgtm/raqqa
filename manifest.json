@@ -1,7 +1,8 @@
 {
   "name": "تطبيق رقة للعناية",
   "short_name": "رقة",
-  "description": "مساحتكِ الآمنة للعناية بمشاعركِ وصحتكِ",
+  "description": "مساحتكِ الآمنة للعناية بمشاعركِ وصحتكِ وجمالكِ يومياً",
+  "lang": "ar-SA",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -19,11 +20,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    },
-    {
-      "src": "https://r.jina.ai/i/0586f77918394982987be7b11c977d29",
-      "sizes": "192x192",
-      "type": "image/png"
     }
   ]
-    }
+}
