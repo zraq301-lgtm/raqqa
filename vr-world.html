@@ -1,102 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
+    <meta charset="UTF-8">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <title>رقة - عالم VR المتكامل</title>
+    <title>عالم رقة الافتراضي</title>
     <style>
-        body { margin: 0; overflow: hidden; }
-        /* لتظهر رسالة التحميل */
-        #loading-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: #fce4ec; color: #e91e63; display: flex;
-            justify-content: center; align-items: center; font-family: 'Segoe UI', sans-serif;
-            font-size: 24px; z-index: 9999;
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+        .mobile-tip {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(194, 24, 91, 0.8); color: white; padding: 12px 25px;
+            border-radius: 30px; z-index: 10; text-align: center; font-size: 14px;
+            pointer-events: none; border: 1px solid white;
         }
     </style>
 </head>
 <body>
 
-    <div id="loading-screen">
-        <p>جاري تحميل عالم رقة... ✨</p>
-    </div>
+    <div class="mobile-tip">📱 حركي هاتفكِ في كل الاتجاهات للاستكشاف</div>
 
     <a-scene>
-        <a-entity camera look-controls position="0 1.6 0" wasd-controls>
-            <a-cursor fuse="true" color="#FFC1E3" opacity="0.8" geometry="primitive: ring; radiusOuter: 0.015; radiusInner: 0.01"></a-cursor>
+        <a-assets>
+            <audio id="relax-sound" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
+        </a-assets>
+
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true" position="0 1.6 0">
+            <a-cursor fuse="true" fuse-timeout="1200" color="#e91e63" geometry="primitive: ring; radiusOuter: 0.02; radiusInner: 0.01"></a-cursor>
         </a-entity>
 
-        <a-entity id="main-room" visible="true">
-            <a-sky color="#B39DDB"></a-sky>
-            <a-plane position="0 0 -5" rotation="-90 0 0" width="10" height="10" color="#f8bbd0"></a-plane>
-            <a-text value="أهلاً بكِ في عالم رقة الافتراضي" align="center" position="0 3.5 -4" color="#4A148C" width="8"></a-text>
-            <a-text value="اختاري غرفتكِ:" align="center" position="0 2.8 -4" color="#673AB7" width="5"></a-text>
+        <a-entity id="lobby" visible="true">
+            <a-sky color="#fce4ec"></a-sky>
+            <a-text value="مرحباً بكِ في عالم رقة الخاص" align="center" position="0 3 -4" color="#c2185b" width="6"></a-text>
 
-            <a-box id="emotions-gate" position="-3 1 -4" color="#FF80AB" width="1.5" height="2" depth="0.2"
-                   animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 1000; loop: true">
-                <a-text value="🧘‍♀️ الاسترخاء والمشاعر" align="center" position="0 0.5 0.15" color="white" width="2"></a-text>
+            <a-box id="btn-emotions" position="-2.5 1.5 -4" color="#9575CD" depth="0.1" width="1.5" height="1.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000">
+                <a-text value="ملاذ السكينة" align="center" position="0 0 0.1" width="4"></a-text>
             </a-box>
 
-            <a-box id="health-gate" position="0 1 -4" color="#8BC34A" width="1.5" height="2" depth="0.2"
-                   animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 1000; loop: true">
-                <a-text value="🩺 عالم الصحة" align="center" position="0 0.5 0.15" color="white" width="2"></a-text>
+            <a-box id="btn-health" position="0 1.5 -4" color="#4CAF50" depth="0.1" width="1.5" height="1.5">
+                <a-text value="واحة العافية" align="center" position="0 0 0.1" width="4"></a-text>
             </a-box>
 
-            <a-box id="intimacy-gate" position="3 1 -4" color="#E91E63" width="1.5" height="2" depth="0.2"
-                   animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 1000; loop: true">
-                <a-text value="💖 خصوصية وحميمية" align="center" position="0 0.5 0.15" color="white" width="2"></a-text>
+            <a-box id="btn-intimacy" position="2.5 1.5 -4" color="#F06292" depth="0.1" width="1.5" height="1.5" animation="property: position; to: 2.5 1.7 -4; dir: alternate; loop: true; dur: 2000">
+                <a-text value="همسات القلوب" align="center" position="0 0 0.1" width="4"></a-text>
             </a-box>
         </a-entity>
 
         <a-entity id="emotions-room" visible="false">
-            <a-sky color="#C5CAE9"></a-sky>
-            <a-text value="تنفسي بعمق.. أنتِ في أمان" align="center" position="0 3 -4" color="#3F51B5" width="6"></a-text>
-            <a-sphere position="0 1.5 -5" radius="1.25" color="#9FA8DA" animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 3000; loop: true"></a-sphere>
-            <a-box id="back-emotions" position="0 0.5 -2" color="#FFB74D" width="1" height="0.5" depth="0.1"><a-text value="رجوع" align="center" position="0 0 0.1" color="white" width="1"></a-text></a-box>
+            <a-sky color="#B3E5FC"></a-sky>
+            <a-text value="تنفسي بعمق.. دعي القلق يرحل" align="center" position="0 2.5 -4" color="#01579B" width="5"></a-text>
+            <a-sphere position="0 1.25 -6" radius="1.5" color="#4FC3F7" animation="property: scale; to: 1.3 1.3 1.3; dir: alternate; loop: true; dur: 3000"></a-sphere>
+            <a-box id="back1" position="0 0.5 -2" color="#666" width="0.6" height="0.2"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-box>
         </a-entity>
 
         <a-entity id="health-room" visible="false">
-            <a-sky color="#DCEDC8"></a-sky>
-            <a-text value="متابعة صحتكِ بوعي" align="center" position="0 3 -4" color="#558B2F" width="6"></a-text>
-            <a-cylinder position="0 1 -5" radius="0.5" height="2" color="#AED581"></a-cylinder>
-            <a-box id="back-health" position="0 0.5 -2" color="#FFB74D" width="1" height="0.5" depth="0.1"><a-text value="رجوع" align="center" position="0 0 0.1" color="white" width="1"></a-text></a-box>
+            <a-sky color="#E8F5E9"></a-sky>
+            <a-text value="نصيحة اليوم: المشي 15 دقيقة يقلل من توتر الدورة الشهرية" align="center" position="0 2.5 -3" color="#2E7D32" width="4"></a-text>
+            <a-text value="تابعي شرب الماء بانتظام" align="center" position="2 1.5 -3" color="#1B5E20" width="3"></a-text>
+            <a-box id="back2" position="0 0.5 -2" color="#666" width="0.6" height="0.2"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-box>
         </a-entity>
 
         <a-entity id="intimacy-room" visible="false">
             <a-sky color="#F8BBD0"></a-sky>
-            <a-text value="مساحتكِ الآمنة للخصوصية" align="center" position="0 3 -4" color="#880E4F" width="6"></a-text>
-            <a-box position="0 1 -5" width="2" height="1.5" depth="0.5" color="#E91E63"></a-box>
-            <a-box id="back-intimacy" position="0 0.5 -2" color="#FFB74D" width="1" height="0.5" depth="0.1"><a-text value="رجوع" align="center" position="0 0 0.1" color="white" width="1"></a-text></a-box>
+            <a-text value="التواصل البصري والكلمة الطيبة أساس المودة" align="center" position="0 2.5 -4" color="#880E4F" width="5"></a-text>
+            <a-text value="ثقافة زوجية مبنية على الاحترام" align="center" position="0 1.8 -4" color="#AD1457" width="4"></a-text>
+            <a-box id="back3" position="0 0.5 -2" color="#666" width="0.6" height="0.2"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-box>
         </a-entity>
+
     </a-scene>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loadingScreen = document.getElementById('loading-screen');
-            loadingScreen.style.display = 'none'; // إخفاء شاشة التحميل بمجرد تحميل الصفحة
+        const lobby = document.querySelector('#lobby');
+        const emotions = document.querySelector('#emotions-room');
+        const health = document.querySelector('#health-room');
+        const intimacy = document.querySelector('#intimacy-room');
+        const relaxSound = document.querySelector('#relax-sound');
 
-            const mainRoom = document.getElementById('main-room');
-            const emotionsRoom = document.getElementById('emotions-room');
-            const healthRoom = document.getElementById('health-room');
-            const intimacyRoom = document.getElementById('intimacy-room');
+        function goTo(room) {
+            [lobby, emotions, health, intimacy].forEach(r => r.setAttribute('visible', 'false'));
+            room.setAttribute('visible', 'true');
+            // تشغيل الصوت فقط في غرفة السكينة
+            if (room === emotions) { relaxSound.play(); } else { relaxSound.pause(); }
+        }
 
-            function showRoom(roomToShow) {
-                mainRoom.setAttribute('visible', 'false');
-                emotionsRoom.setAttribute('visible', 'false');
-                healthRoom.setAttribute('visible', 'false');
-                intimacyRoom.setAttribute('visible', 'false');
-                roomToShow.setAttribute('visible', 'true');
-            }
-
-            // الاستماع للنقر على البوابات
-            document.getElementById('emotions-gate').addEventListener('click', () => showRoom(emotionsRoom));
-            document.getElementById('health-gate').addEventListener('click', () => showRoom(healthRoom));
-            document.getElementById('intimacy-gate').addEventListener('click', () => showRoom(intimacyRoom));
-            
-            // أزرار الرجوع
-            document.getElementById('back-emotions').addEventListener('click', () => showRoom(mainRoom));
-            document.getElementById('back-health').addEventListener('click', () => showRoom(mainRoom));
-            document.getElementById('back-intimacy').addEventListener('click', () => showRoom(mainRoom));
+        document.querySelector('#btn-emotions').addEventListener('click', () => goTo(emotions));
+        document.querySelector('#btn-health').addEventListener('click', () => goTo(health));
+        document.querySelector('#btn-intimacy').addEventListener('click', () => goTo(intimacy));
+        
+        document.querySelectorAll('[id^="back"]').forEach(btn => {
+            btn.addEventListener('click', () => goTo(lobby));
         });
     </script>
 </body>
-</html>
+    </html>
