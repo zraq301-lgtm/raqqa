@@ -10,16 +10,22 @@
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
             background: rgba(194, 24, 91, 0.8); color: white; padding: 12px 25px;
             border-radius: 30px; z-index: 10; text-align: center; font-size: 14px;
-            pointer-events: none; border: 1px solid white;
+            pointer-events: none; /* لتسمح بالتفاعل مع عناصر الـ VR */
+            border: 1px solid white;
         }
     </style>
 </head>
 <body>
 
-    <div class="mobile-tip">📱 حركي هاتفكِ في كل الاتجاهات للاستكشاف</div>
+    <div class="mobile-tip">📱 حركي هاتفكِ في كل الاتجاهات للاستكشاف أو انظري للدائرة للاختيار</div>
 
     <a-scene>
         <a-assets>
+            <img id="lobby-sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/seaside-vil.jpg">
+            <img id="emotions-sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/cutclub.jpg">
+            <img id="health-sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/office.jpg">
+            <img id="intimacy-sky" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/puydesancy.jpg">
+
             <audio id="relax-sound" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
         </a-assets>
 
@@ -28,7 +34,7 @@
         </a-entity>
 
         <a-entity id="lobby" visible="true">
-            <a-sky color="#fce4ec"></a-sky>
+            <a-sky src="#lobby-sky" rotation="0 -90 0"></a-sky> 
             <a-text value="مرحباً بكِ في عالم رقة الخاص" align="center" position="0 3 -4" color="#c2185b" width="6"></a-text>
 
             <a-box id="btn-emotions" position="-2.5 1.5 -4" color="#9575CD" depth="0.1" width="1.5" height="1.5" animation="property: rotation; to: 0 360 0; loop: true; dur: 10000">
@@ -45,23 +51,23 @@
         </a-entity>
 
         <a-entity id="emotions-room" visible="false">
-            <a-sky color="#B3E5FC"></a-sky>
-            <a-text value="تنفسي بعمق.. دعي القلق يرحل" align="center" position="0 2.5 -4" color="#01579B" width="5"></a-text>
-            <a-sphere position="0 1.25 -6" radius="1.5" color="#4FC3F7" animation="property: scale; to: 1.3 1.3 1.3; dir: alternate; loop: true; dur: 3000"></a-sphere>
+            <a-sky src="#emotions-sky" rotation="0 -90 0"></a-sky> 
+            <a-text value="تنفسي بعمق.. دعي القلق يرحل" align="center" position="0 2.5 -4" color="#fff" width="5"></a-text>
+            <a-sphere position="0 1.25 -6" radius="1.5" color="#4FC3F7" opacity="0.6" animation="property: scale; to: 1.3 1.3 1.3; dir: alternate; loop: true; dur: 3000"></a-sphere>
             <a-box id="back1" position="0 0.5 -2" color="#666" width="0.6" height="0.2"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-box>
         </a-entity>
 
         <a-entity id="health-room" visible="false">
-            <a-sky color="#E8F5E9"></a-sky>
-            <a-text value="نصيحة اليوم: المشي 15 دقيقة يقلل من توتر الدورة الشهرية" align="center" position="0 2.5 -3" color="#2E7D32" width="4"></a-text>
-            <a-text value="تابعي شرب الماء بانتظام" align="center" position="2 1.5 -3" color="#1B5E20" width="3"></a-text>
+            <a-sky src="#health-sky" rotation="0 -90 0"></a-sky>
+            <a-text value="نصيحة اليوم: المشي 15 دقيقة يقلل من توتر الدورة الشهرية" align="center" position="0 2.5 -3" color="#fff" width="4"></a-text>
+            <a-text value="تابعي شرب الماء بانتظام" align="center" position="2 1.5 -3" color="#eee" width="3"></a-text>
             <a-box id="back2" position="0 0.5 -2" color="#666" width="0.6" height="0.2"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-box>
         </a-entity>
 
         <a-entity id="intimacy-room" visible="false">
-            <a-sky color="#F8BBD0"></a-sky>
-            <a-text value="التواصل البصري والكلمة الطيبة أساس المودة" align="center" position="0 2.5 -4" color="#880E4F" width="5"></a-text>
-            <a-text value="ثقافة زوجية مبنية على الاحترام" align="center" position="0 1.8 -4" color="#AD1457" width="4"></a-text>
+            <a-sky src="#intimacy-sky" rotation="0 -90 0"></a-sky>
+            <a-text value="التواصل البصري والكلمة الطيبة أساس المودة" align="center" position="0 2.5 -4" color="#fff" width="5"></a-text>
+            <a-text value="ثقافة زوجية مبنية على الاحترام" align="center" position="0 1.8 -4" color="#eee" width="4"></a-text>
             <a-box id="back3" position="0 0.5 -2" color="#666" width="0.6" height="0.2"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-box>
         </a-entity>
 
@@ -77,8 +83,13 @@
         function goTo(room) {
             [lobby, emotions, health, intimacy].forEach(r => r.setAttribute('visible', 'false'));
             room.setAttribute('visible', 'true');
-            // تشغيل الصوت فقط في غرفة السكينة
-            if (room === emotions) { relaxSound.play(); } else { relaxSound.pause(); }
+            if (room === emotions) { 
+                relaxSound.play(); 
+                relaxSound.loop = true; // ليعمل الصوت بشكل متكرر
+            } else { 
+                relaxSound.pause(); 
+                relaxSound.currentTime = 0; // لإعادة تشغيل الصوت من البداية عند العودة للغرفة
+            }
         }
 
         document.querySelector('#btn-emotions').addEventListener('click', () => goTo(emotions));
@@ -90,4 +101,4 @@
         });
     </script>
 </body>
-    </html>
+                                                                                             </html>
