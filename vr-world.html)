@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <title>رقة - عالم VR المتكامل</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        /* لتظهر رسالة التحميل */
+        #loading-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fce4ec; color: #e91e63; display: flex;
+            justify-content: center; align-items: center; font-family: 'Segoe UI', sans-serif;
+            font-size: 24px; z-index: 9999;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen">
+        <p>جاري تحميل عالم رقة... ✨</p>
+    </div>
+
+    <a-scene>
+        <a-entity camera look-controls position="0 1.6 0" wasd-controls>
+            <a-cursor fuse="true" color="#FFC1E3" opacity="0.8" geometry="primitive: ring; radiusOuter: 0.015; radiusInner: 0.01"></a-cursor>
+        </a-entity>
+
+        <a-entity id="main-room" visible="true">
+            <a-sky color="#B39DDB"></a-sky>
+            <a-plane position="0 0 -5" rotation="-90 0 0" width="10" height="10" color="#f8bbd0"></a-plane>
+            <a-text value="أهلاً بكِ في عالم رقة الافتراضي" align="center" position="0 3.5 -4" color="#4A148C" width="8"></a-text>
+            <a-text value="اختاري غرفتكِ:" align="center" position="0 2.8 -4" color="#673AB7" width="5"></a-text>
+
+            <a-box id="emotions-gate" position="-3 1 -4" color="#FF80AB" width="1.5" height="2" depth="0.2"
+                   animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 1000; loop: true">
+                <a-text value="🧘‍♀️ الاسترخاء والمشاعر" align="center" position="0 0.5 0.15" color="white" width="2"></a-text>
+            </a-box>
+
+            <a-box id="health-gate" position="0 1 -4" color="#8BC34A" width="1.5" height="2" depth="0.2"
+                   animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 1000; loop: true">
+                <a-text value="🩺 عالم الصحة" align="center" position="0 0.5 0.15" color="white" width="2"></a-text>
+            </a-box>
+
+            <a-box id="intimacy-gate" position="3 1 -4" color="#E91E63" width="1.5" height="2" depth="0.2"
+                   animation__scale="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 1000; loop: true">
+                <a-text value="💖 خصوصية وحميمية" align="center" position="0 0.5 0.15" color="white" width="2"></a-text>
+            </a-box>
+        </a-entity>
+
+        <a-entity id="emotions-room" visible="false">
+            <a-sky color="#C5CAE9"></a-sky>
+            <a-text value="تنفسي بعمق.. أنتِ في أمان" align="center" position="0 3 -4" color="#3F51B5" width="6"></a-text>
+            <a-sphere position="0 1.5 -5" radius="1.25" color="#9FA8DA" animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 3000; loop: true"></a-sphere>
+            <a-box id="back-emotions" position="0 0.5 -2" color="#FFB74D" width="1" height="0.5" depth="0.1"><a-text value="رجوع" align="center" position="0 0 0.1" color="white" width="1"></a-text></a-box>
+        </a-entity>
+
+        <a-entity id="health-room" visible="false">
+            <a-sky color="#DCEDC8"></a-sky>
+            <a-text value="متابعة صحتكِ بوعي" align="center" position="0 3 -4" color="#558B2F" width="6"></a-text>
+            <a-cylinder position="0 1 -5" radius="0.5" height="2" color="#AED581"></a-cylinder>
+            <a-box id="back-health" position="0 0.5 -2" color="#FFB74D" width="1" height="0.5" depth="0.1"><a-text value="رجوع" align="center" position="0 0 0.1" color="white" width="1"></a-text></a-box>
+        </a-entity>
+
+        <a-entity id="intimacy-room" visible="false">
+            <a-sky color="#F8BBD0"></a-sky>
+            <a-text value="مساحتكِ الآمنة للخصوصية" align="center" position="0 3 -4" color="#880E4F" width="6"></a-text>
+            <a-box position="0 1 -5" width="2" height="1.5" depth="0.5" color="#E91E63"></a-box>
+            <a-box id="back-intimacy" position="0 0.5 -2" color="#FFB74D" width="1" height="0.5" depth="0.1"><a-text value="رجوع" align="center" position="0 0 0.1" color="white" width="1"></a-text></a-box>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.style.display = 'none'; // إخفاء شاشة التحميل بمجرد تحميل الصفحة
+
+            const mainRoom = document.getElementById('main-room');
+            const emotionsRoom = document.getElementById('emotions-room');
+            const healthRoom = document.getElementById('health-room');
+            const intimacyRoom = document.getElementById('intimacy-room');
+
+            function showRoom(roomToShow) {
+                mainRoom.setAttribute('visible', 'false');
+                emotionsRoom.setAttribute('visible', 'false');
+                healthRoom.setAttribute('visible', 'false');
+                intimacyRoom.setAttribute('visible', 'false');
+                roomToShow.setAttribute('visible', 'true');
+            }
+
+            // الاستماع للنقر على البوابات
+            document.getElementById('emotions-gate').addEventListener('click', () => showRoom(emotionsRoom));
+            document.getElementById('health-gate').addEventListener('click', () => showRoom(healthRoom));
+            document.getElementById('intimacy-gate').addEventListener('click', () => showRoom(intimacyRoom));
+            
+            // أزرار الرجوع
+            document.getElementById('back-emotions').addEventListener('click', () => showRoom(mainRoom));
+            document.getElementById('back-health').addEventListener('click', () => showRoom(mainRoom));
+            document.getElementById('back-intimacy').addEventListener('click', () => showRoom(mainRoom));
+        });
+    </script>
+</body>
+</html>
