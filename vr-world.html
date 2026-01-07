@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <title>عالم رقة الواقعي</title>
+    <title>عالم رقة المتطور</title>
 </head>
 <body>
 
@@ -13,47 +13,52 @@
             <img id="emotions-img" src="emotions.jpg">
             <img id="health-img" src="health.jpg">
             <img id="intimacy-img" src="intimacy.jpg">
-            <audio id="bg-music" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
+
+            <video id="health-video" src="https://vjs.zencdn.net/v/oceans.mp4" loop="true" crossorigin="anonymous"></video>
+
+            <audio id="music-lobby" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
+            <audio id="music-emotions" src="https://www.soundjay.com/misc/sounds/wind-chime-1.mp3" preload="auto"></audio>
+            <audio id="music-intimacy" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
         </a-assets>
 
         <a-entity camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true" position="0 1.6 0">
-            <a-cursor fuse="true" fuse-timeout="1500" color="#e91e63"></a-cursor>
-        </a-entity>
+            </a-entity>
 
         <a-entity id="room-lobby" visible="true">
             <a-sky src="#lobby-img"></a-sky>
             <a-text value="أهلاً بكِ في عالم رقة" align="center" position="0 3 -4" width="7" color="#fff"></a-text>
 
-            <a-box id="btn-emotions" position="-2 1.5 -3" scale="0.8 0.8 0.1" color="#9575CD" opacity="0.9">
+            <a-box class="clickable" id="btn-emotions" position="-2 1.5 -3" scale="0.8 0.8 0.1" color="#9575CD" opacity="0.7">
                 <a-text value="ملاذ السكينة" align="center" position="0 0 0.6" width="5"></a-text>
             </a-box>
 
-            <a-box id="btn-health" position="0 1.5 -3" scale="0.8 0.8 0.1" color="#4CAF50" opacity="0.9">
+            <a-box class="clickable" id="btn-health" position="0 1.5 -3" scale="0.8 0.8 0.1" color="#4CAF50" opacity="0.7">
                 <a-text value="واحة العافية" align="center" position="0 0 0.6" width="5"></a-text>
             </a-box>
 
-            <a-box id="btn-intimacy" position="2 1.5 -3" scale="0.8 0.8 0.1" color="#F06292" opacity="0.9">
+            <a-box class="clickable" id="btn-intimacy" position="2 1.5 -3" scale="0.8 0.8 0.1" color="#F06292" opacity="0.7">
                 <a-text value="همسات القلوب" align="center" position="0 0 0.6" width="5"></a-text>
             </a-box>
         </a-entity>
 
         <a-entity id="room-emotions" visible="false">
             <a-sky src="#emotions-img"></a-sky>
-            <a-box id="back1" position="0 0.5 -2" scale="0.5 0.2 0.1" color="#666">
+            <a-box class="clickable" id="back1" position="0 0.5 -2" scale="0.5 0.2 0.1" color="#666">
                 <a-text value="رجوع" align="center" position="0 0 0.6" width="4"></a-text>
             </a-box>
         </a-entity>
 
         <a-entity id="room-health" visible="false">
             <a-sky src="#health-img"></a-sky>
-            <a-box id="back2" position="0 0.5 -2" scale="0.5 0.2 0.1" color="#666">
+            <a-video src="#health-video" width="4" height="2.25" position="0 2 -4"></a-video>
+            <a-box class="clickable" id="back2" position="0 0.5 -2" scale="0.5 0.2 0.1" color="#666">
                 <a-text value="رجوع" align="center" position="0 0 0.6" width="4"></a-text>
             </a-box>
         </a-entity>
 
         <a-entity id="room-intimacy" visible="false">
             <a-sky src="#intimacy-img"></a-sky>
-            <a-box id="back3" position="0 0.5 -2" scale="0.5 0.2 0.1" color="#666">
+            <a-box class="clickable" id="back3" position="0 0.5 -2" scale="0.5 0.2 0.1" color="#666">
                 <a-text value="رجوع" align="center" position="0 0 0.6" width="4"></a-text>
             </a-box>
         </a-entity>
@@ -61,32 +66,38 @@
     </a-scene>
 
     <script>
-        const music = document.getElementById('bg-music');
-        
-        // وظيفة الانتقال
-        function goTo(showId) {
-            // إخفاء الكل
-            document.getElementById('room-lobby').setAttribute('visible', 'false');
-            document.getElementById('room-emotions').setAttribute('visible', 'false');
-            document.getElementById('room-health').setAttribute('visible', 'false');
-            document.getElementById('room-intimacy').setAttribute('visible', 'false');
-            
-            // إظهار الغرفة المطلوبة
-            document.getElementById(showId).setAttribute('visible', 'true');
-            
-            // تشغيل الموسيقى
-            if(showId !== 'room-lobby') { music.play(); music.loop = true; }
+        const musicLobby = document.getElementById('music-lobby');
+        const musicEmotions = document.getElementById('music-emotions');
+        const musicIntimacy = document.getElementById('music-intimacy');
+        const healthVideo = document.getElementById('health-video');
+
+        function stopAll() {
+            [musicLobby, musicEmotions, musicIntimacy].forEach(m => { m.pause(); m.currentTime = 0; });
+            healthVideo.pause();
         }
 
-        // ربط الأزرار بالأوامر
+        function goTo(showId) {
+            stopAll();
+            document.querySelectorAll('a-entity[id^="room-"]').forEach(r => r.setAttribute('visible', 'false'));
+            document.getElementById(showId).setAttribute('visible', 'true');
+
+            // التحكم بالموسيقى والفيديو حسب الغرفة
+            if (showId === 'room-lobby') musicLobby.play();
+            if (showId === 'room-emotions') musicEmotions.play();
+            if (showId === 'room-health') healthVideo.play();
+            if (showId === 'room-intimacy') musicIntimacy.play();
+        }
+
+        // تشغيل موسيقى البداية عند أول لمسة
+        window.addEventListener('touchstart', () => { if(musicLobby.paused) musicLobby.play(); }, {once: true});
+
         document.getElementById('btn-emotions').addEventListener('click', () => goTo('room-emotions'));
         document.getElementById('btn-health').addEventListener('click', () => goTo('room-health'));
         document.getElementById('btn-intimacy').addEventListener('click', () => goTo('room-intimacy'));
         
-        // أزرار الرجوع
         document.getElementById('back1').addEventListener('click', () => goTo('room-lobby'));
         document.getElementById('back2').addEventListener('click', () => goTo('room-lobby'));
         document.getElementById('back3').addEventListener('click', () => goTo('room-lobby'));
     </script>
 </body>
-                </html>
+</html>
