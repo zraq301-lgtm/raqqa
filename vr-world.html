@@ -3,113 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://unpkg.com/aframe-particle-system-component@1.0.x/dist/aframe-particle-system-component.min.js"></script>
-    <title>رقة - الإصدار المتطور</title>
+    <title>رقة VR - التجربة الغامرة</title>
+    <style>
+        body { background-color: #000; }
+        /* واجهة تحميل رقيقة */
+        #loading-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fce4ec; z-index: 100; display: flex;
+            flex-direction: column; justify-content: center; align-items: center;
+            font-family: sans-serif; color: #ad1457; transition: opacity 1s;
+        }
+    </style>
 </head>
 <body>
 
-    <a-scene shadow="type: pcfsoft">
+    <div id="loading-overlay">
+        <h2>جاري تحضير عالمكِ الخاص... ✨</h2>
+        <p>يرجى تحريك الهاتف عند البدء</p>
+    </div>
+
+    <a-scene file-loader>
         <a-assets>
-            <img id="img-lobby" src="lobby.jpg">
-            <img id="img-emotions" src="emotions.jpg">
-            <img id="img-health" src="health.jpg">
-            <img id="img-intimacy" src="intimacy.jpg">
-            <audio id="bg-music" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
+            <img id="lobby-img" src="lobby.jpg">
+            <img id="emotions-img" src="emotions.jpg">
+            <img id="health-img" src="health.jpg">
+            <img id="intimacy-img" src="intimacy.jpg">
+            
+            <audio id="relax-music" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
+            <audio id="soft-piano" src="https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3" preload="auto"></audio>
         </a-assets>
 
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true" position="0 1.6 0">
-            <a-cursor 
-                id="cursor"
-                animation__click="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150; startEvents: click"
-                animation__fusing="property: scale; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500; startEvents: fusing"
-                event-set__fusing="_event: fusing; color: #f06292"
-                event-set__mouseleave="_event: mouseleave; color: #FFC1E3"
-                cursor="fuse: true; fuseTimeout: 1500"
-                material="color: #FFC1E3; shader: flat"
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true" position="0 1.6 0">
+            <a-cursor id="main-cursor"
+                animation__fusing="property: geometry.radiusOuter; from: 0.03; to: 0.01; dur: 1500; startEvents: fusing"
+                animation__reset="property: geometry.radiusOuter; to: 0.03; startEvents: mouseleave"
+                raycaster="objects: .clickable"
+                material="color: #ff80ab; shader: flat"
                 geometry="primitive: ring; radiusOuter: 0.03; radiusInner: 0.02">
             </a-cursor>
         </a-entity>
 
-        <a-entity position="0 2.25 -15" particle-system="color: #FFD700; size: 0.1; particleCount: 1000; velocityValue: 0 1 0"></a-entity>
-
-        <a-light type="ambient" color="#fff" intensity="0.8"></a-light>
-        <a-light type="directional" position="1 4 2" intensity="0.5"></a-light>
-
-        <a-entity id="lobby-zone">
-            <a-sky src="#img-lobby" animation="property: rotation; to: 0 360 0; dur: 200000; loop: true; easing: linear"></a-sky>
+        <a-entity id="room-lobby">
+            <a-sky src="#lobby-img" rotation="0 -90 0"></a-sky>
             
-            <a-entity id="menu-container" position="0 1.5 -4">
-                <a-entity id="to-emotions" position="-1.5 0 0">
-                    <a-ring color="#9575CD" radius-inner="0.4" radius-outer="0.5" animation="property: rotation; to: 0 360 0; dur: 5000; loop: true"></a-ring>
-                    <a-text value="ملاذ السكينة" align="center" position="0 -0.7 0" width="3" font="https://cdn.aframe.io/fonts/Aileron-Semibold.fnt"></a-text>
-                </a-entity>
+            <a-entity position="0 3 -5">
+                <a-text value="عالم رقة" align="center" color="#fff" width="10"></a-text>
+                <a-text value="اختاري وجهتكِ اليوم" align="center" position="0 -0.5 0" color="#fce4ec" width="4"></a-text>
+            </a-entity>
 
-                <a-entity id="to-health" position="0 0 0">
-                    <a-ring color="#4CAF50" radius-inner="0.4" radius-outer="0.5" animation="property: scale; to: 1.1 1.1 1.1; dir: alternate; dur: 2000; loop: true"></a-ring>
-                    <a-text value="واحة العافية" align="center" position="0 -0.7 0" width="3"></a-text>
-                </a-entity>
+            <a-entity class="clickable" id="go-emotions" position="-2.5 1.5 -4">
+                <a-torus color="#9575CD" radius="0.5" radius-tubular="0.01" animation="property: rotation; to: 0 360 0; loop: true; dur: 3000"></a-torus>
+                <a-text value="ملاذ السكينة" align="center" position="0 -0.8 0" width="3"></a-text>
+            </a-entity>
 
-                <a-entity id="to-intimacy" position="1.5 0 0">
-                    <a-ring color="#F06292" radius-inner="0.4" radius-outer="0.5" animation="property: rotation; to: 360 0 0; dur: 7000; loop: true"></a-ring>
-                    <a-text value="همسات القلوب" align="center" position="0 -0.7 0" width="3"></a-text>
-                </a-entity>
+            <a-entity class="clickable" id="go-health" position="0 1.5 -4">
+                <a-torus color="#81C784" radius="0.5" radius-tubular="0.01" animation="property: scale; to: 1.1 1.1 1.1; dir: alternate; loop: true; dur: 2000"></a-torus>
+                <a-text value="واحة العافية" align="center" position="0 -0.8 0" width="3"></a-text>
+            </a-entity>
+
+            <a-entity class="clickable" id="go-intimacy" position="2.5 1.5 -4">
+                <a-torus color="#F06292" radius="0.5" radius-tubular="0.01" animation="property: rotation; to: 360 360 0; loop: true; dur: 5000"></a-torus>
+                <a-text value="همسات القلوب" align="center" position="0 -0.8 0" width="3"></a-text>
             </a-entity>
         </a-entity>
 
-        <a-entity id="emotions-zone" visible="false">
-            <a-sky src="#img-emotions"></a-sky>
-            <a-entity id="back-1" position="0 0.5 -2" class="clickable">
-                <a-sphere radius="0.15" color="#fff" opacity="0.5"></a-sphere>
-                <a-text value="رجوع" align="center" position="0 0.3 0" width="2"></a-text>
+        <a-entity id="room-emotions" visible="false">
+            <a-sky src="#emotions-img"></a-sky>
+            <a-entity position="0 2 -3">
+                <a-plane width="2" height="0.5" material="color: #000; opacity: 0.3"></a-plane>
+                <a-text value="دقيقة تنفس واحدة تقلل التوتر بنسبة 40%" align="center" width="3"></a-text>
             </a-entity>
+            <a-circle class="clickable" id="back-to-1" position="0 0.5 -2" radius="0.15" color="#fff" opacity="0.5"><a-text value="رجوع" align="center" color="#000" width="2"></a-text></a-circle>
         </a-entity>
 
-        <a-entity id="health-zone" visible="false">
-            <a-sky src="#img-health"></a-sky>
-            <a-entity id="back-2" position="0 0.5 -2">
-                <a-sphere radius="0.15" color="#fff" opacity="0.5"></a-sphere>
-                <a-text value="رجوع" align="center" position="0 0.3 0" width="2"></a-text>
-            </a-entity>
+        <a-entity id="room-health" visible="false">
+            <a-sky src="#health-img"></a-sky>
+            <a-text value="اشربي 8 أكواب ماء لجمال بشرتكِ" position="0 2.2 -3" align="center" width="4"></a-text>
+            <a-circle class="clickable" id="back-to-2" position="0 0.5 -2" radius="0.15" color="#fff" opacity="0.5"><a-text value="رجوع" align="center" color="#000" width="2"></a-text></a-circle>
         </a-entity>
 
-        <a-entity id="intimacy-zone" visible="false">
-            <a-sky src="#img-intimacy"></a-sky>
-            <a-entity id="back-3" position="0 0.5 -2">
-                <a-sphere radius="0.15" color="#fff" opacity="0.5"></a-sphere>
-                <a-text value="رجوع" align="center" position="0 0.3 0" width="2"></a-text>
-            </a-entity>
+        <a-entity id="room-intimacy" visible="false">
+            <a-sky src="#intimacy-img"></a-sky>
+            <a-text value="الحوار الهادئ هو مفتاح القلوب" position="0 2.2 -3" align="center" width="4"></a-text>
+            <a-circle class="clickable" id="back-to-3" position="0 0.5 -2" radius="0.15" color="#fff" opacity="0.5"><a-text value="رجوع" align="center" color="#000" width="2"></a-text></a-circle>
         </a-entity>
 
     </a-scene>
 
     <script>
-        const zones = {
-            lobby: document.querySelector('#lobby-zone'),
-            emotions: document.querySelector('#emotions-zone'),
-            health: document.querySelector('#health-zone'),
-            intimacy: document.querySelector('#intimacy-zone')
+        const overlay = document.getElementById('loading-overlay');
+        const rooms = {
+            lobby: document.getElementById('room-lobby'),
+            emotions: document.getElementById('room-emotions'),
+            health: document.getElementById('room-health'),
+            intimacy: document.getElementById('room-intimacy')
         };
-        const music = document.querySelector('#bg-music');
+        const music = document.getElementById('relax-music');
 
-        window.addEventListener('click', () => { music.play(); music.loop = true; }, { once: true });
+        // إخفاء شاشة التحميل
+        window.onload = () => { setTimeout(() => { overlay.style.opacity = '0'; setTimeout(()=> overlay.remove(), 1000); }, 2000); };
 
-        function transitionTo(target) {
-            // تأثير "تعتيم" بسيط قبل الانتقال
-            document.querySelector('a-scene').style.opacity = "0";
+        function changeRoom(target) {
+            // تأثير Fade Out
+            document.querySelector('a-scene').setAttribute('animation', 'property: opacity; from: 1; to: 0; dur: 500');
+            
             setTimeout(() => {
-                Object.values(zones).forEach(z => z.setAttribute('visible', 'false'));
-                zones[target].setAttribute('visible', 'true');
-                document.querySelector('a-scene').style.opacity = "1";
-            }, 300);
+                Object.values(rooms).forEach(r => r.setAttribute('visible', 'false'));
+                rooms[target].setAttribute('visible', 'true');
+                if(target !== 'lobby') music.play(); else music.pause();
+                
+                // تأثير Fade In
+                document.querySelector('a-scene').setAttribute('animation', 'property: opacity; from: 0; to: 1; dur: 500');
+            }, 500);
         }
 
-        document.querySelector('#to-emotions').addEventListener('click', () => transitionTo('emotions'));
-        document.querySelector('#to-health').addEventListener('click', () => transitionTo('health'));
-        document.querySelector('#to-intimacy').addEventListener('click', () => transitionTo('intimacy'));
+        document.getElementById('go-emotions').addEventListener('click', () => changeRoom('emotions'));
+        document.getElementById('go-health').addEventListener('click', () => changeRoom('health'));
+        document.getElementById('go-intimacy').addEventListener('click', () => changeRoom('intimacy'));
         
-        document.querySelectorAll('[id^="back"]').forEach(btn => {
-            btn.addEventListener('click', () => transitionTo('lobby'));
+        document.querySelectorAll('[id^="back-to"]').forEach(btn => {
+            btn.addEventListener('click', () => changeRoom('lobby'));
         });
     </script>
 </body>
-</html>
+                </html>
