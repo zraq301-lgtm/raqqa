@@ -1,17 +1,92 @@
 <!DOCTYPE html>
-<html>
-  <head>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  </head>
-  <body>
+    <title>عالم رقة الواقعي</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        .hud {
+            position: absolute; bottom: 20px; width: 100%; text-align: center;
+            color: white; z-index: 10; font-family: sans-serif; pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hud">📱 حركي الهاتف للاستكشاف | انظري للزر للانتقال</div>
+
     <a-scene>
-      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/seaside.jpg"></a-sky>
-      
-      <a-text value="عالم رقة الواقعي" align="center" position="0 2 -3" color="#fff"></a-text>
-      
-      <a-entity camera look-controls position="0 1.6 0">
-        <a-cursor color="#e91e63"></a-cursor>
-      </a-entity>
+        <a-assets>
+            <img id="img-lobby" src="lobby.jpg">
+            <img id="img-emotions" src="emotions.jpg">
+            <img id="img-health" src="health.jpg">
+            <img id="img-intimacy" src="intimacy.jpg">
+            
+            <audio id="relax-sound" src="relax.mp3" preload="auto"></audio>
+        </a-assets>
+
+        <a-entity camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true" position="0 1.6 0">
+            <a-cursor fuse="true" fuse-timeout="1500" color="#FFC1E3"></a-cursor>
+        </a-entity>
+
+        <a-entity id="lobby-zone" visible="true">
+            <a-sky src="#img-lobby"></a-sky>
+            <a-text value="مرحباً بكِ في رقة" align="center" position="0 3 -4" color="#fff" width="6"></a-text>
+
+            <a-box id="to-emotions" position="-2 1.5 -3" color="#9575CD" opacity="0.8">
+                <a-text value="ملاذ السكينة" align="center" position="0 0 0.6" width="3"></a-text>
+            </a-box>
+
+            <a-box id="to-health" position="0 1.5 -3" color="#4CAF50" opacity="0.8">
+                <a-text value="واحة العافية" align="center" position="0 0 0.6" width="3"></a-text>
+            </a-box>
+
+            <a-box id="to-intimacy" position="2 1.5 -3" color="#F06292" opacity="0.8">
+                <a-text value="همسات القلوب" align="center" position="0 0 0.6" width="3"></a-text>
+            </a-box>
+        </a-entity>
+
+        <a-entity id="emotions-zone" visible="false">
+            <a-sky src="#img-emotions"></a-sky>
+            <a-text value="تنفسي بعمق" align="center" position="0 2.5 -4" color="#fff" width="5"></a-text>
+            <a-circle id="back-1" position="0 1 -2" radius="0.3" color="#666"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-circle>
+        </a-entity>
+
+        <a-entity id="health-zone" visible="false">
+            <a-sky src="#img-health"></a-sky>
+            <a-text value="صحتكِ أمانة" align="center" position="0 2.5 -4" color="#fff" width="5"></a-text>
+            <a-circle id="back-2" position="0 1 -2" radius="0.3" color="#666"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-circle>
+        </a-entity>
+
+        <a-entity id="intimacy-zone" visible="false">
+            <a-sky src="#img-intimacy"></a-sky>
+            <a-text value="خصوصية تامة" align="center" position="0 2.5 -4" color="#fff" width="5"></a-text>
+            <a-circle id="back-3" position="0 1 -2" radius="0.3" color="#666"><a-text value="رجوع" align="center" position="0 0 0.05" width="2"></a-text></a-circle>
+        </a-entity>
+
     </a-scene>
-  </body>
-</html> 
+
+    <script>
+        const zones = {
+            lobby: document.querySelector('#lobby-zone'),
+            emotions: document.querySelector('#emotions-zone'),
+            health: document.querySelector('#health-zone'),
+            intimacy: document.querySelector('#intimacy-zone')
+        };
+
+        function goTo(name) {
+            Object.values(zones).forEach(z => z.setAttribute('visible', 'false'));
+            zones[name].setAttribute('visible', 'true');
+        }
+
+        document.querySelector('#to-emotions').addEventListener('click', () => goTo('emotions'));
+        document.querySelector('#to-health').addEventListener('click', () => goTo('health'));
+        document.querySelector('#to-intimacy').addEventListener('click', () => goTo('intimacy'));
+        
+        document.querySelectorAll('[id^="back"]').forEach(btn => {
+            btn.addEventListener('click', () => goTo('lobby'));
+        });
+    </script>
+</body>
+                  </html>
