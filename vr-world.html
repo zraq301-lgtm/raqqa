@@ -1,95 +1,17 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
+<html>
+  <head>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <title>عالم رقة - تجربة واقعية</title>
-    <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; }
-        .instruction-layer {
-            position: absolute; bottom: 20px; width: 100%; text-align: center;
-            color: white; z-index: 10; pointer-events: none; text-shadow: 1px 1px 2px #000;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="instruction-layer">📱 حركي هاتفكِ لاستكشاف الغرف الواقعية</div>
-
+  </head>
+  <body>
     <a-scene>
-        <a-assets>
-            <img id="img-lobby" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/seaside.jpg">
-            <img id="img-emotions" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/city.jpg">
-            <img id="img-health" src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/cubes.jpg">
-            <img id="img-intimacy" src="https://cdn.aframe.io/a-painter/images/sky.jpg">
-            
-            <audio id="relax-sound" src="https://www.soundjay.com/nature/ocean-wave-1.mp3" preload="auto"></audio>
-        </a-assets>
-
-        <a-entity camera look-controls="magicWindowTrackingEnabled: true; touchEnabled: true" position="0 1.6 0">
-            <a-cursor fuse="true" fuse-timeout="1500" color="#e91e63" geometry="primitive: ring; radiusOuter: 0.02; radiusInner: 0.01"></a-cursor>
-        </a-entity>
-
-        <a-entity id="lobby" visible="true">
-            <a-sky src="#img-lobby" rotation="0 -90 0"></a-sky>
-            <a-text value="أهلاً بكِ في رقة" align="center" position="0 3 -4" color="#fff" width="7"></a-text>
-
-            <a-box id="btn-emotions" position="-2.5 1.5 -4" color="#9575CD" width="1.2" height="1.2" opacity="0.9">
-                <a-text value="ملاذ السكينة" align="center" position="0 0 0.6" width="3"></a-text>
-            </a-box>
-
-            <a-box id="btn-health" position="0 1.5 -4" color="#4CAF50" width="1.2" height="1.2" opacity="0.9">
-                <a-text value="واحة العافية" align="center" position="0 0 0.6" width="3"></a-text>
-            </a-box>
-
-            <a-box id="btn-intimacy" position="2.5 1.5 -4" color="#F06292" width="1.2" height="1.2" opacity="0.9">
-                <a-text value="همسات القلوب" align="center" position="0 0 0.6" width="3"></a-text>
-            </a-box>
-        </a-entity>
-
-        <a-entity id="emotions-room" visible="false">
-            <a-sky src="#img-emotions"></a-sky>
-            <a-text value="هدوء المدينة ليلاً" align="center" position="0 2.5 -4" color="#fff" width="6"></a-text>
-            <a-box id="back1" position="0 0.5 -2" color="#666" width="0.6" height="0.3"><a-text value="رجوع" align="center" position="0 0 0.1" width="2"></a-text></a-box>
-        </a-entity>
-
-        <a-entity id="health-room" visible="false">
-            <a-sky src="#img-health"></a-sky>
-            <a-text value="مساحة الترتيب والنظام" align="center" position="0 2.5 -4" color="#fff" width="6"></a-text>
-            <a-box id="back2" position="0 0.5 -2" color="#666" width="0.6" height="0.3"><a-text value="رجوع" align="center" position="0 0 0.1" width="2"></a-text></a-box>
-        </a-entity>
-
-        <a-entity id="intimacy-room" visible="false">
-            <a-sky src="#img-intimacy"></a-sky>
-            <a-text value="سماء المودة الواسعة" align="center" position="0 2.5 -4" color="#fff" width="6"></a-text>
-            <a-box id="back3" position="0 0.5 -2" color="#666" width="0.6" height="0.3"><a-text value="رجوع" align="center" position="0 0 0.1" width="2"></a-text></a-box>
-        </a-entity>
-
+      <a-sky src="https://cdn.aframe.io/360-image-gallery-boilerplate/img/seaside.jpg"></a-sky>
+      
+      <a-text value="عالم رقة الواقعي" align="center" position="0 2 -3" color="#fff"></a-text>
+      
+      <a-entity camera look-controls position="0 1.6 0">
+        <a-cursor color="#e91e63"></a-cursor>
+      </a-entity>
     </a-scene>
-
-    <script>
-        const rooms = {
-            lobby: document.querySelector('#lobby'),
-            emotions: document.querySelector('#emotions-room'),
-            health: document.querySelector('#health-room'),
-            intimacy: document.querySelector('#intimacy-room')
-        };
-        const sound = document.querySelector('#relax-sound');
-
-        function goTo(roomName) {
-            Object.values(rooms).forEach(r => r.setAttribute('visible', 'false'));
-            rooms[roomName].setAttribute('visible', 'true');
-            // تشغيل الصوت في الغرف الهادئة
-            if (roomName === 'emotions') sound.play(); else sound.pause();
-        }
-
-        document.querySelector('#btn-emotions').addEventListener('click', () => goTo('emotions'));
-        document.querySelector('#btn-health').addEventListener('click', () => goTo('health'));
-        document.querySelector('#btn-intimacy').addEventListener('click', () => goTo('intimacy'));
-        
-        document.querySelectorAll('[id^="back"]').forEach(btn => {
-            btn.addEventListener('click', () => goTo('lobby'));
-        });
-    </script>
-</body>
-                </html>
+  </body>
+</html> 
