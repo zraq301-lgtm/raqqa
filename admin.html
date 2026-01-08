@@ -49,9 +49,11 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <select id="section-select">
-                <option value="bouh-display-1">المشاعر</option>
-                <option value="bouh-display-2">الصحة</option>
-                <option value="bouh-display-3">الفقه</option>
+                <option value="feelings">المشاعر</option>
+                <option value="health">الصحة</option>
+                <option value="fiqh">الفقه</option>
+                <option value="society">المجتمع</option>
+                <option value="intimacy">الحميمية</option>
             </select>
             <select id="type-select">
                 <option value="نصي">نصي</option>
@@ -70,7 +72,7 @@
 </div>
 
 <script>
-    // 1. توليد المحتوى بالذكاء الاصطناعي (مربوط بالـ API الخاص بكِ)
+    // 1. توليد المحتوى بالذكاء الاصطناعي
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
         if(!prompt) return Swal.fire('تنبيه', 'اكتبي سؤالاً أولاً', 'warning');
@@ -113,6 +115,8 @@
         const section = document.getElementById('section-select').value;
         const type = document.getElementById('type-select').value;
 
+        if(!content && !fileInput.files[0]) return Swal.fire('تنبيه', 'يرجى إضافة محتوى أو ملف', 'warning');
+
         Swal.fire({title: 'جاري النشر...', didOpen: () => Swal.showLoading()});
 
         let base64Data = null;
@@ -124,39 +128,51 @@
             });
         }
 
-        const res = await fetch('/api/save-post', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ content, section, type, media_url: base64Data })
-        });
+        try {
+            const res = await fetch('/api/save-post', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ content, section, type, media_url: base64Data })
+            });
 
-        if(res.ok) {
-            Swal.fire('تم!', 'نُشر المحتوى بنجاح', 'success');
-            location.reload();
-        } else {
-            Swal.fire('خطأ', 'فشل في النشر', 'error');
+            if(res.ok) {
+                Swal.fire('تم!', 'نُشر المحتوى بنجاح في قسم ' + section, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error();
+            }
+        } catch (err) {
+            Swal.fire('خطأ', 'فشل في النشر، تأكدي من إعدادات قاعدة البيانات', 'error');
         }
     }
 
     // 4. حذف منشور بواسطة ID
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
-        if(!id) return;
+        if(!id) return Swal.fire('تنبيه', 'يرجى إدخال ID المنشور', 'info');
 
         const result = await Swal.fire({
             title: 'هل أنتِ متأكدة؟',
             text: "لن يمكنكِ التراجع عن الحذف",
             icon: 'warning',
             showCancelButton: true,
+            confirmButtonColor: '#333',
             confirmButtonText: 'نعم، احذفي'
         });
 
         if (result.isConfirmed) {
-            const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
-            if(res.ok) Swal.fire('تم الحذف', '', 'success');
-            else Swal.fire('خطأ', 'الرقم غير موجود', 'error');
+            try {
+                const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
+                if(res.ok) {
+                    Swal.fire('تم الحذف', 'تم إزالة المنشور بنجاح', 'success');
+                } else {
+                    Swal.fire('خطأ', 'الرقم غير موجود أو حدث خطأ في النظام', 'error');
+                }
+            } catch (err) {
+                Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error');
+            }
         }
     }
 </script>
 </body>
-</html>
+                </html>
