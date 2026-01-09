@@ -9,57 +9,49 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; overflow-x: hidden; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
         
-        /* الهيدر والقلب النابض مع النص الجديد */
-        .top-nav { background: #fff; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
-        .logo-text { font-weight: bold; color: var(--p2); font-size: 24px; }
-        
-        .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 14px; }
-        .vr-heart { font-size: 20px; animation: heartBeat 1.2s infinite; }
-        
-        @keyframes heartBeat { 0% {transform: scale(1);} 14% {transform: scale(1.3);} 28% {transform: scale(1);} 42% {transform: scale(1.3);} 70% {transform: scale(1);} }
+        /* الهيدر */
+        .top-nav { background: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
+        .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
+        .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 13px; }
+        .vr-heart { font-size: 18px; animation: heartBeat 1.2s infinite; }
+        @keyframes heartBeat { 0%, 100% {transform: scale(1);} 50% {transform: scale(1.2);} }
 
         .page { display: none; padding: 15px; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
 
         /* أزرار AI المتخصصة */
-        .ai-header-btn { color: white; border: none; width: 100%; padding: 15px; border-radius: 15px; font-weight: bold; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Tajawal'; }
+        .ai-header-btn { color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: bold; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Tajawal'; font-size: 14px; }
         .btn-emotions { background: linear-gradient(45deg, #ff85c0, #722ed1); }
         .btn-health { background: linear-gradient(45deg, #eb2f96, #ff4d4f); }
         .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }
         .btn-fiqh { background: linear-gradient(45deg, #52c41a, #722ed1); }
         .btn-intimacy { background: linear-gradient(45deg, #faad14, #eb2f96); }
 
-        /* جدول المزاج في قسم المشاعر */
-        .mood-table { width: 100%; background: #fff; border-radius: 15px; border-collapse: collapse; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-        .mood-table td { padding: 12px; text-align: center; border: 1px solid var(--soft); cursor: pointer; }
-        .mood-emoji { font-size: 22px; display: block; }
-        .mood-label { font-size: 10px; color: #666; }
+        /* كروت الصحة والبيانات */
+        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
+        .tracker-item { background: #fff; padding: 12px 5px; border-radius: 12px; text-align: center; border: 1px solid var(--soft); cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .tracker-item i { font-size: 18px; color: var(--p2); margin-bottom: 4px; display: block; }
+        .tracker-item span { font-size: 10px; font-weight: bold; color: #444; }
 
-        /* شبكة كروت الصحة (11 كرت) */
-        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        .tracker-item { background: #fff; padding: 12px 5px; border-radius: 15px; text-align: center; border: 1px solid var(--soft); cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .tracker-item i { font-size: 20px; color: var(--p2); margin-bottom: 5px; display: block; }
-        .tracker-item span { font-size: 11px; font-weight: bold; color: #444; }
+        /* نظام المنشورات والتفاعل */
+        .post-card { background: #fff; border-radius: 15px; padding: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
+        .post-content { font-size: 14px; line-height: 1.6; color: #333; margin-bottom: 10px; }
+        .post-media { width: 100%; border-radius: 12px; margin-bottom: 10px; max-height: 300px; object-fit: cover; }
+        .post-actions { display: flex; justify-content: space-around; border-top: 1px solid #f9f9f9; padding-top: 10px; }
+        .action-item { background: none; border: none; color: #777; font-family: 'Tajawal'; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        .action-item.liked { color: var(--p2); }
 
-        /* أرجوحة الأفكار */
-        .post-box { background: #fff; padding: 20px; border-radius: 20px; border: 2px dashed var(--p1); text-align: center; margin-bottom: 20px; cursor: pointer; }
-        .post-card { background: #fff; border-radius: 20px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
-        .post-card video, .post-card img { max-width: 100%; border-radius: 15px; margin-top: 10px; }
+        /* الملاحة السفلى */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; border-top: 1px solid #eee; padding: 8px 0; z-index: 1000; }
+        .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 10px; }
+        .nav-link.active { color: var(--p2); font-weight: bold; }
+        .nav-link i { font-size: 18px; display: block; margin-bottom: 2px; }
 
         /* واجهة الدردشة */
         #ai-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
-        .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; background: var(--soft); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; }
-        .chat-footer { padding: 15px; display: flex; gap: 10px; border-top: 1px solid #eee; }
-        .chat-footer input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ffd6e7; outline: none; }
-
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; border-top: 1px solid #eee; padding: 10px 0; z-index: 1000; }
-        .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 10px; }
-        .nav-link.active { color: var(--p2); font-weight: bold; }
-        .nav-link i { font-size: 20px; display: block; margin-bottom: 2px; }
     </style>
 </head>
 <body>
@@ -74,27 +66,15 @@
     </header>
 
     <div id="page-home" class="page active">
-        <div style="text-align:center; padding:50px 20px; background: linear-gradient(to bottom, #fff0f6, #fff);">
-            <h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2>
-            <p style="color:#666;">رفيقتكِ الذكية لمتابعة صحتكِ، مشاعركِ، وخبراتكِ</p>
+        <div style="text-align:center; padding:40px 20px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/3588/3588294.png" width="80" style="margin-bottom:15px;">
+            <h2 style="color:var(--p2);">أهلاً بكِ في رقة 🌸</h2>
+            <p style="color:#888;">مساحة آمنة لكل رقيقة تهتم بصحتها وجمالها</p>
         </div>
     </div>
 
     <div id="page-emotions" class="page">
         <button class="ai-header-btn btn-emotions" onclick="openChat('المشاعر')"><i class="fas fa-magic"></i> مستشارة رقة النفسية</button>
-        <p style="text-align:center; font-size:13px; color:#666; font-weight:bold;">كيف تشعرين الآن؟ (مؤشر المزاج)</p>
-        <table class="mood-table">
-            <tr>
-                <td onclick="moodTrack('سعيدة')"><span class="mood-emoji">🥰</span><span class="mood-label">سعيدة</span></td>
-                <td onclick="moodTrack('هادئة')"><span class="mood-emoji">😌</span><span class="mood-label">هادئة</span></td>
-                <td onclick="moodTrack('قلقة')"><span class="mood-emoji">😟</span><span class="mood-label">قلقة</span></td>
-            </tr>
-            <tr>
-                <td onclick="moodTrack('متعبة')"><span class="mood-emoji">😫</span><span class="mood-label">متعبة</span></td>
-                <td onclick="moodTrack('متحمسة')"><span class="mood-emoji">🤩</span><span class="mood-label">متحمسة</span></td>
-                <td onclick="moodTrack('حزينة')"><span class="mood-emoji">😔</span><span class="mood-label">حزينة</span></td>
-            </tr>
-        </table>
         <div id="emotions-feed"></div>
     </div>
 
@@ -104,7 +84,7 @@
     </div>
 
     <div id="page-health" class="page">
-        <button class="ai-header-btn btn-health" onclick="openChat('الصحة')"><i class="fas fa-stethoscope"></i> طبيبة رقة (تحليل البيانات)</button>
+        <button class="ai-header-btn btn-health" onclick="openChat('الصحة')"><i class="fas fa-stethoscope"></i> طبيبة رقة للتحليل</button>
         <div class="health-grid">
             <div class="tracker-item" onclick="showHealthInput('حيض')"><i class="fas fa-tint"></i><span>الحيض</span></div>
             <div class="tracker-item" onclick="showHealthInput('حمل')"><i class="fas fa-baby"></i><span>الحمل</span></div>
@@ -122,10 +102,10 @@
     </div>
 
     <div id="page-swing" class="page">
-        <button class="ai-header-btn btn-swing" onclick="openChat('أرجوحة الأفكار')"><i class="fas fa-lightbulb"></i> ملهمة أرجوحة الأفكار</button>
-        <div class="post-box" onclick="handleSwingPost()">
-            <i class="fas fa-file-upload" style="font-size:30px; color:var(--p2);"></i>
-            <p style="margin:10px 0 0; font-weight:bold;">انشري خبرتكِ (فيديو أو صور من جهازكِ)</p>
+        <button class="ai-header-btn btn-swing" onclick="openChat('الأفكار')"><i class="fas fa-lightbulb"></i> ملهمة أرجوحة الأفكار</button>
+        <div style="background:white; padding:15px; border-radius:15px; border:2px dashed var(--p1); text-align:center; margin-bottom:20px; cursor:pointer;" onclick="handleFullPost()">
+            <i class="fas fa-pen-fancy" style="color:var(--p2); font-size:20px;"></i>
+            <p style="margin:5px 0; font-weight:bold;">اكتبي منشوراً أو ارفعي ميديا من جهازكِ</p>
         </div>
         <div id="swing-feed"></div>
     </div>
@@ -135,88 +115,114 @@
         <div id="fiqh-feed"></div>
     </div>
 
-    <div id="ai-overlay">
-        <div class="chat-header">
-            <i class="fas fa-chevron-right" onclick="closeChat()"></i>
-            <span id="chat-title">رقة الذكية</span>
-        </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" placeholder="اكتبي سؤالكِ هنا...">
-            <button onclick="sendAI()" style="background:var(--p2); color:white; border:none; width:45px; height:45px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
-
     <nav class="nav-bar">
         <a href="#" class="nav-link active" onclick="nav('home', this)"><i class="fas fa-home"></i>الرئيسية</a>
         <a href="#" class="nav-link" onclick="nav('emotions', this)"><i class="fas fa-smile"></i>المشاعر</a>
         <a href="#" class="nav-link" onclick="nav('intimacy', this)"><i class="fas fa-venus-mars"></i>الحميمية</a>
         <a href="#" class="nav-link" onclick="nav('health', this)"><i class="fas fa-heartbeat"></i>الصحة</a>
-        <a href="#" class="nav-link" onclick="nav('swing', this)"><i class="fas fa-comments"></i>أرجوحة الأفكار</a>
+        <a href="#" class="nav-link" onclick="nav('swing', this)"><i class="fas fa-comments"></i>أرجوحة</a>
         <a href="#" class="nav-link" onclick="nav('fiqh', this)"><i class="fas fa-mosque"></i>الفقه</a>
     </nav>
 
     <script>
         const dbMapping = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
 
-        // أرجوحة الأفكار: رفع الفيديو أو الصور من الجهاز
-        async function handleSwingPost() {
-            const { value: file } = await Swal.fire({
-                title: 'ارفعي خبرتكِ (فيديو أو صورة)',
-                input: 'file',
-                inputAttributes: { 'accept': 'image/*,video/*', 'aria-label': 'ارفعي ميديا من جهازكِ' },
-                showCancelButton: true,
-                confirmButtonText: 'اختيار الملف',
-                cancelButtonText: 'إلغاء'
+        // دالة النشر الكامل (نص + ميديا)
+        async function handleFullPost() {
+            const { value: formValues } = await Swal.fire({
+                title: 'شاركي خبرتكِ يا رقيقة',
+                html: `
+                    <textarea id="postText" class="swal2-textarea" style="height:100px" placeholder="ماذا يدور في ذهنك؟"></textarea>
+                    <label style="font-size:12px; display:block; margin-top:10px;">ارفعي صورة أو فيديو من جهازكِ:</label>
+                    <input type="file" id="postFile" class="swal2-file" accept="image/*,video/*">
+                `,
+                confirmButtonText: 'نشر الآن ✨',
+                preConfirm: () => {
+                    return {
+                        content: document.getElementById('postText').value,
+                        file: document.getElementById('postFile').files[0]
+                    }
+                }
             });
 
-            if (file) {
-                const { value: text } = await Swal.fire({
-                    title: 'اكتبي نص الخبرة أو القصة',
-                    input: 'textarea',
-                    inputPlaceholder: 'اروي لنا تجربتكِ...',
-                    showCancelButton: true
-                });
-
-                if (text) {
-                    Swal.fire('تم الرفع!', 'خبرتكِ الآن قيد النشر في الأرجوحة.', 'success');
-                    // كود إرسال FormData للسيرفر يوضع هنا
-                }
+            if (formValues && (formValues.content || formValues.file)) {
+                // محاكاة إرسال البيانات للـ DB
+                Swal.fire('تم النشر بنجاح!', 'شكراً لمشاركة خبرتكِ.', 'success');
             }
         }
 
-        // المتابعات الـ 11 الصحية
+        // جلب المحتوى مع نظام التفاعل
+        async function fetchContent(tab) {
+            const feed = document.getElementById(tab + '-feed');
+            if (!feed || tab === 'home') return;
+            feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">جاري التحميل...</p>';
+            
+            try {
+                const res = await fetch('/api/get-posts');
+                const data = await res.json();
+                const filtered = data.posts.filter(p => p.section === dbMapping[tab]);
+                
+                feed.innerHTML = filtered.map(p => `
+                    <div class="post-card">
+                        <div class="post-content">${p.content}</div>
+                        ${p.media_url ? (p.type === 'فيديو' ? `<video class="post-media" src="${p.media_url}" controls></video>` : `<img class="post-media" src="${p.media_url}">`) : ''}
+                        
+                        <div class="post-actions">
+                            <button class="action-item" onclick="handleLike(this, '${p.id}')">
+                                <i class="fas fa-heart"></i> إعجاب
+                            </button>
+                            <button class="action-item" onclick="handleComment('${p.id}')">
+                                <i class="fas fa-comment"></i> تعليق
+                            </button>
+                            <button class="action-item" onclick="handleShare('${p.content}')">
+                                <i class="fas fa-share-alt"></i> مشاركة
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) { feed.innerHTML = '<p style="text-align:center;">لا توجد منشورات حالياً.</p>'; }
+        }
+
+        // وظائف التفاعل المرتبطة بالقاعدة
+        function handleLike(btn, id) {
+            btn.classList.toggle('liked');
+            btn.style.color = btn.classList.contains('liked') ? '#eb2f96' : '#777';
+            // إرسال طلب إعجاب للسيرفر /api/like
+        }
+
+        async function handleComment(id) {
+            const { value: text } = await Swal.fire({
+                title: 'اكتبي تعليقكِ',
+                input: 'text',
+                confirmButtonText: 'إرسال',
+                inputPlaceholder: 'تعليق رقيق مثلكِ...'
+            });
+            if (text) {
+                // إرسال التعليق للسيرفر /api/comment
+                Swal.fire('شكراً لتعليقكِ!', '', 'success');
+            }
+        }
+
+        function handleShare(txt) {
+            if (navigator.share) {
+                navigator.share({ title: 'رقة', text: txt, url: window.location.href });
+            } else {
+                navigator.clipboard.writeText(txt);
+                Swal.fire('تم نسخ النص للمشاركة!');
+            }
+        }
+
+        // باقي وظائف الصحة والـ AI السابقة
         function showHealthInput(type) {
-            let config = {
-                'حيض': { title: 'موعد الدورة', html: '<label>تاريخ البدء:</label><input type="date" id="d1" class="swal2-input"><select id="d2" class="swal2-input"><option>خفيف</option><option>متوسط</option><option>غزير</option></select>' },
-                'حمل': { title: 'متابعة الحمل', html: '<input type="number" id="d1" placeholder="الأسبوع الحالي" class="swal2-input"><input type="text" id="d2" placeholder="أعراض اليوم" class="swal2-input">' },
-                'ضغط_سكر': { title: 'الضغط والسكري', html: '<input type="text" id="d1" placeholder="قياس الضغط (120/80)" class="swal2-input"><input type="text" id="d2" placeholder="قياس السكر" class="swal2-input">' },
-                'سعادة': { title: 'مؤشر السعادة والامتنان', html: '<input type="range" id="d1" min="1" max="10" class="swal2-input"><input type="text" id="d2" placeholder="ما الذي أسعدكِ اليوم؟" class="swal2-input">' }
-            };
-            
-            let item = config[type] || { title: `متابعة ${type}`, html: '<input type="text" id="d1" placeholder="البيانات" class="swal2-input"><input type="text" id="d2" placeholder="ملاحظات" class="swal2-input">' };
-            
             Swal.fire({
-                title: item.title,
-                html: item.html,
-                confirmButtonText: 'حفظ وتحليل ذكي ✨'
-            }).then((r) => {
-                if(r.isConfirmed) {
-                    openChat('الصحة');
-                    const val = document.getElementById('d1').value;
-                    document.getElementById('chat-input').value = `سجلت في قسم ${type} البيانات التالية: ${val}. قدمي لي نصيحة طبية بناءً على ذلك.`;
-                    sendAI();
-                }
+                title: `متابعة ${type}`,
+                html: '<input type="date" id="h1" class="swal2-input"><input type="text" id="h2" placeholder="ملاحظاتكِ" class="swal2-input">',
+                confirmButtonText: 'تحليل البيانات ✨'
+            }).then(r => {
+                if(r.isConfirmed) { openChat('الصحة'); sendAI(`سجلت بيانات ${type}: ${document.getElementById('h1').value}. حللي حالتي.`); }
             });
         }
 
-        function moodTrack(m) {
-            openChat('المشاعر');
-            document.getElementById('chat-input').value = `أشعر أنني ${m} اليوم، ساعديني في التعامل مع مشاعري وتطويرها.`;
-            sendAI();
-        }
-
-        // الوظائف الأساسية (ناف، جلب محتوى، AI)
         function nav(pageId, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
@@ -225,43 +231,7 @@
             fetchContent(pageId);
         }
 
-        async function fetchContent(tab) {
-            const feed = document.getElementById(tab + '-feed');
-            if (!feed || tab === 'home') return;
-            feed.innerHTML = '<p style="text-align:center; padding:20px;">جاري جلب الخبرات...</p>';
-            try {
-                const res = await fetch('/api/get-posts');
-                const data = await res.json();
-                const filtered = data.posts.filter(p => p.section === dbMapping[tab]);
-                feed.innerHTML = filtered.map(p => `
-                    <div class="post-card">
-                        <p style="white-space:pre-wrap;">${p.content}</p>
-                        ${p.media_url ? (p.type==='فيديو' ? `<video src="${p.media_url}" controls></video>` : `<img src="${p.media_url}">`) : ''}
-                    </div>
-                `).join('');
-            } catch (e) { feed.innerHTML = '<p>لا يوجد محتوى حالياً.</p>'; }
-        }
-
-        function openChat(section) {
-            document.getElementById('chat-title').innerText = `رقة - ${section}`;
-            document.getElementById('ai-overlay').style.display = 'flex';
-        }
-        function closeChat() { document.getElementById('ai-overlay').style.display = 'none'; }
-
-        async function sendAI() {
-            const input = document.getElementById('chat-input');
-            const msgs = document.getElementById('chat-messages');
-            if(!input.value) return;
-            const prompt = input.value;
-            msgs.innerHTML += `<div style="text-align:left; color:#888; margin-bottom:10px;">أنتِ: ${prompt}</div>`;
-            input.value = "";
-            const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prompt }) });
-            const data = await res.json();
-            msgs.innerHTML += `<div style="background:var(--soft); padding:12px; border-radius:15px; border-right:4px solid var(--p2); margin-bottom:15px;"><b>رقة:</b> ${data.reply}</div>`;
-            msgs.scrollTop = msgs.scrollHeight;
-        }
-
         window.onload = () => fetchContent('home');
     </script>
 </body>
-                                                                                                                                                                             </html>
+                                                                                                                             </html>
