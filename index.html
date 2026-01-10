@@ -22,8 +22,8 @@
         .ai-header-btn { color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: bold; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Tajawal'; font-size: 14px; }
         .btn-emotions { background: linear-gradient(45deg, #ff85c0, #722ed1); } 
         .btn-intimacy { background: linear-gradient(45deg, #faad14, #eb2f96); } 
-        .btn-health { background: linear-gradient(45deg, #eb2f96, #ff4d4f); }   
-        .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }    
+        .btn-health { background: linear-gradient(45deg, #eb2f96, #ff4d4f); }    
+        .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }     
         .btn-fiqh { background: linear-gradient(45deg, #52c41a, #722ed1); }      
 
         .mood-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #ffe7f0; box-shadow: 0 2px 8px rgba(235, 47, 150, 0.1); }
@@ -155,7 +155,7 @@
         <div id="chat-messages" class="chat-messages"></div>
         <div class="chat-footer" style="padding:10px; display:flex; gap:5px; background:white;">
             <input type="text" id="chat-input" placeholder="اكتبي رسالتك..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #eee;">
-            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:40px; height:40px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
+            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:40px; height:40px; border-radius:50% ;"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
@@ -174,6 +174,11 @@
         function getNow() {
             const now = new Date();
             return { date: now.toISOString().split('T')[0], time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') };
+        }
+
+        function updateMood(val) {
+            const moods = ["", "حزينة 😔", "قلقة 😟", "هادئة 🧘", "سعيدة 😊", "مبتهجة ✨"];
+            document.getElementById('mood-val').innerText = moods[val];
         }
 
         // --- ضبط مدخلات كروت الصحة الـ 11 ---
@@ -287,7 +292,7 @@
                                     <i class="${p.user_liked ? 'fas' : 'far'} fa-heart"></i> <span>${p.likes_count || 'إعجاب'}</span>
                                 </button>
                                 <button class="action-btn" onclick="document.getElementById('input-${p.id}').focus()"><i class="far fa-comment"></i> تعليق</button>
-                                <button class="action-btn" onclick="sharePost('${p.id}')"><i class="far fa-share-square"></i></button>
+                                <button class="action-btn" onclick="sharePost('${p.id}', '${p.content.substring(0,50)}')"><i class="far fa-share-square"></i> مشاركة</button>
                             </div>
                             <div class="comments-section">
                                 <div id="comment-list-${p.id}">${commentsHtml}</div>
@@ -301,10 +306,59 @@
             } catch(e) { feed.innerHTML = ''; }
         }
 
+        // --- تفعيل نظام عداد الإعجاب ---
         async function handleLike(postId, btn) {
             const isLiked = btn.classList.toggle('active-like');
-            btn.querySelector('i').className = isLiked ? 'fas fa-heart' : 'far fa-heart';
-            fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
+            const icon = btn.querySelector('i');
+            const span = btn.querySelector('span');
+            let currentCount = parseInt(span.innerText) || 0;
+
+            if (isLiked) {
+                icon.className = 'fas fa-heart';
+                currentCount++;
+            } else {
+                icon.className = 'far fa-heart';
+                currentCount--;
+            }
+
+            span.innerText = currentCount > 0 ? currentCount : 'إعجاب';
+
+            fetch('/api/likes', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) 
+            });
+        }
+
+        // --- تفعيل زر المشاركة ---
+        async function sharePost(postId, text) {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'تطبيق رقة 🌸',
+                        text: text + '...',
+                        url: window.location.href
+                    });
+                } catch (err) {
+                    console.log("Error sharing:", err);
+                }
+            } else {
+                // Fallback: Copy to clipboard
+                const dummy = document.createElement('input');
+                document.body.appendChild(dummy);
+                dummy.value = window.location.href;
+                dummy.select();
+                document.execCommand('copy');
+                document.body.removeChild(dummy);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'تم نسخ الرابط لمشاركته!',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            }
         }
 
         async function submitComment(postId) {
@@ -382,4 +436,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-                                                                                                                           </html>
+    </html>
