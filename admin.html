@@ -31,7 +31,7 @@
 
     <div class="card">
         <h3><i class="fas fa-robot"></i> مساعد رقة الذكي</h3>
-        <textarea id="ai-prompt" rows="2" placeholder="اكتبي موضوعاً لتوليد مقال من مكتبتك..."></textarea>
+        <textarea id="ai-prompt" rows="2" placeholder="اكتبي موضوعاً لتوليد مقال..."></textarea>
         <button class="btn btn-ai" onclick="generateAIContent()">
             <i class="fas fa-sparkles"></i> توليد نص ذكي
         </button>
@@ -73,7 +73,7 @@
         </div>
 
         <button class="btn btn-upload" onclick="startUpload()" style="margin-top: 15px;">
-            <i class="fas fa-cloud-upload-alt"></i> نشر الآن (Blob + Neon)
+            <i class="fas fa-cloud-upload-alt"></i> نشر الآن
         </button>
     </div>
 
@@ -85,7 +85,7 @@
 </div>
 
 <script>
-    // 1. وظيفة معاينة الملفات وتحديد النوع تلقائياً
+    // وظيفة المعاينة وتغيير النوع تلقائياً
     function handlePreview(input) {
         const preview = document.getElementById('preview');
         const typeSelect = document.getElementById('type-select');
@@ -97,7 +97,7 @@
 
             if (file.type.startsWith('video')) {
                 preview.innerHTML = `<video src="${url}" controls></video>`;
-                typeSelect.value = 'فيديو';
+                typeSelect.value = 'فيديو'; // يطابق كود الـ API
             } else if (file.type.startsWith('image')) {
                 preview.innerHTML = `<img src="${url}">`;
                 typeSelect.value = 'صورة';
@@ -105,7 +105,7 @@
         }
     }
 
-    // 2. وظيفة الرفع (تتعامل مع API الذي يستخدم BLOB_READ_WRITE_TOKEN)
+    // وظيفة الرفع والنشر (تطابق متغيرات req.body في الـ API)
     async function startUpload() {
         const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
@@ -113,12 +113,12 @@
         const type = document.getElementById('type-select').value;
 
         if (!content && !fileInput.files[0]) {
-            return Swal.fire('تنبيه', 'يرجى كتابة نص أو إرفاق ملف', 'warning');
+            return Swal.fire('تنبيه', 'يرجى كتابة نص أو اختيار ملف', 'warning');
         }
 
         Swal.fire({
             title: 'جاري النشر...',
-            text: 'يتم الآن رفع الملف لـ Vercel Blob وحفظ البيانات في Neon',
+            text: 'يتم الآن الرفع لـ Blob والحفظ في Neon',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
@@ -133,28 +133,37 @@
         }
 
         try {
+            // إرسال البيانات للـ API الذي قدمته
             const response = await fetch('/api/save-post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    content, section, type, 
-                    media_url: base64Data // سيتم معالجته ورفعه لـ Blob في الـ API
+                    content: content, 
+                    section: section, 
+                    type: type, 
+                    media_url: base64Data 
                 })
             });
 
+            const result = await response.json();
+
             if (response.ok) {
-                Swal.fire('تم بنجاح!', 'تم النشر وتحديث قاعدة البيانات', 'success');
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم النشر بنجاح!',
+                    text: 'تم الرفع إلى Vercel Blob وتخزين الرابط في Neon',
+                    timer: 2000
+                });
                 setTimeout(() => location.reload(), 2000);
             } else {
-                const error = await response.json();
-                throw new Error(error.message || 'فشل الاتصال بالـ API');
+                throw new Error(result.error || 'حدث خطأ في الـ API');
             }
         } catch (err) {
-            Swal.fire('خطأ', err.message, 'error');
+            Swal.fire('فشل النشر', err.message, 'error');
         }
     }
 
-    // 3. وظيفة الذكاء الاصطناعي (تستخدم RAQQA_SECRET_AI في الـ API)
+    // وظيفة الذكاء الاصطناعي (تستخدم سر RAQQA_SECRET_AI في الخلفية)
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
         if(!prompt) return Swal.fire('تنبيه', 'اكتبي موضوعاً أولاً', 'warning');
@@ -169,19 +178,19 @@
             const data = await res.json();
             document.getElementById('main-content').value = data.reply;
         } catch (err) {
-            Swal.fire('خطأ', 'فشل في توليد النص', 'error');
+            Swal.fire('خطأ', 'فشل الاتصال بخدمة الذكاء الاصطناعي', 'error');
         }
         document.getElementById('ai-loading').style.display = 'none';
     }
 
-    // 4. وظيفة الحذف (تستخدم POSTGRES_URL في الـ API)
+    // وظيفة الحذف (تستخدم POSTGRES_URL في الخلفية)
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
         if(!id) return Swal.fire('تنبيه', 'أدخلي رقم المنشور', 'info');
 
         const result = await Swal.fire({
-            title: 'تأكيد الحذف؟',
-            text: "سيتم مسح البيانات من قاعدة بيانات Neon",
+            title: 'هل أنتِ متأكدة؟',
+            text: "سيتم مسح البيانات نهائياً من Neon",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'نعم، احذفي'
@@ -190,13 +199,13 @@
         if (result.isConfirmed) {
             try {
                 const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
-                if(res.ok) Swal.fire('تم الحذف', '', 'success');
-                else Swal.fire('خطأ', 'لم يتم العثور على المنشور', 'error');
+                if(res.ok) Swal.fire('تم الحذف', 'تم إزالة المنشور بنجاح', 'success');
+                else Swal.fire('خطأ', 'الرقم غير موجود', 'error');
             } catch (err) {
-                Swal.fire('خطأ', 'حدثت مشكلة في الاتصال', 'error');
+                Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error');
             }
         }
     }
 </script>
 </body>
-</html>
+    </html>
