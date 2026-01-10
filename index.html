@@ -19,13 +19,13 @@
         .page.active { display: block; }
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
 
-        /* أزرار AI */
+        /* أزرار الأقسام */
         .ai-header-btn { color: white; border: none; width: 100%; padding: 14px; border-radius: 12px; font-weight: bold; margin-bottom: 15px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Tajawal'; font-size: 14px; }
-        .btn-emotions { background: linear-gradient(45deg, #ff85c0, #722ed1); }
-        .btn-health { background: linear-gradient(45deg, #eb2f96, #ff4d4f); }
-        .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }
-        .btn-fiqh { background: linear-gradient(45deg, #52c41a, #722ed1); }
-        .btn-intimacy { background: linear-gradient(45deg, #faad14, #eb2f96); }
+        .btn-emotions { background: linear-gradient(45deg, #ff85c0, #722ed1); } /* 1 */
+        .btn-intimacy { background: linear-gradient(45deg, #faad14, #eb2f96); } /* 2 */
+        .btn-health { background: linear-gradient(45deg, #eb2f96, #ff4d4f); }   /* 3 */
+        .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }    /* 4 */
+        .btn-fiqh { background: linear-gradient(45deg, #52c41a, #722ed1); }     /* 5 */
 
         /* كروت الصحة الـ 11 */
         .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
@@ -33,11 +33,16 @@
         .tracker-item i { font-size: 18px; color: var(--p2); margin-bottom: 4px; display: block; }
         .tracker-item span { font-size: 10px; font-weight: bold; }
 
-        /* مؤشر المزاج */
-        .mood-tracker-box { background: white; padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: center; border: 1px solid #ffe7f0; }
-        .mood-slider { width: 100%; accent-color: var(--p2); }
+        /* شات الأرجوحة */
+        .swing-card { background: white; border-radius: 18px; padding: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
+        .swing-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .swing-avatar { width: 35px; height: 35px; background: var(--soft); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--p2); }
+        .swing-body { background: #f9f9f9; padding: 12px; border-radius: 12px; font-size: 14px; line-height: 1.6; margin-bottom: 10px; }
+        .swing-media { width: 100%; border-radius: 10px; margin-top: 10px; max-height: 300px; object-fit: cover; }
+        .swing-actions { border-top: 1px dashed #eee; padding-top: 10px; display: flex; justify-content: space-between; }
+        .group-chat-btn { color: var(--purp); font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; }
 
-        /* نظام الشات والمحفوظات */
+        /* واجهة الشات العائمة */
         #ai-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: var(--soft); }
         .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -45,12 +50,7 @@
         .msg-user { align-self: flex-start; background: #f0f0f0; border-radius: 0 15px 15px 15px; }
         .msg-ai { align-self: flex-end; background: var(--soft); border-right: 4px solid var(--p2); border-radius: 15px 0 15px 15px; cursor: pointer; }
 
-        /* شات الأرجوحة الجماعي */
-        .swing-chat-item { background: white; border-radius: 18px; padding: 15px; margin-bottom: 15px; border: 1px solid #f0f0f0; }
-        .swing-content { background: #f9f9f9; padding: 12px; border-radius: 12px; font-size: 14px; }
-        .swing-media { width: 100%; border-radius: 10px; margin-top: 10px; }
-        .group-chat-btn { margin-top: 10px; color: var(--p2); font-size: 13px; cursor: pointer; font-weight: bold; }
-
+        /* التنقل السفلي */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; border-top: 1px solid #eee; padding: 8px 0; z-index: 1000; }
         .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 10px; }
         .nav-link.active { color: var(--p2); font-weight: bold; }
@@ -62,7 +62,7 @@
     <header class="top-nav">
         <a href="https://facebook.com/raqqa" style="color:#1877f2;"><i class="fab fa-facebook fa-lg"></i></a>
         <div class="logo-text">رقة</div>
-        <a href="https://raqqa-v6cd.vercel.app/vr-world.html" class="vr-link"><i class="fas fa-heart"></i> عالم رقة</a>
+        <a href="#" class="vr-link"><i class="fas fa-heart"></i> عالم رقة</a>
     </header>
 
     <div id="page-home" class="page active"><div style="text-align:center; padding:60px 20px;"><i class="fas fa-sparkles" style="font-size:50px; color:var(--p1);"></i><h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2></div></div>
@@ -86,44 +86,46 @@
     </div>
 
     <div id="page-emotions" class="page">
-        <div class="mood-tracker-box">
-            <p>مزاجكِ الآن: <span id="mood-label">سعيدة ✨</span></p>
-            <input type="range" min="1" max="5" value="4" class="mood-slider" oninput="updateMood(this.value)">
-        </div>
         <button class="ai-header-btn btn-emotions" onclick="openChat('المشاعر')">مستشارة رقة النفسية</button>
         <div id="emotions-feed"></div>
     </div>
 
     <div id="page-swing" class="page">
         <button class="ai-header-btn btn-swing" onclick="openChat('الأفكار')">ملهمة أرجوحة الأفكار</button>
-        <div style="background:white; padding:15px; border-radius:15px; border:2px dashed var(--p1); text-align:center;">
+        <div style="background:white; padding:15px; border-radius:15px; border:2px dashed var(--p1); text-align:center; margin-bottom:20px;">
             <div style="display:flex; gap:10px; justify-content:center;">
-                <label style="cursor:pointer; background:var(--soft); padding:8px 15px; border-radius:10px; font-size:12px;">
-                    <i class="fas fa-camera"></i> رفع ميديا
-                    <input type="file" id="media-upload" accept="image/*,video/*" style="display:none;" onchange="handleMediaSelect(this)">
+                <label style="cursor:pointer; background:var(--soft); padding:8px 15px; border-radius:10px; font-size:12px; color:var(--p2);">
+                    <i class="fas fa-camera"></i> إضافة صورة
+                    <input type="file" id="media-upload" accept="image/*" style="display:none;" onchange="handleMediaSelect(this)">
                 </label>
                 <button onclick="handleFullPost()" style="background:var(--p2); color:white; border:none; padding:8px 15px; border-radius:10px; font-size:12px;">نشر الآن</button>
             </div>
             <div id="preview-container" style="margin-top:10px; display:none;">
-                <img id="media-preview" style="width:50px; height:50px; border-radius:5px; object-fit:cover;">
+                <img id="media-preview" style="width:60px; height:60px; border-radius:8px; object-fit:cover;">
             </div>
         </div>
-        <div id="swing-feed" style="margin-top:20px;"></div>
+        <div id="swing-feed"></div>
     </div>
 
-    <div id="page-intimacy" class="page"><button class="ai-header-btn btn-intimacy" onclick="openChat('الحميمية')">استشارية العلاقات</button><div id="intimacy-feed"></div></div>
-    <div id="page-fiqh" class="page"><button class="ai-header-btn btn-fiqh" onclick="openChat('الفقه')">فقيهة رقة</button><div id="fiqh-feed"></div></div>
+    <div id="page-intimacy" class="page">
+        <button class="ai-header-btn btn-intimacy" onclick="openChat('الحميمية')">استشارية العلاقات</button>
+        <div id="intimacy-feed"></div>
+    </div>
+
+    <div id="page-fiqh" class="page">
+        <button class="ai-header-btn btn-fiqh" onclick="openChat('الفقه')">فقيهة رقة</button>
+        <div id="fiqh-feed"></div>
+    </div>
 
     <div id="ai-overlay">
         <div class="chat-header">
             <i class="fas fa-chevron-right" onclick="closeChat()"></i>
             <span id="chat-title">رقة الذكية</span>
-            <i class="fas fa-bookmark" onclick="toggleSavedNotes()" style="cursor:pointer; color:var(--p2);"></i>
+            <i class="fas fa-bookmark" style="color:var(--p2);"></i>
         </div>
-        <div id="saved-notes-panel" style="display:none; padding:10px; background:#f9f9f9;"><div id="saved-items-container"></div></div>
         <div id="chat-messages" class="chat-messages"></div>
         <div class="chat-footer" style="padding:10px; display:flex; gap:5px;">
-            <input type="text" id="chat-input" placeholder="اكتبي سؤالكِ هنا..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #eee;">
+            <input type="text" id="chat-input" placeholder="اكتبي رسالتك..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #eee;">
             <button onclick="sendAI()" style="background:var(--p2); color:white; border:none; width:40px; height:40px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
@@ -138,7 +140,7 @@
     </nav>
 
     <script>
-        // دالة تعيين التاريخ والوقت الجاهز
+        // 1. دالة التوقيت التلقائي
         function getNow() {
             const now = new Date();
             const date = now.toISOString().split('T')[0];
@@ -146,37 +148,85 @@
             return { date, time };
         }
 
+        // 2. إعداد كروت الصحة مع التوقيت التلقائي
         function showHealthInput(type) {
             const { date, time } = getNow();
             let config = {
                 'حيض': { title: 'متابعة الدورة', html: `<label>تاريخ البدء:</label><input type="date" id="v1" value="${date}" class="swal2-input"><select id="v2" class="swal2-input"><option>خفيف</option><option>متوسط</option><option>غزير</option></select>` },
-                'حمل': { title: 'متابعة الحمل', html: `<input type="number" id="v1" placeholder="أسبوع الحمل" class="swal2-input"><input type="text" id="v2" placeholder="أعراض اليوم (${date})" class="swal2-input">` },
-                'رضاعة': { title: 'الرضاعة', html: `<input type="number" id="v1" placeholder="عدد الرضعات اليوم" class="swal2-input"><input type="text" id="v2" placeholder="ملاحظات الساعة ${time}" class="swal2-input">` },
-                'أمومة': { title: 'تطور الطفل', html: `<input type="text" id="v1" placeholder="ما الجديد اليوم؟" class="swal2-input"><input type="hidden" id="v2" value="${date}">` },
+                'حمل': { title: 'متابعة الحمل', html: `<input type="number" id="v1" placeholder="أسبوع الحمل" class="swal2-input"><input type="text" id="v2" placeholder="أعراض اليوم ${date}" class="swal2-input">` },
+                'رضاعة': { title: 'الرضاعة', html: `<input type="number" id="v1" placeholder="عدد الرضعات" class="swal2-input"><input type="text" id="v2" placeholder="ملاحظة وقت ${time}" class="swal2-input">` },
+                'أمومة': { title: 'الأمومة', html: `<input type="text" id="v1" placeholder="حدث اليوم" class="swal2-input"><input type="hidden" id="v2" value="${time}">` },
                 'تخسيس': { title: 'الوزن والرشاقة', html: `<input type="number" id="v1" placeholder="الوزن الحالي" class="swal2-input"><input type="text" id="v2" placeholder="وجبة الساعة ${time}" class="swal2-input">` },
-                'طبيب': { title: 'موعد الطبيب', html: `<input type="date" id="v1" value="${date}" class="swal2-input"><input type="text" id="v2" placeholder="ملخص الاستشارة" class="swal2-input">` },
-                'ضغط_سكر': { title: 'الضغط والسكر', html: `<input type="text" id="v1" placeholder="قياس الضغط" class="swal2-input"><input type="number" id="v2" placeholder="السكر في وقت ${time}" class="swal2-input">` },
-                'رياضة': { title: 'النشاط البدني', html: `<input type="text" id="v1" placeholder="نوع التمرين" class="swal2-input"><input type="number" id="v2" placeholder="المدة (بدأت ${time})" class="swal2-input">` },
-                'بشرة': { title: 'روتين البشرة', html: `<input type="text" id="v1" placeholder="المنتج المستخدم" class="swal2-input"><input type="hidden" id="v2" value="${date}">` },
-                'نوم': { title: 'جودة النوم', html: `<input type="number" id="v1" placeholder="عدد الساعات" class="swal2-input"><select id="v2" class="swal2-input"><option>عميق</option><option>متقطع</option></select>` },
-                'سعادة': { title: 'مؤشر السعادة', html: `<input type="range" id="v1" min="1" max="10" class="swal2-input"><input type="text" id="v2" value="لحظة امتنان في ${date}" class="swal2-input">` }
+                'طبيب': { title: 'زيارة الطبيب', html: `<input type="date" id="v1" value="${date}" class="swal2-input"><input type="text" id="v2" placeholder="النتائج" class="swal2-input">` },
+                'ضغط_سكر': { title: 'الضغط والسكر', html: `<input type="text" id="v1" placeholder="الضغط" class="swal2-input"><input type="number" id="v2" placeholder="السكر (${time})" class="swal2-input">` },
+                'رياضة': { title: 'الرياضة', html: `<input type="text" id="v1" placeholder="نوع التمرين" class="swal2-input"><input type="number" id="v2" placeholder="المدة (بدأت ${time})" class="swal2-input">` },
+                'بشرة': { title: 'البشرة', html: `<input type="text" id="v1" placeholder="المنتج المستخدم" class="swal2-input"><input type="hidden" id="v2" value="${date}">` },
+                'نوم': { title: 'النوم', html: `<input type="number" id="v1" placeholder="ساعات النوم" class="swal2-input"><select id="v2" class="swal2-input"><option>جيد</option><option>متقطع</option></select>` },
+                'سعادة': { title: 'لحظة سعادة', html: `<input type="range" id="v1" min="1" max="10" class="swal2-input"><input type="text" id="v2" placeholder="سبب سعادتكِ اليوم؟" class="swal2-input">` }
             };
 
             const item = config[type];
-            Swal.fire({ title: item.title, html: item.html, confirmButtonText: 'تحليل رقة الذكي ✨' }).then(r => {
+            Swal.fire({ title: item.title, html: item.html, confirmButtonText: 'حفظ وتحليل ✨' }).then(r => {
                 if(r.isConfirmed) {
-                    const val1 = document.getElementById('v1').value;
-                    const val2 = document.getElementById('v2').value;
+                    const v1 = document.getElementById('v1').value;
+                    const v2 = document.getElementById('v2').value;
                     openChat('الصحة');
-                    sendAI(`بيانات متابعة ${type}: ${val1} و ${val2}. قدمي لي تحليلاً طبياً رقيقاً ومختصراً.`);
+                    sendAI(`بيانات ${type} بتاريخ ${date}: ${v1}، ${v2}. حللي هذا طبياً بلطف.`);
                 }
             });
         }
 
-        // باقي وظائف التطبيق كما هي دون تغيير
+        // 3. جلب البيانات من Neon حسب المسميات في الصورة
+        async function fetchContent(tab) {
+            const feed = document.getElementById(tab + '-feed');
+            
+            // خريطة الأقسام حسب طلبك وصورة DB
+            const dbMap = { 
+                'emotions': 'bouh-display-1',
+                'intimacy': 'bouh-display-2',
+                'health': 'bouh-display-3',
+                'swing': 'bouh-display-4', // الأرجوحة
+                'fiqh': 'bouh-display-5'
+            };
+
+            feed.innerHTML = '<p style="text-align:center; color:#888;">جاري التحميل...</p>';
+            
+            try {
+                const res = await fetch('/api/get-posts');
+                const data = await res.json();
+                const filtered = data.posts.filter(p => p.section === dbMap[tab]);
+                
+                if(tab === 'swing') {
+                    // تصميم خاص للأرجوحة: شات جماعي + ميديا
+                    feed.innerHTML = filtered.map(p => `
+                        <div class="swing-card">
+                            <div class="swing-header">
+                                <div class="swing-avatar"><i class="fas fa-user"></i></div>
+                                <div><strong style="font-size:13px;">صديقة رقة</strong></div>
+                            </div>
+                            <div class="swing-body">${p.content}</div>
+                            ${p.media_url ? `<img src="${p.media_url}" class="swing-media">` : ''}
+                            <div class="swing-actions">
+                                <div class="group-chat-btn" onclick="openChat('مناقشة جماعية حول: ${p.content.substring(0,20)}...')">
+                                    <i class="fas fa-comments"></i> شات جماعي للمناقشة
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    feed.innerHTML = filtered.map(p => `
+                        <div style="background:white; padding:15px; border-radius:15px; margin-bottom:10px; border:1px solid #f0f0f0;">
+                            <p>${p.content}</p>
+                            ${p.media_url ? `<img src="${p.media_url}" style="width:100%; border-radius:10px;">` : ''}
+                        </div>
+                    `).join('');
+                }
+            } catch(e) { feed.innerHTML = ''; }
+        }
+
+        // باقي الوظائف (نشر، تنقل، شات)
         let selectedFile = null;
-        let chatHistory = JSON.parse(localStorage.getItem('raqqa_history_v2')) || [];
-        let savedNotes = JSON.parse(localStorage.getItem('raqqa_saved_v2')) || [];
+        let chatHistory = [];
 
         function handleMediaSelect(input) {
             if (input.files && input.files[0]) {
@@ -191,39 +241,11 @@
         }
 
         async function handleFullPost() {
-            const { value: text } = await Swal.fire({ title: 'انشري فكرتكِ', input: 'textarea', inputPlaceholder: 'ماذا يدور في خاطركِ؟' });
-            if (text || selectedFile) {
-                Swal.fire('تم النشر بنجاح 🌸', '', 'success');
-                selectedFile = null;
-                document.getElementById('preview-container').style.display = 'none';
+            const { value: text } = await Swal.fire({ title: 'أرجوحة الأفكار', input: 'textarea', inputPlaceholder: 'ماذا يدور في ذهنك؟' });
+            if (text) {
+                Swal.fire('تم النشر بنجاح', '', 'success');
+                // هنا يتم إضافة كود رفع البيانات للـ API
             }
-        }
-
-        function updateMood(val) {
-            const moods = ['متعبة 😔', 'قلقة 😟', 'هادئة 🧘', 'سعيدة ✨', 'ممتازة 😍'];
-            document.getElementById('mood-label').innerText = moods[val-1];
-        }
-
-        async function fetchContent(tab) {
-            const feed = document.getElementById(tab + '-feed');
-            const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
-            feed.innerHTML = '<p style="text-align:center;">جاري الجلب... ✨</p>';
-            try {
-                const res = await fetch('/api/get-posts');
-                const data = await res.json();
-                const filtered = data.posts.filter(p => p.section === dbMap[tab]);
-                feed.innerHTML = filtered.map(p => `
-                    <div class="swing-chat-item">
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div style="width:30px; height:30px; background:var(--soft); border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--p2); font-size:12px;"><i class="fas fa-user"></i></div>
-                            <strong style="font-size:12px;">صديقة رقة</strong>
-                        </div>
-                        <div class="swing-content">${p.content}</div>
-                        ${p.media_url ? `<img src="${p.media_url}" class="swing-media">` : ''}
-                        <div class="group-chat-btn" onclick="openChat('شات جماعي حول: ${p.content.substring(0,15)}...')"><i class="fas fa-comments"></i> شات جماعي</div>
-                    </div>
-                `).join('');
-            } catch(e) { feed.innerHTML = ''; }
         }
 
         function nav(id, el) {
@@ -234,48 +256,29 @@
             if(id !== 'home') fetchContent(id);
         }
 
-        function openChat(section) {
-            document.getElementById('chat-title').innerText = section;
+        function openChat(title) {
+            document.getElementById('chat-title').innerText = title;
             document.getElementById('ai-overlay').style.display = 'flex';
-            renderHistory();
         }
         function closeChat() { document.getElementById('ai-overlay').style.display = 'none'; }
-        
-        async function sendAI(customPrompt = null) {
+
+        async function sendAI(customMsg = null) {
             const input = document.getElementById('chat-input');
-            const prompt = customPrompt || input.value;
-            if(!prompt) return;
-            chatHistory.push({ role: 'user', text: prompt });
-            renderHistory();
-            input.value = "";
+            const msg = customMsg || input.value;
+            if(!msg) return;
+            
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.innerHTML += `<div class="msg msg-user">${msg}</div>`;
+            input.value = '';
+            
             try {
-                const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prompt }) });
+                const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: msg }) });
                 const data = await res.json();
-                chatHistory.push({ role: 'ai', text: data.reply });
-                localStorage.setItem('raqqa_history_v2', JSON.stringify(chatHistory));
-                renderHistory();
-            } catch (e) { chatHistory.push({ role: 'ai', text: 'رقة معكِ، حدث خطأ بسيط في الاتصال.' }); renderHistory(); }
-        }
-
-        function renderHistory() {
-            const container = document.getElementById('chat-messages');
-            container.innerHTML = chatHistory.map((m, i) => `<div class="msg ${m.role==='user'?'msg-user':'msg-ai'}" onclick="${m.role==='ai'?`saveNote(${i})`:'' }">${m.text}</div>`).join('');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function saveNote(i) {
-            const txt = chatHistory[i].text;
-            if(!savedNotes.includes(txt)) {
-                savedNotes.push(txt);
-                localStorage.setItem('raqqa_saved_v2', JSON.stringify(savedNotes));
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'حفظ في مكتبتكِ 📌', showConfirmButton: false, timer: 1000 });
+                chatBox.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch(e) {
+                chatBox.innerHTML += `<div class="msg msg-ai">عذراً، حدث خطأ في الاتصال.</div>`;
             }
-        }
-
-        function toggleSavedNotes() {
-            const panel = document.getElementById('saved-notes-panel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            document.getElementById('saved-items-container').innerHTML = savedNotes.map(n => `<div style="font-size:11px; padding:5px; border-bottom:1px solid #ddd;">${n.substring(0,40)}...</div>`).join('');
         }
 
         window.onload = () => nav('home', document.querySelector('.nav-link'));
