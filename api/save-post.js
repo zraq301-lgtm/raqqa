@@ -1,6 +1,7 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
+    // إعدادات CORS للسماح بالطلبات
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,7 +12,7 @@ export default async function handler(req, res) {
     try {
         const { content, section, type, media_url } = req.body;
 
-        // الحفظ المباشر في نيون (الرابط يأتي جاهزاً من الواجهة الأمامية)
+        // تنفيذ عملية الإدخال في Neon DB
         await sql`
             INSERT INTO posts (content, section, type, media_url, created_at)
             VALUES (${content}, ${section}, ${type}, ${media_url}, NOW());
@@ -19,7 +20,7 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true });
     } catch (error) {
-        console.error(error);
+        console.error('Neon Error:', error);
         return res.status(500).json({ error: error.message });
     }
 }
