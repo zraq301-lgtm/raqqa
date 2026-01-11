@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -44,13 +44,13 @@
 
     <div class="card">
         <h3><i class="fas fa-robot"></i> مساعد رقة الذكي</h3>
-        <textarea id="ai-prompt" rows="2" placeholder="اكتبي موضوعاً ليتم صياغته..."></textarea>
+        <textarea id="ai-prompt" rows="2" placeholder="اكتبي موضوعاً ليقوم الذكاء الاصطناعي بصياغته..."></textarea>
         <div class="btn-group">
             <button class="btn btn-ai" onclick="generateAIContent()">
                 <i class="fas fa-sparkles"></i> توليد نص
             </button>
             <button class="btn btn-clear" onclick="document.getElementById('main-content').value = ''">
-                <i class="fas fa-eraser"></i> مسح
+                <i class="fas fa-eraser"></i> مسح الخانة
             </button>
         </div>
         <div id="ai-loading" class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> رقة تكتب لكِ...</div>
@@ -109,7 +109,7 @@
 </div>
 
 <script>
-    // معاينة الملف
+    // وظيفة معاينة الملفات
     function handlePreview(input) {
         const preview = document.getElementById('preview');
         const typeSelect = document.getElementById('type-select');
@@ -127,7 +127,7 @@
         }
     }
 
-    // منطق الرفع المباشر (Direct Upload) لحل مشكلة Vercel Blob
+    // المنطق المدمج: رفع للـ Blob ثم حفظ في Neon
     async function startPublish() {
         const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
@@ -139,24 +139,25 @@
 
         try {
             let mediaUrl = null;
+
+            // المرحلة 1: الرفع المباشر لـ Vercel Blob (التقنية الأسرع)
             if (file) {
                 document.getElementById('progress-container').style.display = 'block';
                 const pBar = document.getElementById('progress-bar');
                 const pText = document.getElementById('progress-text');
 
-                // الرفع المباشر يتخطى حدود الـ API والـ 10 ثواني
                 const blob = await window.blobUpload(file.name, file, {
                     access: 'public',
                     handleUploadUrl: '/api/upload-token', 
                     onUploadProgress: (p) => {
                         pBar.style.width = p.percentage + '%';
-                        pText.innerText = `جاري رفع الملف... ${p.percentage}%`;
+                        pText.innerText = `جاري الرفع... ${p.percentage}%`;
                     }
                 });
-                mediaUrl = blob.url;
+                mediaUrl = blob.url; // الحصول على رابط الفيديو/الصورة المباشر
             }
 
-            // إرسال البيانات لقاعدة نيون
+            // المرحلة 2: حفظ الرابط والنص في قاعدة بيانات نيون (Neon)
             const res = await fetch('/api/save-post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -164,17 +165,18 @@
             });
 
             if (res.ok) {
-                Swal.fire('تم بنجاح!', 'تم حفظ المنشور في قاعدة البيانات', 'success');
+                Swal.fire('تم بنجاح!', 'تم النشر وحفظ البيانات في نيون', 'success');
                 setTimeout(() => location.reload(), 1500);
             } else {
                 throw new Error();
             }
         } catch (err) {
-            Swal.fire('خطأ', 'فشل الرفع. تأكدي من وجود ملف api/upload-token.js في جيت هب', 'error');
+            console.error(err);
+            Swal.fire('خطأ', 'تأكدي من إعدادات Vercel Blob و Neon DB', 'error');
         }
     }
 
-    // الذكاء الاصطناعي
+    // استدعاء الذكاء الاصطناعي
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
         if (!prompt) return Swal.fire('تنبيه', 'أدخلي فكرة أولاً', 'info');
@@ -193,27 +195,27 @@
         document.getElementById('ai-loading').style.display = 'none';
     }
 
-    // الحذف
+    // حذف منشور
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
         if (!id) return Swal.fire('تنبيه', 'أدخلي ID المنشور', 'info');
         const confirm = await Swal.fire({
             title: 'تأكيد الحذف؟',
-            text: "سيتم المسح من نيون نهائياً",
+            text: "سيتم المسح نهائياً من قاعدة البيانات",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'احذفي الآن'
+            confirmButtonText: 'نعم، احذفي'
         });
         if (confirm.isConfirmed) {
             try {
                 const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
-                if (res.ok) Swal.fire('تم الحذف', '', 'success');
+                if (res.ok) Swal.fire('تم الحذف بنجاح', '', 'success');
                 else Swal.fire('خطأ', 'الرقم غير موجود', 'error');
             } catch (err) {
-                Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error');
+                Swal.fire('خطأ', 'فشل الاتصال بالقاعدة', 'error');
             }
         }
     }
 </script>
 </body>
-    </html>
+                                                                   </html>       
