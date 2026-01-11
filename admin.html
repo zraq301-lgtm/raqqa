@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم رقة - المطور</title>
+    <title>لوحة تحكم رقة - النظام المطور</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -16,47 +16,47 @@
     <style>
         :root { --primary: #e91e63; --secondary: #673ab7; --bg: #fdf6f8; --dark: #333; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); padding: 15px; direction: rtl; }
-        .admin-container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
-        h1 { color: var(--primary); text-align: center; margin-bottom: 25px; }
-        .card { background: #fff; border: 1px solid #eee; padding: 20px; border-radius: 20px; margin-bottom: 20px; }
-        label { display: block; margin: 12px 0 5px; font-weight: bold; color: #555; }
+        .admin-container { max-width: 650px; margin: 0 auto; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
+        h1 { color: var(--primary); text-align: center; margin-bottom: 25px; font-weight: 700; }
+        .card { background: #fff; border: 1px solid #f1f1f1; padding: 20px; border-radius: 20px; margin-bottom: 20px; }
+        label { display: block; margin: 12px 0 5px; font-weight: bold; color: var(--dark); }
         input, textarea, select { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 12px; margin-bottom: 10px; font-family: 'Tajawal'; box-sizing: border-box; outline: none; }
-        .btn-group { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn { padding: 14px; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; width: 100%; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-upload { background: var(--primary); }
         .btn-ai { background: var(--secondary); }
-        .btn-clear { background: #f0f0f0; color: #555; width: 40%; }
+        .btn-clear { background: #f1f1f1; color: #666; width: 35%; }
         .btn-delete { background: var(--dark); }
-        #progress-container { display: none; margin: 15px 0; background: #f0f0f0; border-radius: 10px; overflow: hidden; height: 12px; }
+        #progress-container { display: none; margin: 15px 0; background: #eee; border-radius: 10px; overflow: hidden; height: 12px; }
         #progress-bar { width: 0%; height: 100%; background: var(--primary); transition: 0.3s; }
-        #preview { margin: 15px 0; border-radius: 15px; text-align: center; background: #fafafa; border: 2px dashed #eee; min-height: 50px; }
-        #preview img, #preview video { max-width: 100%; border-radius: 12px; max-height: 200px; }
+        #preview { margin: 15px 0; border-radius: 15px; text-align: center; background: #fafafa; border: 2px dashed #eee; min-height: 50px; overflow: hidden; }
+        #preview img, #preview video { max-width: 100%; border-radius: 12px; max-height: 250px; }
         .loading-spinner { display: none; text-align: center; color: var(--secondary); margin: 10px 0; }
     </style>
 </head>
 <body>
 
 <div class="admin-container">
-    <h1><i class="fas fa-magic"></i> إدارة محتوى رقة</h1>
+    <h1><i class="fas fa-gem"></i> إدارة محتوى رقة</h1>
 
     <div class="card">
-        <h3><i class="fas fa-robot"></i> مساعد الذكاء الاصطناعي</h3>
-        <textarea id="ai-prompt" rows="2" placeholder="اكتبي فكرة أو عنوان ليقوم الذكاء الاصطناعي بكتابتها..."></textarea>
+        <h3><i class="fas fa-robot"></i> مساعد رقة الذكي</h3>
+        <textarea id="ai-prompt" rows="2" placeholder="اكتبي فكرة ليقوم الذكاء الاصطناعي بصياغتها..."></textarea>
         <div class="btn-group">
             <button class="btn btn-ai" onclick="generateAIContent()">
                 <i class="fas fa-sparkles"></i> توليد نص
             </button>
             <button class="btn btn-clear" onclick="document.getElementById('main-content').value = ''">
-                مسح الخانة
+                <i class="fas fa-eraser"></i> مسح الخانة
             </button>
         </div>
-        <div id="ai-loading" class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> رقة تكتب لكِ...</div>
+        <div id="ai-loading" class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> رقة تكتب لكِ الآن...</div>
     </div>
 
     <div class="card">
         <h3><i class="fas fa-plus-circle"></i> إضافة منشور جديد</h3>
         
-        <label>نص المنشور:</label>
+        <label>محتوى المنشور:</label>
         <textarea id="main-content" rows="4" placeholder="اكتبي المحتوى هنا..."></textarea>
 
         <label>إرفاق فيديو أو صورة:</label>
@@ -66,14 +66,14 @@
 
         <div id="progress-container">
             <div id="progress-bar"></div>
+            <p id="progress-text" style="text-align: center; font-size: 11px; margin-top: 5px; color: var(--primary);">0%</p>
         </div>
-        <p id="progress-text" style="display:none; text-align:center; font-size:12px; margin-top:5px;"></p>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
                 <label>القسم:</label>
                 <select id="section-select">
-                    <option value="bouh-display-1">🌸 المشاعر</option>
+                    <option value="bouh-display-1">🌸 المشاعر والبوح</option>
                     <option value="bouh-display-2">🕯️ الحميمية</option>
                     <option value="bouh-display-3">🩺 الصحة</option>
                     <option value="bouh-display-4">🎡 أرجوحة الأفكار</option>
@@ -83,29 +83,30 @@
             <div>
                 <label>نوع الملف:</label>
                 <select id="type-select">
-                    <option value="نصي">نصي فقط</option>
+                    <option value="نصي">نص فقط</option>
                     <option value="صورة">صورة</option>
                     <option value="فيديو">فيديو</option>
                 </select>
             </div>
         </div>
 
-        <button class="btn btn-upload" onclick="startUpload()" style="margin-top: 15px;">
-            <i class="fas fa-cloud-upload-alt"></i> نشر في نيون (Neon)
+        <button class="btn btn-upload" onclick="startPublish()" style="margin-top: 20px;">
+            <i class="fas fa-cloud-upload-alt"></i> نشر الآن في نيون
         </button>
     </div>
 
     <div class="card">
         <h3><i class="fas fa-trash-alt"></i> حذف منشور</h3>
-        <input type="number" id="delete-id" placeholder="أدخلي ID المنشور المراد حذفه">
+        <label>رقم المنشور (ID):</label>
+        <input type="number" id="delete-id" placeholder="أدخلي ID المنشور للحذف">
         <button class="btn btn-delete" onclick="deletePost()">
-            <i class="fas fa-trash"></i> حذف نهائي
+            <i class="fas fa-trash"></i> حذف نهائي من القاعدة
         </button>
     </div>
 </div>
 
 <script>
-    // 1. معاينة الملف
+    // معاينة الملف المختار
     function handlePreview(input) {
         const preview = document.getElementById('preview');
         const typeSelect = document.getElementById('type-select');
@@ -123,38 +124,37 @@
         }
     }
 
-    // 2. منطق الرفع والنشر (يتعامل مع Vercel Blob مباشرة)
-    async function startUpload() {
+    // منطق النشر المطور (رفع مباشر لتجنب أخطاء Vercel Blob)
+    async function startPublish() {
         const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
         const section = document.getElementById('section-select').value;
         const type = document.getElementById('type-select').value;
         const file = fileInput.files[0];
 
-        if (!content && !file) return Swal.fire('تنبيه', 'أدخلي نصاً أو ملفاً', 'warning');
-
-        let mediaUrl = null;
+        if (!content && !file) return Swal.fire('تنبيه', 'يرجى كتابة نص أو اختيار ملف', 'warning');
 
         try {
+            let mediaUrl = null;
             if (file) {
-                // إظهار شريط التقدم
+                // تفعيل شريط التقدم
                 document.getElementById('progress-container').style.display = 'block';
+                const pBar = document.getElementById('progress-bar');
                 const pText = document.getElementById('progress-text');
-                pText.style.display = 'block';
 
-                // الرفع المباشر لـ Vercel Blob (يتخطى مهلة الـ 10 ثوانٍ)
+                // الرفع المباشر: هذا ما يحل المشكلة الظاهرة في صورتك
                 const blob = await window.blobUpload(file.name, file, {
                     access: 'public',
-                    handleUploadUrl: '/api/upload-token',
+                    handleUploadUrl: '/api/upload-token', // تأكدي من وجود هذا الملف في مجلد api
                     onUploadProgress: (p) => {
-                        document.getElementById('progress-bar').style.width = p.percentage + '%';
-                        pText.innerText = `جاري الرفع... ${p.percentage}%`;
+                        pBar.style.width = p.percentage + '%';
+                        pText.innerText = `جاري رفع الوسائط... ${p.percentage}%`;
                     }
                 });
                 mediaUrl = blob.url;
             }
 
-            // إرسال البيانات النهائية لقاعدة نيون
+            // إرسال الرابط والبيانات لقاعدة نيون (Neon DB)
             const res = await fetch('/api/save-post', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -162,18 +162,20 @@
             });
 
             if (res.ok) {
-                Swal.fire('تم!', 'تم النشر وحفظ البيانات في نيون', 'success');
+                Swal.fire('تم بنجاح!', 'تم حفظ المنشور في قاعدة البيانات', 'success');
                 setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error();
             }
         } catch (err) {
-            Swal.fire('خطأ', 'فشل الرفع. تأكدي من إعدادات Vercel Blob', 'error');
+            Swal.fire('خطأ', 'تأكدي من إعدادات Vercel Blob وملف upload-token', 'error');
         }
     }
 
-    // 3. توليد نص ذكي
+    // منطق الذكاء الاصطناعي
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
-        if(!prompt) return Swal.fire('تنبيه', 'أدخلي فكرة أولاً', 'info');
+        if (!prompt) return Swal.fire('تنبيه', 'أدخلي فكرة أولاً', 'info');
         document.getElementById('ai-loading').style.display = 'block';
         try {
             const res = await fetch('/api/raqqa-ai', {
@@ -189,24 +191,22 @@
         document.getElementById('ai-loading').style.display = 'none';
     }
 
-    // 4. حذف منشور
+    // منطق الحذف
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
-        if(!id) return Swal.fire('تنبيه', 'أدخلي ID المنشور', 'info');
-        
+        if (!id) return Swal.fire('تنبيه', 'أدخلي رقم الـ ID', 'info');
         const confirm = await Swal.fire({
-            title: 'تأكيد الحذف؟',
-            text: "سيتم حذف البيانات من نيون نهائياً",
+            title: 'هل أنتِ متأكدة؟',
+            text: "سيتم الحذف نهائياً من Neon DB",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'احذفي الآن'
+            confirmButtonText: 'نعم، احذفي'
         });
-
         if (confirm.isConfirmed) {
             try {
                 const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
-                if(res.ok) Swal.fire('تم الحذف', '', 'success');
-                else Swal.fire('خطأ', 'الرقم غير موجود', 'error');
+                if (res.ok) Swal.fire('تم الحذف', 'تم مسح المنشور بنجاح', 'success');
+                else Swal.fire('خطأ', 'الرقم غير موجود في القاعدة', 'error');
             } catch (err) {
                 Swal.fire('خطأ', 'فشل الاتصال بقاعدة البيانات', 'error');
             }
@@ -214,4 +214,4 @@
     }
 </script>
 </body>
-                    </html>
+    </html>
