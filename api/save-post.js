@@ -1,43 +1,54 @@
 import { put } from '@vercel/blob';
 import { neon } from '@neondatabase/serverless';
-import formidable from 'formidable'; // تأكدي من تثبيتها كما في الخطوة 1
+import formidable from 'formidable';
 import fs from 'fs';
 
 export const config = {
-  api: { bodyParser: false }, // ضروري لعمل formidable
+  api: { bodyParser: false }, 
 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // تعديل: استخدام اسم المتغير الموجود في صورتك POSTGRES_URL
+  const connectionString = process.env.POSTGRES_URL; 
+  
+  if (!connectionString) {
+    return res.status(500).json({ error: "خطأ: لم يتم العثور على رابط POSTGRES_URL" });
+  }
+
   const form = formidable({});
-  const sql = neon(process.env.DATABASE_URL);
+  const sql = neon(connectionString);
 
   try {
     const [fields, files] = await form.parse(req);
-    const content = fields.content[0];
-    const section = fields.section[0];
-    const type = fields.type[0];
-    let media_url = '';
+    
+    const content = fields.content?.[0] || "";
+    const section = fields.section?.[0] || "bouh-display-1";
+    const type = fields.type?.[0] || "نصي";
+    let mediaUrl = "";
 
-    if (files.file) {
+    // استخدام BLOB_READ_WRITE_TOKEN الموجود في صورتك
+    if (files.file && files.file[0]) {
       const file = files.file[0];
       const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
         access: 'public',
-        contentType: file.mimetype
+        contentType: file.mimetype,
+        token: process.env.BLOB_READ_WRITE_TOKEN // تأكيد استخدام التوكن الصحيح
       });
-      media_url = blob.url;
+      mediaUrl = blob.url;
     }
 
-    // الحفظ في Neon مع القيم الجديدة للأقسام
+    // الحفظ في الجدول بناءً على هيكلة الأقسام الخمسة
     await sql`
       INSERT INTO posts (content, media_url, section, type, created_at)
-      VALUES (${content}, ${media_url}, ${section}, ${type}, NOW())
+      VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
     `;
 
     return res.status(200).json({ success: true });
+
   } catch (error) {
-    console.error("Critical Error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("Error:", error);
+    return res.status(500).json({ error: "حدث خطأ: " + error.message });
   }
-}
+                                      }
