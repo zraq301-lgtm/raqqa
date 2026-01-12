@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #fdf6f8; }
+        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #fdf6f8; --danger: #dc3545; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); padding: 15px; direction: rtl; }
         .admin-container { max-width: 600px; margin: 0 auto; background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.05); }
         h1 { color: var(--primary); text-align: center; margin-bottom: 25px; font-size: 24px; }
@@ -18,6 +18,7 @@
         .btn { padding: 15px; border: none; border-radius: 15px; cursor: pointer; font-weight: bold; color: white; width: 100%; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-upload { background: var(--primary); font-size: 16px; }
         .btn-ai { background: var(--secondary); margin-bottom: 10px; }
+        .btn-delete { background: var(--danger); margin-top: 10px; }
         #preview { margin: 15px 0; border-radius: 15px; text-align: center; background: #fafafa; border: 2px dashed #eee; min-height: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #preview img, #preview video { max-width: 100%; border-radius: 12px; max-height: 250px; }
         .loading-spinner { display: none; text-align: center; color: var(--secondary); margin: 10px 0; }
@@ -75,6 +76,15 @@
             <i class="fas fa-cloud-upload-alt"></i> نشر الآن (نظام الرفع السريع)
         </button>
     </div>
+
+    <div class="card" style="border-top: 3px solid var(--danger);">
+        <h3><i class="fas fa-trash-alt"></i> حذف منشور</h3>
+        <label>معرف المنشور (ID):</label>
+        <input type="number" id="delete-id" placeholder="أدخلي رقم الـ ID هنا...">
+        <button class="btn btn-delete" id="delete-btn" onclick="deletePost()">
+            <i class="fas fa-eraser"></i> حذف المنشور نهائياً
+        </button>
+    </div>
 </div>
 
 <script>
@@ -98,7 +108,7 @@
         }
     }
 
-    // 2. وظيفة الرفع المطور باستخدام FormData (لحل مشكلة البطء)
+    // 2. وظيفة الرفع المطور باستخدام FormData
     async function startUpload() {
         const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
@@ -110,7 +120,6 @@
             return Swal.fire('تنبيه', 'يرجى كتابة نص أو اختيار ملف للرفع', 'warning');
         }
 
-        // تغيير حالة الزر لمنع التكرار
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع والارتباط بـ Neon...';
 
@@ -121,7 +130,6 @@
             didOpen: () => Swal.showLoading()
         });
 
-        // تجهيز البيانات كـ FormData (هذا هو السر في السرعة)
         const formData = new FormData();
         formData.append('content', content);
         formData.append('section', section);
@@ -133,7 +141,6 @@
         try {
             const response = await fetch('/api/save-post', {
                 method: 'POST',
-                // ملاحظة: لا نضع headers في FormData، المتصفح سيتكفل بها
                 body: formData 
             });
 
@@ -153,7 +160,38 @@
         }
     }
 
-    // وظيفة الذكاء الاصطناعي
+    // 3. وظيفة الحذف الجديدة
+    async function deletePost() {
+        const id = document.getElementById('delete-id').value;
+        if (!id) return Swal.fire('تنبيه', 'يرجى إدخال معرف المنشور (ID)', 'warning');
+
+        const confirm = await Swal.fire({
+            title: 'هل أنتِ متأكدة؟',
+            text: "سيتم حذف المنشور رقم " + id + " بشكل نهائي!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'نعم، احذفي',
+            cancelButtonText: 'إلغاء'
+        });
+
+        if (confirm.isConfirmed) {
+            try {
+                const response = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    Swal.fire('تم الحذف!', 'تمت إزالة المنشور بنجاح.', 'success');
+                    document.getElementById('delete-id').value = '';
+                } else {
+                    Swal.fire('خطأ', 'لم يتم العثور على المنشور أو فشل السيرفر', 'error');
+                }
+            } catch (err) {
+                Swal.fire('خطأ', 'تعذر الاتصال بالسيرفر', 'error');
+            }
+        }
+    }
+
+    // 4. وظيفة الذكاء الاصطناعي
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
         if(!prompt) return Swal.fire('تنبيه', 'اكتبي موضوعاً أولاً', 'warning');
@@ -174,4 +212,4 @@
     }
 </script>
 </body>
- </html>
+            </html>
