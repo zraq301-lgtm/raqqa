@@ -54,6 +54,11 @@
         .comment-input { flex: 1; border: 1px solid #eee; border-radius: 20px; padding: 5px 12px; font-size: 12px; outline: none; }
         .comment-submit { background: var(--p2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; }
 
+        /* ستايل الشات الجماعي في قسم الأرجوحة */
+        .group-chat-area { background: #f0f2f5; padding: 10px; border-radius: 12px; margin-top: 10px; border: 1px solid #e0e0e0; }
+        .chat-msg-item { font-size: 11px; margin-bottom: 5px; animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateY(5px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
         #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: var(--soft); }
         .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -72,7 +77,6 @@
         .swing-write-box { background:white; padding:15px; border-radius:15px; border:2px dashed var(--p1); margin-bottom:20px; }
         .swing-textarea { width: 100%; border: none; outline: none; resize: none; font-family: 'Tajawal'; font-size: 14px; margin-bottom: 10px; min-height: 60px; }
         
-        /* تنسيق جداول المدخلات في SweetAlert */
         .swal-custom-input { width: 80%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; font-family: 'Tajawal'; }
         .swal-label { font-size: 14px; color: var(--p2); display: block; margin-top: 10px; font-weight: bold; }
     </style>
@@ -143,9 +147,7 @@
     <div id="chat-overlay">
         <div class="chat-header">
             <i class="fas fa-chevron-right" onclick="closeChat()"></i>
-            <div style="flex:1; text-align: center;">
-                <span id="chat-title" style="font-weight:bold;"></span>
-            </div>
+            <div style="flex:1; text-align: center;"><span id="chat-title" style="font-weight:bold;"></span></div>
             <i class="fas fa-history" onclick="toggleHistory()" style="color:var(--p2); cursor: pointer;"></i>
         </div>
         <div id="history-drawer">
@@ -181,81 +183,23 @@
             document.getElementById('mood-val').innerText = moods[val];
         }
 
-        // --- ضبط مدخلات كروت الصحة الـ 11 ---
         function showHealthInput(type) {
             const { date, time } = getNow();
             let config = {};
-
             switch(type) {
-                case 'menstruation':
-                    config = { title: 'متابعة الدورة الشهرية', html: `
-                        <label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input">
-                        <label class="swal-label">كثافة التدفق:</label><select id="d2" class="swal-custom-input"><option>خفيف</option><option>متوسط</option><option>غزير</option></select>
-                        <label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="مثال: ألم أسفل الظهر" class="swal-custom-input">` };
-                    break;
-                case 'pregnancy':
-                    config = { title: 'متابعة الحمل', html: `
-                        <label class="swal-label">أسبوع الحمل:</label><input type="number" id="d1" placeholder="مثلاً: 12" class="swal-custom-input">
-                        <label class="swal-label">الوزن الحالي (كجم):</label><input type="number" id="d2" class="swal-custom-input">
-                        <label class="swal-label">ملاحظات الطبيب:</label><input type="text" id="d3" class="swal-custom-input">` };
-                    break;
-                case 'breastfeeding':
-                    config = { title: 'سجل الرضاعة', html: `
-                        <label class="swal-label">وقت الرضعة:</label><input type="time" id="d1" value="${time}" class="swal-custom-input">
-                        <label class="swal-label">الجانب:</label><select id="d2" class="swal-custom-input"><option>اليمين</option><option>اليسار</option><option>كلاهما</option></select>
-                        <label class="swal-label">المدة (بالدقائق):</label><input type="number" id="d3" class="swal-custom-input">` };
-                    break;
-                case 'motherhood':
-                    config = { title: 'يوميات الأمومة', html: `
-                        <label class="swal-label">عمر الطفل:</label><input type="text" id="d1" placeholder="مثال: 6 أشهر" class="swal-custom-input">
-                        <label class="swal-label">إنجاز اليوم:</label><input type="text" id="d2" placeholder="أول كلمة، خطوة.." class="swal-custom-input">` };
-                    break;
-                case 'weightloss':
-                    config = { title: 'متابعة الوزن والرشاقة', html: `
-                        <label class="swal-label">الوزن اليوم:</label><input type="number" id="d1" step="0.1" class="swal-custom-input">
-                        <label class="swal-label">كمية الماء (أكواب):</label><input type="number" id="d2" class="swal-custom-input">
-                        <label class="swal-label">السعرات التقريبية:</label><input type="number" id="d3" class="swal-custom-input">` };
-                    break;
-                case 'doctor':
-                    config = { title: 'زيارة الطبيب', html: `
-                        <label class="swal-label">التاريخ:</label><input type="date" id="d1" value="${date}" class="swal-custom-input">
-                        <label class="swal-label">التخصص:</label><input type="text" id="d2" placeholder="مثلاً: جلدية" class="swal-custom-input">
-                        <label class="swal-label">التوصية:</label><input type="text" id="d3" placeholder="الأدوية أو التحاليل" class="swal-custom-input">` };
-                    break;
-                case 'vitals':
-                    config = { title: 'قياس الضغط والسكر', html: `
-                        <label class="swal-label">قياس الضغط:</label><input type="text" id="d1" placeholder="120/80" class="swal-custom-input">
-                        <label class="swal-label">مستوى السكر:</label><input type="number" id="d2" placeholder="mg/dL" class="swal-custom-input">` };
-                    break;
-                case 'exercise':
-                    config = { title: 'النشاط الرياضي', html: `
-                        <label class="swal-label">نوع التمرين:</label><input type="text" id="d1" placeholder="مشي، يوغا.." class="swal-custom-input">
-                        <label class="swal-label">المدة (دقيقة):</label><input type="number" id="d2" class="swal-custom-input">` };
-                    break;
-                case 'skincare':
-                    config = { title: 'روتين العناية بالبشرة', html: `
-                        <label class="swal-label">الفترة:</label><select id="d1" class="swal-custom-input"><option>صباحي</option><option>مسائي</option></select>
-                        <label class="swal-label">المنتجات المستخدمة:</label><input type="text" id="d2" class="swal-custom-input">` };
-                    break;
-                case 'sleep':
-                    config = { title: 'سجل النوم', html: `
-                        <label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input">
-                        <label class="swal-label">جودة النوم:</label><select id="d2" class="swal-custom-input"><option>عميق</option><option>متقطع</option><option>قلق</option></select>` };
-                    break;
-                case 'happiness':
-                    config = { title: 'مؤشر السعادة', html: `
-                        <label class="swal-label">مستوى السعادة (1-10):</label><input type="range" id="d1" min="1" max="10" class="swal-custom-input">
-                        <label class="swal-label">أنا ممتنة لـ:</label><input type="text" id="d2" class="swal-custom-input">` };
-                    break;
+                case 'menstruation': config = { title: 'متابعة الدورة الشهرية', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">كثافة التدفق:</label><select id="d2" class="swal-custom-input"><option>خفيف</option><option>متوسط</option><option>غزير</option></select><label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="مثال: ألم أسفل الظهر" class="swal-custom-input">` }; break;
+                case 'pregnancy': config = { title: 'متابعة الحمل', html: `<label class="swal-label">أسبوع الحمل:</label><input type="number" id="d1" placeholder="مثلاً: 12" class="swal-custom-input"><label class="swal-label">الوزن الحالي (كجم):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات الطبيب:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
+                case 'breastfeeding': config = { title: 'سجل الرضاعة', html: `<label class="swal-label">وقت الرضعة:</label><input type="time" id="d1" value="${time}" class="swal-custom-input"><label class="swal-label">الجانب:</label><select id="d2" class="swal-custom-input"><option>اليمين</option><option>اليسار</option><option>كلاهما</option></select><label class="swal-label">المدة (بالدقائق):</label><input type="number" id="d3" class="swal-custom-input">` }; break;
+                case 'motherhood': config = { title: 'يوميات الأمومة', html: `<label class="swal-label">عمر الطفل:</label><input type="text" id="d1" placeholder="مثال: 6 أشهر" class="swal-custom-input"><label class="swal-label">إنجاز اليوم:</label><input type="text" id="d2" placeholder="أول كلمة، خطوة.." class="swal-custom-input">` }; break;
+                case 'weightloss': config = { title: 'متابعة الوزن والرشاقة', html: `<label class="swal-label">الوزن اليوم:</label><input type="number" id="d1" step="0.1" class="swal-custom-input"><label class="swal-label">كمية الماء (أكواب):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">السعرات التقريبية:</label><input type="number" id="d3" class="swal-custom-input">` }; break;
+                case 'doctor': config = { title: 'زيارة الطبيب', html: `<label class="swal-label">التاريخ:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">التخصص:</label><input type="text" id="d2" placeholder="مثلاً: جلدية" class="swal-custom-input"><label class="swal-label">التوصية:</label><input type="text" id="d3" placeholder="الأدوية أو التحاليل" class="swal-custom-input">` }; break;
+                case 'vitals': config = { title: 'قياس الضغط والسكر', html: `<label class="swal-label">قياس الضغط:</label><input type="text" id="d1" placeholder="120/80" class="swal-custom-input"><label class="swal-label">مستوى السكر:</label><input type="number" id="d2" placeholder="mg/dL" class="swal-custom-input">` }; break;
+                case 'exercise': config = { title: 'النشاط الرياضي', html: `<label class="swal-label">نوع التمرين:</label><input type="text" id="d1" placeholder="مشي، يوغا.." class="swal-custom-input"><label class="swal-label">المدة (دقيقة):</label><input type="number" id="d2" class="swal-custom-input">` }; break;
+                case 'skincare': config = { title: 'روتين العناية بالبشرة', html: `<label class="swal-label">الفترة:</label><select id="d1" class="swal-custom-input"><option>صباحي</option><option>مسائي</option></select><label class="swal-label">المنتجات المستخدمة:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'sleep': config = { title: 'سجل النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">جودة النوم:</label><select id="d2" class="swal-custom-input"><option>عميق</option><option>متقطع</option><option>قلق</option></select>` }; break;
+                case 'happiness': config = { title: 'مؤشر السعادة', html: `<label class="swal-label">مستوى السعادة (1-10):</label><input type="range" id="d1" min="1" max="10" class="swal-custom-input"><label class="swal-label">أنا ممتنة لـ:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
             }
-
-            Swal.fire({
-                title: config.title,
-                html: config.html,
-                confirmButtonText: 'حفظ وتحليل ✨',
-                showCancelButton: true,
-                cancelButtonText: 'إلغاء'
-            }).then(r => {
+            Swal.fire({ title: config.title, html: config.html, confirmButtonText: 'حفظ وتحليل ✨', showCancelButton: true, cancelButtonText: 'إلغاء' }).then(r => {
                 if(r.isConfirmed) {
                     const data1 = document.getElementById('d1')?.value || '';
                     const data2 = document.getElementById('d2')?.value || '';
@@ -266,19 +210,38 @@
             });
         }
 
-        // --- وظائف الـ Neon DB (Likes & Comments) ---
         async function fetchContent(tab) {
             const feed = document.getElementById(tab + '-feed');
             const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
             feed.innerHTML = '<p style="text-align:center;color:#999;">جارِ تحميل عالمكِ...</p>';
-            
             try {
                 const res = await fetch('/api/get-posts'); 
                 const data = await res.json();
                 const filtered = data.posts.filter(p => p.section === dbMap[tab]);
-
                 feed.innerHTML = filtered.map(p => {
+                    // تفريق الصورة عن الفيديو
+                    let mediaTag = '';
+                    if(p.media_url) {
+                        const isVideo = p.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
+                        mediaTag = isVideo ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`;
+                    }
+
                     const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">مجهولة:</span> ${c.comment_text}</div>`).join('');
+                    
+                    // إضافة شات جماعي لقسم الأرجوحة فقط
+                    let swingChatHtml = '';
+                    if(tab === 'swing') {
+                        swingChatHtml = `
+                            <div class="group-chat-area">
+                                <div style="font-weight:bold; font-size:10px; color:var(--purp); margin-bottom:5px;"><i class="fas fa-users"></i> شات جماعي مباشر للمنشور:</div>
+                                <div id="group-chat-msgs-${p.id}" style="max-height:80px; overflow-y:auto; margin-bottom:5px;"></div>
+                                <div class="comment-input-area">
+                                    <input type="text" id="group-input-${p.id}" class="comment-input" style="background:#fff" placeholder="رسالة سريعة للكل...">
+                                    <button class="comment-submit" style="background:var(--purp)" onclick="sendGroupMsg('${p.id}')"><i class="fas fa-paper-plane"></i></button>
+                                </div>
+                            </div>`;
+                    }
+
                     return `
                         <div class="post-card">
                             <div class="post-header">
@@ -286,7 +249,7 @@
                                 <div><div style="font-weight:bold; font-size:13px;">مجهولة</div><div style="font-size:10px; color:#aaa;">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div></div>
                             </div>
                             <div class="post-content">${p.content}</div>
-                            ${p.media_url ? `<img src="${p.media_url}" class="post-media">` : ''}
+                            ${mediaTag}
                             <div class="post-actions">
                                 <button class="action-btn ${p.user_liked ? 'active-like' : ''}" onclick="handleLike('${p.id}', this)">
                                     <i class="${p.user_liked ? 'fas' : 'far'} fa-heart"></i> <span>${p.likes_count || 'إعجاب'}</span>
@@ -294,6 +257,7 @@
                                 <button class="action-btn" onclick="document.getElementById('input-${p.id}').focus()"><i class="far fa-comment"></i> تعليق</button>
                                 <button class="action-btn" onclick="sharePost('${p.id}', '${p.content.substring(0,50)}')"><i class="far fa-share-square"></i> مشاركة</button>
                             </div>
+                            ${swingChatHtml}
                             <div class="comments-section">
                                 <div id="comment-list-${p.id}">${commentsHtml}</div>
                                 <div class="comment-input-area">
@@ -306,59 +270,20 @@
             } catch(e) { feed.innerHTML = ''; }
         }
 
-        // --- تفعيل نظام عداد الإعجاب ---
         async function handleLike(postId, btn) {
             const isLiked = btn.classList.toggle('active-like');
             const icon = btn.querySelector('i');
             const span = btn.querySelector('span');
             let currentCount = parseInt(span.innerText) || 0;
-
-            if (isLiked) {
-                icon.className = 'fas fa-heart';
-                currentCount++;
-            } else {
-                icon.className = 'far fa-heart';
-                currentCount--;
-            }
-
+            if (isLiked) { icon.className = 'fas fa-heart'; currentCount++; } 
+            else { icon.className = 'far fa-heart'; currentCount--; }
             span.innerText = currentCount > 0 ? currentCount : 'إعجاب';
-
-            fetch('/api/likes', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) 
-            });
+            fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
         }
 
-        // --- تفعيل زر المشاركة ---
         async function sharePost(postId, text) {
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'تطبيق رقة 🌸',
-                        text: text + '...',
-                        url: window.location.href
-                    });
-                } catch (err) {
-                    console.log("Error sharing:", err);
-                }
-            } else {
-                // Fallback: Copy to clipboard
-                const dummy = document.createElement('input');
-                document.body.appendChild(dummy);
-                dummy.value = window.location.href;
-                dummy.select();
-                document.execCommand('copy');
-                document.body.removeChild(dummy);
-                Swal.fire({
-                    toast: true,
-                    position: 'top-end',
-                    icon: 'success',
-                    title: 'تم نسخ الرابط لمشاركته!',
-                    showConfirmButton: false,
-                    timer: 2000
-                });
-            }
+            if (navigator.share) { try { await navigator.share({ title: 'رقة 🌸', text: text + '...', url: window.location.href }); } catch (err) {} } 
+            else { const dummy = document.createElement('input'); document.body.appendChild(dummy); dummy.value = window.location.href; dummy.select(); document.execCommand('copy'); document.body.removeChild(dummy); Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط!', showConfirmButton: false, timer: 2000 }); }
         }
 
         async function submitComment(postId) {
@@ -370,29 +295,24 @@
             input.value = '';
         }
 
-        // --- نظام الشات والمحفوظات ---
-        function openAIChat(section) {
-            document.getElementById('chat-title').innerText = section;
-            document.getElementById('chat-overlay').style.display = 'flex';
-            loadHistory();
+        // وظيفة إرسال رسالة في الشات الجماعي (الأرجوحة)
+        function sendGroupMsg(postId) {
+            const input = document.getElementById(`group-input-${postId}`);
+            if(!input.value.trim()) return;
+            const chatBox = document.getElementById(`group-chat-msgs-${postId}`);
+            chatBox.innerHTML += `<div class="chat-msg-item"><strong>أنتِ:</strong> ${input.value}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            input.value = '';
         }
 
+        function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
         function toggleHistory() { document.getElementById('history-drawer').classList.toggle('open'); }
-
         function loadHistory() {
             const list = document.getElementById('history-list');
             list.innerHTML = chatHistory.length ? '' : '<p style="font-size:12px;color:#999;">لا يوجد محفوظات</p>';
-            chatHistory.forEach((item, index) => {
-                list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;" onclick="viewHistoryItem(${index})">${item.q.substring(0,30)}...</div>`;
-            });
+            chatHistory.forEach((item, index) => { list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;" onclick="viewHistoryItem(${index})">${item.q.substring(0,30)}...</div>`; });
         }
-
-        function viewHistoryItem(index) {
-            const item = chatHistory[index];
-            document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`;
-            toggleHistory();
-        }
-
+        function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
         async function sendMessage(auto = false, text = null) {
             const input = document.getElementById('chat-input');
             const msg = text || input.value;
@@ -400,7 +320,6 @@
             const container = document.getElementById('chat-messages');
             container.innerHTML += `<div class="msg msg-user">${msg}</div>`;
             if(!auto) input.value = '';
-            
             try {
                 const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: msg }) });
                 const data = await res.json();
@@ -414,24 +333,12 @@
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-'+id).classList.add('active');
-            el.classList.add('active');
+            document.getElementById('page-'+id).classList.add('active'); el.classList.add('active');
             if(id !== 'home') fetchContent(id);
         }
 
-        function handleMediaSelect(input) {
-            if(input.files[0]) {
-                document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]);
-                document.getElementById('preview-container').style.display = 'block';
-            }
-        }
-
-        function handleFullPost() {
-            Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success');
-            document.getElementById('swing-post-text').value = '';
-            document.getElementById('preview-container').style.display = 'none';
-        }
-
+        function handleMediaSelect(input) { if(input.files[0]) { document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]); document.getElementById('preview-container').style.display = 'block'; } }
+        function handleFullPost() { Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success'); document.getElementById('swing-post-text').value = ''; document.getElementById('preview-container').style.display = 'none'; }
         function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
