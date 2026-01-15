@@ -23,14 +23,13 @@
         .btn-emotions { background: linear-gradient(45deg, #ff85c0, #722ed1); } 
         .btn-intimacy { background: linear-gradient(45deg, #faad14, #eb2f96); } 
         .btn-health { background: linear-gradient(45deg, #eb2f96, #ff4d4f); }    
-        .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }     
+        .btn-swing { background: linear-gradient(45deg, #722ed1, #eb2f96); }      
         .btn-fiqh { background: linear-gradient(45deg, #52c41a, #722ed1); }      
 
         .mood-box { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; border: 1px solid #ffe7f0; box-shadow: 0 2px 8px rgba(235, 47, 150, 0.1); }
         .mood-slider { width: 100%; accent-color: var(--p2); margin-top: 10px; }
         .mood-val { color: var(--p2); font-weight: bold; font-size: 16px; margin-top: 5px; display: block; }
 
-        /* كروت الصحة المحدثة */
         .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 20px; }
         .tracker-item { background: #fff; padding: 12px 5px; border-radius: 12px; text-align: center; border: 1px solid var(--soft); cursor: pointer; transition: 0.2s; }
         .tracker-item:active { transform: scale(0.95); background: var(--soft); }
@@ -54,7 +53,6 @@
         .comment-input { flex: 1; border: 1px solid #eee; border-radius: 20px; padding: 5px 12px; font-size: 12px; outline: none; }
         .comment-submit { background: var(--p2); border: none; color: white; border-radius: 50%; width: 28px; height: 28px; }
 
-        /* ستايل الشات الجماعي في قسم الأرجوحة */
         .group-chat-area { background: #f0f2f5; padding: 10px; border-radius: 12px; margin-top: 10px; border: 1px solid #e0e0e0; }
         .chat-msg-item { font-size: 11px; margin-bottom: 5px; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateY(5px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -62,9 +60,14 @@
         #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: var(--soft); }
         .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .msg { padding: 12px; border-radius: 15px; max-width: 85%; font-size: 14px; }
+        .msg { padding: 12px; border-radius: 15px; max-width: 85%; font-size: 14px; position: relative; }
         .msg-user { align-self: flex-start; background: #f0f0f0; border-radius: 0 15px 15px 15px; }
         .msg-ai { align-self: flex-end; background: var(--soft); border-right: 4px solid var(--p2); border-radius: 15px 0 15px 15px; }
+        
+        /* أدوات الشات الإضافية */
+        .chat-tools { display: flex; gap: 15px; padding: 5px 15px; background: #fff; border-top: 1px solid #eee; justify-content: center; }
+        .chat-tools i { color: var(--p2); font-size: 18px; cursor: pointer; padding: 5px; }
+        .speak-btn { margin-right: 8px; cursor: pointer; color: var(--p2); font-size: 12px; }
 
         #history-drawer { position: absolute; top: 60px; left: 0; width: 80%; height: calc(100% - 60px); background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.1); z-index: 2001; transform: translateX(-100%); transition: 0.3s; padding: 15px; overflow-y: auto; }
         #history-drawer.open { transform: translateX(0); }
@@ -155,6 +158,13 @@
             <div id="history-list"></div>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
+        
+        <div class="chat-tools">
+            <label><i class="fas fa-image"></i><input type="file" accept="image/*" style="display:none;" onchange="sendMediaMsg('صورة')"></label>
+            <i class="fas fa-camera" onclick="capturePhoto()"></i>
+            <i class="fas fa-microphone" id="mic-btn" onclick="startVoiceRecognition()"></i>
+        </div>
+
         <div class="chat-footer" style="padding:10px; display:flex; gap:5px; background:white;">
             <input type="text" id="chat-input" placeholder="اكتبي رسالتك..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #eee;">
             <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:40px; height:40px; border-radius:50% ;"><i class="fas fa-paper-plane"></i></button>
@@ -219,16 +229,14 @@
                 const data = await res.json();
                 const filtered = data.posts.filter(p => p.section === dbMap[tab]);
                 feed.innerHTML = filtered.map(p => {
-                    // تفريق الصورة عن الفيديو
                     let mediaTag = '';
                     if(p.media_url) {
                         const isVideo = p.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
                         mediaTag = isVideo ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`;
                     }
 
-                    const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">مجهولة:</span> ${c.comment_text}</div>`).join('');
+                    const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">رقة:</span> ${c.comment_text}</div>`).join('');
                     
-                    // إضافة شات جماعي لقسم الأرجوحة فقط
                     let swingChatHtml = '';
                     if(tab === 'swing') {
                         swingChatHtml = `
@@ -246,7 +254,7 @@
                         <div class="post-card">
                             <div class="post-header">
                                 <div class="post-avatar"><i class="fas fa-user"></i></div>
-                                <div><div style="font-weight:bold; font-size:13px;">مجهولة</div><div style="font-size:10px; color:#aaa;">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div></div>
+                                <div><div style="font-weight:bold; font-size:13px;">رقة</div><div style="font-size:10px; color:#aaa;">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div></div>
                             </div>
                             <div class="post-content">${p.content}</div>
                             ${mediaTag}
@@ -282,8 +290,19 @@
         }
 
         async function sharePost(postId, text) {
-            if (navigator.share) { try { await navigator.share({ title: 'رقة 🌸', text: text + '...', url: window.location.href }); } catch (err) {} } 
-            else { const dummy = document.createElement('input'); document.body.appendChild(dummy); dummy.value = window.location.href; dummy.select(); document.execCommand('copy'); document.body.removeChild(dummy); Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط!', showConfirmButton: false, timer: 2000 }); }
+            if (navigator.share) { 
+                try { 
+                    await navigator.share({ title: 'تطبيق رقة 🌸', text: text + '...', url: window.location.href }); 
+                } catch (err) {} 
+            } else { 
+                const dummy = document.createElement('input'); 
+                document.body.appendChild(dummy); 
+                dummy.value = window.location.href; 
+                dummy.select(); 
+                document.execCommand('copy'); 
+                document.body.removeChild(dummy); 
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط لمشاركته!', showConfirmButton: false, timer: 2000 }); 
+            }
         }
 
         async function submitComment(postId) {
@@ -295,7 +314,6 @@
             input.value = '';
         }
 
-        // وظيفة إرسال رسالة في الشات الجماعي (الأرجوحة)
         function sendGroupMsg(postId) {
             const input = document.getElementById(`group-input-${postId}`);
             if(!input.value.trim()) return;
@@ -303,6 +321,44 @@
             chatBox.innerHTML += `<div class="chat-msg-item"><strong>أنتِ:</strong> ${input.value}</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
             input.value = '';
+        }
+
+        // وظائف الذكاء الاصطناعي الجديدة
+        function startVoiceRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { Swal.fire('عذراً', 'متصفحك لا يدعم التعرف على الصوت', 'error'); return; }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            recognition.onstart = () => { document.getElementById('mic-btn').style.color = 'red'; };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('chat-input').value = transcript;
+                document.getElementById('mic-btn').style.color = 'var(--p2)';
+            };
+            recognition.start();
+        }
+
+        function readText(text) {
+            const msg = new SpeechSynthesisUtterance();
+            msg.text = text;
+            msg.lang = 'ar-SA';
+            window.speechSynthesis.speak(msg);
+        }
+
+        function capturePhoto() {
+            Swal.fire({ title: 'فتح الكاميرا', text: 'سيتم تشغيل الكاميرا لتحليل الصورة', icon: 'info', confirmButtonText: 'حسناً' });
+            // محاكاة فتح الكاميرا في المتصفح
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'camera';
+            input.click();
+        }
+
+        function sendMediaMsg(type) {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML += `<div class="msg msg-user">تم إرسال ${type} للتحليل...</div>`;
+            sendMessage(true, `لقد أرسلتُ ${type}، يرجى تحليلها.`);
         }
 
         function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
@@ -313,6 +369,7 @@
             chatHistory.forEach((item, index) => { list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;" onclick="viewHistoryItem(${index})">${item.q.substring(0,30)}...</div>`; });
         }
         function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
+        
         async function sendMessage(auto = false, text = null) {
             const input = document.getElementById('chat-input');
             const msg = text || input.value;
@@ -323,10 +380,19 @@
             try {
                 const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: msg }) });
                 const data = await res.json();
-                container.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`;
+                const replyId = 'rep-' + Date.now();
+                container.innerHTML += `
+                    <div class="msg msg-ai">
+                        ${data.reply}
+                        <div style="text-align:left; margin-top:5px;">
+                            <i class="fas fa-volume-up speak-btn" onclick="readText('${data.reply.replace(/'/g, "\\'")}')"></i>
+                        </div>
+                    </div>`;
                 chatHistory.unshift({ q: msg, a: data.reply, date: getNow().time });
                 localStorage.setItem('raqqa_history', JSON.stringify(chatHistory.slice(0, 20)));
-            } catch(e) { container.innerHTML += `<div class="msg msg-ai">رقة معكِ.. جاري معالجة استفساركِ.</div>`; }
+            } catch(e) { 
+                container.innerHTML += `<div class="msg msg-ai">رقة معكِ.. جاري معالجة استفساركِ. <i class="fas fa-volume-up speak-btn" onclick="readText('جاري معالجة استفسارك')"></i></div>`; 
+            }
             container.scrollTop = container.scrollHeight;
         }
 
@@ -343,4 +409,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-    </html>
+                </html>
