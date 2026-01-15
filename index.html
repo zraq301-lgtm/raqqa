@@ -286,42 +286,59 @@
             fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
         }
 
-        // الوظيفة المصلحة لمشاركة النص مع الميديا (صورة أو فيديو)
+        /** * وظيفة المشاركة المتطورة - "تغليف المحتوى"
+         * تقوم بتحويل الرابط إلى ملف حقيقي لضمان قبوله في أندرويد و iOS
+         */
         async function sharePost(text, mediaUrl) {
+            const shareData = {
+                title: 'تطبيق رقة 🌸',
+                text: text,
+                url: window.location.href
+            };
+
             try {
-                const shareData = { title: 'تطبيق رقة 🌸', text: text + '\n\n' };
-                
-                // إذا كان هناك ميديا، نحاول تحميلها وإرسالها كملف
+                // 1. التحقق من وجود ميديا (صورة أو فيديو)
                 if (mediaUrl && navigator.canShare) {
+                    // إظهار تنبيه بسيط للمستخدم بأن المعالجة جارية
+                    Swal.fire({ title: 'جاري التجهيز...', timer: 800, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+
                     const response = await fetch(mediaUrl);
                     const blob = await response.blob();
-                    const fileName = mediaUrl.split('/').pop() || 'raqqa_media.jpg';
+                    
+                    // استخراج الامتداد الصحيح للملف
+                    const extension = mediaUrl.split('.').pop().split(/\#|\?/)[0] || 'jpg';
+                    const fileName = `raqqa_media.${extension}`;
                     const file = new File([blob], fileName, { type: blob.type });
 
+                    // 2. التحقق هل النظام يدعم مشاركة هذا النوع من الملفات
                     if (navigator.canShare({ files: [file] })) {
-                        shareData.files = [file];
-                        await navigator.share(shareData);
-                        return;
+                        // إضافة الملف إلى بيانات المشاركة
+                        await navigator.share({
+                            files: [file],
+                            title: shareData.title,
+                            text: shareData.text
+                        });
+                        return; // نجحت المشاركة كملف
                     }
                 }
-                
-                // إذا لم يوجد ميديا أو المتصفح لا يدعم مشاركة الملفات، نشارك الرابط والنص
-                shareData.url = window.location.href;
+
+                // 3. الحل البديل: مشاركة كنص ورابط (للمتصفحات التي لا تدعم الملفات)
                 if (navigator.share) {
                     await navigator.share(shareData);
                 } else {
-                    throw new Error('Share not supported');
+                    throw new Error('Not supported');
                 }
 
             } catch (err) {
-                // بديل في حال فشل كل شيء (نسخ الرابط)
+                console.log("Share failed:", err);
+                // 4. الحل الأخير: نسخ الرابط للحافظة
                 const dummy = document.createElement('input'); 
                 document.body.appendChild(dummy); 
                 dummy.value = window.location.href; 
                 dummy.select(); 
                 document.execCommand('copy'); 
                 document.body.removeChild(dummy); 
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط!', showConfirmButton: false, timer: 2000 });
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط لمشاركته!', showConfirmButton: false, timer: 2000 });
             }
         }
 
