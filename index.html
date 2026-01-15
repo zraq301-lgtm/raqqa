@@ -15,11 +15,10 @@
         .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
         .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 13px; }
 
-        /* تعديلات القلب: تكبير وجعله نابضاً */
         .beating-heart {
-            font-size: 20px; /* حجم أكبر */
+            font-size: 20px;
             display: inline-block;
-            animation: pulse-animation 1.2s infinite; /* تأثير النبض */
+            animation: pulse-animation 1.2s infinite;
         }
 
         @keyframes pulse-animation {
@@ -131,6 +130,8 @@
     </div>
 
     <div id="page-swing" class="page">
+        <button class="ai-header-btn btn-swing" onclick="openGroupChat()"><i class="fas fa-users"></i> دردشة أرجوحة الجماعية</button>
+        
         <div class="swing-write-box">
             <textarea id="swing-post-text" class="swing-textarea" placeholder="اكتبي ما يجول في خاطركِ هنا..."></textarea>
             <div style="display:flex; gap:10px; justify-content:space-between; align-items: center;">
@@ -245,10 +246,8 @@
 
                     const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">رقة:</span> ${c.comment_text}</div>`).join('');
                     
-                    let shareBtnHtml = '';
-                    if(tab === 'emotions') {
-                        shareBtnHtml = `<button class="action-btn" onclick="sharePost('${p.id}', '${p.content.substring(0,50)}')"><i class="far fa-share-square"></i> مشاركة</button>`;
-                    }
+                    // تفعيل زر المشاركة في جميع الأقسام بدون استثناء
+                    let shareBtnHtml = `<button class="action-btn" onclick="sharePost('${p.id}', '${p.content.substring(0,50)}')"><i class="far fa-share-square"></i> مشاركة</button>`;
 
                     return `
                         <div class="post-card">
@@ -345,6 +344,15 @@
         }
 
         function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
+        
+        // خاصية الدردشة الجماعية الجديدة
+        function openGroupChat() {
+            document.getElementById('chat-title').innerText = "دردشة أرجوحة الجماعية 👥";
+            document.getElementById('chat-overlay').style.display = 'flex';
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = `<div class="msg msg-ai" style="text-align:center; background:var(--soft); border:none;">مرحباً بكِ في الغرفة الجماعية! هنا تلتقي رقيقات أرجوحة.. شاركينا حديثكِ 🌸</div>`;
+        }
+
         function toggleHistory() { document.getElementById('history-drawer').classList.toggle('open'); }
         function loadHistory() {
             const list = document.getElementById('history-list');
@@ -387,4 +395,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-</html>
+    </html>
