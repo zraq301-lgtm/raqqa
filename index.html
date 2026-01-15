@@ -245,9 +245,8 @@
                     }
 
                     const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">رقة:</span> ${c.comment_text}</div>`).join('');
-                    
-                    // تحسين: تجهيز النص للمشاركة لضمان عدم توقف الزر بسبب علامات التنصيص
-                    const safeText = p.content.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0,100);
+                    const safeText = p.content.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const mediaUrl = p.media_url || '';
 
                     return `
                         <div class="post-card">
@@ -262,7 +261,7 @@
                                     <i class="${p.user_liked ? 'fas' : 'far'} fa-heart"></i> <span>${p.likes_count || 'إعجاب'}</span>
                                 </button>
                                 <button class="action-btn" onclick="document.getElementById('input-${p.id}').focus()"><i class="far fa-comment"></i> تعليق</button>
-                                <button class="action-btn" onclick="sharePost('${p.id}', '${safeText}')"><i class="far fa-share-square"></i> مشاركة</button>
+                                <button class="action-btn" onclick="sharePost('${safeText}', '${mediaUrl}')"><i class="far fa-share-square"></i> مشاركة</button>
                             </div>
                             <div class="comments-section">
                                 <div id="comment-list-${p.id}">${commentsHtml}</div>
@@ -287,19 +286,42 @@
             fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
         }
 
-        async function sharePost(postId, text) {
-            if (navigator.share) { 
-                try { 
-                    await navigator.share({ title: 'تطبيق رقة 🌸', text: text + '...', url: window.location.href }); 
-                } catch (err) {} 
-            } else { 
+        // الوظيفة المصلحة لمشاركة النص مع الميديا (صورة أو فيديو)
+        async function sharePost(text, mediaUrl) {
+            try {
+                const shareData = { title: 'تطبيق رقة 🌸', text: text + '\n\n' };
+                
+                // إذا كان هناك ميديا، نحاول تحميلها وإرسالها كملف
+                if (mediaUrl && navigator.canShare) {
+                    const response = await fetch(mediaUrl);
+                    const blob = await response.blob();
+                    const fileName = mediaUrl.split('/').pop() || 'raqqa_media.jpg';
+                    const file = new File([blob], fileName, { type: blob.type });
+
+                    if (navigator.canShare({ files: [file] })) {
+                        shareData.files = [file];
+                        await navigator.share(shareData);
+                        return;
+                    }
+                }
+                
+                // إذا لم يوجد ميديا أو المتصفح لا يدعم مشاركة الملفات، نشارك الرابط والنص
+                shareData.url = window.location.href;
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    throw new Error('Share not supported');
+                }
+
+            } catch (err) {
+                // بديل في حال فشل كل شيء (نسخ الرابط)
                 const dummy = document.createElement('input'); 
                 document.body.appendChild(dummy); 
                 dummy.value = window.location.href; 
                 dummy.select(); 
                 document.execCommand('copy'); 
                 document.body.removeChild(dummy); 
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط!', showConfirmButton: false, timer: 2000 }); 
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ الرابط!', showConfirmButton: false, timer: 2000 });
             }
         }
 
@@ -394,4 +416,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-    </html>
+                </html>
