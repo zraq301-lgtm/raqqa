@@ -191,17 +191,8 @@
 
     <script>
         let chatHistory = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
-        let currentSectionPosts = [];
-
-        function filterPosts() {
-            const query = document.getElementById('main-search-input').value.toLowerCase();
-            const cards = document.querySelectorAll('.post-card');
-            cards.forEach(card => {
-                const content = card.querySelector('.post-content').innerText.toLowerCase();
-                card.style.display = content.includes(query) ? 'block' : 'none';
-            });
-        }
-
+        
+        // --- وظائف عامة ---
         function getNow() {
             const now = new Date();
             return { date: now.toISOString().split('T')[0], time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') };
@@ -212,6 +203,16 @@
             document.getElementById('mood-val').innerText = moods[val];
         }
 
+        function filterPosts() {
+            const query = document.getElementById('main-search-input').value.toLowerCase();
+            const cards = document.querySelectorAll('.post-card');
+            cards.forEach(card => {
+                const content = card.querySelector('.post-content').innerText.toLowerCase();
+                card.style.display = content.includes(query) ? 'block' : 'none';
+            });
+        }
+
+        // --- تفعيل الـ 11 متابعة صحية بدقة ---
         function showHealthInput(type) {
             const { date, time } = getNow();
             let config = {};
@@ -228,17 +229,30 @@
                 case 'sleep': config = { title: 'سجل النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">جودة النوم:</label><select id="d2" class="swal-custom-input"><option>عميق</option><option>متقطع</option><option>قلق</option></select>` }; break;
                 case 'happiness': config = { title: 'مؤشر السعادة', html: `<label class="swal-label">مستوى السعادة (1-10):</label><input type="range" id="d1" min="1" max="10" class="swal-custom-input"><label class="swal-label">أنا ممتنة لـ:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
             }
-            Swal.fire({ title: config.title, html: config.html, confirmButtonText: 'حفظ وتحليل ✨', showCancelButton: true, cancelButtonText: 'إلغاء' }).then(r => {
+            
+            Swal.fire({
+                title: config.title,
+                html: config.html,
+                confirmButtonText: 'حفظ وتحليل ✨',
+                showCancelButton: true,
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('d1')?.value || '',
+                        document.getElementById('d2')?.value || '',
+                        document.getElementById('d3')?.value || ''
+                    ];
+                }
+            }).then(r => {
                 if(r.isConfirmed) {
-                    const data1 = document.getElementById('d1')?.value || '';
-                    const data2 = document.getElementById('d2')?.value || '';
-                    const data3 = document.getElementById('d3')?.value || '';
+                    const [v1, v2, v3] = r.value;
                     openAIChat('تحليل الصحة');
-                    sendMessage(true, `بيانات صحية لـ ${config.title}: المدخلات هي ${data1}, ${data2}, ${data3}. قدمي لي نصيحة صحية بناءً على ذلك.`);
+                    sendMessage(true, `بيانات صحية لـ ${config.title}: المدخلات هي ${v1}, ${v2}, ${v3}. قدمي لي نصيحة صحية شاملة.`);
                 }
             });
         }
 
+        // --- جلب المحتوى من Neon ---
         async function fetchContent(tab) {
             const feed = document.getElementById(tab + '-feed');
             const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
@@ -284,126 +298,38 @@
             } catch(e) { feed.innerHTML = ''; }
         }
 
-        async function handleLike(postId, btn) {
-            const isLiked = btn.classList.toggle('active-like');
-            const icon = btn.querySelector('i');
-            const span = btn.querySelector('span');
-            let currentCount = parseInt(span.innerText) || 0;
-            if (isLiked) { icon.className = 'fas fa-heart'; currentCount++; } 
-            else { icon.className = 'far fa-heart'; currentCount--; }
-            span.innerText = currentCount > 0 ? currentCount : 'إعجاب';
-            fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
-        }
-
-        /* تفعيل زر المشاركة لمشاركة النص والصورة/الفيديو معاً */
+        // --- ميزة المشاركة (نص + وسائط) ---
         async function sharePost(content, mediaUrl) {
             const finalDescription = content + "\n\nتمت المشاركة من تطبيق رقة 🌸\n";
-            
             try {
-                // التحقق مما إذا كان هناك رابط ميديا وهل المتصفح يدعم مشاركة الملفات
                 if (mediaUrl && navigator.canShare) {
-                    Swal.fire({ title: 'جاري تجهيز المنشور...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                    
-                    // جلب ملف الميديا وتحويله إلى Blob
+                    Swal.fire({ title: 'جاري التجهيز...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                     const response = await fetch(mediaUrl);
                     const blob = await response.blob();
-                    
-                    // تحديد نوع الملف وامتداده
                     const extension = mediaUrl.split('.').pop().split(/\#|\?/)[0] || 'jpg';
-                    const file = new File([blob], `raqqa_content.${extension}`, { type: blob.type });
+                    const file = new File([blob], `raqqa_post.${extension}`, { type: blob.type });
 
-                    // التحقق مما إذا كان النظام يسمح بمشاركة هذا الملف مع النص
                     if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            files: [file],
-                            title: 'تطبيق رقة ✨',
-                            text: finalDescription
-                        });
-                        Swal.close();
-                        return;
+                        await navigator.share({ files: [file], title: 'رقة ✨', text: finalDescription });
+                        Swal.close(); return;
                     }
                 }
-
-                // إذا لم يوجد ميديا أو كان المتصفح لا يدعم مشاركة الملفات، نشارك النص فقط
                 if (navigator.share) {
-                    await navigator.share({
-                        title: 'تطبيق رقة ✨',
-                        text: finalDescription,
-                        url: window.location.href
-                    });
+                    await navigator.share({ title: 'رقة ✨', text: finalDescription, url: window.location.href });
                 } else {
-                    throw new Error('Share not supported');
+                    throw new Error('Fallback');
                 }
             } catch (err) {
-                // في حال الفشل (مثل متصفحات الكمبيوتر القديمة)، نقوم بنسخ النص
                 const tempInput = document.createElement('textarea');
                 tempInput.value = finalDescription + " " + (mediaUrl || "");
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ محتوى المنشور لمشاركته!', showConfirmButton: false, timer: 3000 });
+                document.body.appendChild(tempInput); tempInput.select();
+                document.execCommand('copy'); document.body.removeChild(tempInput);
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ النص والوسائط!', showConfirmButton: false, timer: 3000 });
             }
             Swal.close();
         }
 
-        async function submitComment(postId) {
-            const input = document.getElementById(`input-${postId}`);
-            if(!input.value.trim()) return;
-            const list = document.getElementById(`comment-list-${postId}`);
-            list.innerHTML += `<div class="comment-item"><span class="comment-user">أنتِ:</span> ${input.value}</div>`;
-            fetch('/api/comments', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, comment_text: input.value }) });
-            input.value = '';
-        }
-
-        function startVoiceRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) { Swal.fire('عذراً', 'المتصفح لا يدعم الميكروفون', 'error'); return; }
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'ar-SA';
-            recognition.onstart = () => { document.getElementById('mic-btn').style.color = 'red'; };
-            recognition.onresult = (event) => {
-                document.getElementById('chat-input').value = event.results[0][0].transcript;
-                document.getElementById('mic-btn').style.color = 'var(--p2)';
-            };
-            recognition.start();
-        }
-
-        function readText(text) {
-            const msg = new SpeechSynthesisUtterance();
-            msg.text = text; msg.lang = 'ar-SA'; window.speechSynthesis.speak(msg);
-        }
-
-        function capturePhoto() {
-            const input = document.createElement('input');
-            input.type = 'file'; input.accept = 'image/*'; input.capture = 'camera';
-            input.onchange = () => sendMediaMsg('صورة كاميرا');
-            input.click();
-        }
-
-        function sendMediaMsg(type) {
-            const container = document.getElementById('chat-messages');
-            container.innerHTML += `<div class="msg msg-user">تم رفع ${type} للتحليل..</div>`;
-            sendMessage(true, `لقد أرسلتُ ${type}، حلليها لي.`);
-        }
-
-        function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
-        
-        function openGroupChat() {
-            document.getElementById('chat-title').innerText = "دردشة أرجوحة الجماعية 👥";
-            document.getElementById('chat-overlay').style.display = 'flex';
-            const container = document.getElementById('chat-messages');
-            container.innerHTML = `<div class="msg msg-ai" style="text-align:center; background:var(--soft); border:none;">مرحباً بكِ في الغرفة الجماعية! هنا تلتقي رقيقات أرجوحة.. شاركينا حديثكِ 🌸</div>`;
-        }
-
-        function toggleHistory() { document.getElementById('history-drawer').classList.toggle('open'); }
-        function loadHistory() {
-            const list = document.getElementById('history-list');
-            list.innerHTML = chatHistory.length ? '' : '<p style="font-size:12px;color:#999;">لا يوجد محفوظات</p>';
-            chatHistory.forEach((item, index) => { list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;" onclick="viewHistoryItem(${index})">${item.q.substring(0,30)}...</div>`; });
-        }
-        function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
-        
+        // --- الذكاء الاصطناعي ---
         async function sendMessage(auto = false, text = null) {
             const input = document.getElementById('chat-input');
             const msg = text || input.value;
@@ -425,23 +351,50 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        // --- التنقل ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active'); el.classList.add('active');
             const searchBar = document.getElementById('search-bar');
-            if(id === 'home') {
-                searchBar.style.display = 'none';
-            } else {
-                searchBar.style.display = 'block';
-                document.getElementById('main-search-input').value = '';
-                fetchContent(id);
-            }
+            if(id === 'home') { searchBar.style.display = 'none'; } 
+            else { searchBar.style.display = 'block'; document.getElementById('main-search-input').value = ''; fetchContent(id); }
         }
 
+        // --- باقي الوظائف المساعدة ---
+        async function handleLike(postId, btn) {
+            const isLiked = btn.classList.toggle('active-like');
+            const span = btn.querySelector('span');
+            let count = parseInt(span.innerText) || 0;
+            span.innerText = isLiked ? ++count : (count > 0 ? --count : 'إعجاب');
+            fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
+        }
+
+        async function submitComment(postId) {
+            const input = document.getElementById(`input-${postId}`);
+            if(!input.value.trim()) return;
+            document.getElementById(`comment-list-${postId}`).innerHTML += `<div class="comment-item"><span class="comment-user">أنتِ:</span> ${input.value}</div>`;
+            fetch('/api/comments', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, comment_text: input.value }) });
+            input.value = '';
+        }
+
+        function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
+        function openGroupChat() { document.getElementById('chat-title').innerText = "دردشة أرجوحة الجماعية 👥"; document.getElementById('chat-overlay').style.display = 'flex'; }
+        function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
+        function toggleHistory() { document.getElementById('history-drawer').classList.toggle('open'); }
+        function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = chatHistory.length ? '' : '<p style="font-size:12px;color:#999;">لا يوجد محفوظات</p>';
+            chatHistory.forEach((item, index) => { list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;" onclick="viewHistoryItem(${index})">${item.q.substring(0,30)}...</div>`; });
+        }
+        function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
         function handleMediaSelect(input) { if(input.files[0]) { document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]); document.getElementById('preview-container').style.display = 'block'; } }
         function handleFullPost() { Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success'); document.getElementById('swing-post-text').value = ''; document.getElementById('preview-container').style.display = 'none'; }
-        function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
+        function startVoiceRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const r = new SpeechRecognition(); r.lang = 'ar-SA'; r.onstart = () => document.getElementById('mic-btn').style.color = 'red'; r.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; document.getElementById('mic-btn').style.color = 'var(--p2)'; }; r.start(); }
+        function readText(t) { const m = new SpeechSynthesisUtterance(); m.text = t; m.lang = 'ar-SA'; window.speechSynthesis.speak(m); }
+        function capturePhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'camera'; i.onchange = () => sendMediaMsg('صورة كاميرا'); i.click(); }
+        function sendMediaMsg(t) { document.getElementById('chat-messages').innerHTML += `<div class="msg msg-user">تم رفع ${t}..</div>`; sendMessage(true, `لقد أرسلتُ ${t}، حلليها لي.`); }
+
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
