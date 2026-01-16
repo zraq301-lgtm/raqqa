@@ -15,17 +15,14 @@
         .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
         .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 13px; }
 
-        .beating-heart {
-            font-size: 20px;
-            display: inline-block;
-            animation: pulse-animation 1.2s infinite;
-        }
+        /* شريط البحث */
+        .search-container { padding: 10px 15px; background: var(--bg); position: sticky; top: 55px; z-index: 1000; }
+        .search-wrapper { position: relative; display: flex; align-items: center; }
+        .search-input { width: 100%; padding: 10px 40px 10px 15px; border-radius: 25px; border: 1px solid #ffe7f0; outline: none; font-family: 'Tajawal'; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .search-icon { position: absolute; right: 15px; color: var(--p1); }
 
-        @keyframes pulse-animation {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.3); }
-            100% { transform: scale(1); }
-        }
+        .beating-heart { font-size: 20px; display: inline-block; animation: pulse-animation 1.2s infinite; }
+        @keyframes pulse-animation { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
         .page { display: none; padding: 15px; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
@@ -99,6 +96,13 @@
         <a href="#" class="vr-link"><i class="fas fa-heart beating-heart"></i> عالم رقة الافتراضي</a>
     </header>
 
+    <div class="search-container" id="search-bar" style="display:none;">
+        <div class="search-wrapper">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="main-search-input" class="search-input" placeholder="ابحثي في محتوى القسم..." onkeyup="filterPosts()">
+        </div>
+    </div>
+
     <div id="page-home" class="page active"><div style="text-align:center; padding:60px 20px;"><i class="fas fa-sparkles" style="font-size:50px; color:var(--p1);"></i><h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2></div></div>
 
     <div id="page-health" class="page">
@@ -131,7 +135,6 @@
 
     <div id="page-swing" class="page">
         <button class="ai-header-btn btn-swing" onclick="openGroupChat()"><i class="fas fa-users"></i> دردشة أرجوحة الجماعية</button>
-        
         <div class="swing-write-box">
             <textarea id="swing-post-text" class="swing-textarea" placeholder="اكتبي ما يجول في خاطركِ هنا..."></textarea>
             <div style="display:flex; gap:10px; justify-content:space-between; align-items: center;">
@@ -167,13 +170,11 @@
             <div id="history-list"></div>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
-        
         <div class="chat-tools">
             <label><i class="fas fa-image"></i><input type="file" accept="image/*" style="display:none;" onchange="sendMediaMsg('صورة')"></label>
             <i class="fas fa-camera" onclick="capturePhoto()"></i>
             <i class="fas fa-microphone" id="mic-btn" onclick="startVoiceRecognition()"></i>
         </div>
-
         <div class="chat-footer" style="padding:10px; display:flex; gap:5px; background:white;">
             <input type="text" id="chat-input" placeholder="اكتبي رسالتك..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #eee;">
             <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:40px; height:40px; border-radius:50% ;"><i class="fas fa-paper-plane"></i></button>
@@ -191,6 +192,16 @@
 
     <script>
         let chatHistory = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
+        let currentSectionPosts = []; // لتخزين المنشورات الحالية للبحث فيها
+
+        function filterPosts() {
+            const query = document.getElementById('main-search-input').value.toLowerCase();
+            const cards = document.querySelectorAll('.post-card');
+            cards.forEach(card => {
+                const content = card.querySelector('.post-content').innerText.toLowerCase();
+                card.style.display = content.includes(query) ? 'block' : 'none';
+            });
+        }
 
         function getNow() {
             const now = new Date();
@@ -243,7 +254,6 @@
                         const isVideo = p.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
                         mediaTag = isVideo ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`;
                     }
-
                     const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">رقة:</span> ${c.comment_text}</div>`).join('');
                     const safeText = p.content.replace(/'/g, "\\'").replace(/"/g, '\\"');
                     const mediaUrl = p.media_url || '';
@@ -286,49 +296,26 @@
             fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
         }
 
-        /**
-         * وظيفة المشاركة النهائية: تدمج النص الطويل مع ملفات الوسائط
-         */
         async function sharePost(content, mediaUrl) {
-            // تنظيف النص وضمان وجود رابط التطبيق في النهاية
             const finalDescription = content + "\n\nتمت المشاركة من تطبيق رقة 🌸\n";
-            
             try {
-                // في حال وجود ميديا، نقوم بتجهيزها كملف
                 if (mediaUrl && navigator.canShare) {
                     Swal.fire({ title: 'جاري تجهيز المنشور...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
                     const response = await fetch(mediaUrl);
                     const blob = await response.blob();
                     const extension = mediaUrl.split('.').pop().split(/\#|\?/)[0] || 'jpg';
                     const file = new File([blob], `raqqa_post.${extension}`, { type: blob.type });
-
-                    // التحقق من إمكانية مشاركة الملف مع النص
                     if (navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            files: [file],
-                            title: 'رقة ✨',
-                            text: finalDescription // النص الطويل هنا
-                        });
-                        Swal.close();
-                        return;
+                        await navigator.share({ files: [file], title: 'رقة ✨', text: finalDescription });
+                        Swal.close(); return;
                     }
                 }
-
-                // إذا لم يوجد ميديا أو المتصفح لا يدعم مشاركة الملفات، نشارك النص فقط
                 if (navigator.share) {
-                    await navigator.share({
-                        title: 'رقة ✨',
-                        text: finalDescription,
-                        url: window.location.href
-                    });
+                    await navigator.share({ title: 'رقة ✨', text: finalDescription, url: window.location.href });
                 } else {
                     throw new Error('Web Share API not supported');
                 }
-
             } catch (err) {
-                console.log("Sharing error:", err);
-                // حل أخير: نسخ النص والوصف للحافظة
                 const tempInput = document.createElement('textarea');
                 tempInput.value = finalDescription + " " + window.location.href;
                 document.body.appendChild(tempInput);
@@ -422,7 +409,16 @@
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active'); el.classList.add('active');
-            if(id !== 'home') fetchContent(id);
+            
+            // إخفاء شريط البحث في الرئيسية وإظهاره في الأقسام الأخرى
+            const searchBar = document.getElementById('search-bar');
+            if(id === 'home') {
+                searchBar.style.display = 'none';
+            } else {
+                searchBar.style.display = 'block';
+                document.getElementById('main-search-input').value = ''; // تصفير البحث عند التنقل
+                fetchContent(id);
+            }
         }
 
         function handleMediaSelect(input) { if(input.files[0]) { document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]); document.getElementById('preview-container').style.display = 'block'; } }
@@ -431,4 +427,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-        </html>
+                                                                                                                                                                           </html>
