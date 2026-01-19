@@ -14,10 +14,6 @@
         .top-nav { background: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
         .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
         .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 13px; }
-        
-        /* تنسيق زر الإشعارات الجديد */
-        .notification-btn { background: none; border: none; color: var(--p1); font-size: 20px; cursor: pointer; position: relative; padding: 5px; transition: 0.3s; }
-        .notification-btn:active { transform: scale(0.8); color: var(--p2); }
 
         .search-container { padding: 10px 15px; background: var(--bg); position: sticky; top: 55px; z-index: 1000; }
         .search-wrapper { position: relative; display: flex; align-items: center; }
@@ -94,9 +90,7 @@
 <body>
 
     <header class="top-nav">
-        <button class="notification-btn" onclick="triggerNovuNotification()">
-            <i class="fas fa-bell"></i>
-        </button>
+        <a href="https://facebook.com/raqqa" style="color:#1877f2;"><i class="fab fa-facebook fa-lg"></i></a>
         <div class="logo-text">رقة</div>
         <a href="#" class="vr-link"><i class="fas fa-heart beating-heart"></i> عالم رقة الافتراضي</a>
     </header>
@@ -108,13 +102,7 @@
         </div>
     </div>
 
-    <div id="page-home" class="page active">
-        <div style="text-align:center; padding:60px 20px;">
-            <i class="fas fa-sparkles" style="font-size:50px; color:var(--p1);"></i>
-            <h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2>
-            <p style="color:#888;">اضغطي على الجرس بالأعلى لتجربة نظام الإشعارات</p>
-        </div>
-    </div>
+    <div id="page-home" class="page active"><div style="text-align:center; padding:60px 20px;"><i class="fas fa-sparkles" style="font-size:50px; color:var(--p1);"></i><h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2></div></div>
 
     <div id="page-health" class="page">
         <button class="ai-header-btn btn-health" onclick="openAIChat('الصحة')"><i class="fas fa-stethoscope"></i> طبيبة رقة - تحليل ذكي</button>
@@ -202,37 +190,26 @@
     </nav>
 
     <script>
-        // --- منطق Novu لإرسال الإشعارات ---
-        async function triggerNovuNotification() {
-            try {
-                // استدعاء ملف الـ API الذي تم إعداده ببيانات Novu
-                const response = await fetch('/api/novu-trigger', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                
-                if (response.ok) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'تم إرسال الإشعار!',
-                        text: 'تحققي من هاتفك أو لوحة تحكم Novu 🌸',
-                        confirmButtonColor: '#eb2f96'
-                    });
-                } else {
-                    throw new Error('فشل الإرسال');
-                }
-            } catch (error) {
-                console.error("Novu Error:", error);
-                Swal.fire('تنبيه', 'تأكدي من إعداد مفاتيح Novu في Vercel بدقة.', 'info');
-            }
-        }
-
-        // --- باقي وظائف التطبيق الأصلية ---
         let chatHistory = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
-
+        
+        // --- وظائف عامة ---
         function getNow() {
             const now = new Date();
             return { date: now.toISOString().split('T')[0], time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') };
+        }
+
+        // --- منطق إشعارات Novu الجديد ---
+        async function triggerWelcomeNotification() {
+            // نتحقق إذا كان هذا أول دخول للمستخدم في هذه الجلسة
+            if (!sessionStorage.getItem('welcome_notified')) {
+                try {
+                    await fetch('/api/novu-trigger', { // تأكدي من تسمية ملف الـ API في Vercel بهذا الاسم
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    sessionStorage.setItem('welcome_notified', 'true');
+                } catch (e) { console.error("إشعار Novu فشل:", e); }
+            }
         }
 
         function updateMood(val) {
@@ -249,7 +226,7 @@
             });
         }
 
-        // إدخالات الصحة
+        // --- تفعيل الـ 11 متابعة صحية بدقة ---
         function showHealthInput(type) {
             const { date, time } = getNow();
             let config = {};
@@ -272,17 +249,24 @@
                 html: config.html,
                 confirmButtonText: 'حفظ وتحليل ✨',
                 showCancelButton: true,
-                preConfirm: () => [document.getElementById('d1')?.value || '', document.getElementById('d2')?.value || '', document.getElementById('d3')?.value || '']
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('d1')?.value || '',
+                        document.getElementById('d2')?.value || '',
+                        document.getElementById('d3')?.value || ''
+                    ];
+                }
             }).then(r => {
                 if(r.isConfirmed) {
                     const [v1, v2, v3] = r.value;
                     openAIChat('تحليل الصحة');
-                    sendMessage(true, `بيانات صحية لـ ${config.title}: ${v1}, ${v2}, ${v3}. قدمي نصيحة.`);
+                    sendMessage(true, `بيانات صحية لـ ${config.title}: المدخلات هي ${v1}, ${v2}, ${v3}. قدمي لي نصيحة صحية شاملة.`);
                 }
             });
         }
 
-        // جلب المحتوى
+        // --- جلب المحتوى من Neon ---
         async function fetchContent(tab) {
             const feed = document.getElementById(tab + '-feed');
             const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
@@ -291,22 +275,75 @@
                 const res = await fetch('/api/get-posts'); 
                 const data = await res.json();
                 const filtered = data.posts.filter(p => p.section === dbMap[tab]);
-                feed.innerHTML = filtered.map(p => `
-                    <div class="post-card">
-                        <div class="post-header">
-                            <div class="post-avatar"><i class="fas fa-user"></i></div>
-                            <div><div style="font-weight:bold; font-size:13px;">رقة</div></div>
-                        </div>
-                        <div class="post-content">${p.content}</div>
-                        <div class="post-actions">
-                            <button class="action-btn" onclick="handleLike('${p.id}', this)"><i class="far fa-heart"></i> <span>${p.likes_count || 'إعجاب'}</span></button>
-                            <button class="action-btn" onclick="document.getElementById('input-${p.id}').focus()"><i class="far fa-comment"></i> تعليق</button>
-                        </div>
-                    </div>`).join('');
+                feed.innerHTML = filtered.map(p => {
+                    let mediaTag = '';
+                    if(p.media_url) {
+                        const isVideo = p.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
+                        mediaTag = isVideo ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`;
+                    }
+                    const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">رقة:</span> ${c.comment_text}</div>`).join('');
+                    const safeText = p.content.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                    const mediaUrl = p.media_url || '';
+
+                    return `
+                        <div class="post-card">
+                            <div class="post-header">
+                                <div class="post-avatar"><i class="fas fa-user"></i></div>
+                                <div><div style="font-weight:bold; font-size:13px;">رقة</div><div style="font-size:10px; color:#aaa;">${new Date(p.created_at).toLocaleDateString('ar-EG')}</div></div>
+                            </div>
+                            <div class="post-content">${p.content}</div>
+                            ${mediaTag}
+                            <div class="post-actions">
+                                <button class="action-btn ${p.user_liked ? 'active-like' : ''}" onclick="handleLike('${p.id}', this)">
+                                    <i class="${p.user_liked ? 'fas' : 'far'} fa-heart"></i> <span>${p.likes_count || 'إعجاب'}</span>
+                                </button>
+                                <button class="action-btn" onclick="document.getElementById('input-${p.id}').focus()"><i class="far fa-comment"></i> تعليق</button>
+                                <button class="action-btn" onclick="sharePost('${safeText}', '${mediaUrl}')"><i class="far fa-share-square"></i> مشاركة</button>
+                            </div>
+                            <div class="comments-section">
+                                <div id="comment-list-${p.id}">${commentsHtml}</div>
+                                <div class="comment-input-area">
+                                    <input type="text" id="input-${p.id}" class="comment-input" placeholder="اكتبي تعليقاً...">
+                                    <button class="comment-submit" onclick="submitComment('${p.id}')"><i class="fas fa-arrow-up"></i></button>
+                                </div>
+                            </div>
+                        </div>`;
+                }).join('');
             } catch(e) { feed.innerHTML = ''; }
         }
 
-        // الذكاء الاصطناعي
+        // --- ميزة المشاركة (نص + وسائط) ---
+        async function sharePost(content, mediaUrl) {
+            const finalDescription = content + "\n\nتمت المشاركة من تطبيق رقة 🌸\n";
+            try {
+                if (mediaUrl && navigator.canShare) {
+                    Swal.fire({ title: 'جاري التجهيز...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                    const response = await fetch(mediaUrl);
+                    const blob = await response.blob();
+                    const extension = mediaUrl.split('.').pop().split(/\#|\?/)[0] || 'jpg';
+                    const file = new File([blob], `raqqa_post.${extension}`, { type: blob.type });
+
+                    if (navigator.canShare({ files: [file] })) {
+                        await navigator.share({ files: [file], title: 'رقة ✨', text: finalDescription });
+                        Swal.close(); return;
+                    }
+                }
+                if (navigator.share) {
+                    await navigator.share({ title: 'رقة ✨', text: finalDescription, url: window.location.href });
+                } else {
+                    throw new Error('Fallback');
+                }
+            } catch (err) {
+                const tempInput = document.createElement('textarea');
+                tempInput.value = finalDescription + " " + (mediaUrl || "");
+                document.body.appendChild(tempInput); tempInput.select();
+                document.execCommand('copy'); document.body.removeChild(tempInput);
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم نسخ النص والوسائط!', showConfirmButton: false, timer: 3000 });
+            }
+            Swal.close();
+        }
+
+        // --- الذكاء الاصطناعي ---
         async function sendMessage(auto = false, text = null) {
             const input = document.getElementById('chat-input');
             const msg = text || input.value;
@@ -317,40 +354,65 @@
             try {
                 const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: msg }) });
                 const data = await res.json();
-                container.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`;
-                chatHistory.unshift({ q: msg, a: data.reply });
+                container.innerHTML += `
+                    <div class="msg msg-ai">
+                        ${data.reply}
+                        <div style="text-align:left; margin-top:5px;"><i class="fas fa-volume-up speak-btn" onclick="readText('${data.reply.replace(/'/g, "\\'")}')"></i></div>
+                    </div>`;
+                chatHistory.unshift({ q: msg, a: data.reply, date: getNow().time });
                 localStorage.setItem('raqqa_history', JSON.stringify(chatHistory.slice(0, 20)));
-            } catch(e) { container.innerHTML += `<div class="msg msg-ai">أهلاً بكِ.. سأكون معكِ للحظة.</div>`; }
+            } catch(e) { container.innerHTML += `<div class="msg msg-ai">رقة معكِ.. جاري معالجة استفساركِ.</div>`; }
             container.scrollTop = container.scrollHeight;
         }
 
+        // --- التنقل ---
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active'); el.classList.add('active');
             const searchBar = document.getElementById('search-bar');
             if(id === 'home') { searchBar.style.display = 'none'; } 
-            else { searchBar.style.display = 'block'; fetchContent(id); }
+            else { searchBar.style.display = 'block'; document.getElementById('main-search-input').value = ''; fetchContent(id); }
         }
 
-        function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; }
+        // --- باقي الوظائف المساعدة ---
+        async function handleLike(postId, btn) {
+            const isLiked = btn.classList.toggle('active-like');
+            const span = btn.querySelector('span');
+            let count = parseInt(span.innerText) || 0;
+            span.innerText = isLiked ? ++count : (count > 0 ? --count : 'إعجاب');
+            fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
+        }
+
+        async function submitComment(postId) {
+            const input = document.getElementById(`input-${postId}`);
+            if(!input.value.trim()) return;
+            document.getElementById(`comment-list-${postId}`).innerHTML += `<div class="comment-item"><span class="comment-user">أنتِ:</span> ${input.value}</div>`;
+            fetch('/api/comments', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, comment_text: input.value }) });
+            input.value = '';
+        }
+
+        function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
         function openGroupChat() { document.getElementById('chat-title').innerText = "دردشة أرجوحة الجماعية 👥"; document.getElementById('chat-overlay').style.display = 'flex'; }
         function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
         function toggleHistory() { document.getElementById('history-drawer').classList.toggle('open'); }
+        function loadHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = chatHistory.length ? '' : '<p style="font-size:12px;color:#999;">لا يوجد محفوظات</p>';
+            chatHistory.forEach((item, index) => { list.innerHTML += `<div style="padding:10px; border-bottom:1px solid #eee; font-size:12px;" onclick="viewHistoryItem(${index})">${item.q.substring(0,30)}...</div>`; });
+        }
+        function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
         function handleMediaSelect(input) { if(input.files[0]) { document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]); document.getElementById('preview-container').style.display = 'block'; } }
-        function handleFullPost() { Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success'); }
-        function startVoiceRecognition() { const r = new (window.SpeechRecognition || window.webkitSpeechRecognition)(); r.lang = 'ar-SA'; r.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; }; r.start(); }
-        function capturePhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'camera'; i.click(); }
-        function sendMediaMsg(t) { sendMessage(true, `أرسلتُ ${t}، حلليها لي.`); }
+        function handleFullPost() { Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success'); document.getElementById('swing-post-text').value = ''; document.getElementById('preview-container').style.display = 'none'; }
+        function startVoiceRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const r = new SpeechRecognition(); r.lang = 'ar-SA'; r.onstart = () => document.getElementById('mic-btn').style.color = 'red'; r.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; document.getElementById('mic-btn').style.color = 'var(--p2)'; }; r.start(); }
+        function readText(t) { const m = new SpeechSynthesisUtterance(); m.text = t; m.lang = 'ar-SA'; window.speechSynthesis.speak(m); }
+        function capturePhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'camera'; i.onchange = () => sendMediaMsg('صورة كاميرا'); i.click(); }
+        function sendMediaMsg(t) { document.getElementById('chat-messages').innerHTML += `<div class="msg msg-user">تم رفع ${t}..</div>`; sendMessage(true, `لقد أرسلتُ ${t}، حلليها لي.`); }
 
         window.onload = () => {
             nav('home', document.querySelector('.nav-link'));
-            // تشغيل إشعار Novu تلقائياً عند الدخول (مرة واحدة في الجلسة)
-            if(!sessionStorage.getItem('welcome_done')) {
-                triggerNovuNotification();
-                sessionStorage.setItem('welcome_done', 'true');
-            }
+            triggerWelcomeNotification(); // استدعاء الإشعار عند التحميل
         };
     </script>
 </body>
-      </html>
+            </html>
