@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم رقة | الإدارة الذكية</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #fffcfd; }
+        .pink-gradient { background: linear-gradient(135deg, #ff85c0 0%, #eb2f96 100%); }
+        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+        <aside class="w-full md:w-64 pink-gradient text-white p-6 shadow-xl">
+            <div class="text-2xl font-bold mb-10 flex items-center gap-2">
+                <i class="fas fa-gem"></i> رقة - الإدارة
+            </div>
+            <nav class="space-y-4">
+                <a href="#" class="flex items-center gap-3 p-3 bg-white/20 rounded-xl transition hover:bg-white/30">
+                    <i class="fas fa-home w-6"></i> الرئيسية
+                </a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition">
+                    <i class="fas fa-bullhorn w-6"></i> الإشعارات
+                </a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition">
+                    <i class="fas fa-ad w-6"></i> الإعلانات
+                </a>
+                <a href="#" class="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl transition">
+                    <i class="fas fa-database w-6"></i> بيانات Neon
+                </a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-6 md:p-10">
+            <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">مرحباً بكِ في مركز القيادة 🚀</h1>
+                    <p class="text-gray-500 mt-1">إدارة الذكاء الاصطناعي والإعلانات في مكان واحد.</p>
+                </div>
+                <div class="flex gap-3">
+                    <span class="bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> متصل بـ Neon DB
+                    </span>
+                </div>
+            </header>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                <section class="bg-white rounded-3xl p-8 shadow-sm border border-pink-50 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-purple-700">
+                        <i class="fas fa-robot"></i> صانع الإشعارات الذكي
+                    </h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">اكتبي موضوع الإشعار (سيقوم AI بالصياغة):</label>
+                            <textarea id="ai-prompt" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-purple-200 outline-none transition h-32" placeholder="مثال: اكتبي نصيحة رقيقة عن شرب الماء في الصباح..."></textarea>
+                        </div>
+                        <button onclick="generateNotification()" class="w-full py-4 bg-purple-600 text-white rounded-2xl font-bold shadow-lg shadow-purple-200 hover:bg-purple-700 transition flex justify-center items-center gap-2">
+                            <i class="fas fa-magic"></i> توليد وحفظ في التطبيق
+                        </button>
+                    </div>
+                </section>
+
+                <section class="bg-white rounded-3xl p-8 shadow-sm border border-blue-50 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-blue-700">
+                        <i class="fas fa-money-bill-wave"></i> مركز الأرباح والإعلانات
+                    </h2>
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">نوع الإعلان الحالي</label>
+                                <select class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-200">
+                                    <option value="admob">Google AdMob</option>
+                                    <option value="local">إعلان مخصص (بنر)</option>
+                                    <option value="none text-red-500">إيقاف الإعلانات</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-sm font-medium text-gray-700">تردد الإعلانات</label>
+                                <select class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl outline-none focus:ring-2 focus:ring-blue-200">
+                                    <option>مرة واحدة يومياً</option>
+                                    <option>في كل فتح للتطبيق</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Ad Unit ID (المعرف البرمجي):</label>
+                            <input type="text" class="w-full p-3 bg-gray-50 border border-gray-100 rounded-xl font-mono text-sm text-blue-600 outline-none" value="ca-app-pub-3940256099942544/6300978111">
+                        </div>
+                        <button class="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition">
+                            تحديث إعدادات الإعلانات
+                        </button>
+                    </div>
+                </section>
+
+                <section class="lg:col-span-2 bg-white rounded-3xl p-8 shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2">
+                        <i class="fas fa-history text-pink-500"></i> آخر الإشعارات المحفوظة في قاعدة البيانات
+                    </h2>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-4 bg-pink-50/50 rounded-2xl border border-pink-100">
+                            <div>
+                                <p class="text-gray-800 font-medium">🌸 "جمالكِ يبدأ من ثقتك بنفسك.."</p>
+                                <span class="text-xs text-gray-400">منذ 10 دقائق بواسطة AI</span>
+                            </div>
+                            <button class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <div>
+                                <p class="text-gray-800 font-medium">🥛 "هل شربتِ كوب الماء المعتاد؟ رقة تذكرك.."</p>
+                                <span class="text-xs text-gray-400">منذ ساعتين بواسطة AI</span>
+                            </div>
+                            <button class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        async function generateNotification() {
+            const prompt = document.getElementById('ai-prompt').value;
+            if(!prompt) return alert('يرجى كتابة فكرة أولاً');
+            
+            // محاكاة الاتصال بالـ API
+            const btn = event.currentTarget;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جارِ التوليد والحفظ...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/raqqa-ai', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: prompt })
+                });
+                const data = await response.json();
+                
+                alert('تم التوليد والحفظ بنجاح ✨: \n' + data.reply);
+                location.reload(); // لتحديث القائمة
+            } catch (e) {
+                alert('تم الحفظ في قاعدة البيانات (محاكاة)');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-magic"></i> توليد وحفظ في التطبيق';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+                            </html>
