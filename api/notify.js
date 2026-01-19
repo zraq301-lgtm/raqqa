@@ -1,23 +1,24 @@
 import { Novu } from '@novu/node';
 
 export default async function handler(req, res) {
-  const novu = new Novu(process.env.NOVU_SECRET_KEY); // الربط بمتغير فيرسل
-
   if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  // الآن نأخذ "المعرف" و "البيانات" من الطلب نفسه
-  const { userId, workflowId, payload } = req.body;
+  // استخدام الاسم المكتوب في إعدادات Vercel الخاصة بكِ بالضبط
+  const novu = new Novu(process.env.NOVU_SECRET_KEY); 
 
   try {
-    await novu.trigger(workflowId, { // سيستخدم أي معرف ترسلينه (ترحيب، عرض، إلخ)
-      to: { subscriberId: userId },
-      payload: payload, // محتوى متغير (مثل اسم العرض أو تاريخ الموعد)
+    // استخدام المعرف (Identifier) الظاهر في صورة Novu الخاصة بكِ
+    await novu.trigger('riqqa-welcome-notification', {
+      to: {
+        subscriberId: 'riqqa_global_user', // المعرف العام الذي سنضعه في الواجهة
+      },
+      payload: {}, // يمكنكِ إضافة بيانات متغيرة هنا مستقبلاً
     });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, message: 'تم إرسال الإشعار بنجاح' });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
-}
+    }
