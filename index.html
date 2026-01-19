@@ -11,26 +11,13 @@
         :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
         
-        /* جعل الهيدر ثابت تماماً */
         .top-nav { background: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
         .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
         .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 13px; }
-
-        /* ستايل جرس الإشعارات */
-        .notif-bell-wrapper { position: relative; cursor: pointer; margin-left: 15px; }
-        .notif-bell-wrapper i { font-size: 22px; color: var(--p2); }
-        .bell-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: red; border-radius: 50%; border: 2px solid white; display: none; }
         
-        /* قائمة الإشعارات المنسدلة */
-        #notif-dropdown { 
-            display: none; position: absolute; top: 45px; left: 0; width: 280px; 
-            background: white; border-radius: 15px; shadow: 0 5px 20px rgba(0,0,0,0.1); 
-            border: 1px solid var(--soft); z-index: 2005; max-height: 350px; overflow-y: auto;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        .notif-item { padding: 12px; border-bottom: 1px solid #f9f9f9; font-size: 12px; line-height: 1.4; color: #444; }
-        .notif-item:last-child { border-bottom: none; }
-        .notif-item.new { background: #fff9fb; border-right: 3px solid var(--p2); }
+        /* أيقونة الإشعارات الجديدة */
+        .notif-btn { position: relative; color: var(--p2); cursor: pointer; font-size: 20px; margin-left: 15px; }
+        .notif-badge { position: absolute; top: -5px; right: -5px; background: red; color: white; border-radius: 50%; padding: 2px 5px; font-size: 10px; display: none; }
 
         .search-container { padding: 10px 15px; background: var(--bg); position: sticky; top: 55px; z-index: 1000; }
         .search-wrapper { position: relative; display: flex; align-items: center; }
@@ -107,17 +94,13 @@
 <body>
 
     <header class="top-nav">
-        <div class="notif-bell-wrapper" onclick="toggleNotifs()">
-            <i class="fas fa-bell"></i>
-            <span id="bell-dot" class="bell-dot"></span>
-            <div id="notif-dropdown">
-                <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid var(--soft); color: var(--p2);">إشعارات رقة ✨</div>
-                <div id="notif-items-list">
-                    <p style="padding: 15px; font-size: 11px; color: #999;">لا توجد إشعارات جديدة</p>
-                </div>
+        <div style="display: flex; align-items: center;">
+            <a href="https://facebook.com/raqqa" style="color:#1877f2;"><i class="fab fa-facebook fa-lg"></i></a>
+            <div class="notif-btn" onclick="showNotifications()">
+                <i class="fas fa-bell"></i>
+                <span id="notif-count" class="notif-badge">0</span>
             </div>
         </div>
-
         <div class="logo-text">رقة</div>
         <a href="#" class="vr-link"><i class="fas fa-heart beating-heart"></i> عالم رقة الافتراضي</a>
     </header>
@@ -218,40 +201,55 @@
 
     <script>
         let chatHistory = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
-        
-        // --- وظائف الجرس والإشعارات ---
-        function toggleNotifs() {
-            const dropdown = document.getElementById('notif-dropdown');
-            const dot = document.getElementById('bell-dot');
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-            dot.style.display = 'none'; // إخفاء النقطة الحمراء عند الفتح
-        }
+        // معرف المستخدم الافتراضي (يمكنك استبداله بمعرف حقيقي من نظام الدخول)
+        const USER_ID = "woman_user_1"; 
+        let notificationsData = [];
 
-        async function fetchNeonNotifications() {
+        // --- دالة جلب الإشعارات من الـ API (Redis) ---
+        async function fetchNotifications() {
             try {
-                const res = await fetch('/api/get-notifications'); // تأكدي من مسار الـ API
+                const res = await fetch(`/api/notifications?userId=${USER_ID}`);
                 const data = await res.json();
-                const list = document.getElementById('notif-items-list');
-                const dot = document.getElementById('bell-dot');
-
-                if (data.notifications && data.notifications.length > 0) {
-                    dot.style.display = 'block'; // تنبيه بوجود جديد
-                    list.innerHTML = data.notifications.map(n => `
-                        <div class="notif-item new">
-                            <div>${n.message}</div>
-                            <div style="font-size:9px; color:#aaa; margin-top:4px;">${new Date(n.created_at).toLocaleTimeString('ar-EG')}</div>
-                        </div>
-                    `).join('');
+                if (Array.isArray(data)) {
+                    notificationsData = data;
+                    const badge = document.getElementById('notif-count');
+                    if (data.length > 0) {
+                        badge.innerText = data.length;
+                        badge.style.display = 'block';
+                    }
                 }
-            } catch (e) { console.log("لا يوجد اتصال بقاعدة البيانات حالياً"); }
+            } catch (e) { console.error("Error fetching notifications", e); }
         }
 
-        // تشغيل الجلب التلقائي عند التحميل وكل دقيقتين
-        window.addEventListener('load', () => {
-            fetchNeonNotifications();
-            setInterval(fetchNeonNotifications, 120000);
-        });
+        // --- دالة إرسال إشعار ترحيبي (POST) ---
+        async function sendWelcomeNotification() {
+            try {
+                await fetch('/api/notifications', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ userId: USER_ID, message: "مرحباً بكِ في رقة ✨ عالمكِ الخاص بانتظاركِ." })
+                });
+                fetchNotifications(); // تحديث القائمة بعد الإرسال
+            } catch (e) { console.error("Error sending notification", e); }
+        }
 
+        // عرض الإشعارات في نافذة تنبيه
+        function showNotifications() {
+            if (notificationsData.length === 0) {
+                Swal.fire({ title: 'الإشعارات', text: 'لا توجد إشعارات جديدة حالياً 🌸', icon: 'info', confirmButtonText: 'حسناً' });
+                return;
+            }
+            let listHtml = notificationsData.map(n => `
+                <div style="text-align:right; padding:10px; border-bottom:1px solid #eee;">
+                    <div style="font-weight:bold; color:var(--p2);">${n.text}</div>
+                    <div style="font-size:10px; color:#aaa;">${new Date(n.date).toLocaleString('ar-EG')}</div>
+                </div>
+            `).join('');
+            
+            Swal.fire({ title: 'إشعاراتكِ 🔔', html: `<div style="max-height:300px; overflow-y:auto;">${listHtml}</div>`, confirmButtonText: 'إغلاق' });
+        }
+
+        // --- وظائف عامة ---
         function getNow() {
             const now = new Date();
             return { date: now.toISOString().split('T')[0], time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') };
@@ -446,7 +444,15 @@
         function startVoiceRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const r = new SpeechRecognition(); r.lang = 'ar-SA'; r.onstart = () => document.getElementById('mic-btn').style.color = 'red'; r.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; document.getElementById('mic-btn').style.color = 'var(--p2)'; }; r.start(); }
         function readText(t) { const m = new SpeechSynthesisUtterance(); m.text = t; m.lang = 'ar-SA'; window.speechSynthesis.speak(m); }
         function capturePhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'camera'; i.onchange = () => sendMediaMsg('صورة كاميرا'); i.click(); }
-        function sendMediaMsg(t) { document.getElementById('chat-messages').innerHTML += `<div class="msg msg-user">تم رفع ${t}..</div>`; sendMessage(true, `لقد أرسلتُ ${t}، هل يمكنك تحليلها؟`); }
+        function sendMediaMsg(t) { document.getElementById('chat-messages').innerHTML += `<div class="msg msg-user">تم رفع ${t}..</div>`; sendMessage(true, `لقد أرسلتُ ${t}، حلليها لي.`); }
+
+        window.onload = () => {
+            nav('home', document.querySelector('.nav-link'));
+            // جلب الإشعارات عند تحميل التطبيق
+            fetchNotifications();
+            // إرسال إشعار ترحيبي لمرة واحدة
+            sendWelcomeNotification();
+        };
     </script>
 </body>
-                                                                                 </html>
+    </html>
