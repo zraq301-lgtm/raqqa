@@ -209,30 +209,51 @@
             });
         }
 
-        // --- تفعيل الـ 11 متابعة صحية بدقة ---
+        // --- المتابعات الصحية الـ 11 وإرسالها لـ Neon DB ---
+        async function saveHealthData(category, value, note, rating) {
+            try {
+                const response = await fetch('/api/health-tracking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: 1, // معرف افتراضي
+                        category: category,
+                        value: value || 0,
+                        note: note || '',
+                        rating: rating || 0
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    Swal.fire({ icon: 'success', title: 'تم الحفظ', text: result.message, timer: 2000, showConfirmButton: false });
+                }
+            } catch (error) {
+                console.error("خطأ في الحفظ:", error);
+            }
+        }
+
         function showHealthInput(type) {
             const { date, time } = getNow();
             let config = {};
             switch(type) {
-                case 'menstruation': config = { title: 'متابعة الدورة الشهرية', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">كثافة التدفق:</label><select id="d2" class="swal-custom-input"><option>خفيف</option><option>متوسط</option><option>غزير</option></select><label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="مثال: ألم أسفل الظهر" class="swal-custom-input">` }; break;
-                case 'pregnancy': config = { title: 'متابعة الحمل', html: `<label class="swal-label">أسبوع الحمل:</label><input type="number" id="d1" placeholder="مثلاً: 12" class="swal-custom-input"><label class="swal-label">الوزن الحالي (كجم):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات الطبيب:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
-                case 'breastfeeding': config = { title: 'سجل الرضاعة', html: `<label class="swal-label">وقت الرضعة:</label><input type="time" id="d1" value="${time}" class="swal-custom-input"><label class="swal-label">الجانب:</label><select id="d2" class="swal-custom-input"><option>اليمين</option><option>اليسار</option><option>كلاهما</option></select><label class="swal-label">المدة (بالدقائق):</label><input type="number" id="d3" class="swal-custom-input">` }; break;
-                case 'motherhood': config = { title: 'يوميات الأمومة', html: `<label class="swal-label">عمر الطفل:</label><input type="text" id="d1" placeholder="مثال: 6 أشهر" class="swal-custom-input"><label class="swal-label">إنجاز اليوم:</label><input type="text" id="d2" placeholder="أول كلمة، خطوة.." class="swal-custom-input">` }; break;
-                case 'weightloss': config = { title: 'متابعة الوزن والرشاقة', html: `<label class="swal-label">الوزن اليوم:</label><input type="number" id="d1" step="0.1" class="swal-custom-input"><label class="swal-label">كمية الماء (أكواب):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">السعرات التقريبية:</label><input type="number" id="d3" class="swal-custom-input">` }; break;
-                case 'doctor': config = { title: 'زيارة الطبيب', html: `<label class="swal-label">التاريخ:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">التخصص:</label><input type="text" id="d2" placeholder="مثلاً: جلدية" class="swal-custom-input"><label class="swal-label">التوصية:</label><input type="text" id="d3" placeholder="الأدوية أو التحاليل" class="swal-custom-input">` }; break;
-                case 'vitals': config = { title: 'قياس الضغط والسكر', html: `<label class="swal-label">قياس الضغط:</label><input type="text" id="d1" placeholder="120/80" class="swal-custom-input"><label class="swal-label">مستوى السكر:</label><input type="number" id="d2" placeholder="mg/dL" class="swal-custom-input">` }; break;
-                case 'exercise': config = { title: 'النشاط الرياضي', html: `<label class="swal-label">نوع التمرين:</label><input type="text" id="d1" placeholder="مشي، يوغا.." class="swal-custom-input"><label class="swal-label">المدة (دقيقة):</label><input type="number" id="d2" class="swal-custom-input">` }; break;
-                case 'skincare': config = { title: 'روتين العناية بالبشرة', html: `<label class="swal-label">الفترة:</label><select id="d1" class="swal-custom-input"><option>صباحي</option><option>مسائي</option></select><label class="swal-label">المنتجات المستخدمة:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'sleep': config = { title: 'سجل النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">جودة النوم:</label><select id="d2" class="swal-custom-input"><option>عميق</option><option>متقطع</option><option>قلق</option></select>` }; break;
-                case 'happiness': config = { title: 'مؤشر السعادة', html: `<label class="swal-label">مستوى السعادة (1-10):</label><input type="range" id="d1" min="1" max="10" class="swal-custom-input"><label class="swal-label">أنا ممتنة لـ:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'menstruation': config = { title: 'متابعة الدورة الشهرية', cat: 'الحيض', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">كثافة التدفق (1-10):</label><input type="number" id="d2" class="swal-custom-input" placeholder="10-1"><label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="ألم، تعب..." class="swal-custom-input">` }; break;
+                case 'pregnancy': config = { title: 'متابعة الحمل', cat: 'الحمل', html: `<label class="swal-label">أسبوع الحمل:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الوزن الحالي:</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
+                case 'breastfeeding': config = { title: 'سجل الرضاعة', cat: 'الرضاعة', html: `<label class="swal-label">مدة الرضاعة (دقيقة):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'motherhood': config = { title: 'يوميات الأمومة', cat: 'الأمومة', html: `<label class="swal-label">تقييم اليوم (1-10):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">أهم إنجاز:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'weightloss': config = { title: 'متابعة الوزن', cat: 'التخسيس', html: `<label class="swal-label">الوزن الحالي:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">السعرات:</label><input type="number" id="d2" class="swal-custom-input">` }; break;
+                case 'doctor': config = { title: 'زيارة الطبيب', cat: 'الطبيب', html: `<label class="swal-label">التاريخ:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">التوصية:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'vitals': config = { title: 'ضغط/سكر', cat: 'ضغط_سكر', html: `<label class="swal-label">القياس الرقمي:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'exercise': config = { title: 'الرياضة', cat: 'الرياضة', html: `<label class="swal-label">مدة التمرين:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">النوع:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'skincare': config = { title: 'البشرة', cat: 'البشرة', html: `<label class="swal-label">تقييم البشرة (1-10):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الروتين:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'sleep': config = { title: 'النوم', cat: 'النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الجودة (1-10):</label><input type="number" id="d2" class="swal-custom-input">` }; break;
+                case 'happiness': config = { title: 'السعادة', cat: 'السعادة', html: `<label class="swal-label">مؤشر السعادة (1-10):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">السبب:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
             }
             
             Swal.fire({
                 title: config.title,
                 html: config.html,
-                confirmButtonText: 'حفظ وتحليل ✨',
+                confirmButtonText: 'حفظ في السجل ✨',
                 showCancelButton: true,
-                cancelButtonText: 'إلغاء',
                 preConfirm: () => {
                     return [
                         document.getElementById('d1')?.value || '',
@@ -243,8 +264,8 @@
             }).then(r => {
                 if(r.isConfirmed) {
                     const [v1, v2, v3] = r.value;
-                    openAIChat('تحليل الصحة');
-                    sendMessage(true, `بيانات صحية لـ ${config.title}: المدخلات هي ${v1}, ${v2}, ${v3}. قدمي لي نصيحة صحية شاملة.`);
+                    // رفع البيانات للـ API
+                    saveHealthData(config.cat, parseFloat(v1), v2 + " " + (v3 || ""), parseInt(v1));
                 }
             });
         }
