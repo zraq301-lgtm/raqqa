@@ -11,8 +11,9 @@
         :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
         
-        .top-nav { background: #fff; padding: 12px 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
+        .top-nav { background: #fff; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
         .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
+        .vr-link { text-decoration: none; display: flex; align-items: center; gap: 8px; color: #ff4d4f; font-weight: bold; font-size: 13px; }
 
         .search-container { padding: 10px 15px; background: var(--bg); position: sticky; top: 55px; z-index: 1000; }
         .search-wrapper { position: relative; display: flex; align-items: center; }
@@ -89,7 +90,9 @@
 <body>
 
     <header class="top-nav">
+        <a href="https://facebook.com/raqqa" style="color:#1877f2;"><i class="fab fa-facebook fa-lg"></i></a>
         <div class="logo-text">رقة</div>
+        <a href="#" class="vr-link"><i class="fas fa-heart beating-heart"></i> عالم رقة الافتراضي</a>
     </header>
 
     <div class="search-container" id="search-bar" style="display:none;">
@@ -188,6 +191,7 @@
 
     <script>
         let chatHistory = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
+        const USER_ID = 123; // معرف تجريبي للمستخدم
         
         // --- وظائف عامة ---
         function getNow() {
@@ -209,63 +213,64 @@
             });
         }
 
-        // --- المتابعات الصحية الـ 11 وإرسالها لـ Neon DB ---
-        async function saveHealthData(category, value, note, rating) {
-            try {
-                const response = await fetch('/api/health-tracking', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: 1, // معرف افتراضي
-                        category: category,
-                        value: value || 0,
-                        note: note || '',
-                        rating: rating || 0
-                    })
-                });
-                const result = await response.json();
-                if (result.success) {
-                    Swal.fire({ icon: 'success', title: 'تم الحفظ', text: result.message, timer: 2000, showConfirmButton: false });
-                }
-            } catch (error) {
-                console.error("خطأ في الحفظ:", error);
-            }
-        }
-
+        // --- ربط المتابعات الصحية بـ Neon DB ---
         function showHealthInput(type) {
             const { date, time } = getNow();
             let config = {};
+            // ضبط الحقول بناءً على النوع مع تجهيز القيم للإرسال
             switch(type) {
-                case 'menstruation': config = { title: 'متابعة الدورة الشهرية', cat: 'الحيض', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">كثافة التدفق (1-10):</label><input type="number" id="d2" class="swal-custom-input" placeholder="10-1"><label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="ألم، تعب..." class="swal-custom-input">` }; break;
-                case 'pregnancy': config = { title: 'متابعة الحمل', cat: 'الحمل', html: `<label class="swal-label">أسبوع الحمل:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الوزن الحالي:</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
-                case 'breastfeeding': config = { title: 'سجل الرضاعة', cat: 'الرضاعة', html: `<label class="swal-label">مدة الرضاعة (دقيقة):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'motherhood': config = { title: 'يوميات الأمومة', cat: 'الأمومة', html: `<label class="swal-label">تقييم اليوم (1-10):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">أهم إنجاز:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'weightloss': config = { title: 'متابعة الوزن', cat: 'التخسيس', html: `<label class="swal-label">الوزن الحالي:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">السعرات:</label><input type="number" id="d2" class="swal-custom-input">` }; break;
-                case 'doctor': config = { title: 'زيارة الطبيب', cat: 'الطبيب', html: `<label class="swal-label">التاريخ:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">التوصية:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'vitals': config = { title: 'ضغط/سكر', cat: 'ضغط_سكر', html: `<label class="swal-label">القياس الرقمي:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'exercise': config = { title: 'الرياضة', cat: 'الرياضة', html: `<label class="swal-label">مدة التمرين:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">النوع:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'skincare': config = { title: 'البشرة', cat: 'البشرة', html: `<label class="swal-label">تقييم البشرة (1-10):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الروتين:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
-                case 'sleep': config = { title: 'النوم', cat: 'النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الجودة (1-10):</label><input type="number" id="d2" class="swal-custom-input">` }; break;
-                case 'happiness': config = { title: 'السعادة', cat: 'السعادة', html: `<label class="swal-label">مؤشر السعادة (1-10):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">السبب:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                case 'menstruation': config = { cat: 'الحيض', title: 'متابعة الدورة الشهرية', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">كثافة التدفق:</label><select id="d2" class="swal-custom-input"><option value="1">خفيف</option><option value="2">متوسط</option><option value="3">غزير</option></select><label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="مثال: ألم أسفل الظهر" class="swal-custom-input">` }; break;
+                case 'pregnancy': config = { cat: 'الحمل', title: 'متابعة الحمل', html: `<label class="swal-label">أسبوع الحمل:</label><input type="number" id="d1" placeholder="مثلاً: 12" class="swal-custom-input"><label class="swal-label">الوزن الحالي (كجم):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات الطبيب:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
+                case 'breastfeeding': config = { cat: 'الرضاعة', title: 'سجل الرضاعة', html: `<label class="swal-label">وقت الرضعة:</label><input type="time" id="d1" value="${time}" class="swal-custom-input"><label class="swal-label">المدة (بالدقائق):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
+                case 'motherhood': config = { cat: 'الأمومة', title: 'يوميات الأمومة', html: `<label class="swal-label">عمر الطفل (بالأشهر):</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">إنجاز اليوم:</label><input type="text" id="d2" placeholder="أول كلمة، خطوة.." class="swal-custom-input">` }; break;
+                case 'weightloss': config = { cat: 'التخسيس', title: 'متابعة الوزن والرشاقة', html: `<label class="swal-label">الوزن اليوم:</label><input type="number" id="d1" step="0.1" class="swal-custom-input"><label class="swal-label">كمية الماء (أكواب):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">السعرات التقريبية:</label><input type="number" id="d3" class="swal-custom-input">` }; break;
+                case 'doctor': config = { cat: 'الطبيب', title: 'زيارة الطبيب', html: `<label class="swal-label">التاريخ:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">التخصص:</label><input type="text" id="d2" placeholder="مثلاً: جلدية" class="swal-custom-input"><label class="swal-label">التوصية:</label><input type="text" id="d3" placeholder="الأدوية أو التحاليل" class="swal-custom-input">` }; break;
+                case 'vitals': config = { cat: 'ضغط وسكر', title: 'قياس الضغط والسكر', html: `<label class="swal-label">قياس الضغط:</label><input type="text" id="d3" placeholder="120/80" class="swal-custom-input"><label class="swal-label">مستوى السكر:</label><input type="number" id="d1" placeholder="mg/dL" class="swal-custom-input">` }; break;
+                case 'exercise': config = { cat: 'الرياضة', title: 'النشاط الرياضي', html: `<label class="swal-label">نوع التمرين:</label><input type="text" id="d3" placeholder="مشي، يوغا.." class="swal-custom-input"><label class="swal-label">المدة (دقيقة):</label><input type="number" id="d1" class="swal-custom-input">` }; break;
+                case 'skincare': config = { cat: 'البشرة', title: 'روتين العناية بالبشرة', html: `<label class="swal-label">التقييم (1-5):</label><input type="number" id="d2" min="1" max="5" class="swal-custom-input"><label class="swal-label">المنتجات المستخدمة:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
+                case 'sleep': config = { cat: 'النوم', title: 'سجل النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الجودة (1-5):</label><input type="number" id="d2" min="1" max="5" class="swal-custom-input">` }; break;
+                case 'happiness': config = { cat: 'السعادة', title: 'مؤشر السعادة', html: `<label class="swal-label">مستوى السعادة (1-10):</label><input type="range" id="d2" min="1" max="10" class="swal-custom-input"><label class="swal-label">أنا ممتنة لـ:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
             }
             
             Swal.fire({
                 title: config.title,
                 html: config.html,
-                confirmButtonText: 'حفظ في السجل ✨',
+                confirmButtonText: 'حفظ وتحليل ✨',
                 showCancelButton: true,
+                cancelButtonText: 'إلغاء',
                 preConfirm: () => {
-                    return [
-                        document.getElementById('d1')?.value || '',
-                        document.getElementById('d2')?.value || '',
-                        document.getElementById('d3')?.value || ''
-                    ];
+                    return {
+                        val: document.getElementById('d1')?.value || 0,
+                        rating: document.getElementById('d2')?.value || 0,
+                        note: document.getElementById('d3')?.value || ''
+                    };
                 }
-            }).then(r => {
+            }).then(async (r) => {
                 if(r.isConfirmed) {
-                    const [v1, v2, v3] = r.value;
-                    // رفع البيانات للـ API
-                    saveHealthData(config.cat, parseFloat(v1), v2 + " " + (v3 || ""), parseInt(v1));
+                    const { val, rating, note } = r.value;
+                    
+                    // إرسال البيانات لـ Neon DB عبر الـ API المذكور
+                    try {
+                        const dbRes = await fetch('/api/health-track', { 
+                            method: 'POST', 
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                user_id: USER_ID,
+                                category: config.cat,
+                                value: parseFloat(val) || 0,
+                                note: note,
+                                rating: parseInt(rating) || 0
+                            })
+                        });
+                        const dbData = await dbRes.json();
+                        if(dbData.success) {
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم الحفظ في قاعدة البيانات', showConfirmButton: false, timer: 2000 });
+                        }
+                    } catch (err) { console.error("DB Save Error:", err); }
+
+                    // فتح الشات لتحليل البيانات بالذكاء الاصطناعي
+                    openAIChat('تحليل الصحة');
+                    sendMessage(true, `بيانات صحية لـ ${config.title}: القيمة ${val}, التقييم ${rating}, ملاحظات: ${note}. قدمي لي نصيحة صحية شاملة.`);
                 }
             });
         }
@@ -313,10 +318,10 @@
                             </div>
                         </div>`;
                 }).join('');
-            } catch(e) { feed.innerHTML = ''; }
+            } catch(e) { feed.innerHTML = '<p style="text-align:center; padding:20px; color:#999;">لا يوجد محتوى حالياً.</p>'; }
         }
 
-        // --- ميزة المشاركة (نص + وسائط) ---
+        // --- ميزة المشاركة ---
         async function sharePost(content, mediaUrl) {
             const finalDescription = content + "\n\nتمت المشاركة من تطبيق رقة 🌸\n";
             try {
@@ -379,7 +384,7 @@
             else { searchBar.style.display = 'block'; document.getElementById('main-search-input').value = ''; fetchContent(id); }
         }
 
-        // --- باقي الوظائف المساعدة ---
+        // --- وظائف المساعدة ---
         async function handleLike(postId, btn) {
             const isLiked = btn.classList.toggle('active-like');
             const span = btn.querySelector('span');
@@ -416,4 +421,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-</html>
+        </html>
