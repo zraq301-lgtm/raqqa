@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إشعارات رقة</title>
+    <script src="https://unpkg.com/@knocklabs/client"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fce4ec; margin: 0; padding: 15px; }
+        .notification-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; border-right: 5px solid #e91e63; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .date { font-size: 0.8rem; color: #888; }
+        .message { color: #333; margin-top: 8px; line-height: 1.6; }
+        .tag { display: inline-block; background: #f8bbd0; color: #ad1457; padding: 2px 10px; border-radius: 20px; font-size: 0.7rem; margin-top: 5px; }
+        h2 { color: #ad1457; text-align: center; }
+    </style>
+</head>
+<body>
+    <h2>مركز المتابعات</h2>
+    <div id="notifications-container">جارِ تحميل تحديثاتك...</div>
+
+    <script>
+        // استخراج User ID المرسل من App24 عبر الرابط
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('userId'); // سيمرره App24 تلقائياً
+
+        const knockClient = new Knock("pk_test_..."); // ضع هنا مفتاح برمجية التطبيقات العام
+        const userFeed = knockClient.feed("user-followup");
+
+        userFeed.listenForUpdates();
+        userFeed.on("items.received", (data) => {
+            renderNotifications(data.items);
+        });
+
+        async function fetchNotifications() {
+            if (!userId) {
+                document.getElementById('notifications-container').innerText = "يرجى فتح الصفحة من داخل التطبيق.";
+                return;
+            }
+            const { entries } = await userFeed.get({ userId: userId });
+            renderNotifications(entries);
+        }
+
+        function renderNotifications(items) {
+            const container = document.getElementById('notifications-container');
+            container.innerHTML = items.length ? '' : 'لا توجد متابعات جديدة حالياً.';
+            items.forEach(item => {
+                const card = `
+                    <div class="notification-card">
+                        <div class="date">${new Date(item.inserted_at).toLocaleDateString('ar-EG')}</div>
+                        <div class="message">${item.data.message}</div>
+                        <div class="tag">${item.data.mood || 'متابعة عامة'}</div>
+                    </div>`;
+                container.innerHTML += card;
+            });
+        }
+        fetchNotifications();
+    </script>
+</body>
+</html>
