@@ -11,7 +11,6 @@
         :root { --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; --bg: #fffcfd; --soft: #fff0f6; }
         body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 90px; }
         
-        /* تعديل الهيدر: توسيط اللوجو وحذف الروابط الجانبية */
         .top-nav { background: #fff; padding: 12px 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
         .logo-text { font-weight: bold; color: var(--p2); font-size: 22px; }
 
@@ -49,7 +48,10 @@
         
         .post-actions { display: flex; border-top: 1px solid #f0f0f0; margin-top: 12px; padding-top: 10px; }
         .action-btn { flex: 1; border: none; background: none; cursor: pointer; color: #666; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .action-btn.active-like { color: #ff4d4f; font-weight: bold; }
+
+        .comments-section { background: #fcfcfc; border-top: 1px solid #f0f0f0; padding-top: 10px; margin-top: 10px; }
+        .comment-item { font-size: 12px; margin-bottom: 8px; padding: 8px; background: #fff; border-radius: 8px; border: 1px solid #eee; }
+        .comment-user { font-weight: bold; color: var(--p2); margin-left: 5px; }
 
         #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: var(--soft); }
@@ -58,10 +60,6 @@
         .msg-user { align-self: flex-start; background: #f0f0f0; border-radius: 0 15px 15px 15px; }
         .msg-ai { align-self: flex-end; background: var(--soft); border-right: 4px solid var(--p2); border-radius: 15px 0 15px 15px; }
         
-        .chat-footer { padding: 10px; display:flex; gap: 5px; background: white; border-top: 1px solid #eee; }
-        .chat-footer input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #eee; }
-        .chat-footer button { background: var(--p2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; }
-
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; border-top: 1px solid #eee; padding: 8px 0; z-index: 1000; }
         .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 10px; }
         .nav-link.active { color: var(--p2); font-weight: bold; }
@@ -87,7 +85,12 @@
         </div>
     </div>
 
-    <div id="page-home" class="page active"><div style="text-align:center; padding:60px 20px;"><i class="fas fa-sparkles" style="font-size:50px; color:var(--p1);"></i><h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2></div></div>
+    <div id="page-home" class="page active">
+        <div style="text-align:center; padding:60px 20px;">
+            <i class="fas fa-sparkles" style="font-size:50px; color:var(--p1);"></i>
+            <h2 style="color:var(--p2);">مرحباً بكِ في رقة 🌸</h2>
+        </div>
+    </div>
 
     <div id="page-health" class="page">
         <button class="ai-header-btn btn-health" onclick="openAIChat('الصحة')"><i class="fas fa-stethoscope"></i> طبيبة رقة - تحليل ذكي</button>
@@ -119,6 +122,17 @@
 
     <div id="page-swing" class="page">
         <button class="ai-header-btn btn-swing" onclick="openGroupChat()"><i class="fas fa-users"></i> دردشة أرجوحة الجماعية</button>
+        <div class="swing-write-box">
+            <textarea id="swing-post-text" class="swing-textarea" placeholder="اكتبي ما يجول في خاطركِ هنا..."></textarea>
+            <div style="display:flex; gap:10px; justify-content:space-between; align-items: center;">
+                <label style="cursor:pointer; background:var(--soft); padding:8px 15px; border-radius:10px; font-size:12px; color:var(--p2);">
+                    <i class="fas fa-camera"></i> صورة/فيديو
+                    <input type="file" id="media-upload" accept="image/*,video/*" style="display:none;" onchange="handleMediaSelect(this)">
+                </label>
+                <button onclick="handleFullPost()" style="background:var(--p2); color:white; border:none; padding:8px 25px; border-radius:10px; font-size:12px; font-weight: bold;">نشر</button>
+            </div>
+            <div id="preview-container" style="margin-top:10px; display:none;"><img id="media-preview" style="width:60px; height:60px; border-radius:8px; object-fit:cover;"></div>
+        </div>
         <div id="swing-feed"></div>
     </div>
 
@@ -136,12 +150,12 @@
         <div class="chat-header">
             <i class="fas fa-chevron-right" onclick="closeChat()"></i>
             <div style="flex:1; text-align: center;"><span id="chat-title" style="font-weight:bold;"></span></div>
-            <i class="fas fa-history" style="color:var(--p2); cursor: pointer;"></i>
+            <i class="fas fa-history" onclick="toggleHistory()" style="color:var(--p2); cursor: pointer;"></i>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" placeholder="اكتبي رسالتك...">
-            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        <div class="chat-footer" style="padding:10px; display:flex; gap:5px; background:white;">
+            <input type="text" id="chat-input" placeholder="اكتبي رسالتك..." style="flex:1; padding:10px; border-radius:20px; border:1px solid #eee;">
+            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:40px; height:40px; border-radius:50% ;"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
@@ -155,51 +169,70 @@
     </nav>
 
     <script>
-        // دالة الحفظ المربوطة بـ API نيون حسب الكود المرفق
-        async function saveToNeon(category, value, note, rating) {
+        let chatHistory = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
+        const MOCK_USER_ID = 1001; // يمكنك تغييره حسب نظام تسجيل الدخول لديك
+
+        function getNow() {
+            const now = new Date();
+            return { 
+                date: now.toISOString().split('T')[0], 
+                time: now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0') 
+            };
+        }
+
+        function updateMood(val) {
+            const moods = ["", "حزينة 😔", "قلقة 😟", "هادئة 🧘", "سعيدة 😊", "مبتهجة ✨"];
+            document.getElementById('mood-val').innerText = moods[val];
+        }
+
+        // دالة إرسال البيانات إلى API نيون
+        async function saveToNeon(category, value = 0, note = '', rating = 0) {
             try {
-                const response = await fetch('/api/health-track', {
+                const response = await fetch('/api/health-tracking', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: 1, // معرف المستخدم الافتراضي
+                        user_id: MOCK_USER_ID,
                         category: category,
                         value: parseFloat(value) || 0,
                         note: note,
-                        rating: parseInt(rating) || 5
+                        rating: parseInt(rating) || 0
                     })
                 });
                 const result = await response.json();
-                console.log(result.message);
+                return result.success;
             } catch (error) {
-                console.error("خطأ في الاتصال بالـ API:", error);
+                console.error("خطأ في الحفظ:", error);
+                return false;
             }
         }
 
         function showHealthInput(type) {
-            const now = new Date().toISOString().split('T')[0];
+            const { date, time } = getNow();
             let config = {};
             switch(type) {
-                case 'menstruation': config = { title: 'متابعة الحيض', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${now}" class="swal-custom-input"><label class="swal-label">الكثافة (1-10):</label><input type="number" id="d2" placeholder="1-10" class="swal-custom-input"><label class="swal-label">أعراض:</label><input type="text" id="d3" placeholder="ألم، تعب..." class="swal-custom-input">` }; break;
-                case 'pregnancy': config = { title: 'متابعة الحمل', html: `<label class="swal-label">الأسبوع:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الوزن:</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظة:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
-                case 'weightloss': config = { title: 'التخسيس', html: `<label class="swal-label">الوزن اليوم:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الماء:</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظة:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
-                // إكمال لبقية الـ 11 خياراً بنفس النمط...
-                default: config = { title: 'متابعة صحية', html: `<label class="swal-label">القيمة:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">مؤشر (1-10):</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d3" class="swal-custom-input">` };
+                case 'menstruation': config = { cat: 'الحيض', title: 'متابعة الدورة الشهرية', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="d1" value="${date}" class="swal-custom-input"><label class="swal-label">كثافة التدفق (1-10):</label><input type="number" id="d2" placeholder="10" class="swal-custom-input"><label class="swal-label">الأعراض:</label><input type="text" id="d3" placeholder="ألم، صداع.." class="swal-custom-input">` }; break;
+                case 'weightloss': config = { cat: 'التخسيس', title: 'متابعة الوزن', html: `<label class="swal-label">الوزن الحالي:</label><input type="number" id="d1" step="0.1" class="swal-custom-input"><label class="swal-label">أكواب الماء:</label><input type="number" id="d2" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input type="text" id="d3" class="swal-custom-input">` }; break;
+                case 'vitals': config = { cat: 'ضغط وسكر', title: 'القياسات الحيوية', html: `<label class="swal-label">مستوى السكر:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">الضغط:</label><input type="text" id="d2" placeholder="120/80" class="swal-custom-input">` }; break;
+                case 'happiness': config = { cat: 'السعادة', title: 'مؤشر السعادة', html: `<label class="swal-label">المستوى (1-10):</label><input type="range" id="d1" min="1" max="10" class="swal-custom-input"><label class="swal-label">ممتنة لـ:</label><input type="text" id="d2" class="swal-custom-input">` }; break;
+                default: config = { cat: type, title: 'تسجيل بيانات', html: `<label class="swal-label">القيمة الرقمية:</label><input type="number" id="d1" class="swal-custom-input"><label class="swal-label">ملاحظة:</label><input type="text" id="d2" class="swal-custom-input">` };
             }
             
             Swal.fire({
                 title: config.title,
                 html: config.html,
-                confirmButtonText: 'حفظ وتحليل ✨',
-                preConfirm: () => [document.getElementById('d1').value, document.getElementById('d2').value, document.getElementById('d3').value]
-            }).then(r => {
+                confirmButtonText: 'حفظ في السجل ✨',
+                showCancelButton: true,
+                preConfirm: () => [document.getElementById('d1')?.value, document.getElementById('d2')?.value, document.getElementById('d3')?.value]
+            }).then(async (r) => {
                 if(r.isConfirmed) {
-                    const [v1, v2, note] = r.value;
-                    // الحفظ في نيون
-                    saveToNeon(config.title, v2, `بيانات: ${v1}, ملاحظة: ${note}`, v2);
-                    // التحليل بالذكاء الاصطناعي
-                    openAIChat('طبيبة رقة');
-                    sendMessage(true, `سجلت في ${config.title}: القيمة الأولى ${v1} والثانية ${v2} مع ملاحظة: ${note}. ما نصيحتك؟`);
+                    const [v1, v2, v3] = r.value;
+                    const success = await saveToNeon(config.cat, v1, `${v2} | ${v3 || ''}`, v1);
+                    if(success) {
+                        Swal.fire('تم الحفظ!', 'تم تسجيل بياناتك بنجاح في قاعدة البيانات', 'success');
+                    } else {
+                        Swal.fire('عذراً', 'حدث خطأ أثناء الحفظ، جربي مرة أخرى', 'error');
+                    }
                 }
             });
         }
@@ -211,24 +244,38 @@
             const container = document.getElementById('chat-messages');
             container.innerHTML += `<div class="msg msg-user">${msg}</div>`;
             if(!auto) input.value = '';
+            
             try {
-                const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: msg }) });
+                const res = await fetch('/api/raqqa-ai', { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ prompt: msg }) 
+                });
                 const data = await res.json();
                 container.innerHTML += `<div class="msg msg-ai">${data.reply}</div>`;
-            } catch(e) { container.innerHTML += `<div class="msg msg-ai">رقة معكِ.. جاري المعالجة.</div>`; }
+            } catch(e) { 
+                container.innerHTML += `<div class="msg msg-ai">رقة معكِ.. جاري الاتصال.</div>`; 
+            }
             container.scrollTop = container.scrollHeight;
         }
 
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-'+id).classList.add('active'); el.classList.add('active');
-            document.getElementById('search-bar').style.display = (id === 'home') ? 'none' : 'block';
+            document.getElementById('page-'+id).classList.add('active'); 
+            el.classList.add('active');
+            const searchBar = document.getElementById('search-bar');
+            searchBar.style.display = (id === 'home') ? 'none' : 'block';
         }
 
-        function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; }
+        function openAIChat(section) { 
+            document.getElementById('chat-title').innerText = section; 
+            document.getElementById('chat-overlay').style.display = 'flex'; 
+        }
         function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
-        function updateMood(val) { const moods = ["", "حزينة 😔", "قلقة 😟", "هادئة 🧘", "سعيدة 😊", "مبتهجة ✨"]; document.getElementById('mood-val').innerText = moods[val]; }
+        function openGroupChat() { openAIChat("دردشة أرجوحة الجماعية 👥"); }
+        function handleFullPost() { Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success'); }
+
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
