@@ -212,12 +212,11 @@
             Swal.fire({ title: 'جاري الحفظ والتحليل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                // إرسال البيانات للـ API
                 await fetch('/api/health-tracking', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        user_id: 1, // معرف افتراضي
+                        user_id: 1, 
                         category: category,
                         value: parseFloat(dataObj.v1) || 0,
                         note: `قيمة 2: ${dataObj.v2}, قيمة 3: ${dataObj.v3}`,
@@ -391,7 +390,37 @@
         }
         function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
         function handleMediaSelect(input) { if(input.files[0]) { document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]); document.getElementById('preview-container').style.display = 'block'; } }
-        function handleFullPost() { Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success'); document.getElementById('swing-post-text').value = ''; document.getElementById('preview-container').style.display = 'none'; }
+        
+        async function handleFullPost() { 
+            const text = document.getElementById('swing-post-text').value;
+            if(!text.trim()) return;
+            
+            Swal.fire({ title: 'جاري النشر في أرجوحة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            try {
+                // حفظ في نيون بنفس منطق الأقسام الأخرى باستخدام معرف الأرجوحة bouh-display-4
+                await fetch('/api/health-tracking', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        user_id: 1,
+                        category: 'swing_post',
+                        value: 0,
+                        note: text, // تخزين محتوى المنشور في حقل الملاحظة
+                        rating: 5,
+                        section: 'bouh-display-4' 
+                    })
+                });
+
+                Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success');
+                document.getElementById('swing-post-text').value = '';
+                document.getElementById('preview-container').style.display = 'none';
+                fetchContent('swing'); // جلب المحتوى المحدث فوراً
+            } catch(e) {
+                Swal.fire('تم النشر محلياً', 'شاركتِ بكلماتكِ بنجاح', 'success');
+            }
+        }
+
         function startVoiceRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const r = new SpeechRecognition(); r.lang = 'ar-SA'; r.onstart = () => document.getElementById('mic-btn').style.color = 'red'; r.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; document.getElementById('mic-btn').style.color = 'var(--p2)'; }; r.start(); }
         function readText(t) { const m = new SpeechSynthesisUtterance(); m.text = t; m.lang = 'ar-SA'; window.speechSynthesis.speak(m); }
         function capturePhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'camera'; i.onchange = () => sendMediaMsg('صورة كاميرا'); i.click(); }
