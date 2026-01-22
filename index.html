@@ -137,7 +137,7 @@
                     <i class="fas fa-camera"></i> صورة/فيديو
                     <input type="file" id="media-upload" accept="image/*,video/*" style="display:none;" onchange="handleMediaSelect(this)">
                 </label>
-                <button onclick="handleFullPost()" style="background:var(--p2); color:white; border:none; padding:8px 25px; border-radius:10px; font-size:12px; font-weight: bold;">نشر</button>
+                <button id="publish-btn" onclick="handleFullPost()" style="background:var(--p2); color:white; border:none; padding:8px 25px; border-radius:10px; font-size:12px; font-weight: bold;">نشر</button>
             </div>
             <div id="preview-container" style="margin-top:10px; display:none;"><img id="media-preview" style="width:60px; height:60px; border-radius:8px; object-fit:cover;"></div>
         </div>
@@ -207,22 +207,17 @@
             });
         }
 
-        // --- وظيفة الحفظ في DB نيون والتحليل الذكي ---
         async function saveToNeonAndAnalyze(category, dataObj, configTitle) {
             Swal.fire({ title: 'جاري الحفظ والتحليل...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
             try {
-                await fetch('/api/health-tracking', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        user_id: 1, 
-                        category: category,
-                        value: parseFloat(dataObj.v1) || 0,
-                        note: `قيمة 2: ${dataObj.v2}, قيمة 3: ${dataObj.v3}`,
-                        rating: 5
-                    })
-                });
+                // استخدام الـ API المرفوع لحفظ البيانات الصحية
+                const formData = new FormData();
+                formData.append('content', `قيمة 1: ${dataObj.v1}, قيمة 2: ${dataObj.v2}, قيمة 3: ${dataObj.v3}`);
+                formData.append('section', 'bouh-display-3'); // الصحة
+                formData.append('type', category);
+
+                await fetch('/api/health-tracking', { method: 'POST', body: formData });
 
                 Swal.close();
                 openAIChat('تحليل الصحة');
@@ -274,9 +269,16 @@
 
         async function fetchContent(tab) {
             const feed = document.getElementById(tab + '-feed');
-            const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
+            const dbMap = { 
+                'emotions': 'bouh-display-1', 
+                'intimacy': 'bouh-display-2', 
+                'health': 'bouh-display-3', 
+                'swing': 'bouh-display-4', 
+                'fiqh': 'bouh-display-5' 
+            };
             feed.innerHTML = '<p style="text-align:center;color:#999;">جارِ تحميل عالمكِ...</p>';
             try {
+                // استخدام الـ API الجديد للجلب
                 const res = await fetch('/api/get-posts'); 
                 const data = await res.json();
                 const filtered = data.posts.filter(p => p.section === dbMap[tab]);
@@ -286,7 +288,6 @@
                         const isVideo = p.media_url.match(/\.(mp4|webm|ogg|mov)$/i);
                         mediaTag = isVideo ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`;
                     }
-                    const commentsHtml = (p.comments || []).map(c => `<div class="comment-item"><span class="comment-user">رقة:</span> ${c.comment_text}</div>`).join('');
                     const safeText = p.content.replace(/'/g, "\\'").replace(/"/g, '\\"');
                     const mediaUrl = p.media_url || '';
 
@@ -299,22 +300,55 @@
                             <div class="post-content">${p.content}</div>
                             ${mediaTag}
                             <div class="post-actions">
-                                <button class="action-btn ${p.user_liked ? 'active-like' : ''}" onclick="handleLike('${p.id}', this)">
-                                    <i class="${p.user_liked ? 'fas' : 'far'} fa-heart"></i> <span>${p.likes_count || 'إعجاب'}</span>
-                                </button>
-                                <button class="action-btn" onclick="document.getElementById('input-${p.id}').focus()"><i class="far fa-comment"></i> تعليق</button>
+                                <button class="action-btn" onclick="handleLike('${p.id}', this)"><i class="far fa-heart"></i> <span>إعجاب</span></button>
+                                <button class="action-btn"><i class="far fa-comment"></i> تعليق</button>
                                 <button class="action-btn" onclick="sharePost('${safeText}', '${mediaUrl}')"><i class="far fa-share-square"></i> مشاركة</button>
-                            </div>
-                            <div class="comments-section">
-                                <div id="comment-list-${p.id}">${commentsHtml}</div>
-                                <div class="comment-input-area">
-                                    <input type="text" id="input-${p.id}" class="comment-input" placeholder="اكتبي تعليقاً...">
-                                    <button class="comment-submit" onclick="submitComment('${p.id}')"><i class="fas fa-arrow-up"></i></button>
-                                </div>
                             </div>
                         </div>`;
                 }).join('');
-            } catch(e) { feed.innerHTML = ''; }
+                if(!filtered.length) feed.innerHTML = '<p style="text-align:center;color:#999;padding:20px;">لا يوجد محتوى في هذا القسم بعد.</p>';
+            } catch(e) { feed.innerHTML = '<p style="text-align:center;color:red;">عذراً، حدث خطأ أثناء التحميل.</p>'; }
+        }
+
+        async function handleFullPost() { 
+            const text = document.getElementById('swing-post-text').value;
+            const mediaInput = document.getElementById('media-upload');
+            const publishBtn = document.getElementById('publish-btn');
+            
+            if(!text.trim() && !mediaInput.files[0]) return;
+            
+            publishBtn.disabled = true;
+            Swal.fire({ title: 'جاري النشر في الأرجوحة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            
+            const formData = new FormData();
+            formData.append('content', text);
+            formData.append('section', 'bouh-display-4'); // الأرجوحة
+            formData.append('type', mediaInput.files[0] ? 'وسائط' : 'نصي');
+            if(mediaInput.files[0]) formData.append('file', mediaInput.files[0]);
+
+            try {
+                // الإرسال إلى API الحفظ الذي يدعم الـ Blob و Neon
+                const res = await fetch('/api/health-tracking', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await res.json();
+                if(result.success) {
+                    Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success');
+                    document.getElementById('swing-post-text').value = '';
+                    mediaInput.value = '';
+                    document.getElementById('preview-container').style.display = 'none';
+                    fetchContent('swing'); // تحديث العرض
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch(e) {
+                console.error(e);
+                Swal.fire('خطأ', 'فشل النشر: ' + e.message, 'error');
+            } finally {
+                publishBtn.disabled = false;
+            }
         }
 
         async function sharePost(content, mediaUrl) {
@@ -332,9 +366,7 @@
                 if (navigator.share) {
                     await navigator.share({ title: 'رقة ✨', text: finalDescription });
                 }
-            } catch (err) {
-                console.log("Share failed");
-            }
+            } catch (err) { console.log("Share failed"); }
         }
 
         async function sendMessage(auto = false, text = null) {
@@ -363,20 +395,10 @@
             else { searchBar.style.display = 'block'; document.getElementById('main-search-input').value = ''; fetchContent(id); }
         }
 
-        async function handleLike(postId, btn) {
-            const isLiked = btn.classList.toggle('active-like');
+        function handleLike(postId, btn) {
+            btn.classList.toggle('active-like');
             const span = btn.querySelector('span');
-            let count = parseInt(span.innerText) || 0;
-            span.innerText = isLiked ? ++count : (count > 0 ? --count : 'إعجاب');
-            fetch('/api/likes', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, action: isLiked ? 'like' : 'unlike' }) });
-        }
-
-        async function submitComment(postId) {
-            const input = document.getElementById(`input-${postId}`);
-            if(!input.value.trim()) return;
-            document.getElementById(`comment-list-${postId}`).innerHTML += `<div class="comment-item"><span class="comment-user">أنتِ:</span> ${input.value}</div>`;
-            fetch('/api/comments', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ post_id: postId, comment_text: input.value }) });
-            input.value = '';
+            span.innerText = btn.classList.contains('active-like') ? 'تم الإعجاب' : 'إعجاب';
         }
 
         function openAIChat(section) { document.getElementById('chat-title').innerText = section; document.getElementById('chat-overlay').style.display = 'flex'; loadHistory(); }
@@ -390,37 +412,6 @@
         }
         function viewHistoryItem(index) { const item = chatHistory[index]; document.getElementById('chat-messages').innerHTML = `<div class="msg msg-user">${item.q}</div><div class="msg msg-ai">${item.a}</div>`; toggleHistory(); }
         function handleMediaSelect(input) { if(input.files[0]) { document.getElementById('media-preview').src = URL.createObjectURL(input.files[0]); document.getElementById('preview-container').style.display = 'block'; } }
-        
-        async function handleFullPost() { 
-            const text = document.getElementById('swing-post-text').value;
-            if(!text.trim()) return;
-            
-            Swal.fire({ title: 'جاري النشر في أرجوحة...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-            
-            try {
-                // حفظ في نيون بنفس منطق الأقسام الأخرى باستخدام معرف الأرجوحة bouh-display-4
-                await fetch('/api/health-tracking', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        user_id: 1,
-                        category: 'swing_post',
-                        value: 0,
-                        note: text, // تخزين محتوى المنشور في حقل الملاحظة
-                        rating: 5,
-                        section: 'bouh-display-4' 
-                    })
-                });
-
-                Swal.fire('تم النشر ✨', 'شاركتِ رقة بكلماتكِ الرقيقة', 'success');
-                document.getElementById('swing-post-text').value = '';
-                document.getElementById('preview-container').style.display = 'none';
-                fetchContent('swing'); // جلب المحتوى المحدث فوراً
-            } catch(e) {
-                Swal.fire('تم النشر محلياً', 'شاركتِ بكلماتكِ بنجاح', 'success');
-            }
-        }
-
         function startVoiceRecognition() { const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SpeechRecognition) return; const r = new SpeechRecognition(); r.lang = 'ar-SA'; r.onstart = () => document.getElementById('mic-btn').style.color = 'red'; r.onresult = (e) => { document.getElementById('chat-input').value = e.results[0][0].transcript; document.getElementById('mic-btn').style.color = 'var(--p2)'; }; r.start(); }
         function readText(t) { const m = new SpeechSynthesisUtterance(); m.text = t; m.lang = 'ar-SA'; window.speechSynthesis.speak(m); }
         function capturePhoto() { const i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.capture = 'camera'; i.onchange = () => sendMediaMsg('صورة كاميرا'); i.click(); }
@@ -429,4 +420,4 @@
         window.onload = () => nav('home', document.querySelector('.nav-link'));
     </script>
 </body>
-    </html>
+                                                                                                                                                                                       </html>
