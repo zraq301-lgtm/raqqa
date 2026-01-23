@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --p2: #eb2f96;
-            --soft-bg: #fff9fb;
-            --card-grad: linear-gradient(135deg, #ffffff 0%, #fff5f8 100%);
+            --raqqa-pink: #eb2f96;
+            --raqqa-soft: #fff9fb;
+            --raqqa-gradient: linear-gradient(135deg, #ffffff 0%, #fff5f8 100%);
         }
 
         body {
             font-family: 'Tajawal', sans-serif;
-            background-color: var(--soft-bg);
+            background-color: var(--raqqa-soft);
             margin: 0;
             padding: 15px;
             color: #444;
@@ -23,6 +23,7 @@
 
         .container { max-width: 500px; margin: 0 auto; }
 
+        /* الهيدر */
         .header {
             display: flex;
             align-items: center;
@@ -31,39 +32,40 @@
         }
 
         .header h3 {
-            font-size: 17px;
+            font-size: 18px;
             margin: 0;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .header i {
-            color: var(--p2);
+        .header i.main-icon {
+            color: var(--raqqa-pink);
             background: #fff;
-            padding: 8px;
-            border-radius: 12px;
+            padding: 10px;
+            border-radius: 15px;
             box-shadow: 0 4px 10px rgba(235, 47, 150, 0.1);
         }
 
-        .status-badge {
-            font-size: 10px;
-            padding: 4px 12px;
-            border-radius: 20px;
+        .status-dot {
+            font-size: 11px;
+            color: var(--raqqa-pink);
             background: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
             border: 1px solid #ffdeeb;
-            color: var(--p2);
         }
 
+        /* بطاقة الإشعار */
         .notif-card {
-            background: var(--card-grad);
+            background: var(--raqqa-gradient);
             border: 1px solid #fff;
-            padding: 16px;
+            padding: 18px;
             margin-bottom: 15px;
-            border-radius: 22px;
-            box-shadow: 0 8px 20px rgba(235, 47, 150, 0.05);
+            border-radius: 25px;
+            box-shadow: 0 10px 25px rgba(235, 47, 150, 0.05);
             position: relative;
-            animation: slideUp 0.5s ease forwards;
+            animation: slideIn 0.5s ease-out forwards;
         }
 
         .notif-card::after {
@@ -73,56 +75,60 @@
             top: 20%;
             height: 60%;
             width: 4px;
-            background: var(--p2);
+            background: var(--raqqa-pink);
             border-radius: 4px 0 0 4px;
         }
 
         .notif-title {
             font-weight: 700;
-            font-size: 14px;
+            font-size: 15px;
             color: #2d3436;
             margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .notif-body {
-            font-size: 13px;
+            font-size: 13.5px;
             color: #636e72;
             line-height: 1.6;
         }
 
-        .notif-footer {
+        .notif-time {
             margin-top: 12px;
-            display: flex;
-            justify-content: space-between;
             font-size: 10px;
             color: #b2bec3;
+            display: block;
+            text-align: left;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .error-container {
+        /* حالة الخطأ/الفراغ */
+        .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 50px 20px;
+        }
+
+        .error-box {
             background: #fff;
+            padding: 25px;
             border-radius: 20px;
-            border: 1px solid #ffe5e5;
+            border: 1px solid #ffe5f1;
+            text-align: center;
         }
 
         .btn-retry {
-            background: var(--p2);
+            background: var(--raqqa-pink);
             color: white;
             border: none;
-            padding: 8px 20px;
-            border-radius: 10px;
+            padding: 10px 25px;
+            border-radius: 12px;
             margin-top: 15px;
             font-family: 'Tajawal';
+            font-weight: bold;
             cursor: pointer;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -130,8 +136,8 @@
 
 <div class="container">
     <div class="header">
-        <h3><i class="fas fa-bell"></i> إشعارات رقة الذكية</h3>
-        <span class="status-badge" id="sync-status">جاري المزامنة...</span>
+        <h3><i class="fas fa-bell main-icon"></i> إشعارات رقة الذكية</h3>
+        <span class="status-dot" id="sync-status">جاري المزامنة...</span>
     </div>
 
     <div id="notifications-list">
@@ -139,68 +145,64 @@
 </div>
 
 <script>
-    // الإعدادات بناءً على بيانات Vercel و Neon في الصور
-    const CONFIG = {
-        API_URL: 'https://raqqs-pro.vercel.app/api/notifications', 
-        USER_ID: 1 // تأكدي أن هذا المستخدم موجود في جدول Neon
+    // إعدادات الربط بناءً على مشروعك raqqs-pro
+    const RAQQA_API = {
+        URL: 'https://raqqs-pro.vercel.app/api/notifications', // رابط الـ API الخاص بك
+        USER_ID: 1 // هذا الـ ID الذي سيتم جلب بياناته كما في صورة نيون
     };
 
-    async function fetchRaqqaData() {
-        const list = document.getElementById('notifications-list');
-        const status = document.getElementById('sync-status');
+    async function loadNotifications() {
+        const listContainer = document.getElementById('notifications-list');
+        const syncText = document.getElementById('sync-status');
 
         try {
-            // جلب البيانات مع تمرير user_id كباراميتر
-            const response = await fetch(`${CONFIG.API_URL}?user_id=${CONFIG.USER_ID}`);
+            // جلب البيانات مع تمرير الـ user_id المطلوب
+            const response = await fetch(`${RAQQA_API.URL}?user_id=${RAQQA_API.USER_ID}`);
             
-            if (!response.ok) throw new Error('فشل الاتصال بـ Vercel');
-            
+            // تحويل الاستجابة لـ JSON
             const data = await response.json();
 
-            if (data.success && data.notifications.length > 0) {
-                list.innerHTML = data.notifications.map(n => `
-                    <div class="notif-card">
-                        <div class="notif-title">
-                            <i class="fas fa-sparkles" style="font-size:10px; color:var(--p2)"></i>
-                            ${n.title}
+            if (data.success) {
+                if (data.notifications.length > 0) {
+                    listContainer.innerHTML = data.notifications.map(n => `
+                        <div class="notif-card">
+                            <div class="notif-title">${n.title}</div>
+                            <div class="notif-body">${n.body}</div>
+                            <span class="notif-time">
+                                <i class="far fa-clock"></i> ${new Date(n.created_at).toLocaleString('ar-EG', {hour: '2-digit', minute:'2-digit'})}
+                            </span>
                         </div>
-                        <div class="notif-body">${n.body}</div>
-                        <div class="notif-footer">
-                            <span><i class="far fa-clock"></i> ${formatTime(n.created_at)}</span>
-                            <span>رقة • تنبيه ذكي</span>
-                        </div>
-                    </div>
-                `).join('');
-                status.innerText = "مُحدث الآن";
+                    `).join('');
+                    syncText.innerText = "مُحدث الآن";
+                } else {
+                    listContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-check-circle" style="font-size:40px; color:#d1d8e0; margin-bottom:15px;"></i>
+                            <p style="color:#888;">لا توجد إشعارات جديدة حالياً ✨</p>
+                        </div>`;
+                    syncText.innerText = "خالٍ";
+                }
             } else {
-                list.innerHTML = `
-                    <div style="text-align:center; padding:60px 20px;">
-                        <i class="fas fa-check-double" style="font-size:40px; color:#d1d8e0; margin-bottom:15px;"></i>
-                        <p style="color:#888; font-size:13px;">لا توجد إشعارات جديدة بانتظاركِ ✨</p>
-                    </div>`;
-                status.innerText = "خالٍ";
+                throw new Error(data.error || "خطأ غير معروف");
             }
 
-        } catch (error) {
-            console.error("Sync Error:", error);
-            status.innerText = "خطأ في الاتصال";
-            list.innerHTML = `
-                <div class="error-container">
-                    <i class="fas fa-exclamation-circle" style="font-size:30px; color:#ff7675;"></i>
-                    <p style="font-size:13px; color:#666; margin-top:10px;">عذراً، تعذر الوصول لبيانات رقة.<br>تأكدي من إعدادات <b>POSTGRES_URL</b>.</p>
-                    <button class="btn-retry" onclick="fetchRaqqaData()">إعادة المحاولة</button>
+        } catch (err) {
+            console.error(err);
+            syncText.innerText = "خطأ في المزامنة";
+            listContainer.innerHTML = `
+                <div class="error-box">
+                    <i class="fas fa-exclamation-triangle" style="font-size:35px; color:#ff4d4f; margin-bottom:15px;"></i>
+                    <p style="color:#666; font-size:14px;">عذراً، تعذر الوصول للبيانات.<br>تأكدي من إعدادات <b>POSTGRES_URL</b> في Vercel.</p>
+                    <button class="btn-retry" onclick="loadNotifications()">إعادة المحاولة</button>
                 </div>`;
         }
     }
 
-    function formatTime(dateStr) {
-        const date = new Date(dateStr);
-        return date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-    }
-
-    // التشغيل الأولي والتحديث التلقائي
-    window.onload = fetchRaqqaData;
-    setInterval(fetchRaqqaData, 60000); // تحديث كل دقيقة
+    // التشغيل عند فتح الصفحة
+    window.onload = loadNotifications;
+    
+    // تحديث تلقائي كل 30 ثانية لضمان ظهور الإشعارات الجديدة فوراً
+    setInterval(loadNotifications, 30000);
 </script>
 
 </body>
