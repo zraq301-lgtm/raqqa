@@ -2,154 +2,46 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>رقة - الإشعارات الذكية</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
     <style>
-        :root {
-            --p2: #eb2f96; /* لون رقة الأساسي */
-            --p1: #ff85c0;
-            --soft-bg: #fff9fb;
-            --card-grad: linear-gradient(135deg, #ffffff 0%, #fff5f8 100%);
-        }
+        :root { --p2: #eb2f96; --soft-bg: #fff9fb; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--soft-bg); margin: 0; padding: 20px; }
+        
+        #smart-notifications { max-width: 500px; margin: 0 auto; }
+        .header-area { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+        .header-area h3 { font-size: 18px; margin: 0; color: #444; display: flex; align-items: center; gap: 10px; }
+        .header-area h3 i { color: var(--p2); background: #fff; padding: 8px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .status-badge { font-size: 10px; color: var(--p2); background: #fff; padding: 4px 12px; border-radius: 20px; border: 1px solid #ffe0ef; }
 
-        body {
-            font-family: 'Tajawal', sans-serif;
-            background-color: var(--soft-bg);
-            margin: 0;
-            padding: 20px;
-            color: #444;
-        }
-
-        #smart-notifications {
-            max-width: 500px;
-            margin: 0 auto;
-        }
-
-        /* الهيدر */
-        .header-area {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 25px;
-        }
-
-        .header-area h3 {
-            font-size: 18px;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .header-area h3 i {
-            color: var(--p2);
-            background: #fff;
-            padding: 10px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(235, 47, 150, 0.1);
-        }
-
-        .refresh-badge {
-            font-size: 10px;
-            font-weight: bold;
-            color: var(--p2);
-            background: #fff;
-            padding: 5px 12px;
-            border-radius: 20px;
-            border: 1px solid #ffdeeb;
-            transition: all 0.3s ease;
-        }
-
-        /* بطاقة الإشعار */
         .notif-card {
-            background: var(--card-grad);
+            background: linear-gradient(135deg, #ffffff 0%, #fff5f8 100%);
             border: 1px solid #fff;
-            padding: 18px;
-            margin-bottom: 16px;
-            border-radius: 24px;
-            box-shadow: 0 8px 25px rgba(235, 47, 150, 0.04);
-            position: relative;
-            overflow: hidden;
-            animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-        }
-
-        .notif-card::before {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 0;
-            height: 100%;
-            width: 6px;
-            background: var(--p2);
-        }
-
-        .notif-title {
-            font-weight: 700;
-            color: #2d3436;
-            font-size: 15px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .notif-message {
-            font-size: 13.5px;
-            color: #636e72;
-            line-height: 1.7;
-        }
-
-        .notif-footer {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px dashed #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 10px;
-            color: #b2bec3;
-        }
-
-        /* تأثير التحميل (Shimmer) */
-        .shimmer {
-            height: 100px;
-            background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 24px;
-            margin-bottom: 16px;
-        }
-
-        @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* رسالة الخطأ */
-        .error-msg {
-            text-align: center;
-            padding: 40px 20px;
-            background: #fff;
+            padding: 16px;
+            margin-bottom: 15px;
             border-radius: 20px;
-            color: #ff4d4f;
+            box-shadow: 0 8px 15px rgba(235, 47, 150, 0.03);
+            position: relative;
+            animation: slideIn 0.5s ease forwards;
         }
+        .notif-card::after { content: ''; position: absolute; right: 0; top: 0; height: 100%; width: 4px; background: var(--p2); border-radius: 4px 0 0 4px; }
+        
+        .notif-title { font-weight: 700; color: #333; font-size: 14px; margin-bottom: 5px; }
+        .notif-body { font-size: 13px; color: #666; line-height: 1.6; }
+        .notif-time { font-size: 10px; color: #bbb; margin-top: 10px; display: block; }
+
+        .shimmer { height: 80px; background: #f0f0f0; border-radius: 20px; margin-bottom: 15px; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
 <div id="smart-notifications">
     <div class="header-area">
-        <h3><i class="fas fa-magic"></i> إشعارات رقة الذكية</h3>
-        <span class="refresh-badge" id="status-text">جاري التحميل...</span>
+        <h3><i class="fas fa-magic"></i> إشعارات رقة</h3>
+        <span class="status-badge" id="sync-text">جاري المزامنة...</span>
     </div>
 
     <div id="notifications-list">
@@ -159,77 +51,42 @@
 </div>
 
 <script>
-    // إعدادات الربط
+    // الإعدادات بناءً على لقطات الشاشة
     const CONFIG = {
-        // استبدلي هذا الرابط برابط مشروعك الحقيقي على فيرسل
-        API_URL: 'https://your-project-name.vercel.app/api/notifications', 
-        USER_ID: 1 // هذا الـ ID الذي سيتم جلب بياناته من جدول نيون
+        API_URL: 'https://raqqs-pro.vercel.app/api/notifications', // تم استنتاج الاسم من صورة فيرسل
+        USER_ID: 1 // تأكد من وجود صف في نيون يحمل user_id = 1
     };
 
-    async function fetchSmartNotifications() {
-        const list = document.getElementById('notifications-list');
-        const status = document.getElementById('status-text');
-        
+    async function loadNotifications() {
+        const container = document.getElementById('notifications-list');
+        const syncStatus = document.getElementById('sync-text');
+
         try {
-            status.innerText = "جاري المزامنة...";
-            
-            // جلب البيانات من الـ API
             const response = await fetch(`${CONFIG.API_URL}?user_id=${CONFIG.USER_ID}`);
-            
-            if (!response.ok) throw new Error('فشل في الاتصال بالسيرفر');
-            
             const data = await response.json();
-            
-            if (data.success && data.notifications && data.notifications.length > 0) {
-                // عرض الإشعارات
-                list.innerHTML = data.notifications.map((n, index) => `
-                    <div class="notif-card" style="animation-delay: ${index * 0.1}s">
-                        <div class="notif-title">
-                            <i class="fas fa-sparkles" style="color:var(--p2); font-size:12px;"></i>
-                            ${n.title}
-                        </div>
-                        <div class="notif-message">${n.body}</div>
-                        <div class="notif-footer">
-                            <span><i class="far fa-clock"></i> ${formatDate(n.created_at)}</span>
-                            <span>رقة • ${n.type || 'تنبيه ذكي'}</span>
-                        </div>
+
+            if (data.success && data.notifications.length > 0) {
+                container.innerHTML = data.notifications.map(n => `
+                    <div class="notif-card">
+                        <div class="notif-title">${n.title}</div>
+                        <div class="notif-body">${n.body}</div>
+                        <span class="notif-time"><i class="far fa-clock"></i> ${new Date(n.created_at).toLocaleString('ar-EG')}</span>
                     </div>
                 `).join('');
-                status.innerText = "مُحدث الآن";
+                syncStatus.innerText = "مُحدث الآن";
             } else {
-                // في حال عدم وجود إشعارات غير مقروءة
-                list.innerHTML = `
-                    <div style="text-align:center; padding:50px 20px;">
-                        <i class="fas fa-check-circle" style="font-size:40px; color:#d4edda; margin-bottom:15px; display:block;"></i>
-                        <div style="color:#888; font-size:14px;">لا توجد تنبيهات جديدة حالياً في عالم رقة ✨</div>
-                    </div>`;
-                status.innerText = "خالٍ";
+                container.innerHTML = '<div style="text-align:center; padding:40px; color:#ccc;">لا توجد تنبيهات جديدة ✨</div>';
+                syncStatus.innerText = "خالٍ";
             }
-
-        } catch (e) {
-            console.error("Fetch Error:", e);
-            status.innerText = "خطأ في المزامنة";
-            list.innerHTML = `
-                <div class="error-msg">
-                    <i class="fas fa-exclamation-triangle" style="font-size:30px; margin-bottom:10px; display:block;"></i>
-                    <div style="font-size:13px;">عذراً، تعذر المزامنة مع قاعدة البيانات. تأكدي من إعدادات Vercel و Neon.</div>
-                    <button onclick="fetchSmartNotifications()" style="margin-top:15px; background:var(--p2); color:#fff; border:none; padding:8px 20px; border-radius:10px; font-family:'Tajawal';">إعادة المحاولة</button>
-                </div>`;
+        } catch (err) {
+            syncStatus.innerText = "خطأ في الاتصال";
+            container.innerHTML = '<div style="text-align:center; padding:20px; color:#ff7675;">تأكد من إعدادات Vercel و POSTGRES_URL</div>';
         }
     }
 
-    // دالة لتنسيق الوقت
-    function formatDate(dateStr) {
-        const options = { hour: '2-digit', minute: '2-digit' };
-        return new Date(dateStr).toLocaleTimeString('ar-EG', options);
-    }
-
-    // التشغيل عند فتح الصفحة
-    window.onload = fetchSmartNotifications;
-
-    // تحديث تلقائي كل دقيقة واحدة
-    setInterval(fetchSmartNotifications, 60000);
+    window.onload = loadNotifications;
+    setInterval(loadNotifications, 30000); // تحديث كل 30 ثانية
 </script>
 
 </body>
-        </html>
+</html>
