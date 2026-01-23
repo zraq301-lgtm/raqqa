@@ -1,22 +1,19 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-    // إعدادات السماح بالاتصال (CORS)
+    // حل مشكلة CORS (خطأ المزامنة)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // جلب user_id من الرابط (Query Parameter)
     const { user_id } = req.query;
 
-    if (!user_id) {
-        return res.status(400).json({ error: "يجب تزويد user_id" });
-    }
+    if (!user_id) return res.status(400).json({ success: false, error: "Missing user_id" });
 
     try {
-        // الاستعلام مطابق لأسماء الأعمدة في لقطات الشاشة: id, user_id, title, body, is_read, created_at
+        // الاستعلام مطابق تماماً لصورة الجدول (body, is_read, user_id)
         const result = await sql`
             SELECT id, title, body, created_at 
             FROM notifications 
@@ -26,7 +23,6 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, notifications: result.rows });
     } catch (error) {
-        // في حال وجود خطأ في الاتصال بقاعدة البيانات نيون
-        return res.status(500).json({ error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 }
