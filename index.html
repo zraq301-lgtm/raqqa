@@ -55,21 +55,29 @@
         .action-btn { border: none; background: none; cursor: pointer; color: #777; font-size: 13px; display: flex; align-items: center; gap: 6px; font-family: 'Tajawal'; }
         .action-btn.active-like { color: #ff4d4f; font-weight: bold; }
 
+        /* نظام التعليقات */
+        .comment-section { display: none; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
+        .comment-input-area { display: flex; gap: 8px; margin-bottom: 12px; }
+        .comment-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 1px solid #eee; font-family: 'Tajawal'; font-size: 13px; }
+        .comment-btn { background: var(--p1); color: white; border: none; padding: 5px 12px; border-radius: 15px; cursor: pointer; }
+        .comment-list { font-size: 13px; color: #666; }
+        .single-comment { background: #f9f9f9; padding: 8px 12px; border-radius: 12px; margin-bottom: 5px; }
+
         #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
         .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: #fff; }
         .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #fdfbfd; }
-        .msg { padding: 14px 18px; border-radius: 22px; max-width: 80%; font-size: 14px; line-height: 1.6; }
+        .msg { padding: 14px 18px; border-radius: 22px; max-width: 80%; font-size: 14px; line-height: 1.6; position: relative; }
         .msg-user { align-self: flex-start; background: #f0f0f0; color: #333; }
         .msg-ai { align-self: flex-end; background: var(--p2); color: white; border-bottom-right-radius: 2px; }
         
-        .chat-tools { display: flex; gap: 20px; padding: 12px 20px; background: #fff; border-top: 1px solid #f5f5f5; border-bottom: 1px solid #f5f5f5; }
+        .chat-tools { display: flex; gap: 20px; padding: 12px 20px; background: #fff; border-top: 1px solid #f5f5f5; border-bottom: 1px solid #f5f5f5; justify-content: center; }
         .tool-btn { color: var(--p2); font-size: 22px; cursor: pointer; transition: 0.2s; }
         .tool-btn:active { transform: scale(1.2); }
 
         .chat-footer { padding: 15px; display: flex; gap: 10px; background: white; align-items: center; }
         .chat-input { flex: 1; padding: 12px 20px; border-radius: 30px; border: 1.5px solid #eee; outline: none; font-family: 'Tajawal'; }
         
-        #saved-panel { position: absolute; bottom: 85px; left: 15px; right: 15px; background: white; border-radius: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); display: none; max-height: 300px; overflow-y: auto; z-index: 2100; padding: 15px; border: 1px solid var(--soft); }
+        #saved-panel { position: absolute; bottom: 140px; left: 15px; right: 15px; background: white; border-radius: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); display: none; max-height: 300px; overflow-y: auto; z-index: 2100; padding: 15px; border: 1px solid var(--soft); }
         .saved-item { padding: 12px; border-bottom: 1px solid #f9f9f9; font-size: 13px; color: #555; cursor: pointer; }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); display: flex; border-top: 1px solid #eee; padding: 12px 0 25px 0; z-index: 1000; }
@@ -80,7 +88,6 @@
         .swal-label { display: block; text-align: right; margin-top: 12px; font-weight: bold; color: var(--p2); font-size: 14px; }
         .swal-custom-input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 12px; border: 1px solid #ddd; font-family: 'Tajawal'; box-sizing: border-box; }
         
-        /* مضاف لإخفاء عناصر الإدخال الحقيقية */
         #hidden-file-input { display: none; }
     </style>
 </head>
@@ -147,19 +154,22 @@
             <i class="fas fa-trash-alt" onclick="clearChat()" style="color: #ff4d4f; cursor: pointer;"></i>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
+        
         <div id="saved-panel">
             <div style="font-weight: bold; border-bottom: 2px solid var(--soft); padding-bottom: 8px; margin-bottom: 10px; color: var(--p2); display: flex; justify-content: space-between;">
-                <span>المحفوظات ✨</span>
+                <span>الردود المحفوظة ✨</span>
                 <i class="fas fa-times" onclick="toggleSaved()" style="cursor:pointer;"></i>
             </div>
             <div id="saved-list"></div>
         </div>
+
         <div class="chat-tools">
             <i class="fas fa-microphone tool-btn" onclick="aiTool('الميكروفون')"></i>
             <i class="fas fa-camera tool-btn" onclick="aiTool('الكاميرا')"></i>
             <i class="fas fa-image tool-btn" onclick="aiTool('المعرض')"></i>
-            <i class="fas fa-bookmark tool-btn" onclick="toggleSaved()" style="margin-right: auto;"></i>
+            <i class="fas fa-bookmark tool-btn" onclick="toggleSaved()"></i>
         </div>
+
         <div class="chat-footer">
             <input type="text" id="chat-input" class="chat-input" placeholder="اكتبي سؤالكِ هنا...">
             <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:50px; height:50px; border-radius:50%; box-shadow: 0 4px 12px rgba(235, 47, 150, 0.3);"><i class="fas fa-paper-plane"></i></button>
@@ -178,7 +188,7 @@
         const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
         let savedAIs = JSON.parse(localStorage.getItem('raqqa_saved')) || [];
 
-        // إعداد المستمع لرفع الملفات
+        // إدارة الكاميرا والرفع
         const fileInput = document.getElementById('hidden-file-input');
         fileInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
@@ -188,10 +198,9 @@
                     container.innerHTML += `
                         <div class="msg msg-user">
                             <img src="${e.target.result}" style="max-width:100%; border-radius:10px; margin-bottom:5px;">
-                            <br> جاري تحليل الصورة...
+                            <br> جاري تحليل الصورة المرفقة...
                         </div>`;
                     container.scrollTop = container.scrollHeight;
-                    // هنا يمكن إرسال الصورة للسيرفر فعلياً
                 };
                 reader.readAsDataURL(this.files[0]);
             }
@@ -205,25 +214,31 @@
                 fileInput.setAttribute('capture', 'environment');
                 fileInput.click();
             } else if (name === 'الميكروفون') {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    Swal.fire({
-                        title: 'جاري الاستماع...',
-                        text: 'تحدثي الآن، رقة تسمعكِ',
-                        icon: 'info',
-                        showConfirmButton: false,
-                        timer: 3000
-                    });
-                    // منطق التسجيل الصوتي يوضع هنا
-                } else {
-                    Swal.fire('خطأ', 'المتصفح لا يدعم الوصول للميكروفون', 'error');
-                }
+                Swal.fire({ title: 'جاري الاستماع...', text: 'تحدثي الآن، رقة تسمعكِ', icon: 'info', showConfirmButton: false, timer: 3000 });
             }
         }
 
+        function toggleComment(id) {
+            const section = document.getElementById(`comment-sec-${id}`);
+            section.style.display = section.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function addComment(id) {
+            const input = document.getElementById(`input-${id}`);
+            const list = document.getElementById(`list-${id}`);
+            if(input.value.trim() === "") return;
+            
+            const div = document.createElement('div');
+            div.className = 'single-comment';
+            div.innerText = input.value;
+            list.appendChild(div);
+            input.value = "";
+        }
+
+        // --- وظائف المتابعة الصحية (كما هي دون تغيير) ---
         function showDetailedHealth(type) {
             let config = {};
             const d = new Date().toISOString().split('T')[0];
-
             switch(type) {
                 case 'menstruation': config = { title: 'متابعة الحيض (الدورة)', html: `<label class="swal-label">تاريخ بدء النزيف:</label><input type="date" id="v1" value="${d}" class="swal-custom-input"><label class="swal-label">كثافة التدفق:</label><select id="v2" class="swal-custom-input"><option>خفيف جداً</option><option>متوسط</option><option>غزير</option><option>نزيف شديد</option></select><label class="swal-label">الأعراض الجسدية:</label><input id="v3" placeholder="تقلصات، صداع، آلام ظهر.." class="swal-custom-input"><label class="swal-label">الحالة المزاجية:</label><input id="v4" placeholder="توتر، رغبة في البكاء، هدوء.." class="swal-custom-input">` }; break;
                 case 'pregnancy': config = { title: 'متابعة الحمل التفصيلية', html: `<label class="swal-label">الأسبوع الحالي:</label><input type="number" id="v1" placeholder="مثلاً: 14" class="swal-custom-input"><label class="swal-label">مستوى الغثيان/التعب:</label><select id="v2" class="swal-custom-input"><option>منعدم</option><option>بسيط</option><option>شديد</option></select><label class="swal-label">حركة الجنين (إن وجدت):</label><input id="v3" placeholder="نشطة، ضعيفة.." class="swal-custom-input"><label class="swal-label">ملاحظات طبية:</label><input id="v4" placeholder="تورم، إفرازات، ضغط.." class="swal-custom-input">` }; break;
@@ -264,13 +279,21 @@
                 const res = await fetch('/api/get-posts');
                 const data = await res.json();
                 const filtered = data.posts.filter(p => p.section === dbMap[tab]);
-                feed.innerHTML = filtered.length ? filtered.map(p => `
+                feed.innerHTML = filtered.length ? filtered.map((p, idx) => `
                     <div class="post-card">
                         <div class="post-content">${p.content}</div>
                         ${p.media_url ? (p.media_url.match(/\.(mp4|webm|mov)$/i) ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`) : ''}
                         <div class="post-actions">
                             <button class="action-btn" onclick="this.classList.toggle('active-like')"><i class="far fa-heart"></i> إعجاب</button>
+                            <button class="action-btn" onclick="toggleComment('${idx}')"><i class="far fa-comment"></i> تعليق</button>
                             <button class="action-btn" onclick="sharePost(\`${p.content}\`)"><i class="far fa-share-square"></i> مشاركة</button>
+                        </div>
+                        <div class="comment-section" id="comment-sec-${idx}">
+                            <div class="comment-input-area">
+                                <input type="text" id="input-${idx}" class="comment-input" placeholder="اكتبي تعليقكِ...">
+                                <button class="comment-btn" onclick="addComment('${idx}')">نشر</button>
+                            </div>
+                            <div class="comment-list" id="list-${idx}"></div>
                         </div>
                     </div>`).join('') : '<p style="text-align:center; padding:20px; color:#999;">لا يوجد محتوى حالياً.</p>';
             } catch(e) { feed.innerHTML = '<p style="text-align:center;">خطأ في الاتصال بالخادم.</p>'; }
@@ -294,8 +317,8 @@
                 const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: text }) });
                 const data = await res.json();
                 const reply = data.reply || "أنا معكِ يا جميلة.. كيف يمكنني دعمكِ أكثر؟";
-                container.innerHTML += `<div class="msg msg-ai">${reply} <br><small onclick="saveAI('${reply.replace(/'/g, "\\'")}')" style="cursor:pointer; color:#eee; text-decoration:underline; font-size:10px;">حفظ الرد ✨</small></div>`;
-            } catch(e) { container.innerHTML += `<div class="msg msg-ai">أنا هنا بجانبك.. هل ترغبين في تسجيلي أي ملاحظة أخرى؟</div>`; }
+                container.innerHTML += `<div class="msg msg-ai">${reply} <br><small onclick="saveAI('${reply.replace(/'/g, "\\'")}')" style="cursor:pointer; color:#eee; text-decoration:underline; font-size:10px; display:block; margin-top:5px;">حفظ في المحفوظات ✨</small></div>`;
+            } catch(e) { container.innerHTML += `<div class="msg msg-ai">أنا هنا بجانبك.. هل ترغبين في تسجيلي أي ملاحظة أخرى؟ <br><small onclick="saveAI('أنا هنا بجانبك..')" style="cursor:pointer; color:#eee; text-decoration:underline; font-size:10px; display:block; margin-top:5px;">حفظ ✨</small></div>`; }
             container.scrollTop = container.scrollHeight;
         }
 
@@ -308,7 +331,7 @@
         function toggleSaved() {
             const panel = document.getElementById('saved-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            document.getElementById('saved-list').innerHTML = savedAIs.map((t, i) => `<div class="saved-item" onclick="document.getElementById('chat-input').value='${t}'; toggleSaved();">${t.substring(0, 60)}...</div>`).join('');
+            document.getElementById('saved-list').innerHTML = savedAIs.length ? savedAIs.map((t, i) => `<div class="saved-item" onclick="document.getElementById('chat-input').value='${t}'; toggleSaved();">${t.substring(0, 50)}...</div>`).join('') : '<p style="text-align:center; font-size:12px; color:#999;">لا توجد محفوظات بعد</p>';
         }
 
         function nav(id, el) {
