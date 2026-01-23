@@ -1,7 +1,7 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-    // حل مشكلة CORS (خطأ المزامنة)
+    // حل مشكلة CORS للاتصال من خارج فيرسل
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,10 +10,12 @@ export default async function handler(req, res) {
 
     const { user_id } = req.query;
 
-    if (!user_id) return res.status(400).json({ success: false, error: "Missing user_id" });
+    if (!user_id) {
+        return res.status(200).json({ success: false, error: "user_id is missing" });
+    }
 
     try {
-        // الاستعلام مطابق تماماً لصورة الجدول (body, is_read, user_id)
+        // الاستعلام مطابق تماماً لأسماء المفاتيح في صورتك (id, user_id, title, body, is_read)
         const result = await sql`
             SELECT id, title, body, created_at 
             FROM notifications 
@@ -21,8 +23,16 @@ export default async function handler(req, res) {
             ORDER BY created_at DESC;
         `;
 
-        return res.status(200).json({ success: true, notifications: result.rows });
+        return res.status(200).json({ 
+            success: true, 
+            notifications: result.rows 
+        });
     } catch (error) {
-        return res.status(500).json({ success: false, error: error.message });
+        console.error("Database Error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            error: "خطأ في الاتصال بقاعدة البيانات",
+            details: error.message 
+        });
     }
-}
+        }
