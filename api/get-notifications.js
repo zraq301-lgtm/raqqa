@@ -1,33 +1,32 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-    // 1. إضافة تصاريح الوصول (CORS) لحل مشكلة "خطأ الاتصال"
-    res.setHeader('Access-Control-Allow-Origin', '*'); 
+    // إعدادات السماح بالاتصال (CORS)
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // التعامل مع طلبات Pre-flight
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
 
+    // جلب user_id من الرابط (Query Parameter)
     const { user_id } = req.query;
 
-    // التأكد من وجود user_id لتجنب توقف السيرفر
     if (!user_id) {
-        return res.status(400).json({ error: "user_id is required" });
+        return res.status(400).json({ error: "يجب تزويد user_id" });
     }
 
     try {
+        // الاستعلام مطابق لأسماء الأعمدة في لقطات الشاشة: id, user_id, title, body, is_read, created_at
         const result = await sql`
-            SELECT id, title, body, type, created_at 
+            SELECT id, title, body, created_at 
             FROM notifications 
-            WHERE user_id = ${user_id} AND is_read = FALSE
+            WHERE user_id = ${parseInt(user_id)} AND is_read = FALSE
             ORDER BY created_at DESC;
         `;
 
         return res.status(200).json({ success: true, notifications: result.rows });
     } catch (error) {
+        // في حال وجود خطأ في الاتصال بقاعدة البيانات نيون
         return res.status(500).json({ error: error.message });
     }
 }
