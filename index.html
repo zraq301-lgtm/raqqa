@@ -55,7 +55,6 @@
         .action-btn { border: none; background: none; cursor: pointer; color: #777; font-size: 13px; display: flex; align-items: center; gap: 6px; font-family: 'Tajawal'; }
         .action-btn.active-like { color: #ff4d4f; font-weight: bold; }
 
-        /* نظام التعليقات */
         .comment-section { display: none; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
         .comment-input-area { display: flex; gap: 8px; margin-bottom: 12px; }
         .comment-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 1px solid #eee; font-family: 'Tajawal'; font-size: 13px; }
@@ -154,7 +153,6 @@
             <i class="fas fa-trash-alt" onclick="clearChat()" style="color: #ff4d4f; cursor: pointer;"></i>
         </div>
         <div id="chat-messages" class="chat-messages"></div>
-        
         <div id="saved-panel">
             <div style="font-weight: bold; border-bottom: 2px solid var(--soft); padding-bottom: 8px; margin-bottom: 10px; color: var(--p2); display: flex; justify-content: space-between;">
                 <span>الردود المحفوظة ✨</span>
@@ -162,14 +160,12 @@
             </div>
             <div id="saved-list"></div>
         </div>
-
         <div class="chat-tools">
             <i class="fas fa-microphone tool-btn" onclick="aiTool('الميكروفون')"></i>
             <i class="fas fa-camera tool-btn" onclick="aiTool('الكاميرا')"></i>
             <i class="fas fa-image tool-btn" onclick="aiTool('المعرض')"></i>
             <i class="fas fa-bookmark tool-btn" onclick="toggleSaved()"></i>
         </div>
-
         <div class="chat-footer">
             <input type="text" id="chat-input" class="chat-input" placeholder="اكتبي سؤالكِ هنا...">
             <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:50px; height:50px; border-radius:50%; box-shadow: 0 4px 12px rgba(235, 47, 150, 0.3);"><i class="fas fa-paper-plane"></i></button>
@@ -195,11 +191,7 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const container = document.getElementById('chat-messages');
-                    container.innerHTML += `
-                        <div class="msg msg-user">
-                            <img src="${e.target.result}" style="max-width:100%; border-radius:10px; margin-bottom:5px;">
-                            <br> جاري تحليل الصورة المرفقة...
-                        </div>`;
+                    container.innerHTML += `<div class="msg msg-user"><img src="${e.target.result}" style="max-width:100%; border-radius:10px; margin-bottom:5px;"><br> جاري تحليل الصورة المرفقة...</div>`;
                     container.scrollTop = container.scrollHeight;
                 };
                 reader.readAsDataURL(this.files[0]);
@@ -207,15 +199,9 @@
         });
 
         function aiTool(name) {
-            if (name === 'المعرض') {
-                fileInput.removeAttribute('capture');
-                fileInput.click();
-            } else if (name === 'الكاميرا') {
-                fileInput.setAttribute('capture', 'environment');
-                fileInput.click();
-            } else if (name === 'الميكروفون') {
-                Swal.fire({ title: 'جاري الاستماع...', text: 'تحدثي الآن، رقة تسمعكِ', icon: 'info', showConfirmButton: false, timer: 3000 });
-            }
+            if (name === 'المعرض') { fileInput.removeAttribute('capture'); fileInput.click(); }
+            else if (name === 'الكاميرا') { fileInput.setAttribute('capture', 'environment'); fileInput.click(); }
+            else if (name === 'الميكروفون') { Swal.fire({ title: 'جاري الاستماع...', text: 'تحدثي الآن، رقة تسمعكِ', icon: 'info', showConfirmButton: false, timer: 3000 }); }
         }
 
         function toggleComment(id) {
@@ -227,7 +213,6 @@
             const input = document.getElementById(`input-${id}`);
             const list = document.getElementById(`list-${id}`);
             if(input.value.trim() === "") return;
-            
             const div = document.createElement('div');
             div.className = 'single-comment';
             div.innerText = input.value;
@@ -235,41 +220,106 @@
             input.value = "";
         }
 
-        // --- وظائف المتابعة الصحية (كما هي دون تغيير) ---
+        // --- وظائف المتابعة الصحية وضبط الحفظ في نيون ---
         function showDetailedHealth(type) {
             let config = {};
             const d = new Date().toISOString().split('T')[0];
+            let categoryText = "";
+
             switch(type) {
-                case 'menstruation': config = { title: 'متابعة الحيض (الدورة)', html: `<label class="swal-label">تاريخ بدء النزيف:</label><input type="date" id="v1" value="${d}" class="swal-custom-input"><label class="swal-label">كثافة التدفق:</label><select id="v2" class="swal-custom-input"><option>خفيف جداً</option><option>متوسط</option><option>غزير</option><option>نزيف شديد</option></select><label class="swal-label">الأعراض الجسدية:</label><input id="v3" placeholder="تقلصات، صداع، آلام ظهر.." class="swal-custom-input"><label class="swal-label">الحالة المزاجية:</label><input id="v4" placeholder="توتر، رغبة في البكاء، هدوء.." class="swal-custom-input">` }; break;
-                case 'pregnancy': config = { title: 'متابعة الحمل التفصيلية', html: `<label class="swal-label">الأسبوع الحالي:</label><input type="number" id="v1" placeholder="مثلاً: 14" class="swal-custom-input"><label class="swal-label">مستوى الغثيان/التعب:</label><select id="v2" class="swal-custom-input"><option>منعدم</option><option>بسيط</option><option>شديد</option></select><label class="swal-label">حركة الجنين (إن وجدت):</label><input id="v3" placeholder="نشطة، ضعيفة.." class="swal-custom-input"><label class="swal-label">ملاحظات طبية:</label><input id="v4" placeholder="تورم، إفرازات، ضغط.." class="swal-custom-input">` }; break;
-                case 'weight': config = { title: 'متابعة الوزن والكتلة', html: `<label class="swal-label">الوزن الحالي (كجم):</label><input type="number" step="0.1" id="v1" class="swal-custom-input"><label class="swal-label">الطول (سم):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الهدف:</label><select id="v3" class="swal-custom-input"><option>إنقاص وزن</option><option>ثبات</option><option>زيادة وزن</option></select><label class="swal-label">النشاط البدني:</label><input id="v4" placeholder="مشي، كارديو، خمول.." class="swal-custom-input">` }; break;
-                case 'skincare': config = { title: 'متابعة نضارة البشرة', html: `<label class="swal-label">نوع البشرة اليوم:</label><select id="v1" class="swal-custom-input"><option>دهنية</option><option>جافة</option><option>مختلطة</option><option>حساسة</option></select><label class="swal-label">المشكلة الحالية:</label><input id="v2" placeholder="بثور، شحوب، هالات.." class="swal-custom-input"><label class="swal-label">الروتين المتبع:</label><input id="v3" placeholder="ترطيب، تقشير، واقي شمس.." class="swal-custom-input"><label class="swal-label">كمية شرب الماء:</label><input id="v4" placeholder="مثلاً: 8 أكواب" class="swal-custom-input">` }; break;
-                case 'vitals': config = { title: 'الضغط والسكر', html: `<label class="swal-label">ضغط الدم:</label><input id="v1" placeholder="مثلاً: 120/80" class="swal-custom-input"><label class="swal-label">مستوى سكر الدم:</label><input type="number" id="v2" placeholder="صائم أو بعد الأكل" class="swal-custom-input"><label class="swal-label">وقت القياس:</label><input id="v3" placeholder="صباحاً، مساءً.." class="swal-custom-input"><label class="swal-label">أعراض مرتبطة:</label><input id="v4" placeholder="دوخة، خفقان، عطش.." class="swal-custom-input">` }; break;
-                case 'sleep': config = { title: 'متابعة جودة النوم', html: `<label class="swal-label">عدد ساعات النوم:</label><input type="number" step="0.5" id="v1" class="swal-custom-input"><label class="swal-label">جودة النوم:</label><select id="v2" class="swal-custom-input"><option>عميق ومريح</option><option>متقطع</option><option>أرق وصعوبة</option></select><label class="swal-label">وقت الاستيقاظ:</label><input type="time" id="v3" class="swal-custom-input"><label class="swal-label">الشعور عند النهوض:</label><input id="v4" placeholder="نشطة، خمول، صداع.." class="swal-custom-input">` }; break;
-                case 'motherhood': config = { title: 'الأمومة والطفل', html: `<label class="swal-label">عمر الطفل:</label><input id="v1" class="swal-custom-input"><label class="swal-label">تحديات اليوم:</label><input id="v2" class="swal-custom-input"><label class="swal-label">سلوك الطفل:</label><input id="v3" class="swal-custom-input"><label class="swal-label">وقتك الخاص:</label><input id="v4" placeholder="هل حصلتِ على راحة؟" class="swal-custom-input">` }; break;
-                case 'breastfeeding': config = { title: 'متابعة الرضاعة', html: `<label class="swal-label">النوع:</label><select id="v1" class="swal-custom-input"><option>طبيعية</option><option>صناعية</option></select><label class="swal-label">عدد المرات:</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">ملاحظات الحليب:</label><input id="v3" class="swal-custom-input"><label class="swal-label">آلام أو صعوبات:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'doctor': config = { title: 'زيارة الطبيب', html: `<label class="swal-label">التخصص:</label><input id="v1" class="swal-custom-input"><label class="swal-label">التشخيص:</label><input id="v2" class="swal-custom-input"><label class="swal-label">الأدوية:</label><input id="v3" class="swal-custom-input"><label class="swal-label">الموعد القادم:</label><input type="date" id="v4" class="swal-custom-input">` }; break;
-                default: config = { title: 'بيانات صحية', html: `<input id="v1" class="swal-custom-input">` };
+                case 'menstruation': 
+                    categoryText = "الحيض";
+                    config = { title: 'متابعة الحيض (الدورة)', html: `<label class="swal-label">تاريخ بدء النزيف:</label><input type="date" id="v1" value="${d}" class="swal-custom-input"><label class="swal-label">كثافة التدفق (رقم):</label><input type="number" id="v2" placeholder="مثلاً 1-5" class="swal-custom-input"><label class="swal-label">الأعراض الجسدية:</label><input id="v3" placeholder="تقلصات، صداع، آلام ظهر.." class="swal-custom-input"><label class="swal-label">الحالة المزاجية:</label><input id="v4" placeholder="توتر، رغبة في البكاء، هدوء.." class="swal-custom-input">` }; 
+                    break;
+                case 'pregnancy': 
+                    categoryText = "الحمل";
+                    config = { title: 'متابعة الحمل التفصيلية', html: `<label class="swal-label">الأسبوع الحالي:</label><input type="number" id="v1" placeholder="مثلاً: 14" class="swal-custom-input"><label class="swal-label">مستوى التعب (1-10):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">حركة الجنين:</label><input id="v3" placeholder="نشطة، ضعيفة.." class="swal-custom-input"><label class="swal-label">ملاحظات طبية:</label><input id="v4" placeholder="تورم، إفرازات، ضغط.." class="swal-custom-input">` }; 
+                    break;
+                case 'weight': 
+                    categoryText = "الوزن";
+                    config = { title: 'متابعة الوزن والكتلة', html: `<label class="swal-label">الوزن الحالي (كجم):</label><input type="number" step="0.1" id="v2" class="swal-custom-input"><label class="swal-label">الطول (سم):</label><input type="number" id="v1" class="swal-custom-input"><label class="swal-label">الهدف:</label><input id="v3" placeholder="إنقاص، ثبات.." class="swal-custom-input"><label class="swal-label">النشاط البدني:</label><input id="v4" placeholder="مشي، كارديو.." class="swal-custom-input">` }; 
+                    break;
+                case 'skincare': 
+                    categoryText = "البشرة";
+                    config = { title: 'متابعة نضارة البشرة', html: `<label class="swal-label">نوع البشرة:</label><input id="v1" class="swal-custom-input"><label class="swal-label">التحسن (1-10):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الروتين:</label><input id="v3" class="swal-custom-input"><label class="swal-label">الماء:</label><input id="v4" class="swal-custom-input">` }; 
+                    break;
+                case 'vitals': 
+                    categoryText = "الضغط والسكر";
+                    config = { title: 'الضغط والسكر', html: `<label class="swal-label">الضغط:</label><input id="v3" placeholder="120/80" class="swal-custom-input"><label class="swal-label">القيمة الرقمية (السكر):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الوقت:</label><input id="v1" class="swal-custom-input"><label class="swal-label">أعراض:</label><input id="v4" class="swal-custom-input">` }; 
+                    break;
+                case 'sleep': 
+                    categoryText = "النوم";
+                    config = { title: 'متابعة جودة النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" step="0.5" id="v2" class="swal-custom-input"><label class="swal-label">وقت الاستيقاظ:</label><input type="time" id="v1" class="swal-custom-input"><label class="swal-label">الجودة:</label><input id="v3" class="swal-custom-input"><label class="swal-label">الشعور:</label><input id="v4" class="swal-custom-input">` }; 
+                    break;
+                case 'motherhood': 
+                    categoryText = "الأمومة";
+                    config = { title: 'الأمومة والطفل', html: `<label class="swal-label">عمر الطفل:</label><input id="v1" class="swal-custom-input"><label class="swal-label">تحديات (رقم):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">السلوك:</label><input id="v3" class="swal-custom-input"><label class="swal-label">وقت الراحة:</label><input id="v4" class="swal-custom-input">` }; 
+                    break;
+                case 'breastfeeding': 
+                    categoryText = "الرضاعة";
+                    config = { title: 'متابعة الرضاعة', html: `<label class="swal-label">النوع:</label><input id="v1" class="swal-custom-input"><label class="swal-label">عدد المرات:</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">ملاحظات الحليب:</label><input id="v3" class="swal-custom-input"><label class="swal-label">صعوبات:</label><input id="v4" class="swal-custom-input">` }; 
+                    break;
+                case 'doctor': 
+                    categoryText = "زيارة الطبيب";
+                    config = { title: 'زيارة الطبيب', html: `<label class="swal-label">التخصص:</label><input id="v1" class="swal-custom-input"><label class="swal-label">درجة التحسن (1-10):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الأدوية:</label><input id="v3" class="swal-custom-input"><label class="swal-label">الموعد:</label><input type="date" id="v4" class="swal-custom-input">` }; 
+                    break;
+                default: 
+                    categoryText = "بيانات صحية";
+                    config = { title: 'بيانات صحية', html: `<input id="v1" class="swal-custom-input">` };
             }
 
             Swal.fire({
                 title: config.title,
                 html: config.html,
-                confirmButtonText: 'تحليل ذكي ✨',
+                confirmButtonText: 'تحليل وحفظ ✨',
                 confirmButtonColor: '#eb2f96',
                 showCancelButton: true,
                 preConfirm: () => {
-                    let res = "";
+                    let noteParts = [];
+                    let numericVal = 0;
                     for(let i=1; i<=4; i++) {
                         let el = document.getElementById('v'+i);
                         if(el) {
                             let label = el.previousSibling ? el.previousSibling.innerText : "بيانات";
-                            res += label + ": " + el.value + " | ";
+                            noteParts.push(label + ": " + el.value);
+                            // استخراج أول قيمة رقمية تجدها لخانة numeric_value في الداتابيز
+                            if (el.type === 'number' && numericVal === 0) numericVal = el.value;
                         }
                     }
-                    return res;
+                    return {
+                        user_id: 1, // معرف افتراضي
+                        category: categoryText,
+                        value: numericVal || 0,
+                        note: noteParts.join(' | ')
+                    };
                 }
-            }).then(r => { if(r.isConfirmed) { openAIChat('تحليل رقة'); sendMessage(true, `بياناتي الصحية المفصلة: ${r.value}. قدمي لي تحليلاً ملكياً ونصائح دقيقة.`); } });
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'جاري الحفظ والتحليل...', didOpen: () => Swal.showLoading() });
+                    
+                    try {
+                        const response = await fetch('/api/save-health', { // اسم ملف الـ API الذي ستقوم بإنشائه بالكود الذي أرفقته
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(result.value)
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            openAIChat('طبيبة رقة');
+                            const container = document.getElementById('chat-messages');
+                            container.innerHTML += `<div class="msg msg-user">تم تسجيل بيانات ${categoryText}</div>`;
+                            container.innerHTML += `<div class="msg msg-ai">${data.advice}</div>`;
+                            container.scrollTop = container.scrollHeight;
+                            Swal.fire('تم بنجاح ✨', data.advice, 'success');
+                        } else {
+                            throw new Error();
+                        }
+                    } catch (error) {
+                        Swal.fire('عذراً', 'حدث خطأ أثناء الحفظ في قاعدة البيانات', 'error');
+                    }
+                }
+            });
         }
 
         async function fetchContent(tab) {
@@ -289,20 +339,14 @@
                             <button class="action-btn" onclick="sharePost(\`${p.content}\`)"><i class="far fa-share-square"></i> مشاركة</button>
                         </div>
                         <div class="comment-section" id="comment-sec-${idx}">
-                            <div class="comment-input-area">
-                                <input type="text" id="input-${idx}" class="comment-input" placeholder="اكتبي تعليقكِ...">
-                                <button class="comment-btn" onclick="addComment('${idx}')">نشر</button>
-                            </div>
+                            <div class="comment-input-area"><input type="text" id="input-${idx}" class="comment-input" placeholder="اكتبي تعليقكِ..."><button class="comment-btn" onclick="addComment('${idx}')">نشر</button></div>
                             <div class="comment-list" id="list-${idx}"></div>
                         </div>
                     </div>`).join('') : '<p style="text-align:center; padding:20px; color:#999;">لا يوجد محتوى حالياً.</p>';
             } catch(e) { feed.innerHTML = '<p style="text-align:center;">خطأ في الاتصال بالخادم.</p>'; }
         }
 
-        function openAIChat(title) {
-            document.getElementById('chat-title').innerText = title;
-            document.getElementById('chat-overlay').style.display = 'flex';
-        }
+        function openAIChat(title) { document.getElementById('chat-title').innerText = title; document.getElementById('chat-overlay').style.display = 'flex'; }
         function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
         function clearChat() { document.getElementById('chat-messages').innerHTML = ''; }
 
@@ -318,7 +362,7 @@
                 const data = await res.json();
                 const reply = data.reply || "أنا معكِ يا جميلة.. كيف يمكنني دعمكِ أكثر؟";
                 container.innerHTML += `<div class="msg msg-ai">${reply} <br><small onclick="saveAI('${reply.replace(/'/g, "\\'")}')" style="cursor:pointer; color:#eee; text-decoration:underline; font-size:10px; display:block; margin-top:5px;">حفظ في المحفوظات ✨</small></div>`;
-            } catch(e) { container.innerHTML += `<div class="msg msg-ai">أنا هنا بجانبك.. هل ترغبين في تسجيلي أي ملاحظة أخرى؟ <br><small onclick="saveAI('أنا هنا بجانبك..')" style="cursor:pointer; color:#eee; text-decoration:underline; font-size:10px; display:block; margin-top:5px;">حفظ ✨</small></div>`; }
+            } catch(e) { container.innerHTML += `<div class="msg msg-ai">أنا هنا بجانبك.. هل ترغبين في تسجيلي أي ملاحظة أخرى؟</div>`; }
             container.scrollTop = container.scrollHeight;
         }
 
