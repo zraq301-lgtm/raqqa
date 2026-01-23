@@ -2,12 +2,15 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>رقة - الإشعارات الذكية</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
         :root {
-            --p2: #eb2f96;
+            --p2: #eb2f96; /* لون رقة الأساسي */
             --p1: #ff85c0;
             --soft-bg: #fff9fb;
             --card-grad: linear-gradient(135deg, #ffffff 0%, #fff5f8 100%);
@@ -18,6 +21,7 @@
             background-color: var(--soft-bg);
             margin: 0;
             padding: 20px;
+            color: #444;
         }
 
         #smart-notifications {
@@ -25,50 +29,52 @@
             margin: 0 auto;
         }
 
+        /* الهيدر */
         .header-area {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .header-area h3 {
-            color: #444;
             font-size: 18px;
             margin: 0;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         .header-area h3 i {
             color: var(--p2);
-            background: #fff0f6;
-            padding: 8px;
-            border-radius: 12px;
-            font-size: 16px;
+            background: #fff;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(235, 47, 150, 0.1);
         }
 
         .refresh-badge {
-            font-size: 11px;
+            font-size: 10px;
+            font-weight: bold;
             color: var(--p2);
             background: #fff;
-            padding: 4px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             border: 1px solid #ffdeeb;
+            transition: all 0.3s ease;
         }
 
+        /* بطاقة الإشعار */
         .notif-card {
             background: var(--card-grad);
             border: 1px solid #fff;
-            padding: 16px;
-            margin-bottom: 15px;
-            border-radius: 20px;
-            box-shadow: 0 10px 20px rgba(235, 47, 150, 0.05);
+            padding: 18px;
+            margin-bottom: 16px;
+            border-radius: 24px;
+            box-shadow: 0 8px 25px rgba(235, 47, 150, 0.04);
             position: relative;
             overflow: hidden;
-            transition: transform 0.3s ease;
-            animation: slideUp 0.5s ease forwards;
+            animation: slideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
         }
 
         .notif-card::before {
@@ -77,29 +83,30 @@
             right: 0;
             top: 0;
             height: 100%;
-            width: 5px;
+            width: 6px;
             background: var(--p2);
-            border-radius: 0 5px 5px 0;
         }
 
         .notif-title {
             font-weight: 700;
             color: #2d3436;
-            font-size: 14px;
-            margin-bottom: 6px;
+            font-size: 15px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .notif-message {
-            font-size: 13px;
+            font-size: 13.5px;
             color: #636e72;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         .notif-footer {
-            margin-top: 12px;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dashed #eee;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -107,30 +114,42 @@
             color: #b2bec3;
         }
 
+        /* تأثير التحميل (Shimmer) */
         .shimmer {
-            height: 80px;
-            background: #eee;
-            background-image: linear-gradient(to right, #eee 0%, #f5f5f5 20%, #eee 40%, #eee 100%);
-            background-repeat: no-repeat;
-            background-size: 800px 104px;
-            display: inline-block;
-            position: relative;
-            animation: shimmer 1.5s linear infinite forwards;
-            width: 100%;
-            border-radius: 20px;
-            margin-bottom: 15px;
+            height: 100px;
+            background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+            border-radius: 24px;
+            margin-bottom: 16px;
         }
 
-        @keyframes shimmer { 0% { background-position: -468px 0; } 100% { background-position: 468px 0; } }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* رسالة الخطأ */
+        .error-msg {
+            text-align: center;
+            padding: 40px 20px;
+            background: #fff;
+            border-radius: 20px;
+            color: #ff4d4f;
+        }
     </style>
 </head>
 <body>
 
 <div id="smart-notifications">
     <div class="header-area">
-        <h3><i class="fas fa-sparkles"></i> إشعارات رقة الذكية</h3>
-        <span class="refresh-badge" id="status-text">جاري المزامنة...</span>
+        <h3><i class="fas fa-magic"></i> إشعارات رقة الذكية</h3>
+        <span class="refresh-badge" id="status-text">جاري التحميل...</span>
     </div>
 
     <div id="notifications-list">
@@ -140,49 +159,77 @@
 </div>
 
 <script>
-    // معرف المستخدم (يجب تمريره ديناميكياً أو تعيينه هنا للتجربة)
-    const USER_ID = 1; 
+    // إعدادات الربط
+    const CONFIG = {
+        // استبدلي هذا الرابط برابط مشروعك الحقيقي على فيرسل
+        API_URL: 'https://your-project-name.vercel.app/api/notifications', 
+        USER_ID: 1 // هذا الـ ID الذي سيتم جلب بياناته من جدول نيون
+    };
 
     async function fetchSmartNotifications() {
         const list = document.getElementById('notifications-list');
         const status = document.getElementById('status-text');
         
         try {
-            // جلب البيانات من الـ API الخاص بكِ مع تمرير الـ user_id
-            const response = await fetch(`/api/notifications?user_id=${USER_ID}`);
+            status.innerText = "جاري المزامنة...";
+            
+            // جلب البيانات من الـ API
+            const response = await fetch(`${CONFIG.API_URL}?user_id=${CONFIG.USER_ID}`);
+            
+            if (!response.ok) throw new Error('فشل في الاتصال بالسيرفر');
+            
             const data = await response.json();
             
-            if (data.success && data.notifications.length > 0) {
+            if (data.success && data.notifications && data.notifications.length > 0) {
+                // عرض الإشعارات
                 list.innerHTML = data.notifications.map((n, index) => `
                     <div class="notif-card" style="animation-delay: ${index * 0.1}s">
                         <div class="notif-title">
-                            <i class="fas fa-magic" style="font-size:12px; color:var(--p2)"></i>
+                            <i class="fas fa-sparkles" style="color:var(--p2); font-size:12px;"></i>
                             ${n.title}
                         </div>
                         <div class="notif-message">${n.body}</div>
                         <div class="notif-footer">
-                            <span><i class="far fa-clock"></i> ${new Date(n.created_at).toLocaleDateString('ar-EG')}</span>
-                            <span>رقة - ${n.type || 'تنبيه'}</span>
+                            <span><i class="far fa-clock"></i> ${formatDate(n.created_at)}</span>
+                            <span>رقة • ${n.type || 'تنبيه ذكي'}</span>
                         </div>
                     </div>
                 `).join('');
                 status.innerText = "مُحدث الآن";
             } else {
-                list.innerHTML = `<div style="text-align:center; color:#888; padding:40px;">لا توجد إشعارات جديدة حالياً ✨</div>`;
-                status.innerText = "لا توجد بيانات";
+                // في حال عدم وجود إشعارات غير مقروءة
+                list.innerHTML = `
+                    <div style="text-align:center; padding:50px 20px;">
+                        <i class="fas fa-check-circle" style="font-size:40px; color:#d4edda; margin-bottom:15px; display:block;"></i>
+                        <div style="color:#888; font-size:14px;">لا توجد تنبيهات جديدة حالياً في عالم رقة ✨</div>
+                    </div>`;
+                status.innerText = "خالٍ";
             }
 
         } catch (e) {
-            console.error("Error fetching notifications:", e);
-            status.innerText = "خطأ في الاتصال";
+            console.error("Fetch Error:", e);
+            status.innerText = "خطأ في المزامنة";
+            list.innerHTML = `
+                <div class="error-msg">
+                    <i class="fas fa-exclamation-triangle" style="font-size:30px; margin-bottom:10px; display:block;"></i>
+                    <div style="font-size:13px;">عذراً، تعذر المزامنة مع قاعدة البيانات. تأكدي من إعدادات Vercel و Neon.</div>
+                    <button onclick="fetchSmartNotifications()" style="margin-top:15px; background:var(--p2); color:#fff; border:none; padding:8px 20px; border-radius:10px; font-family:'Tajawal';">إعادة المحاولة</button>
+                </div>`;
         }
     }
 
-    // تحديث البيانات عند تحميل الصفحة
+    // دالة لتنسيق الوقت
+    function formatDate(dateStr) {
+        const options = { hour: '2-digit', minute: '2-digit' };
+        return new Date(dateStr).toLocaleTimeString('ar-EG', options);
+    }
+
+    // التشغيل عند فتح الصفحة
     window.onload = fetchSmartNotifications;
-    // تحديث تلقائي كل 30 ثانية
-    setInterval(fetchSmartNotifications, 30000);
+
+    // تحديث تلقائي كل دقيقة واحدة
+    setInterval(fetchSmartNotifications, 60000);
 </script>
 
 </body>
-</html>
+        </html>
