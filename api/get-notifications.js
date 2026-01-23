@@ -1,7 +1,7 @@
 import { createPool } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-    // 1. إعدادات الـ CORS للسماح بالوصول من واجهة التطبيق
+    // 1. إعدادات CORS للسماح بالوصول من واجهة التطبيق الخارجية
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,19 +13,18 @@ export default async function handler(req, res) {
 
     const { user_id } = req.query;
 
-    // التأكد من إرسال user_id في الطلب
+    // التحقق من وجود user_id لتجنب أخطاء الاستعلام
     if (!user_id) {
-        return res.status(200).json({ success: false, error: "Missing user_id parameter" });
+        return res.status(400).json({ success: false, error: "Missing user_id parameter" });
     }
 
-    // 2. إنشاء اتصال بقاعدة بيانات Neon باستخدام الرابط المخزن في Vercel
+    // 2. إنشاء الاتصال باستخدام المسمى الدقيق الظاهر في صورتك: raqqa_POSTGRES_URL
     const pool = createPool({
-        connectionString: process.env.POSTGRES_URL
+        connectionString: process.env.raqqa_POSTGRES_URL 
     });
 
     try {
-        // 3. الاستعلام باستخدام أسماء المفاتيح الدقيقة من صورك
-        // استخدمنا $1 كمعامل أمان لمنع ثغرات SQL Injection
+        // 3. تنفيذ الاستعلام مع معالجة البيانات (التأكد من أن user_id رقم)
         const { rows } = await pool.query(
             `SELECT id, title, body, created_at 
              FROM notifications 
@@ -34,22 +33,22 @@ export default async function handler(req, res) {
             [parseInt(user_id)]
         );
 
-        // إرجاع النتيجة بنجاح
+        // إرجاع النتائج بنجاح
         return res.status(200).json({ 
             success: true, 
             notifications: rows 
         });
 
     } catch (error) {
-        // في حال فشل الاتصال، سيظهر لكِ السبب في "خطأ المزامنة" بالواجهة
-        console.error("Database Error:", error);
+        // طباعة الخطأ في سجلات Vercel لتسهيل تتبعه
+        console.error("Database Error:", error.message);
         return res.status(500).json({ 
             success: false, 
-            error: "فشل الاتصال بـ Neon",
+            error: "فشل الاتصال بقاعدة البيانات",
             details: error.message 
         });
     } finally {
-        // إغلاق الاتصال لتحسين الأداء
+        // 4. إغلاق الاتصال فوراً لتحرير الموارد ومنع تراكم الجلسات
         await pool.end();
     }
-            }
+}
