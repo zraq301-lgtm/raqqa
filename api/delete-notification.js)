@@ -1,45 +1,25 @@
 import { createPool } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-    // إعدادات CORS للسماح للواجهة بالاتصال
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-
-    // يجب أن تكون الطريقة POST للأمان عند الحذف أو التعديل
-    if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, error: "الطريقة غير مسموح بها" });
-    }
+    if (req.method !== 'POST') return res.status(405).json({ success: false, error: "الطريقة غير مسموح بها" });
 
     const { id } = req.query;
-
-    if (!id) {
-        return res.status(400).json({ success: false, error: "معرف الإشعار مطلوب" });
-    }
-
+    
+    // التأكد من استخدام POSTGRES_URL كما هو في لقطة الشاشة
     const pool = createPool({
         connectionString: process.env.POSTGRES_URL 
     });
 
     try {
-        // تحديث حالة الإشعار ليصبح مقروءاً بدلاً من حذفه نهائياً (لأرشفة البيانات)
-        // هذا يتوافق مع استعلام العرض الذي يبحث عن is_read = FALSE
-        const result = await pool.query(
-            `UPDATE notifications 
-             SET is_read = TRUE 
-             WHERE id = $1`,
-            [parseInt(id)]
-        );
-
-        if (result.rowCount > 0) {
-            return res.status(200).json({ success: true, message: "تم حذف الإشعار بنجاح" });
-        } else {
-            return res.status(404).json({ success: false, error: "الإشعار غير موجود" });
-        }
+        await pool.query('UPDATE notifications SET is_read = TRUE WHERE id = $1', [parseInt(id)]);
+        return res.status(200).json({ success: true });
     } catch (error) {
-        return res.status(500).json({ success: false, error: "خطأ في قاعدة البيانات", details: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     } finally {
         await pool.end();
     }
