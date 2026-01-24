@@ -3,76 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إشعارات رقة</title>
+    <title>إشعارات رقة الذكية</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --p2: #eb2f96; --bg: #fff9fb; }
         body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
         
+        /* الهيدر مع زر الخروج */
         .header { 
-            background: white; padding: 15px; display: flex; align-items: center; 
-            justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            background: white; padding: 15px 20px; display: flex; align-items: center; 
+            justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             position: sticky; top: 0; z-index: 100;
         }
 
         .exit-btn {
-            background: #fdf2f7; color: var(--p2); border: none; padding: 8px 15px;
-            border-radius: 10px; cursor: pointer; font-weight: bold; text-decoration: none;
-            display: flex; align-items: center; gap: 5px; font-size: 13px;
+            background: #fff0f6; color: var(--p2); border: 1px solid #ffdeeb; 
+            padding: 8px 16px; border-radius: 12px; cursor: pointer; 
+            font-weight: bold; text-decoration: none; display: flex; 
+            align-items: center; gap: 8px; font-size: 13px; transition: 0.3s;
+        }
+        .exit-btn:hover { background: #ffd6e7; }
+
+        .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+
+        /* بطاقة الإشعار بناءً على حقول الـ API */
+        .notif-card { 
+            background: white; padding: 18px; margin-bottom: 15px; border-radius: 20px; 
+            border-right: 5px solid var(--p2); box-shadow: 0 4px 15px rgba(235,47,150,0.05);
+            animation: fadeIn 0.5s ease;
         }
 
-        .container { padding: 15px; max-width: 500px; margin: 0 auto; }
-        .notif-card { 
-            background: white; padding: 16px; margin-bottom: 12px; border-radius: 15px; 
-            border-right: 4px solid var(--p2); box-shadow: 0 3px 10px rgba(0,0,0,0.03);
-        }
-        .notif-title { font-weight: 700; color: #333; margin-bottom: 5px; font-size: 14px; }
-        .notif-body { font-size: 13px; color: #666; line-height: 1.5; }
-        #status { text-align: center; color: var(--p2); font-size: 11px; margin-top: 20px; }
+        .notif-title { font-weight: 700; color: #333; margin-bottom: 6px; font-size: 15px; }
+        .notif-body { font-size: 13.5px; color: #666; line-height: 1.6; }
+        .notif-date { font-size: 10px; color: #bbb; margin-top: 10px; display: block; text-align: left; }
+
+        #status-info { text-align: center; color: var(--p2); font-size: 12px; margin-top: 30px; }
+        .error-box { background: #fff2f0; border: 1px solid #ffccc7; padding: 15px; border-radius: 12px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h3 style="margin:0; font-size: 16px; color: #333;">إشعارات رقة</h3>
+        <h3 style="margin:0; font-size: 18px; color: #2d3436;">إشعارات رقة</h3>
         <a href="javascript:history.back()" class="exit-btn">
-            <i class="fas fa-arrow-left"></i> خروج
+             خروج <i class="fas fa-sign-out-alt"></i>
         </a>
     </div>
 
     <div class="container">
-        <div id="notif-list"></div>
-        <div id="status">جاري تحديث البيانات...</div>
+        <div id="notif-list">
+            </div>
+        <div id="status-info">جاري مزامنة الإشعارات...</div>
     </div>
 
 <script>
-    async function getRaqqaNotifs() {
-        const list = document.getElementById('notif-list');
-        const status = document.getElementById('status');
+    async function loadNotifications() {
+        const listDiv = document.getElementById('notif-list');
+        const status = document.getElementById('status-info');
         
         try {
-            const res = await fetch('/api/notifications?user_id=1');
-            const data = await res.json();
+            // جلب البيانات من الـ API (تأكدي من صحة المسار)
+            const response = await fetch('/api/notifications?user_id=1');
+            const data = await response.json();
 
-            if (data.success && data.notifications.length > 0) {
-                list.innerHTML = data.notifications.map(n => `
-                    <div class="notif-card">
-                        <div class="notif-title"><i class="fas fa-bell"></i> ${n.title}</div>
-                        <div class="notif-body">${n.body}</div>
-                        <div style="font-size:10px; color:#aaa; margin-top:8px;">${new Date(n.created_at).toLocaleDateString('ar-EG')}</div>
-                    </div>
-                `).join('');
-                status.innerText = "تم التحديث";
+            if (data.success) {
+                if (data.notifications.length > 0) {
+                    status.style.display = 'none';
+                    listDiv.innerHTML = data.notifications.map(n => `
+                        <div class="notif-card">
+                            <div class="notif-title"><i class="fas fa-magic" style="color:var(--p2)"></i> ${n.title}</div>
+                            <div class="notif-body">${n.body}</div>
+                            <span class="notif-date">${new Date(n.created_at).toLocaleString('ar-EG')}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة حالياً ✨</p>';
+                    status.innerText = "";
+                }
             } else {
-                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد تنبيهات جديدة ✨</p>';
-                status.innerText = "";
+                throw new Error(data.error);
             }
-        } catch (e) {
-            status.innerText = "تعذر الاتصال بقاعدة البيانات. تأكدي من raqqa_POSTGRES_URL";
+        } catch (err) {
+            status.innerHTML = `
+                <div class="error-box">
+                    <i class="fas fa-exclamation-circle"></i><br>
+                    تعذر الاتصال بقاعدة البيانات.<br>
+                    <small>تأكدي من المفتاح: raqqa_POSTGRES_URL</small>
+                </div>`;
+            console.error("Fetch Error:", err);
         }
     }
-    window.onload = getRaqqaNotifs;
+
+    // التنفيذ عند فتح الصفحة
+    window.onload = loadNotifications;
 </script>
 </body>
 </html>
