@@ -33,9 +33,14 @@
     async function loadNotifications() {
         const list = document.getElementById('notif-list');
         const status = document.getElementById('status');
+        
+        // 1. التقاط الرقم المرسل من AppCreator24 تلقائياً عبر الرابط
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentUserId = urlParams.get('user_id') || '1'; 
+
         try {
-            // استدعاء الـ API
-            const response = await fetch('/api/notifications?user_id=1');
+            // 2. طلب الإشعارات الخاصة بهذا الرقم فقط من قاعدة بيانات Neon
+            const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
             const data = await response.json();
 
             if (data.success && data.notifications.length > 0) {
@@ -47,14 +52,15 @@
                     </div>
                 `).join('');
             } else {
-                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة</p>';
+                // عرض رسالة في حال عدم وجود إشعارات لهذا المستخدم بعينه
+                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة لكِ حالياً ✨</p>';
                 status.innerText = "";
             }
         } catch (e) {
-            status.innerText = "تأكدي من إعدادات POSTGRES_URL في Vercel";
+            status.innerText = "فشل في تحديث التنبيهات، تأكدي من الاتصال بالقاعدة";
         }
     }
     window.onload = loadNotifications;
 </script>
 </body>
-</html>
+</html>             
