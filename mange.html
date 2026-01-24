@@ -12,28 +12,28 @@
         .exit-btn { background: #fff0f6; color: var(--p2); border: 1px solid #ffdeeb; padding: 8px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 13px; font-weight: bold; }
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
         
-        /* تصميم الكارت مع زر الحذف */
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 15px; border-radius: 15px; 
             border-right: 5px solid var(--p2); box-shadow: 0 3px 10px rgba(0,0,0,0.03); 
-            position: relative; transition: 0.3s;
+            position: relative; transition: all 0.3s ease;
         }
         .notif-title { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .notif-body { font-size: 13px; color: #666; line-height: 1.5; padding-left: 30px; }
+        .notif-body { font-size: 13px; color: #666; line-height: 1.5; padding-left: 25px; }
         
-        /* زر الحذف */
+        /* زر الحذف الأنيق */
         .delete-btn {
             position: absolute; left: 10px; top: 10px;
-            background: #f1f1f1; color: #999; border: none;
-            width: 24px; height: 24px; border-radius: 50%;
-            cursor: pointer; font-size: 12px; display: flex;
+            background: #f8f9fa; color: #ccc; border: none;
+            width: 26px; height: 26px; border-radius: 50%;
+            cursor: pointer; font-size: 14px; display: flex;
             align-items: center; justify-content: center;
+            transition: 0.2s;
         }
-        .delete-btn:hover { background: #ffebee; color: #f44336; }
+        .delete-btn:hover { background: #fee2e2; color: #ef4444; }
 
-        /* ألوان لأنواع الإشعارات */
-        .type-general { border-right-color: var(--blue); }
-        .type-content { border-right-color: var(--green); }
+        /* تمييز أنواع الإشعارات */
+        .general-notif { border-right-color: var(--blue); }
+        .content-notif { border-right-color: var(--green); }
 
         #status { text-align: center; color: var(--p2); font-size: 11px; margin-top: 20px; }
     </style>
@@ -51,6 +51,7 @@
     </div>
 
 <script>
+    // 1. التقاط معرف المستخدم من الرابط الذي يرسله AppCreator24
     const urlParams = new URLSearchParams(window.location.search);
     const currentUserId = urlParams.get('user_id') || '1';
 
@@ -58,28 +59,28 @@
         const list = document.getElementById('notif-list');
         const status = document.getElementById('status');
         try {
-            // استدعاء الـ API مع تمرير user_id الديناميكي
+            // استدعاء API جلب الإشعارات
             const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
             const data = await response.json();
 
             if (data.success && data.notifications.length > 0) {
                 status.style.display = 'none';
                 list.innerHTML = data.notifications.map(n => {
-                    // تمييز الإشعارات العامة (التي ليس لها user_id مخصص أو بنوع معين)
                     let cardClass = "notif-card";
                     let icon = "🌸";
-                    
+
+                    // تمييز الإشعارات بناءً على العنوان (عام، محتوى، مكافأة)
                     if (n.title.includes("محتوى") || n.title.includes("جديد")) {
-                        cardClass += " type-content";
+                        cardClass += " content-notif";
                         icon = "📚";
-                    } else if (n.title.includes("عرض") || n.title.includes("مكافأة")) {
-                        cardClass += " type-general";
+                    } else if (n.title.includes("عرض") || n.title.includes("مكافأة") || n.user_id == 0) {
+                        cardClass += " general-notif";
                         icon = "🎁";
                     }
 
                     return `
-                        <div class="${cardClass}" id="notif-${n.id}">
-                            <button class="delete-btn" onclick="deleteNotif(${n.id})">✕</button>
+                        <div class="${cardClass}" id="notif-container-${n.id}">
+                            <button class="delete-btn" onclick="confirmDelete(${n.id})" title="حذف">✕</button>
                             <div class="notif-title"><span>${icon}</span> ${n.title}</div>
                             <div class="notif-body">${n.body}</div>
                         </div>
@@ -90,27 +91,33 @@
                 status.innerText = "";
             }
         } catch (e) {
-            status.innerText = "تأكدي من إعدادات الاتصال بقاعدة البيانات";
+            status.innerText = "خطأ في الاتصال؛ تأكدي من إعدادات قاعدة البيانات";
         }
     }
 
-    // وظيفة حذف الإشعار (تحديث الحالة في قاعدة البيانات)
-    async function deleteNotif(id) {
+    // 2. وظيفة الحذف المتوافقة مع كود الـ API الخاص بك
+    async function confirmDelete(notifId) {
         if (!confirm("هل تريدين حذف هذا الإشعار؟")) return;
 
         try {
-            // سنفترض وجود API للحذف يقوم بـ UPDATE notifications SET is_read = TRUE
-            const response = await fetch(`/api/delete-notification?id=${id}`, { method: 'POST' });
+            // إرسال طلب POST إلى الـ API الخاص بالحذف
+            const response = await fetch(`/api/delete-notification?id=${notifId}`, {
+                method: 'POST'
+            });
             const result = await response.json();
 
             if (result.success) {
-                const element = document.getElementById(`notif-${id}`);
-                element.style.opacity = '0';
+                // إزالة الإشعار من الواجهة فوراً عند نجاح الحذف في قاعدة البيانات
+                const element = document.getElementById(`notif-container-${notifId}`);
+                element.style.transform = "translateX(100px)";
+                element.style.opacity = "0";
                 setTimeout(() => element.remove(), 300);
+            } else {
+                alert("عذراً، تعذر الحذف حالياً.");
             }
         } catch (e) {
-            // للحذف المؤقت من الواجهة إذا لم يتم إعداد API الحذف بعد
-            document.getElementById(`notif-${id}`).remove();
+            console.error("خطأ أثناء الحذف:", e);
+            alert("حدث خطأ في الاتصال بالخادم.");
         }
     }
 
