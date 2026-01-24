@@ -1,0 +1,30 @@
+<div id="ads-container" style="padding: 10px 20px;"></div>
+
+<script>
+    // تعديل بسيط في دالة loadNotifications لجلب الإعلانات والإشعارات العامة
+    async function loadNotifications() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentUserId = urlParams.get('user_id') || '1';
+        
+        try {
+            // جلب الإشعارات (تشمل user_id المحدد و user_id=0 للعامة)
+            const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
+            const data = await response.json();
+            
+            // جلب الإعلانات النشطة
+            const adsRes = await fetch('/api/get-ads');
+            const adsData = await adsRes.json();
+            
+            if(adsData.success) {
+                document.getElementById('ads-container').innerHTML = adsData.ads.map(ad => `
+                    <a href="${ad.link}" style="text-decoration:none;">
+                        <div style="background:linear-gradient(90deg, #eb2f96, #ff85c0); color:white; padding:12px; border-radius:10px; margin-bottom:10px; font-size:12px; text-align:center;">
+                            📢 إعلان: ${ad.text} (اضغطي للتفاصيل)
+                        </div>
+                    </a>
+                `).join('');
+            }
+            // ... بقية كود عرض الإشعارات السابق
+        } catch (e) { console.error(e); }
+    }
+</script>
