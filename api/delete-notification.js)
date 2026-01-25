@@ -1,26 +1,42 @@
 import { createPool } from '@vercel/postgres';
 
 export default async function handler(req, res) {
+    // إعدادات الوصول (CORS) للسماح للواجهة بالاتصال بالـ API
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ success: false, error: "الطريقة غير مسموح بها" });
+
+    // التأكد من أن الطلب من نوع POST فقط [cite: 3]
+    if (req.method !== 'POST') {
+        return res.status(405).json({ success: false, error: "Method not allowed" });
+    }
 
     const { id } = req.query;
-    
-    // التأكد من استخدام POSTGRES_URL كما هو في لقطة الشاشة
+
+    if (!id) {
+        return res.status(400).json({ success: false, error: "Missing notification ID" });
+    }
+
+    // إنشاء الاتصال باستخدام المتغير الموجود في الصورة POSTGRES_URL 
     const pool = createPool({
         connectionString: process.env.POSTGRES_URL 
     });
 
     try {
-        await pool.query('UPDATE notifications SET is_read = TRUE WHERE id = $1', [parseInt(id)]);
-        return res.status(200).json({ success: true });
+        // تنفيذ الحذف الفعلي من الجدول 
+        const result = await pool.query('DELETE FROM notifications WHERE id = $1', [parseInt(id)]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: "Notification not found" });
+        }
+
+        return res.status(200).json({ success: true }); [cite: 6]
     } catch (error) {
+        console.error("Database Error:", error);
         return res.status(500).json({ success: false, error: error.message });
     } finally {
-        await pool.end();
+        await pool.end(); [cite: 7]
     }
 }
