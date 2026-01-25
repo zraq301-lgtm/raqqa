@@ -6,71 +6,121 @@
     <title>إشعارات رقة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p2: #eb2f96; --bg: #fff9fb; }
+        :root { --p2: #eb2f96; --bg: #fff9fb; --blue: #2196f3; --green: #4caf50; }
         body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
         .header { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .exit-btn { background: #fff0f6; color: var(--p2); border: 1px solid #ffdeeb; padding: 8px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 13px; font-weight: bold; }
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 15px; border-radius: 15px; 
             border-right: 5px solid var(--p2); box-shadow: 0 3px 10px rgba(0,0,0,0.03); 
-            position: relative; transition: all 0.4s ease;
+            position: relative; transition: all 0.3s ease;
         }
+        .notif-title { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
+        .notif-body { font-size: 13px; color: #666; line-height: 1.5; padding-left: 25px; }
+        
+        /* زر الحذف الأنيق */
         .delete-btn {
-            position: absolute; left: 10px; top: 10px; background: #fee2e2; color: #ef4444; 
-            border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+            position: absolute; left: 10px; top: 10px;
+            background: #f8f9fa; color: #ccc; border: none;
+            width: 26px; height: 26px; border-radius: 50%;
+            cursor: pointer; font-size: 14px; display: flex;
+            align-items: center; justify-content: center;
+            transition: 0.2s;
         }
-        #status { text-align: center; color: var(--p2); font-size: 12px; margin-top: 20px; }
+        .delete-btn:hover { background: #fee2e2; color: #ef4444; }
+
+        /* تمييز أنواع الإشعارات */
+        .general-notif { border-right-color: var(--blue); }
+        .content-notif { border-right-color: var(--green); }
+
+        #status { text-align: center; color: var(--p2); font-size: 11px; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="header"><h3>إشعاراتي</h3></div>
+
+    <div class="header">
+        <h3 style="margin:0;">إشعارات رقة</h3>
+        <a href="javascript:history.back()" class="exit-btn">خروج</a>
+    </div>
+
     <div class="container">
         <div id="notif-list"></div>
-        <div id="status">جاري التحميل...</div>
+        <div id="status">جاري تحديث التنبيهات...</div>
     </div>
 
 <script>
+    // 1. التقاط معرف المستخدم من الرابط الذي يرسله AppCreator24
     const urlParams = new URLSearchParams(window.location.search);
     const currentUserId = urlParams.get('user_id') || '1';
 
     async function loadNotifications() {
+        const list = document.getElementById('notif-list');
+        const status = document.getElementById('status');
         try {
+            // استدعاء API جلب الإشعارات
             const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
             const data = await response.json();
+
             if (data.success && data.notifications.length > 0) {
-                document.getElementById('status').style.display = 'none';
-                document.getElementById('notif-list').innerHTML = data.notifications.map(n => `
-                    <div class="notif-card" id="row-${n.id}">
-                        <button class="delete-btn" onclick="executeDelete(${n.id})">×</button>
-                        <div style="font-weight:bold;">🌸 ${n.title}</div>
-                        <div style="font-size:13px; color:#666;">${n.body}</div>
-                    </div>
-                `).join('');
+                status.style.display = 'none';
+                list.innerHTML = data.notifications.map(n => {
+                    let cardClass = "notif-card";
+                    let icon = "🌸";
+
+                    if (n.title.includes("محتوى") || n.title.includes("جديد")) {
+                        cardClass += " content-notif";
+                        icon = "📚";
+                    } else if (n.title.includes("عرض") || n.title.includes("مكافأة") || n.user_id == 0) {
+                        cardClass += " general-notif";
+                        icon = "🎁";
+                    }
+
+                    return `
+                        <div class="${cardClass}" id="notif-container-${n.id}">
+                            <button class="delete-btn" onclick="confirmDelete(${n.id})" title="حذف">✕</button>
+                            <div class="notif-title"><span>${icon}</span> ${n.title}</div>
+                            <div class="notif-body">${n.body}</div>
+                        </div>
+                    `;
+                }).join('');
             } else {
-                document.getElementById('notif-list').innerHTML = '<p style="text-align:center;">لا توجد إشعارات حالياً ✨</p>';
-                document.getElementById('status').innerText = "";
+                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة لكِ حالياً ✨</p>';
+                status.innerText = "";
             }
-        } catch (e) { document.getElementById('status').innerText = "خطأ في الاتصال"; }
+        } catch (e) {
+            status.innerText = "خطأ في الاتصال؛ تأكدي من إعدادات قاعدة البيانات";
+        }
     }
 
-    async function executeDelete(id) {
+    // 2. وظيفة الحذف المتوافقة مع كود الـ API الخاص بك (تم تعديل المسار وMethod)
+    async function confirmDelete(notifId) {
         if (!confirm("هل تريدين حذف هذا الإشعار؟")) return;
+
         try {
-            // هذا السطر يرسل الـ id للـ API بنفس طريقة حذف المنشورات
-            const response = await fetch(`/api/delete-notification?id=${id}`, {
+            // إرسال طلب DELETE إلى الـ API الجديد
+            const response = await fetch(`/api/delete-post?id=${notifId}`, {
                 method: 'DELETE'
             });
+            const result = await response.json();
 
+            // التحقق من نجاح العملية (الـ API يعيد 200 عند النجاح)
             if (response.ok) {
-                const card = document.getElementById(`row-${id}`);
-                card.style.opacity = "0";
-                card.style.transform = "translateX(50px)";
-                setTimeout(() => card.remove(), 300);
+                // إزالة الإشعار من الواجهة فوراً
+                const element = document.getElementById(`notif-container-${notifId}`);
+                element.style.transform = "translateX(100px)";
+                element.style.opacity = "0";
+                setTimeout(() => element.remove(), 300);
             } else {
-                alert("تعذر الحذف من الخادم");
+                alert("عذراً، تعذر الحذف حالياً: " + (result.error || "خطأ غير معروف"));
             }
-        } catch (e) { alert("فشل الاتصال بالخادم؛ تأكدي من رفع التعديلات."); }
+        } catch (e) {
+            console.error("خطأ أثناء الحذف:", e);
+            alert("حدث خطأ في الاتصال بالخادم.");
+        }
     }
+
     window.onload = loadNotifications;
 </script>
 </body>
