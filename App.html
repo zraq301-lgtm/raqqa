@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <title>لوحة إدارة المحتوى والإعلانات</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; cursor: pointer; border: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>إضافة محتوى جديد</h2>
+        
+        <input type="text" id="title" placeholder="عنوان الفيديو">
+        <input type="text" id="video_url" placeholder="رابط الفيديو (YouTube/MP4)">
+        
+        <hr>
+        
+        <label>نوع الإعلان:</label>
+        <select id="ad_type">
+            <option value="id">عبر معرف (ID)</option>
+            <option value="link">عبر رابط مباشر</option>
+        </select>
+        <input type="text" id="ad_content" placeholder="أدخل ID الإعلان أو الرابط">
+        <input type="text" id="company_name" placeholder="اسم شركة الإعلانات">
+        
+        <button onclick="uploadData()">نشر المحتوى إلى نيون</button>
+    </div>
+
+    <script>
+        async function uploadData() {
+            const data = {
+                title: document.getElementById('title').value,
+                video_url: document.getElementById('video_url').value,
+                ad_type: document.getElementById('ad_type').value,
+                ad_content: document.getElementById('ad_content').value,
+                company_name: document.getElementById('company_name').value
+            };
+
+            const response = await fetch('/api/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) alert('تم النشر بنجاح!');
+            else alert('فشل الاتصال بقاعدة البيانات');
+        }
+    </script>
+</body>
+</html>
