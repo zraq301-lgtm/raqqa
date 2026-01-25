@@ -20,6 +20,7 @@
         .notif-title { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
         .notif-body { font-size: 13px; color: #666; line-height: 1.5; padding-left: 25px; }
         
+        /* زر الحذف */
         .delete-btn {
             position: absolute; left: 10px; top: 10px;
             background: #f8f9fa; color: #ccc; border: none;
@@ -49,11 +50,11 @@
     </div>
 
 <script>
-    // 1. استخراج معرف المستخدم من الرابط (AppCreator24)
+    // 1. التقاط معرف المستخدم من الرابط
     const urlParams = new URLSearchParams(window.location.search);
     const currentUserId = urlParams.get('user_id') || '1';
 
-    // 2. وظيفة جلب الإشعارات وعرضها
+    // 2. دالة جلب الإشعارات
     async function loadNotifications() {
         const list = document.getElementById('notif-list');
         const status = document.getElementById('status');
@@ -67,7 +68,6 @@
                     let cardClass = "notif-card";
                     let icon = "🌸";
 
-                    // منطق تصنيف الإشعارات بصرياً
                     if (n.title.includes("محتوى") || n.title.includes("جديد")) {
                         cardClass += " content-notif";
                         icon = "📚";
@@ -89,23 +89,26 @@
                 status.innerText = "";
             }
         } catch (e) {
-            status.innerText = "خطأ في الاتصال بالخادم؛ تأكدي من إعدادات قاعدة البيانات";
+            status.innerText = "خطأ في الاتصال؛ تأكدي من إعدادات قاعدة البيانات";
         }
     }
 
-    // 3. وظيفة الحذف المحسنة والمتوافقة مع API الحذف
+    // 3. وظيفة الحذف المحدثة التي طلبتها
     async function confirmDelete(notifId) {
         if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
 
-        // الحصول على العنصر من الواجهة لتطبيق تأثير الاختفاء
         const element = document.getElementById(`notif-container-${notifId}`);
         
         try {
-            // إرسال طلب POST مع المعرف (ID) في الرابط كما هو محدد في كود الـ API 
+            // استخدام مسار نسبي يبدأ بـ / لضمان التوجيه الصحيح داخل Vercel
             const response = await fetch(`/api/delete-notification?id=${notifId}`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 
+                    'Content-Type': 'application/json' 
+                }
             });
+
+            if (!response.ok) throw new Error('Network response was not ok');
 
             const result = await response.json();
 
@@ -117,22 +120,22 @@
                 
                 setTimeout(() => {
                     element.remove();
-                    // فحص إذا كانت القائمة أصبحت فارغة بعد الحذف
+                    // إذا لم يتبقَ إشعارات، اظهر رسالة "لا توجد إشعارات"
                     if (document.querySelectorAll('.notif-card').length === 0) {
                         document.getElementById('notif-list').innerHTML = 
                             '<p style="text-align:center; color:#999; margin-top:50px;">تم حذف جميع الإشعارات ✨</p>';
                     }
                 }, 400);
             } else {
-                alert("عذراً، تعذر الحذف: " + (result.error || "خطأ مجهول"));
+                alert("فشل الحذف من قاعدة البيانات: " + (result.error || "خطأ غير معروف"));
             }
         } catch (e) {
             console.error("Connection Error:", e);
-            alert("حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً.");
+            alert("تعذر الاتصال بالخادم. تأكدي من رفع التعديلات على Vercel.");
         }
     }
 
     window.onload = loadNotifications;
 </script>
 </body>
-</html>
+</html> 
