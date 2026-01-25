@@ -66,11 +66,9 @@
                     let icon = "🌸";
 
                     if (n.title.includes("محتوى") || n.title.includes("جديد")) {
-                        cardClass += " content-notif";
-                        icon = "📚";
+                        cardClass += " content-notif"; icon = "📚";
                     } else if (n.title.includes("عرض") || n.title.includes("مكافأة") || n.user_id == 0) {
-                        cardClass += " general-notif";
-                        icon = "🎁";
+                        cardClass += " general-notif"; icon = "🎁";
                     }
 
                     return `
@@ -82,53 +80,47 @@
                     `;
                 }).join('');
             } else {
-                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة لكِ حالياً ✨</p>';
+                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة ✨</p>';
                 status.innerText = "";
             }
         } catch (e) {
-            status.innerText = "خطأ في الاتصال؛ تأكدي من إعدادات قاعدة البيانات";
+            status.innerText = "خطأ في الاتصال بقاعدة البيانات";
         }
     }
 
-    // وظيفة الحذف المحسنة التي طلبتها
     async function confirmDelete(notifId) {
         if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
 
         const element = document.getElementById(`notif-container-${notifId}`);
         
         try {
-            // استخدام مسار نسبي يبدأ بـ / لضمان التوجيه الصحيح داخل Vercel
+            // استخدام المسار النسبي الصحيح لـ Vercel 
             const response = await fetch(`/api/delete-notification?id=${notifId}`, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json' 
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) throw new Error('استجابة الشبكة غير صحيحة');
 
             const result = await response.json();
 
             if (result.success) {
-                // تأثير بصري عند الحذف بنجاح
-                element.style.transition = "all 0.4s ease";
                 element.style.transform = "scale(0.8)";
                 element.style.opacity = "0";
                 
                 setTimeout(() => {
                     element.remove();
-                    // إذا لم يتبقَ إشعارات، اظهر رسالة "تم حذف جميع الإشعارات"
                     if (document.querySelectorAll('.notif-card').length === 0) {
                         document.getElementById('notif-list').innerHTML = 
                             '<p style="text-align:center; color:#999; margin-top:50px;">تم حذف جميع الإشعارات ✨</p>';
                     }
                 }, 400);
             } else {
-                alert("فشل الحذف من قاعدة البيانات: " + (result.error || "خطأ غير معروف"));
+                alert("فشل الحذف: " + (result.error || "خطأ غير معروف"));
             }
         } catch (e) {
             console.error("Connection Error:", e);
-            alert("تعذر الاتصال بالخادم. تأكدي من رفع التعديلات على Vercel.");
+            alert("تعذر الاتصال بالخادم. يرجى التأكد من رفع التعديلات على Vercel.");
         }
     }
 
