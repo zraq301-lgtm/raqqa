@@ -2,7 +2,7 @@ import { sql } from '@vercel/postgres';
 
 export default async function handler(request, response) {
     
-    // 1. معالجة طلبات OPTIONS و CORS (نفس منطق كود الحذف الفعال)
+    // 1. إعدادات CORS للسماح بالوصول ومنع أخطاء الاتصال
     if (request.method === 'OPTIONS') {
         response.setHeader('Access-Control-Allow-Origin', '*'); 
         response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS'); 
@@ -13,7 +13,7 @@ export default async function handler(request, response) {
     
     response.setHeader('Access-Control-Allow-Origin', '*');
 
-    // 2. التحقق من أن الطريقة هي DELETE
+    // 2. التحقق من طريقة الطلب (يجب أن تكون DELETE)
     if (request.method !== 'DELETE') {
         return response.status(405).json({ error: 'Method Not Allowed, use DELETE' });
     }
@@ -25,8 +25,8 @@ export default async function handler(request, response) {
             return response.status(400).json({ error: 'Missing required field (id)' });
         }
         
-        // 3. تنفيذ استعلام الحذف من جدول notifications باستخدام المعرف id
-        // ملاحظة: تم تغيير اسم الجدول من posts إلى notifications ليناسب الإشعارات
+        // 3. تنفيذ استعلام الحذف الفعلي من جدول notifications
+        // تم استخدام sql من @vercel/postgres للربط المباشر بـ POSTGRES_URL 
         const result = await sql`
             DELETE FROM notifications
             WHERE id = ${id};
