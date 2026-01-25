@@ -1,41 +1,31 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(request, response) {
-    // إعدادات CORS للسماح بالوصول الكامل
+    // إعدادات CORS للسماح بالاتصال من الواجهة
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    // التعامل مع طلب التحقق Preflight
-    if (request.method === 'OPTIONS') {
-        return response.status(200).end();
-    }
+    if (request.method === 'OPTIONS') return response.status(200).end();
 
-    // يجب أن تكون الطريقة DELETE كما في كود المنشورات الناجح
+    // يجب استخدام DELETE لتجنب أخطاء الطريقة غير المسموح بها
     if (request.method !== 'DELETE') {
-        return response.status(405).json({ success: false, error: 'Method Not Allowed' });
+        return response.status(405).json({ success: false, error: 'استخدم طريقة DELETE' });
     }
 
     try {
         const { id } = request.query;
+        if (!id) return response.status(400).json({ success: false, error: 'المعرف مفقود' });
 
-        if (!id) {
-            return response.status(400).json({ success: false, error: 'ID is missing' });
-        }
-
-        // الحذف الفعلي من قاعدة البيانات (notifications)
-        const result = await sql`
-            DELETE FROM notifications 
-            WHERE id = ${id};
-        `;
+        // الحذف الفعلي من جدول notifications بناءً على الصور المرفقة
+        const result = await sql`DELETE FROM notifications WHERE id = ${id};`;
 
         if (result.rowCount === 0) {
-            return response.status(404).json({ success: false, error: 'Not found' });
+            return response.status(404).json({ success: false, error: 'الإشعار غير موجود' });
         }
 
         return response.status(200).json({ success: true });
     } catch (error) {
-        console.error('Database Error:', error);
         return response.status(500).json({ success: false, error: error.message });
     }
 }
