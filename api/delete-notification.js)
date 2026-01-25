@@ -1,31 +1,32 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(request, response) {
-    // إعدادات CORS للسماح بالاتصال من الواجهة
+    // إعدادات CORS للسماح بالوصول من الواجهة
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (request.method === 'OPTIONS') return response.status(200).end();
 
-    // يجب استخدام DELETE لتجنب أخطاء الطريقة غير المسموح بها
+    // يجب استخدام طريقة DELETE لتتوافق مع عمليات الحذف
     if (request.method !== 'DELETE') {
-        return response.status(405).json({ success: false, error: 'استخدم طريقة DELETE' });
+        return response.status(405).json({ success: false, error: 'Method Not Allowed' });
     }
 
     try {
         const { id } = request.query;
-        if (!id) return response.status(400).json({ success: false, error: 'المعرف مفقود' });
+        if (!id) return response.status(400).json({ success: false, error: 'ID is missing' });
 
-        // الحذف الفعلي من جدول notifications بناءً على الصور المرفقة
+        // الحذف الفعلي للسجل من جدول notifications بناءً على الـ id
         const result = await sql`DELETE FROM notifications WHERE id = ${id};`;
 
         if (result.rowCount === 0) {
-            return response.status(404).json({ success: false, error: 'الإشعار غير موجود' });
+            return response.status(404).json({ success: false, error: 'Notification not found' });
         }
 
-        return response.status(200).json({ success: true });
+        return response.status(200).json({ success: true, message: 'Deleted successfully' });
     } catch (error) {
+        console.error('Database Error:', error);
         return response.status(500).json({ success: false, error: error.message });
     }
 }
