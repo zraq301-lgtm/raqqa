@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إشعارات رقة</title>
+    <title>إدارة إشعارات رقة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --p2: #eb2f96; --bg: #fff9fb; }
@@ -11,6 +11,7 @@
         .header { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .exit-btn { background: #fff0f6; color: var(--p2); border: 1px solid #ffdeeb; padding: 8px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 13px; font-weight: bold; }
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 15px; border-radius: 15px; 
             border-right: 5px solid var(--p2); box-shadow: 0 3px 10px rgba(0,0,0,0.03); 
@@ -18,30 +19,31 @@
         }
         .notif-title { font-weight: bold; color: #333; margin-bottom: 5px; }
         .notif-body { font-size: 13px; color: #666; line-height: 1.5; }
+        
         .delete-btn {
             position: absolute; left: 10px; top: 10px;
-            background: #f8f9fa; color: #ccc; border: none;
-            width: 26px; height: 26px; border-radius: 50%;
-            cursor: pointer; font-size: 14px; display: flex;
+            background: #fee2e2; color: #ef4444; border: none;
+            width: 30px; height: 30px; border-radius: 50%;
+            cursor: pointer; font-size: 16px; display: flex;
             align-items: center; justify-content: center;
         }
-        .delete-btn:hover { background: #fee2e2; color: #ef4444; }
-        #status { text-align: center; color: var(--p2); font-size: 11px; margin-top: 20px; }
+        #status { text-align: center; color: var(--p2); font-size: 12px; margin-top: 20px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h3 style="margin:0;">إشعارات رقة</h3>
+        <h3 style="margin:0;">إشعاراتي</h3>
         <a href="javascript:history.back()" class="exit-btn">خروج</a>
     </div>
 
     <div class="container">
         <div id="notif-list"></div>
-        <div id="status">جاري التحديث...</div>
+        <div id="status">جاري التحميل...</div>
     </div>
 
 <script>
+    // جلب الـ user_id من الرابط
     const urlParams = new URLSearchParams(window.location.search);
     const currentUserId = urlParams.get('user_id') || '1';
 
@@ -55,50 +57,50 @@
             if (data.success && data.notifications.length > 0) {
                 status.style.display = 'none';
                 list.innerHTML = data.notifications.map(n => `
-                    <div class="notif-card" id="notif-container-${n.id}">
-                        <button class="delete-btn" onclick="confirmDelete(${n.id})">✕</button>
+                    <div class="notif-card" id="notif-row-${n.id}">
+                        <button class="delete-btn" onclick="executeDelete(${n.id})">×</button>
                         <div class="notif-title">🌸 ${n.title}</div>
                         <div class="notif-body">${n.body}</div>
                     </div>
                 `).join('');
             } else {
-                list.innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات ✨</p>';
+                list.innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
                 status.innerText = "";
             }
         } catch (e) {
-            status.innerText = "خطأ في الاتصال بقاعدة البيانات";
+            status.innerText = "تعذر الاتصال بالخادم؛ تأكدي من رفع الملفات لـ Vercel";
         }
     }
 
-    // وظيفة الحذف باستخدام طريقة DELETE (نفس منطق الكود الفعال الذي أرسلته)
-    async function confirmDelete(notifId) {
-        if (!confirm("هل تريدين حذف هذا الإشعار؟")) return;
+    // وظيفة الحذف "الفعالة" بناءً على منطق حذف المنشورات الخاص بك
+    async function executeDelete(id) {
+        if (!confirm("هل أنتِ متأكدة من حذف هذا الإشعار؟")) return;
 
+        const card = document.getElementById(`notif-row-${id}`);
+        
         try {
-            // إرسال طلب DELETE مع الـ id في الرابط (query parameter)
-            const response = await fetch(`/api/delete-notification?id=${notifId}`, {
-                method: 'DELETE' // تغيير الطريقة إلى DELETE لتطابق الـ API
+            // إرسال طلب DELETE مع الـ ID في الرابط (Query String)
+            // هذا المنطق هو نفسه المستخدم في حذف البوستات الناجح لديك
+            const response = await fetch(`/api/delete-notification?id=${id}`, {
+                method: 'DELETE'
             });
-            
-            const result = await response.json();
 
-            if (result.success || response.ok) {
-                // إزالة الإشعار من الواجهة فوراً
-                const element = document.getElementById(`notif-container-${notifId}`);
-                element.style.opacity = "0";
-                element.style.transform = "translateX(50px)";
+            if (response.ok) {
+                // تأثير الحذف البصري الفوري
+                card.style.opacity = "0";
+                card.style.transform = "scale(0.8)";
                 setTimeout(() => {
-                    element.remove();
+                    card.remove();
                     if (document.querySelectorAll('.notif-card').length === 0) {
                         document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">تم حذف جميع الإشعارات ✨</p>';
                     }
                 }, 300);
             } else {
-                alert("تعذر الحذف: " + (result.message || "خطأ غير معروف"));
+                const result = await response.json();
+                alert("تعذر الحذف: " + (result.error || "خطأ مجهول"));
             }
         } catch (e) {
-            console.error("خطأ أثناء الحذف:", e);
-            alert("حدث خطأ في الاتصال بالخادم.");
+            alert("فشل الاتصال بالخادم؛ تأكدي من كود الـ API");
         }
     }
 
