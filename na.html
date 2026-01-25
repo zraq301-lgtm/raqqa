@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إشعارات رقة</title>
+    <title>إدارة الإشعارات</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --p2: #eb2f96; --bg: #fff9fb; }
@@ -16,15 +16,16 @@
         }
         .delete-btn {
             position: absolute; left: 10px; top: 10px; background: #fee2e2; color: #ef4444; 
-            border: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+            border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
         }
     </style>
 </head>
 <body>
-    <div class="header"><h3>إشعاراتي</h3></div>
+    <div class="header"><h3>إشعاراتي</h3><a href="javascript:history.back()" style="text-decoration:none; color:var(--p2);">خروج</a></div>
     <div class="container">
         <div id="notif-list"></div>
-        <div id="status" style="text-align:center; color:var(--p2);">جاري التحميل...</div>
+        <div id="status" style="text-align:center; color:var(--p2); margin-top:20px;">جاري التحميل...</div>
     </div>
 
 <script>
@@ -39,30 +40,33 @@
                 document.getElementById('status').style.display = 'none';
                 document.getElementById('notif-list').innerHTML = data.notifications.map(n => `
                     <div class="notif-card" id="card-${n.id}">
-                        <button class="delete-btn" onclick="executeDelete(${n.id})">✕</button>
+                        <button class="delete-btn" onclick="confirmDelete(${n.id})">✕</button>
                         <div style="font-weight:bold;">🌸 ${n.title}</div>
-                        <div style="font-size:13px; color:#666;">${n.body}</div>
+                        <div style="font-size:13px; color:#666; margin-top:5px;">${n.body}</div>
                     </div>
                 `).join('');
             } else {
-                document.getElementById('notif-list').innerHTML = '<p style="text-align:center;">لا توجد إشعارات ✨</p>';
+                document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
                 document.getElementById('status').innerText = "";
             }
-        } catch (e) { document.getElementById('status').innerText = "خطأ في الاتصال"; }
+        } catch (e) { document.getElementById('status').innerText = "خطأ في تحميل البيانات"; }
     }
 
-    async function executeDelete(id) {
-        if (!confirm("حذف هذا الإشعار؟")) return;
+    async function confirmDelete(id) {
+        if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
         try {
-            // استخدام DELETE بدلاً من POST كما في كودك الفعال
+            // إرسال طلب DELETE مع تمرير الـ id في الرابط
             const response = await fetch(`/api/delete-notification?id=${id}`, {
                 method: 'DELETE'
             });
             if (response.ok) {
-                const el = document.getElementById(`card-${id}`);
-                el.style.opacity = "0";
-                setTimeout(() => el.remove(), 300);
-            } else { alert("فشل الحذف من الخادم"); }
+                const card = document.getElementById(`card-${id}`);
+                card.style.opacity = "0";
+                card.style.transform = "translateX(50px)";
+                setTimeout(() => card.remove(), 300);
+            } else {
+                alert("فشل الحذف: تأكدي من تحديث الـ API على Vercel");
+            }
         } catch (e) { alert("تعذر الاتصال بالخادم"); }
     }
     window.onload = loadNotifications;
