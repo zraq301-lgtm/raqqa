@@ -1,44 +1,45 @@
-import { createPool } from '@vercel/postgres';
+import { sql } from '@vercel/postgres';
 
-export default async function handler(req, res) {
-    // إعدادات السماح بالوصول (CORS)
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // التعامل مع طلبات Preflight
-    if (req.method === 'OPTIONS') return res.status(200).end();
-
-    // التحقق من أن الطلب من نوع POST [cite: 2, 3]
-    if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, error: "الطريقة غير مسموح بها" });
+export default async function handler(request, response) {
+    
+    // 1. معالجة طلبات OPTIONS و CORS (نفس منطق كود الحذف الفعال)
+    if (request.method === 'OPTIONS') {
+        response.setHeader('Access-Control-Allow-Origin', '*'); 
+        response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS'); 
+        response.setHeader('Access-Control-Allow-Headers', 'Content-Type'); 
+        response.status(200).end(); 
+        return;
     }
+    
+    response.setHeader('Access-Control-Allow-Origin', '*');
 
-    // جلب المعرف من query string 
-    const { id } = req.query;
-
-    if (!id) {
-        return res.status(400).json({ success: false, error: "معرف الإشعار مفقود" });
+    // 2. التحقق من أن الطريقة هي DELETE
+    if (request.method !== 'DELETE') {
+        return response.status(405).json({ error: 'Method Not Allowed, use DELETE' });
     }
-
-    // إنشاء اتصال باستخدام POSTGRES_URL الظاهر في الصورة [cite: 4]
-    const pool = createPool({
-        connectionString: process.env.POSTGRES_URL 
-    });
 
     try {
-        // تنفيذ الحذف الفعلي من جدول notifications [cite: 5]
-        const result = await pool.query('DELETE FROM notifications WHERE id = $1', [parseInt(id)]);
+        const { id } = request.query;
+
+        if (!id) {
+            return response.status(400).json({ error: 'Missing required field (id)' });
+        }
+        
+        // 3. تنفيذ استعلام الحذف من جدول notifications باستخدام المعرف id
+        // ملاحظة: تم تغيير اسم الجدول من posts إلى notifications ليناسب الإشعارات
+        const result = await sql`
+            DELETE FROM notifications
+            WHERE id = ${id};
+        `;
         
         if (result.rowCount === 0) {
-            return res.status(404).json({ success: false, error: "الإشعار غير موجود" });
+             return response.status(404).json({ message: `Notification with ID ${id} not found.` });
         }
 
-        return res.status(200).json({ success: true }); // [cite: 6]
+        return response.status(200).json({ success: true, message: `Notification deleted successfully.` });
+
     } catch (error) {
-        console.error("Database Error:", error);
-        return res.status(500).json({ success: false, error: error.message });
-    } finally {
-        await pool.end(); // [cite: 7]
+        console.error('Database Delete Error:', error);
+        return response.status(500).json({ error: 'Failed to delete notification.', details: error.message });
     }
 }
