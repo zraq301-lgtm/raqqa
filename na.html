@@ -9,7 +9,6 @@
         :root { --p2: #eb2f96; --bg: #fff9fb; }
         body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
         .header { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .exit-btn { background: #fff0f6; color: var(--p2); border: 1px solid #ffdeeb; padding: 8px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 13px; font-weight: bold; }
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 15px; border-radius: 15px; 
@@ -17,21 +16,14 @@
             position: relative; transition: all 0.4s ease;
         }
         .delete-btn {
-            position: absolute; left: 10px; top: 10px;
-            background: #fee2e2; color: #ef4444; border: none;
-            width: 30px; height: 30px; border-radius: 50%;
-            cursor: pointer; font-size: 16px; display: flex;
-            align-items: center; justify-content: center;
+            position: absolute; left: 10px; top: 10px; background: #fee2e2; color: #ef4444; 
+            border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
         }
         #status { text-align: center; color: var(--p2); font-size: 12px; margin-top: 20px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h3 style="margin:0;">إشعاراتي</h3>
-        <a href="javascript:history.back()" class="exit-btn">خروج</a>
-    </div>
-
+    <div class="header"><h3>إشعاراتي</h3></div>
     <div class="container">
         <div id="notif-list"></div>
         <div id="status">جاري التحميل...</div>
@@ -42,55 +34,44 @@
     const currentUserId = urlParams.get('user_id') || '1';
 
     async function loadNotifications() {
-        const list = document.getElementById('notif-list');
-        const status = document.getElementById('status');
         try {
             const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
             const data = await response.json();
             if (data.success && data.notifications.length > 0) {
-                status.style.display = 'none';
-                list.innerHTML = data.notifications.map(n => `
-                    <div class="notif-card" id="notif-row-${n.id}">
+                document.getElementById('status').style.display = 'none';
+                document.getElementById('notif-list').innerHTML = data.notifications.map(n => `
+                    <div class="notif-card" id="row-${n.id}">
                         <button class="delete-btn" onclick="executeDelete(${n.id})">×</button>
-                        <div style="font-weight:bold; color:#333;">🌸 ${n.title}</div>
-                        <div style="font-size:13px; color:#666; margin-top:5px;">${n.body}</div>
+                        <div style="font-weight:bold;">🌸 ${n.title}</div>
+                        <div style="font-size:13px; color:#666;">${n.body}</div>
                     </div>
                 `).join('');
             } else {
-                list.innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
-                status.innerText = "";
+                document.getElementById('notif-list').innerHTML = '<p style="text-align:center;">لا توجد إشعارات حالياً ✨</p>';
+                document.getElementById('status').innerText = "";
             }
-        } catch (e) {
-            status.innerText = "خطأ في الاتصال بالخادم";
-        }
+        } catch (e) { document.getElementById('status').innerText = "خطأ في الاتصال"; }
     }
 
     async function executeDelete(id) {
-        if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
-        const card = document.getElementById(`notif-row-${id}`);
+        if (!confirm("هل تريدين حذف هذا الإشعار؟")) return;
         try {
-            // استخدام طريقة DELETE لتطابق كود المنشورات الناجح
+            // هذا السطر يرسل الـ id للـ API بنفس طريقة حذف المنشورات
             const response = await fetch(`/api/delete-notification?id=${id}`, {
                 method: 'DELETE'
             });
 
             if (response.ok) {
+                const card = document.getElementById(`row-${id}`);
                 card.style.opacity = "0";
                 card.style.transform = "translateX(50px)";
-                setTimeout(() => {
-                    card.remove();
-                    if (document.querySelectorAll('.notif-card').length === 0) {
-                        document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">تم حذف جميع الإشعارات ✨</p>';
-                    }
-                }, 300);
+                setTimeout(() => card.remove(), 300);
             } else {
-                alert("فشل الحذف من الخادم.");
+                alert("تعذر الحذف من الخادم");
             }
-        } catch (e) {
-            alert("حدث خطأ أثناء الاتصال.");
-        }
+        } catch (e) { alert("فشل الاتصال بالخادم؛ تأكدي من رفع التعديلات."); }
     }
     window.onload = loadNotifications;
 </script>
 </body>
-    </html>
+</html>
