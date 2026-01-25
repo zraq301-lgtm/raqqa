@@ -6,33 +6,26 @@
     <title>إشعارات رقة</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --p2: #eb2f96; --bg: #fff9fb; --blue: #2196f3; --green: #4caf50; }
+        :root { --p2: #eb2f96; --bg: #fff9fb; }
         body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
         .header { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .exit-btn { background: #fff0f6; color: var(--p2); border: 1px solid #ffdeeb; padding: 8px 15px; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 13px; font-weight: bold; }
         .container { padding: 20px; max-width: 500px; margin: 0 auto; }
-        
         .notif-card { 
             background: white; padding: 15px; margin-bottom: 15px; border-radius: 15px; 
             border-right: 5px solid var(--p2); box-shadow: 0 3px 10px rgba(0,0,0,0.03); 
             position: relative; transition: all 0.4s ease;
         }
-        .notif-title { font-weight: bold; color: #333; margin-bottom: 5px; display: flex; align-items: center; gap: 8px; }
-        .notif-body { font-size: 13px; color: #666; line-height: 1.5; padding-left: 25px; }
-        
+        .notif-title { font-weight: bold; color: #333; margin-bottom: 5px; }
+        .notif-body { font-size: 13px; color: #666; line-height: 1.5; }
         .delete-btn {
             position: absolute; left: 10px; top: 10px;
             background: #f8f9fa; color: #ccc; border: none;
             width: 26px; height: 26px; border-radius: 50%;
             cursor: pointer; font-size: 14px; display: flex;
             align-items: center; justify-content: center;
-            transition: 0.2s;
         }
         .delete-btn:hover { background: #fee2e2; color: #ef4444; }
-
-        .general-notif { border-right-color: var(--blue); }
-        .content-notif { border-right-color: var(--green); }
-
         #status { text-align: center; color: var(--p2); font-size: 11px; margin-top: 20px; }
     </style>
 </head>
@@ -45,7 +38,7 @@
 
     <div class="container">
         <div id="notif-list"></div>
-        <div id="status">جاري تحديث التنبيهات...</div>
+        <div id="status">جاري التحديث...</div>
     </div>
 
 <script>
@@ -61,26 +54,15 @@
 
             if (data.success && data.notifications.length > 0) {
                 status.style.display = 'none';
-                list.innerHTML = data.notifications.map(n => {
-                    let cardClass = "notif-card";
-                    let icon = "🌸";
-
-                    if (n.title.includes("محتوى") || n.title.includes("جديد")) {
-                        cardClass += " content-notif"; icon = "📚";
-                    } else if (n.title.includes("عرض") || n.title.includes("مكافأة") || n.user_id == 0) {
-                        cardClass += " general-notif"; icon = "🎁";
-                    }
-
-                    return `
-                        <div class="${cardClass}" id="notif-container-${n.id}">
-                            <button class="delete-btn" onclick="confirmDelete(${n.id})" title="حذف">✕</button>
-                            <div class="notif-title"><span>${icon}</span> ${n.title}</div>
-                            <div class="notif-body">${n.body}</div>
-                        </div>
-                    `;
-                }).join('');
+                list.innerHTML = data.notifications.map(n => `
+                    <div class="notif-card" id="notif-container-${n.id}">
+                        <button class="delete-btn" onclick="confirmDelete(${n.id})">✕</button>
+                        <div class="notif-title">🌸 ${n.title}</div>
+                        <div class="notif-body">${n.body}</div>
+                    </div>
+                `).join('');
             } else {
-                list.innerHTML = '<p style="text-align:center; color:#999; margin-top:50px;">لا توجد إشعارات جديدة ✨</p>';
+                list.innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات ✨</p>';
                 status.innerText = "";
             }
         } catch (e) {
@@ -88,39 +70,35 @@
         }
     }
 
+    // وظيفة الحذف باستخدام طريقة DELETE (نفس منطق الكود الفعال الذي أرسلته)
     async function confirmDelete(notifId) {
-        if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
+        if (!confirm("هل تريدين حذف هذا الإشعار؟")) return;
 
-        const element = document.getElementById(`notif-container-${notifId}`);
-        
         try {
-            // استخدام المسار النسبي الصحيح لـ Vercel 
+            // إرسال طلب DELETE مع الـ id في الرابط (query parameter)
             const response = await fetch(`/api/delete-notification?id=${notifId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                method: 'DELETE' // تغيير الطريقة إلى DELETE لتطابق الـ API
             });
-
-            if (!response.ok) throw new Error('استجابة الشبكة غير صحيحة');
-
+            
             const result = await response.json();
 
-            if (result.success) {
-                element.style.transform = "scale(0.8)";
+            if (result.success || response.ok) {
+                // إزالة الإشعار من الواجهة فوراً
+                const element = document.getElementById(`notif-container-${notifId}`);
                 element.style.opacity = "0";
-                
+                element.style.transform = "translateX(50px)";
                 setTimeout(() => {
                     element.remove();
                     if (document.querySelectorAll('.notif-card').length === 0) {
-                        document.getElementById('notif-list').innerHTML = 
-                            '<p style="text-align:center; color:#999; margin-top:50px;">تم حذف جميع الإشعارات ✨</p>';
+                        document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">تم حذف جميع الإشعارات ✨</p>';
                     }
-                }, 400);
+                }, 300);
             } else {
-                alert("فشل الحذف: " + (result.error || "خطأ غير معروف"));
+                alert("تعذر الحذف: " + (result.message || "خطأ غير معروف"));
             }
         } catch (e) {
-            console.error("Connection Error:", e);
-            alert("تعذر الاتصال بالخادم. يرجى التأكد من رفع التعديلات على Vercel.");
+            console.error("خطأ أثناء الحذف:", e);
+            alert("حدث خطأ في الاتصال بالخادم.");
         }
     }
 
