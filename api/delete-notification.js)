@@ -1,45 +1,30 @@
 import { sql } from '@vercel/postgres';
 
 export default async function handler(request, response) {
-    
-    // 1. إعدادات CORS للسماح بالوصول ومنع أخطاء الاتصال
+    // إعدادات CORS للسماح بطريقة DELETE
     if (request.method === 'OPTIONS') {
-        response.setHeader('Access-Control-Allow-Origin', '*'); 
-        response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS'); 
-        response.setHeader('Access-Control-Allow-Headers', 'Content-Type'); 
-        response.status(200).end(); 
-        return;
+        response.setHeader('Access-Control-Allow-Origin', '*');
+        response.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
+        response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        return response.status(200).end();
     }
-    
     response.setHeader('Access-Control-Allow-Origin', '*');
 
-    // 2. التحقق من طريقة الطلب (يجب أن تكون DELETE)
     if (request.method !== 'DELETE') {
-        return response.status(405).json({ error: 'Method Not Allowed, use DELETE' });
+        return response.status(405).json({ error: 'يجب استخدام DELETE' });
     }
 
     try {
         const { id } = request.query;
+        if (!id) return response.status(400).json({ error: 'المعرف مفقود' });
 
-        if (!id) {
-            return response.status(400).json({ error: 'Missing required field (id)' });
-        }
-        
-        // 3. تنفيذ استعلام الحذف الفعلي من جدول notifications
-        // تم استخدام sql من @vercel/postgres للربط المباشر بـ POSTGRES_URL 
-        const result = await sql`
-            DELETE FROM notifications
-            WHERE id = ${id};
-        `;
-        
-        if (result.rowCount === 0) {
-             return response.status(404).json({ message: `Notification with ID ${id} not found.` });
-        }
+        // استخدام sql للربط المباشر بـ POSTGRES_URL 
+        const result = await sql`DELETE FROM notifications WHERE id = ${id};`;
 
-        return response.status(200).json({ success: true, message: `Notification deleted successfully.` });
+        if (result.rowCount === 0) return response.status(404).json({ error: 'غير موجود' });
 
+        return response.status(200).json({ success: true });
     } catch (error) {
-        console.error('Database Delete Error:', error);
-        return response.status(500).json({ error: 'Failed to delete notification.', details: error.message });
+        return response.status(500).json({ error: error.message });
     }
-}
+} 
