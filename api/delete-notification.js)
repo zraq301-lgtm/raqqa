@@ -1,37 +1,44 @@
 import { createPool } from '@vercel/postgres';
 
 export default async function handler(req, res) {
-    // إعدادات CORS للسماح بالاتصال من أي مكان 
+    // إعدادات السماح بالوصول (CORS)
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
+    // التعامل مع طلبات Preflight
     if (req.method === 'OPTIONS') return res.status(200).end();
 
-    // التأكد من أن الطريقة هي POST [cite: 2, 3]
+    // التحقق من أن الطلب من نوع POST [cite: 2, 3]
     if (req.method !== 'POST') {
-        return res.status(405).json({ success: false, error: "Method not allowed" });
+        return res.status(405).json({ success: false, error: "الطريقة غير مسموح بها" });
     }
 
-    // جلب المعرف من الرابط بطريقة حديثة تتجنب أخطاء url.parse [cite: 4]
-    const { searchParams } = new URL(req.url, `http://${req.headers.host}`);
-    const id = searchParams.get('id');
+    // جلب المعرف من query string 
+    const { id } = req.query;
 
     if (!id) {
-        return res.status(400).json({ success: false, error: "ID is missing" });
+        return res.status(400).json({ success: false, error: "معرف الإشعار مفقود" });
     }
 
+    // إنشاء اتصال باستخدام POSTGRES_URL الظاهر في الصورة [cite: 4]
     const pool = createPool({
-        connectionString: process.env.POSTGRES_URL // التأكد من استخدام المفتاح الصحيح من الصورة [cite: 4]
+        connectionString: process.env.POSTGRES_URL 
     });
 
     try {
-        // تحديث أو حذف الإشعار [cite: 5]
-        await pool.query('DELETE FROM notifications WHERE id = $1', [parseInt(id)]);
-        return res.status(200).json({ success: true }); [cite: 6]
+        // تنفيذ الحذف الفعلي من جدول notifications [cite: 5]
+        const result = await pool.query('DELETE FROM notifications WHERE id = $1', [parseInt(id)]);
+        
+        if (result.rowCount === 0) {
+            return res.status(404).json({ success: false, error: "الإشعار غير موجود" });
+        }
+
+        return res.status(200).json({ success: true }); // [cite: 6]
     } catch (error) {
+        console.error("Database Error:", error);
         return res.status(500).json({ success: false, error: error.message });
     } finally {
-        await pool.end(); [cite: 7]
+        await pool.end(); // [cite: 7]
     }
 }
