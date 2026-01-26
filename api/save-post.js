@@ -10,9 +10,7 @@ export const config = {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // تعديل: استخدام اسم المتغير الموجود في صورتك POSTGRES_URL
   const connectionString = process.env.POSTGRES_URL; 
-  
   if (!connectionString) {
     return res.status(500).json({ error: "خطأ: لم يتم العثور على رابط POSTGRES_URL" });
   }
@@ -23,32 +21,46 @@ export default async function handler(req, res) {
   try {
     const [fields, files] = await form.parse(req);
     
-    const content = fields.content?.[0] || "";
-    const section = fields.section?.[0] || "bouh-display-1";
-    const type = fields.type?.[0] || "نصي";
-    let mediaUrl = "";
+    // تحديد نوع العملية: هل هي رابط فيديو خارجي أم منشور عادي؟
+    const isExternalLink = fields.isExternal?.[0] === 'true';
 
-    // استخدام BLOB_READ_WRITE_TOKEN الموجود في صورتك
-    if (files.file && files.file[0]) {
-      const file = files.file[0];
-      const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
-        access: 'public',
-        contentType: file.mimetype,
-        token: process.env.BLOB_READ_WRITE_TOKEN // تأكيد استخدام التوكن الصحيح
-      });
-      mediaUrl = blob.url;
+    if (isExternalLink) {
+      // منطق حفظ الرابط الخارجي في جدول video_links
+      const videoUrl = fields.videoUrl?.[0] || "";
+      const description = fields.description?.[0] || "";
+      const section = fields.section?.[0] || "bouh-display-1";
+
+      await sql`
+        INSERT INTO video_links (url, description, section, created_at)
+        VALUES (${videoUrl}, ${description}, ${section}, NOW())
+      `;
+      return res.status(200).json({ success: true, message: "تم حفظ الرابط بنجاح" });
+
+    } else {
+      // منطق رفع المنشور العادي في جدول raqqa_posts
+      const content = fields.content?.[0] || "";
+      const section = fields.section?.[0] || "bouh-display-1";
+      const type = fields.type?.[0] || "نصي";
+      let mediaUrl = "";
+
+      if (files.file && files.file[0]) {
+        const file = files.file[0];
+        const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN
+        });
+        mediaUrl = blob.url;
+      }
+
+      await sql`
+        INSERT INTO raqqa_posts (content, media_url, section, type, created_at)
+        VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
+      `;
+      return res.status(200).json({ success: true, message: "تم نشر المنشور بنجاح" });
     }
-
-    // الحفظ في الجدول بناءً على هيكلة الأقسام الخمسة
-    await sql`
-      INSERT INTO posts (content, media_url, section, type, created_at)
-      VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
-    `;
-
-    return res.status(200).json({ success: true });
 
   } catch (error) {
     console.error("Error:", error);
     return res.status(500).json({ error: "حدث خطأ: " + error.message });
   }
-                                      }
+}
