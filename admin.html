@@ -47,7 +47,7 @@
         <h3><i class="fas fa-robot"></i> مساعد رقة الذكي</h3>
         <textarea id="ai-prompt" rows="2" placeholder="اكتبي موضوعاً لتوليد نص مقترح..."></textarea>
         <button class="btn btn-ai" onclick="generateAIContent()">
-            <i class="fas fa-magic"></i> توليد نص ذكي
+            <i class="fas fa-sparkles"></i> توليد نص ذكي
         </button>
         <div id="ai-loading" class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> رقة تفكر...</div>
     </div>
@@ -104,6 +104,7 @@
 </div>
 
 <script>
+    // معاينة الملف
     function handlePreview(input) {
         const preview = document.getElementById('preview');
         const typeSelect = document.getElementById('type-select');
@@ -112,20 +113,20 @@
             const file = input.files[0];
             const url = URL.createObjectURL(file);
             if (file.type.startsWith('video')) {
-                preview.innerHTML = `<video src="${url}" style="width:100%" controls></video>`;
+                preview.innerHTML = `<video src="${url}" controls></video>`;
                 typeSelect.value = 'فيديو';
             } else {
-                preview.innerHTML = `<img src="${url}" style="width:100%">`;
+                preview.innerHTML = `<img src="${url}">`;
                 typeSelect.value = 'صورة';
             }
         }
     }
 
-    // الرفع لجدول المنشورات الأساسي
+    // 1. الرفع لجدول المنشورات (Posts)
     async function startUpload() {
         const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
-        const section = document.getElementById('global-section').value;
+        const section = document.getElementById('global-section').value; // جلب القسم المختار
         const type = document.getElementById('type-select').value;
         const btn = document.getElementById('upload-btn');
 
@@ -135,29 +136,26 @@
         Swal.fire({ title: 'جاري الحفظ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         const formData = new FormData();
-        formData.append('isExternal', 'false'); // لتمييز الطلب في السيرفر
         formData.append('content', content);
         formData.append('section', section);
         formData.append('type', type);
         if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
 
         try {
-            const res = await fetch('/api/save-content', { method: 'POST', body: formData });
+            const res = await fetch('/api/save-post', { method: 'POST', body: formData });
             if (res.ok) {
-                Swal.fire('تم!', 'تم النشر بنجاح في ' + section, 'success');
+                Swal.fire('تم!', 'تم النشر في ' + section, 'success');
                 setTimeout(() => location.reload(), 1500);
-            } else {
-                throw new Error();
             }
         } catch (err) { Swal.fire('خطأ', 'فشل الرفع', 'error'); }
         btn.disabled = false;
     }
 
-    // حفظ رابط فيديو خارجي باستخدام نفس الـ API
+    // 2. الرفع لجدول الروابط (Video Links) مع توزيع الأقسام
     async function uploadVideoLink() {
         const videoUrl = document.getElementById('external-video-url').value;
         const description = document.getElementById('video-desc').value;
-        const section = document.getElementById('global-section').value;
+        const section = document.getElementById('global-section').value; // جلب القسم المختار للرابط
         const btn = document.getElementById('link-btn');
 
         if (!videoUrl) return Swal.fire('تنبيه', 'يرجى وضع الرابط', 'warning');
@@ -165,50 +163,42 @@
         btn.disabled = true;
         Swal.fire({ title: 'جاري حفظ الرابط...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-        const formData = new FormData();
-        formData.append('isExternal', 'true'); // تفعيل منطق الروابط الخارجية
-        formData.append('videoUrl', videoUrl);
-        formData.append('description', description);
-        formData.append('section', section);
-
         try {
-            const res = await fetch('/api/save-content', { method: 'POST', body: formData });
+            const res = await fetch('/api/save-video-link', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoUrl, description, section })
+            });
+
             if (res.ok) {
                 Swal.fire('ناجح!', 'تم إضافة الرابط إلى ' + section, 'success');
                 document.getElementById('external-video-url').value = '';
                 document.getElementById('video-desc').value = '';
-            } else {
-                throw new Error();
             }
         } catch (err) { Swal.fire('خطأ', 'حدث خطأ في السيرفر', 'error'); }
         btn.disabled = false;
     }
 
+    // وظيفة الذكاء الاصطناعي والحذف
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
         if(!prompt) return;
         document.getElementById('ai-loading').style.display = 'block';
-        try {
-            const res = await fetch('/api/raqqa-ai', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ prompt }) 
-            });
-            const data = await res.json();
-            document.getElementById('main-content').value = data.reply;
-        } catch (e) {}
+        const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prompt }) });
+        const data = await res.json();
+        document.getElementById('main-content').value = data.reply;
         document.getElementById('ai-loading').style.display = 'none';
     }
 
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
         if (!id) return;
-        const result = await Swal.fire({ title: 'حذف نهائي؟', icon: 'warning', showCancelButton: true });
-        if (result.isConfirmed) {
+        const confirm = await Swal.fire({ title: 'حذف نهائي؟', icon: 'warning', showCancelButton: true });
+        if (confirm.isConfirmed) {
             await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
             Swal.fire('تم الحذف');
         }
     }
 </script>
 </body>
-</html>
+            </html>
