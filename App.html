@@ -1,53 +1,116 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <title>لوحة إدارة المحتوى والإعلانات</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - مكتبة الرقة</title>
     <style>
-        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input, select, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
-        button { background: #007bff; color: white; cursor: pointer; border: none; }
+        :root { --primary: #0070f3; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(0,112,243,0.1); }
+        .ad-section { background: #f9f9f9; padding: 15px; border-radius: 8px; border-right: 4px solid var(--primary); margin: 20px 0; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #0056b3; transform: translateY(-2px); }
+        #status { margin-top: 15px; text-align: center; padding: 10px; border-radius: 5px; display: none; }
+        .success { background: #d4edda; color: #155724; display: block !important; }
+        .error { background: #f8d7da; color: #721c24; display: block !important; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>إضافة محتوى جديد</h2>
-        
-        <input type="text" id="title" placeholder="عنوان الفيديو">
-        <input type="text" id="video_url" placeholder="رابط الفيديو (YouTube/MP4)">
-        
-        <hr>
-        
-        <label>نوع الإعلان:</label>
-        <select id="ad_type">
-            <option value="id">عبر معرف (ID)</option>
-            <option value="link">عبر رابط مباشر</option>
-        </select>
-        <input type="text" id="ad_content" placeholder="أدخل ID الإعلان أو الرابط">
-        <input type="text" id="company_name" placeholder="اسم شركة الإعلانات">
-        
-        <button onclick="uploadData()">نشر المحتوى إلى نيون</button>
+
+<div class="container">
+    <h2>إضافة فيديو جديد للقاعدة</h2>
+    
+    <div class="form-group">
+        <label>عنوان الفيديو</label>
+        <input type="text" id="title" placeholder="أدخل اسم الفيديو هنا...">
     </div>
 
-    <script>
-        async function uploadData() {
-            const data = {
-                title: document.getElementById('title').value,
-                video_url: document.getElementById('video_url').value,
-                ad_type: document.getElementById('ad_type').value,
-                ad_content: document.getElementById('ad_content').value,
-                company_name: document.getElementById('company_name').value
-            };
+    <div class="form-group">
+        <label>رابط الفيديو (URL)</label>
+        <input type="url" id="video_url" placeholder="https://example.com/video.mp4">
+    </div>
 
-            const response = await fetch('/api/upload', {
+    <div class="ad-section">
+        <div class="form-group">
+            <label>اسم شركة الإعلانات</label>
+            <input type="text" id="company_name" placeholder="مثال: Google Ads">
+        </div>
+
+        <div class="form-group">
+            <label>نوع الإعلان</label>
+            <select id="ad_type">
+                <option value="link">رابط مباشر (Link)</option>
+                <option value="id">معرف الإعلان (ID)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>محتوى الإعلان (الرابط أو الـ ID)</label>
+            <input type="text" id="ad_content" placeholder="ضع الرابط أو المعرف هنا...">
+        </div>
+    </div>
+
+    <button onclick="submitData()">نشر الفيديو إلى Neon</button>
+    <div id="status"></div>
+</div>
+
+<script>
+    async function submitData() {
+        const btn = document.querySelector('button');
+        const status = document.getElementById('status');
+        
+        // تجهيز البيانات بناءً على أسماء الحقول في الـ API وقاعدة البيانات
+        const payload = {
+            title: document.getElementById('title').value,
+            video_url: document.getElementById('video_url').value,
+            ad_type: document.getElementById('ad_type').value,
+            ad_content: document.getElementById('ad_content').value,
+            company_name: document.getElementById('company_name').value
+        };
+
+        if(!payload.title || !payload.video_url) {
+            showStatus('يرجى ملء الحقول الأساسية!', 'error');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = 'جاري الحفظ...';
+
+        try {
+            const response = await fetch('/api/upload', { // تأكدي أن هذا هو مسار ملف الـ API في Vercel
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(payload)
             });
 
-            if (response.ok) alert('تم النشر بنجاح!');
-            else alert('فشل الاتصال بقاعدة البيانات');
+            const result = await response.json();
+
+            if (response.ok) {
+                showStatus('✅ ' + result.message, 'success');
+                document.querySelectorAll('input').forEach(i => i.value = '');
+            } else {
+                showStatus('❌ ' + (result.details || result.error), 'error');
+            }
+        } catch (err) {
+            showStatus('❌ فشل الاتصال بالخادم: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'نشر الفيديو إلى Neon';
         }
-    </script>
+    }
+
+    function showStatus(msg, type) {
+        const status = document.getElementById('status');
+        status.innerText = msg;
+        status.className = type;
+    }
+</script>
+
 </body>
 </html>
