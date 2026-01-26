@@ -7,53 +7,100 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #f8f9fa; --card-bg: #ffffff; }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
-        
-        header { background: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .logo { color: var(--primary); font-size: 22px; font-weight: bold; margin-bottom: 15px; display: block; }
-        
-        .tabs-container { display: flex; overflow-x: auto; gap: 10px; padding: 5px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-        .tab { padding: 8px 20px; background: #eee; border-radius: 20px; white-space: nowrap; cursor: pointer; transition: 0.3s; font-size: 14px; border: none; font-family: 'Tajawal'; }
-        .tab.active { background: var(--primary); color: white; }
+        :root { --primary: #e91e63; --accent: #ffeb3b; --bg: #fdf6f8; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; overflow-x: hidden; }
 
-        .video-feed { max-width: 600px; margin: 20px auto; padding: 0 15px; }
-        .video-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f1f1; }
+        /* تصميم الهيدر والوردة */
+        header { background: white; padding: 20px 0 60px 0; text-align: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .logo { color: var(--primary); font-size: 20px; font-weight: bold; display: block; margin-bottom: 50px; }
+
+        .flower-container { position: relative; width: 200px; height: 120px; margin: 0 auto; display: flex; justify-content: center; }
         
-        /* تحسين حاوية الفيديو لضمان الظهور */
-        .video-wrapper { position: relative; width: 100%; min-height: 200px; background: #000; display: flex; align-items: center; justify-content: center; }
-        .video-wrapper video, .video-wrapper iframe { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; }
+        /* بتلات الوردة (الأقسام) */
+        .tab {
+            position: absolute;
+            width: 80px;
+            height: 45px;
+            background: #fff;
+            border: 2px solid var(--primary);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--primary);
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
 
-        .video-info { padding: 15px; }
-        .video-title { font-size: 17px; font-weight: bold; color: #333; margin-bottom: 8px; }
-        .video-desc { font-size: 14px; color: #666; line-height: 1.6; }
+        /* توزيع البتلات بشكل دائري */
+        .tab:nth-child(1) { transform: translate(-70px, -20px) rotate(-30deg); }
+        .tab:nth-child(2) { transform: translate(-40px, -50px) rotate(-15deg); }
+        .tab:nth-child(3) { transform: translate(0px, -60px); }
+        .tab:nth-child(4) { transform: translate(40px, -50px) rotate(15deg); }
+        .tab:nth-child(5) { transform: translate(70px, -20px) rotate(30deg); }
 
-        .actions { display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #f9f9f9; }
-        .action-btn { background: none; border: none; color: #555; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: 'Tajawal'; font-size: 14px; }
+        /* القسم الفعال (في عنق الوردة) */
+        .tab.active {
+            background: var(--primary);
+            color: white;
+            transform: translate(0, 30px) scale(1.1) !important;
+            z-index: 10;
+            border-radius: 20px;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        /* عنق الوردة (الساق الصغير) */
+        .flower-stem {
+            position: absolute;
+            bottom: -40px;
+            width: 4px;
+            height: 40px;
+            background: #4caf50;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        /* حاوية المحتوى */
+        .video-feed { max-width: 600px; margin: 40px auto; padding: 0 15px; }
+        .video-card { background: #fff; border-radius: 25px; overflow: hidden; margin-bottom: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        
+        .video-wrapper { position: relative; width: 100%; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; }
+        .video-wrapper video, .video-wrapper iframe { width: 100%; height: 100%; border: none; }
+
+        .video-info { padding: 20px; }
+        .video-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .video-desc { font-size: 14px; color: #777; line-height: 1.6; }
+
+        .actions { display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #f5f5f5; }
+        .action-btn { background: none; border: none; color: #888; display: flex; align-items: center; gap: 8px; font-family: 'Tajawal'; cursor: pointer; }
         .action-btn.active { color: var(--primary); }
 
-        .comments-section { padding: 10px 15px; background: #fafafa; display: none; border-top: 1px solid #eee; }
-        .comment-input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-family: 'Tajawal'; outline: none; }
-
-        #loader { text-align: center; padding: 50px; color: var(--primary); }
+        #loader { text-align: center; padding: 40px; color: var(--primary); }
     </style>
 </head>
 <body>
 
 <header>
-    <span class="logo"><i class="fas fa-heart"></i> عالم رقة المرئي</span>
-    <div class="tabs-container">
-        <button class="tab active" onclick="filterVideos('all', this)">الكل</button>
+    <span class="logo"><i class="fas fa-sparkles"></i> عالم رقة المرئي</span>
+    
+    <div class="flower-container">
         <button class="tab" onclick="filterVideos('bouh-display-1', this)">بلسم القلب</button>
         <button class="tab" onclick="filterVideos('bouh-display-2', this)">غرفة نوم</button>
-        <button class="tab" onclick="filterVideos('bouh-display-3', this)">تألق</button>
-        <button class="tab" onclick="filterVideos('bouh-display-4', this)">أرجوحة الافكار</button>
+        <button class="tab active" onclick="filterVideos('bouh-display-3', this)">تألق</button>
+        <button class="tab" onclick="filterVideos('bouh-display-4', this)">أرجوحة</button>
         <button class="tab" onclick="filterVideos('bouh-display-5', this)">بصيرة</button>
+        
+        <div class="flower-stem"></div>
     </div>
 </header>
 
 <div class="video-feed" id="video-container">
-    <div id="loader"><i class="fas fa-spinner fa-spin fa-2x"></i> جاري جلب الجمال...</div>
+    <div id="loader"><i class="fas fa-fan fa-spin fa-2x"></i> تفتّح البتلات...</div>
 </div>
 
 <script>
@@ -61,33 +108,38 @@
 
     async function fetchVideos() {
         try {
-            // ملاحظة: تأكدي من أن المسار /api/get-posts يعيد بيانات صحيحة
             const response = await fetch('/api/get-posts');
             const data = await response.json();
             allPosts = data.posts;
-            renderVideos(allPosts);
+            // عرض قسم "تألق" افتراضياً عند التحميل
+            filterVideos('bouh-display-3', document.querySelector('.tab.active'));
         } catch (error) {
-            document.getElementById('video-container').innerHTML = '<p style="text-align:center; padding:20px;">عذراً، تعذر الاتصال بالقاعدة</p>';
+            document.getElementById('video-container').innerHTML = '<p style="text-align:center">عذراً، تعذر جلب البيانات</p>';
         }
     }
 
+    // وظيفة تشغيل الميديا الذكية (يوتيوب + فيديو مباشر)
     function renderMedia(post) {
         const url = post.media_url;
-        if (!url) return '<div style="color:white; padding:20px;">رابط الفيديو غير متاح</div>';
+        if (!url) return '<div style="color:white; padding:20px; text-align:center; width:100%;">رابط الفيديو غير متاح</div>';
 
-        const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
-        
-        if (isYoutube) {
-            const videoId = url.split('v=')[1] || url.split('/').pop();
-            const embedUrl = `https://www.youtube.com/embed/${videoId.split('&')[0]}`;
+        function getYoutubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        const videoId = getYoutubeId(url);
+
+        if (videoId) {
+            const embedUrl = `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`;
             return `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
         } else {
-            // تحسين: إضافة خاصية preload و poster اختيارية لضمان عدم بقاء الفيديو أسود
             return `
-                <video controls preload="auto" playsinline webkit-playsinline>
+                <video controls preload="metadata" playsinline>
                     <source src="${url}" type="video/mp4">
                     <source src="${url}" type="video/webm">
-                    متصفحك لا يدعم تشغيل الفيديو.
+                    متصفحك لا يدعم التشغيل.
                 </video>`;
         }
     }
@@ -97,7 +149,7 @@
         container.innerHTML = '';
 
         if (!posts || posts.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">لا يوجد محتوى في هذا القسم حالياً</p>';
+            container.innerHTML = '<div style="text-align:center; color:#999; padding:50px;">لا يوجد محتوى في هذا القسم بعد.</div>';
             return;
         }
 
@@ -105,26 +157,14 @@
             const card = document.createElement('div');
             card.className = 'video-card';
             card.innerHTML = `
-                <div class="video-wrapper">
-                    ${renderMedia(post)}
-                </div>
+                <div class="video-wrapper">${renderMedia(post)}</div>
                 <div class="video-info">
-                    <div class="video-title">${post.title || (post.content ? post.content.substring(0, 45) + '...' : 'فيديو من رقة')}</div>
+                    <div class="video-title">${post.content ? post.content.substring(0, 40) + '...' : 'مرئيات رقة'}</div>
                     <div class="video-desc">${post.content || ''}</div>
                 </div>
                 <div class="actions">
-                    <button class="action-btn" onclick="toggleLike(this)">
-                        <i class="far fa-heart"></i> إعجاب
-                    </button>
-                    <button class="action-btn" onclick="toggleComments(${post.id})">
-                        <i class="far fa-comment"></i> تعليق
-                    </button>
-                    <button class="action-btn" onclick="shareVideo('${post.media_url}')">
-                        <i class="far fa-paper-plane"></i> مشاركة
-                    </button>
-                </div>
-                <div class="comments-section" id="comments-${post.id}">
-                    <input type="text" class="comment-input" placeholder="اكتبي تعليقكِ برقة...">
+                    <button class="action-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i> إعجاب</button>
+                    <button class="action-btn" onclick="shareVideo('${post.media_url}')"><i class="far fa-paper-plane"></i> مشاركة</button>
                 </div>
             `;
             container.appendChild(card);
@@ -135,23 +175,17 @@
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         element.classList.add('active');
         
-        if (section === 'all') {
-            renderVideos(allPosts);
-        } else {
-            const filtered = allPosts.filter(p => p.section === section);
-            renderVideos(filtered);
-        }
+        const filtered = allPosts.filter(p => p.section === section);
+        renderVideos(filtered);
+        
+        // تمرير الصفحة للأعلى بسلاسة لرؤية النتائج
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function toggleLike(btn) {
         const icon = btn.querySelector('i');
         const active = btn.classList.toggle('active');
         icon.className = active ? 'fas fa-heart' : 'far fa-heart';
-    }
-
-    function toggleComments(id) {
-        const el = document.getElementById(`comments-${id}`);
-        el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
 
     function shareVideo(url) {
@@ -166,4 +200,4 @@
 </script>
 
 </body>
-</html>
+    </html>
