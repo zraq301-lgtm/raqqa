@@ -84,14 +84,14 @@
         <span class="badge" style="background: var(--success); color: white;">الجدول: video_links</span>
         <h3><i class="fas fa-link"></i> رفع روابط فيديو خارجية</h3>
         
-        <label>رابط الفيديو (YouTube/Drive):</label>
-        <input type="url" id="external-video-url" placeholder="ضعِي الرابط هنا...">
+        <label>رابط الفيديو (URL):</label>
+        <input type="url" id="external-video-url" placeholder="https://...">
         
-        <label>وصف مختصر للرابط:</label>
-        <input type="text" id="video-desc" placeholder="عن ماذا يتحدث الفيديو؟">
+        <label>وصف الرابط:</label>
+        <input type="text" id="video-desc" placeholder="وصف الفيديو...">
 
         <button class="btn btn-video-link" id="link-btn" onclick="uploadVideoLink()">
-            <i class="fas fa-save"></i> حفظ الرابط في جدول الروابط
+            <i class="fas fa-save"></i> حفظ الرابط في الجدول
         </button>
     </div>
 
@@ -106,68 +106,70 @@
 </div>
 
 <script>
-    // معاينة الملف (محسنة لسرعة الاستجابة)
+    let currentFileData = null;
+
+    // معاينة الملف وتحويله لـ Blob/Base64 للرفع السريع
     function handlePreview(input) {
         const preview = document.getElementById('preview');
         const typeSelect = document.getElementById('type-select');
         preview.innerHTML = '';
+        
         if (input.files && input.files[0]) {
             const file = input.files[0];
-            const url = URL.createObjectURL(file);
-            if (file.type.startsWith('video')) {
-                preview.innerHTML = `<video src="${url}" controls></video>`;
-                typeSelect.value = 'فيديو';
-            } else {
-                preview.innerHTML = `<img src="${url}">`;
-                typeSelect.value = 'صورة';
-            }
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                currentFileData = e.target.result; // تخزين البيانات للرفع
+                if (file.type.startsWith('video')) {
+                    preview.innerHTML = `<video src="${e.target.result}" controls></video>`;
+                    typeSelect.value = 'فيديو';
+                } else {
+                    preview.innerHTML = `<img src="${e.target.result}">`;
+                    typeSelect.value = 'صورة';
+                }
+            };
+            reader.readAsDataURL(file);
         }
     }
 
-    // 1. الرفع للجدول الأساسي (Posts) - تم تحسين سرعة المعالجة
+    // 1. الرفع للجدول الأساسي (تحسين معالجة الحقول بناءً على صور Neon)
     async function startUpload() {
-        const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
         const section = document.getElementById('section-select').value;
         const type = document.getElementById('type-select').value;
         const btn = document.getElementById('upload-btn');
 
-        if (!content && !fileInput.files[0]) return Swal.fire('تنبيه', 'أدخلي بيانات للرفع', 'warning');
+        if (!content && !currentFileData) return Swal.fire('تنبيه', 'أدخلي بيانات للرفع', 'warning');
 
         btn.disabled = true;
-        Swal.fire({ 
-            title: 'جاري النشر...', 
-            text: 'يتم معالجة النص والملفات الآن',
-            allowOutsideClick: false, 
-            didOpen: () => Swal.showLoading() 
-        });
-
-        const formData = new FormData();
-        formData.append('content', content);
-        formData.append('section', section);
-        formData.append('type', type);
-        if (fileInput.files[0]) formData.append('file', fileInput.files[0]);
+        Swal.fire({ title: 'جاري الرفع...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            const res = await fetch('/api/save-post', { 
-                method: 'POST', 
-                body: formData // إرسال Multipart يضمن وصول الملفات الكبيرة بشكل أسرع
+            const res = await fetch('/api/save-post', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: content,
+                    section: section,
+                    post_type: type, // تغيير المسمى ليطابق صورة Neon (post_type)
+                    file_path: currentFileData // إرسال الملف كـ blob data
+                })
             });
-            
+
             if (res.ok) {
-                Swal.fire('تم بنجاح!', 'نُشر المنشور في جدول رقة الأساسي', 'success');
-                setTimeout(() => location.reload(), 1000);
+                Swal.fire('تم!', 'تم الحفظ في قاعدة البيانات بنجاح', 'success');
+                setTimeout(() => location.reload(), 1500);
             } else {
-                throw new Error('فشل الرفع');
+                throw new Error();
             }
-        } catch (err) { 
-            Swal.fire('خطأ', 'تعذر الرفع، تأكدي من حجم الملف أو اتصال السيرفر', 'error'); 
+        } catch (err) {
+            Swal.fire('خطأ', 'تأكدي من حجم الملف أو اتصال السيرفر', 'error');
         } finally {
             btn.disabled = false;
         }
     }
 
-    // 2. الرفع لجدول الروابط (Video Links) - تم إصلاح سرعة الإرسال
+    // 2. الرفع لجدول الروابط (تم مطابقة أسماء الحقول مع صورة Neon)
     async function uploadVideoLink() {
         const videoUrl = document.getElementById('external-video-url').value;
         const description = document.getElementById('video-desc').value;
@@ -177,80 +179,53 @@
         if (!videoUrl) return Swal.fire('تنبيه', 'يرجى وضع الرابط أولاً', 'warning');
 
         btn.disabled = true;
-        Swal.fire({ title: 'جاري الحفظ...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        Swal.fire({ title: 'جاري حفظ الرابط...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
         try {
-            const res = await fetch('/api/save-video-link', { 
+            // ملاحظة: الحقول تم تسميتها بناءً على الأعمدة الظاهرة في صورتك (file_path, section)
+            const res = await fetch('/api/save-video-link', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    videoUrl: videoUrl.trim(), 
-                    description: description, 
+                    video_url: videoUrl, // الحقل في Neon
+                    content: description, 
                     section: section 
                 })
             });
 
             if (res.ok) {
-                Swal.fire('ممتاز!', 'تم حفظ الرابط في الجدول المخصص بنجاح', 'success');
+                Swal.fire('ممتاز!', 'تم تحديث جدول الروابط', 'success');
                 document.getElementById('external-video-url').value = '';
                 document.getElementById('video-desc').value = '';
             } else {
                 throw new Error();
             }
         } catch (err) {
-            Swal.fire('خطأ', 'لم ينجح حفظ الرابط، تأكدي من صلاحيات الوصول لقاعدة البيانات', 'error');
+            Swal.fire('فشل الرفع', 'تأكدي من مطابقة أسماء الحقول في السيرفر مع Neon', 'error');
         } finally {
             btn.disabled = false;
         }
     }
 
-    // وظيفة الحذف
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
-        if (!id) return Swal.fire('خطأ', 'يرجى إدخال رقم ID', 'error');
-        
-        const confirm = await Swal.fire({ 
-            title: 'تأكيد الحذف؟', 
-            text: "لن تتمكني من استعادة هذا المنشور!",
-            icon: 'warning', 
-            showCancelButton: true,
-            confirmButtonText: 'نعم، حذف',
-            cancelButtonText: 'إلغاء'
-        });
-
+        if (!id) return;
+        const confirm = await Swal.fire({ title: 'تأكيد الحذف؟', icon: 'warning', showCancelButton: true });
         if (confirm.isConfirmed) {
-            try {
-                const res = await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
-                if(res.ok) Swal.fire('تم!', 'تم حذف المنشور بنجاح', 'success');
-                else Swal.fire('خطأ', 'لا يوجد منشور بهذا الرقم', 'error');
-            } catch(e) {
-                Swal.fire('خطأ', 'فشل الاتصال بالسيرفر', 'error');
-            }
+            await fetch(`/api/delete-post?id=${id}`, { method: 'DELETE' });
+            Swal.fire('تم الحذف');
         }
     }
 
-    // وظيفة الذكاء الاصطناعي
     async function generateAIContent() {
         const prompt = document.getElementById('ai-prompt').value;
         if(!prompt) return;
-        
-        const loading = document.getElementById('ai-loading');
-        loading.style.display = 'block';
-        
-        try {
-            const res = await fetch('/api/raqqa-ai', { 
-                method: 'POST', 
-                headers: {'Content-Type': 'application/json'}, 
-                body: JSON.stringify({ prompt }) 
-            });
-            const data = await res.json();
-            document.getElementById('main-content').value = data.reply;
-        } catch (err) {
-            Swal.fire('خطأ', 'مساعد رقة غير متاح حالياً', 'error');
-        } finally {
-            loading.style.display = 'none';
-        }
+        document.getElementById('ai-loading').style.display = 'block';
+        const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prompt }) });
+        const data = await res.json();
+        document.getElementById('main-content').value = data.reply;
+        document.getElementById('ai-loading').style.display = 'none';
     }
 </script>
 </body>
-</html>
+    </html>
