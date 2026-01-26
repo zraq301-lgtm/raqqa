@@ -184,7 +184,6 @@
         const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
         let savedAIs = JSON.parse(localStorage.getItem('raqqa_saved')) || [];
 
-        // إدارة الكاميرا والرفع
         const fileInput = document.getElementById('hidden-file-input');
         fileInput.addEventListener('change', function() {
             if (this.files && this.files[0]) {
@@ -220,7 +219,6 @@
             input.value = "";
         }
 
-        // --- وظائف المتابعة الصحية وضبط الحفظ في نيون ---
         function showDetailedHealth(type) {
             let config = {};
             const d = new Date().toISOString().split('T')[0];
@@ -282,29 +280,17 @@
                         if(el) {
                             let label = el.previousSibling ? el.previousSibling.innerText : "بيانات";
                             noteParts.push(label + ": " + el.value);
-                            // استخراج أول قيمة رقمية تجدها لخانة numeric_value في الداتابيز
                             if (el.type === 'number' && numericVal === 0) numericVal = el.value;
                         }
                     }
-                    return {
-                        user_id: 1, // معرف افتراضي
-                        category: categoryText,
-                        value: numericVal || 0,
-                        note: noteParts.join(' | ')
-                    };
+                    return { user_id: 1, category: categoryText, value: numericVal || 0, note: noteParts.join(' | ') };
                 }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     Swal.fire({ title: 'جاري الحفظ والتحليل...', didOpen: () => Swal.showLoading() });
-                    
                     try {
-                        const response = await fetch('/api/save-health', { // اسم ملف الـ API الذي ستقوم بإنشائه بالكود الذي أرفقته
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(result.value)
-                        });
+                        const response = await fetch('/api/save-health', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(result.value) });
                         const data = await response.json();
-                        
                         if (data.success) {
                             openAIChat('طبيبة رقة');
                             const container = document.getElementById('chat-messages');
@@ -312,12 +298,8 @@
                             container.innerHTML += `<div class="msg msg-ai">${data.advice}</div>`;
                             container.scrollTop = container.scrollHeight;
                             Swal.fire('تم بنجاح ✨', data.advice, 'success');
-                        } else {
-                            throw new Error();
-                        }
-                    } catch (error) {
-                        Swal.fire('عذراً', 'حدث خطأ أثناء الحفظ في قاعدة البيانات', 'error');
-                    }
+                        } else { throw new Error(); }
+                    } catch (error) { Swal.fire('عذراً', 'حدث خطأ أثناء الحفظ في قاعدة البيانات', 'error'); }
                 }
             });
         }
@@ -332,7 +314,7 @@
                 feed.innerHTML = filtered.length ? filtered.map((p, idx) => `
                     <div class="post-card">
                         <div class="post-content">${p.content}</div>
-                        ${p.media_url ? (p.media_url.match(/\.(mp4|webm|mov)$/i) ? `<video src="${p.media_url}" class="post-media" controls></video>` : `<img src="${p.media_url}" class="post-media">`) : ''}
+                        ${p.media_url ? (p.media_url.match(/\.(mp4|webm|mov)$/i) ? '' : `<img src="${p.media_url}" class="post-media">`) : ''}
                         <div class="post-actions">
                             <button class="action-btn" onclick="this.classList.toggle('active-like')"><i class="far fa-heart"></i> إعجاب</button>
                             <button class="action-btn" onclick="toggleComment('${idx}')"><i class="far fa-comment"></i> تعليق</button>
