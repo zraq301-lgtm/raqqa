@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -22,6 +22,7 @@
         #preview { margin: 15px 0; border-radius: 15px; text-align: center; background: #fafafa; border: 2px dashed #eee; min-height: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #preview img, #preview video { max-width: 100%; border-radius: 12px; max-height: 250px; }
         .loading-spinner { display: none; text-align: center; color: var(--secondary); margin: 10px 0; }
+        .external-link-area { background: #fff5f8; padding: 10px; border-radius: 12px; border: 1px solid #ffe1e9; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -44,7 +45,12 @@
         <label>نص المنشور:</label>
         <textarea id="main-content" rows="4" placeholder="اكتبي محتوى المنشور هنا..."></textarea>
 
-        <label>إرفاق ملف (صورة أو فيديو):</label>
+        <div class="external-link-area">
+            <label><i class="fas fa-link"></i> رابط فيديو خارجي (YouTube/Drive):</label>
+            <input type="url" id="external-url" placeholder="انسخي الرابط هنا إذا وجد...">
+        </div>
+
+        <label>أو إرفاق ملف (صورة أو فيديو):</label>
         <input type="file" id="file-input" accept="video/*,image/*" onchange="handlePreview(this)">
         
         <div id="preview">
@@ -68,6 +74,7 @@
                     <option value="نصي">نصي فقط</option>
                     <option value="صورة">صورة</option>
                     <option value="فيديو">فيديو</option>
+                    <option value="رابط_خارجي">رابط فيديو خارجي</option>
                 </select>
             </div>
         </div>
@@ -105,6 +112,8 @@
                 preview.innerHTML = `<img src="${url}">`;
                 typeSelect.value = 'صورة';
             }
+            // تفريغ حقل الرابط الخارجي إذا تم اختيار ملف
+            document.getElementById('external-url').value = '';
         }
     }
 
@@ -114,10 +123,12 @@
         const content = document.getElementById('main-content').value;
         const section = document.getElementById('section-select').value;
         const type = document.getElementById('type-select').value;
+        const externalUrl = document.getElementById('external-url').value;
         const btn = document.getElementById('upload-btn');
 
-        if (!content && !fileInput.files[0]) {
-            return Swal.fire('تنبيه', 'يرجى كتابة نص أو اختيار ملف للرفع', 'warning');
+        // التحقق من وجود محتوى أو ملف أو رابط
+        if (!content && !fileInput.files[0] && !externalUrl) {
+            return Swal.fire('تنبيه', 'يرجى كتابة نص، اختيار ملف، أو وضع رابط خارجي', 'warning');
         }
 
         btn.disabled = true;
@@ -125,7 +136,7 @@
 
         Swal.fire({
             title: 'جاري المعالجة...',
-            text: 'يتم الآن رفع الملف وحفظ البيانات بأقصى سرعة',
+            text: 'يتم الآن حفظ البيانات في قاعدة بيانات Neon',
             allowOutsideClick: false,
             didOpen: () => Swal.showLoading()
         });
@@ -133,7 +144,9 @@
         const formData = new FormData();
         formData.append('content', content);
         formData.append('section', section);
-        formData.append('type', type);
+        formData.append('type', externalUrl ? 'رابط_خارجي' : type);
+        formData.append('external_url', externalUrl); // إرسال الرابط لـ Neon
+
         if (fileInput.files[0]) {
             formData.append('file', fileInput.files[0]);
         }
@@ -160,7 +173,7 @@
         }
     }
 
-    // 3. وظيفة الحذف الجديدة
+    // 3. وظيفة الحذف
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
         if (!id) return Swal.fire('تنبيه', 'يرجى إدخال معرف المنشور (ID)', 'warning');
@@ -212,4 +225,4 @@
     }
 </script>
 </body>
-            </html>
+</html>
