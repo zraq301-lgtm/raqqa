@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>رقة - عالم المرئيات</title>
+    <title>عالم رقة المرئي</title>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,28 +13,27 @@
         header { background: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .logo { color: var(--primary); font-size: 22px; font-weight: bold; margin-bottom: 15px; display: block; }
         
-        .tabs-container { display: flex; overflow-x: auto; gap: 10px; padding: 5px 10px; scrollbar-width: none; }
-        .tab { padding: 8px 20px; background: #eee; border-radius: 20px; white-space: nowrap; cursor: pointer; transition: 0.3s; font-size: 14px; border: none; }
+        .tabs-container { display: flex; overflow-x: auto; gap: 10px; padding: 5px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .tab { padding: 8px 20px; background: #eee; border-radius: 20px; white-space: nowrap; cursor: pointer; transition: 0.3s; font-size: 14px; border: none; font-family: 'Tajawal'; }
         .tab.active { background: var(--primary); color: white; }
 
         .video-feed { max-width: 600px; margin: 20px auto; padding: 0 15px; }
         .video-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f1f1; }
         
-        /* مشغل الفيديو المرن */
-        .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
-        .video-wrapper iframe, .video-wrapper video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+        /* تحسين حاوية الفيديو لضمان الظهور */
+        .video-wrapper { position: relative; width: 100%; min-height: 200px; background: #000; display: flex; align-items: center; justify-content: center; }
+        .video-wrapper video, .video-wrapper iframe { width: 100%; height: auto; aspect-ratio: 16 / 9; display: block; }
 
         .video-info { padding: 15px; }
-        .video-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px; }
-        .video-desc { font-size: 14px; color: #666; line-height: 1.5; }
+        .video-title { font-size: 17px; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .video-desc { font-size: 14px; color: #666; line-height: 1.6; }
 
-        .actions { display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #f9f9f9; background: #fff; }
-        .action-btn { background: none; border: none; color: #555; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: 'Tajawal'; font-size: 14px; transition: 0.2s; }
-        .action-btn:hover { color: var(--primary); }
+        .actions { display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #f9f9f9; }
+        .action-btn { background: none; border: none; color: #555; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: 'Tajawal'; font-size: 14px; }
         .action-btn.active { color: var(--primary); }
 
-        .comments-section { padding: 10px 15px; background: #fafafa; display: none; }
-        .comment-input { width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; font-family: 'Tajawal'; }
+        .comments-section { padding: 10px 15px; background: #fafafa; display: none; border-top: 1px solid #eee; }
+        .comment-input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-family: 'Tajawal'; outline: none; }
 
         #loader { text-align: center; padding: 50px; color: var(--primary); }
     </style>
@@ -42,19 +41,19 @@
 <body>
 
 <header>
-    <span class="logo"><i class="fas fa-heart"></i> رقة فليكس</span>
+    <span class="logo"><i class="fas fa-heart"></i> عالم رقة المرئي</span>
     <div class="tabs-container">
         <button class="tab active" onclick="filterVideos('all', this)">الكل</button>
-        <button class="tab" onclick="filterVideos('bouh-display-1', this)">المشاعر</button>
-        <button class="tab" onclick="filterVideos('bouh-display-2', this)">الحميمية</button>
-        <button class="tab" onclick="filterVideos('bouh-display-3', this)">الصحة</button>
+        <button class="tab" onclick="filterVideos('bouh-display-1', this)">بلسم القلب</button>
+        <button class="tab" onclick="filterVideos('bouh-display-2', this)">غرفة نوم</button>
+        <button class="tab" onclick="filterVideos('bouh-display-3', this)">تألق</button>
         <button class="tab" onclick="filterVideos('bouh-display-4', this)">أرجوحة الافكار</button>
-        <button class="tab" onclick="filterVideos('bouh-display-5', this)">الفقه</button>
+        <button class="tab" onclick="filterVideos('bouh-display-5', this)">بصيرة</button>
     </div>
 </header>
 
 <div class="video-feed" id="video-container">
-    <div id="loader"><i class="fas fa-spinner fa-spin fa-2x"></i> جارٍ تحميل المحتوى...</div>
+    <div id="loader"><i class="fas fa-spinner fa-spin fa-2x"></i> جاري جلب الجمال...</div>
 </div>
 
 <script>
@@ -62,35 +61,32 @@
 
     async function fetchVideos() {
         try {
+            // ملاحظة: تأكدي من أن المسار /api/get-posts يعيد بيانات صحيحة
             const response = await fetch('/api/get-posts');
             const data = await response.json();
             allPosts = data.posts;
             renderVideos(allPosts);
         } catch (error) {
-            document.getElementById('video-container').innerHTML = '<p style="text-align:center">عذراً، تعذر تحميل البيانات</p>';
+            document.getElementById('video-container').innerHTML = '<p style="text-align:center; padding:20px;">عذراً، تعذر الاتصال بالقاعدة</p>';
         }
     }
 
-    // وظيفة ذكية لتحديد نوع المشغل (فيديو عادي أم رابط خارجي)
     function renderMedia(post) {
         const url = post.media_url;
-        if (!url) return '<div class="video-wrapper" style="background:#eee; display:flex; align-items:center; justify-content:center;">لا يوجد محتوى مرئي</div>';
+        if (!url) return '<div style="color:white; padding:20px;">رابط الفيديو غير متاح</div>';
 
-        // التحقق من الروابط الخارجية (YouTube, Vimeo, etc.)
-        const isExternal = url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
+        const isYoutube = url.includes('youtube.com') || url.includes('youtu.be');
         
-        if (isExternal) {
-            let embedUrl = url;
-            if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                const videoId = url.split('v=')[1] || url.split('/').pop();
-                embedUrl = `https://www.youtube.com/embed/${videoId.split('&')[0]}`;
-            }
+        if (isYoutube) {
+            const videoId = url.split('v=')[1] || url.split('/').pop();
+            const embedUrl = `https://www.youtube.com/embed/${videoId.split('&')[0]}`;
             return `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
         } else {
-            // إذا كان رابط فيديو مباشر (MP4 أو ما شابه)
+            // تحسين: إضافة خاصية preload و poster اختيارية لضمان عدم بقاء الفيديو أسود
             return `
-                <video controls preload="metadata" playsinline>
+                <video controls preload="auto" playsinline webkit-playsinline>
                     <source src="${url}" type="video/mp4">
+                    <source src="${url}" type="video/webm">
                     متصفحك لا يدعم تشغيل الفيديو.
                 </video>`;
         }
@@ -101,7 +97,7 @@
         container.innerHTML = '';
 
         if (!posts || posts.length === 0) {
-            container.innerHTML = '<p style="text-align:center; color:#999;">لا يوجد محتوى متاح حالياً</p>';
+            container.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">لا يوجد محتوى في هذا القسم حالياً</p>';
             return;
         }
 
@@ -113,8 +109,8 @@
                     ${renderMedia(post)}
                 </div>
                 <div class="video-info">
-                    <div class="video-title">${post.content ? post.content.substring(0, 40) + '...' : 'فيديو جديد'}</div>
-                    <div class="video-desc">${post.content || 'لا يوجد وصف'}</div>
+                    <div class="video-title">${post.title || (post.content ? post.content.substring(0, 45) + '...' : 'فيديو من رقة')}</div>
+                    <div class="video-desc">${post.content || ''}</div>
                 </div>
                 <div class="actions">
                     <button class="action-btn" onclick="toggleLike(this)">
@@ -128,7 +124,7 @@
                     </button>
                 </div>
                 <div class="comments-section" id="comments-${post.id}">
-                    <input type="text" class="comment-input" placeholder="اكتبي تعليقكِ...">
+                    <input type="text" class="comment-input" placeholder="اكتبي تعليقكِ برقة...">
                 </div>
             `;
             container.appendChild(card);
@@ -138,27 +134,31 @@
     function filterVideos(section, element) {
         document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
         element.classList.add('active');
-        const filtered = section === 'all' ? allPosts : allPosts.filter(p => p.section === section);
-        renderVideos(filtered);
+        
+        if (section === 'all') {
+            renderVideos(allPosts);
+        } else {
+            const filtered = allPosts.filter(p => p.section === section);
+            renderVideos(filtered);
+        }
     }
 
     function toggleLike(btn) {
         const icon = btn.querySelector('i');
-        const isActive = btn.classList.toggle('active');
-        icon.className = isActive ? 'fas fa-heart' : 'far fa-heart';
-        btn.style.color = isActive ? 'var(--primary)' : '#555';
+        const active = btn.classList.toggle('active');
+        icon.className = active ? 'fas fa-heart' : 'far fa-heart';
     }
 
     function toggleComments(id) {
-        const section = document.getElementById(`comments-${id}`);
-        section.style.display = section.style.display === 'block' ? 'none' : 'block';
+        const el = document.getElementById(`comments-${id}`);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
 
     function shareVideo(url) {
         if (navigator.share) {
-            navigator.share({ title: 'رقة فليكس', url: url });
+            navigator.share({ title: 'عالم رقة المرئي', url: url });
         } else {
-            alert('تم نسخ الرابط: ' + url);
+            alert('تم نسخ الرابط');
         }
     }
 
@@ -166,4 +166,4 @@
 </script>
 
 </body>
-    </html>
+</html>
