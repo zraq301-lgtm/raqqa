@@ -3,113 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم - مكتبة الرقة</title>
+    <title>رقة - عالم المرئيات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root { --primary: #0070f3; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); padding: 20px; color: #333; }
-        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-        h2 { text-align: center; color: var(--primary); margin-bottom: 25px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; transition: 0.3s; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 2px rgba(0,112,243,0.1); }
-        .ad-section { background: #f9f9f9; padding: 15px; border-radius: 8px; border-right: 4px solid var(--primary); margin: 20px 0; }
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button:hover { background: #0056b3; transform: translateY(-2px); }
-        #status { margin-top: 15px; text-align: center; padding: 10px; border-radius: 5px; display: none; }
-        .success { background: #d4edda; color: #155724; display: block !important; }
-        .error { background: #f8d7da; color: #721c24; display: block !important; }
+        :root { --primary: #e91e63; --secondary: #673ab7; --bg: #f8f9fa; --card-bg: #ffffff; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; }
+        
+        /* الهيدر والأقسام */
+        header { background: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .logo { color: var(--primary); font-size: 22px; font-weight: bold; margin-bottom: 15px; display: block; }
+        
+        .tabs-container { display: flex; overflow-x: auto; gap: 10px; padding: 5px 10px; scrollbar-width: none; }
+        .tab { padding: 8px 20px; background: #eee; border-radius: 20px; white-space: nowrap; cursor: pointer; transition: 0.3s; font-size: 14px; border: none; }
+        .tab.active { background: var(--primary); color: white; }
+
+        /* حاوية الفيديوهات */
+        .video-feed { max-width: 600px; margin: 20px auto; padding: 0 15px; }
+        .video-card { background: var(--card-bg); border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f1f1; }
+        
+        /* مشغل الفيديو */
+        .video-wrapper { position: relative; width: 100%; padding-top: 56.25%; background: #000; }
+        .video-wrapper iframe, .video-wrapper video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+        /* معلومات الفيديو */
+        .video-info { padding: 15px; }
+        .video-title { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .video-desc { font-size: 14px; color: #666; line-height: 1.5; }
+
+        /* أزرار التفاعل */
+        .actions { display: flex; justify-content: space-around; padding: 12px; border-top: 1px solid #f9f9f9; background: #fff; }
+        .action-btn { background: none; border: none; color: #555; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: 'Tajawal'; font-size: 14px; transition: 0.2s; }
+        .action-btn:hover { color: var(--primary); }
+        .action-btn i { font-size: 18px; }
+        .action-btn.active { color: var(--primary); }
+
+        /* نظام التعليقات البسيط */
+        .comments-section { padding: 10px 15px; background: #fafafa; display: none; }
+        .comment-input { width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 10px; font-family: 'Tajawal'; }
+
+        /* شاشة التحميل */
+        #loader { text-align: center; padding: 50px; color: var(--primary); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>إضافة فيديو جديد للقاعدة</h2>
-    
-    <div class="form-group">
-        <label>عنوان الفيديو</label>
-        <input type="text" id="title" placeholder="أدخل اسم الفيديو هنا...">
+<header>
+    <span class="logo"><i class="fas fa-heart"></i> رقة فليكس</span>
+    <div class="tabs-container">
+        <button class="tab active" onclick="filterVideos('all', this)">الكل</button>
+        <button class="tab" onclick="filterVideos('bouh-display-1', this)">المشاعر</button>
+        <button class="tab" onclick="filterVideos('bouh-display-2', this)">الحميمية</button>
+        <button class="tab" onclick="filterVideos('bouh-display-3', this)">الصحة</button>
+        <button class="tab" onclick="filterVideos('bouh-display-4', this)">أرجوحة الافكار</button>
+        <button class="tab" onclick="filterVideos('bouh-display-5', this)">الفقه</button>
     </div>
+</header>
 
-    <div class="form-group">
-        <label>رابط الفيديو (URL)</label>
-        <input type="url" id="video_url" placeholder="https://example.com/video.mp4">
-    </div>
-
-    <div class="ad-section">
-        <div class="form-group">
-            <label>اسم شركة الإعلانات</label>
-            <input type="text" id="company_name" placeholder="مثال: Google Ads">
-        </div>
-
-        <div class="form-group">
-            <label>نوع الإعلان</label>
-            <select id="ad_type">
-                <option value="link">رابط مباشر (Link)</option>
-                <option value="id">معرف الإعلان (ID)</option>
-            </select>
-        </div>
-
-        <div class="form-group">
-            <label>محتوى الإعلان (الرابط أو الـ ID)</label>
-            <input type="text" id="ad_content" placeholder="ضع الرابط أو المعرف هنا...">
-        </div>
-    </div>
-
-    <button onclick="submitData()">نشر الفيديو إلى Neon</button>
-    <div id="status"></div>
+<div class="video-feed" id="video-container">
+    <div id="loader"><i class="fas fa-spinner fa-spin fa-2x"></i> جارٍ جلب الروابط...</div>
 </div>
 
 <script>
-    async function submitData() {
-        const btn = document.querySelector('button');
-        const status = document.getElementById('status');
-        
-        // تجهيز البيانات بناءً على أسماء الحقول في الـ API وقاعدة البيانات
-        const payload = {
-            title: document.getElementById('title').value,
-            video_url: document.getElementById('video_url').value,
-            ad_type: document.getElementById('ad_type').value,
-            ad_content: document.getElementById('ad_content').value,
-            company_name: document.getElementById('company_name').value
-        };
+    let allPosts = [];
 
-        if(!payload.title || !payload.video_url) {
-            showStatus('يرجى ملء الحقول الأساسية!', 'error');
+    // جلب البيانات من الـ API الخاص بكِ
+    async function fetchVideos() {
+        try {
+            const response = await fetch('/api/get-posts');
+            const data = await response.json();
+            allPosts = data.posts;
+            renderVideos(allPosts);
+        } catch (error) {
+            document.getElementById('video-container').innerHTML = '<p style="text-align:center">عذراً، تعذر تحميل الفيديوهات</p>';
+        }
+    }
+
+    // وظيفة تحويل الرابط إلى Embed لمشغلات مختلفة
+    function getEmbedUrl(url) {
+        if (!url) return '';
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            const videoId = url.split('v=')[1] || url.split('/').pop();
+            return `https://www.youtube.com/embed/${videoId.split('&')[0]}`;
+        }
+        return url; // للروابط المباشرة الأخرى
+    }
+
+    function renderVideos(posts) {
+        const container = document.getElementById('video-container');
+        container.innerHTML = '';
+
+        // تصفية الفيديوهات فقط (التي لها رابط media_url)
+        const videoPosts = posts.filter(post => post.media_url || post.type === 'فيديو' || post.type === 'رابط_خارجي');
+
+        if (videoPosts.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:#999;">لا توجد فيديوهات في هذا القسم حالياً</p>';
             return;
         }
 
-        btn.disabled = true;
-        btn.innerText = 'جاري الحفظ...';
+        videoPosts.forEach(post => {
+            const embedUrl = getEmbedUrl(post.media_url);
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.innerHTML = `
+                <div class="video-wrapper">
+                    <iframe src="${embedUrl}" allowfullscreen></iframe>
+                </div>
+                <div class="video-info">
+                    <div class="video-title">${post.content ? post.content.substring(0, 50) + '...' : 'فيديو من رقة'}</div>
+                    <div class="video-desc">${post.content || 'لا يوجد وصف متاح'}</div>
+                </div>
+                <div class="actions">
+                    <button class="action-btn" onclick="toggleLike(this)">
+                        <i class="far fa-heart"></i> إعجاب
+                    </button>
+                    <button class="action-btn" onclick="toggleComments(${post.id})">
+                        <i class="far fa-comment"></i> تعليق
+                    </button>
+                    <button class="action-btn" onclick="shareVideo('${post.media_url}')">
+                        <i class="far fa-paper-plane"></i> مشاركة
+                    </button>
+                </div>
+                <div class="comments-section" id="comments-${post.id}">
+                    <input type="text" class="comment-input" placeholder="اكتبي تعليقكِ برقة...">
+                    <div style="font-size: 12px; color: #999; text-align: center;">لا توجد تعليقات بعد</div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
 
-        try {
-            const response = await fetch('/api/upload', { // تأكدي أن هذا هو مسار ملف الـ API في Vercel
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
+    // تصفية حسب القسم
+    function filterVideos(section, element) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        element.classList.add('active');
 
-            const result = await response.json();
-
-            if (response.ok) {
-                showStatus('✅ ' + result.message, 'success');
-                document.querySelectorAll('input').forEach(i => i.value = '');
-            } else {
-                showStatus('❌ ' + (result.details || result.error), 'error');
-            }
-        } catch (err) {
-            showStatus('❌ فشل الاتصال بالخادم: ' + err.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = 'نشر الفيديو إلى Neon';
+        if (section === 'all') {
+            renderVideos(allPosts);
+        } else {
+            const filtered = allPosts.filter(p => p.section === section);
+            renderVideos(filtered);
         }
     }
 
-    function showStatus(msg, type) {
-        const status = document.getElementById('status');
-        status.innerText = msg;
-        status.className = type;
+    // التفاعلات
+    function toggleLike(btn) {
+        const icon = btn.querySelector('i');
+        btn.classList.toggle('active');
+        if (btn.classList.contains('active')) {
+            icon.className = 'fas fa-heart';
+            btn.style.color = 'var(--primary)';
+        } else {
+            icon.className = 'far fa-heart';
+            btn.style.color = '#555';
+        }
     }
+
+    function toggleComments(id) {
+        const section = document.getElementById(`comments-${id}`);
+        section.style.display = section.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function shareVideo(url) {
+        if (navigator.share) {
+            navigator.share({ title: 'رقة - فيديو مميز', url: url });
+        } else {
+            alert('تم نسخ الرابط: ' + url);
+        }
+    }
+
+    // البدء
+    fetchVideos();
 </script>
 
 </body>
