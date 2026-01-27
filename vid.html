@@ -13,7 +13,7 @@
         header { background: white; padding: 20px 0 80px 0; text-align: center; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }
         .logo { color: var(--primary); font-size: 22px; font-weight: bold; display: block; margin-bottom: 60px; }
 
-        /* تنسيق الأقسام على شكل وردة */
+        /* تنسيق الوردة */
         .flower-container { position: relative; width: 300px; height: 100px; margin: 0 auto; }
         .tab {
             position: absolute; width: 85px; height: 45px; background: #fff; border: 2px solid var(--primary);
@@ -31,19 +31,19 @@
         .tab.active { background: var(--primary); color: white; transform: translate(-50%, 35px) scale(1.1) !important; left: 50%; z-index: 10; }
         .flower-stem { position: absolute; bottom: -45px; width: 5px; height: 50px; background: #4caf50; left: 50%; transform: translateX(-50%); border-radius: 5px; }
 
-        /* حاوية الفيديو */
+        /* المحتوى */
         .video-feed { max-width: 550px; margin: 30px auto; padding: 0 15px; }
         .video-card { background: #fff; border-radius: 20px; overflow: hidden; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         
-        .video-wrapper { position: relative; width: 100%; background: #000; aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
-        .video-wrapper iframe, .video-wrapper video { width: 100%; height: 100%; border: none; }
+        .video-wrapper { position: relative; width: 100%; background: #000; aspect-ratio: 16/9; }
+        .video-wrapper iframe { position: absolute; top:0; left:0; width: 100%; height: 100%; border: none; }
         
         .video-info { padding: 15px; border-bottom: 1px solid #f5f5f5; }
         .video-title { font-size: 16px; font-weight: bold; color: #333; }
 
         .actions { display: flex; justify-content: space-around; padding: 12px; }
         .action-btn { background: none; border: none; color: #777; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; font-size: 12px; font-family: 'Tajawal'; }
-        .action-btn.active i { color: var(--primary); font-weight: 900; }
+        .action-btn.active i { color: var(--primary); }
 
         .comment-section { display: none; padding: 10px 15px; background: #fafafa; border-top: 1px solid #eee; }
         .comment-input { width: 100%; padding: 8px 12px; border-radius: 10px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
@@ -64,7 +64,7 @@
 </header>
 
 <div class="video-feed" id="video-container">
-    <div style="text-align:center; padding:50px;"><i class="fas fa-circle-notch fa-spin fa-2x" style="color:var(--primary)"></i></div>
+    <div style="text-align:center; padding:50px;"><i class="fas fa-fan fa-spin fa-2x" style="color:var(--primary)"></i></div>
 </div>
 
 <script>
@@ -74,62 +74,57 @@
         try {
             const response = await fetch('/api/get-posts');
             const data = await response.json();
-            allPosts = data.posts;
+            // تصفية البيانات فور جلبها لمنع أي صور أو ملفات فيديو مرفوعة
+            allPosts = data.posts.filter(post => isExternalLink(post.media_url));
             filterVideos('bouh-display-3', document.querySelector('.tab.active'));
         } catch (e) {
-            document.getElementById('video-container').innerHTML = "فشل في جلب الفيديوهات";
+            document.getElementById('video-container').innerHTML = "تعذر جلب الروابط";
         }
     }
 
-    // وظيفة عرض الفيديو من الرابط فقط ومنع أي شيء آخر
-    function renderVideoOnly(url) {
-        if (!url) return '';
+    // وظيفة التحقق: هل الرابط خارجي (يوتيوب)؟ ومنع الصور والفيديوهات العادية
+    function isExternalLink(url) {
+        if (!url) return false;
+        // منع الصور تماماً
+        if (url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) return false;
+        // منع ملفات الفيديو المباشرة المرفوعة
+        if (url.match(/\.(mp4|webm|ogg|mov)$/i)) return false;
+        // السماح فقط بروابط يوتيوب أو الروابط التي تحتوي على embed
+        return url.includes('youtube.com') || url.includes('youtu.be') || url.includes('embed');
+    }
 
-        // تنظيف الرابط من المسافات
-        const cleanUrl = url.trim();
-
-        // التعرف على يوتيوب
-        const ytMatch = cleanUrl.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/);
-        
+    function getEmbedUrl(url) {
+        const ytMatch = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/);
         if (ytMatch && ytMatch[2].length === 11) {
-            return `<iframe src="https://www.youtube.com/embed/${ytMatch[2]}" allowfullscreen></iframe>`;
-        } 
-        
-        // التحقق من روابط الفيديو المباشرة (mp4, webm)
-        const isDirectVideo = /\.(mp4|webm|ogg)$/i.test(cleanUrl);
-        if (isDirectVideo) {
-            return `<video controls playsinline><source src="${cleanUrl}" type="video/mp4"></video>`;
+            return `https://www.youtube.com/embed/${ytMatch[2]}`;
         }
-
-        // في حال كان رابطاً خارجياً عاماً، نحاول عرضه كإطار
-        return `<iframe src="${cleanUrl}" allowfullscreen></iframe>`;
+        return url; // إرجاع الرابط كما هو إذا كان بالفعل رابط Embed
     }
 
     function renderVideos(posts) {
         const container = document.getElementById('video-container');
-        container.innerHTML = '';
+        container.innerHTML = posts.length ? '' : '<p style="text-align:center; padding:50px;">لا توجد روابط خارجية في هذا القسم</p>';
 
         posts.forEach(post => {
-            // التحقق من وجود رابط ميديا قبل الإنشاء لضمان نظافة الواجهة
-            if (post.media_url) {
-                const card = document.createElement('div');
-                card.className = 'video-card';
-                card.innerHTML = `
-                    <div class="video-wrapper">${renderVideoOnly(post.media_url)}</div>
-                    <div class="video-info">
-                        <div class="video-title">${post.title || 'مرئيات رقة'}</div>
-                    </div>
-                    <div class="actions">
-                        <button class="action-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i><span>إعجاب</span></button>
-                        <button class="action-btn" onclick="toggleComment(${post.id})"><i class="far fa-comment"></i><span>تعليق</span></button>
-                        <button class="action-btn" onclick="shareVideo('${post.title}', '${post.media_url}')"><i class="fas fa-share-nodes"></i><span>مشاركة</span></button>
-                    </div>
-                    <div class="comment-section" id="comment-${post.id}">
-                        <input type="text" class="comment-input" placeholder="اكتبي تعليقكِ هنا...">
-                    </div>
-                `;
-                container.appendChild(card);
-            }
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.innerHTML = `
+                <div class="video-wrapper">
+                    <iframe src="${getEmbedUrl(post.media_url)}" allowfullscreen></iframe>
+                </div>
+                <div class="video-info">
+                    <div class="video-title">${post.title || 'رابط خارجي'}</div>
+                </div>
+                <div class="actions">
+                    <button class="action-btn" onclick="toggleLike(this)"><i class="far fa-heart"></i><span>إعجاب</span></button>
+                    <button class="action-btn" onclick="toggleComment(${post.id})"><i class="far fa-comment"></i><span>تعليق</span></button>
+                    <button class="action-btn" onclick="shareVideo('${post.title}', '${post.media_url}')"><i class="fas fa-share-nodes"></i><span>مشاركة</span></button>
+                </div>
+                <div class="comment-section" id="comment-${post.id}">
+                    <input type="text" class="comment-input" placeholder="اكتبي تعليقكِ هنا...">
+                </div>
+            `;
+            container.appendChild(card);
         });
     }
 
@@ -142,21 +137,21 @@
 
     function toggleLike(btn) {
         const icon = btn.querySelector('i');
-        const isActive = btn.classList.toggle('active');
-        icon.className = isActive ? 'fas fa-heart' : 'far fa-heart';
-        btn.style.color = isActive ? 'var(--primary)' : '#777';
+        const active = btn.classList.toggle('active');
+        icon.className = active ? 'fas fa-heart' : 'far fa-heart';
+        btn.style.color = active ? 'var(--primary)' : '#777';
     }
 
     function toggleComment(id) {
-        const section = document.getElementById(`comment-${id}`);
-        section.style.display = section.style.display === 'block' ? 'none' : 'block';
+        const el = document.getElementById(`comment-${id}`);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
     }
 
     async function shareVideo(title, url) {
         if (navigator.share) {
             navigator.share({ title: title, url: url });
         } else {
-            alert('تم نسخ الرابط لمشاركته!');
+            alert('تم نسخ الرابط!');
         }
     }
 
