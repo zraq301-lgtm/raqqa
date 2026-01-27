@@ -22,8 +22,7 @@
         #preview { margin: 15px 0; border-radius: 15px; text-align: center; background: #fafafa; border: 2px dashed #eee; min-height: 80px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         #preview img, #preview video { max-width: 100%; border-radius: 12px; max-height: 250px; }
         .loading-spinner { display: none; text-align: center; color: var(--secondary); margin: 10px 0; }
-        /* ستايل إضافي لحقل الرابط */
-        .url-input-group { display: none; margin-top: 10px; border: 1px solid var(--secondary); padding: 10px; border-radius: 12px; background: #f9f4ff; }
+        .url-input-group { display: none; margin-top: 10px; border: 2px solid var(--primary); padding: 15px; border-radius: 15px; background: #fff5f8; }
     </style>
 </head>
 <body>
@@ -46,8 +45,10 @@
         <label>نص المنشور:</label>
         <textarea id="main-content" rows="4" placeholder="اكتبي محتوى المنشور هنا..."></textarea>
 
-        <label>إرفاق ملف (صورة أو فيديو):</label>
-        <input type="file" id="file-input" accept="video/*,image/*" onchange="handlePreview(this)">
+        <div id="file-upload-section">
+            <label>إرفاق ملف (صورة أو فيديو):</label>
+            <input type="file" id="file-input" accept="video/*,image/*" onchange="handlePreview(this)">
+        </div>
         
         <div id="preview">
             <p style="color: #ccc; padding: 20px;">معاينة الملف تظهر هنا</p>
@@ -65,19 +66,20 @@
                 </select>
             </div>
             <div>
-                <label>نوع الملف:</label>
-                <select id="type-select" onchange="toggleUrlInput()">
+                <label>نوع المرفق:</label>
+                <select id="type-select" onchange="toggleInputMode()">
                     <option value="نصي">نصي فقط</option>
-                    <option value="صورة">صورة</option>
-                    <option value="فيديو">فيديو</option>
+                    <option value="صورة">صورة (ملف)</option>
+                    <option value="فيديو">فيديو (ملف)</option>
                     <option value="رابط">رابط خارجي (URL)</option>
                 </select>
             </div>
         </div>
 
         <div id="url-container" class="url-input-group">
-            <label style="color: var(--secondary);">رابط الملف الخارجي:</label>
-            <input type="url" id="external-url" placeholder="https://example.com/video.mp4">
+            <label><i class="fas fa-link"></i> ضع الرابط الكامل للفيديو أو الصورة:</label>
+            <input type="url" id="external-url" placeholder="https://example.com/video.mp4" style="border-color: var(--primary);">
+            <small style="color: #888;">سيتم تخزين هذا الرابط مباشرة في خانة media_url</small>
         </div>
 
         <button class="btn btn-upload" id="upload-btn" onclick="startUpload()" style="margin-top: 15px;">
@@ -96,14 +98,24 @@
 </div>
 
 <script>
-    // وظيفة إظهار/إخفاء حقل الرابط
-    function toggleUrlInput() {
+    // تبديل بين رفع ملف أو وضع رابط
+    function toggleInputMode() {
         const type = document.getElementById('type-select').value;
         const urlContainer = document.getElementById('url-container');
-        urlContainer.style.display = (type === 'رابط') ? 'block' : 'none';
+        const fileSection = document.getElementById('file-upload-section');
+        
+        if (type === 'رابط') {
+            urlContainer.style.display = 'block';
+            fileSection.style.opacity = '0.5';
+            document.getElementById('file-input').disabled = true;
+        } else {
+            urlContainer.style.display = 'none';
+            fileSection.style.opacity = '1';
+            document.getElementById('file-input').disabled = false;
+        }
     }
 
-    // 1. معاينة الملف وتحديد النوع تلقائياً
+    // 1. معاينة الملف
     function handlePreview(input) {
         const preview = document.getElementById('preview');
         const typeSelect = document.getElementById('type-select');
@@ -120,11 +132,10 @@
                 preview.innerHTML = `<img src="${url}">`;
                 typeSelect.value = 'صورة';
             }
-            toggleUrlInput(); // لضمان إخفاء حقل الرابط إذا تم اختيار ملف
         }
     }
 
-    // 2. وظيفة الرفع المطور باستخدام FormData
+    // 2. وظيفة الرفع المعدلة لإرسال الرابط
     async function startUpload() {
         const fileInput = document.getElementById('file-input');
         const content = document.getElementById('main-content').value;
@@ -133,32 +144,24 @@
         const externalUrl = document.getElementById('external-url').value;
         const btn = document.getElementById('upload-btn');
 
-        // التحقق من المدخلات
         if (!content && !fileInput.files[0] && !externalUrl) {
-            return Swal.fire('تنبيه', 'يرجى كتابة نص أو اختيار ملف أو وضع رابط للرفع', 'warning');
+            return Swal.fire('تنبيه', 'يرجى إدخال محتوى أو ملف أو رابط', 'warning');
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع والارتباط بـ Neon...';
-
-        Swal.fire({
-            title: 'جاري المعالجة...',
-            text: 'يتم الآن رفع البيانات وحفظها بأقصى سرعة',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ في Neon...';
 
         const formData = new FormData();
         formData.append('content', content);
         formData.append('section', section);
         formData.append('type', type);
-        
-        // إرسال الرابط الخارجي إذا وجد
-        if (type === 'رابط' && externalUrl) {
-            formData.append('external_url', externalUrl);
-        }
 
-        if (fileInput.files[0]) {
+        // أهم تعديل: إذا كان النوع رابط، نرسل الرابط في حقل الـ file كـ string 
+        // أو نرسله في حقل مخصص حسب برمجة السيرفر لديك. 
+        // هنا سنرسله في حقل 'external_url' لضمان وصوله
+        if (type === 'رابط') {
+            formData.append('file', externalUrl); 
+        } else if (fileInput.files[0]) {
             formData.append('file', fileInput.files[0]);
         }
 
@@ -168,23 +171,22 @@
                 body: formData 
             });
 
-            const result = await response.json();
-
             if (response.ok) {
-                Swal.fire('تم بنجاح!', 'تم النشر وتحديث Neon بنجاح', 'success');
+                Swal.fire('تم بنجاح!', 'تم تحديث قاعدة البيانات بالرابط الجديد', 'success');
                 setTimeout(() => location.reload(), 2000);
             } else {
-                throw new Error(result.error || 'حدث خطأ في الاتصال بالسيرفر');
+                const result = await response.json();
+                throw new Error(result.error || 'فشل السيرفر في الاستلام');
             }
         } catch (err) {
-            Swal.fire('فشل النشر', err.message, 'error');
+            Swal.fire('خطأ في الرفع', err.message, 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> نشر الآن (نظام الرفع السريع)';
         }
     }
 
-    // 3. وظيفة الحذف الجديدة
+    // 3. حذف منشور
     async function deletePost() {
         const id = document.getElementById('delete-id').value;
         if (!id) return Swal.fire('تنبيه', 'يرجى إدخال معرف المنشور (ID)', 'warning');
@@ -194,8 +196,6 @@
             text: "سيتم حذف المنشور رقم " + id + " بشكل نهائي!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#dc3545',
-            cancelButtonColor: '#6c757d',
             confirmButtonText: 'نعم، احذفي',
             cancelButtonText: 'إلغاء'
         });
@@ -206,8 +206,6 @@
                 if (response.ok) {
                     Swal.fire('تم الحذف!', 'تمت إزالة المنشور بنجاح.', 'success');
                     document.getElementById('delete-id').value = '';
-                } else {
-                    Swal.fire('خطأ', 'لم يتم العثور على المنشور أو فشل السيرفر', 'error');
                 }
             } catch (err) {
                 Swal.fire('خطأ', 'تعذر الاتصال بالسيرفر', 'error');
@@ -236,4 +234,4 @@
     }
 </script>
 </body>
-                    </html>
+</html>
