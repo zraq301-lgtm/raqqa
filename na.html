@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -35,11 +35,11 @@
     <script src="https://unpkg.com/@knocklabs/client@latest/dist/index.umd.js"></script>
 
     <script>
-        // 1. إعدادات التعريف وجلب ID المستخدم من الرابط
+        // 1. إعدادات التعريف وجلب ID المستخدم
         const urlParams = new URLSearchParams(window.location.search);
         const currentUserId = urlParams.get('user_id') || '1';
 
-        // 2. ربط الواجهة بمفتاحك العام
+        // 2. ربط الواجهة بالمفتاح العام الظاهر في صورتك
         const knockClient = new window.Knock.default("pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY");
         knockClient.authenticate(currentUserId);
 
@@ -66,7 +66,7 @@
                     statusLabel.innerText = "";
                 }
             } catch (e) { 
-                document.getElementById('status').innerText = "خطأ في تحميل البيانات"; //
+                document.getElementById('status').innerText = "خطأ في تحميل البيانات"; 
             }
         }
 
@@ -77,7 +77,6 @@
                 const response = await fetch(`/api/delete-notification?id=${id}`, {
                     method: 'DELETE'
                 });
-                
                 if (response.ok) {
                     const card = document.getElementById(`card-${id}`);
                     card.style.opacity = "0";
@@ -89,14 +88,16 @@
             } catch (e) { alert("تعذر الاتصال بالخادم"); }
         }
 
-        // تشغيل التحميل عند فتح الصفحة
         window.onload = loadNotifications;
 
-        // ميزة التحديث التلقائي المرتبطة بـ سير العمل: new-notification
-        knockClient.feed().on('notifications.new', () => {
-            console.log("إشعار جديد وصل من سير العمل: new-notification");
-            loadNotifications(); 
+        // الربط اللحظي مع سير العمل: new-notification
+        // تأكد أنك كتبت new-notification في خانة "المعرف مفتاح" داخل لوحة Knock
+        const notificationFeed = knockClient.feed("new-notification");
+        notificationFeed.on('notifications.new', () => {
+            console.log("وصل إشعار جديد!");
+            loadNotifications(); // تحديث القائمة فوراً من نيون
         });
+        notificationFeed.listen();
     </script>
 </body>
 </html>
