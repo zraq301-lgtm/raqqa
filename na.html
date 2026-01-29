@@ -30,27 +30,32 @@
     </div>
 
 <script>
+    // 1. استخراج بيانات المستخدم من الرابط (URL) أو من نظام تسجيل الدخول
     const urlParams = new URLSearchParams(window.location.search);
-    const currentUserId = urlParams.get('user_id') || '1';
+    const currentUserId = urlParams.get('user_id') || '1'; // معرف المستخدم
+    const currentUserName = urlParams.get('name') || 'مستخدم'; // اسم المستخدم
 
-    // إعدادات Knock من الصور الخاصة بكِ
-    const KNOCK_PUBLIC_KEY = "pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY"; // من صورتك
-    const WORKFLOW_KEY = "raqqa"; // من صورتك
+    // 2. إعدادات Knock الخاصة بكِ
+    const KNOCK_PUBLIC_KEY = "pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY"; //
+    const WORKFLOW_KEY = "raqqa"; //
 
-    // تشغيل Knock للاستماع للتحديثات اللحظية
+    // 3. تهيئة العميل وربطه بمعرف المستخدم الحالي
     const knockClient = new window.Knock.default(KNOCK_PUBLIC_KEY);
+    
+    // ربط المتصفح بهوية المستخدم لاستلام إشعاراته الشخصية فقط
     knockClient.authenticate(currentUserId);
 
     const notificationFeed = knockClient.feed(WORKFLOW_KEY);
 
-    // تحديث القائمة فوراً عند وصول إشعار جديد من Neon عبر Knock
+    // 4. الاستماع لوصول إشعار جديد وتحديث القائمة فوراً
     notificationFeed.on('notifications.new', () => {
-        console.log("🌸 إشعار جديد وصل للتو!");
+        console.log(`🌸 إشعار جديد وصل للمستخدم: ${currentUserName}`);
         loadNotifications(); 
     });
 
     notificationFeed.listen();
 
+    // 5. دالة جلب الإشعارات من قاعدة بيانات Neon
     async function loadNotifications() {
         try {
             const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
@@ -82,8 +87,6 @@
                 card.style.opacity = "0";
                 card.style.transform = "translateX(50px)";
                 setTimeout(() => card.remove(), 300);
-            } else {
-                alert("فشل الحذف");
             }
         } catch (e) { alert("تعذر الاتصال بالخادم"); }
     }
