@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -39,7 +39,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const currentUserId = urlParams.get('user_id') || '1';
 
-        // 2. ربط الواجهة بمفتاحك العام من الصورة
+        // 2. ربط الواجهة بمفتاحك العام
         const knockClient = new window.Knock.default("pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY");
         knockClient.authenticate(currentUserId);
 
@@ -59,7 +59,6 @@
                             <button class="delete-btn" onclick="confirmDelete(${n.id})">✕</button>
                             <div style="font-weight:bold;">🌸 ${n.title}</div>
                             <div style="font-size:13px; color:#666; margin-top:5px;">${n.body}</div>
-                            <div style="font-size:10px; color:#ccc; margin-top:5px;">${new Date(n.created_at).toLocaleString('ar-EG')}</div>
                         </div>
                     `).join('');
                 } else {
@@ -67,7 +66,7 @@
                     statusLabel.innerText = "";
                 }
             } catch (e) { 
-                document.getElementById('status').innerText = "خطأ في الاتصال بقاعدة البيانات"; 
+                document.getElementById('status').innerText = "خطأ في تحميل البيانات"; //
             }
         }
 
@@ -93,10 +92,11 @@
         // تشغيل التحميل عند فتح الصفحة
         window.onload = loadNotifications;
 
-        // ميزة التحديث التلقائي عند وصول إشعار جديد من Knock
+        // ميزة التحديث التلقائي المرتبطة بـ سير العمل: new-notification
         knockClient.feed().on('notifications.new', () => {
+            console.log("إشعار جديد وصل من سير العمل: new-notification");
             loadNotifications(); 
         });
     </script>
 </body>
-</html>     
+</html>
