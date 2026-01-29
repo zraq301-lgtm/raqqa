@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -39,15 +39,13 @@
         const urlParams = new URLSearchParams(window.location.search);
         const currentUserId = urlParams.get('user_id') || '1';
 
-        // 2. ربط الواجهة بـ Knock للإشعارات اللحظية
-        // ملاحظة: استبدل YOUR_KNOCK_PUBLIC_API_KEY بالمفتاح الخاص بك من لوحة تحكم Knock
-        const knockClient = new window.Knock.default("YOUR_KNOCK_PUBLIC_API_KEY");
+        // 2. ربط الواجهة بمفتاحك العام من الصورة
+        const knockClient = new window.Knock.default("pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY");
         knockClient.authenticate(currentUserId);
 
         // 3. دالة تحميل الإشعارات من Neon عبر Vercel API
         async function loadNotifications() {
             try {
-                // نطلب البيانات من الـ API المرتبط بقاعدة بيانات Neon
                 const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
                 const data = await response.json();
                 
@@ -73,7 +71,7 @@
             }
         }
 
-        // 4. دالة حذف الإشعار نهائياً
+        // 4. دالة حذف الإشعار
         async function confirmDelete(id) {
             if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
             try {
@@ -85,29 +83,20 @@
                     const card = document.getElementById(`card-${id}`);
                     card.style.opacity = "0";
                     card.style.transform = "translateX(50px)";
-                    setTimeout(() => {
-                        card.remove();
-                        // إذا فرغت القائمة تماماً بعد الحذف
-                        if (document.querySelectorAll('.notif-card').length === 0) {
-                            document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
-                        }
-                    }, 300);
+                    setTimeout(() => card.remove(), 300);
                 } else {
-                    alert("فشل الحذف: تأكدي من تحديث الـ API على Vercel");
+                    alert("فشل الحذف");
                 }
-            } catch (e) { 
-                alert("تعذر الاتصال بالخادم"); 
-            }
+            } catch (e) { alert("تعذر الاتصال بالخادم"); }
         }
 
         // تشغيل التحميل عند فتح الصفحة
         window.onload = loadNotifications;
 
-        // ميزة إضافية: تحديث القائمة تلقائياً إذا أرسل Knock إشعاراً جديداً
+        // ميزة التحديث التلقائي عند وصول إشعار جديد من Knock
         knockClient.feed().on('notifications.new', () => {
-            console.log("إشعار جديد وصل!");
-            loadNotifications(); // إعادة تحميل القائمة من نيون لتظهر البيانات الجديدة
+            loadNotifications(); 
         });
     </script>
 </body>
-</html>
+</html>     
