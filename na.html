@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>إدارة الإشعارات</title>
+    <script src="https://unpkg.com/@knocklabs/client"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --p2: #eb2f96; --bg: #fff9fb; }
@@ -22,82 +23,72 @@
     </style>
 </head>
 <body>
-    <div class="header">
-        <h3>إشعاراتي</h3>
-        <a href="javascript:history.back()" style="text-decoration:none; color:var(--p2);">خروج</a>
-    </div>
-    
+    <div class="header"><h3>إشعاراتي</h3><a href="javascript:history.back()" style="text-decoration:none; color:var(--p2);">خروج</a></div>
     <div class="container">
         <div id="notif-list"></div>
         <div id="status" style="text-align:center; color:var(--p2); margin-top:20px;">جاري التحميل...</div>
     </div>
 
-    <script src="https://unpkg.com/@knocklabs/client@latest/dist/index.umd.js"></script>
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentUserId = urlParams.get('user_id') || '1';
 
-    <script>
-        // 1. إعدادات التعريف وجلب ID المستخدم
-        const urlParams = new URLSearchParams(window.location.search);
-        const currentUserId = urlParams.get('user_id') || '1';
+    // إعدادات Knock من الصور الخاصة بكِ
+    const KNOCK_PUBLIC_KEY = "pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY"; // من صورتك
+    const WORKFLOW_KEY = "raqqa"; // من صورتك
 
-        // 2. ربط الواجهة بالمفتاح العام الظاهر في صورتك
-        const knockClient = new window.Knock.default("pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY");
-        knockClient.authenticate(currentUserId);
+    // تشغيل Knock للاستماع للتحديثات اللحظية
+    const knockClient = new window.Knock.default(KNOCK_PUBLIC_KEY);
+    knockClient.authenticate(currentUserId);
 
-        // 3. دالة تحميل الإشعارات من Neon عبر Vercel API
-        async function loadNotifications() {
-            try {
-                const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
-                const data = await response.json();
-                
-                const listContainer = document.getElementById('notif-list');
-                const statusLabel = document.getElementById('status');
+    const notificationFeed = knockClient.feed(WORKFLOW_KEY);
 
-                if (data.success && data.notifications.length > 0) {
-                    statusLabel.style.display = 'none';
-                    listContainer.innerHTML = data.notifications.map(n => `
-                        <div class="notif-card" id="card-${n.id}">
-                            <button class="delete-btn" onclick="confirmDelete(${n.id})">✕</button>
-                            <div style="font-weight:bold;">🌸 ${n.title}</div>
-                            <div style="font-size:13px; color:#666; margin-top:5px;">${n.body}</div>
-                        </div>
-                    `).join('');
-                } else {
-                    listContainer.innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
-                    statusLabel.innerText = "";
-                }
-            } catch (e) { 
-                document.getElementById('status').innerText = "خطأ في تحميل البيانات"; 
+    // تحديث القائمة فوراً عند وصول إشعار جديد من Neon عبر Knock
+    notificationFeed.on('notifications.new', () => {
+        console.log("🌸 إشعار جديد وصل للتو!");
+        loadNotifications(); 
+    });
+
+    notificationFeed.listen();
+
+    async function loadNotifications() {
+        try {
+            const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
+            const data = await response.json();
+            if (data.success && data.notifications.length > 0) {
+                document.getElementById('status').style.display = 'none';
+                document.getElementById('notif-list').innerHTML = data.notifications.map(n => `
+                    <div class="notif-card" id="card-${n.id}">
+                        <button class="delete-btn" onclick="confirmDelete(${n.id})">✕</button>
+                        <div style="font-weight:bold;">🌸 ${n.title}</div>
+                        <div style="font-size:13px; color:#666; margin-top:5px;">${n.body}</div>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
+                document.getElementById('status').innerText = "";
             }
-        }
+        } catch (e) { document.getElementById('status').innerText = "خطأ في تحميل البيانات"; }
+    }
 
-        // 4. دالة حذف الإشعار
-        async function confirmDelete(id) {
-            if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
-            try {
-                const response = await fetch(`/api/delete-notification?id=${id}`, {
-                    method: 'DELETE'
-                });
-                if (response.ok) {
-                    const card = document.getElementById(`card-${id}`);
-                    card.style.opacity = "0";
-                    card.style.transform = "translateX(50px)";
-                    setTimeout(() => card.remove(), 300);
-                } else {
-                    alert("فشل الحذف");
-                }
-            } catch (e) { alert("تعذر الاتصال بالخادم"); }
-        }
+    async function confirmDelete(id) {
+        if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
+        try {
+            const response = await fetch(`/api/delete-notification?id=${id}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                const card = document.getElementById(`card-${id}`);
+                card.style.opacity = "0";
+                card.style.transform = "translateX(50px)";
+                setTimeout(() => card.remove(), 300);
+            } else {
+                alert("فشل الحذف");
+            }
+        } catch (e) { alert("تعذر الاتصال بالخادم"); }
+    }
 
-        window.onload = loadNotifications;
-
-        // الربط اللحظي مع سير العمل: new-notification
-        // تأكد أنك كتبت new-notification في خانة "المعرف مفتاح" داخل لوحة Knock
-        const notificationFeed = knockClient.feed("new-notification");
-        notificationFeed.on('notifications.new', () => {
-            console.log("وصل إشعار جديد!");
-            loadNotifications(); // تحديث القائمة فوراً من نيون
-        });
-        notificationFeed.listen();
-    </script>
+    window.onload = loadNotifications;
+</script>
 </body>
 </html>
