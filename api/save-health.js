@@ -48,11 +48,11 @@ export default async function handler(req, res) {
             VALUES (${user_id}, 'تنبيه من رقة ✨', ${aiAdvice});
         `;
 
-        // --- التعديل الجديد (الربط مع Knock) ---
-        // إرسال البيانات فوراً إلى سير العمل "raqqa" ليظهر الإشعار في الهاتف والواجهة
+        // --- التعديل المدمج (الرفع إلى Knock) ---
+        // استخدام المفتاح sk_ المربوط بـ KNOCK_API_KEY
         try {
             await knock.workflows.trigger("raqqa", {
-                recipients: [user_id.toString()], // التأكد من إرسال المعرف كـ String
+                recipients: [user_id.toString()], 
                 data: {
                     title: 'تنبيه من رقة ✨',
                     body: aiAdvice
@@ -60,7 +60,6 @@ export default async function handler(req, res) {
             });
         } catch (knockError) {
             console.error("Knock Webhook Error:", knockError);
-            // لا يتم إيقاف العملية هنا لضمان وصول الرد للمستخدم حتى لو فشل الإشعار اللحظي
         }
         // ---------------------------------------
 
