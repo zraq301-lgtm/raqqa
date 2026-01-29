@@ -1,7 +1,7 @@
 import { db } from '@vercel/postgres';
 import { Knock } from "@knocklabs/node";
 
-// تهيئة مكتبة Knock باستخدام المفتاح السري (Secret Key) من Vercel Environment Variables
+// تأكدي أن KNOCK_API_KEY في Vercel هو المفتاح السري (Secret Key) الذي يبدأ بـ sk_
 const knock = new Knock(process.env.KNOCK_API_KEY);
 
 export default async function handler(req, res) {
@@ -10,18 +10,17 @@ export default async function handler(req, res) {
     const { userId, title, body } = req.body;
 
     try {
-        // الخطوة الأولى: الحفظ في نيون (Neon) لتظهر في صفحة na.html
+        // 1. الحفظ في نيون (Neon)
         const query = 'INSERT INTO notifications (user_id, title, body) VALUES ($1, $2, $3) RETURNING *';
         const values = [userId, title, body];
         const { rows } = await db.query(query, values);
 
-        // الخطوة الثانية: إرسال "إشارة" لـ Knock لإرسال إشعار الهاتف (Push)
-        // يجب أن يكون اسم الـ Workflow مطابقاً لما أنشأته في لوحة تحكم Knock
-        await knock.workflows.trigger("new-notification", {
+        // 2. إرسال الإشارة لـ Knock (تم تصحيح الاسم إلى raqqa)
+        await knock.workflows.trigger("raqqa", { // تم التغيير من new-notification إلى raqqa
             recipients: [userId],
             data: {
-                title: title,
-                body: body,
+                title: title, // سيظهر مكان {{ title }} في القالب
+                body: body,   // سيظهر مكان {{ body }} في القالب
             },
         });
 
