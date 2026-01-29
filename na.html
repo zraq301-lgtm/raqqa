@@ -23,21 +23,24 @@
     </style>
 </head>
 <body>
-    <div class="header"><h3>إشعاراتي</h3><a href="javascript:history.back()" style="text-decoration:none; color:var(--p2);">خروج</a></div>
+    <div class="header">
+        <h3>إشعاراتي</h3>
+        <a href="javascript:history.back()" style="text-decoration:none; color:var(--p2);">خروج</a>
+    </div>
     <div class="container">
         <div id="notif-list"></div>
         <div id="status" style="text-align:center; color:var(--p2); margin-top:20px;">جاري التحميل...</div>
     </div>
 
 <script>
-    // 1. استخراج بيانات المستخدم من الرابط (URL) أو من نظام تسجيل الدخول
+    // 1. استخراج بيانات المستخدم من الرابط (URL)
     const urlParams = new URLSearchParams(window.location.search);
-    const currentUserId = urlParams.get('user_id') || '1'; // معرف المستخدم
-    const currentUserName = urlParams.get('name') || 'مستخدم'; // اسم المستخدم
+    const currentUserId = urlParams.get('user_id') || '1'; 
+    const currentUserName = urlParams.get('name') || 'مستخدم'; 
 
     // 2. إعدادات Knock الخاصة بكِ
-    const KNOCK_PUBLIC_KEY = "pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY"; //
-    const WORKFLOW_KEY = "raqqa"; //
+    const KNOCK_PUBLIC_KEY = "pk_b1cS2Jp6wBG3FPmXBlwcBfc-knQsRP8TaromqmCy4cY"; 
+    const WORKFLOW_KEY = "raqqa"; 
 
     // 3. تهيئة العميل وربطه بمعرف المستخدم الحالي
     const knockClient = new window.Knock.default(KNOCK_PUBLIC_KEY);
@@ -58,8 +61,10 @@
     // 5. دالة جلب الإشعارات من قاعدة بيانات Neon
     async function loadNotifications() {
         try {
+            // يتم جلب الإشعارات فقط بناءً على user_id
             const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
             const data = await response.json();
+            
             if (data.success && data.notifications.length > 0) {
                 document.getElementById('status').style.display = 'none';
                 document.getElementById('notif-list').innerHTML = data.notifications.map(n => `
@@ -73,9 +78,12 @@
                 document.getElementById('notif-list').innerHTML = '<p style="text-align:center; color:#999;">لا توجد إشعارات حالياً ✨</p>';
                 document.getElementById('status').innerText = "";
             }
-        } catch (e) { document.getElementById('status').innerText = "خطأ في تحميل البيانات"; }
+        } catch (e) { 
+            document.getElementById('status').innerText = "خطأ في تحميل البيانات"; 
+        }
     }
 
+    // دالة حذف الإشعار
     async function confirmDelete(id) {
         if (!confirm("هل تريدين حذف هذا الإشعار نهائياً؟")) return;
         try {
@@ -88,7 +96,9 @@
                 card.style.transform = "translateX(50px)";
                 setTimeout(() => card.remove(), 300);
             }
-        } catch (e) { alert("تعذر الاتصال بالخادم"); }
+        } catch (e) { 
+            alert("تعذر الاتصال بالخادم"); 
+        }
     }
 
     window.onload = loadNotifications;
