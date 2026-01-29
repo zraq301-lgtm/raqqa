@@ -1,4 +1,8 @@
 import { sql } from '@vercel/postgres';
+import { Knock } from "@knocklabs/node";
+
+// تهيئة مكتبة Knock باستخدام المفتاح السري المضاف في Vercel
+const knock = new Knock(process.env.KNOCK_API_KEY);
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
@@ -38,11 +42,27 @@ export default async function handler(req, res) {
             console.error("AI Error:", aiError);
         }
 
-        // 3. حفظ الإشعار
+        // 3. حفظ الإشعار في جدول notifications (Neon)
         await sql`
             INSERT INTO notifications (user_id, title, body)
             VALUES (${user_id}, 'تنبيه من رقة ✨', ${aiAdvice});
         `;
+
+        // --- التعديل الجديد (الربط مع Knock) ---
+        // إرسال البيانات فوراً إلى سير العمل "raqqa" ليظهر الإشعار في الهاتف والواجهة
+        try {
+            await knock.workflows.trigger("raqqa", {
+                recipients: [user_id.toString()], // التأكد من إرسال المعرف كـ String
+                data: {
+                    title: 'تنبيه من رقة ✨',
+                    body: aiAdvice
+                },
+            });
+        } catch (knockError) {
+            console.error("Knock Webhook Error:", knockError);
+            // لا يتم إيقاف العملية هنا لضمان وصول الرد للمستخدم حتى لو فشل الإشعار اللحظي
+        }
+        // ---------------------------------------
 
         return res.status(200).json({ success: true, advice: aiAdvice });
 
