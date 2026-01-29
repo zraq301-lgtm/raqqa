@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@knocklabs/node": "^0.6.10",
     "@novu/node": "^2.0.0",
     "formidable": "^3.5.1",
     "@neondatabase/serverless": "^0.10.4",
