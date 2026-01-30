@@ -1,5 +1,0 @@
-# This directory is required for Ionic Appflow Android builds.
-# The keep.txt file ensures that the 'android' folder is tracked by Git 
-# even if it is currently empty or pending native initialization.
-# Generated for: raqqa-app-pro
-# Date: 2026-01-30
