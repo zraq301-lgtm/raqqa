@@ -1,41 +1,42 @@
 name: raqqa_app
 description: "A professional wrapper for Raqqa project on Vercel using Flutter."
+publish_to: 'none' 
 
-# إصدار التطبيق (يتم زيادته عند كل تحديث جديد للمتجر)
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0' # يتوافق مع أحدث إصدارات فلاتر في Codemagic
+  sdk: '>=3.0.0 <4.0.0' 
 
 dependencies:
   flutter:
     sdk: flutter
 
-  # المكتبة الأساسية لعرض الروابط (Vercel)
+  # المكتبة الأساسية لعرض موقع Vercel داخل التطبيق
   webview_flutter: ^4.4.2
-
-  # لفتح الروابط الخارجية أو تطبيقات التواصل الاجتماعي
+  
+  # ضروري للأندرويد لفتح الروابط الخارجية (مثل واتساب أو خرائط)
   url_launcher: ^6.2.1
-
-  # لإضافة أيقونات احترافية
+  
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   
-  # أداة لتوليد أيقونة التطبيق تلقائياً (اختياري لكن احترافي)
+  # أداة توليد الأيقونات - مهمة جداً لظهور شكل احترافي للتطبيق
   flutter_launcher_icons: ^0.13.1
 
-# إعدادات الأيقونة (إذا وضعت صورة في مجلد assets/images/logo.png)
-flutter_icons:
+flutter_launcher_icons:
   android: true
   ios: true
   image_path: "assets/images/logo.png"
+  # إضافة خلفية للأيقونة لتناسب معايير أندرويد الحديثة
+  adaptive_icon_background: "#FFFFFF" 
+  adaptive_icon_foreground: "assets/images/logo.png"
 
 flutter:
   uses-material-design: true
 
-  # تأكد من إنشاء هذه المجلدات في مشروعك إذا أردت إضافة صور أو شعار
-  # assets:
-  #   - assets/images/
+  # تفعيل المجلدات لضمان عدم فشل البناء عند البحث عن الصور
+  assets:
+    - assets/images/
