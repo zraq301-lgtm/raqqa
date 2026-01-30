@@ -1,6 +1,6 @@
 {
-  "appId": "com.yourname.app",
-  "appName": "YourAppName",
-  "webDir": "public",
+  "appId": "com.zraq301.app",
+  "appName": "LgtmProject",
+  "webDir": ".",
   "bundledWebRuntime": false
 }
