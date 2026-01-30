@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "ionic:build": "vite build",
-    "ionic:cap:build": "npx cap copy android"
+    "ionic:cap:build": "npx cap add android && npx cap copy android"
   },
   "dependencies": {
     "@knocklabs/node": "^0.6.10",
