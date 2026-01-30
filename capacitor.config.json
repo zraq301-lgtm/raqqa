@@ -2,5 +2,9 @@
   "appId": "com.raqqa.app",
   "appName": "raqqa-app-pro",
   "webDir": ".",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://raqqa-v6cd-j65v409kk-raqqs-projects.vercel.app/",
+    "cleartext": true
+  }
 }
