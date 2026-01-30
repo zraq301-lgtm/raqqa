@@ -1,0 +1,48 @@
+name: Build Android APK
+on:
+  push:
+    branches: [ main ]  # تأكد أن اسم فرعك في جيت هاب هو main وليس master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Create Web Assets (dist)
+        run: |
+          mkdir -p dist
+          cp index.html dist/
+          # إذا كان لديك ملفات css أو صور في الرئيسية انسخها هنا أيضاً
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Capacitor Build
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raqqa-App-Test
+          path: android/app/build/outputs/apk/debug/app-debug.apk
