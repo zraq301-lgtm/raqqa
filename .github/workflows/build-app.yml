@@ -1,41 +1,41 @@
-name: Roqa Auto Build
+name: Roqa Ultimate Build
 on:
-  workflow_dispatch: # لتشغيل البناء يدوياً بضغطة زر
+  workflow_dispatch: # لتشغيله يدوياً بضغطة زر
 
 jobs:
-  build:
+  build_android:
     runs-on: ubuntu-latest
     steps:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد بيئة جافا
+      - name: 2. إعداد جافا 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 3. تثبيت المكتبات (علاج أخطاء التحميل)
-        run: npm install --legacy-peer-deps
+      - name: 3. إعداد نود (Node.js)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
 
-      - name: 4. بناء ملفات الموقع (Web Build)
-        run: npm run build --if-present
-
-      - name: 5. فحص وجود مجلد الأندرويد
+      - name: 4. تثبيت المكتبات (تجاوز التعارضات)
         run: |
-          if [ ! -d "android" ]; then
-            echo "المجلد غير موجود.. جاري إنشاؤه الآن"
-            npx cap add android
-          fi
-          npx cap sync android
+          npm install --legacy-peer-deps || npm install --force
 
-      - name: 6. بناء التطبيق النهائي (Gradle)
+      - name: 5. بناء أصول الويب وتحديث كاباسيتور
+        run: |
+          npm run build --if-present
+          npx cap sync android || (npx cap add android && npx cap sync android)
+
+      - name: 6. بناء التطبيق (Gradle) - المرحلة الحاسمة
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease
+          ./gradlew assembleRelease bundleRelease --stacktrace
 
-      - name: 7. التوقيع باستخدام أسرارك
+      - name: 7. التوقيع باستخدام أسرار جيت هب
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -44,10 +44,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 8. رفع الملفات الجاهزة للتحميل
+      - name: 8. استخراج الملفات النهائية
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-App-Final
+          name: Roqa-Production-APK
           path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+             android/app/build/outputs/apk/release/*.apk
+             android/app/build/outputs/bundle/release/*.aab
