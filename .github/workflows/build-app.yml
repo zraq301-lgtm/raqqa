@@ -17,19 +17,25 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Dependencies
-        run: npm install
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-      - name: Prepare Capacitor Android
-        run: |
-          npx cap add android || true
-          npx cap sync android
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps || npm install
 
       - name: Build Android Release
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease
+          # تأكد من وجود مجلد اندرويد قبل البناء
+          if [ -d "android" ]; then
+            cd android
+            chmod +x gradlew
+            ./gradlew assembleRelease bundleRelease
+          else
+            echo "Error: Android folder not found!"
+            exit 1
+          fi
 
       - name: Sign Android Release
         uses: r0adkll/sign-android-release@v1
