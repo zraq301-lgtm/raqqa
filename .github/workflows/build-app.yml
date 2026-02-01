@@ -1,54 +1,45 @@
-name: Roqa Final Professional Build
+name: Roqa Final Professional Build Fixed
 on:
-  workflow_dispatch: # لتشغيله يدوياً بضغطة زر
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. جلب الكود من المستودع
+      - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - name: 2. إعداد البيئة (Node 22 & Java 21)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21' # تم الترقية لـ 21 لحل خطأ invalid source release
           distribution: 'temurin'
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. التنظيف الجراحي وعزل الكود (الحل العبقري)
+      - name: 3. التنظيف وعزل الكود
         run: |
-          # تنظيف البيئة من أي مخلفات قديمة
-          rm -rf android node_modules 
+          rm -rf android node_modules
           npm install --legacy-peer-deps
-          
-          # إنشاء المجلد العازل dist_web لمنع "النسخ الذاتي"
           mkdir -p dist_web
-          # نسخ الملفات البرمجية فقط وتجاهل الملفات النصية والصور المسببة للفشل
           rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
-          
-          # بناء المشروع إذا كان هناك سكربت بناء
           npm run build --if-present
 
-      - name: 4. إنشاء منصة أندرويد وتحديثها
+      - name: 4. إضافة منصة أندرويد وتحديثها
         run: |
-          # إجبار Capacitor على استخدام المجلد العازل
           npx cap config set webDir dist_web
-          # إضافة المنصة من الصفر لضمان سلامة الملفات
           npx cap add android
           npx cap sync android
 
-      - name: 5. بناء ملف الـ APK (الترجمة النهائية)
+      - name: 5. بناء ملف الـ APK (الآن سيعمل بنجاح)
         run: |
           cd android
           chmod +x gradlew
-          # بناء نسخة الإصدار
           ./gradlew assembleRelease
 
-      - name: 6. التوقيع الرقمي (سحب الأسرار من GitHub)
-        # هنا يقوم النظام بجلب الأسرار من المكان الذي وضعتها فيه بـ GitHub
+      - name: 6. التوقيع الرقمي (سحب الأسرار)
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -57,8 +48,8 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. رفع التطبيق الجاهز للتحميل
+      - name: 7. رفع التطبيق النهائي
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-App-Final
+          name: Roqa-Final-APK
           path: android/app/build/outputs/apk/release/*-signed.apk
