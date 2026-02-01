@@ -1,8 +1,8 @@
 name: Build and Sign Roqa App
 on:
   push:
-    branches: [ main ] # سيعمل الكود تلقائياً عند كل تحديث
-  workflow_dispatch: # يسمح لك بتشغيله يدوياً أيضاً
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,15 +17,24 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Build with Gradle
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Prepare Capacitor Android
         run: |
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Build Android Release
+        run: |
+          cd android
           chmod +x gradlew
-          ./gradlew bundleRelease assembleRelease
+          ./gradlew assembleRelease bundleRelease
 
       - name: Sign Android Release
         uses: r0adkll/sign-android-release@v1
         with:
-          releaseDirectory: app/build/outputs/apk/release
+          releaseDirectory: android/app/build/outputs/apk/release
           signingKeyBase64: ${{ secrets.SIGNING_KEY }}
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
@@ -36,5 +45,5 @@ jobs:
         with:
           name: Roqa-Signed-App
           path: |
-            app/build/outputs/apk/release/*.apk
-            app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
