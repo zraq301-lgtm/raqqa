@@ -1,4 +1,4 @@
-name: Roqa Ultimate Success
+name: Roqa Final Success
 on:
   workflow_dispatch:
 
@@ -9,36 +9,42 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد جافا ونود
+      - name: 2. إعداد البيئة (Node 22 & Java 17)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات وبناء الويب
+      - name: 3. تثبيت المكتبات وتجهيز المجلد العازل
         run: |
           npm install --legacy-peer-deps
-          npm run build --if-present # هذا سينشئ مجلد www أو build
+          # إنشاء مجلد مخرجات ويب مستقل تماماً بعيداً عن ملفات النظام
+          mkdir -p dist_web
+          # بناء ملفات الويب داخل هذا المجلد (أو نسخها إذا لم يوجد بناء)
+          if [ -f "package.json" ] && grep -q "build" package.json; then
+            npm run build
+          else
+            cp -r . dist_web || true
+          fi
+          # تنظيف المجلد العازل من مجلدات النظام لتجنب "النسخ الذاتي"
+          rm -rf dist_web/android dist_web/node_modules dist_web/.github
 
-      - name: 4. حل مشكلة التعارض في المجلدات
+      - name: 4. تحديث إعدادات Capacitor برمجياً
         run: |
-          # التأكد من وجود مجلد لتصدير ملفات الويب إليه قبل المزامنة
-          mkdir -p www
-          # إذا لم يكن هناك ملفات في www، سنضع ملفاً مؤقتاً لتجنب فشل Capacitor
-          touch www/index.html 
-          npx cap sync android || (npx cap add android && npx cap sync android)
+          # تعديل ملف الإعدادات لإجبار الأداة على استخدام المجلد العازل
+          npx cap config set webDir dist_web
 
-      - name: 5. بناء الأندرويد (Gradle)
+      - name: 5. مزامنة وبناء الأندرويد
         run: |
+          npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease
 
-      - name: 6. التوقيع باستخدام الأسرار
+      - name: 6. التوقيع النهائي (Signing)
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -47,10 +53,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. رفع التطبيق الجاهز
+      - name: 7. رفع الملفات الجاهزة (Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-APK
+          name: Roqa-App-Final
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
