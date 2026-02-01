@@ -1,4 +1,4 @@
-name: Roqa Professional Build Fixed
+name: Roqa Final Debug & Build
 on:
   workflow_dispatch:
 
@@ -6,10 +6,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Code
+      - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. Setup Java 17 & Node 22
+      - name: 2. إعداد البيئة (Node 22 & Java 17)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -18,28 +18,26 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. Create Clean Web Bundle
+      - name: 3. تثبيت المكتبات وعزل ملفات الويب
         run: |
           npm install --legacy-peer-deps
           mkdir -p dist_web
-          # نسخ الملفات من المجلد الرئيسي للمجلد العازل
           rsync -av . dist_web/ --exclude android --exclude node_modules --exclude .git --exclude dist_web
           npm run build --if-present
 
-      - name: 4. Add and Sync Android Platform
+      - name: 4. إضافة منصة أندرويد وتحديثها
         run: |
-          # التأكد من إضافة منصة أندرويد إذا لم تكن موجودة
-          npx cap add android || true 
-          # تحديث المنصة بملفات الويب الجديدة
+          npx cap add android || true
           npx cap sync android
 
-      - name: 5. Build Android App (Gradle)
+      - name: 5. البناء مع إظهار الخطأ (التشخيص العميق)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease
+          # تنظيف البقايا القديمة ثم البناء مع إظهار التفاصيل
+          ./gradlew clean assembleRelease bundleRelease --stacktrace --info
 
-      - name: 6. Sign the App
+      - name: 6. التوقيع (Signing)
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -48,10 +46,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. Upload Final Files
+      - name: 7. استخراج الملف النهائي
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-Ready
+          name: Roqa-Final-Application
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
