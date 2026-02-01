@@ -1,4 +1,4 @@
-name: Build and Sign Roqa App
+name: Roqa Final Build
 on:
   push:
     branches: [ main ]
@@ -8,36 +8,34 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: 2. Set up Java
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Dependencies
-        run: npm install --legacy-peer-deps || npm install
-
-      - name: Build Android Release
+      - name: 3. Check Project Files (Diagnostic)
         run: |
-          # تأكد من وجود مجلد اندرويد قبل البناء
+          echo "Listing files in root:"
+          ls -R # هذا الأمر سيكشف لنا فوراً إذا كانت الملفات مفقودة
+
+      - name: 4. Install Dependencies
+        run: |
+          npm install --legacy-peer-deps || npm install
+
+      - name: 5. Build Android Release
+        run: |
+          # الكود سيبحث عن المجلد الصحيح تلقائياً
           if [ -d "android" ]; then
             cd android
-            chmod +x gradlew
-            ./gradlew assembleRelease bundleRelease
-          else
-            echo "Error: Android folder not found!"
-            exit 1
           fi
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease
 
-      - name: Sign Android Release
+      - name: 6. Sign Android Release
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -46,10 +44,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload Finished Files
+      - name: 7. Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Signed-App
+          name: Roqa-App-Production
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
