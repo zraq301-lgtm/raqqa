@@ -1,0 +1,18 @@
+name: Generate Keystore
+on: workflow_dispatch # هذا يسمح لك بتشغيل الأمر يدوياً بضغطة زر
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Keystore File
+        run: |
+          keytool -genkey -v -keystore roqa.jks -keyalg RSA -keysize 2048 -validity 10000 \
+          -alias roqa_key -storepass 12345678 -keypass 12345678 \
+          -dname "CN=Roqa App, OU=Development, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
+      - name: Upload Keystore as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-keystore
+          path: roqa.jks
