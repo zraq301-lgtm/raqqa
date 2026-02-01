@@ -1,4 +1,4 @@
-name: Roqa Final Success
+name: Roqa Professional Build
 on:
   workflow_dispatch:
 
@@ -6,10 +6,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. جلب الكود
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة
+      - name: 2. Setup Java 17 & Node 22
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -18,30 +18,24 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. إنشاء المجلد العازل (الخروج من الحلقة)
+      - name: 3. Create Clean Web Bundle (The Fix)
         run: |
-          # تثبيت المكتبات
           npm install --legacy-peer-deps
-          
-          # إنشاء مجلد ويب نظيف تماماً
-          mkdir -p dist_folder
-          
-          # نسخ ملفات الموقع فقط (HTML/JS/CSS) وتجنب مجلد الأندرويد
-          # سنفترض أن ملفاتك في المجلد الرئيسي، سننقلها للمجلد الجديد
-          rsync -av . dist_folder --exclude android --exclude node_modules --exclude .git
-          
-          # إجبار Capacitor على استخدام المجلد المعزول كمصدر
-          npx cap config set webDir dist_folder
+          # إنشاء مجلد التوزيع المؤقت
+          mkdir -p dist_web
+          # نسخ ملفات الويب فقط وتجاهل مجلدات النظام لتجنب "النسخ الذاتي"
+          rsync -av . dist_web/ --exclude android --exclude node_modules --exclude .git --exclude dist_web
+          # بناء المشروع إذا وجد سكربت بناء
+          npm run build --if-present
 
-      - name: 4. المزامنة والبناء
+      - name: 4. Capacitor Sync & Build
         run: |
-          # المزامنة الآن ستتم من dist_folder إلى android ولن يحدث تكرار
           npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease
 
-      - name: 5. التوقيع النهائي
+      - name: 5. Sign the App
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -50,10 +44,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 6. رفع ملف الـ APK الجاهز
+      - name: 6. Upload Production Files
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-Application
+          name: Roqa-Production-Ready
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
