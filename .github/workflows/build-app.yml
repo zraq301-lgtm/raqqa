@@ -1,4 +1,4 @@
-name: Roqa Professional Build
+name: Roqa Professional Build Fixed
 on:
   workflow_dispatch:
 
@@ -18,24 +18,28 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. Create Clean Web Bundle (The Fix)
+      - name: 3. Create Clean Web Bundle
         run: |
           npm install --legacy-peer-deps
-          # إنشاء مجلد التوزيع المؤقت
           mkdir -p dist_web
-          # نسخ ملفات الويب فقط وتجاهل مجلدات النظام لتجنب "النسخ الذاتي"
+          # نسخ الملفات من المجلد الرئيسي للمجلد العازل
           rsync -av . dist_web/ --exclude android --exclude node_modules --exclude .git --exclude dist_web
-          # بناء المشروع إذا وجد سكربت بناء
           npm run build --if-present
 
-      - name: 4. Capacitor Sync & Build
+      - name: 4. Add and Sync Android Platform
         run: |
+          # التأكد من إضافة منصة أندرويد إذا لم تكن موجودة
+          npx cap add android || true 
+          # تحديث المنصة بملفات الويب الجديدة
           npx cap sync android
+
+      - name: 5. Build Android App (Gradle)
+        run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease
 
-      - name: 5. Sign the App
+      - name: 6. Sign the App
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -44,7 +48,7 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 6. Upload Production Files
+      - name: 7. Upload Final Files
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Ready
