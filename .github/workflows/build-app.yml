@@ -9,7 +9,7 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - name: 2. إعداد البيئة
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -18,33 +18,30 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات وتجهيز المجلد العازل
+      - name: 3. إنشاء المجلد العازل (الخروج من الحلقة)
         run: |
+          # تثبيت المكتبات
           npm install --legacy-peer-deps
-          # إنشاء مجلد مخرجات ويب مستقل تماماً بعيداً عن ملفات النظام
-          mkdir -p dist_web
-          # بناء ملفات الويب داخل هذا المجلد (أو نسخها إذا لم يوجد بناء)
-          if [ -f "package.json" ] && grep -q "build" package.json; then
-            npm run build
-          else
-            cp -r . dist_web || true
-          fi
-          # تنظيف المجلد العازل من مجلدات النظام لتجنب "النسخ الذاتي"
-          rm -rf dist_web/android dist_web/node_modules dist_web/.github
+          
+          # إنشاء مجلد ويب نظيف تماماً
+          mkdir -p dist_folder
+          
+          # نسخ ملفات الموقع فقط (HTML/JS/CSS) وتجنب مجلد الأندرويد
+          # سنفترض أن ملفاتك في المجلد الرئيسي، سننقلها للمجلد الجديد
+          rsync -av . dist_folder --exclude android --exclude node_modules --exclude .git
+          
+          # إجبار Capacitor على استخدام المجلد المعزول كمصدر
+          npx cap config set webDir dist_folder
 
-      - name: 4. تحديث إعدادات Capacitor برمجياً
+      - name: 4. المزامنة والبناء
         run: |
-          # تعديل ملف الإعدادات لإجبار الأداة على استخدام المجلد العازل
-          npx cap config set webDir dist_web
-
-      - name: 5. مزامنة وبناء الأندرويد
-        run: |
+          # المزامنة الآن ستتم من dist_folder إلى android ولن يحدث تكرار
           npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease
 
-      - name: 6. التوقيع النهائي (Signing)
+      - name: 5. التوقيع النهائي
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -53,10 +50,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. رفع الملفات الجاهزة (Artifacts)
+      - name: 6. رفع ملف الـ APK الجاهز
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-App-Final
+          name: Roqa-Final-Application
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
