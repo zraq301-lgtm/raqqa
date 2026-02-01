@@ -1,12 +1,12 @@
-name: Roqa Auto Fix & Build
+name: Roqa Final Professional Build
 on:
-  workflow_dispatch:
+  workflow_dispatch: # لتشغيله يدوياً بضغطة زر
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. جلب الكود
+      - name: 1. جلب الكود من المستودع
         uses: actions/checkout@v4
 
       - name: 2. إعداد البيئة (Node 22 & Java 17)
@@ -18,32 +18,37 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. التنظيف الجراحي (حذف الملفات المسببة للفشل)
+      - name: 3. التنظيف الجراحي وعزل الكود (الحل العبقري)
         run: |
-          # حذف أي ملفات تخص فلاتر أو منصات أخرى تسبب تعارض
-          rm -f pubspec.yaml codemagic.yaml
-          # حذف أي مجلد أندرويد قديم قد يكون به إعدادات خاطئة
-          rm -rf android
+          # تنظيف البيئة من أي مخلفات قديمة
+          rm -rf android node_modules 
           npm install --legacy-peer-deps
           
-          # إنشاء مجلد مخرجات نظيف وتجاهل الملفات النصية غير البرمجية
+          # إنشاء المجلد العازل dist_web لمنع "النسخ الذاتي"
           mkdir -p dist_web
-          rsync -av . dist_web/ --exclude android --exclude node_modules --exclude .git --exclude "*.txt"
+          # نسخ الملفات البرمجية فقط وتجاهل الملفات النصية والصور المسببة للفشل
+          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
+          
+          # بناء المشروع إذا كان هناك سكربت بناء
+          npm run build --if-present
 
-      - name: 4. بناء المنصة من الصفر
+      - name: 4. إنشاء منصة أندرويد وتحديثها
         run: |
+          # إجبار Capacitor على استخدام المجلد العازل
+          npx cap config set webDir dist_web
+          # إضافة المنصة من الصفر لضمان سلامة الملفات
           npx cap add android
           npx cap sync android
 
-      - name: 5. البناء النهائي (بدون توقف)
+      - name: 5. بناء ملف الـ APK (الترجمة النهائية)
         run: |
           cd android
           chmod +x gradlew
-          # استخدام خيار تجميع الـ APK مباشرة مع تجاهل الأخطاء غير الحرجة
-          ./gradlew assembleRelease --stacktrace
+          # بناء نسخة الإصدار
+          ./gradlew assembleRelease
 
-      - name: 6. التوقيع الرقمي
-        if: success()
+      - name: 6. التوقيع الرقمي (سحب الأسرار من GitHub)
+        # هنا يقوم النظام بجلب الأسرار من المكان الذي وضعتها فيه بـ GitHub
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -52,9 +57,8 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. رفع الـ APK الجاهز
-        if: success()
+      - name: 7. رفع التطبيق الجاهز للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-App
+          name: Roqa-App-Final
           path: android/app/build/outputs/apk/release/*-signed.apk
