@@ -1,41 +1,41 @@
-name: Roqa Final Build
+name: Roqa Auto Build
 on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch: # لتشغيل البناء يدوياً بضغطة زر
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. Checkout Code
+      - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. Set up Java
+      - name: 2. إعداد بيئة جافا
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 3. Check Project Files (Diagnostic)
-        run: |
-          echo "Listing files in root:"
-          ls -R # هذا الأمر سيكشف لنا فوراً إذا كانت الملفات مفقودة
+      - name: 3. تثبيت المكتبات (علاج أخطاء التحميل)
+        run: npm install --legacy-peer-deps
 
-      - name: 4. Install Dependencies
-        run: |
-          npm install --legacy-peer-deps || npm install
+      - name: 4. بناء ملفات الموقع (Web Build)
+        run: npm run build --if-present
 
-      - name: 5. Build Android Release
+      - name: 5. فحص وجود مجلد الأندرويد
         run: |
-          # الكود سيبحث عن المجلد الصحيح تلقائياً
-          if [ -d "android" ]; then
-            cd android
+          if [ ! -d "android" ]; then
+            echo "المجلد غير موجود.. جاري إنشاؤه الآن"
+            npx cap add android
           fi
+          npx cap sync android
+
+      - name: 6. بناء التطبيق النهائي (Gradle)
+        run: |
+          cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease
 
-      - name: 6. Sign Android Release
+      - name: 7. التوقيع باستخدام أسرارك
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -44,10 +44,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. Upload Result
+      - name: 8. رفع الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-App-Production
+          name: Roqa-App-Final
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
