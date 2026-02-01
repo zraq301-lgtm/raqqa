@@ -1,9 +1,9 @@
-name: Roqa Ultimate Build
+name: Roqa Final Build Fixed
 on:
-  workflow_dispatch: # لتشغيله يدوياً بضغطة زر
+  workflow_dispatch:
 
 jobs:
-  build_android:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: 1. جلب الكود
@@ -15,27 +15,23 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: 3. إعداد نود (Node.js)
+      - name: 3. إعداد Node.js النسخة المطلوبة (22)
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22' # هذا هو التغيير الذي سيحل الخطأ
 
-      - name: 4. تثبيت المكتبات (تجاوز التعارضات)
+      - name: 4. تثبيت المكتبات وتجهيز أندرويد
         run: |
-          npm install --legacy-peer-deps || npm install --force
-
-      - name: 5. بناء أصول الويب وتحديث كاباسيتور
-        run: |
-          npm run build --if-present
+          npm install --legacy-peer-deps
           npx cap sync android || (npx cap add android && npx cap sync android)
 
-      - name: 6. بناء التطبيق (Gradle) - المرحلة الحاسمة
+      - name: 5. بناء التطبيق (Gradle)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --stacktrace
+          ./gradlew assembleRelease bundleRelease
 
-      - name: 7. التوقيع باستخدام أسرار جيت هب
+      - name: 6. التوقيع النهائي
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -44,10 +40,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 8. استخراج الملفات النهائية
+      - name: 7. رفع الملفات للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-APK
+          name: Roqa-Final-App
           path: |
-             android/app/build/outputs/apk/release/*.apk
-             android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
