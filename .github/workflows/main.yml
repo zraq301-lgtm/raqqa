@@ -1,18 +1,28 @@
-name: Generate Keystore
-on: workflow_dispatch # هذا يسمح لك بتشغيل الأمر يدوياً بضغطة زر
+name: Generate Keystore Corrected
+on: workflow_dispatch
 
 jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # تحديث لآخر نسخة مستقرة
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4 # إعداد الجافا بشكل صريح لحل مشكلة الـ LTS
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
       - name: Create Keystore File
         run: |
-          keytool -genkey -v -keystore roqa.jks -keyalg RSA -keysize 2048 -validity 10000 \
-          -alias roqa_key -storepass 12345678 -keypass 12345678 \
-          -dname "CN=Roqa App, OU=Development, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          keytool -genkey -v -keystore roqa_production.jks -keyalg RSA -keysize 2048 -validity 10000 \
+          -alias roqa_alias -storepass 12345678 -keypass 12345678 \
+          -dname "CN=Roqa, OU=Development, O=RoqaApp, L=Cairo, S=Egypt, C=EG"
           
-      - name: Upload Keystore as Artifact
-        uses: actions/upload-artifact@v3
+      - name: Upload Keystore
+        uses: actions/upload-artifact@v4 # تحديث لنسخة الرفع المتوافقة مع LTS
         with:
-          name: my-keystore
-          path: roqa.jks
+          name: roqa-secure-keystore
+          path: roqa_production.jks
