@@ -1,4 +1,4 @@
-name: Roqa Final Debug & Build
+name: Roqa Auto Fix & Build
 on:
   workflow_dispatch:
 
@@ -18,26 +18,32 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات وعزل ملفات الويب
+      - name: 3. التنظيف الجراحي (حذف الملفات المسببة للفشل)
         run: |
+          # حذف أي ملفات تخص فلاتر أو منصات أخرى تسبب تعارض
+          rm -f pubspec.yaml codemagic.yaml
+          # حذف أي مجلد أندرويد قديم قد يكون به إعدادات خاطئة
+          rm -rf android
           npm install --legacy-peer-deps
+          
+          # إنشاء مجلد مخرجات نظيف وتجاهل الملفات النصية غير البرمجية
           mkdir -p dist_web
-          rsync -av . dist_web/ --exclude android --exclude node_modules --exclude .git --exclude dist_web
-          npm run build --if-present
+          rsync -av . dist_web/ --exclude android --exclude node_modules --exclude .git --exclude "*.txt"
 
-      - name: 4. إضافة منصة أندرويد وتحديثها
+      - name: 4. بناء المنصة من الصفر
         run: |
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
 
-      - name: 5. البناء مع إظهار الخطأ (التشخيص العميق)
+      - name: 5. البناء النهائي (بدون توقف)
         run: |
           cd android
           chmod +x gradlew
-          # تنظيف البقايا القديمة ثم البناء مع إظهار التفاصيل
-          ./gradlew clean assembleRelease bundleRelease --stacktrace --info
+          # استخدام خيار تجميع الـ APK مباشرة مع تجاهل الأخطاء غير الحرجة
+          ./gradlew assembleRelease --stacktrace
 
-      - name: 6. التوقيع (Signing)
+      - name: 6. التوقيع الرقمي
+        if: success()
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -46,10 +52,9 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. استخراج الملف النهائي
+      - name: 7. رفع الـ APK الجاهز
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-Application
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
+          name: Roqa-Final-App
+          path: android/app/build/outputs/apk/release/*-signed.apk
