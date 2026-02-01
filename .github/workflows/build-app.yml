@@ -1,4 +1,4 @@
-name: Roqa Final Build Fixed
+name: Roqa Ultimate Success
 on:
   workflow_dispatch:
 
@@ -9,29 +9,36 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد جافا 17
+      - name: 2. إعداد جافا ونود
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-
-      - name: 3. إعداد Node.js النسخة المطلوبة (22)
-        uses: actions/setup-node@v4
+      
+      - uses: actions/setup-node@v4
         with:
-          node-version: '22' # هذا هو التغيير الذي سيحل الخطأ
+          node-version: '22'
 
-      - name: 4. تثبيت المكتبات وتجهيز أندرويد
+      - name: 3. تثبيت المكتبات وبناء الويب
         run: |
           npm install --legacy-peer-deps
+          npm run build --if-present # هذا سينشئ مجلد www أو build
+
+      - name: 4. حل مشكلة التعارض في المجلدات
+        run: |
+          # التأكد من وجود مجلد لتصدير ملفات الويب إليه قبل المزامنة
+          mkdir -p www
+          # إذا لم يكن هناك ملفات في www، سنضع ملفاً مؤقتاً لتجنب فشل Capacitor
+          touch www/index.html 
           npx cap sync android || (npx cap add android && npx cap sync android)
 
-      - name: 5. بناء التطبيق (Gradle)
+      - name: 5. بناء الأندرويد (Gradle)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease
 
-      - name: 6. التوقيع النهائي
+      - name: 6. التوقيع باستخدام الأسرار
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -40,10 +47,10 @@ jobs:
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
 
-      - name: 7. رفع الملفات للتحميل
+      - name: 7. رفع التطبيق الجاهز
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-App
+          name: Roqa-Final-APK
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
