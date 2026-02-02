@@ -47,24 +47,29 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      - name: 6. التوقيع الرقمي (منطق التشخيص والتوقيع اليدوي)
+      - name: 6. التوقيع الرقمي (منطق تشخيص الخطأ التفصيلي)
         run: |
-          # 1. تحويل السر إلى ملف Keystore فعلي للفحص
+          # 1. تحويل السر إلى ملف Keystore فعلي
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release_key.jks
           
-          # 2. فحص المفتاح وطباعة المعلومات في السجلات (Logs) للتأكد من الـ Alias وكلمة المرور
-          echo "--- Keystore Info ---"
-          keytool -list -v -keystore release_key.jks -storepass "${{ secrets.KEY_STORE_PASSWORD }}" | grep "Alias name" || echo "Failed to list alias - check password"
+          echo "--- START DIAGNOSIS ---"
           
-          # 3. التوقيع اليدوي المباشر لتجاوز أخطاء الأدوات الجاهزة
-          echo "--- Starting Manual Sign ---"
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
+          # 2. اختبار كلمة مرور المتجر واستخراج الـ Alias الحقيقي
+          # إذا نجح هذا الأمر، فكلمة مرور المتجر صحيحة.
+          echo "Checking Keystore Alias and Password..."
+          keytool -list -v -keystore release_key.jks -storepass "${{ secrets.KEY_STORE_PASSWORD }}" | grep "Alias name" || echo "!!! ERROR: Wrong KEY_STORE_PASSWORD or Corrupt Keystore !!!"
+          
+          # 3. محاولة التوقيع مع طباعة الأخطاء البرمجية (Verbose)
+          echo "--- Starting apksigner ---"
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --v --ks release_key.jks \
             --ks-key-alias "${{ secrets.ALIAS }}" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out android/app/build/outputs/apk/release/app-release-signed.apk \
-            android/app/build/outputs/apk/release/app-release-unsigned.apk
-        continue-on-error: true # يضمن استمرار الرفع حتى لو فشل التوقيع
+            android/app/build/outputs/apk/release/app-release-unsigned.apk || echo "!!! SIGNING FAILED: Check if ALIAS or KEY_PASSWORD is correct !!!"
+          
+          echo "--- END DIAGNOSIS ---"
+        continue-on-error: true 
 
       - name: 7. رفع التطبيق النهائي (بما في ذلك النسخ غير الموقعة كاحتياط)
         uses: actions/upload-artifact@v4
