@@ -12,7 +12,7 @@ jobs:
       - name: 2. إعداد البيئة (Node 22 & Java 21)
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # تم الترقية لـ 21 لحل خطأ invalid source release
+          java-version: '21'
           distribution: 'temurin'
 
       - name: إعداد Node.js
@@ -22,21 +22,14 @@ jobs:
 
       - name: 3. التنظيف وعزل الكود
         run: |
-          # تنظيف أي مخلفات قديمة لضمان بناء نظيف
           rm -rf android node_modules 
           npm install --legacy-peer-deps
-          
-          # إنشاء مجلد ويب عازل لمنع تكرار المسارات
           mkdir -p dist_web
-          # نسخ ملفات الويب وتجاهل الملفات النصية والصور التي قد تسبب تعارضات
           rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
-          
-          # بناء المشروع إذا كان يدعم البناء التلقائي
           npm run build --if-present
 
       - name: 4. إضافة منصة أندرويد وتحديثها
         run: |
-          # ضبط المجلد المصدر وتوليد ملفات الأندرويد من الصفر
           npx cap config set webDir dist_web
           npx cap add android
           npx cap sync android
@@ -47,23 +40,22 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      - name: 6. التوقيع الرقمي (حل مشكلة zipalign)
-        uses: r0adkll/sign-android-release@v1
+      - name: 6. التوقيع الرقمي (الإصدار المرن)
+        # استخدمنا أداة ilp0 لأنها تحل مشاكل تشفير Java الحديثة ومسارات zipalign
+        uses: ilp0/sign-android-release@v1
+        id: sign_app
         with:
-          releaseDirectory: android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
+          releaseDir: android/app/build/outputs/apk/release
+          signingKey: ${{ secrets.SIGNING_KEY }}
+          keyAlias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
         env:
-          # هذا السطر هو مفتاح الحل لمشكلة Build tools 29.0.3 المفقودة
-          BUILD_TOOLS_VERSION: "34.0.0" 
+          BUILD_TOOLS_VERSION: "34.0.0"
 
       - name: 7. رفع التطبيق النهائي
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Final-APK
-          # التقاط الملف الموقع والجاهز للتثبيت
-          path: |
-            android/app/build/outputs/apk/release/*-signed.apk
-            android/app/build/outputs/bundle/release/*.aab
+          # هذا المسار سيلتقط ملف الـ APK الموقع والجاهز
+          path: android/app/build/outputs/apk/release/*.apk
