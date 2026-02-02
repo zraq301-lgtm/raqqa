@@ -47,24 +47,29 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      - name: 6. التوقيع الرقمي (المنطق المعدل لتجاوز الخطأ)
-        uses: r0adkll/sign-android-release@v1
-        continue-on-error: true # يسمح باستكمال العملية حتى لو فشل التوقيع
-        with:
-          releaseDirectory: android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
-          alias: ${{ secrets.ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-        env:
-          # هذا السطر هو مفتاح الحل لمشكلة Build tools 29.0.3 المفقودة
-          BUILD_TOOLS_VERSION: "34.0.0" 
+      - name: 6. التوقيع الرقمي (منطق التشخيص والتوقيع اليدوي)
+        run: |
+          # 1. تحويل السر إلى ملف Keystore فعلي للفحص
+          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release_key.jks
+          
+          # 2. فحص المفتاح وطباعة المعلومات في السجلات (Logs) للتأكد من الـ Alias وكلمة المرور
+          echo "--- Keystore Info ---"
+          keytool -list -v -keystore release_key.jks -storepass "${{ secrets.KEY_STORE_PASSWORD }}" | grep "Alias name" || echo "Failed to list alias - check password"
+          
+          # 3. التوقيع اليدوي المباشر لتجاوز أخطاء الأدوات الجاهزة
+          echo "--- Starting Manual Sign ---"
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
+            --ks-key-alias "${{ secrets.ALIAS }}" \
+            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
+            --out android/app/build/outputs/apk/release/app-release-signed.apk \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk
+        continue-on-error: true # يضمن استمرار الرفع حتى لو فشل التوقيع
 
       - name: 7. رفع التطبيق النهائي (بما في ذلك النسخ غير الموقعة كاحتياط)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Final-APK
-          # قمنا بتعديل المسار ليلتقط أي APK تم إنتاجه بنجاح
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
