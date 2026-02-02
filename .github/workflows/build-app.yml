@@ -15,31 +15,39 @@ jobs:
           java-version: '21' # تم الترقية لـ 21 لحل خطأ invalid source release
           distribution: 'temurin'
 
-      - uses: actions/setup-node@v4
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: 3. التنظيف وعزل الكود
         run: |
-          rm -rf android node_modules
+          # تنظيف أي مخلفات قديمة لضمان بناء نظيف
+          rm -rf android node_modules 
           npm install --legacy-peer-deps
+          
+          # إنشاء مجلد ويب عازل لمنع تكرار المسارات
           mkdir -p dist_web
+          # نسخ ملفات الويب وتجاهل الملفات النصية والصور التي قد تسبب تعارضات
           rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
+          
+          # بناء المشروع إذا كان يدعم البناء التلقائي
           npm run build --if-present
 
       - name: 4. إضافة منصة أندرويد وتحديثها
         run: |
+          # ضبط المجلد المصدر وتوليد ملفات الأندرويد من الصفر
           npx cap config set webDir dist_web
           npx cap add android
           npx cap sync android
 
-      - name: 5. بناء ملف الـ APK (الآن سيعمل بنجاح)
+      - name: 5. بناء ملف الـ APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      - name: 6. التوقيع الرقمي (سحب الأسرار)
+      - name: 6. التوقيع الرقمي (حل مشكلة zipalign)
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: android/app/build/outputs/apk/release
@@ -47,9 +55,15 @@ jobs:
           alias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          # هذا السطر هو مفتاح الحل لمشكلة Build tools 29.0.3 المفقودة
+          BUILD_TOOLS_VERSION: "34.0.0" 
 
       - name: 7. رفع التطبيق النهائي
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Final-APK
-          path: android/app/build/outputs/apk/release/*-signed.apk
+          # التقاط الملف الموقع والجاهز للتثبيت
+          path: |
+            android/app/build/outputs/apk/release/*-signed.apk
+            android/app/build/outputs/bundle/release/*.aab
