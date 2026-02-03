@@ -55,14 +55,14 @@ jobs:
           echo "--- START DIAGNOSIS ---"
           
           # 2. اختبار كلمة مرور المتجر واستخراج الـ Alias الحقيقي
-          # إذا نجح هذا الأمر، فكلمة مرور المتجر صحيحة.
+          # تم ضبط الـ Alias هنا ليكون roqa_alias بناءً على الملف المرفوع
           echo "Checking Keystore Alias and Password..."
           keytool -list -v -keystore release_key.jks -storepass "${{ secrets.KEY_STORE_PASSWORD }}" | grep "Alias name" || echo "!!! ERROR: Wrong KEY_STORE_PASSWORD or Corrupt Keystore !!!"
           
           # 3. محاولة التوقيع مع طباعة الأخطاء البرمجية (Verbose)
           echo "--- Starting apksigner ---"
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --v --ks release_key.jks \
-            --ks-key-alias "${{ secrets.ALIAS }}" \
+            --ks-key-alias "roqa_alias" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
             --out android/app/build/outputs/apk/release/app-release-signed.apk \
