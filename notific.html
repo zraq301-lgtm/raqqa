@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مركز الإشعارات الصحية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --p2: #eb2f96; --bg: #fff9fb; }
+        body { font-family: 'Tajawal', sans-serif; background-color: var(--bg); margin: 0; padding: 0; }
+        .header { background: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .container { padding: 20px; max-width: 500px; margin: 0 auto; }
+        .notif-card { 
+            background: white; padding: 15px; margin-bottom: 15px; border-radius: 15px; 
+            border-right: 5px solid var(--p2); position: relative; transition: 0.3s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+        .delete-btn {
+            position: absolute; left: 10px; top: 10px; background: #fee2e2; color: #ef4444; 
+            border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .time-tag { font-size: 11px; color: #aaa; margin-top: 8px; display: block; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h3>🔔 تنبيهاتي الصحية</h3>
+        <a href="/" style="text-decoration:none; color:var(--p2); font-weight:bold;">الرئيسية</a>
+    </div>
+    
+    <div class="container">
+        <div id="notif-list"></div>
+        <div id="status" style="text-align:center; color:var(--p2); margin-top:20px;">جاري جلب آخر القياسات...</div>
+    </div>
+
+<script>
+    // جلب معرف المستخدم (نفترض 1 كبداية)
+    const currentUserId = new URLSearchParams(window.location.search).get('user_id') || '1';
+
+    async function loadNotifications() {
+        try {
+            // استدعاء الـ API الذي ربطناه في Pipedream
+            const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
+            const data = await response.json();
+            
+            const listDiv = document.getElementById('notif-list');
+            const statusDiv = document.getElementById('status');
+
+            if (data.success && data.notifications.length > 0) {
+                statusDiv.style.display = 'none';
+                listDiv.innerHTML = data.notifications.map(n => `
+                    <div class="notif-card" id="card-${n.id}">
+                        <button class="delete-btn" onclick="deleteNotif(${n.id})">✕</button>
+                        <div style="font-weight:bold; color:var(--p2);">🌸 ${n.title}</div>
+                        <div style="font-size:14px; color:#444; margin-top:8px; line-height:1.6;">${n.body}</div>
+                        <span class="time-tag">📅 ${new Date(n.created_at).toLocaleString('ar-EG')}</span>
+                    </div>
+                `).join('');
+            } else {
+                listDiv.innerHTML = '<div style="text-align:center; margin-top:50px;"><p style="color:#999;">لا توجد تنبيهات جديدة حالياً ✨</p></div>';
+                statusDiv.innerText = "";
+            }
+        } catch (e) { 
+            statusDiv.innerText = "تعذر الاتصال بقاعدة البيانات"; 
+        }
+    }
+
+    async function deleteNotif(id) {
+        if (!confirm("هل تريدين حذف هذا التنبيه؟")) return;
+        try {
+            // افترضنا هنا وجود API للحذف، يمكنكِ إعداده لاحقاً
+            const response = await fetch(`/api/delete-notification?id=${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                document.getElementById(`card-${id}`).remove();
+            }
+        } catch (e) { alert("خطأ في الحذف"); }
+    }
+
+    // جلب الإشعارات فور فتح الصفحة
+    window.onload = loadNotifications;
+    
+    // تحديث تلقائي كل دقيقة لضمان ظهور إشعارات نيون الجديدة
+    setInterval(loadNotifications, 60000);
+</script>
+</body>
+</html>
