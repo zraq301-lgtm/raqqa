@@ -1,12 +1,12 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-    // التأكد من استخدام DELETE للحذف
+    // 1. التأكد من أن نوع الطلب هو DELETE للحماية
     if (req.method !== 'DELETE') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    // استلام المعرف (id) من الرابط
+    // 2. استلام المعرف (id) الخاص بالإشعار من رابط الاستدعاء
     const { id } = req.query;
 
     if (!id) {
@@ -14,19 +14,25 @@ export default async function handler(req, res) {
     }
 
     try {
-        // استخدام POSTGRES_URL كما يظهر في إعدادات فيرسل لديكِ
+        // 3. الاتصال بقاعدة بيانات Neon باستخدام الرابط الصحيح من Vercel
         const sql = neon(process.env.POSTGRES_URL);
 
-        // تنفيذ الحذف الفعلي باستخدام الـ id من جدول health_tracking
-        const result = await sql`DELETE FROM health_tracking WHERE id = ${id} RETURNING id`;
+        // 4. تنفيذ أمر الحذف من جدول notifications (الجدول الجديد)
+        const result = await sql`DELETE FROM notifications WHERE id = ${id} RETURNING id`;
 
+        // 5. التحقق مما إذا كان السجل موجوداً بالفعل وتم حذفه
         if (result.length === 0) {
-            // هذا يعني أن الـ id أُرسل للسيرفر لكنه غير موجود في قاعدة البيانات
-            return res.status(404).json({ success: false, error: 'Record not found in database' });
+            return res.status(404).json({ 
+                success: false, 
+                error: 'الإشعار غير موجود في قاعدة البيانات، ربما تم حذفه مسبقاً' 
+            });
         }
 
-        return res.status(200).json({ success: true, message: 'Deleted successfully' });
+        // 6. إرسال استجابة بالنجاح
+        return res.status(200).json({ success: true, message: 'تم الحذف بنجاح' });
+
     } catch (error) {
+        // في حال حدوث خطأ في الاتصال أو هيكل الجدول (مثل نقص عمود is_read)
         console.error('Database Error:', error);
         return res.status(500).json({ success: false, error: error.message });
     }
