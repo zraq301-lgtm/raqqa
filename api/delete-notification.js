@@ -1,30 +1,28 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-    // 1. التأكد أن الطلب هو DELETE لضمان الأمان ومنع أخطاء السجلات
+    // 1. التأكد من نوع الطلب لضمان الأمان وتجنب أخطاء السجلات
     if (req.method !== 'DELETE') {
-        return res.status(405).json({ message: 'طريقة غير مسموح بها، يرجى استخدام DELETE' });
+        return res.status(405).json({ message: 'Method Not Allowed. Please use DELETE method.' });
     }
 
-    // 2. الحصول على معرف الإشعار المراد حذفه من الرابط
-    const { id } = req.query;
+    const { id } = req.query; // استلام معرف السجل المراد حذفه
 
     if (!id) {
-        return res.status(400).json({ message: 'معرف الإشعار مفقود' });
+        return res.status(400).json({ success: false, error: 'Missing notification ID' });
     }
 
     try {
-        // 3. الاتصال بقاعدة بيانات نيون باستخدام الرابط المخزن في البيئة
         const sql = neon(process.env.DATABASE_URL);
 
-        // 4. تنفيذ أمر الحذف الفعلي من الجدول
-        await sql`DELETE FROM notifications WHERE id = ${id}`;
+        // 2. تنفيذ الحذف من جدول health_tracking الصحيح
+        await sql`DELETE FROM health_tracking WHERE id = ${id}`;
 
-        // 5. إرسال رد بنجاح العملية
-        return res.status(200).json({ success: true, message: 'تم حذف الإشعار بنجاح' });
+        // 3. إرسال رد النجاح
+        return res.status(200).json({ success: true, message: 'تم الحذف من قاعدة البيانات بنجاح' });
         
     } catch (error) {
         console.error('Database Error:', error);
-        return res.status(500).json({ success: false, error: 'حدث خطأ أثناء الحذف من قاعدة البيانات' });
+        return res.status(500).json({ success: false, error: error.message });
     }
 }
