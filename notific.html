@@ -35,12 +35,10 @@
     </div>
 
 <script>
-    // جلب معرف المستخدم (نفترض 1 كبداية)
     const currentUserId = new URLSearchParams(window.location.search).get('user_id') || '1';
 
     async function loadNotifications() {
         try {
-            // استدعاء الـ API الذي ربطناه في Pipedream
             const response = await fetch(`/api/notifications?user_id=${currentUserId}`);
             const data = await response.json();
             
@@ -66,22 +64,28 @@
         }
     }
 
+    // الدالة المعدلة للحذف المتوافقة مع الـ API الجديد
     async function deleteNotif(id) {
-        if (!confirm("هل تريدين حذف هذا التنبيه؟")) return;
+        if (!confirm("هل تريدين حذف هذا التنبيه نهائياً؟")) return;
         try {
-            // افترضنا هنا وجود API للحذف، يمكنكِ إعداده لاحقاً
-            const response = await fetch(`/api/delete-notification?id=${id}`, { method: 'DELETE' });
+            const response = await fetch(`/api/delete-notification?id=${id}`, { 
+                method: 'DELETE' // تأكيد استخدام DELETE بدلاً من GET
+            });
+            
             if (response.ok) {
-                document.getElementById(`card-${id}`).remove();
+                const element = document.getElementById(`card-${id}`);
+                element.style.opacity = '0';
+                setTimeout(() => element.remove(), 300); // حذف العنصر من الشاشة بحركة ناعمة
+            } else {
+                alert("فشل الحذف من الخادم");
             }
-        } catch (e) { alert("خطأ في الحذف"); }
+        } catch (e) { 
+            alert("خطأ في الاتصال بالشبكة"); 
+        }
     }
 
-    // جلب الإشعارات فور فتح الصفحة
     window.onload = loadNotifications;
-    
-    // تحديث تلقائي كل دقيقة لضمان ظهور إشعارات نيون الجديدة
-    setInterval(loadNotifications, 60000);
+    setInterval(loadNotifications, 60000); // تحديث كل دقيقة
 </script>
 </body>
 </html>
