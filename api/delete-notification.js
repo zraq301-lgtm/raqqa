@@ -1,26 +1,22 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-    // 1. التأكد من أن الطريقة هي DELETE لمنع أخطاء السجلات (Security check)
     if (req.method !== 'DELETE') {
-        return res.status(405).json({ message: 'يرجى استخدام DELETE للحذف' });
+        return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    const { id } = req.query; // استلام الـ ID من الرابط
-
-    if (!id) {
-        return res.status(400).json({ success: false, error: 'معرف السجل مفقود' });
-    }
+    const { id } = req.query;
 
     try {
-        const sql = neon(process.env.DATABASE_URL);
+        // قمنا بتغيير DATABASE_URL إلى POSTGRES_URL لتطابق ما هو موجود في لقطة الشاشة الخاصة بكِ
+        const sql = neon(process.env.POSTGRES_URL);
 
-        // 2. تنفيذ الحذف الفعلي من جدول health_tracking
+        // الحذف من الجدول الذي أكدتِ اسمه
         await sql`DELETE FROM health_tracking WHERE id = ${id}`;
 
-        return res.status(200).json({ success: true, message: 'تم الحذف بنجاح' });
+        return res.status(200).json({ success: true });
     } catch (error) {
-        console.error('Database Error:', error);
+        console.error(error);
         return res.status(500).json({ success: false, error: error.message });
     }
 }
