@@ -74,7 +74,7 @@ jobs:
       - name: 7. رفع التطبيق النهائي (بما في ذلك النسخ غير الموقعة كاحتياط)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-APK
+          name: Roqa-Signed-Package-Latest
           path: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
