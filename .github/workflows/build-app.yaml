@@ -34,22 +34,41 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 5. بناء ملفات الـ APK و AAB
+      - name: 5. ضبط الأيقونات وفيديو شاشة البداية
+        run: |
+          # تثبيت أداة توليد الأيقونات
+          npm install @capacitor/assets --save-dev
+          
+          # إنشاء مجلدات أندرويد للفيديو إذا لم تكن موجودة
+          mkdir -p android/app/src/main/res/raw
+          
+          # نقل الفيديو (يجب أن يكون الملف موجود في resources/splash_video.mp4)
+          if [ -f "resources/splash_video.mp4" ]; then
+            cp resources/splash_video.mp4 android/app/src/main/res/raw/
+            echo "✅ تم نقل الفيديو بنجاح"
+          else
+            echo "⚠️ تحذير: لم يتم العثور على resources/splash_video.mp4"
+          fi
+
+          # توليد الأيقونات آلياً من مجلد resources
+          # سيبحث عن icon-only.png و icon-foreground.png و icon-background.png و splash.png
+          npx capacitor-assets generate --android
+
+      - name: 6. بناء ملفات الـ APK و AAB
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 6. إنشاء ملف التوقيع وتوقيع الملفات
+      - name: 7. إنشاء ملف التوقيع وتوقيع الملفات
         run: |
           # 1. إنشاء ملف التوقيع
           keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # 2. البحث عن الملفات بدقة أكبر
-          # سنبحث في كل مجلد android عن أي ملف apk ناتج
+          # 2. البحث عن الملفات
           APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
 
@@ -70,10 +89,9 @@ jobs:
             -keypass "roqa_password_2026" \
             "$AAB_FILE" roqa_alias
 
-          # نقل الـ AAB الموقع لمكان واضح للرفع
           cp "$AAB_FILE" Roqa-Final-Signed.aab
 
-      - name: 7. رفع الملفات الموقعة وملف التوقيع
+      - name: 8. رفع الملفات الموقعة وملف التوقيع
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Full-Package-v${{ github.run_number }}
