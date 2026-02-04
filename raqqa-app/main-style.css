@@ -1,0 +1,113 @@
+/* 1. إعدادات المتغيرات العامة (Root) - مستوحاة من كودك الأصلي */
+:root { 
+    --p1: #ff85c0; 
+    --p2: #eb2f96; 
+    --purp: #722ed1; 
+    --bg: #fffcfd; 
+    --soft: #fff0f6; 
+    --gold: #faad14;
+    --glass: rgba(255, 255, 255, 0.9);
+    --shadow-main: 0 2px 15px rgba(0,0,0,0.05);
+}
+
+/* 2. التنسيق الأساسي للجسم والخطوط */
+body { 
+    font-family: 'Tajawal', sans-serif; 
+    background: var(--bg); 
+    margin: 0; 
+    padding-bottom: 100px; 
+    color: #444; 
+    overflow-x: hidden; 
+    direction: rtl; /* لضمان الاتجاه العربي */
+}
+
+/* 3. شريط التنقل العلوي (Top Nav) */
+.top-nav { 
+    background: var(--glass); 
+    backdrop-filter: blur(10px); 
+    padding: 15px 20px; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    box-shadow: var(--shadow-main); 
+    position: sticky; 
+    top: 0; 
+    z-index: 1001; 
+}
+
+.logo-text { 
+    font-weight: 800; 
+    color: var(--p2); 
+    font-size: 26px; 
+}
+
+/* 4. إدارة الصفحات والتحويلات */
+.page { 
+    display: none; 
+    padding: 15px; 
+    animation: fadeIn 0.5s ease; 
+}
+
+.page.active { 
+    display: block; 
+}
+
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
+
+/* 5. شريط التنقل السفلي (Bottom Nav) */
+.nav-bar { 
+    position: fixed; 
+    bottom: 0; 
+    width: 100%; 
+    background: rgba(255,255,255,0.95); 
+    backdrop-filter: blur(10px); 
+    display: flex; 
+    border-top: 1px solid #eee; 
+    padding: 12px 0 25px 0; 
+    z-index: 1000; 
+}
+
+.nav-link { 
+    flex: 1; 
+    text-align: center; 
+    color: #bbb; 
+    text-decoration: none; 
+    font-size: 11px; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 5px; 
+}
+
+.nav-link i { 
+    font-size: 24px; 
+}
+
+.nav-link.active { 
+    color: var(--p2); 
+    font-weight: bold; 
+}
+
+/* 6. أزرار الذكاء الاصطناعي العامة */
+.ai-header-btn { 
+    color: white; 
+    border: none; 
+    width: 100%; 
+    padding: 16px; 
+    border-radius: 18px; 
+    font-weight: bold; 
+    margin-bottom: 20px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 12px; 
+    font-family: 'Tajawal'; 
+    font-size: 15px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+}
+
+.btn-health { background: linear-gradient(135deg, var(--p2), #ff4d4f); }
