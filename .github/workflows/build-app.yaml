@@ -34,7 +34,15 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 5. ضبط الأيقونات وفيديو شاشة البداية
+      - name: 5. إضافة صلاحيات الإنترنت والبيانات غير المشفرة
+        run: |
+          # إضافة تصريح الإنترنت للمانيفست
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+          
+          # تفعيل Cleartext Traffic للسماح بالاتصال بـ Neon/Vercel دون تشفير إلزامي
+          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
+
+      - name: 6. ضبط الأيقونات وفيديو شاشة البداية
         run: |
           # تثبيت أداة توليد الأيقونات
           npm install @capacitor/assets --save-dev
@@ -51,17 +59,16 @@ jobs:
           fi
 
           # توليد الأيقونات آلياً من مجلد resources
-          # سيبحث عن icon-only.png و icon-foreground.png و icon-background.png و splash.png
           npx capacitor-assets generate --android
 
-      - name: 6. بناء ملفات الـ APK و AAB
+      - name: 7. بناء ملفات الـ APK و AAB
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 7. إنشاء ملف التوقيع وتوقيع الملفات
+      - name: 8. إنشاء ملف التوقيع وتوقيع الملفات
         run: |
           # 1. إنشاء ملف التوقيع
           keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
@@ -91,7 +98,7 @@ jobs:
 
           cp "$AAB_FILE" Roqa-Final-Signed.aab
 
-      - name: 8. رفع الملفات الموقعة وملف التوقيع
+      - name: 9. رفع الملفات الموقعة وملف التوقيع
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Full-Package-v${{ github.run_number }}
