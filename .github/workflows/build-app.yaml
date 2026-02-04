@@ -26,7 +26,6 @@ jobs:
           npm install --legacy-peer-deps
           mkdir -p dist_web
           rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
-          # بناء المشروع إذا كان يدعم البناء التلقائي
           npm run build --if-present
 
       - name: 4. إضافة منصة أندرويد وتحديثها
@@ -42,38 +41,43 @@ jobs:
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 6. إنشاء ملف التوقيع وتوقيع (APK & AAB)
+      - name: 6. إنشاء ملف التوقيع وتوقيع الملفات
         run: |
-          # 1. إنشاء ملف توقيع جديد تماماً ببيانات ثابتة
-          # Alias: roqa_alias | Password: roqa_password_2026
+          # 1. إنشاء ملف التوقيع
           keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # 2. تحديد المسارات للملفات الناتجة عن البناء
-          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" ! -name "*signed*")
-          AAB_PATH=$(find android/app/build/outputs/bundle/release -name "*.aab")
+          # 2. البحث عن الملفات بدقة أكبر
+          # سنبحث في كل مجلد android عن أي ملف apk ناتج
+          APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
 
-          # 3. توقيع الـ APK باستخدام apksigner
+          echo "Found APK at: $APK_FILE"
+          echo "Found AAB at: $AAB_FILE"
+
+          # 3. توقيع الـ APK
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
             --ks-key-alias "roqa_alias" \
             --ks-pass pass:"roqa_password_2026" \
             --key-pass pass:"roqa_password_2026" \
-            --out android/app/build/outputs/apk/release/Roqa-Final-Signed.apk \
-            "$APK_PATH"
+            --out Roqa-Final-Signed.apk \
+            "$APK_FILE"
 
-          # 4. توقيع الـ AAB باستخدام jarsigner
+          # 4. توقيع الـ AAB
           jarsigner -keystore release_key.jks \
             -storepass "roqa_password_2026" \
             -keypass "roqa_password_2026" \
-            "$AAB_PATH" roqa_alias
-        continue-on-error: true 
+            "$AAB_FILE" roqa_alias
 
-      - name: 7. رفع الملفات الموقعة وملف التوقيع الجديد
+          # نقل الـ AAB الموقع لمكان واضح للرفع
+          cp "$AAB_FILE" Roqa-Final-Signed.aab
+
+      - name: 7. رفع الملفات الموقعة وملف التوقيع
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Full-Package-v${{ github.run_number }}
           path: |
-            android/app/build/outputs/apk/release/Roqa-Final-Signed.apk
-            android/app/build/outputs/bundle/release/*.aab
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
             release_key.jks
