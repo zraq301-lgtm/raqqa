@@ -1,4 +1,4 @@
-name: Roqa Final Professional Build Fixed
+name: Roqa Auto-Generate Key and Build
 on:
   workflow_dispatch:
 
@@ -9,66 +9,54 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 21)
+      - name: 2. إعداد البيئة (Java 21)
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: إعداد Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: 3. التنظيف وعزل الكود
+      - name: 3. بناء التطبيق (Gradle)
         run: |
-          rm -rf android node_modules 
           npm install --legacy-peer-deps
-          mkdir -p dist_web
-          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
           npm run build --if-present
-
-      - name: 4. إضافة منصة أندرويد وتحديثها
-        run: |
-          npx cap config set webDir dist_web
-          npx cap add android
           npx cap sync android
-
-      - name: 5. بناء ملفات الـ APK و AAB
-        run: |
-          cd android
-          chmod +x gradlew
+          cd android && chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 6. التوقيع الرقمي (APK & AAB)
+      - name: 4. إنشاء مفتاح توقيع جديد وتوقيع الملفات
         run: |
-          # 1. فك تشفير المفتاح
-          echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release_key.jks
-          
-          # 2. تحديد المسارات
-          APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" ! -name "*signed*")
-          AAB_PATH=$(find android/app/build/outputs/bundle/release -name "*.aab")
+          # إنشاء مفتاح جديد تماماً داخل السيرفر
+          # Alias: roqa_alias | Password: roqa_password_2026
+          keytool -genkey -v -keystore roqa_generated.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
 
-          # 3. توقيع الـ APK (استخدام roqa_alias مباشرة)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
+          # توقيع ملف الـ APK
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_generated.jks \
             --ks-key-alias "roqa_alias" \
-            --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
-            --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-            --out android/app/build/outputs/apk/release/Roqa-Final-Signed.apk \
-            "$APK_PATH"
+            --ks-pass pass:"roqa_password_2026" \
+            --key-pass pass:"roqa_password_2026" \
+            --out android/app/build/outputs/apk/release/Roqa-New-Signed.apk \
+            android/app/build/outputs/apk/release/app-release-unsigned.apk || \
+            /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_generated.jks \
+            --ks-key-alias "roqa_alias" \
+            --ks-pass pass:"roqa_password_2026" \
+            --key-pass pass:"roqa_password_2026" \
+            --out android/app/build/outputs/apk/release/Roqa-New-Signed.apk \
+            android/app/build/outputs/apk/release/app-release.apk
 
-          # 4. توقيع الـ AAB باستخدام jarsigner
-          jarsigner -keystore release_key.jks \
-            -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            "$AAB_PATH" roqa_alias
-        continue-on-error: true 
+          # توقيع ملف الـ AAB (للمتجر)
+          jarsigner -keystore roqa_generated.jks \
+            -storepass "roqa_password_2026" \
+            -keypass "roqa_password_2026" \
+            android/app/build/outputs/bundle/release/app-release.aab roqa_alias
 
-      - name: 7. رفع الملفات الموقعة باسم فريد
+      - name: 5. رفع الناتج (التطبيق + المفتاح الجديد)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Full-Package-v${{ github.run_number }}
+          name: Roqa-Full-Package-With-Key
           path: |
-            android/app/build/outputs/apk/release/Roqa-Final-Signed.apk
-            android/app/build/outputs/bundle/release/*.aab
+            android/app/build/outputs/apk/release/Roqa-New-Signed.apk
+            android/app/build/outputs/bundle/release/app-release.aab
+            roqa_generated.jks
