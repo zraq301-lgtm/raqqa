@@ -38,20 +38,19 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          # بناء APK
           ./gradlew assembleRelease
-          # بناء AAB (للمتجر)
           ./gradlew bundleRelease
 
       - name: 6. التوقيع الرقمي (APK & AAB)
         run: |
+          # 1. فك تشفير المفتاح
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release_key.jks
           
-          # مسارات الملفات الناتجة من Gradle
+          # 2. تحديد المسارات
           APK_PATH=$(find android/app/build/outputs/apk/release -name "*.apk" ! -name "*signed*")
           AAB_PATH=$(find android/app/build/outputs/bundle/release -name "*.aab")
 
-          echo "Signing APK: $APK_PATH"
+          # 3. توقيع الـ APK (استخدام roqa_alias مباشرة)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
             --ks-key-alias "roqa_alias" \
             --ks-pass pass:"${{ secrets.KEY_STORE_PASSWORD }}" \
@@ -59,18 +58,17 @@ jobs:
             --out android/app/build/outputs/apk/release/Roqa-Final-Signed.apk \
             "$APK_PATH"
 
-          # ملاحظة: التوقيع لـ AAB يتطلب أداة jarsigner (تأتي مع Java)
-          echo "Signing AAB: $AAB_PATH"
+          # 4. توقيع الـ AAB باستخدام jarsigner
           jarsigner -keystore release_key.jks \
             -storepass "${{ secrets.KEY_STORE_PASSWORD }}" \
             -keypass "${{ secrets.KEY_PASSWORD }}" \
             "$AAB_PATH" roqa_alias
         continue-on-error: true 
 
-      - name: 7. رفع الملفات الموقعة
+      - name: 7. رفع الملفات الموقعة باسم فريد
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Signed-Package-v${{ github.run_number }}
+          name: Roqa-Full-Package-v${{ github.run_number }}
           path: |
             android/app/build/outputs/apk/release/Roqa-Final-Signed.apk
             android/app/build/outputs/bundle/release/*.aab
