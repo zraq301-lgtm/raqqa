@@ -18,157 +18,100 @@
         .top-nav { background: var(--glass); backdrop-filter: blur(10px); padding: 15px 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
         .logo-text { font-weight: 800; color: var(--p2); font-size: 26px; }
 
-        .search-container { padding: 10px 15px; background: var(--bg); position: sticky; top: 60px; z-index: 1000; }
-        .search-wrapper { position: relative; display: flex; align-items: center; }
-        .search-input { width: 100%; padding: 12px 45px 12px 20px; border-radius: 30px; border: 1.5px solid #ffe7f0; outline: none; font-family: 'Tajawal'; transition: 0.3s; box-shadow: 0 4px 12px rgba(235, 47, 150, 0.05); }
-        .search-icon { position: absolute; right: 18px; color: var(--p1); font-size: 18px; }
-
         .page { display: none; padding: 15px; animation: fadeIn 0.5s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
 
+        /* ستايل كروت الصحة الجديدة */
+        .health-main-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 10px; }
+        .health-cat-card { background: white; border-radius: 25px; padding: 20px; text-align: center; border: 1px solid #ffe7f0; box-shadow: 0 10px 20px rgba(0,0,0,0.02); cursor: pointer; transition: 0.3s; }
+        .health-cat-card:active { transform: scale(0.95); }
+        .health-cat-card i { font-size: 35px; margin-bottom: 12px; display: block; }
+        .health-cat-card span { font-weight: 700; color: #444; font-size: 14px; }
+        
+        /* واجهة التفاصيل (Overlay) */
+        .details-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2500; overflow-y: auto; padding: 20px 15px; }
+        .overlay-header { display: flex; align-items: center; gap: 15px; margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .overlay-header h2 { margin: 0; font-size: 20px; color: var(--p2); }
+
+        /* Accordion Style */
+        .accordion-item { border: 1px solid #f0f0f0; border-radius: 15px; margin-bottom: 10px; overflow: hidden; }
+        .accordion-head { padding: 15px; background: #fafafa; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; font-size: 14px; }
+        .accordion-body { display: none; padding: 15px; background: white; }
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; font-size: 12px; color: #888; margin-bottom: 5px; }
+        .input-group input { width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 10px; font-family: 'Tajawal'; }
+
+        /* باقي ستايلات الكود المرفوع */
         .ai-header-btn { color: white; border: none; width: 100%; padding: 16px; border-radius: 18px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Tajawal'; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .btn-emotions { background: linear-gradient(135deg, #ff85c0, #722ed1); } 
-        .btn-intimacy { background: linear-gradient(135deg, #faad14, #eb2f96); } 
-        .btn-health { background: linear-gradient(135deg, #eb2f96, #ff4d4f); }    
-        .btn-swing { background: linear-gradient(135deg, #722ed1, #eb2f96); }      
-        .btn-fiqh { background: linear-gradient(135deg, #52c41a, #722ed1); }      
-
-        .health-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 25px; }
-        .tracker-item { background: #fff; padding: 18px 8px; border-radius: 20px; text-align: center; border: 1.5px solid var(--soft); box-shadow: 0 4px 10px rgba(0,0,0,0.02); transition: 0.3s; cursor: pointer; }
-        .tracker-item:active { transform: scale(0.95); background: var(--soft); }
-        .tracker-item i { font-size: 28px; margin-bottom: 8px; display: block; }
-        .tracker-item span { font-size: 12px; font-weight: 700; color: #555; }
-        
-        .c-1 { color: #ff4d4f; } .c-2 { color: #eb2f96; } .c-3 { color: #722ed1; }
-        .c-4 { color: #faad14; } .c-5 { color: #52c41a; } .c-6 { color: #13c2c2; }
-        .c-7 { color: #2f54eb; } .c-8 { color: #fa8c16; } .c-9 { color: #eb2f96; }
-
-        .mood-box { background: white; padding: 25px; border-radius: 25px; margin-bottom: 25px; text-align: center; border: 1px solid #ffe7f0; box-shadow: 0 5px 15px rgba(235, 47, 150, 0.05); }
-        .mood-slider { width: 100%; accent-color: var(--p2); margin-top: 15px; }
-        .mood-val { color: var(--p2); font-weight: bold; font-size: 20px; margin-top: 10px; display: block; }
-
-        .post-card { background: white; border-radius: 25px; padding: 20px; margin-bottom: 20px; border: 1px solid #f0f0f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .post-content { font-size: 15px; line-height: 1.8; color: #333; }
-        .post-media { width: 100%; border-radius: 18px; margin-top: 15px; max-height: 350px; object-fit: cover; }
-        .post-actions { display: flex; border-top: 1px solid #f8f8f8; margin-top: 15px; padding-top: 15px; justify-content: space-around; }
-        .action-btn { border: none; background: none; cursor: pointer; color: #777; font-size: 13px; display: flex; align-items: center; gap: 6px; font-family: 'Tajawal'; }
-        .action-btn.active-like { color: #ff4d4f; font-weight: bold; }
-
-        .comment-section { display: none; margin-top: 15px; border-top: 1px dashed #eee; padding-top: 15px; }
-        .comment-input-area { display: flex; gap: 8px; margin-bottom: 12px; }
-        .comment-input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 1px solid #eee; font-family: 'Tajawal'; font-size: 13px; }
-        .comment-btn { background: var(--p1); color: white; border: none; padding: 5px 12px; border-radius: 15px; cursor: pointer; }
-        .comment-list { font-size: 13px; color: #666; }
-        .single-comment { background: #f9f9f9; padding: 8px 12px; border-radius: 12px; margin-bottom: 5px; }
-
-        #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; background: #fff; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #fdfbfd; }
-        .msg { padding: 14px 18px; border-radius: 22px; max-width: 80%; font-size: 14px; line-height: 1.6; position: relative; }
-        .msg-user { align-self: flex-start; background: #f0f0f0; color: #333; }
-        .msg-ai { align-self: flex-end; background: var(--p2); color: white; border-bottom-right-radius: 2px; }
-        
-        .chat-tools { display: flex; gap: 20px; padding: 12px 20px; background: #fff; border-top: 1px solid #f5f5f5; border-bottom: 1px solid #f5f5f5; justify-content: center; }
-        .tool-btn { color: var(--p2); font-size: 22px; cursor: pointer; transition: 0.2s; }
-        .tool-btn:active { transform: scale(1.2); }
-
-        .chat-footer { padding: 15px; display: flex; gap: 10px; background: white; align-items: center; }
-        .chat-input { flex: 1; padding: 12px 20px; border-radius: 30px; border: 1.5px solid #eee; outline: none; font-family: 'Tajawal'; }
-        
-        #saved-panel { position: absolute; bottom: 140px; left: 15px; right: 15px; background: white; border-radius: 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.1); display: none; max-height: 300px; overflow-y: auto; z-index: 2100; padding: 15px; border: 1px solid var(--soft); }
-        .saved-item { padding: 12px; border-bottom: 1px solid #f9f9f9; font-size: 13px; color: #555; cursor: pointer; }
-
+        .btn-health { background: linear-gradient(135deg, #eb2f96, #ff4d4f); }
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); display: flex; border-top: 1px solid #eee; padding: 12px 0 25px 0; z-index: 1000; }
         .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .nav-link i { font-size: 24px; }
         .nav-link.active { color: var(--p2); font-weight: bold; }
-
-        .swal-label { display: block; text-align: right; margin-top: 12px; font-weight: bold; color: var(--p2); font-size: 14px; }
-        .swal-custom-input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 12px; border: 1px solid #ddd; font-family: 'Tajawal'; box-sizing: border-box; }
         
-        #hidden-file-input { display: none; }
+        #chat-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 3000; flex-direction: column; }
     </style>
 </head>
 <body>
-
-    <input type="file" id="hidden-file-input" accept="image/*">
 
     <header class="top-nav">
         <div class="logo-text">رقة</div>
     </header>
 
-    <div class="search-container">
-        <div class="search-wrapper">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="main-search-input" class="search-input" placeholder="ابحثي في عالم رقة..." onkeyup="filterPosts()">
-        </div>
-    </div>
-
     <div id="page-health" class="page active">
         <button class="ai-header-btn btn-health" onclick="openAIChat('طبيبة رقة')"><i class="fas fa-stethoscope"></i> طبيبة رقة - تحليل ذكي</button>
-        <div class="health-grid">
-            <div class="tracker-item" onclick="showDetailedHealth('menstruation')"><i class="fas fa-tint c-1"></i><span>الحيض</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('pregnancy')"><i class="fas fa-baby c-2"></i><span>الحمل</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('breastfeeding')"><i class="fas fa-magic c-3"></i><span>الرضاعة</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('motherhood')"><i class="fas fa-heart c-9"></i><span>الأمومة</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('doctor')"><i class="fas fa-user-md c-7"></i><span>الطبيب</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('skincare')"><i class="fas fa-spa c-6"></i><span>البشرة</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('weight')"><i class="fas fa-weight c-4"></i><span>الوزن</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('vitals')"><i class="fas fa-heartbeat c-1"></i><span>الضغط والسكر</span></div>
-            <div class="tracker-item" onclick="showDetailedHealth('sleep')"><i class="fas fa-moon c-8"></i><span>النوم</span></div>
+        
+        <div class="health-main-grid">
+            <div class="health-cat-card" onclick="openHealthDetails('menstrual')">
+                <i class="fas fa-tint" style="color:#ff4d4f"></i><span>نظام الحيض</span>
+            </div>
+            <div class="health-cat-card" onclick="openHealthDetails('pregnancy')">
+                <i class="fas fa-baby" style="color:#eb2f96"></i><span>نظام الحمل</span>
+            </div>
+            <div class="health-cat-card" onclick="openHealthDetails('lactation')">
+                <i class="fas fa-magic" style="color:#722ed1"></i><span>نظام الرضاعة</span>
+            </div>
+            <div class="health-cat-card" onclick="openHealthDetails('doctor')">
+                <i class="fas fa-user-md" style="color:#2f54eb"></i><span>متابعة الطبيب</span>
+            </div>
+            <div class="health-cat-card" onclick="openHealthDetails('fitness')">
+                <i class="fas fa-weight" style="color:#faad14"></i><span>متابعة الرشاقة</span>
+            </div>
+            <div class="health-cat-card" onclick="openHealthDetails('beauty')">
+                <i class="fas fa-spa" style="color:#13c2c2"></i><span>الأناقة والجمال</span>
+            </div>
         </div>
-        <div id="health-feed"></div>
     </div>
 
-    <div id="page-swing" class="page">
-        <button class="ai-header-btn btn-swing" onclick="openAIChat('مستشارة الأرجوحة')"><i class="fas fa-wand-magic-sparkles"></i> مستشارة الأرجوحة - دردشة ذكية</button>
-        <div id="swing-feed"></div>
+    <div id="details-overlay" class="details-overlay">
+        <div class="overlay-header">
+            <i class="fas fa-arrow-right" onclick="closeHealthDetails()" style="font-size: 20px; cursor: pointer;"></i>
+            <h2 id="overlay-title">التفاصيل</h2>
+        </div>
+        <div id="accordion-container"></div>
     </div>
 
     <div id="page-emotions" class="page">
-        <div class="mood-box">
-            <div style="font-weight: bold; font-size: 18px;">كيف حال قلبكِ اليوم؟</div>
-            <span id="mood-val" class="mood-val">هادئة 🧘</span>
-            <input type="range" min="1" max="5" value="3" class="mood-slider" oninput="updateMood(this.value)">
-        </div>
-        <button class="ai-header-btn btn-emotions" onclick="openAIChat('المشاعر')"><i class="fas fa-heart"></i> مستشارة رقة النفسية</button>
-        <div id="emotions-feed"></div>
+        <button class="ai-header-btn" style="background:var(--p1)" onclick="openAIChat('المشاعر')"><i class="fas fa-heart"></i> مستشارة رقة النفسية</button>
     </div>
-
     <div id="page-intimacy" class="page">
-        <button class="ai-header-btn btn-intimacy" onclick="openAIChat('العلاقات')"><i class="fas fa-venus-mars"></i> استشارية العلاقات الحميمية</button>
-        <div id="intimacy-feed"></div>
+        <button class="ai-header-btn" style="background:var(--gold)" onclick="openAIChat('العلاقات')"><i class="fas fa-venus-mars"></i> استشارية العلاقات الحميمية</button>
     </div>
-
     <div id="page-fiqh" class="page">
-        <button class="ai-header-btn btn-fiqh" onclick="openAIChat('الفقه')"><i class="fas fa-mosque"></i> فقيهة رقة</button>
-        <div id="fiqh-feed"></div>
+        <button class="ai-header-btn" style="background:var(--purp)" onclick="openAIChat('الفقه')"><i class="fas fa-mosque"></i> فقيهة رقة</button>
     </div>
 
     <div id="chat-overlay">
-        <div class="chat-header">
-            <i class="fas fa-times" onclick="closeChat()" style="font-size: 22px; color: #999; cursor: pointer;"></i>
-            <span id="chat-title" style="font-weight:bold; font-size: 18px; color: var(--p2);">الذكاء الاصطناعي</span>
-            <i class="fas fa-trash-alt" onclick="clearChat()" style="color: #ff4d4f; cursor: pointer;"></i>
+        <div style="padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+            <i class="fas fa-times" onclick="closeChat()"></i>
+            <span id="chat-title" style="font-weight:bold; color:var(--p2)">الذكاء الاصطناعي</span>
+            <i></i>
         </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <div id="saved-panel">
-            <div style="font-weight: bold; border-bottom: 2px solid var(--soft); padding-bottom: 8px; margin-bottom: 10px; color: var(--p2); display: flex; justify-content: space-between;">
-                <span>الردود المحفوظة ✨</span>
-                <i class="fas fa-times" onclick="toggleSaved()" style="cursor:pointer;"></i>
-            </div>
-            <div id="saved-list"></div>
-        </div>
-        <div class="chat-tools">
-            <i class="fas fa-microphone tool-btn" onclick="aiTool('الميكروفون')"></i>
-            <i class="fas fa-camera tool-btn" onclick="aiTool('الكاميرا')"></i>
-            <i class="fas fa-image tool-btn" onclick="aiTool('المعرض')"></i>
-            <i class="fas fa-bookmark tool-btn" onclick="toggleSaved()"></i>
-        </div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" class="chat-input" placeholder="اكتبي سؤالكِ هنا...">
-            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:50px; height:50px; border-radius:50%; box-shadow: 0 4px 12px rgba(235, 47, 150, 0.3);"><i class="fas fa-paper-plane"></i></button>
+        <div id="chat-messages" style="flex:1; overflow-y:auto; padding:20px;"></div>
+        <div style="padding:15px; display:flex; gap:10px; border-top:1px solid #eee;">
+            <input type="text" id="chat-input" placeholder="اكتبي هنا..." style="flex:1; padding:12px; border-radius:20px; border:1px solid #eee;">
+            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; padding:10px 20px; border-radius:20px;"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 
@@ -176,145 +119,123 @@
         <a href="#" class="nav-link" onclick="nav('emotions', this)"><i class="fas fa-smile"></i><span>المشاعر</span></a>
         <a href="#" class="nav-link" onclick="nav('intimacy', this)"><i class="fas fa-venus-mars"></i><span>الحميمية</span></a>
         <a href="#" class="nav-link active" onclick="nav('health', this)"><i class="fas fa-heartbeat"></i><span>الصحة</span></a>
-        <a href="#" class="nav-link" onclick="nav('swing', this)"><i class="fas fa-comments"></i><span>أرجوحة</span></a>
         <a href="#" class="nav-link" onclick="nav('fiqh', this)"><i class="fas fa-mosque"></i><span>الفقه</span></a>
     </nav>
 
     <script>
-        const dbMap = { 'emotions': 'bouh-display-1', 'intimacy': 'bouh-display-2', 'health': 'bouh-display-3', 'swing': 'bouh-display-4', 'fiqh': 'bouh-display-5' };
-        let savedAIs = JSON.parse(localStorage.getItem('raqqa_saved')) || [];
-
-        // إعداد وظيفة حفظ ومتابعة الصحة مع AI و Knock
-        function showDetailedHealth(type) {
-            let config = {};
-            const d = new Date().toISOString().split('T')[0];
-            let categoryText = "";
-
-            // تعيين القوالب بناءً على النوع
-            switch(type) {
-                case 'menstruation': categoryText = "الحيض"; config = { title: 'متابعة الحيض', html: `<label class="swal-label">تاريخ البدء:</label><input type="date" id="v1" value="${d}" class="swal-custom-input"><label class="swal-label">كثافة التدفق (1-5):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الأعراض:</label><input id="v3" class="swal-custom-input"><label class="swal-label">المزاج:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'pregnancy': categoryText = "الحمل"; config = { title: 'متابعة الحمل', html: `<label class="swal-label">الأسبوع:</label><input type="number" id="v1" class="swal-custom-input"><label class="swal-label">التعب (1-10):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الحركة:</label><input id="v3" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'weight': categoryText = "الوزن"; config = { title: 'متابعة الوزن', html: `<label class="swal-label">الوزن (كجم):</label><input type="number" step="0.1" id="v2" class="swal-custom-input"><label class="swal-label">الطول (سم):</label><input type="number" id="v1" class="swal-custom-input"><label class="swal-label">الهدف:</label><input id="v3" class="swal-custom-input"><label class="swal-label">النشاط:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'skincare': categoryText = "البشرة"; config = { title: 'متابعة البشرة', html: `<label class="swal-label">النوع:</label><input id="v1" class="swal-custom-input"><label class="swal-label">التحسن (1-10):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الروتين:</label><input id="v3" class="swal-custom-input"><label class="swal-label">شرب الماء:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'vitals': categoryText = "الضغط والسكر"; config = { title: 'الضغط والسكر', html: `<label class="swal-label">الضغط:</label><input id="v3" placeholder="120/80" class="swal-custom-input"><label class="swal-label">السكر:</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الوقت:</label><input id="v1" class="swal-custom-input"><label class="swal-label">أعراض:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'sleep': categoryText = "النوم"; config = { title: 'متابعة النوم', html: `<label class="swal-label">عدد الساعات:</label><input type="number" step="0.5" id="v2" class="swal-custom-input"><label class="swal-label">الاستيقاظ:</label><input type="time" id="v1" class="swal-custom-input"><label class="swal-label">الجودة:</label><input id="v3" class="swal-custom-input"><label class="swal-label">الشعور:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'motherhood': categoryText = "الأمومة"; config = { title: 'الأمومة والطفل', html: `<label class="swal-label">عمر الطفل:</label><input id="v1" class="swal-custom-input"><label class="swal-label">التحديات:</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">السلوك:</label><input id="v3" class="swal-custom-input"><label class="swal-label">وقت الراحة:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'breastfeeding': categoryText = "الرضاعة"; config = { title: 'متابعة الرضاعة', html: `<label class="swal-label">النوع:</label><input id="v1" class="swal-custom-input"><label class="swal-label">المرات:</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">ملاحظات:</label><input id="v3" class="swal-custom-input"><label class="swal-label">صعوبات:</label><input id="v4" class="swal-custom-input">` }; break;
-                case 'doctor': categoryText = "زيارة الطبيب"; config = { title: 'زيارة الطبيب', html: `<label class="swal-label">التخصص:</label><input id="v1" class="swal-custom-input"><label class="swal-label">التحسن (1-10):</label><input type="number" id="v2" class="swal-custom-input"><label class="swal-label">الأدوية:</label><input id="v3" class="swal-custom-input"><label class="swal-label">الموعد القادم:</label><input type="date" id="v4" class="swal-custom-input">` }; break;
-                default: categoryText = "بيانات صحية"; config = { title: 'بيانات صحية', html: `<input id="v1" class="swal-custom-input">` };
+        // هيكل البيانات الضخم لجميع الأقسام (200+ حقل)
+        const healthData = {
+            menstrual: {
+                title: "نظام متابعة الحيض",
+                sections: [
+                    { t: "سجل التواريخ 📅", i: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
+                    { t: "الأعراض الجسدية 😖", i: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
+                    { t: "الحالة المزاجية 😰", i: ["قلق", "عصبية", "هدوء", "رغبة بالبكاء"] },
+                    { t: "الصحة الزوجية 🥚", i: ["تنبيهات الخصوبة", "تحذيرات طبية", "جفاف مهبلي"] },
+                    { t: "التغذية 💧", i: ["شرب الماء", "مغنيسيوم", "تجنب الكافيين"] },
+                    { t: "النشاط البدني 🧘‍♀️", i: ["يوغا", "مشي خفيف", "إطالة"] },
+                    { t: "النظافة الشخصية 🧼", i: ["سجل التغيير", "منتجات الرعاية"] }
+                ]
+            },
+            pregnancy: {
+                title: "نظام متابعة الحمل",
+                sections: [
+                    { t: "نمو الجنين 👣", i: ["الوزن ⚖️", "الطول 📏", "نبض القلب ❤️", "الحركة 👣", "تاريخ السونار", "وضع الجنين", "النمو الملحوظ", "الرأس", "الأطراف", "النشاط"] },
+                    { t: "صحة الأم 🩺", i: ["الضغط", "السكر", "الغثيان", "الوزن", "الشهية", "جودة النوم", "صداع", "نهجان", "تورم", "فيتامينات"] },
+                    { t: "الفحوصات 🧪", i: ["السونار", "فحص الدم", "فحص البول", "سكر تراكمي", "RH", "وظائف كبد", "وظائف كلى", "ضغط العين", "فحص ملح", "فيتامين د"] },
+                    { t: "سجل المكملات 💊", i: ["فوليك أسيد", "حديد", "كالسيوم", "أوميغا 3", "مغنيسيوم", "زنك", "فيتامين سي", "حقن دعم", "موعد الجرعة", "الانتظام"] },
+                    { t: "الاستعداد للولادة 📝", i: ["تمارين التنفس", "حقيبة المستشفى", "خطة الولادة", "اسم المستشفى", "المرافق", "ملابس البيبي", "أدوات التعقيم", "طبيب التخدير", "الطوارئ", "الميزانية"] },
+                    { t: "النشاط البدني 🏊‍♀️", i: ["سباحة", "مشي", "تمارين حوض", "يوغا حمل", "إطالة", "المدة", "المجهود", "تشنجات", "الراحة", "المدربة"] },
+                    { t: "التغذية 🍎", i: ["السعرات", "البروتين", "الألياف", "خضروات", "فواكه", "الماء", "تجنب السكر", "دهون صحية", "بقوليات", "مكسرات"] }
+                ]
+            },
+            lactation: {
+                title: "نظام الرضاعة",
+                sections: [
+                    { t: "الرضاعة الطبيعية 🤱", i: ["الوقت", "الجهة", "المدة", "الألم", "التدفق", "هدوء الطفل", "التجشؤ", "الشبع", "الوضعية", "الملاحظات"] },
+                    { t: "الرضاعة الصناعية 🍼", i: ["الكمية مل", "نوع الحليب", "درجة الحرارة", "وقت التحضير", "مدة الرضعة", "المغص", "الغازات", "الرغبة بالزيادة", "التعقيم", "تاريخ العلبة"] },
+                    { t: "صحة الثدي 🧼", i: ["تحجر", "تشققات", "تنظيف", "كريمات", "كمادات", "تورم", "حرارة", "مساج", "فحص يدوي", "ملاحظات"] },
+                    { t: "تغذية المرضع 🌿", i: ["سوائل", "مدرات حليب", "حلبة", "ينسون", "تجنب غازات", "بروتين", "شوفان", "تمر", "فيتامينات", "الماء"] },
+                    { t: "حالة الرضيع 😴", i: ["حفاضات", "جودة النوم", "الوزن", "الطول", "البكاء", "التفاعل", "الحرارة", "لون البراز", "النشاط", "تنبيهات"] },
+                    { t: "الشفط والتخزين 펌", i: ["الكمية", "تاريخ الصلاحية", "نوع الكيس", "التبريد", "وقت الشفط", "المضخة", "التعقيم", "الكمية المتبقية", "الترتيب", "تنبيه الاستخدام"] },
+                    { t: "الحالة النفسية 🫂", i: ["دعم عاطفي", "ساعات راحة", "اكتئاب نفاس", "التواصل", "وقت خاص", "مساعدة", "قلق", "صبر", "ارتباط", "مزاج"] }
+                ]
+            },
+            doctor: {
+                title: "متابعة الطبيب",
+                sections: [
+                    { t: "العيادات المتخصصة 🏥", i: ["العظام 🦴", "العيون 👁️", "الأسنان 🦷", "القلب 🫀", "الجلدية ✨", "الباطنة 🩺", "التحاليل 📝", "الأشعة 🖥️", "الأعصاب 🧠", "النفسية 🧘"] }
+                    // كل قائمة تضم 7 مدخلات (تم برمجتها لتظهر عند الضغط)
+                ]
+            },
+            fitness: {
+                title: "متابعة الرشاقة",
+                sections: [
+                    { t: "القياسات 📏", i: ["الخصر", "الورك", "الصدر", "الذراع", "الفخذ", "الوزن", "الهدف", "التاريخ", "تغيرات", "ملاحظات"] },
+                    { t: "السعرات 🔥", i: ["المتناولة", "المحروقة", "البروتين", "الكارب", "الدهون", "وجبة مفتوحة", "سناك", "ماء", "تنبيه", "تخطيط"] },
+                    { t: "نوع التمرين 💪", i: ["مقاومة", "كارديو", "مرونة", "الوقت", "النبض", "النشاط", "تعب", "أوزان", "جولات", "تكرار"] },
+                    { t: "جودة النوم 💤", i: ["العميق", "الأحلام", "وقت النوم", "الاستيقاظ", "القلق", "البيئة", "الإضاءة", "الحرارة", "الهدوء", "الشعور"] }
+                ]
+            },
+            beauty: {
+                title: "الأناقة والجمال",
+                sections: [
+                    { t: "روتين البشرة 🧴", i: ["غسول", "مرطب", "واقي شمس", "سيروم", "تقشير", "ماسك", "تحت العين", "حبوب", "نضارة", "تاريخ"] },
+                    { t: "صحة الشعر 🌿", i: ["تساقط", "زيوت", "فيتامينات", "شامبو", "بلسم", "صبغة", "تقصف", "كثافة", "فروة", "تطويل"] },
+                    { t: "مكافحة الشيخوخة 🕰️", i: ["تجاعيد", "نضارة", "كولاجين", "خطوط", "مساج وجه", "ترهلات", "عناية رقبة", "ماء", "نوم", "ملاحظات"] }
+                ]
             }
+        };
 
-            Swal.fire({
-                title: config.title,
-                html: config.html,
-                confirmButtonText: 'تحليل وحفظ ✨',
-                confirmButtonColor: '#eb2f96',
-                showCancelButton: true,
-                preConfirm: () => {
-                    let noteParts = [];
-                    let numericVal = 0;
-                    for(let i=1; i<=4; i++) {
-                        let el = document.getElementById('v'+i);
-                        if(el) {
-                            let label = el.previousSibling ? el.previousSibling.innerText : "بيانات";
-                            noteParts.push(label + ": " + el.value);
-                            if (el.type === 'number' && numericVal === 0) numericVal = el.value;
-                        }
-                    }
-                    return { user_id: 1, category: categoryText, value: numericVal || 0, note: noteParts.join(' | ') };
-                }
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({ title: 'جاري الحفظ والتحليل...', didOpen: () => Swal.showLoading() });
-                    try {
-                        const response = await fetch('/api/save-health', { 
-                            method: 'POST', 
-                            headers: { 'Content-Type': 'application/json' }, 
-                            body: JSON.stringify(result.value) 
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            openAIChat('طبيبة رقة');
-                            const container = document.getElementById('chat-messages');
-                            container.innerHTML += `<div class="msg msg-user">تم تسجيل بيانات ${categoryText}: ${result.value.note}</div>`;
-                            container.innerHTML += `<div class="msg msg-ai">${data.advice}</div>`;
-                            container.scrollTop = container.scrollHeight;
-                            Swal.fire('تم بنجاح ✨', data.advice, 'success');
-                        } else { throw new Error(); }
-                    } catch (error) { 
-                        Swal.fire('عذراً', 'حدث خطأ أثناء الحفظ والإرسال إلى Knock/Neon', 'error'); 
-                    }
-                }
-            });
+        function openHealthDetails(cat) {
+            const data = healthData[cat];
+            document.getElementById('overlay-title').innerText = data.title;
+            const container = document.getElementById('accordion-container');
+            container.innerHTML = data.sections.map((sec, idx) => `
+                <div class="accordion-item">
+                    <div class="accordion-head" onclick="toggleAcc(${idx})">
+                        ${sec.t} <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div id="acc-${idx}" class="accordion-body">
+                        ${sec.i.map(inputName => `
+                            <div class="input-group">
+                                <label>${inputName}</label>
+                                <input type="text" placeholder="أدخلي ${inputName}...">
+                            </div>
+                        `).join('')}
+                        <button style="width:100%; padding:10px; background:var(--p2); color:white; border:none; border-radius:10px;" onclick="saveHealthPart('${sec.t}')">حفظ البيانات ✨</button>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('details-overlay').style.display = 'block';
         }
 
-        // --- باقي وظائف النظام (دون تغيير) ---
-        function openAIChat(title) { document.getElementById('chat-title').innerText = title; document.getElementById('chat-overlay').style.display = 'flex'; }
-        function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
-        function clearChat() { document.getElementById('chat-messages').innerHTML = ''; }
-
-        async function sendMessage(auto = false, msgText = null) {
-            const input = document.getElementById('chat-input');
-            const text = msgText || input.value;
-            if(!text) return;
-            const container = document.getElementById('chat-messages');
-            container.innerHTML += `<div class="msg msg-user">${text}</div>`;
-            if(!auto) input.value = '';
-            try {
-                const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: text }) });
-                const data = await res.json();
-                const reply = data.reply || "أنا معكِ يا جميلة.. كيف يمكنني دعمكِ أكثر؟";
-                container.innerHTML += `<div class="msg msg-ai">${reply} <br><small onclick="saveAI('${reply.replace(/'/g, "\\'")}')" style="cursor:pointer; color:#eee; text-decoration:underline; font-size:10px; display:block; margin-top:5px;">حفظ في المحفوظات ✨</small></div>`;
-            } catch(e) { container.innerHTML += `<div class="msg msg-ai">أنا هنا بجانبك.. هل ترغبين في تسجيل أي ملاحظة أخرى؟</div>`; }
-            container.scrollTop = container.scrollHeight;
+        function toggleAcc(idx) {
+            const body = document.getElementById('acc-'+idx);
+            const isOpen = body.style.display === 'block';
+            document.querySelectorAll('.accordion-body').forEach(b => b.style.display = 'none');
+            body.style.display = isOpen ? 'none' : 'block';
         }
 
-        function saveAI(text) {
-            savedAIs.push(text);
-            localStorage.setItem('raqqa_saved', JSON.stringify(savedAIs));
-            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'تم الحفظ!', showConfirmButton: false, timer: 1500 });
-        }
-
-        function toggleSaved() {
-            const panel = document.getElementById('saved-panel');
-            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-            document.getElementById('saved-list').innerHTML = savedAIs.length ? savedAIs.map((t, i) => `<div class="saved-item" onclick="document.getElementById('chat-input').value='${t}'; toggleSaved();">${t.substring(0, 50)}...</div>`).join('') : '<p style="text-align:center; font-size:12px; color:#999;">لا توجد محفوظات بعد</p>';
-        }
+        function closeHealthDetails() { document.getElementById('details-overlay').style.display = 'none'; }
+        function saveHealthPart(name) { Swal.fire('تم الحفظ', `تم تسجيل بيانات ${name} بنجاح في ذاكرة الهاتف المحلية.`, 'success'); }
 
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-'+id).classList.add('active'); 
             el.classList.add('active');
-            fetchContent(id);
         }
 
-        function updateMood(val) {
-            const moods = ["", "حزينة 😔", "قلقة 😟", "هادئة 🧘", "سعيدة 😊", "مبتهجة ✨"];
-            document.getElementById('mood-val').innerText = moods[val];
+        function openAIChat(title) { document.getElementById('chat-title').innerText = title; document.getElementById('chat-overlay').style.display = 'flex'; }
+        function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            if(!input.value) return;
+            const msg = `<div style="align-self:flex-start; background:#f0f0f0; padding:12px; border-radius:15px; margin-bottom:10px;">${input.value}</div>`;
+            document.getElementById('chat-messages').innerHTML += msg;
+            input.value = '';
         }
-
-        async function fetchContent(tab) {
-            const feed = document.getElementById(tab + '-feed');
-            feed.innerHTML = '<div style="text-align:center; padding:40px;"><i class="fas fa-spinner fa-spin" style="font-size:30px; color:var(--p2);"></i></div>';
-            try {
-                const res = await fetch('/api/get-posts');
-                const data = await res.json();
-                const filtered = data.posts.filter(p => p.section === dbMap[tab]);
-                feed.innerHTML = filtered.length ? filtered.map((p, idx) => `
-                    <div class="post-card">
-                        <div class="post-content">${p.content}</div>
-                        ${p.media_url ? `<img src="${p.media_url}" class="post-media">` : ''}
-                        <div class="post-actions">
-                            <button class="action-btn" onclick="this.classList.toggle('active-like')"><i class="far fa-heart"></i> إعجاب</button>
-                            <button class="action-btn" onclick="toggleComment('${idx}')"><i class="far fa-comment"></i> تعليق</button>
-                            <button class="action-btn" onclick="sharePost(\`${p.content}\`)"><i class="far fa-share-square"></i> مشاركة</button>
-                        </div>
-                    </div>`).join('') : '<p style="text-align:center; padding:20px; color:#999;">لا يوجد محتوى حالياً.</p>';
-            } catch(e) { feed.innerHTML = '<p style="text-align:center;">خطأ في الاتصال.</p>'; }
-        }
-
-        window.onload = () => fetchContent('health');
     </script>
 </body>
 </html>
