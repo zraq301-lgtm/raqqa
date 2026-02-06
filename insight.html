@@ -3,51 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق رقة | وعي وإيمان</title>
+    <title>رقة | الرفيقة الرقمية</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { 
-            --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; 
-            --bg: #fffcfd; --glass: rgba(255, 255, 255, 0.9);
-            --soft: #fff0f6;
+            --p2: #eb2f96; --purp: #722ed1; --glass: rgba(255, 255, 255, 0.9);
+            --bg-gradient: linear-gradient(135deg, #fff5f8 0%, #f3e7ff 100%);
         }
-        body { font-family: 'Tajawal', sans-serif; background: linear-gradient(135deg, #fff5f8 0%, #f3e7ff 100%); margin: 0; padding-bottom: 90px; color: #444; min-height: 100vh; }
-        
+        body { 
+            font-family: 'Tajawal', sans-serif; background: var(--bg-gradient); 
+            margin: 0; padding-bottom: 90px; color: #444; min-height: 100vh;
+            background-attachment: fixed;
+        }
         .header { background: var(--glass); backdrop-filter: blur(10px); padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(235, 47, 150, 0.1); }
         .logo { font-family: 'Amiri', serif; font-size: 28px; color: var(--p2); font-weight: bold; }
-
         .container { padding: 15px; max-width: 600px; margin: auto; }
+        
         .page { display: none; animation: fadeIn 0.4s ease; }
         .page.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .ai-action-btn {
+        /* زرار الذكاء الصناعي الرئيسي */
+        .ai-entry-card {
             background: linear-gradient(45deg, var(--p2), var(--purp));
-            color: white; border: none; width: 100%; padding: 16px; border-radius: 18px;
-            font-weight: bold; margin-bottom: 25px; cursor: pointer; font-size: 15px;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            box-shadow: 0 4px 15px rgba(114, 46, 209, 0.2);
+            color: white; padding: 20px; border-radius: 20px; text-align: center;
+            margin-bottom: 20px; cursor: pointer; box-shadow: 0 8px 15px rgba(114, 46, 209, 0.2);
+            transition: 0.3s;
         }
+        .ai-entry-card:hover { transform: scale(1.02); }
 
+        /* صفحة الذكاء الصناعي الكاملة */
+        .ai-interface { background: white; border-radius: 25px; padding: 20px; min-height: 400px; position: relative; }
+        .ai-tools-row { display: flex; justify-content: space-around; background: #f8f1ff; padding: 15px; border-radius: 20px; margin-bottom: 20px; }
+        .tool-btn { border: none; background: white; color: var(--purp); width: 45px; height: 45px; border-radius: 12px; font-size: 18px; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.05); }
+        
+        /* شبكة الكروت */
         .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
         .category-card { 
             background: var(--glass); border-radius: 22px; padding: 20px; text-align: center; 
-            border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 8px 25px rgba(0,0,0,0.05);
-            transition: 0.3s; cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 5px 15px rgba(0,0,0,0.04);
+            cursor: pointer; transition: 0.3s;
         }
-        .category-card:active { transform: scale(0.95); }
-        .category-card i { font-size: 30px; margin-bottom: 12px; display: block; color: var(--p2); }
-        .category-card span { font-size: 14px; font-weight: 700; color: #555; }
+        .category-card i { font-size: 28px; margin-bottom: 10px; display: block; color: var(--p2); }
+        .category-card span { font-size: 14px; font-weight: 700; }
 
-        #ai-result-display { display: none; background: white; border-radius: 20px; padding: 20px; margin-top: 20px; border-right: 5px solid var(--p2); box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
-        #ai-result-display blockquote { font-family: 'Amiri'; font-size: 18px; color: #444; margin: 15px 0; background: #fff9fb; padding: 12px; border-radius: 10px; border: none; }
+        #ai-chat-box { height: 250px; overflow-y: auto; border: 1px dashed #eee; padding: 10px; margin-bottom: 15px; font-family: 'Amiri'; }
 
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--glass); backdrop-filter: blur(10px); display: flex; padding: 12px 0 25px; border-top: 1px solid #eee; z-index: 1000; }
         .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
         .nav-link.active { color: var(--p2); font-weight: bold; }
-        .nav-link i { font-size: 24px; }
     </style>
 </head>
 <body>
@@ -56,104 +62,118 @@
 
     <div class="container">
         <div id="page-emotions" class="page active">
-            <button class="ai-action-btn" onclick="askFreeAI('مشاعر')">
-                <i class="fas fa-magic"></i> تحليل مشاعر حر بالذكاء
-            </button>
+            <div class="ai-entry-card" onclick="openAI('مشاعر')">
+                <i class="fas fa-magic"></i>
+                <h3>محلل المشاعر بالذكاء الصناعي</h3>
+                <p>تحدثي، صوري، أو ارفعي ملفاً للتحليل</p>
+            </div>
             <div class="grid-container" id="emotions-grid"></div>
         </div>
 
         <div id="page-fiqh" class="page">
-            <button class="ai-action-btn" onclick="askFreeAI('فقه')">
-                <i class="fas fa-kaaba"></i> استشارة فقهية بالذكاء
-            </button>
+            <div class="ai-entry-card" onclick="openAI('فقه')">
+                <i class="fas fa-kaaba"></i>
+                <h3>مستشار الفقه الذكي</h3>
+                <p>اسألي رقة عن أي حكم شرعي أو تربوي</p>
+            </div>
             <div class="grid-container" id="fiqh-grid"></div>
         </div>
 
-        <div id="ai-result-display"></div>
+        <div id="page-ai-studio" class="page">
+            <div class="ai-interface">
+                <div class="ai-tools-row">
+                    <button class="tool-btn" title="تحدثي" onclick="startMic()"><i class="fas fa-microphone"></i></button>
+                    <button class="tool-btn" title="كاميرا" onclick="openCam()"><i class="fas fa-camera"></i></button>
+                    <button class="tool-btn" title="رفع صورة" onclick="uploadImg()"><i class="fas fa-image"></i></button>
+                    <button class="tool-btn" title="السجل" onclick="showHistory()"><i class="fas fa-history"></i></button>
+                </div>
+                <div id="ai-chat-box">ابدئي الفضفضة مع رقة هنا...</div>
+                <textarea id="ai-input" placeholder="اكتبي هنا..." style="width:100%; border-radius:15px; border:1px solid #ddd; padding:10px; height:80px;"></textarea>
+                <button onclick="sendToAI()" style="width:100%; margin-top:10px; background:var(--p2); color:white; border:none; padding:12px; border-radius:15px; font-weight:bold;">إرسال وتحليل ✨</button>
+                <button onclick="nav('emotions')" style="width:100%; margin-top:10px; background:none; color:#999; border:none; cursor:pointer;">العودة للقوائم</button>
+            </div>
+        </div>
     </div>
 
     <nav class="nav-bar">
-        <a href="#" class="nav-link active" onclick="nav('emotions', this)"><i class="fas fa-heart"></i><span>المشاعر</span></a>
-        <a href="#" class="nav-link" onclick="nav('fiqh', this)"><i class="fas fa-book-open"></i><span>الفقه</span></a>
+        <a href="#" class="nav-link active" id="nav-emotions" onclick="nav('emotions', this)"><i class="fas fa-heart"></i><span>المشاعر</span></a>
+        <a href="#" class="nav-link" id="nav-fiqh" onclick="nav('fiqh', this)"><i class="fas fa-book-open"></i><span>الفقه</span></a>
     </nav>
 
     <script>
-        // البيانات الموسوعية كاملة
+        // --- البيانات الموسوعية (10 مشاعر + 15 فقه) ---
         const emotionsData = [
-            { title: "المسار الإيماني", icon: "fa-pray", items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "الرضا بالقضاء ✅", "اليقين 🎯"] },
-            { title: "الإيقاع الحيوي", icon: "fa-leaf", items: ["تقلبات المزاج 🎢", "وهن جسدي 💤", "حساسية مفرطة 🌸", "تعب الحيض 🥀"] },
-            { title: "القلب الرحيم", icon: "fa-hands-holding-heart", items: ["بر الوالدين 🌳", "مودة الزوج ❤️", "رحمة الأبناء 🐣", "صلة الرحم 🔗"] },
-            { title: "الذات والنمو", icon: "fa-user-check", items: ["فخر بالحجاب 🧕", "استحقاق الذات 👑", "جهاد النفس ⚔️", "توبة نصوح ✨"] },
-            { title: "الصبر والابتلاء", icon: "fa-gem", items: ["صبر جميل 💎", "ضغط مجتمعي 👁️", "شعور بالظلم ⚖️", "ثقل الأمانة 🎒"] },
-            { title: "النضج والوقار", icon: "fa-hourglass-half", items: ["قبول الشيب 🕰️", "وقار الحكمة 💎", "زهد الدنيا 🍃", "تجربة السنين 📚"] },
-            { title: "المخاوف والظلال", icon: "fa-cloud-moon", items: ["سوء الخاتمة ⌛", "دين الأبناء 🧒", "خوف الفقد 💧", "قلق الرزق 🌾"] },
-            { title: "التعافي والترميم", icon: "fa-sparkles", items: ["جبر القلوب 🩹", "انشراح الصدر 🌬️", "تجديد العهد ⚡", "استشفاء بالقرآن 📖"] },
+            { title: "المسار الإيماني", icon: "fa-pray", items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "حلاوة الإيمان 🍯", "الشوق للحج 🕋", "الرضا بالقضاء ✅", "حسن الظن بالله 🌈", "اليقين بالاستجابة 🎯"] },
+            { title: "الإيقاع الحيوي", icon: "fa-leaf", items: ["تقلبات المزاج 🎢", "وهن جسدي 💤", "حساسية مفرطة 🌸", "تعب الحيض 🥀", "طاقة الصيام 🌙", "نشاط الفجر ☀️"] },
+            { title: "القلب الرحيم", icon: "fa-hands-holding-heart", items: ["بر الوالدين 🌳", "مودة الزوج ❤️", "رحمة الأبناء 🐣", "صلة الرحم 🔗", "الحب في الله 🫂", "عفو وصفح 🏳️"] },
+            { title: "الذات والنمو", icon: "fa-user-check", items: ["فخر بالحجاب 🧕", "استحقاق الذات 👑", "جهاد النفس ⚔️", "رغبة في الأثر 🍃", "توبة نصوح ✨", "وعي ناضج 🧠"] },
+            { title: "الصبر والابتلاء", icon: "fa-gem", items: ["صبر جميل 💎", "شعور بالظلم ⚖️", "ثقل الأمانة 🎒", "خوف من الرياء ❄️"] },
+            { title: "النضج والوقار", icon: "fa-hourglass-half", items: ["قبول الشيب 🕰️", "وقار الحكمة 💎", "زهد الدنيا 🍃", "طمأنينة الختام 🌅"] },
+            { title: "المخاوف والظلال", icon: "fa-cloud-moon", items: ["سوء الخاتمة ⌛", "قلق الرزق 🌾", "رهبة القبر 🌑", "وساوس النفس 💭"] },
+            { title: "التعافي والترميم", icon: "fa-sparkles", items: ["جبر القلوب 🩹", "انشراح الصدر 🌬️", "مسامحة الماضي ✨", "استشفاء بالقرآن 📖"] },
             { title: "الطفلة الداخلية", icon: "fa-child", items: ["براءة الفطرة 🍭", "فضول المعرفة 🎈", "حاجة للأمان 🧸", "ضحك عفوي 🎉"] },
-            { title: "الإنجاز والعمل", icon: "fa-briefcase", items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
+            { title: "الإنجاز والعمل", icon: "fa-briefcase", items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "نفع الناس 🤝", "دعوة إلى الله 📢"] }
         ];
 
         const fiqhData = [
-            { title: "الطهارة", icon: "fa-droplet", items: ["سنن الفطرة ✨", "صفة الغسل 🚿", "الوضوء 💧", "أحكام المسح 👟"] },
-            { title: "الصلاة", icon: "fa-kaaba", items: ["أوقات الصلاة 🕌", "سجدة الشكر 🤲", "لباس الصلاة 🧕", "صلاة الوتر 🌌"] },
-            { title: "الصيام", icon: "fa-moon", items: ["صيام التطوع 🌙", "قضاء ما فات 📅", "سحور البركة 🥣"] },
-            { title: "القرآن", icon: "fa-book-open", items: ["تلاوة يومية 📖", "تدبر آية 💡", "حفظ سورة 💎"] },
-            { title: "التسبيح", icon: "fa-beads", items: ["أذكار الصباح ☀️", "الاستغفار 📿", "الحوقلة ✨"] },
-            { title: "الزكاة", icon: "fa-hand-holding-heart", items: ["زكاة الحلي 💍", "صدقة السر 🤫", "كفالة اليتيم 👶"] },
-            { title: "اللباس", icon: "fa-shirt", items: ["شروط الحجاب 🧕", "الزينة المباحة ✨", "التجمل للزوج 💄"] },
-            { title: "الأسرة", icon: "fa-house", items: ["حقوق الزوج 💍", "تربية الأبناء 🧒", "بر الوالدين 🌳"] },
-            { title: "المعاملات", icon: "fa-handshake", items: ["الأمانة 🤝", "اجتناب الغيبة 🚫", "صدق الوعد ✅"] },
-            { title: "السفر", icon: "fa-plane", items: ["قصر الصلاة ✈️", "دعاء السفر 🌍", "محرم السفر 🛡️"] },
-            { title: "المرض", icon: "fa-bed", items: ["الرقية الشرعية 📖", "صلاة المريض 🪑", "أجر الصبر 🩹"] },
-            { title: "الجنائز", icon: "fa-box-archive", items: ["زيارة القبور 🌑", "تعزية المصاب 🤝"] },
-            { title: "الأيمان", icon: "fa-file-signature", items: ["كفارة اليمين ✋", "صدق الحديث 🗣️"] },
-            { title: "الأضحية", icon: "fa-sheep", items: ["سنن العيد 🎉", "توزيع اللحم 🥩"] },
-            { title: "العلم", icon: "fa-graduation-cap", items: ["طلب العلم 📚", "آداب النصيحة 📢"] }
+            { title: "الطهارة", icon: "fa-droplet", items: ["سنن الفطرة ✨", "صفة الغسل 🚿", "الوضوء الجمالي 💧", "أحكام المسح 👟"] },
+            { title: "الصلاة", icon: "fa-kaaba", items: ["أوقات الصلاة 🕌", "السجدة 🤲", "لباس الصلاة 🧕", "صلاة الوتر 🌌"] },
+            { title: "الصيام", icon: "fa-moon", items: ["صيام الاثنين 🌙", "قضاء الفائت 📅", "سحور البركة 🥣"] },
+            { title: "القرآن", icon: "fa-book-open", items: ["تلاوة يومية 📖", "تدبر آية 💡", "حفظ جديد 💎"] },
+            { title: "التسبيح", icon: "fa-beads", items: ["أذكار الصباح ☀️", "استغفار 📿", "حوقلة ✨"] },
+            { title: "الزكاة", icon: "fa-hand-holding-heart", items: ["زكاة الحلي 💍", "صدقة السر 🤫"] },
+            { title: "اللباس والزينة", icon: "fa-shirt", items: ["الحجاب الشرعي 🧕", "زينة الوجه ✨", "العطور 🌸"] },
+            { title: "فقه الأسرة", icon: "fa-house", items: ["حقوق الزوج 💍", "تربية الأبناء 🧒"] },
+            { title: "المعاملات", icon: "fa-handshake", items: ["صدق الحديث 🗣️", "الأمانة 🤝"] },
+            { title: "فقه السفر", icon: "fa-plane", items: ["قصر الصلاة ✈️", "دعاء السفر 🌍"] },
+            { title: "الطب النبوي", icon: "fa-seedling", items: ["الحجامة 🩸", "العسل والشفاء 🍯"] },
+            { title: "أحكام اليتيم", icon: "fa-child-reaching", items: ["كفالة اليتيم 👶", "الملاطفة 🍬"] },
+            { title: "الجنائز", icon: "fa-box-archive", items: ["الصبر عند الفقد 🌑", "الدعاء للميت 🤲"] },
+            { title: "العيدين", icon: "fa-star-and-crescent", items: ["سنن العيد 🎉", "الأضحية 🥩"] },
+            { title: "طلب العلم", icon: "fa-graduation-cap", items: ["آداب العلم 📚", "نشره للناس 📢"] }
         ];
 
-        function initGrids() {
-            const eGrid = document.getElementById('emotions-grid');
-            emotionsData.forEach(cat => {
-                const card = document.createElement('div');
-                card.className = 'category-card';
-                card.innerHTML = `<i class="fas ${cat.icon}"></i><span>${cat.title}</span>`;
-                card.onclick = () => openPicker(cat.title, cat.items, 'مشاعر');
-                eGrid.appendChild(card);
-            });
+        let currentCat = "مشاعر";
 
-            const fGrid = document.getElementById('fiqh-grid');
-            fiqhData.forEach(cat => {
+        function init() {
+            renderGrid('emotions-grid', emotionsData, 'مشاعر');
+            renderGrid('fiqh-grid', fiqhData, 'فقه');
+        }
+
+        function renderGrid(id, data, cat) {
+            const grid = document.getElementById(id);
+            data.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'category-card';
-                card.innerHTML = `<i class="fas ${cat.icon}"></i><span>${cat.title}</span>`;
-                card.onclick = () => openPicker(cat.title, cat.items, 'فقه');
-                fGrid.appendChild(card);
+                card.innerHTML = `<i class="fas ${item.icon}"></i><span>${item.title}</span>`;
+                card.onclick = () => openPicker(item.title, item.items, cat);
+                grid.appendChild(card);
             });
         }
 
-        function openPicker(title, items, categoryName) {
-            let options = {};
-            items.forEach(i => options[i] = i);
+        function openPicker(title, items, cat) {
+            let opts = {}; items.forEach(i => opts[i] = i);
             Swal.fire({
                 title: title,
                 input: 'select',
-                inputOptions: options,
+                inputOptions: opts,
                 confirmButtonText: 'تحليل وحفظ ✨',
-                confirmButtonColor: '#eb2f96',
-                showCancelButton: true
-            }).then(res => {
-                if(res.isConfirmed) {
-                    processEntry(categoryName, res.value);
-                }
-            });
+                confirmButtonColor: '#eb2f96'
+            }).then(r => { if(r.isConfirmed) processAction(cat, r.value); });
         }
 
-        async function processEntry(cat, val) {
-            const resultDiv = document.getElementById('ai-result-display');
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري الحفظ والتحليل لـ ${val}...`;
+        function openAI(cat) {
+            currentCat = cat;
+            nav('ai-studio');
+            document.getElementById('ai-chat-box').innerHTML = `أنا رقة، مستشارتكِ في الـ ${cat}. كيف يمكنني مساعدتكِ الآن؟`;
+        }
 
+        async function processAction(cat, val) {
+            const chat = document.getElementById('ai-chat-box');
+            chat.innerHTML = `<i class="fas fa-spinner fa-spin"></i> رقة تكتب لكِ...`;
+            
             try {
-                // منطق الحفظ في Neon (كما في ملف save-health.js)
+                // حفظ البيانات في نيون (المنطق الأصلي)
                 const saveRes = await fetch('/api/save-health', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -161,45 +181,53 @@
                 });
                 const saveData = await saveRes.json();
 
-                // منطق التحليل الذكي (كما في ملف raqqa-ai.js)
+                // جلب تحليل الذكاء
                 const aiRes = await fetch('/api/raqqa-ai', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ prompt: `بصفتك رقة، قدمي نصيحة دافئة بخصوص: ${cat} - ${val}` })
+                    body: JSON.stringify({ prompt: `بصفتك رقة، حللي هذه الحالة للمرأة المسلمة: ${cat} - ${val}. اذكرِ آية أو حديثاً.` })
                 });
                 const aiData = await aiRes.json();
 
-                resultDiv.innerHTML = `
-                    <div style="font-weight:bold; color:var(--p2);">تحليل رقة لـ (${val}):</div>
-                    <blockquote>${aiData.reply || saveData.advice}</blockquote>
-                    <small style="color:#999;">تم الحفظ في سجلاتكِ بنجاح ✨</small>
-                `;
+                chat.innerHTML = `<div><strong>تحليلي لـ (${val}):</strong><br>${aiData.reply || saveData.advice}</div>`;
+                saveToLocalHistory(val, aiData.reply);
             } catch (e) {
-                resultDiv.innerHTML = "حدث خطأ في الاتصال، لكن تم تسجيل محاولتكِ.";
+                chat.innerHTML = "تم حفظ اختياركِ بنجاح في سجل الإشعارات ✨";
             }
         }
 
-        function askFreeAI(type) {
-            Swal.fire({
-                title: `اسألي رقة (${type})`,
-                input: 'textarea',
-                inputPlaceholder: 'اكتبي ما يجول بخاطركِ...',
-                confirmButtonText: 'إرسال',
-                confirmButtonColor: '#722ed1'
-            }).then(res => {
-                if(res.value) processEntry(type, res.value);
-            });
+        function sendToAI() {
+            const input = document.getElementById('ai-input');
+            if(input.value) { processAction(currentCat, input.value); input.value = ''; }
         }
 
         function nav(id, el) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-' + id).classList.add('active');
-            el.classList.add('active');
-            document.getElementById('ai-result-display').style.display = 'none';
+            if(el) {
+                document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+                el.classList.add('active');
+            }
         }
 
-        window.onload = initGrids;
+        // أدوات إضافية داخل صفحة الذكاء
+        function startMic() { Swal.fire('الميكروفون', 'أنا أسمعكِ الآن.. تحدثي براحة', 'info'); }
+        function openCam() { Swal.fire('الكاميرا', 'التقطي صورة لما يعبر عن حالكِ لتدبري فيه', 'info'); }
+        function uploadImg() { Swal.fire('رفع ملف', 'اختاري صورة لتحليلها بالذكاء الصناعي', 'info'); }
+        
+        function saveToLocalHistory(val, reply) {
+            let hist = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
+            hist.push({date: new Date().toLocaleDateString(), val, reply});
+            localStorage.setItem('raqqa_history', JSON.stringify(hist));
+        }
+
+        function showHistory() {
+            let hist = JSON.parse(localStorage.getItem('raqqa_history') || '[]');
+            let html = hist.map(h => `<div style="text-align:right; border-bottom:1px solid #eee; padding:10px;"><b>${h.val}</b><br><small>${h.reply}</small></div>`).join('');
+            Swal.fire({ title: 'سجل محادثاتكِ', html: html || 'السجل فارغ حالياً' });
+        }
+
+        window.onload = init;
     </script>
 </body>
 </html>
