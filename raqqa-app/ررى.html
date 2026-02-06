@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق رقة | وعي وإيمان</title>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Tajawal:wght@300;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        :root { 
+            --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; 
+            --bg: #fffcfd; --glass: rgba(255, 255, 255, 0.9);
+            --soft: #fff0f6;
+        }
+        body { font-family: 'Tajawal', sans-serif; background: linear-gradient(135deg, #fff5f8 0%, #f3e7ff 100%); margin: 0; padding-bottom: 90px; color: #444; min-height: 100vh; }
+        
+        .header { background: var(--glass); backdrop-filter: blur(10px); padding: 15px; text-align: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid rgba(235, 47, 150, 0.1); }
+        .logo { font-family: 'Amiri', serif; font-size: 28px; color: var(--p2); font-weight: bold; }
+
+        .container { padding: 15px; max-width: 600px; margin: auto; }
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .ai-action-btn {
+            background: linear-gradient(45deg, var(--p2), var(--purp));
+            color: white; border: none; width: 100%; padding: 16px; border-radius: 18px;
+            font-weight: bold; margin-bottom: 25px; cursor: pointer; font-size: 15px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 4px 15px rgba(114, 46, 209, 0.2);
+        }
+
+        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .category-card { 
+            background: var(--glass); border-radius: 22px; padding: 20px; text-align: center; 
+            border: 1px solid rgba(255,255,255,0.7); box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+            transition: 0.3s; cursor: pointer;
+        }
+        .category-card:active { transform: scale(0.95); }
+        .category-card i { font-size: 30px; margin-bottom: 12px; display: block; color: var(--p2); }
+        .category-card span { font-size: 14px; font-weight: 700; color: #555; }
+
+        #ai-result-display { display: none; background: white; border-radius: 20px; padding: 20px; margin-top: 20px; border-right: 5px solid var(--p2); box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+        #ai-result-display blockquote { font-family: 'Amiri'; font-size: 18px; color: #444; margin: 15px 0; background: #fff9fb; padding: 12px; border-radius: 10px; border: none; }
+
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: var(--glass); backdrop-filter: blur(10px); display: flex; padding: 12px 0 25px; border-top: 1px solid #eee; z-index: 1000; }
+        .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
+        .nav-link.active { color: var(--p2); font-weight: bold; }
+        .nav-link i { font-size: 24px; }
+    </style>
+</head>
+<body>
+
+    <header class="header"><div class="logo">رقة</div></header>
+
+    <div class="container">
+        <div id="page-emotions" class="page active">
+            <button class="ai-action-btn" onclick="askFreeAI('مشاعر')">
+                <i class="fas fa-magic"></i> تحليل مشاعر حر بالذكاء
+            </button>
+            <div class="grid-container" id="emotions-grid"></div>
+        </div>
+
+        <div id="page-fiqh" class="page">
+            <button class="ai-action-btn" onclick="askFreeAI('فقه')">
+                <i class="fas fa-kaaba"></i> استشارة فقهية بالذكاء
+            </button>
+            <div class="grid-container" id="fiqh-grid"></div>
+        </div>
+
+        <div id="ai-result-display"></div>
+    </div>
+
+    <nav class="nav-bar">
+        <a href="#" class="nav-link active" onclick="nav('emotions', this)"><i class="fas fa-heart"></i><span>المشاعر</span></a>
+        <a href="#" class="nav-link" onclick="nav('fiqh', this)"><i class="fas fa-book-open"></i><span>الفقه</span></a>
+    </nav>
+
+    <script>
+        // البيانات الموسوعية كاملة
+        const emotionsData = [
+            { title: "المسار الإيماني", icon: "fa-pray", items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "الرضا بالقضاء ✅", "اليقين 🎯"] },
+            { title: "الإيقاع الحيوي", icon: "fa-leaf", items: ["تقلبات المزاج 🎢", "وهن جسدي 💤", "حساسية مفرطة 🌸", "تعب الحيض 🥀"] },
+            { title: "القلب الرحيم", icon: "fa-hands-holding-heart", items: ["بر الوالدين 🌳", "مودة الزوج ❤️", "رحمة الأبناء 🐣", "صلة الرحم 🔗"] },
+            { title: "الذات والنمو", icon: "fa-user-check", items: ["فخر بالحجاب 🧕", "استحقاق الذات 👑", "جهاد النفس ⚔️", "توبة نصوح ✨"] },
+            { title: "الصبر والابتلاء", icon: "fa-gem", items: ["صبر جميل 💎", "ضغط مجتمعي 👁️", "شعور بالظلم ⚖️", "ثقل الأمانة 🎒"] },
+            { title: "النضج والوقار", icon: "fa-hourglass-half", items: ["قبول الشيب 🕰️", "وقار الحكمة 💎", "زهد الدنيا 🍃", "تجربة السنين 📚"] },
+            { title: "المخاوف والظلال", icon: "fa-cloud-moon", items: ["سوء الخاتمة ⌛", "دين الأبناء 🧒", "خوف الفقد 💧", "قلق الرزق 🌾"] },
+            { title: "التعافي والترميم", icon: "fa-sparkles", items: ["جبر القلوب 🩹", "انشراح الصدر 🌬️", "تجديد العهد ⚡", "استشفاء بالقرآن 📖"] },
+            { title: "الطفلة الداخلية", icon: "fa-child", items: ["براءة الفطرة 🍭", "فضول المعرفة 🎈", "حاجة للأمان 🧸", "ضحك عفوي 🎉"] },
+            { title: "الإنجاز والعمل", icon: "fa-briefcase", items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
+        ];
+
+        const fiqhData = [
+            { title: "الطهارة", icon: "fa-droplet", items: ["سنن الفطرة ✨", "صفة الغسل 🚿", "الوضوء 💧", "أحكام المسح 👟"] },
+            { title: "الصلاة", icon: "fa-kaaba", items: ["أوقات الصلاة 🕌", "سجدة الشكر 🤲", "لباس الصلاة 🧕", "صلاة الوتر 🌌"] },
+            { title: "الصيام", icon: "fa-moon", items: ["صيام التطوع 🌙", "قضاء ما فات 📅", "سحور البركة 🥣"] },
+            { title: "القرآن", icon: "fa-book-open", items: ["تلاوة يومية 📖", "تدبر آية 💡", "حفظ سورة 💎"] },
+            { title: "التسبيح", icon: "fa-beads", items: ["أذكار الصباح ☀️", "الاستغفار 📿", "الحوقلة ✨"] },
+            { title: "الزكاة", icon: "fa-hand-holding-heart", items: ["زكاة الحلي 💍", "صدقة السر 🤫", "كفالة اليتيم 👶"] },
+            { title: "اللباس", icon: "fa-shirt", items: ["شروط الحجاب 🧕", "الزينة المباحة ✨", "التجمل للزوج 💄"] },
+            { title: "الأسرة", icon: "fa-house", items: ["حقوق الزوج 💍", "تربية الأبناء 🧒", "بر الوالدين 🌳"] },
+            { title: "المعاملات", icon: "fa-handshake", items: ["الأمانة 🤝", "اجتناب الغيبة 🚫", "صدق الوعد ✅"] },
+            { title: "السفر", icon: "fa-plane", items: ["قصر الصلاة ✈️", "دعاء السفر 🌍", "محرم السفر 🛡️"] },
+            { title: "المرض", icon: "fa-bed", items: ["الرقية الشرعية 📖", "صلاة المريض 🪑", "أجر الصبر 🩹"] },
+            { title: "الجنائز", icon: "fa-box-archive", items: ["زيارة القبور 🌑", "تعزية المصاب 🤝"] },
+            { title: "الأيمان", icon: "fa-file-signature", items: ["كفارة اليمين ✋", "صدق الحديث 🗣️"] },
+            { title: "الأضحية", icon: "fa-sheep", items: ["سنن العيد 🎉", "توزيع اللحم 🥩"] },
+            { title: "العلم", icon: "fa-graduation-cap", items: ["طلب العلم 📚", "آداب النصيحة 📢"] }
+        ];
+
+        function initGrids() {
+            const eGrid = document.getElementById('emotions-grid');
+            emotionsData.forEach(cat => {
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                card.innerHTML = `<i class="fas ${cat.icon}"></i><span>${cat.title}</span>`;
+                card.onclick = () => openPicker(cat.title, cat.items, 'مشاعر');
+                eGrid.appendChild(card);
+            });
+
+            const fGrid = document.getElementById('fiqh-grid');
+            fiqhData.forEach(cat => {
+                const card = document.createElement('div');
+                card.className = 'category-card';
+                card.innerHTML = `<i class="fas ${cat.icon}"></i><span>${cat.title}</span>`;
+                card.onclick = () => openPicker(cat.title, cat.items, 'فقه');
+                fGrid.appendChild(card);
+            });
+        }
+
+        function openPicker(title, items, categoryName) {
+            let options = {};
+            items.forEach(i => options[i] = i);
+            Swal.fire({
+                title: title,
+                input: 'select',
+                inputOptions: options,
+                confirmButtonText: 'تحليل وحفظ ✨',
+                confirmButtonColor: '#eb2f96',
+                showCancelButton: true
+            }).then(res => {
+                if(res.isConfirmed) {
+                    processEntry(categoryName, res.value);
+                }
+            });
+        }
+
+        async function processEntry(cat, val) {
+            const resultDiv = document.getElementById('ai-result-display');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = `<i class="fas fa-spinner fa-spin"></i> جاري الحفظ والتحليل لـ ${val}...`;
+
+            try {
+                // منطق الحفظ في Neon (كما في ملف save-health.js)
+                const saveRes = await fetch('/api/save-health', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ user_id: 1, category: cat, value: 0, note: val })
+                });
+                const saveData = await saveRes.json();
+
+                // منطق التحليل الذكي (كما في ملف raqqa-ai.js)
+                const aiRes = await fetch('/api/raqqa-ai', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ prompt: `بصفتك رقة، قدمي نصيحة دافئة بخصوص: ${cat} - ${val}` })
+                });
+                const aiData = await aiRes.json();
+
+                resultDiv.innerHTML = `
+                    <div style="font-weight:bold; color:var(--p2);">تحليل رقة لـ (${val}):</div>
+                    <blockquote>${aiData.reply || saveData.advice}</blockquote>
+                    <small style="color:#999;">تم الحفظ في سجلاتكِ بنجاح ✨</small>
+                `;
+            } catch (e) {
+                resultDiv.innerHTML = "حدث خطأ في الاتصال، لكن تم تسجيل محاولتكِ.";
+            }
+        }
+
+        function askFreeAI(type) {
+            Swal.fire({
+                title: `اسألي رقة (${type})`,
+                input: 'textarea',
+                inputPlaceholder: 'اكتبي ما يجول بخاطركِ...',
+                confirmButtonText: 'إرسال',
+                confirmButtonColor: '#722ed1'
+            }).then(res => {
+                if(res.value) processEntry(type, res.value);
+            });
+        }
+
+        function nav(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + id).classList.add('active');
+            el.classList.add('active');
+            document.getElementById('ai-result-display').style.display = 'none';
+        }
+
+        window.onload = initGrids;
+    </script>
+</body>
+</html>
