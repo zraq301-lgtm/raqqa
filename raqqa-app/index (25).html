@@ -1,305 +1,0 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق رقة | المنصة المتكاملة</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        :root { 
-            --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; 
-            --bg: #fffcfd; --soft: #fff0f6; --gold: #faad14;
-            --glass: rgba(255, 255, 255, 0.95);
-        }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #444; overflow-x: hidden; }
-        
-        /* Header */
-        .top-nav { background: var(--glass); backdrop-filter: blur(10px); padding: 15px 20px; display: flex; justify-content: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
-        .logo-text { font-weight: 800; color: var(--p2); font-size: 26px; }
-
-        .page { display: none; padding: 15px; animation: fadeIn 0.5s ease; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
-
-        /* AI Buttons */
-        .ai-header-btn { color: white; border: none; width: 100%; padding: 16px; border-radius: 18px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Tajawal'; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s; }
-        .btn-health { background: linear-gradient(135deg, #eb2f96, #ff4d4f); }
-        .btn-intimacy { background: linear-gradient(135deg, #800020, #faad14); } /* ألوان عنابية وذهبية للحميمية */
-
-        /* Health & Intimacy Cards */
-        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
-        .card-item { background: #fff; padding: 20px 10px; border-radius: 22px; text-align: center; border: 1.5px solid var(--soft); box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: 0.3s; cursor: pointer; }
-        .card-item:hover { transform: translateY(-5px); border-color: var(--p1); }
-        .card-item i { font-size: 32px; margin-bottom: 10px; display: block; }
-        .card-item span { font-size: 14px; font-weight: 700; color: #444; }
-
-        /* Form Styling */
-        .swal-label { display: block; text-align: right; margin-top: 12px; font-weight: bold; color: var(--p2); font-size: 14px; }
-        .swal-custom-input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 12px; border: 1px solid #ddd; font-family: 'Tajawal'; box-sizing: border-box; }
-        .swal-back-btn { background: #eee; color: #333; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; font-family: 'Tajawal'; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
-
-        /* Chat UI */
-        #chat-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 2000; flex-direction: column; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #fdfbfd; }
-        .msg { padding: 14px 18px; border-radius: 20px; max-width: 80%; font-size: 14px; line-height: 1.6; }
-        .msg-user { align-self: flex-start; background: #f0f0f0; }
-        .msg-ai { align-self: flex-end; background: var(--p2); color: white; }
-        .chat-footer { padding: 15px; display: flex; gap: 10px; background: white; border-top: 1px solid #eee; }
-        .chat-input { flex: 1; padding: 12px 20px; border-radius: 30px; border: 1.5px solid #eee; outline: none; font-family: 'Tajawal'; }
-
-        /* Nav Bar */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; padding: 12px 0 25px 0; z-index: 1000; }
-        .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .nav-link i { font-size: 24px; }
-        .nav-link.active { color: var(--p2); font-weight: bold; }
-    </style>
-</head>
-<body>
-
-    <header class="top-nav"><div class="logo-text">رقة</div></header>
-
-    <div id="page-health" class="page active">
-        <button class="ai-header-btn btn-health" onclick="openAIChat('طبيبة رقة')"><i class="fas fa-stethoscope"></i> تحليل صحي شامل بالذكاء الاصطناعي</button>
-        <div class="grid-container" id="health-grid">
-            </div>
-    </div>
-
-    <div id="page-intimacy" class="page">
-        <button class="ai-header-btn btn-intimacy" onclick="openAIChat('مستشارة العلاقات')"><i class="fas fa-venus-mars"></i> محلل العلاقات الزوجية الذكي</button>
-        <div class="grid-container" id="intimacy-grid">
-            </div>
-    </div>
-
-    <div id="chat-overlay">
-        <div class="chat-header">
-            <i class="fas fa-times" onclick="closeChat()" style="font-size: 22px; color: #999; cursor: pointer;"></i>
-            <span id="chat-title" style="font-weight:bold; color: var(--p2);">طبيبة رقة</span>
-            <i class="fas fa-robot" style="color: var(--p2);"></i>
-        </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" class="chat-input" placeholder="اكتبي سؤالكِ هنا...">
-            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:48px; height:48px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
-
-    <nav class="nav-bar">
-        <a href="#" class="nav-link" onclick="nav('intimacy', this)"><i class="fas fa-venus-mars"></i><span>الحميمية</span></a>
-        <a href="#" class="nav-link active" onclick="nav('health', this)"><i class="fas fa-heartbeat"></i><span>الصحة</span></a>
-    </nav>
-
-    <script>
-        // --- قاعدة بيانات قسم الصحة (أكثر من 200 حقل) ---
-        const healthData = {
-            menstruation: { title: 'متابعة الحيض', icon: 'fa-tint', color: '#ff4d4f', sub: {
-                "سجل التواريخ 📅": ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة", "غزارة التدفق"],
-                "الأعراض الجسدية 😖": ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"],
-                "الحالة المزاجية 😰": ["قلق", "عصبية", "هدوء", "رغبة بالبكاء"],
-                "الصحة الزوجية 🥚": ["تنبيهات الخصوبة", "تحذيرات طبية", "جفاف مهبلي"],
-                "التغذية 💧": ["شرب الماء", "مغنيسيوم", "تجنب الكافيين"],
-                "النشاط البدني 🧘‍♀️": ["يوغا", "مشي خفيف", "إطالة"],
-                "النظافة الشخصية 🧼": ["سجل التغيير", "منتجات الرعاية"]
-            }},
-            pregnancy: { title: 'متابعة الحمل', icon: 'fa-baby', color: '#eb2f96', sub: {
-                "نمو الجنين 👣": ["الوزن ⚖️", "الطول 📏", "نبض القلب ❤️", "الحركة", "رأس الجنين", "السائل الأمينوسي"],
-                "صحة الأم 🩺": ["الضغط", "السكر", "الغثيان", "الوزن", "تورم القدمين"],
-                "الفحوصات 🧪": ["السونار", "فحص الدم", "فحص البول", "موعد القادم"],
-                "سجل المكملات 💊": ["فوليك أسيد", "حديد", "كالسيوم", "أوميجا 3"],
-                "الاستعداد للولادة 👜": ["تمارين التنفس", "حقيبة المستشفى", "خطة الولادة"],
-                "النشاط البدني 🏊‍♀️": ["سباحة", "مشي", "تمارين الحوض"],
-                "التغذية 🍎": ["السعرات", "البروتين", "الألياف"]
-            }},
-            lactation: { title: 'نظام الرضاعة', icon: 'fa-magic', color: '#722ed1', sub: {
-                "سجل الرضاعة 🤱": ["الوقت", "الجهة يمين/يسار", "المدة"],
-                "الرضاعة الصناعية 🍼": ["الكمية مل", "نوع الحليب"],
-                "صحة الثدي 🧼": ["تحجر", "تشققات", "تنظيف"],
-                "تغذية المرضع 🌿": ["سوائل", "مدرات الحليب"],
-                "حالة الرضيع 😴": ["عدد الحفاضات", "جودة النوم"],
-                "الشفط 펌": ["كمية الشفط", "تاريخ الصلاحية"],
-                "الحالة النفسية 🫂": ["دعم عاطفي", "ساعات الراحة"]
-            }},
-            doctor: { title: 'متابعة الطبيب', icon: 'fa-user-md', color: '#2f54eb', sub: {
-                "العيادة 🏥": ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "التخصص"]
-            }},
-            fitness: { title: 'الرشاقة والوزن', icon: 'fa-weight', color: '#faad14', sub: {
-                "قياسات الجسم 📏": ["الخصر", "الورك", "الصدر", "الوزن"],
-                "السعرات 🔥": ["المتناولة", "المحروقة"],
-                "الماء والتمارين 🏃‍♀️": ["شرب الماء", "نوع التمرين", "الخطوات"],
-                "النوم والصيام 💤": ["جودة النوم", "الصيام المتقطع"]
-            }},
-            beauty: { title: 'الأناقة والجمال', icon: 'fa-spa', color: '#13c2c2', sub: {
-                "الروتين اليومي ✨": ["بشرة", "شعر", "أظافر"],
-                "عناية متقدمة 🧴": ["مكافحة الشيخوخة", "ترطيب الجسم", "تقشير"],
-                "ستايل 👗": ["تنسيق الملابس", "الصحة الجمالية"]
-            }}
-        };
-
-        // --- قاعدة بيانات قسم الحميمية (10 قوائم × 15 مدخل) ---
-        const intimacyData = {
-            emotional: { title: 'الود والاتصال', icon: 'fa-heart', sub: {
-                "الارتباط العاطفي 🗣️": ["لغة الحوار", "تبادل النظرات", "كلمات التقدير", "الهدايا", "الدعم", "الضحك", "وقت خاص", "اللمس العفوي", "الأمان", "التسامح"]
-            }},
-            sensuality: { title: 'لغة الجسد', icon: 'fa-fire', sub: {
-                "التمهيد والملاطفة 💋": ["القبلات", "الأحضان", "الملاطفة", "لغة العيون", "همس", "تدليك", "نظافة", "تأنق"]
-            }},
-            physical: { title: 'الصحة التبادلية', icon: 'fa-venus-mars', sub: {
-                "اللقاء الجنسي 🌡️": ["توافق الرغبة", "المبادرة", "استكشاف", "التفاعل", "التعبير عن احتياج", "إشباع", "المدة"]
-            }},
-            aftercare: { title: 'النشوة وما بعدها', icon: 'fa-stars', sub: {
-                "الاطمئنان 💞": ["الوصول للنشوة", "التزامن", "حضن بعدي", "كلمات حب", "بقاء معا", "رضا", "عناية"]
-            }},
-            creativity: { title: 'الابتكار والأنواع', icon: 'fa-lightbulb', sub: {
-                "كسر الروتين 🔄": ["تغيير المكان", "أوضاع جديدة", "روائح", "موسيقى", "تفاعل سمعي", "مفاجآت"]
-            }},
-            boundaries: { title: 'الضوابط الشرعية', icon: 'fa-shield-halved', sub: {
-                "الستر والخصوصية 🤐": ["تجنب الحيض", "تجنب الدبر", "عدم إفشاء السر", "تجنب الإكراه", "الالتزام بالستر"]
-            }},
-            sexualhealth: { title: 'الصحة الفسيولوجية', icon: 'fa-dna', sub: {
-                "البدن والقدرة 💪": ["قدرة بدنية", "غياب الألم", "هرمونات", "رياضة مقوية", "تغذية", "نوم"]
-            }},
-            barriers: { title: 'العوائق والصعوبات', icon: 'fa-ban', sub: {
-                "تحديات يومية 🌪️": ["ضغوط", "انشغال بالأبناء", "تعب", "ملل", "صورة الجسد"]
-            }},
-            education: { title: 'الوعي والثقافة', icon: 'fa-book-open', sub: {
-                "الفهم السيكولوجي 🧠": ["سيكولوجية الرجل", "سيكولوجية المرأة", "كتب تنمية", "نقاط المتعة"]
-            }},
-            spiritual: { title: 'الاطمئنان الروحي', icon: 'fa-mosque', sub: {
-                "النية والعبادة 🤲": ["دعاء قبل العلاقة", "غسل مشترك", "شكر النعمة", "نية الإعفاف"]
-            }}
-        };
-
-        // توليد كروت الصحة
-        function renderHealth() {
-            const grid = document.getElementById('health-grid');
-            grid.innerHTML = '';
-            for (let key in healthData) {
-                grid.innerHTML += `
-                    <div class="card-item" onclick="openSubMenu('${key}', 'health')">
-                        <i class="fas ${healthData[key].icon}" style="color:${healthData[key].color}"></i>
-                        <span>${healthData[key].title}</span>
-                    </div>`;
-            }
-        }
-
-        // توليد كروت الحميمية
-        function renderIntimacy() {
-            const grid = document.getElementById('intimacy-grid');
-            grid.innerHTML = '';
-            for (let key in intimacyData) {
-                grid.innerHTML += `
-                    <div class="card-item" onclick="openSubMenu('${key}', 'intimacy')">
-                        <i class="fas ${intimacyData[key].icon}" style="color:#800020"></i>
-                        <span>${intimacyData[key].title}</span>
-                    </div>`;
-            }
-        }
-
-        function openSubMenu(mainKey, type) {
-            const data = type === 'health' ? healthData[mainKey] : intimacyData[mainKey];
-            let html = `<div style="text-align:right;">`;
-            for (let subKey in data.sub) {
-                html += `<button onclick="openForm('${mainKey}', '${subKey}', '${type}')" style="width:100%; padding:15px; margin-bottom:10px; border:1px solid #eee; border-radius:15px; background:white; font-family:'Tajawal'; text-align:right; cursor:pointer; display:flex; justify-content:space-between;">
-                    <span>${subKey}</span> <i class="fas fa-chevron-left" style="color:var(--p2); font-size:12px; margin-top:4px;"></i>
-                </button>`;
-            }
-            html += `</div>`;
-
-            Swal.fire({ title: data.title, html: html, showConfirmButton: false, showCloseButton: true });
-        }
-
-        function openForm(mainKey, subKey, type) {
-            const data = type === 'health' ? healthData[mainKey] : intimacyData[mainKey];
-            const fields = data.sub[subKey];
-            let formHtml = `
-                <button class="swal-back-btn" onclick="openSubMenu('${mainKey}', '${type}')"><i class="fas fa-arrow-right"></i> رجوع</button>
-                <div style="max-height:350px; overflow-y:auto; padding:5px;">`;
-            
-            fields.forEach((f, i) => {
-                formHtml += `<label class="swal-label">${f}:</label><input id="v${i}" class="swal-custom-input" placeholder="أدخلي البيانات...">`;
-            });
-            formHtml += `</div>`;
-
-            Swal.fire({
-                title: subKey,
-                html: formHtml,
-                confirmButtonText: 'حفظ وتحليل ذكي ✨',
-                confirmButtonColor: type === 'health' ? '#eb2f96' : '#800020',
-                preConfirm: () => {
-                    let results = [];
-                    fields.forEach((f, i) => {
-                        results.push(f + ": " + document.getElementById('v' + i).value);
-                    });
-                    return { category: subKey, note: results.join(' | ') };
-                }
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    saveAndAnalyze(result.value, type);
-                }
-            });
-        }
-
-        async function saveAndAnalyze(payload, type) {
-            Swal.fire({ title: 'جاري الحفظ والتحليل...', didOpen: () => Swal.showLoading() });
-            
-            // محاكاة إرسال لـ Neon و Knock كما في كودك
-            try {
-                const response = await fetch('/api/save-health', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ category: payload.category, note: payload.note, user_id: 1 }) 
-                });
-                const data = await response.json();
-                
-                openAIChat(type === 'health' ? 'طبيبة رقة' : 'مستشارة الحميمية');
-                const container = document.getElementById('chat-messages');
-                container.innerHTML += `<div class="msg msg-user">تم تسجيل: ${payload.note}</div>`;
-                container.innerHTML += `<div class="msg msg-ai">${data.advice || "تم تحليل بياناتكِ بنجاح. بناءً على المدخلات، حالتكِ مستقرة وننصح بالمتابعة الدورية."}</div>`;
-                container.scrollTop = container.scrollHeight;
-                Swal.fire('تم الحفظ ✨', 'يمكنكِ رؤية التحليل في الشات', 'success');
-            } catch (e) {
-                Swal.fire('تم الحفظ محلياً', 'تم حفظ البيانات في المتصفح وسيتم الرفع عند توفر الاتصال', 'info');
-            }
-        }
-
-        function nav(id, el) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + id).classList.add('active');
-            el.classList.add('active');
-        }
-
-        function openAIChat(title) {
-            document.getElementById('chat-title').innerText = title;
-            document.getElementById('chat-overlay').style.display = 'flex';
-        }
-
-        function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
-
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value;
-            if(!text) return;
-            const container = document.getElementById('chat-messages');
-            container.innerHTML += `<div class="msg msg-user">${text}</div>`;
-            input.value = '';
-            
-            try {
-                const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: text }) });
-                const data = await res.json();
-                container.innerHTML += `<div class="msg msg-ai">${data.reply || "أنا معكِ.. سأقوم بتحليل استفسارك بناءً على سجلاتكِ الصحية."}</div>`;
-            } catch(e) {
-                container.innerHTML += `<div class="msg msg-ai">عذراً، أنا أعمل حالياً على تحليل بياناتكِ السابقة، هل من سؤال آخر؟</div>`;
-            }
-            container.scrollTop = container.scrollHeight;
-        }
-
-        window.onload = () => {
-            renderHealth();
-            renderIntimacy();
-        };
-    </script>
-</body>
-</html>
