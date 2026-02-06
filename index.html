@@ -3,302 +3,303 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق رقة | المنصة المتكاملة</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <title>تطبيق رؤاقة - النسخة النسائية الفاخرة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { 
-            --p1: #ff85c0; --p2: #eb2f96; --purp: #722ed1; 
-            --bg: #fffcfd; --soft: #fff0f6; --gold: #faad14;
-            --glass: rgba(255, 255, 255, 0.95);
+        :root {
+            --rose-gold: #e29578;
+            --soft-pink: #ffddd2;
+            --mauve: #9d8189;
+            --light-mauve: #f4eeff;
+            --deep-rose: #d6808c;
+            --white: #ffffff;
+            --pearl: #fdfafb;
+            --text-main: #4a4e69;
+            --gradient-fem: linear-gradient(135deg, #d6808c 0%, #9d8189 100%);
         }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #444; overflow-x: hidden; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--pearl);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        .header {
+            background-color: var(--white);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 15px rgba(157, 129, 137, 0.1);
+            z-index: 1000;
+        }
+
+        .video-library {
+            background: var(--gradient-fem);
+            color: white;
+            padding: 8px 18px;
+            border-radius: 50px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            box-shadow: 0 4px 10px rgba(214, 128, 140, 0.3);
+        }
+
+        .notification-bell {
+            font-size: 22px;
+            color: var(--mauve);
+            position: relative;
+            cursor: pointer;
+        }
+
+        .notif-dot {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 8px;
+            height: 8px;
+            background: #e5989b;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: none;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -280px;
+            width: 260px;
+            height: 100%;
+            background: var(--white);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2000;
+            padding: 40px 20px;
+        }
+
+        .sidebar.active { right: 0; }
+
+        .sidebar h2 { 
+            color: var(--mauve); 
+            font-size: 1.4rem;
+            margin-bottom: 35px;
+            font-weight: 300;
+        }
         
-        /* Header */
-        .top-nav { background: var(--glass); backdrop-filter: blur(10px); padding: 15px 20px; display: flex; justify-content: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
-        .logo-text { font-weight: 800; color: var(--p2); font-size: 26px; }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 14px;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 15px;
+            margin-bottom: 10px;
+            transition: 0.3s;
+        }
 
-        .page { display: none; padding: 15px; animation: fadeIn 0.5s ease; }
-        .page.active { display: block; }
-        @keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(74, 78, 105, 0.2);
+            display: none;
+            z-index: 1500;
+            backdrop-filter: blur(4px);
+        }
 
-        /* AI Buttons */
-        .ai-header-btn { color: white; border: none; width: 100%; padding: 16px; border-radius: 18px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Tajawal'; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s; }
-        .btn-health { background: linear-gradient(135deg, #eb2f96, #ff4d4f); }
-        .btn-intimacy { background: linear-gradient(135deg, #800020, #faad14); } /* ألوان عنابية وذهبية للحميمية */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px 20px;
+            padding-bottom: 120px;
+        }
 
-        /* Health & Intimacy Cards */
-        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
-        .card-item { background: #fff; padding: 20px 10px; border-radius: 22px; text-align: center; border: 1.5px solid var(--soft); box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: 0.3s; cursor: pointer; }
-        .card-item:hover { transform: translateY(-5px); border-color: var(--p1); }
-        .card-item i { font-size: 32px; margin-bottom: 10px; display: block; }
-        .card-item span { font-size: 14px; font-weight: 700; color: #444; }
+        .post-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(157, 129, 137, 0.05);
+            border: 1px solid rgba(255, 221, 210, 0.3);
+        }
 
-        /* Form Styling */
-        .swal-label { display: block; text-align: right; margin-top: 12px; font-weight: bold; color: var(--p2); font-size: 14px; }
-        .swal-custom-input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 12px; border: 1px solid #ddd; font-family: 'Tajawal'; box-sizing: border-box; }
-        .swal-back-btn { background: #eee; color: #333; border: none; padding: 6px 15px; border-radius: 8px; cursor: pointer; font-family: 'Tajawal'; margin-bottom: 15px; display: flex; align-items: center; gap: 5px; font-size: 13px; }
+        .post-card img {
+            width: 100%;
+            border-radius: 15px;
+            margin-top: 10px;
+        }
 
-        /* Chat UI */
-        #chat-overlay { display: none; position: fixed; inset: 0; background: white; z-index: 2000; flex-direction: column; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; background: #fdfbfd; }
-        .msg { padding: 14px 18px; border-radius: 20px; max-width: 80%; font-size: 14px; line-height: 1.6; }
-        .msg-user { align-self: flex-start; background: #f0f0f0; }
-        .msg-ai { align-self: flex-end; background: var(--p2); color: white; }
-        .chat-footer { padding: 15px; display: flex; gap: 10px; background: white; border-top: 1px solid #eee; }
-        .chat-input { flex: 1; padding: 12px 20px; border-radius: 30px; border: 1.5px solid #eee; outline: none; font-family: 'Tajawal'; }
+        .post-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--light-mauve);
+        }
 
-        /* Nav Bar */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; padding: 12px 0 25px 0; z-index: 1000; }
-        .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .nav-link i { font-size: 24px; }
-        .nav-link.active { color: var(--p2); font-weight: bold; }
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--mauve);
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            height: 90px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -10px 30px rgba(157, 129, 137, 0.1);
+            z-index: 1000;
+            backdrop-filter: blur(15px);
+            border-top: 1px solid var(--soft-pink);
+        }
+
+        .nav-item {
+            text-align: center;
+            flex: 1;
+            color: #b2b2c2;
+            text-decoration: none;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .nav-item i { font-size: 22px; margin-bottom: 6px; display: block; }
+        .active-nav { color: var(--deep-rose); }
+
+        .center-btn {
+            position: relative;
+            top: -30px;
+            background: var(--gradient-fem);
+            min-width: 85px;
+            height: 85px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white !important;
+            box-shadow: 0 12px 25px rgba(214, 128, 140, 0.4);
+            border: 8px solid var(--pearl);
+        }
     </style>
 </head>
 <body>
 
-    <header class="top-nav"><div class="logo-text">رقة</div></header>
-
-    <div id="page-health" class="page active">
-        <button class="ai-header-btn btn-health" onclick="openAIChat('طبيبة رقة')"><i class="fas fa-stethoscope"></i> تحليل صحي شامل بالذكاء الاصطناعي</button>
-        <div class="grid-container" id="health-grid">
-            </div>
+    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <h2>رواقكِ الأنيق</h2>
+        <a href="#" class="sidebar-link"><i class="fas fa-shield-heart"></i> سياسة الخصوصية</a>
+        <a href="#" class="sidebar-link"><i class="fab fa-facebook-f"></i> مجتمع فيسبوك</a>
+        <hr style="border: 0; border-top: 1px solid var(--light-mauve); margin: 25px 0;">
+        <a href="#" class="sidebar-link" onclick="toggleMenu()" style="color: var(--mauve);"><i class="fas fa-times"></i> إغلاق</a>
     </div>
 
-    <div id="page-intimacy" class="page">
-        <button class="ai-header-btn btn-intimacy" onclick="openAIChat('مستشارة العلاقات')"><i class="fas fa-venus-mars"></i> محلل العلاقات الزوجية الذكي</button>
-        <div class="grid-container" id="intimacy-grid">
-            </div>
-    </div>
+    <header class="header">
+        <div onclick="toggleMenu()" style="cursor: pointer; color: var(--mauve);"><i class="fas fa-bars-staggered fa-lg"></i></div>
+        <button class="video-library" onclick="window.location.href='videos.html'"><i class="fas fa-sparkles"></i> مكتبة الفيديوهات</button>
+        <div class="notification-bell" onclick="fetchNotifications()"><i class="fas fa-bell"></i><span class="notif-dot" id="notif-dot"></span></div>
+    </header>
 
-    <div id="chat-overlay">
-        <div class="chat-header">
-            <i class="fas fa-times" onclick="closeChat()" style="font-size: 22px; color: #999; cursor: pointer;"></i>
-            <span id="chat-title" style="font-weight:bold; color: var(--p2);">طبيبة رقة</span>
-            <i class="fas fa-robot" style="color: var(--p2);"></i>
-        </div>
-        <div id="chat-messages" class="chat-messages"></div>
-        <div class="chat-footer">
-            <input type="text" id="chat-input" class="chat-input" placeholder="اكتبي سؤالكِ هنا...">
-            <button onclick="sendMessage()" style="background:var(--p2); color:white; border:none; width:48px; height:48px; border-radius:50%;"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
+    <main class="main-content" id="posts-container">
+        <h3 style="font-weight: 300; margin-bottom: 20px;">مرحباً بكِ، زهرتنا الجميلة ✨</h3>
+        <div id="loading">جاري تحميل أسرارك الرقيقة...</div>
+    </main>
 
-    <nav class="nav-bar">
-        <a href="#" class="nav-link" onclick="nav('intimacy', this)"><i class="fas fa-venus-mars"></i><span>الحميمية</span></a>
-        <a href="#" class="nav-link active" onclick="nav('health', this)"><i class="fas fa-heartbeat"></i><span>الصحة</span></a>
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item active-nav"><i class="fas fa-house-chimney-window"></i> الرئيسية</a>
+        <a href="#" class="nav-item"><i class="fas fa-feather"></i> منتدى الأرجوحة</a>
+        <a href="health.html" class="nav-item center-btn"><i class="fas fa-hand-holding-heart"></i><span>الحميمية<br>وصحتك</span></a>
+        <a href="insight.html" class="nav-item"><i class="fas fa-wand-magic-sparkles"></i> بوحك وبصيرتك</a>
     </nav>
 
     <script>
-        // --- قاعدة بيانات قسم الصحة (أكثر من 200 حقل) ---
-        const healthData = {
-            menstruation: { title: 'متابعة الحيض', icon: 'fa-tint', color: '#ff4d4f', sub: {
-                "سجل التواريخ 📅": ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة", "غزارة التدفق"],
-                "الأعراض الجسدية 😖": ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"],
-                "الحالة المزاجية 😰": ["قلق", "عصبية", "هدوء", "رغبة بالبكاء"],
-                "الصحة الزوجية 🥚": ["تنبيهات الخصوبة", "تحذيرات طبية", "جفاف مهبلي"],
-                "التغذية 💧": ["شرب الماء", "مغنيسيوم", "تجنب الكافيين"],
-                "النشاط البدني 🧘‍♀️": ["يوغا", "مشي خفيف", "إطالة"],
-                "النظافة الشخصية 🧼": ["سجل التغيير", "منتجات الرعاية"]
-            }},
-            pregnancy: { title: 'متابعة الحمل', icon: 'fa-baby', color: '#eb2f96', sub: {
-                "نمو الجنين 👣": ["الوزن ⚖️", "الطول 📏", "نبض القلب ❤️", "الحركة", "رأس الجنين", "السائل الأمينوسي"],
-                "صحة الأم 🩺": ["الضغط", "السكر", "الغثيان", "الوزن", "تورم القدمين"],
-                "الفحوصات 🧪": ["السونار", "فحص الدم", "فحص البول", "موعد القادم"],
-                "سجل المكملات 💊": ["فوليك أسيد", "حديد", "كالسيوم", "أوميجا 3"],
-                "الاستعداد للولادة 👜": ["تمارين التنفس", "حقيبة المستشفى", "خطة الولادة"],
-                "النشاط البدني 🏊‍♀️": ["سباحة", "مشي", "تمارين الحوض"],
-                "التغذية 🍎": ["السعرات", "البروتين", "الألياف"]
-            }},
-            lactation: { title: 'نظام الرضاعة', icon: 'fa-magic', color: '#722ed1', sub: {
-                "سجل الرضاعة 🤱": ["الوقت", "الجهة يمين/يسار", "المدة"],
-                "الرضاعة الصناعية 🍼": ["الكمية مل", "نوع الحليب"],
-                "صحة الثدي 🧼": ["تحجر", "تشققات", "تنظيف"],
-                "تغذية المرضع 🌿": ["سوائل", "مدرات الحليب"],
-                "حالة الرضيع 😴": ["عدد الحفاضات", "جودة النوم"],
-                "الشفط 펌": ["كمية الشفط", "تاريخ الصلاحية"],
-                "الحالة النفسية 🫂": ["دعم عاطفي", "ساعات الراحة"]
-            }},
-            doctor: { title: 'متابعة الطبيب', icon: 'fa-user-md', color: '#2f54eb', sub: {
-                "العيادة 🏥": ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "التخصص"]
-            }},
-            fitness: { title: 'الرشاقة والوزن', icon: 'fa-weight', color: '#faad14', sub: {
-                "قياسات الجسم 📏": ["الخصر", "الورك", "الصدر", "الوزن"],
-                "السعرات 🔥": ["المتناولة", "المحروقة"],
-                "الماء والتمارين 🏃‍♀️": ["شرب الماء", "نوع التمرين", "الخطوات"],
-                "النوم والصيام 💤": ["جودة النوم", "الصيام المتقطع"]
-            }},
-            beauty: { title: 'الأناقة والجمال', icon: 'fa-spa', color: '#13c2c2', sub: {
-                "الروتين اليومي ✨": ["بشرة", "شعر", "أظافر"],
-                "عناية متقدمة 🧴": ["مكافحة الشيخوخة", "ترطيب الجسم", "تقشير"],
-                "ستايل 👗": ["تنسيق الملابس", "الصحة الجمالية"]
-            }}
-        };
+        const API_BASE = "https://raqqa-v6cd-fno0fllke-raqqs-projects.vercel.app/api";
 
-        // --- قاعدة بيانات قسم الحميمية (10 قوائم × 15 مدخل) ---
-        const intimacyData = {
-            emotional: { title: 'الود والاتصال', icon: 'fa-heart', sub: {
-                "الارتباط العاطفي 🗣️": ["لغة الحوار", "تبادل النظرات", "كلمات التقدير", "الهدايا", "الدعم", "الضحك", "وقت خاص", "اللمس العفوي", "الأمان", "التسامح"]
-            }},
-            sensuality: { title: 'لغة الجسد', icon: 'fa-fire', sub: {
-                "التمهيد والملاطفة 💋": ["القبلات", "الأحضان", "الملاطفة", "لغة العيون", "همس", "تدليك", "نظافة", "تأنق"]
-            }},
-            physical: { title: 'الصحة التبادلية', icon: 'fa-venus-mars', sub: {
-                "اللقاء الجنسي 🌡️": ["توافق الرغبة", "المبادرة", "استكشاف", "التفاعل", "التعبير عن احتياج", "إشباع", "المدة"]
-            }},
-            aftercare: { title: 'النشوة وما بعدها', icon: 'fa-stars', sub: {
-                "الاطمئنان 💞": ["الوصول للنشوة", "التزامن", "حضن بعدي", "كلمات حب", "بقاء معا", "رضا", "عناية"]
-            }},
-            creativity: { title: 'الابتكار والأنواع', icon: 'fa-lightbulb', sub: {
-                "كسر الروتين 🔄": ["تغيير المكان", "أوضاع جديدة", "روائح", "موسيقى", "تفاعل سمعي", "مفاجآت"]
-            }},
-            boundaries: { title: 'الضوابط الشرعية', icon: 'fa-shield-halved', sub: {
-                "الستر والخصوصية 🤐": ["تجنب الحيض", "تجنب الدبر", "عدم إفشاء السر", "تجنب الإكراه", "الالتزام بالستر"]
-            }},
-            sexualhealth: { title: 'الصحة الفسيولوجية', icon: 'fa-dna', sub: {
-                "البدن والقدرة 💪": ["قدرة بدنية", "غياب الألم", "هرمونات", "رياضة مقوية", "تغذية", "نوم"]
-            }},
-            barriers: { title: 'العوائق والصعوبات', icon: 'fa-ban', sub: {
-                "تحديات يومية 🌪️": ["ضغوط", "انشغال بالأبناء", "تعب", "ملل", "صورة الجسد"]
-            }},
-            education: { title: 'الوعي والثقافة', icon: 'fa-book-open', sub: {
-                "الفهم السيكولوجي 🧠": ["سيكولوجية الرجل", "سيكولوجية المرأة", "كتب تنمية", "نقاط المتعة"]
-            }},
-            spiritual: { title: 'الاطمئنان الروحي', icon: 'fa-mosque', sub: {
-                "النية والعبادة 🤲": ["دعاء قبل العلاقة", "غسل مشترك", "شكر النعمة", "نية الإعفاف"]
-            }}
-        };
-
-        // توليد كروت الصحة
-        function renderHealth() {
-            const grid = document.getElementById('health-grid');
-            grid.innerHTML = '';
-            for (let key in healthData) {
-                grid.innerHTML += `
-                    <div class="card-item" onclick="openSubMenu('${key}', 'health')">
-                        <i class="fas ${healthData[key].icon}" style="color:${healthData[key].color}"></i>
-                        <span>${healthData[key].title}</span>
-                    </div>`;
-            }
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('active');
+            overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
         }
 
-        // توليد كروت الحميمية
-        function renderIntimacy() {
-            const grid = document.getElementById('intimacy-grid');
-            grid.innerHTML = '';
-            for (let key in intimacyData) {
-                grid.innerHTML += `
-                    <div class="card-item" onclick="openSubMenu('${key}', 'intimacy')">
-                        <i class="fas ${intimacyData[key].icon}" style="color:#800020"></i>
-                        <span>${intimacyData[key].title}</span>
-                    </div>`;
-            }
-        }
-
-        function openSubMenu(mainKey, type) {
-            const data = type === 'health' ? healthData[mainKey] : intimacyData[mainKey];
-            let html = `<div style="text-align:right;">`;
-            for (let subKey in data.sub) {
-                html += `<button onclick="openForm('${mainKey}', '${subKey}', '${type}')" style="width:100%; padding:15px; margin-bottom:10px; border:1px solid #eee; border-radius:15px; background:white; font-family:'Tajawal'; text-align:right; cursor:pointer; display:flex; justify-content:space-between;">
-                    <span>${subKey}</span> <i class="fas fa-chevron-left" style="color:var(--p2); font-size:12px; margin-top:4px;"></i>
-                </button>`;
-            }
-            html += `</div>`;
-
-            Swal.fire({ title: data.title, html: html, showConfirmButton: false, showCloseButton: true });
-        }
-
-        function openForm(mainKey, subKey, type) {
-            const data = type === 'health' ? healthData[mainKey] : intimacyData[mainKey];
-            const fields = data.sub[subKey];
-            let formHtml = `
-                <button class="swal-back-btn" onclick="openSubMenu('${mainKey}', '${type}')"><i class="fas fa-arrow-right"></i> رجوع</button>
-                <div style="max-height:350px; overflow-y:auto; padding:5px;">`;
-            
-            fields.forEach((f, i) => {
-                formHtml += `<label class="swal-label">${f}:</label><input id="v${i}" class="swal-custom-input" placeholder="أدخلي البيانات...">`;
-            });
-            formHtml += `</div>`;
-
-            Swal.fire({
-                title: subKey,
-                html: formHtml,
-                confirmButtonText: 'حفظ وتحليل ذكي ✨',
-                confirmButtonColor: type === 'health' ? '#eb2f96' : '#800020',
-                preConfirm: () => {
-                    let results = [];
-                    fields.forEach((f, i) => {
-                        results.push(f + ": " + document.getElementById('v' + i).value);
-                    });
-                    return { category: subKey, note: results.join(' | ') };
-                }
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    saveAndAnalyze(result.value, type);
-                }
-            });
-        }
-
-        async function saveAndAnalyze(payload, type) {
-            Swal.fire({ title: 'جاري الحفظ والتحليل...', didOpen: () => Swal.showLoading() });
-            
-            // محاكاة إرسال لـ Neon و Knock كما في كودك
+        // جلب المنشورات من نيون
+        async function fetchPosts() {
             try {
-                const response = await fetch('/api/save-health', { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ category: payload.category, note: payload.note, user_id: 1 }) 
-                });
-                const data = await response.json();
-                
-                openAIChat(type === 'health' ? 'طبيبة رقة' : 'مستشارة الحميمية');
-                const container = document.getElementById('chat-messages');
-                container.innerHTML += `<div class="msg msg-user">تم تسجيل: ${payload.note}</div>`;
-                container.innerHTML += `<div class="msg msg-ai">${data.advice || "تم تحليل بياناتكِ بنجاح. بناءً على المدخلات، حالتكِ مستقرة وننصح بالمتابعة الدورية."}</div>`;
-                container.scrollTop = container.scrollHeight;
-                Swal.fire('تم الحفظ ✨', 'يمكنكِ رؤية التحليل في الشات', 'success');
-            } catch (e) {
-                Swal.fire('تم الحفظ محلياً', 'تم حفظ البيانات في المتصفح وسيتم الرفع عند توفر الاتصال', 'info');
-            }
-        }
-
-        function nav(id, el) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
-            document.getElementById('page-' + id).classList.add('active');
-            el.classList.add('active');
-        }
-
-        function openAIChat(title) {
-            document.getElementById('chat-title').innerText = title;
-            document.getElementById('chat-overlay').style.display = 'flex';
-        }
-
-        function closeChat() { document.getElementById('chat-overlay').style.display = 'none'; }
-
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value;
-            if(!text) return;
-            const container = document.getElementById('chat-messages');
-            container.innerHTML += `<div class="msg msg-user">${text}</div>`;
-            input.value = '';
-            
-            try {
-                const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: text }) });
+                const res = await fetch(`${API_BASE}/get-posts`);
                 const data = await res.json();
-                container.innerHTML += `<div class="msg msg-ai">${data.reply || "أنا معكِ.. سأقوم بتحليل استفسارك بناءً على سجلاتكِ الصحية."}</div>`;
-            } catch(e) {
-                container.innerHTML += `<div class="msg msg-ai">عذراً، أنا أعمل حالياً على تحليل بياناتكِ السابقة، هل من سؤال آخر؟</div>`;
+                const container = document.getElementById('posts-container');
+                document.getElementById('loading').style.display = 'none';
+
+                data.posts.forEach(post => {
+                    // تصفية لجلب النصوص والصور فقط كما طلبت
+                    if (post.type === 'نصي' || post.type === 'صورة') {
+                        const card = document.createElement('div');
+                        card.className = 'post-card';
+                        card.innerHTML = `
+                            <p>${post.content}</p>
+                            ${post.media_url ? `<img src="${post.media_url}" alt="Raqqa Image">` : ''}
+                            <div class="post-actions">
+                                <button class="action-btn" onclick="likePost(${post.id})"><i class="far fa-heart"></i> إعجاب</button>
+                                <button class="action-btn" onclick="commentPost(${post.id})"><i class="far fa-comment"></i> تعليق</button>
+                                <button class="action-btn" onclick="sharePost('${post.content}')"><i class="fas fa-share-nodes"></i> مشاركة</button>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    }
+                });
+            } catch (err) {
+                console.error("Fetch Error:", err);
             }
-            container.scrollTop = container.scrollHeight;
         }
 
+        // جلب الإشعارات
+        async function fetchNotifications() {
+            try {
+                const res = await fetch(`${API_BASE}/notifications?user_id=1`);
+                const data = await res.json();
+                if (data.notifications.length > 0) {
+                    document.getElementById('notif-dot').style.display = 'block';
+                    alert(`لديكِ ${data.notifications.length} إشعارات جديدة رقيقة ✨`);
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        // وظائف التفاعل
+        function sharePost(text) {
+            if (navigator.share) {
+                navigator.share({ title: 'من تطبيق رقة', text: text, url: window.location.href });
+            } else {
+                alert("خاصية المشاركة غير مدعومة في هذا المتصفح");
+            }
+        }
+
+        function likePost(id) { alert("شكراً لإعجابكِ يا رفيقتي! ❤️"); }
+        function commentPost(id) { const msg = prompt("اكتبي بوحك هنا..."); if(msg) alert("تم إضافة تعليقك الرقيق"); }
+
+        // التشغيل عند التحميل
         window.onload = () => {
-            renderHealth();
-            renderIntimacy();
+            fetchPosts();
+            fetchNotifications();
         };
     </script>
 </body>
