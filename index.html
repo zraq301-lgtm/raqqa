@@ -65,7 +65,19 @@
         /* ألوان الأيقونات الجديدة المعبرة */
         .icon-vr { color: #ff00c8; } /* فوشيا لعالم الـ VR */
         .icon-vid { color: #00b4d8; } /* سماوي للمكتبة */
-        .icon-bell { color: #ff9f1c; font-size: 18px; } /* برتقالي ذهبي للإشعارات */
+        .icon-bell { color: #ff9f1c; font-size: 18px; position: relative; } /* برتقالي ذهبي للإشعارات */
+
+        /* النقطة الحمراء للإشعار */
+        #dot {
+            display: none;
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid white;
+        }
 
         .sidebar {
             position: fixed;
@@ -165,7 +177,10 @@
             <button class="tool-btn" onclick="openFrame('videos.html')">
                 <i class="fas fa-play-circle icon-vid"></i> مكتبة الفيديوهات
             </button>
-            <i class="fas fa-bell icon-bell" onclick="openFrame('notifications.html')"></i>
+            <div style="position: relative; cursor: pointer;" onclick="openFrame('notifications.html'); document.getElementById('dot').style.display='none';">
+                <i class="fas fa-bell icon-bell"></i>
+                <span id="dot"></span>
+            </div>
         </div>
     </header>
 
@@ -194,8 +209,7 @@
 
         function openFrame(url) {
             viewer.src = url;
-            // إزالة الحالة النشطة من الجميع وإضافتها للضغط الحالي إذا كان من النيبار
-            if(event && event.currentTarget.classList.contains('nav-item')) {
+            if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
                 event.currentTarget.classList.add('active-nav');
             }
@@ -208,8 +222,33 @@
             overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
         }
 
-        // تم ربط الـ API للذكاء الصناعي والمنشورات لضمان عملها في الـ APK
-        // سيقوم التطبيق بفتح صفحة الحميمية تلقائياً عند التشغيل
+        // الرابط الذي سيتم فحصه (رابط جلب الإشعارات من نيون)
+        const CHECK_NOTIF_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/api/notifications?user_id=1";
+
+        async function listenToPlatform() {
+            try {
+                const res = await fetch(CHECK_NOTIF_URL);
+                const data = await res.json();
+
+                // إذا وجدنا إشعارات غير مقروءة أرسلتها المنصة تواً
+                if (data.success && data.notifications.length > 0) {
+                    const bellDot = document.getElementById('dot'); // تأكد أن لديك id="dot" في الجرس
+                    if (bellDot) {
+                        bellDot.style.display = 'block'; // إظهار النقطة الحمراء
+                        bellDot.style.backgroundColor = '#ff0000'; 
+                    }
+                    console.log("تنبيه جديد من المنصة جاهز للعرض!");
+                }
+            } catch (err) {
+                console.log("في انتظار تحديثات المنصة...");
+            }
+        }
+
+        // الفحص كل 40 ثانية (مناسب جداً للـ APK والبطارية)
+        setInterval(listenToPlatform, 40000);
+        
+        // استدعاء أولي عند التحميل
+        listenToPlatform();
     </script>
 </body>
 </html>
