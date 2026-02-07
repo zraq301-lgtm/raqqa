@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -57,11 +57,10 @@
             display: none; z-index: 1500; backdrop-filter: blur(4px);
         }
 
-        /* تعديل العبقري: إضافة هامش سفلي للإطار لمنع اختفاء الأزرار خلف النيبار */
         #app-viewport {
             flex: 1; width: 100%; border: none; background: var(--pearl);
             transition: transform 0.3s ease-in-out;
-            padding-bottom: 90px; /* مساحة أمان إضافية لظهور زر التحليل */
+            padding-bottom: 90px;
             box-sizing: border-box;
         }
 
@@ -127,21 +126,26 @@
     </nav>
 
     <script>
-        // الروابط الأصلية والفعالة 100% كما هي
         const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        function openFrame(page) {
+        // التعديل العبقري لكسر التخزين المؤقت وضمان أحدث نسخة
+        function openFrame(pageName) {
+            // إضافة "بصمة زمنية" عشوائية تجبر Vercel على إعطائك أحدث نسخة فوراً
+            const versionBuster = "?update=" + Date.now();
+            const finalUrl = pageName.startsWith('http') ? pageName + versionBuster : BASE_URL + pageName + versionBuster;
+            
             viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
             
             setTimeout(() => {
-                viewer.src = page.startsWith('http') ? page : BASE_URL + page;
+                viewer.src = finalUrl;
                 viewer.style.transform = "translateY(0)";
                 viewer.style.opacity = "1";
             }, 200);
 
+            // الحفاظ على منطق النيبار النشط
             if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
                 event.currentTarget.classList.add('active-nav');
