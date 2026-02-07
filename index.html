@@ -3,159 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق رقة</title>
+    <title>منتدى الأرجوحة | مساحة خاصة للمرأة</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --rose-gold: #e29578;
-            --mauve: #9d8189;
-            --deep-rose: #d6808c;
-            --white: #ffffff;
-            --pearl: #fdfafb;
-            --text-main: #4a4e69;
-            --gradient-fem: linear-gradient(135deg, #d6808c 0%, #9d8189 100%);
-        }
-
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--pearl);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #fdf6f9;
             margin: 0; padding: 0;
-            display: flex; flex-direction: column;
-            height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
-
-        /* الهيدر ثابت */
-        .header {
-            background: var(--white);
-            padding: 15px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
-            z-index: 1000;
+        header {
+            background-color: #8e44ad; color: white;
+            padding: 15px; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;
         }
-
-        /* الحاوية الرئيسية للأقسام */
-        .view-section {
-            display: none; /* مخفي افتراضياً */
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-            padding-bottom: 100px;
+        nav {
+            background: #a569bd; padding: 10px;
+            display: flex; justify-content: center; gap: 15px;
         }
-
-        .active-view { display: block; } /* القسم النشط فقط يظهر */
-
-        /* تصميم الكروت */
-        .post-card {
-            background: white; border-radius: 15px;
-            padding: 15px; margin-bottom: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        nav a, .nav-item {
+            color: white; text-decoration: none; font-weight: bold; cursor: pointer; font-size: 14px;
         }
-        .post-card img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        .main-container {
+            flex: 1; overflow-y: auto; padding: 20px; padding-bottom: 100px;
+        }
+        /* تصميم الكروت لجلب بيانات نيون */
+        .forum-section {
+            background: white; border-radius: 10px; padding: 20px;
+            margin-bottom: 20px; border-right: 5px solid #8e44ad;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .forum-section img { width: 100%; border-radius: 10px; margin-top: 10px; }
+        
+        .private-badge {
+            background: #ff75a0; color: white; padding: 2px 8px;
+            border-radius: 15px; font-size: 12px; float: left;
+        }
+        /* الأزرار التفاعلية */
+        .post-actions {
+            display: flex; gap: 15px; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;
+        }
+        .action-btn { border: none; background: none; color: #8e44ad; cursor: pointer; font-size: 13px; }
 
-        /* القائمة السفلية */
+        /* القائمة السفلية الثابتة للـ APK */
         .bottom-nav {
-            position: fixed; bottom: 0; width: 100%;
-            background: white; height: 80px;
-            display: flex; justify-content: space-around; align-items: center;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
-            z-index: 1000;
+            position: fixed; bottom: 0; width: 100%; background: white;
+            height: 70px; display: flex; justify-content: space-around;
+            align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000;
         }
+        .nav-link { text-align: center; color: #7f8c8d; text-decoration: none; flex: 1; font-size: 12px; }
+        .nav-link i { display: block; font-size: 20px; margin-bottom: 3px; }
+        .nav-link.active { color: #8e44ad; }
 
-        .nav-item {
-            text-align: center; color: #b2b2c2;
-            cursor: pointer; font-size: 11px; flex: 1;
-        }
-        .nav-item i { font-size: 20px; display: block; margin-bottom: 5px; }
-        .active-nav { color: var(--deep-rose); }
-
-        .center-btn {
-            position: relative; top: -20px;
-            background: var(--gradient-fem);
-            width: 70px; height: 70px; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            color: white !important; border: 5px solid var(--pearl);
+        /* إطار عرض الصفحات الخارجية */
+        #external-view {
+            position: fixed; top: 120px; left: 0; width: 100%; bottom: 70px;
+            background: white; border: none; display: none; z-index: 500;
         }
     </style>
 </head>
 <body>
 
-    <header class="header">
-        <i class="fas fa-bars-staggered fa-lg" style="color: var(--mauve)"></i>
-        <span style="font-weight: bold; color: var(--mauve)">رقة</span>
-        <i class="fas fa-bell" style="color: var(--mauve)" onclick="loadSection('notifications')"></i>
-    </header>
+<header>
+    <h1>منتدى الأرجوحة</h1>
+    <p>مساحتكِ الخاصة للبوح والإبداع</p>
+</header>
 
-    <div id="home" class="view-section active-view">
-        <h3 style="font-weight: 300;">مرحباً بكِ في رقة ✨</h3>
-        <div id="loading">جاري جلب البوح من نيون...</div>
-        <div id="posts-container"></div>
-    </div>
+<nav>
+    <div class="nav-item" onclick="closeExternal()">الرئيسية</div>
+    <div class="nav-item" onclick="openPage('videos.html')">مكتبة الفيديوهات</div>
+    <div class="nav-item" onclick="openPage('insight.html')">بصيرة</div>
+</nav>
 
-    <div id="health" class="view-section">
-        <h3 style="color: var(--deep-rose)">صحتكِ وحميميتكِ</h3>
-        <p>هنا تجدين كل ما يخص تتبع صحتك برقة...</p>
-        </div>
+<iframe id="external-view"></iframe>
 
-    <div id="insight" class="view-section">
-        <h3>بوحكِ وبصيرتكِ</h3>
-        <p>مساحة آمنة للتأمل والذكاء الصناعي...</p>
-    </div>
+<div class="main-container" id="main-content">
+    <div id="loading" style="text-align: center; color: #8e44ad;">جاري تحميل بوح الأرجوحة من نيون...</div>
+    <div id="posts-list"></div>
+</div>
 
-    <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="loadSection('home')">
-            <i class="fas fa-house"></i> الرئيسية
-        </div>
-        <div class="nav-item" onclick="loadSection('health')">
-            <i class="fas fa-heart-pulse"></i> الحميمية
-        </div>
-        <div class="nav-item center-btn" onclick="alert('خاصية الرفع قريباً')">
-            <i class="fas fa-plus"></i>
-        </div>
-        <div class="nav-item" onclick="loadSection('insight')">
-            <i class="fas fa-wand-magic-sparkles"></i> بصيرة
-        </div>
-    </nav>
+<nav class="bottom-nav">
+    <a href="javascript:void(0)" class="nav-link active" onclick="closeExternal()"><i class="fas fa-home"></i>الرئيسية</a>
+    <a href="javascript:void(0)" class="nav-link" onclick="openPage('health.html')"><i class="fas fa-heartbeat"></i>الحميمية</a>
+    <a href="javascript:void(0)" class="nav-link" onclick="openPage('insight.html')"><i class="fas fa-magic"></i>بصيرة</a>
+    <a href="javascript:void(0)" class="nav-link" onclick="askAI()"><i class="fas fa-robot"></i>رقة AI</a>
+</nav>
 
-    <script>
-        const API_BASE = "https://raqqa-v6cd-fno0fllke-raqqs-projects.vercel.app/api";
+<script>
+    const API_BASE = "https://raqqa-v6cd-fno0fllke-raqqs-projects.vercel.app/api";
 
-        // وظيفة التنقل بين الأقسام
-        function loadSection(sectionId) {
-            // إخفاء كل الأقسام
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active-view'));
-            // إزالة اللون النشط من الأزرار
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-            
-            // إظهار القسم المطلوب
-            document.getElementById(sectionId).classList.add('active-view');
-            // تفعيل الزر المقابل (اختياري حسب الترتيب)
+    // وظيفة لفتح الصفحات داخل الإطار دون اختفاء القوائم
+    function openPage(url) {
+        const iframe = document.getElementById('external-view');
+        iframe.src = url;
+        iframe.style.display = "block";
+        document.getElementById('main-content').style.display = "none";
+    }
+
+    // العودة للرئيسية
+    function closeExternal() {
+        document.getElementById('external-view').style.display = "none";
+        document.getElementById('main-content').style.display = "block";
+    }
+
+    // جلب المنشورات (نصوص وصور فقط) من نيون
+    async function fetchPosts() {
+        try {
+            const res = await fetch(`${API_BASE}/get-posts`);
+            const data = await res.json();
+            const list = document.getElementById('posts-list');
+            document.getElementById('loading').style.display = 'none';
+
+            data.posts.forEach(post => {
+                if (post.type === 'نصي' || post.type === 'صورة') {
+                    const div = document.createElement('div');
+                    div.className = 'forum-section';
+                    div.innerHTML = `
+                        <span class="private-badge">آمن</span>
+                        <h2>بوح جديد</h2>
+                        <p>${post.content}</p>
+                        ${post.media_url ? `<img src="${post.media_url}">` : ''}
+                        <div class="post-actions">
+                            <button class="action-btn" onclick="alert('أعجبكِ هذا')"><i class="fas fa-heart"></i> إعجاب</button>
+                            <button class="action-btn" onclick="prompt('اكتبي تعليقكِ:')"><i class="fas fa-comment"></i> تعليق</button>
+                            <button class="action-btn" onclick="share('${post.content}')"><i class="fas fa-share"></i> مشاركة</button>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                }
+            });
+        } catch (e) {
+            document.getElementById('loading').innerText = "حدث خطأ في الاتصال بالشبكة";
         }
+    }
 
-        // جلب المنشورات من نيون عند فتح التطبيق
-        async function fetchPosts() {
-            try {
-                const res = await fetch(`${API_BASE}/get-posts`);
-                const data = await res.json();
-                const container = document.getElementById('posts-container');
-                document.getElementById('loading').style.display = 'none';
+    // منطق الذكاء الصناعي APK
+    async function askAI() {
+        const promptMsg = prompt("اسألي 'رقة' عن أي شيء يخص بصيرتكِ:");
+        if(!promptMsg) return;
+        try {
+            const res = await fetch(`${API_BASE}/raqqa-ai`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ prompt: promptMsg })
+            });
+            const data = await res.json();
+            alert("رقة تقول لكِ: " + data.reply);
+        } catch(e) { alert("عذراً، تعثر الاتصال بذكاء رقة"); }
+    }
 
-                data.posts.forEach(post => {
-                    if (post.type === 'نصي' || post.type === 'صورة') {
-                        const card = document.createElement('div');
-                        card.className = 'post-card';
-                        card.innerHTML = `
-                            <p>${post.content}</p>
-                            ${post.media_url ? `<img src="${post.media_url}">` : ''}
-                        `;
-                        container.appendChild(card);
-                    }
-                });
-            } catch (err) {
-                document.getElementById('loading').innerText = "خطأ في الاتصال بالشبكة";
-            }
+    // مشاركة المحتوى لجميع المنصات
+    function share(msg) {
+        if (navigator.share) {
+            navigator.share({ title: 'من منتدى الأرجوحة', text: msg, url: window.location.href });
+        } else {
+            alert("تم نسخ النص لمشاركته");
         }
+    }
 
-        window.onload = fetchPosts;
-    </script>
+    window.onload = fetchPosts;
+</script>
 </body>
 </html>
