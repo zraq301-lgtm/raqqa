@@ -13,7 +13,7 @@
             --bg: #fffcfd; --soft: #fff0f6; --gold: #faad14;
             --glass: rgba(255, 255, 255, 0.95);
         }
-        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; color: #444; overflow-x: hidden; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding-bottom: 50px; color: #444; overflow-x: hidden; }
         
         /* Header */
         .top-nav { background: var(--glass); backdrop-filter: blur(10px); padding: 15px 20px; display: flex; justify-content: center; box-shadow: 0 2px 15px rgba(0,0,0,0.05); position: sticky; top:0; z-index:1001; }
@@ -24,9 +24,14 @@
         @keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
 
         /* AI Buttons */
-        .ai-header-btn { color: white; border: none; width: 100%; padding: 16px; border-radius: 18px; font-weight: bold; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Tajawal'; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s; }
+        .ai-header-btn { color: white; border: none; width: 100%; padding: 16px; border-radius: 18px; font-weight: bold; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Tajawal'; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: 0.3s; }
         .btn-health { background: linear-gradient(135deg, #eb2f96, #ff4d4f); }
-        .btn-intimacy { background: linear-gradient(135deg, #800020, #faad14); } /* ألوان عنابية وذهبية للحميمية */
+        .btn-intimacy { background: linear-gradient(135deg, #800020, #faad14); }
+
+        /* Inline Navigation (Moved from Bottom) */
+        .inline-nav { display: flex; gap: 10px; margin-bottom: 20px; }
+        .inline-nav-btn { flex: 1; padding: 12px; border-radius: 12px; border: 1.5px solid #eee; background: white; color: #bbb; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: bold; transition: 0.3s; }
+        .inline-nav-btn.active { background: var(--soft); border-color: var(--p2); color: var(--p2); }
 
         /* Health & Intimacy Cards */
         .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
@@ -34,6 +39,10 @@
         .card-item:hover { transform: translateY(-5px); border-color: var(--p1); }
         .card-item i { font-size: 32px; margin-bottom: 10px; display: block; }
         .card-item span { font-size: 14px; font-weight: 700; color: #444; }
+
+        /* Sub-menu Grid (for two columns) */
+        .submenu-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; text-align: right; }
+        .submenu-btn { padding: 12px; border: 1px solid #eee; border-radius: 15px; background: white; font-family: 'Tajawal'; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; font-size: 13px; font-weight: bold; color: #555; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
 
         /* Form Styling */
         .swal-label { display: block; text-align: right; margin-top: 12px; font-weight: bold; color: var(--p2); font-size: 14px; }
@@ -49,12 +58,6 @@
         .msg-ai { align-self: flex-end; background: var(--p2); color: white; }
         .chat-footer { padding: 15px; display: flex; gap: 10px; background: white; border-top: 1px solid #eee; }
         .chat-input { flex: 1; padding: 12px 20px; border-radius: 30px; border: 1.5px solid #eee; outline: none; font-family: 'Tajawal'; }
-
-        /* Nav Bar */
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 1px solid #eee; padding: 12px 0 25px 0; z-index: 1000; }
-        .nav-link { flex: 1; text-align: center; color: #bbb; text-decoration: none; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-        .nav-link i { font-size: 24px; }
-        .nav-link.active { color: var(--p2); font-weight: bold; }
     </style>
 </head>
 <body>
@@ -63,14 +66,24 @@
 
     <div id="page-health" class="page active">
         <button class="ai-header-btn btn-health" onclick="openAIChat('طبيبة رقة')"><i class="fas fa-stethoscope"></i> تحليل صحي شامل بالذكاء الاصطناعي</button>
-        <div class="grid-container" id="health-grid">
-            </div>
+        
+        <div class="inline-nav">
+            <div class="inline-nav-btn active" onclick="nav('health')"><i class="fas fa-heartbeat"></i> الصحة</div>
+            <div class="inline-nav-btn" onclick="nav('intimacy')"><i class="fas fa-venus-mars"></i> الحميمية</div>
+        </div>
+
+        <div class="grid-container" id="health-grid"></div>
     </div>
 
     <div id="page-intimacy" class="page">
         <button class="ai-header-btn btn-intimacy" onclick="openAIChat('مستشارة العلاقات')"><i class="fas fa-venus-mars"></i> محلل العلاقات الزوجية الذكي</button>
-        <div class="grid-container" id="intimacy-grid">
-            </div>
+        
+        <div class="inline-nav">
+            <div class="inline-nav-btn" onclick="nav('health')"><i class="fas fa-heartbeat"></i> الصحة</div>
+            <div class="inline-nav-btn active" onclick="nav('intimacy')"><i class="fas fa-venus-mars"></i> الحميمية</div>
+        </div>
+
+        <div class="grid-container" id="intimacy-grid"></div>
     </div>
 
     <div id="chat-overlay">
@@ -86,13 +99,7 @@
         </div>
     </div>
 
-    <nav class="nav-bar">
-        <a href="#" class="nav-link" onclick="nav('intimacy', this)"><i class="fas fa-venus-mars"></i><span>الحميمية</span></a>
-        <a href="#" class="nav-link active" onclick="nav('health', this)"><i class="fas fa-heartbeat"></i><span>الصحة</span></a>
-    </nav>
-
     <script>
-        // --- قاعدة بيانات قسم الصحة (أكثر من 200 حقل) ---
         const healthData = {
             menstruation: { title: 'متابعة الحيض', icon: 'fa-tint', color: '#ff4d4f', sub: {
                 "سجل التواريخ 📅": ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة", "غزارة التدفق"],
@@ -137,7 +144,6 @@
             }}
         };
 
-        // --- قاعدة بيانات قسم الحميمية (10 قوائم × 15 مدخل) ---
         const intimacyData = {
             emotional: { title: 'الود والاتصال', icon: 'fa-heart', sub: {
                 "الارتباط العاطفي 🗣️": ["لغة الحوار", "تبادل النظرات", "كلمات التقدير", "الهدايا", "الدعم", "الضحك", "وقت خاص", "اللمس العفوي", "الأمان", "التسامح"]
@@ -171,7 +177,6 @@
             }}
         };
 
-        // توليد كروت الصحة
         function renderHealth() {
             const grid = document.getElementById('health-grid');
             grid.innerHTML = '';
@@ -184,7 +189,6 @@
             }
         }
 
-        // توليد كروت الحميمية
         function renderIntimacy() {
             const grid = document.getElementById('intimacy-grid');
             grid.innerHTML = '';
@@ -199,11 +203,13 @@
 
         function openSubMenu(mainKey, type) {
             const data = type === 'health' ? healthData[mainKey] : intimacyData[mainKey];
-            let html = `<div style="text-align:right;">`;
+            let html = `<div class="submenu-grid">`;
             for (let subKey in data.sub) {
-                html += `<button onclick="openForm('${mainKey}', '${subKey}', '${type}')" style="width:100%; padding:15px; margin-bottom:10px; border:1px solid #eee; border-radius:15px; background:white; font-family:'Tajawal'; text-align:right; cursor:pointer; display:flex; justify-content:space-between;">
-                    <span>${subKey}</span> <i class="fas fa-chevron-left" style="color:var(--p2); font-size:12px; margin-top:4px;"></i>
-                </button>`;
+                html += `
+                    <div class="submenu-btn" onclick="openForm('${mainKey}', '${subKey}', '${type}')">
+                        <i class="fas fa-list-ul" style="color:var(--p2); font-size:16px;"></i>
+                        <span>${subKey}</span>
+                    </div>`;
             }
             html += `</div>`;
 
@@ -243,8 +249,6 @@
 
         async function saveAndAnalyze(payload, type) {
             Swal.fire({ title: 'جاري الحفظ والتحليل...', didOpen: () => Swal.showLoading() });
-            
-            // محاكاة إرسال لـ Neon و Knock كما في كودك
             try {
                 const response = await fetch('/api/save-health', { 
                     method: 'POST', 
@@ -252,23 +256,28 @@
                     body: JSON.stringify({ category: payload.category, note: payload.note, user_id: 1 }) 
                 });
                 const data = await response.json();
-                
                 openAIChat(type === 'health' ? 'طبيبة رقة' : 'مستشارة الحميمية');
                 const container = document.getElementById('chat-messages');
                 container.innerHTML += `<div class="msg msg-user">تم تسجيل: ${payload.note}</div>`;
-                container.innerHTML += `<div class="msg msg-ai">${data.advice || "تم تحليل بياناتكِ بنجاح. بناءً على المدخلات، حالتكِ مستقرة وننصح بالمتابعة الدورية."}</div>`;
+                container.innerHTML += `<div class="msg msg-ai">${data.advice || "تم تحليل بياناتكِ بنجاح."}</div>`;
                 container.scrollTop = container.scrollHeight;
                 Swal.fire('تم الحفظ ✨', 'يمكنكِ رؤية التحليل في الشات', 'success');
             } catch (e) {
-                Swal.fire('تم الحفظ محلياً', 'تم حفظ البيانات في المتصفح وسيتم الرفع عند توفر الاتصال', 'info');
+                Swal.fire('تم الحفظ محلياً', 'تم حفظ البيانات في المتصفح', 'info');
             }
         }
 
-        function nav(id, el) {
+        function nav(id) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
             document.getElementById('page-' + id).classList.add('active');
-            el.classList.add('active');
+            
+            // تحديث الأزرار النشطة داخل الصفحة
+            document.querySelectorAll('.inline-nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.innerText.includes(id === 'health' ? 'الصحة' : 'الحميمية')) {
+                    btn.classList.add('active');
+                }
+            });
         }
 
         function openAIChat(title) {
@@ -289,9 +298,9 @@
             try {
                 const res = await fetch('/api/raqqa-ai', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt: text }) });
                 const data = await res.json();
-                container.innerHTML += `<div class="msg msg-ai">${data.reply || "أنا معكِ.. سأقوم بتحليل استفسارك بناءً على سجلاتكِ الصحية."}</div>`;
+                container.innerHTML += `<div class="msg msg-ai">${data.reply || "أنا معكِ.. سأقوم بتحليل استفسارك."}</div>`;
             } catch(e) {
-                container.innerHTML += `<div class="msg msg-ai">عذراً، أنا أعمل حالياً على تحليل بياناتكِ السابقة، هل من سؤال آخر؟</div>`;
+                container.innerHTML += `<div class="msg msg-ai">عذراً، أحتاج لثوانٍ للتحليل.. هل من سؤال آخر؟</div>`;
             }
             container.scrollTop = container.scrollHeight;
         }
@@ -303,4 +312,3 @@
     </script>
 </body>
 </html>
-
