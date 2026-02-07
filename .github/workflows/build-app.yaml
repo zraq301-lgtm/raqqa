@@ -7,102 +7,102 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 1. جلب الكود
-        [cite_start]uses: actions/checkout@v4 [cite: 5]
+        [cite_start]uses: actions/checkout@v4 [cite: 1]
 
       - name: 2. إعداد البيئة (Node 22 & Java 21)
-        uses: actions/setup-java@v4
+        [cite_start]uses: actions/setup-java@v4 [cite: 1]
         with:
-          java-version: '21'
-          [cite_start]distribution: 'temurin' [cite: 5]
+          [cite_start]java-version: '21' [cite: 1]
+          [cite_start]distribution: 'temurin' [cite: 1]
 
       - name: إعداد Node.js
-        uses: actions/setup-node@v4
+        [cite_start]uses: actions/setup-node@v4 [cite: 1, 2]
         with:
-          [cite_start]node-version: '22' [cite: 5]
+          [cite_start]node-version: '22' [cite: 1, 2]
 
       - name: 3. التنظيف وعزل الكود
         run: |
-          rm -rf android node_modules 
-          npm install --legacy-peer-deps
-          mkdir -p dist_web
-          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
-          npm run build --if-present [cite: 5]
+          rm -rf android node_modules [cite: 3]
+          npm install --legacy-peer-deps [cite: 3]
+          mkdir -p dist_web [cite: 3]
+          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web [cite: 3, 4]
+          npm run build --if-present [cite: 4]
 
       - name: 4. إضافة منصة أندرويد وتحديثها
         run: |
-          npx cap config set webDir dist_web
-          npx cap add android
+          npx cap config set webDir dist_web [cite: 5]
+          npx cap add android [cite: 5]
           npx cap sync android [cite: 5]
 
-      - name: 5. إضافة صلاحيات الإنترنت والبيانات غير المشفرة
+      - name: 5. إضافة صلاحيات الإنترنت والبيانات غير المشفرة (حل مشكلة الاتصال الخارجي)
         run: |
           # إضافة تصريح الإنترنت للمانيفست لضمان عمل الـ APIs الخارجية 
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml 
           
-          # تفعيل Cleartext Traffic للسماح بالاتصال بـ Neon/Vercel كما في المتصفح 
+          # تفعيل Cleartext Traffic للسماح بالاتصال بـ Neon/Vercel دون تشفير إلزامي تماماً كالمتصفح 
           [cite_start]sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml [cite: 6]
 
       - name: 6. ضبط الأيقونات وفيديو شاشة البداية
         run: |
-          # تثبيت أداة توليد الأيقونات [cite: 5]
-          npm install @capacitor/assets --save-dev [cite: 5]
+          # تثبيت أداة توليد الأيقونات [cite: 7]
+          npm install @capacitor/assets --save-dev [cite: 7]
           
-          # إنشاء مجلدات أندرويد للفيديو [cite: 5]
-          [cite_start]mkdir -p android/app/src/main/res/raw [cite: 5]
+          # إنشاء مجلدات أندرويد للفيديو [cite: 7]
+          [cite_start]mkdir -p android/app/src/main/res/raw [cite: 7]
           
-          # نقل الفيديو (يجب أن يكون الملف موجود في resources/splash_video.mp4) [cite: 5]
-          if [ -f "resources/splash_video.mp4" ]; then
-            [cite_start]cp resources/splash_video.mp4 android/app/src/main/res/raw/ [cite: 5]
-            echo "✅ تم نقل الفيديو بنجاح"
-          else
-            echo "⚠️ تحذير: لم يتم العثور على resources/splash_video.mp4"
-          [cite_start]fi [cite: 5]
+          # نقل الفيديو (يجب أن يكون الملف موجود في resources/splash_video.mp4) [cite: 7, 8]
+          [cite_start]if [ -f "resources/splash_video.mp4" ]; then [cite: 8]
+            [cite_start]cp resources/splash_video.mp4 android/app/src/main/res/raw/ [cite: 8]
+            [cite_start]echo "✅ تم نقل الفيديو بنجاح" [cite: 8]
+          [cite_start]else [cite: 8]
+            [cite_start]echo "⚠️ تحذير: لم يتم العثور على resources/splash_video.mp4" [cite: 8]
+          fi
 
-          # توليد الأيقونات آلياً من مجلد resources [cite: 5]
-          [cite_start]npx capacitor-assets generate --android [cite: 5]
+          # توليد الأيقونات آلياً من مجلد resources [cite: 8, 9]
+          [cite_start]npx capacitor-assets generate --android [cite: 9]
 
       - name: 7. بناء ملفات الـ APK و AAB
         run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleRelease
-          ./gradlew bundleRelease [cite: 5]
+          cd android [cite: 10]
+          chmod +x gradlew [cite: 10]
+          ./gradlew assembleRelease [cite: 10]
+          ./gradlew bundleRelease [cite: 10]
 
       - name: 8. إنشاء ملف التوقيع وتوقيع الملفات
         run: |
-          # 1. إنشاء ملف التوقيع [cite: 5]
+          # 1. إنشاء ملف التوقيع [cite: 11]
           keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 5]
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 11]
           
-          # 2. البحث عن الملفات [cite: 5]
-          [cite_start]APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1) [cite: 5]
-          [cite_start]AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1) [cite: 5]
+          # 2. البحث عن الملفات [cite: 11, 12]
+          [cite_start]APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1) [cite: 12]
+          [cite_start]AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1) [cite: 12]
 
-          echo "Found APK at: $APK_FILE"
-          [cite_start]echo "Found AAB at: $AAB_FILE" [cite: 5]
+          [cite_start]echo "Found APK at: $APK_FILE" [cite: 12]
+          [cite_start]echo "Found AAB at: $AAB_FILE" [cite: 12]
 
-          # 3. توقيع الـ APK [cite: 5]
+          # 3. توقيع الـ APK [cite: 12, 13]
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
             --ks-key-alias "roqa_alias" \
             --ks-pass pass:"roqa_password_2026" \
             --key-pass pass:"roqa_password_2026" \
             --out Roqa-Final-Signed.apk \
-            [cite_start]"$APK_FILE" [cite: 5]
+            [cite_start]"$APK_FILE" [cite: 13]
 
-          # 4. توقيع الـ AAB [cite: 5]
+          # 4. توقيع الـ AAB [cite: 13, 14]
           jarsigner -keystore release_key.jks \
             -storepass "roqa_password_2026" \
             -keypass "roqa_password_2026" \
-            [cite_start]"$AAB_FILE" roqa_alias [cite: 5]
+            [cite_start]"$AAB_FILE" roqa_alias [cite: 14]
 
-          [cite_start]cp "$AAB_FILE" Roqa-Final-Signed.aab [cite: 5]
+          [cite_start]cp "$AAB_FILE" Roqa-Final-Signed.aab [cite: 14]
 
       - name: 9. رفع الملفات الموقعة وملف التوقيع
-        uses: actions/upload-artifact@v4
+        [cite_start]uses: actions/upload-artifact@v4 [cite: 15]
         with:
-          name: Roqa-Full-Package-v${{ github.run_number }}
-          path: |
-            Roqa-Final-Signed.apk
-            Roqa-Final-Signed.aab
-            release_key.jks [cite: 5]
+          [cite_start]name: Roqa-Full-Package-v${{ github.run_number }} [cite: 15]
+          [cite_start]path: | [cite: 15]
+            [cite_start]Roqa-Final-Signed.apk [cite: 15]
+            [cite_start]Roqa-Final-Signed.aab [cite: 15]
+            [cite_start]release_key.jks [cite: 15]
