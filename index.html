@@ -7,152 +7,78 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --rose-gold: #e29578;
-            --soft-pink: #ffddd2;
-            --mauve: #9d8189;
-            --light-mauve: #f4eeff;
-            --deep-rose: #d6808c;
-            --white: #ffffff;
-            --pearl: #fdfafb;
-            --text-main: #4a4e69;
+            --rose-gold: #e29578; --soft-pink: #ffddd2; --mauve: #9d8189;
+            --light-mauve: #f4eeff; --deep-rose: #d6808c; --white: #ffffff;
+            --pearl: #fdfafb; --text-main: #4a4e69;
             --gradient-fem: linear-gradient(135deg, #d6808c 0%, #9d8189 100%);
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--pearl);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
-            color: var(--text-main);
+            background-color: var(--pearl); margin: 0; padding: 0;
+            display: flex; flex-direction: column; height: 100vh;
+            overflow: hidden; color: var(--text-main);
         }
 
         .header {
-            background-color: var(--white);
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 15px rgba(157, 129, 137, 0.1);
-            z-index: 1000;
+            background-color: var(--white); padding: 10px 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 15px rgba(157, 129, 137, 0.1); z-index: 1000;
         }
 
-        /* حاوية الأزرار العلوية الجديدة */
-        .header-tools {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .header-tools { display: flex; align-items: center; gap: 10px; }
 
         .tool-btn {
-            background: white;
-            border: 1px solid var(--soft-pink);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            transition: 0.3s;
+            background: white; border: 1px solid var(--soft-pink);
+            padding: 6px 12px; border-radius: 20px; font-size: 11px;
+            font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.3s;
         }
 
-        /* ألوان الأيقونات الجديدة المعبرة */
-        .icon-vr { color: #ff00c8; } /* فوشيا لعالم الـ VR */
-        .icon-vid { color: #00b4d8; } /* سماوي للمكتبة */
-        .icon-bell { color: #ff9f1c; font-size: 18px; position: relative; } /* برتقالي ذهبي للإشعارات */
+        .icon-vr { color: #ff00c8; } 
+        .icon-vid { color: #00b4d8; }
+        .icon-bell { color: #ff9f1c; font-size: 18px; position: relative; }
 
-        /* النقطة الحمراء للإشعار */
         #dot {
-            display: none;
-            position: absolute;
-            top: -2px;
-            right: -2px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            border: 1px solid white;
+            display: none; position: absolute; top: -2px; right: -2px;
+            width: 8px; height: 8px; border-radius: 50%; border: 1px solid white;
         }
 
         .sidebar {
-            position: fixed;
-            top: 0;
-            right: -280px;
-            width: 260px;
-            height: 100%;
-            background: var(--white);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 2000;
-            padding: 40px 20px;
+            position: fixed; top: 0; right: -280px; width: 260px; height: 100%;
+            background: var(--white); box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2000; padding: 40px 20px;
         }
 
         .sidebar.active { right: 0; }
 
         .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(74, 78, 105, 0.2);
-            display: none;
-            z-index: 1500;
-            backdrop-filter: blur(4px);
+            position: fixed; inset: 0; background: rgba(74, 78, 105, 0.2);
+            display: none; z-index: 1500; backdrop-filter: blur(4px);
         }
 
-        /* إطار العرض الداخلي لثبات الواجهة في الـ APK */
+        /* تحسين سلاسة الحركة للإطار الداخلي */
         #app-viewport {
-            flex: 1;
-            width: 100%;
-            border: none;
-            background: var(--pearl);
+            flex: 1; width: 100%; border: none; background: var(--pearl);
+            transition: transform 0.3s ease-in-out;
         }
 
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            height: 85px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            box-shadow: 0 -10px 30px rgba(157, 129, 137, 0.1);
-            z-index: 1000;
-            backdrop-filter: blur(15px);
-            border-top: 1px solid var(--soft-pink);
+            position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.9);
+            height: 85px; display: flex; justify-content: space-around; align-items: center;
+            box-shadow: 0 -10px 30px rgba(157, 129, 137, 0.1); z-index: 1000;
+            backdrop-filter: blur(15px); border-top: 1px solid var(--soft-pink);
         }
 
-        .nav-item {
-            text-align: center;
-            flex: 1;
-            color: #b2b2c2;
-            text-decoration: none;
-            font-size: 10px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
+        .nav-item { text-align: center; flex: 1; color: #b2b2c2; text-decoration: none; font-size: 10px; font-weight: 700; cursor: pointer; }
         .nav-item i { font-size: 22px; margin-bottom: 6px; display: block; }
         .active-nav { color: var(--deep-rose); }
 
         .center-btn {
-            position: relative;
-            top: -25px;
-            background: var(--gradient-fem);
-            min-width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white !important;
-            box-shadow: 0 10px 20px rgba(214, 128, 140, 0.4);
-            border: 6px solid var(--pearl);
+            position: relative; top: -25px; background: var(--gradient-fem);
+            min-width: 80px; height: 80px; border-radius: 50%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: white !important; box-shadow: 0 10px 20px rgba(214, 128, 140, 0.4); border: 6px solid var(--pearl);
         }
     </style>
 </head>
@@ -184,31 +110,36 @@
         </div>
     </header>
 
-    <iframe id="app-viewport" src="health.html"></iframe>
+    <iframe id="app-viewport" src="https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/health.html"></iframe>
 
     <nav class="bottom-nav">
         <div class="nav-item" onclick="openFrame('swing.html')">
-            <i class="fas fa-feather" style="color: #9d8189;"></i>
-            منتدى الأرجوحة
+            <i class="fas fa-feather" style="color: #9d8189;"></i> منتدى الأرجوحة
         </div>
-
         <div class="nav-item center-btn active-nav" onclick="openFrame('health.html')">
-            <i class="fas fa-hand-holding-heart"></i>
-            <span>الحميمية<br>وصحتك</span>
+            <i class="fas fa-hand-holding-heart"></i> <span>الحميمية<br>وصحتك</span>
         </div>
-
         <div class="nav-item" onclick="openFrame('insight.html')">
-            <i class="fas fa-wand-magic-sparkles" style="color: #d6808c;"></i>
-            بوحك وبصيرتك
+            <i class="fas fa-wand-magic-sparkles" style="color: #d6808c;"></i> بوحك وبصيرتك
         </div>
     </nav>
 
     <script>
-        const API_BASE = "https://raqqa-v6cd-fno0fllke-raqqs-projects.vercel.app/api";
+        const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
+        const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        function openFrame(url) {
-            viewer.src = url;
+        // وظيفة فتح الروابط كاملة مع تأثير حركة سلس
+        function openFrame(page) {
+            viewer.style.transform = "translateY(20px)";
+            viewer.style.opacity = "0.5";
+            
+            setTimeout(() => {
+                viewer.src = page.startsWith('http') ? page : BASE_URL + page;
+                viewer.style.transform = "translateY(0)";
+                viewer.style.opacity = "1";
+            }, 200);
+
             if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
                 event.currentTarget.classList.add('active-nav');
@@ -222,33 +153,30 @@
             overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
         }
 
-        // الرابط الذي سيتم فحصه (رابط جلب الإشعارات من نيون)
-        const CHECK_NOTIF_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/api/notifications?user_id=1";
-
+        // منطق الاستماع للإشعارات من المنصة
         async function listenToPlatform() {
             try {
                 const res = await fetch(CHECK_NOTIF_URL);
                 const data = await res.json();
-
-                // إذا وجدنا إشعارات غير مقروءة أرسلتها المنصة تواً
                 if (data.success && data.notifications.length > 0) {
-                    const bellDot = document.getElementById('dot'); // تأكد أن لديك id="dot" في الجرس
+                    const bellDot = document.getElementById('dot');
                     if (bellDot) {
-                        bellDot.style.display = 'block'; // إظهار النقطة الحمراء
+                        bellDot.style.display = 'block';
                         bellDot.style.backgroundColor = '#ff0000'; 
                     }
-                    console.log("تنبيه جديد من المنصة جاهز للعرض!");
                 }
-            } catch (err) {
-                console.log("في انتظار تحديثات المنصة...");
+            } catch (err) { console.log("بانتظار المنصة..."); }
+        }
+
+        // منطق التفاعل (مشاركة وإعجاب) لجلب المقالات
+        function shareContent(title, url) {
+            if (navigator.share) {
+                navigator.share({ title: title, url: url });
             }
         }
 
-        // الفحص كل 40 ثانية (مناسب جداً للـ APK والبطارية)
         setInterval(listenToPlatform, 40000);
-        
-        // استدعاء أولي عند التحميل
-        listenToPlatform();
+        window.onload = listenToPlatform;
     </script>
 </body>
 </html>
