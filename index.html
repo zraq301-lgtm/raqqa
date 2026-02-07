@@ -57,10 +57,12 @@
             display: none; z-index: 1500; backdrop-filter: blur(4px);
         }
 
-        /* تحسين سلاسة الحركة للإطار الداخلي */
+        /* تعديل العبقري: إضافة هامش سفلي للإطار لمنع اختفاء الأزرار خلف النيبار */
         #app-viewport {
             flex: 1; width: 100%; border: none; background: var(--pearl);
             transition: transform 0.3s ease-in-out;
+            padding-bottom: 90px; /* مساحة أمان إضافية لظهور زر التحليل */
+            box-sizing: border-box;
         }
 
         .bottom-nav {
@@ -125,11 +127,11 @@
     </nav>
 
     <script>
+        // الروابط الأصلية والفعالة 100% كما هي
         const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        // وظيفة فتح الروابط كاملة مع تأثير حركة سلس
         function openFrame(page) {
             viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
@@ -153,7 +155,6 @@
             overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
         }
 
-        // منطق الاستماع للإشعارات من المنصة
         async function listenToPlatform() {
             try {
                 const res = await fetch(CHECK_NOTIF_URL);
@@ -168,7 +169,6 @@
             } catch (err) { console.log("بانتظار المنصة..."); }
         }
 
-        // منطق التفاعل (مشاركة وإعجاب) لجلب المقالات
         function shareContent(title, url) {
             if (navigator.share) {
                 navigator.share({ title: title, url: url });
