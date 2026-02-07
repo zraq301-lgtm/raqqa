@@ -3,14 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق رقة - النسخة الاحترافية</title>
+    <title>تطبيق رقة</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --rose-gold: #e29578;
-            --soft-pink: #ffddd2;
             --mauve: #9d8189;
-            --light-mauve: #f4eeff;
             --deep-rose: #d6808c;
             --white: #ffffff;
             --pearl: #fdfafb;
@@ -19,202 +17,145 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
             background-color: var(--pearl);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            overflow: hidden; /* لمنع التمرير المزدوج */
-            color: var(--text-main);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column;
+            height: 100vh; overflow: hidden;
         }
 
-        /* الهيدر الثابت */
+        /* الهيدر ثابت */
         .header {
-            background-color: var(--white);
+            background: var(--white);
             padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 15px rgba(157, 129, 137, 0.1);
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
             z-index: 1000;
         }
 
-        .video-library {
-            background: var(--gradient-fem);
-            color: white;
-            padding: 8px 18px;
-            border-radius: 50px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-        }
-
-        /* منطقة المحتوى المتغيرة (الإطار) */
-        #content-frame {
+        /* الحاوية الرئيسية للأقسام */
+        .view-section {
+            display: none; /* مخفي افتراضياً */
             flex: 1;
-            width: 100%;
-            border: none;
-            background: var(--pearl);
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px;
         }
 
-        /* القائمة السفلية الثابتة */
+        .active-view { display: block; } /* القسم النشط فقط يظهر */
+
+        /* تصميم الكروت */
+        .post-card {
+            background: white; border-radius: 15px;
+            padding: 15px; margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+        }
+        .post-card img { width: 100%; border-radius: 10px; margin-top: 10px; }
+
+        /* القائمة السفلية */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            height: 90px;
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            box-shadow: 0 -10px 30px rgba(157, 129, 137, 0.1);
+            position: fixed; bottom: 0; width: 100%;
+            background: white; height: 80px;
+            display: flex; justify-content: space-around; align-items: center;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
             z-index: 1000;
-            backdrop-filter: blur(15px);
-            border-top: 1px solid var(--soft-pink);
         }
 
         .nav-item {
-            text-align: center;
-            flex: 1;
-            color: #b2b2c2;
-            text-decoration: none;
-            font-size: 11px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.3s;
+            text-align: center; color: #b2b2c2;
+            cursor: pointer; font-size: 11px; flex: 1;
         }
-
-        .nav-item i { font-size: 22px; margin-bottom: 6px; display: block; }
+        .nav-item i { font-size: 20px; display: block; margin-bottom: 5px; }
         .active-nav { color: var(--deep-rose); }
 
         .center-btn {
-            position: relative;
-            top: -25px;
+            position: relative; top: -20px;
             background: var(--gradient-fem);
-            min-width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white !important;
-            box-shadow: 0 10px 20px rgba(214, 128, 140, 0.3);
-            border: 5px solid var(--pearl);
-        }
-
-        /* السايد بار */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            right: -280px;
-            width: 260px;
-            height: 100%;
-            background: var(--white);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
-            transition: 0.4s;
-            z-index: 2000;
-            padding: 40px 20px;
-        }
-        .sidebar.active { right: 0; }
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.2);
-            display: none;
-            z-index: 1500;
+            width: 70px; height: 70px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white !important; border: 5px solid var(--pearl);
         }
     </style>
 </head>
 <body>
 
-    <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
-    
-    <div class="sidebar" id="sidebar">
-        <h2 style="color: var(--mauve)">رواقكِ الأنيق</h2>
-        <a href="#" class="sidebar-link" onclick="loadPage('privacy.html')">سياسة الخصوصية</a>
-        <a href="#" class="sidebar-link" onclick="toggleMenu()">إغلاق</a>
-    </div>
-
     <header class="header">
-        <div onclick="toggleMenu()" style="cursor: pointer; color: var(--mauve);"><i class="fas fa-bars-staggered fa-lg"></i></div>
-        <button class="video-library" onclick="loadPage('videos.html')"><i class="fas fa-sparkles"></i> مكتبة الفيديوهات</button>
-        <div class="notification-bell" onclick="fetchNotifications()"><i class="fas fa-bell"></i></div>
+        <i class="fas fa-bars-staggered fa-lg" style="color: var(--mauve)"></i>
+        <span style="font-weight: bold; color: var(--mauve)">رقة</span>
+        <i class="fas fa-bell" style="color: var(--mauve)" onclick="loadSection('notifications')"></i>
     </header>
 
-    <iframe id="content-frame" src="about:blank"></iframe>
+    <div id="home" class="view-section active-view">
+        <h3 style="font-weight: 300;">مرحباً بكِ في رقة ✨</h3>
+        <div id="loading">جاري جلب البوح من نيون...</div>
+        <div id="posts-container"></div>
+    </div>
+
+    <div id="health" class="view-section">
+        <h3 style="color: var(--deep-rose)">صحتكِ وحميميتكِ</h3>
+        <p>هنا تجدين كل ما يخص تتبع صحتك برقة...</p>
+        </div>
+
+    <div id="insight" class="view-section">
+        <h3>بوحكِ وبصيرتكِ</h3>
+        <p>مساحة آمنة للتأمل والذكاء الصناعي...</p>
+    </div>
 
     <nav class="bottom-nav">
-        <div class="nav-item active-nav" onclick="loadMainContent()"><i class="fas fa-house-chimney-window"></i> الرئيسية</div>
-        <div class="nav-item" onclick="loadPage('forum.html')"><i class="fas fa-feather"></i> منتدى الأرجوحة</div>
-        <div class="nav-item center-btn" onclick="loadPage('health.html')"><i class="fas fa-hand-holding-heart"></i><span>الحميمية</span></div>
-        <div class="nav-item" onclick="loadPage('insight.html')"><i class="fas fa-wand-magic-sparkles"></i> بوحك</div>
+        <div class="nav-item active-nav" onclick="loadSection('home')">
+            <i class="fas fa-house"></i> الرئيسية
+        </div>
+        <div class="nav-item" onclick="loadSection('health')">
+            <i class="fas fa-heart-pulse"></i> الحميمية
+        </div>
+        <div class="nav-item center-btn" onclick="alert('خاصية الرفع قريباً')">
+            <i class="fas fa-plus"></i>
+        </div>
+        <div class="nav-item" onclick="loadSection('insight')">
+            <i class="fas fa-wand-magic-sparkles"></i> بصيرة
+        </div>
     </nav>
 
     <script>
         const API_BASE = "https://raqqa-v6cd-fno0fllke-raqqs-projects.vercel.app/api";
-        const frame = document.getElementById('content-frame');
 
-        // وظيفة لفتح أي صفحة داخل الإطار مع بقاء الأزرار
-        function loadPage(url) {
-            frame.src = url;
-            updateNav(url);
+        // وظيفة التنقل بين الأقسام
+        function loadSection(sectionId) {
+            // إخفاء كل الأقسام
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active-view'));
+            // إزالة اللون النشط من الأزرار
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+            
+            // إظهار القسم المطلوب
+            document.getElementById(sectionId).classList.add('active-view');
+            // تفعيل الزر المقابل (اختياري حسب الترتيب)
         }
 
-        // وظيفة جلب المنشورات الأساسية (التي كانت في الصفحة الرئيسية)
-        // سنقوم بحقنها داخل الإطار عند الضغط على "الرئيسية"
-        async function loadMainContent() {
-            frame.src = 'about:blank'; // تنظيف الإطار
-            const doc = frame.contentDocument || frame.contentWindow.document;
-            doc.open();
-            doc.write(`
-                <style>
-                    body { font-family: sans-serif; direction: rtl; padding: 20px; background: #fdfafb; color: #4a4e69; }
-                    .post-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-                    img { width: 100%; border-radius: 10px; }
-                </style>
-                <div id="loading">جاري تحميل أسرار نيون...</div>
-                <div id="posts"></div>
-            `);
-            doc.close();
-
+        // جلب المنشورات من نيون عند فتح التطبيق
+        async function fetchPosts() {
             try {
-                const res = await fetch(\`\${API_BASE}/get-posts\`);
+                const res = await fetch(`${API_BASE}/get-posts`);
                 const data = await res.json();
-                const postsDiv = doc.getElementById('posts');
-                doc.getElementById('loading').style.display = 'none';
+                const container = document.getElementById('posts-container');
+                document.getElementById('loading').style.display = 'none';
 
                 data.posts.forEach(post => {
                     if (post.type === 'نصي' || post.type === 'صورة') {
-                        const div = doc.createElement('div');
-                        div.className = 'post-card';
-                        div.innerHTML = \`
-                            <p>\${post.content}</p>
-                            \${post.media_url ? \`<img src="\${post.media_url}">\` : ''}
-                        \`;
-                        postsDiv.appendChild(div);
+                        const card = document.createElement('div');
+                        card.className = 'post-card';
+                        card.innerHTML = `
+                            <p>${post.content}</p>
+                            ${post.media_url ? `<img src="${post.media_url}">` : ''}
+                        `;
+                        container.appendChild(card);
                     }
                 });
-            } catch (e) { doc.getElementById('loading').innerText = "خطأ في الاتصال"; }
+            } catch (err) {
+                document.getElementById('loading').innerText = "خطأ في الاتصال بالشبكة";
+            }
         }
 
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').style.display = 
-                document.getElementById('sidebar').classList.contains('active') ? 'block' : 'none';
-        }
-
-        function updateNav(url) {
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active-nav'));
-            // منطق بسيط لتغيير اللون حسب الصفحة المختارة
-        }
-
-        // عند فتح التطبيق لأول مرة، حمل المحتوى الرئيسي
-        window.onload = loadMainContent;
-
+        window.onload = fetchPosts;
     </script>
 </body>
 </html>
