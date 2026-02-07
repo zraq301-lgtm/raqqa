@@ -1,12 +1,28 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+    // --- بداية إعدادات CORS ---
+    // السماح لجميع المصادر بالوصول (ضروري جداً لعمل الـ APK)
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    // السماح بطرق الإرسال المطلوبة
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    // السماح بالعناوين (Headers) التي يرسلها التطبيق
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // معالجة طلب الـ "Preflight" (المتصفحات والـ WebView ترسل طلب OPTIONS قبل الـ POST)
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+    // --- نهاية إعدادات CORS ---
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
+    }
     
     const { user_id, category, value, note } = req.body;
 
     try {
-        // الاتصال بـ Neon باستخدام POSTGRES_URL الظاهر في إعداداتك
+        // الاتصال بـ Neon
         const sql = neon(process.env.POSTGRES_URL);
 
         let aiAdvice = `تم تسجيل ${category} بنجاح في رقة ✨`;
@@ -36,10 +52,9 @@ export default async function handler(req, res) {
         }
 
         // 2. الحفظ في جدول notifications الموحد في Neon
-        // تم استبدال health_tracking بـ notifications بناءً على طلبك
         await sql`
             INSERT INTO notifications (user_id, title, body)
-            VALUES (${user_id}, 'تنبيه من رقة ✨', ${aiAdvice});
+            VALUES (${user_id || 1}, 'تنبيه من رقة ✨', ${aiAdvice});
         `;
 
         // 3. إرسال البيانات إلى Pipedream للمزامنة الإضافية
