@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق رؤاقة - النسخة النسائية الفاخرة</title>
+    <title>تطبيق رقة - النسخة الاحترافية</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -26,10 +26,11 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden;
+            overflow: hidden; /* لمنع التمرير المزدوج */
             color: var(--text-main);
         }
 
+        /* الهيدر الثابت */
         .header {
             background-color: var(--white);
             padding: 15px 20px;
@@ -48,121 +49,23 @@
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
             border: none;
-            box-shadow: 0 4px 10px rgba(214, 128, 140, 0.3);
         }
 
-        .notification-bell {
-            font-size: 22px;
-            color: var(--mauve);
-            position: relative;
-            cursor: pointer;
-        }
-
-        .notif-dot {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 8px;
-            height: 8px;
-            background: #e5989b;
-            border-radius: 50%;
-            border: 2px solid white;
-            display: none;
-        }
-
-        .sidebar {
-            position: fixed;
-            top: 0;
-            right: -280px;
-            width: 260px;
-            height: 100%;
-            background: var(--white);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
-            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 2000;
-            padding: 40px 20px;
-        }
-
-        .sidebar.active { right: 0; }
-
-        .sidebar h2 { 
-            color: var(--mauve); 
-            font-size: 1.4rem;
-            margin-bottom: 35px;
-            font-weight: 300;
-        }
-        
-        .sidebar-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px;
-            color: var(--text-main);
-            text-decoration: none;
-            border-radius: 15px;
-            margin-bottom: 10px;
-            transition: 0.3s;
-        }
-
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(74, 78, 105, 0.2);
-            display: none;
-            z-index: 1500;
-            backdrop-filter: blur(4px);
-        }
-
-        .main-content {
+        /* منطقة المحتوى المتغيرة (الإطار) */
+        #content-frame {
             flex: 1;
-            overflow-y: auto;
-            padding: 25px 20px;
-            padding-bottom: 120px;
-        }
-
-        .post-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 20px rgba(157, 129, 137, 0.05);
-            border: 1px solid rgba(255, 221, 210, 0.3);
-        }
-
-        .post-card img {
             width: 100%;
-            border-radius: 15px;
-            margin-top: 10px;
-        }
-
-        .post-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid var(--light-mauve);
-        }
-
-        .action-btn {
-            background: none;
             border: none;
-            color: var(--mauve);
-            cursor: pointer;
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            background: var(--pearl);
         }
 
+        /* القائمة السفلية الثابتة */
         .bottom-nav {
             position: fixed;
             bottom: 0;
             width: 100%;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             height: 90px;
             display: flex;
             justify-content: space-around;
@@ -178,8 +81,10 @@
             flex: 1;
             color: #b2b2c2;
             text-decoration: none;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
         }
 
         .nav-item i { font-size: 22px; margin-bottom: 6px; display: block; }
@@ -187,18 +92,40 @@
 
         .center-btn {
             position: relative;
-            top: -30px;
+            top: -25px;
             background: var(--gradient-fem);
-            min-width: 85px;
-            height: 85px;
+            min-width: 80px;
+            height: 80px;
             border-radius: 50%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             color: white !important;
-            box-shadow: 0 12px 25px rgba(214, 128, 140, 0.4);
-            border: 8px solid var(--pearl);
+            box-shadow: 0 10px 20px rgba(214, 128, 140, 0.3);
+            border: 5px solid var(--pearl);
+        }
+
+        /* السايد بار */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -280px;
+            width: 260px;
+            height: 100%;
+            background: var(--white);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.05);
+            transition: 0.4s;
+            z-index: 2000;
+            padding: 40px 20px;
+        }
+        .sidebar.active { right: 0; }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1500;
         }
     </style>
 </head>
@@ -207,100 +134,87 @@
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     
     <div class="sidebar" id="sidebar">
-        <h2>رواقكِ الأنيق</h2>
-        <a href="#" class="sidebar-link"><i class="fas fa-shield-heart"></i> سياسة الخصوصية</a>
-        <a href="#" class="sidebar-link"><i class="fab fa-facebook-f"></i> مجتمع فيسبوك</a>
-        <hr style="border: 0; border-top: 1px solid var(--light-mauve); margin: 25px 0;">
-        <a href="#" class="sidebar-link" onclick="toggleMenu()" style="color: var(--mauve);"><i class="fas fa-times"></i> إغلاق</a>
+        <h2 style="color: var(--mauve)">رواقكِ الأنيق</h2>
+        <a href="#" class="sidebar-link" onclick="loadPage('privacy.html')">سياسة الخصوصية</a>
+        <a href="#" class="sidebar-link" onclick="toggleMenu()">إغلاق</a>
     </div>
 
     <header class="header">
         <div onclick="toggleMenu()" style="cursor: pointer; color: var(--mauve);"><i class="fas fa-bars-staggered fa-lg"></i></div>
-        <button class="video-library" onclick="window.location.href='videos.html'"><i class="fas fa-sparkles"></i> مكتبة الفيديوهات</button>
-        <div class="notification-bell" onclick="fetchNotifications()"><i class="fas fa-bell"></i><span class="notif-dot" id="notif-dot"></span></div>
+        <button class="video-library" onclick="loadPage('videos.html')"><i class="fas fa-sparkles"></i> مكتبة الفيديوهات</button>
+        <div class="notification-bell" onclick="fetchNotifications()"><i class="fas fa-bell"></i></div>
     </header>
 
-    <main class="main-content" id="posts-container">
-        <h3 style="font-weight: 300; margin-bottom: 20px;">مرحباً بكِ، زهرتنا الجميلة ✨</h3>
-        <div id="loading">جاري تحميل أسرارك الرقيقة...</div>
-    </main>
+    <iframe id="content-frame" src="about:blank"></iframe>
 
     <nav class="bottom-nav">
-        <a href="index.html" class="nav-item active-nav"><i class="fas fa-house-chimney-window"></i> الرئيسية</a>
-        <a href="#" class="nav-item"><i class="fas fa-feather"></i> منتدى الأرجوحة</a>
-        <a href="health.html" class="nav-item center-btn"><i class="fas fa-hand-holding-heart"></i><span>الحميمية<br>وصحتك</span></a>
-        <a href="insight.html" class="nav-item"><i class="fas fa-wand-magic-sparkles"></i> بوحك وبصيرتك</a>
+        <div class="nav-item active-nav" onclick="loadMainContent()"><i class="fas fa-house-chimney-window"></i> الرئيسية</div>
+        <div class="nav-item" onclick="loadPage('forum.html')"><i class="fas fa-feather"></i> منتدى الأرجوحة</div>
+        <div class="nav-item center-btn" onclick="loadPage('health.html')"><i class="fas fa-hand-holding-heart"></i><span>الحميمية</span></div>
+        <div class="nav-item" onclick="loadPage('insight.html')"><i class="fas fa-wand-magic-sparkles"></i> بوحك</div>
     </nav>
 
     <script>
         const API_BASE = "https://raqqa-v6cd-fno0fllke-raqqs-projects.vercel.app/api";
+        const frame = document.getElementById('content-frame');
 
-        function toggleMenu() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('active');
-            overlay.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+        // وظيفة لفتح أي صفحة داخل الإطار مع بقاء الأزرار
+        function loadPage(url) {
+            frame.src = url;
+            updateNav(url);
         }
 
-        // جلب المنشورات من نيون
-        async function fetchPosts() {
+        // وظيفة جلب المنشورات الأساسية (التي كانت في الصفحة الرئيسية)
+        // سنقوم بحقنها داخل الإطار عند الضغط على "الرئيسية"
+        async function loadMainContent() {
+            frame.src = 'about:blank'; // تنظيف الإطار
+            const doc = frame.contentDocument || frame.contentWindow.document;
+            doc.open();
+            doc.write(`
+                <style>
+                    body { font-family: sans-serif; direction: rtl; padding: 20px; background: #fdfafb; color: #4a4e69; }
+                    .post-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+                    img { width: 100%; border-radius: 10px; }
+                </style>
+                <div id="loading">جاري تحميل أسرار نيون...</div>
+                <div id="posts"></div>
+            `);
+            doc.close();
+
             try {
-                const res = await fetch(`${API_BASE}/get-posts`);
+                const res = await fetch(\`\${API_BASE}/get-posts\`);
                 const data = await res.json();
-                const container = document.getElementById('posts-container');
-                document.getElementById('loading').style.display = 'none';
+                const postsDiv = doc.getElementById('posts');
+                doc.getElementById('loading').style.display = 'none';
 
                 data.posts.forEach(post => {
-                    // تصفية لجلب النصوص والصور فقط كما طلبت
                     if (post.type === 'نصي' || post.type === 'صورة') {
-                        const card = document.createElement('div');
-                        card.className = 'post-card';
-                        card.innerHTML = `
-                            <p>${post.content}</p>
-                            ${post.media_url ? `<img src="${post.media_url}" alt="Raqqa Image">` : ''}
-                            <div class="post-actions">
-                                <button class="action-btn" onclick="likePost(${post.id})"><i class="far fa-heart"></i> إعجاب</button>
-                                <button class="action-btn" onclick="commentPost(${post.id})"><i class="far fa-comment"></i> تعليق</button>
-                                <button class="action-btn" onclick="sharePost('${post.content}')"><i class="fas fa-share-nodes"></i> مشاركة</button>
-                            </div>
-                        `;
-                        container.appendChild(card);
+                        const div = doc.createElement('div');
+                        div.className = 'post-card';
+                        div.innerHTML = \`
+                            <p>\${post.content}</p>
+                            \${post.media_url ? \`<img src="\${post.media_url}">\` : ''}
+                        \`;
+                        postsDiv.appendChild(div);
                     }
                 });
-            } catch (err) {
-                console.error("Fetch Error:", err);
-            }
+            } catch (e) { doc.getElementById('loading').innerText = "خطأ في الاتصال"; }
         }
 
-        // جلب الإشعارات
-        async function fetchNotifications() {
-            try {
-                const res = await fetch(`${API_BASE}/notifications?user_id=1`);
-                const data = await res.json();
-                if (data.notifications.length > 0) {
-                    document.getElementById('notif-dot').style.display = 'block';
-                    alert(`لديكِ ${data.notifications.length} إشعارات جديدة رقيقة ✨`);
-                }
-            } catch (err) { console.error(err); }
+        function toggleMenu() {
+            document.getElementById('sidebar').classList.toggle('active');
+            document.getElementById('overlay').style.display = 
+                document.getElementById('sidebar').classList.contains('active') ? 'block' : 'none';
         }
 
-        // وظائف التفاعل
-        function sharePost(text) {
-            if (navigator.share) {
-                navigator.share({ title: 'من تطبيق رقة', text: text, url: window.location.href });
-            } else {
-                alert("خاصية المشاركة غير مدعومة في هذا المتصفح");
-            }
+        function updateNav(url) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active-nav'));
+            // منطق بسيط لتغيير اللون حسب الصفحة المختارة
         }
 
-        function likePost(id) { alert("شكراً لإعجابكِ يا رفيقتي! ❤️"); }
-        function commentPost(id) { const msg = prompt("اكتبي بوحك هنا..."); if(msg) alert("تم إضافة تعليقك الرقيق"); }
+        // عند فتح التطبيق لأول مرة، حمل المحتوى الرئيسي
+        window.onload = loadMainContent;
 
-        // التشغيل عند التحميل
-        window.onload = () => {
-            fetchPosts();
-            fetchNotifications();
-        };
     </script>
 </body>
 </html>
