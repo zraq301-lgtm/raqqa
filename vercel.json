@@ -1,15 +1,4 @@
 {
-  "version": 2,
-  "name": "raqqa-app-pro",
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -21,27 +10,29 @@
       ]
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron-handler",
-      "schedule": "0 9 * * *"
-    }
-  ],
   "rewrites": [
     {
-      "source": "/api/notifications",
-      "destination": "/api/notifications.js"
+      "source": "/swing.html",
+      "destination": "/index.html"
     },
     {
-      "source": "/api/gemini",
-      "destination": "/api/gemini.js"
+      "source": "/insight.html",
+      "destination": "/index.html"
     },
     {
-      "source": "/api/cron-handler",
-      "destination": "/api/cron-handler.js"
+      "source": "/health.html",
+      "destination": "/index.html"
     },
     {
-      "source": "/(.*)",
+      "source": "/vr-world.html",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/videos.html",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/notifications.html",
       "destination": "/index.html"
     }
   ]
