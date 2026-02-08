@@ -111,7 +111,7 @@
         </div>
     </header>
 
-    <iframe id="app-viewport" src="https://raqqa-v6cd.vercel.app/health.html"></iframe>
+    <iframe id="app-viewport" src="https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/health.html"></iframe>
 
     <nav class="bottom-nav">
         <div class="nav-item" onclick="openFrame('swing.html')">
@@ -126,19 +126,22 @@
     </nav>
 
     <script>
-        // الروابط الأصلية والمختصرة لضمان التحديث
-        const BASE_URL = "https://raqqa-v6cd.vercel.app/";
+        const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
+        // الوظيفة المحدثة لضمان جلب آخر نسخة من الصفحات
         function openFrame(page) {
-            // إضافة "بصمة زمنية" عشوائية لكسر التخزين المؤقت دون التأثير على التصميم
-            const cacheBuster = "?update=" + Date.now();
-            const finalUrl = page.startsWith('http') ? page + cacheBuster : BASE_URL + page + cacheBuster;
-
             viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
             
+            // إضافة ميكانيزم تحديث الرابط (Cache Buster)
+            const timestamp = new Date().getTime();
+            let finalUrl = page.startsWith('http') ? page : BASE_URL + page;
+            
+            // إضافة علامة استفهام إذا لم تكن موجودة أو إضافة المعامل الجديد
+            finalUrl += (finalUrl.indexOf('?') === -1 ? '?' : '&') + 'v=' + timestamp;
+
             setTimeout(() => {
                 viewer.src = finalUrl;
                 viewer.style.transform = "translateY(0)";
@@ -160,7 +163,8 @@
 
         async function listenToPlatform() {
             try {
-                const res = await fetch(CHECK_NOTIF_URL);
+                // إضافة التحديث التلقائي لطلب التنبيهات أيضاً
+                const res = await fetch(CHECK_NOTIF_URL + "&t=" + new Date().getTime());
                 const data = await res.json();
                 if (data.success && data.notifications.length > 0) {
                     const bellDot = document.getElementById('dot');
@@ -170,6 +174,12 @@
                     }
                 }
             } catch (err) { console.log("بانتظار المنصة..."); }
+        }
+
+        function shareContent(title, url) {
+            if (navigator.share) {
+                navigator.share({ title: title, url: url });
+            }
         }
 
         setInterval(listenToPlatform, 40000);
