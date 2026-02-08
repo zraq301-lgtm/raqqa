@@ -98,10 +98,10 @@
         <div onclick="toggleMenu()" style="cursor: pointer; color: var(--mauve);"><i class="fas fa-bars-staggered fa-lg"></i></div>
         
         <div class="header-tools">
-            <button class="tool-btn" onclick="openFrame('vr-world.html')">
+            <button class="tool-btn" id="btn-vr" onclick="openFrame('vr-world.html')">
                 <i class="fas fa-vr-cardboard icon-vr"></i> عالم رقة
             </button>
-            <button class="tool-btn" onclick="openFrame('videos.html')">
+            <button class="tool-btn" id="btn-videos" onclick="openFrame('videos.html')">
                 <i class="fas fa-play-circle icon-vid"></i> مكتبة الفيديوهات
             </button>
             <div style="position: relative; cursor: pointer;" onclick="openFrame('notifications.html'); document.getElementById('dot').style.display='none';">
@@ -111,16 +111,16 @@
         </div>
     </header>
 
-    <iframe id="app-viewport" src="https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/health.html"></iframe>
+    <iframe id="app-viewport"></iframe>
 
     <nav class="bottom-nav">
-        <div class="nav-item" onclick="openFrame('swing.html')">
+        <div class="nav-item" id="nav-swing" onclick="openFrame('swing.html')">
             <i class="fas fa-feather" style="color: #9d8189;"></i> منتدى الأرجوحة
         </div>
-        <div class="nav-item center-btn active-nav" onclick="openFrame('health.html')">
+        <div class="nav-item center-btn" id="nav-health" onclick="openFrame('health.html')">
             <i class="fas fa-hand-holding-heart"></i> <span>الحميمية<br>وصحتك</span>
         </div>
-        <div class="nav-item" onclick="openFrame('insight.html')">
+        <div class="nav-item" id="nav-insight" onclick="openFrame('insight.html')">
             <i class="fas fa-wand-magic-sparkles" style="color: #d6808c;"></i> بوحك وبصيرتك
         </div>
     </nav>
@@ -130,29 +130,47 @@
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        // الوظيفة المحدثة لضمان جلب آخر نسخة من الصفحات
+        // وظيفة لفتح الصفحة مع تحديث الرابط في شريط عنوان المتصفح
         function openFrame(page) {
             viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
             
-            // إضافة ميكانيزم تحديث الرابط (Cache Buster)
             const timestamp = new Date().getTime();
             let finalUrl = page.startsWith('http') ? page : BASE_URL + page;
-            
-            // إضافة علامة استفهام إذا لم تكن موجودة أو إضافة المعامل الجديد
-            finalUrl += (finalUrl.indexOf('?') === -1 ? '?' : '&') + 'v=' + timestamp;
+            let displayUrl = finalUrl + (finalUrl.indexOf('?') === -1 ? '?' : '&') + 'v=' + timestamp;
 
             setTimeout(() => {
-                viewer.src = finalUrl;
+                viewer.src = displayUrl;
                 viewer.style.transform = "translateY(0)";
                 viewer.style.opacity = "1";
             }, 200);
 
-            if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-                event.currentTarget.classList.add('active-nav');
-            }
+            // تحديث شريط عنوان المتصفح بدون إعادة تحميل الصفحة ليعكس الصفحة الحالية
+            window.history.pushState({page: page}, "", page);
+
+            // تحديث حالة الأزرار النشطة
+            updateActiveState(page);
         }
+
+        function updateActiveState(pageName) {
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+            if (pageName.includes('health')) document.getElementById('nav-health').classList.add('active-nav');
+            if (pageName.includes('swing')) document.getElementById('nav-swing').classList.add('active-nav');
+            if (pageName.includes('insight')) document.getElementById('nav-insight').classList.add('active-nav');
+        }
+
+        // عند تشغيل التطبيق لأول مرة: فحص الرابط الحالي
+        window.onload = function() {
+            let currentPath = window.location.pathname.split('/').pop();
+            
+            // إذا كان المسار فارغاً افتح الصحة، وإلا افتح المسار المكتوب
+            if (currentPath === "" || currentPath === "index.html") {
+                openFrame('health.html');
+            } else {
+                openFrame(currentPath);
+            }
+            listenToPlatform();
+        };
 
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
@@ -163,7 +181,6 @@
 
         async function listenToPlatform() {
             try {
-                // إضافة التحديث التلقائي لطلب التنبيهات أيضاً
                 const res = await fetch(CHECK_NOTIF_URL + "&t=" + new Date().getTime());
                 const data = await res.json();
                 if (data.success && data.notifications.length > 0) {
@@ -176,14 +193,7 @@
             } catch (err) { console.log("بانتظار المنصة..."); }
         }
 
-        function shareContent(title, url) {
-            if (navigator.share) {
-                navigator.share({ title: title, url: url });
-            }
-        }
-
         setInterval(listenToPlatform, 40000);
-        window.onload = listenToPlatform;
     </script>
 </body>
 </html>
