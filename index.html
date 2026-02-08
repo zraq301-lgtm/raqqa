@@ -20,6 +20,11 @@
             overflow: hidden; color: var(--text-main);
         }
 
+        /* منع التكرار: إخفاء الواجهة إذا فتحت داخل iframe */
+        body.is-framed .header, body.is-framed .bottom-nav, body.is-framed .sidebar {
+            display: none !important;
+        }
+
         .header {
             background-color: var(--white); padding: 10px 15px;
             display: flex; justify-content: space-between; align-items: center;
@@ -60,7 +65,7 @@
         #app-viewport {
             flex: 1; width: 100%; border: none; background: var(--pearl);
             transition: transform 0.3s ease-in-out;
-            padding-bottom: 90px;
+            padding-bottom: 90px; 
             box-sizing: border-box;
         }
 
@@ -73,7 +78,8 @@
 
         .nav-item { text-align: center; flex: 1; color: #b2b2c2; text-decoration: none; font-size: 10px; font-weight: 700; cursor: pointer; }
         .nav-item i { font-size: 22px; margin-bottom: 6px; display: block; }
-        .active-nav { color: var(--deep-rose); }
+        .active-nav { color: var(--deep-rose) !important; }
+        .active-nav i { color: var(--deep-rose) !important; }
 
         .center-btn {
             position: relative; top: -25px; background: var(--gradient-fem);
@@ -84,6 +90,16 @@
     </style>
 </head>
 <body>
+
+    <script>
+        if (window.self !== window.top) {
+            document.body.classList.add('is-framed');
+            // إذا كان المسار يحتوي على index، نوجهه لصفحة المحتوى لمنع التكرار
+            if(window.location.pathname.includes('index')) {
+                window.location.href = "health.html";
+            }
+        }
+    </script>
 
     <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
     
@@ -98,10 +114,10 @@
         <div onclick="toggleMenu()" style="cursor: pointer; color: var(--mauve);"><i class="fas fa-bars-staggered fa-lg"></i></div>
         
         <div class="header-tools">
-            <button class="tool-btn" id="btn-vr" onclick="openFrame('vr-world.html')">
+            <button class="tool-btn" onclick="openFrame('vr-world.html')">
                 <i class="fas fa-vr-cardboard icon-vr"></i> عالم رقة
             </button>
-            <button class="tool-btn" id="btn-videos" onclick="openFrame('videos.html')">
+            <button class="tool-btn" onclick="openFrame('videos.html')">
                 <i class="fas fa-play-circle icon-vid"></i> مكتبة الفيديوهات
             </button>
             <div style="position: relative; cursor: pointer;" onclick="openFrame('notifications.html'); document.getElementById('dot').style.display='none';">
@@ -115,62 +131,52 @@
 
     <nav class="bottom-nav">
         <div class="nav-item" id="nav-swing" onclick="openFrame('swing.html')">
-            <i class="fas fa-feather" style="color: #9d8189;"></i> منتدى الأرجوحة
+            <i class="fas fa-feather"></i> منتدى الأرجوحة
         </div>
         <div class="nav-item center-btn" id="nav-health" onclick="openFrame('health.html')">
             <i class="fas fa-hand-holding-heart"></i> <span>الحميمية<br>وصحتك</span>
         </div>
         <div class="nav-item" id="nav-insight" onclick="openFrame('insight.html')">
-            <i class="fas fa-wand-magic-sparkles" style="color: #d6808c;"></i> بوحك وبصيرتك
+            <i class="fas fa-wand-magic-sparkles"></i> بوحك وبصيرتك
         </div>
     </nav>
 
     <script>
+        // تم استخدام الرابط من الملف المرفوع لضمان التشغيل
         const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        // وظيفة لفتح الصفحة مع تحديث الرابط في شريط عنوان المتصفح
         function openFrame(page) {
+            // حماية إضافية من تكرار الواجهة داخل الإطار
+            if (page.includes('index.html') || page === "" || page === "/") {
+                page = "health.html";
+            }
+
             viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
             
-            const timestamp = new Date().getTime();
-            let finalUrl = page.startsWith('http') ? page : BASE_URL + page;
-            let displayUrl = finalUrl + (finalUrl.indexOf('?') === -1 ? '?' : '&') + 'v=' + timestamp;
+            // إضافة التوقيت لكسر التخزين
+            const version = new Date().getTime();
+            let cleanPage = page.replace(/^\//, "");
+            const finalUrl = page.startsWith('http') ? page : `${BASE_URL}${cleanPage}${cleanPage.includes('?') ? '&' : '?'}v=${version}`;
 
             setTimeout(() => {
-                viewer.src = displayUrl;
+                viewer.src = finalUrl;
                 viewer.style.transform = "translateY(0)";
                 viewer.style.opacity = "1";
             }, 200);
 
-            // تحديث شريط عنوان المتصفح بدون إعادة تحميل الصفحة ليعكس الصفحة الحالية
-            window.history.pushState({page: page}, "", page);
-
-            // تحديث حالة الأزرار النشطة
-            updateActiveState(page);
+            // تحديث الأيقونات النشطة
+            updateNavIcons(cleanPage);
         }
 
-        function updateActiveState(pageName) {
+        function updateNavIcons(path) {
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
-            if (pageName.includes('health')) document.getElementById('nav-health').classList.add('active-nav');
-            if (pageName.includes('swing')) document.getElementById('nav-swing').classList.add('active-nav');
-            if (pageName.includes('insight')) document.getElementById('nav-insight').classList.add('active-nav');
+            if (path.includes('swing')) document.getElementById('nav-swing').classList.add('active-nav');
+            else if (path.includes('health')) document.getElementById('nav-health').classList.add('active-nav');
+            else if (path.includes('insight')) document.getElementById('nav-insight').classList.add('active-nav');
         }
-
-        // عند تشغيل التطبيق لأول مرة: فحص الرابط الحالي
-        window.onload = function() {
-            let currentPath = window.location.pathname.split('/').pop();
-            
-            // إذا كان المسار فارغاً افتح الصحة، وإلا افتح المسار المكتوب
-            if (currentPath === "" || currentPath === "index.html") {
-                openFrame('health.html');
-            } else {
-                openFrame(currentPath);
-            }
-            listenToPlatform();
-        };
 
         function toggleMenu() {
             const sidebar = document.getElementById('sidebar');
@@ -181,7 +187,7 @@
 
         async function listenToPlatform() {
             try {
-                const res = await fetch(CHECK_NOTIF_URL + "&t=" + new Date().getTime());
+                const res = await fetch(`${CHECK_NOTIF_URL}&t=${new Date().getTime()}`);
                 const data = await res.json();
                 if (data.success && data.notifications.length > 0) {
                     const bellDot = document.getElementById('dot');
@@ -192,6 +198,12 @@
                 }
             } catch (err) { console.log("بانتظار المنصة..."); }
         }
+
+        window.onload = function() {
+            // فتح صفحة الصحة كبداية افتراضية من سيرفر Vercel
+            openFrame('health.html');
+            listenToPlatform();
+        };
 
         setInterval(listenToPlatform, 40000);
     </script>
