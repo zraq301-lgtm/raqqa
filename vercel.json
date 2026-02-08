@@ -5,7 +5,9 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "distDir": "dist"
+      }
     }
   ],
   "headers": [
@@ -19,10 +21,28 @@
       ]
     }
   ],
+  "crons": [
+    {
+      "path": "/api/cron-handler",
+      "schedule": "0 9 * * *"
+    }
+  ],
   "rewrites": [
-    { "source": "/api/notifications", "destination": "/api/notifications.js" },
-    { "source": "/api/gemini", "destination": "/api/gemini.js" },
-    { "source": "/api/cron-handler", "destination": "/api/cron-handler.js" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/api/notifications",
+      "destination": "/api/notifications.js"
+    },
+    {
+      "source": "/api/gemini",
+      "destination": "/api/gemini.js"
+    },
+    {
+      "source": "/api/cron-handler",
+      "destination": "/api/cron-handler.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ]
 }
