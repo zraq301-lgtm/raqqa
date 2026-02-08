@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx serve .",
-    "build": "npx shx mkdir -p dist && npx shx cp -r . dist",
+    "build": "npx shx rm -rf dist && npx shx mkdir -p dist && npx shx cp -r . dist && npx shx rm -rf dist/dist",
     "preview": "npx serve dist",
     "ionic:build": "npm run build",
     "ionic:cap:build": "npx cap add android && npx cap copy android"
