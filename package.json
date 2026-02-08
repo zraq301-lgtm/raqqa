@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx serve .",
-    "build": "mkdir -p dist && cp -r * dist/ 2>/dev/null || xcopy /E /I * dist",
+    "build": "npx shx mkdir -p dist && npx shx cp -r . dist",
     "preview": "npx serve dist",
     "ionic:build": "npm run build",
     "ionic:cap:build": "npx cap add android && npx cap copy android"
@@ -24,7 +24,8 @@
     "pg": "^8.11.0",
     "@capacitor/core": "latest",
     "@capacitor/cli": "latest",
-    "@capacitor/android": "latest"
+    "@capacitor/android": "latest",
+    "shx": "^0.3.4"
   },
   "devDependencies": {
     "tailwindcss": "^3.4.4",
