@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -111,7 +111,7 @@
         </div>
     </header>
 
-    <iframe id="app-viewport" src="https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/health.html"></iframe>
+    <iframe id="app-viewport" src="https://raqqa-v6cd.vercel.app/health.html"></iframe>
 
     <nav class="bottom-nav">
         <div class="nav-item" onclick="openFrame('swing.html')">
@@ -126,26 +126,30 @@
     </nav>
 
     <script>
-        const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
+        // استخدام الرابط المختصر والوظائف الجديدة كما طلبت بالضبط
+        const BASE_URL = "https://raqqa-v6cd.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        // التعديل العبقري لكسر التخزين المؤقت وضمان أحدث نسخة
         function openFrame(pageName) {
-            // إضافة "بصمة زمنية" عشوائية تجبر Vercel على إعطائك أحدث نسخة فوراً
-            const versionBuster = "?update=" + Date.now();
-            const finalUrl = pageName.startsWith('http') ? pageName + versionBuster : BASE_URL + pageName + versionBuster;
+            // كسر التخزين المؤقت عبر إضافة توقيت فريد للرابط لضمان التحديث
+            const cacheBuster = "?v=" + new Date().getTime();
             
-            viewer.style.transform = "translateY(20px)";
+            // بناء الرابط النهائي
+            let finalUrl = pageName.startsWith('http') ? pageName : BASE_URL + pageName;
+            
+            // إضافة علامة التحديث للرابط
+            finalUrl = finalUrl.includes('?') ? `${finalUrl}&upd=${new Date().getTime()}` : `${finalUrl}${cacheBuster}`;
+
+            // تأثير بصري بسيط لتأكيد التحميل
             viewer.style.opacity = "0.5";
             
             setTimeout(() => {
                 viewer.src = finalUrl;
-                viewer.style.transform = "translateY(0)";
                 viewer.style.opacity = "1";
-            }, 200);
+            }, 150);
 
-            // الحفاظ على منطق النيبار النشط
+            // تحديث شكل الأزرار النشطة في النيبار
             if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
                 event.currentTarget.classList.add('active-nav');
@@ -180,7 +184,11 @@
         }
 
         setInterval(listenToPlatform, 40000);
-        window.onload = listenToPlatform;
+        window.onload = () => {
+            listenToPlatform();
+            // تشغيل الصفحة الرئيسية عند الفتح لضمان أحدث نسخة
+            openFrame('health.html');
+        };
     </script>
 </body>
 </html>
