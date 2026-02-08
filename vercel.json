@@ -1,11 +1,14 @@
 {
   "version": 2,
-  "name": "ragga-vercel-app",
-  "build": {
-    "env": {
-      "NODE_VERSION": "20"
+  "name": "raqqa-app-pro",
+  "framework": "vite",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
     }
-  },
+  ],
   "headers": [
     {
       "source": "/(.*)",
@@ -23,12 +26,15 @@
           "value": "0"
         }
       ]
-    }
-  ],
-  "crons": [
+    },
     {
-      "path": "/api/cron-handler",
-      "schedule": "0 9 * * *"
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
     }
   ],
   "rewrites": [
@@ -43,6 +49,16 @@
     {
       "source": "/api/cron-handler",
       "destination": "/api/cron-handler.js"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron-handler",
+      "schedule": "0 9 * * *"
     }
   ]
 }
