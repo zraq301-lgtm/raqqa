@@ -126,30 +126,25 @@
     </nav>
 
     <script>
-        // استخدام الرابط المختصر والوظائف الجديدة كما طلبت بالضبط
+        // الروابط الأصلية والمختصرة لضمان التحديث
         const BASE_URL = "https://raqqa-v6cd.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
-        function openFrame(pageName) {
-            // كسر التخزين المؤقت عبر إضافة توقيت فريد للرابط لضمان التحديث
-            const cacheBuster = "?v=" + new Date().getTime();
-            
-            // بناء الرابط النهائي
-            let finalUrl = pageName.startsWith('http') ? pageName : BASE_URL + pageName;
-            
-            // إضافة علامة التحديث للرابط
-            finalUrl = finalUrl.includes('?') ? `${finalUrl}&upd=${new Date().getTime()}` : `${finalUrl}${cacheBuster}`;
+        function openFrame(page) {
+            // إضافة "بصمة زمنية" عشوائية لكسر التخزين المؤقت دون التأثير على التصميم
+            const cacheBuster = "?update=" + Date.now();
+            const finalUrl = page.startsWith('http') ? page + cacheBuster : BASE_URL + page + cacheBuster;
 
-            // تأثير بصري بسيط لتأكيد التحميل
+            viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
             
             setTimeout(() => {
                 viewer.src = finalUrl;
+                viewer.style.transform = "translateY(0)";
                 viewer.style.opacity = "1";
-            }, 150);
+            }, 200);
 
-            // تحديث شكل الأزرار النشطة في النيبار
             if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
                 event.currentTarget.classList.add('active-nav');
@@ -177,18 +172,8 @@
             } catch (err) { console.log("بانتظار المنصة..."); }
         }
 
-        function shareContent(title, url) {
-            if (navigator.share) {
-                navigator.share({ title: title, url: url });
-            }
-        }
-
         setInterval(listenToPlatform, 40000);
-        window.onload = () => {
-            listenToPlatform();
-            // تشغيل الصفحة الرئيسية عند الفتح لضمان أحدث نسخة
-            openFrame('health.html');
-        };
+        window.onload = listenToPlatform;
     </script>
 </body>
 </html>
