@@ -1,7 +1,6 @@
 {
   "version": 2,
   "name": "raqqa-app-pro",
-  "framework": "vite",
   "builds": [
     {
       "src": "package.json",
@@ -16,49 +15,14 @@
         {
           "key": "Cache-Control",
           "value": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
-        },
-        {
-          "key": "Pragma",
-          "value": "no-cache"
-        },
-        {
-          "key": "Expires",
-          "value": "0"
-        }
-      ]
-    },
-    {
-      "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
   ],
   "rewrites": [
-    {
-      "source": "/api/notifications",
-      "destination": "/api/notifications.js"
-    },
-    {
-      "source": "/api/gemini",
-      "destination": "/api/gemini.js"
-    },
-    {
-      "source": "/api/cron-handler",
-      "destination": "/api/cron-handler.js"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron-handler",
-      "schedule": "0 9 * * *"
-    }
+    { "source": "/api/notifications", "destination": "/api/notifications.js" },
+    { "source": "/api/gemini", "destination": "/api/gemini.js" },
+    { "source": "/api/cron-handler", "destination": "/api/cron-handler.js" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
