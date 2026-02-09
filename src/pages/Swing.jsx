@@ -82,7 +82,8 @@ const Swing = () => {
             </div>
 
             {isChatOpen && (
-                <div style={{position: 'fixed', inset: 0, background: 'white', z-index: 2000, display: 'flex', flexDirection: 'column'}}>
+                /* تم تعديل zIndex هنا لإصلاح خطأ البناء */
+                <div style={{position: 'fixed', inset: 0, background: 'white', zIndex: 2000, display: 'flex', flexDirection: 'column'}}>
                     <div style={{padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between'}}>
                         <i className="fas fa-times" onClick={()=>setIsChatOpen(false)}></i>
                         <span>رقة الذكية</span>
