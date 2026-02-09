@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -94,7 +94,6 @@
     <script>
         if (window.self !== window.top) {
             document.body.classList.add('is-framed');
-            // إذا كان المسار يحتوي على index، نوجهه لصفحة المحتوى لمنع التكرار
             if(window.location.pathname.includes('index')) {
                 window.location.href = "health.html";
             }
@@ -142,32 +141,37 @@
     </nav>
 
     <script>
-        // تم استخدام الرابط من الملف المرفوع لضمان التشغيل
         const BASE_URL = "https://raqqa-v6cd-29ts9t5cn-raqqs-projects.vercel.app/";
         const CHECK_NOTIF_URL = BASE_URL + "api/notifications?user_id=1";
         const viewer = document.getElementById('app-viewport');
 
         function openFrame(page) {
-            // حماية إضافية من تكرار الواجهة داخل الإطار
-            if (page.includes('index.html') || page === "" || page === "/") {
-                page = "health.html";
+            // كسر التخزين باستخدام الوقت الحالي لضمان تحميل أحدث نسخة من GitHub
+            const cacheBuster = new Date().getTime();
+            const cleanPage = page.replace(/^\//, "");
+            
+            // منع تكرار الصفحة الرئيسية داخل الإطار
+            if (cleanPage.includes('index')) {
+                viewer.src = BASE_URL + "health.html?v=" + cacheBuster;
+            } else {
+                viewer.src = (page.startsWith('http') ? page : BASE_URL + cleanPage) + "?v=" + cacheBuster;
             }
 
             viewer.style.transform = "translateY(20px)";
             viewer.style.opacity = "0.5";
             
-            // إضافة التوقيت لكسر التخزين
-            const version = new Date().getTime();
-            let cleanPage = page.replace(/^\//, "");
-            const finalUrl = page.startsWith('http') ? page : `${BASE_URL}${cleanPage}${cleanPage.includes('?') ? '&' : '?'}v=${version}`;
-
             setTimeout(() => {
-                viewer.src = finalUrl;
                 viewer.style.transform = "translateY(0)";
                 viewer.style.opacity = "1";
             }, 200);
 
-            // تحديث الأيقونات النشطة
+            // تحديث الأزرار النشطة
+            if(event && event.currentTarget && event.currentTarget.classList.contains('nav-item')) {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active-nav'));
+                event.currentTarget.classList.add('active-nav');
+            }
+            
+            // تحديث الأيقونات بناءً على المسار
             updateNavIcons(cleanPage);
         }
 
@@ -200,7 +204,6 @@
         }
 
         window.onload = function() {
-            // فتح صفحة الصحة كبداية افتراضية من سيرفر Vercel
             openFrame('health.html');
             listenToPlatform();
         };
