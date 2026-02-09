@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx serve .",
-    "build": "echo 'Vercel: Deployment in progress...'",
+    "build": "echo 'Build optimization: skipping dist creation'",
     "preview": "npx serve ."
   },
   "dependencies": {
