@@ -1,0 +1,49 @@
+:root {
+    --rose-gold: #e29578; --soft-pink: #ffddd2; --mauve: #9d8189;
+    --light-mauve: #f4eeff; --deep-rose: #d6808c; --white: #ffffff;
+    --pearl: #fdfafb; --text-main: #4a4e69;
+    --gradient-fem: linear-gradient(135deg, #d6808c 0%, #9d8189 100%);
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--pearl); margin: 0; padding: 0;
+    color: var(--text-main);
+}
+
+.app-container {
+    display: flex; flex-direction: column; height: 100vh; overflow: hidden;
+}
+
+.content {
+    flex: 1; width: 100%; overflow-y: auto; padding-bottom: 90px;
+    transition: all 0.3s ease-in-out;
+}
+
+/* التنسيقات الخاصة بالهيدر والنيبار من ملفك الأصلي */
+.header {
+    background-color: var(--white); padding: 10px 15px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 15px rgba(157, 129, 137, 0.1); z-index: 1000;
+}
+
+.bottom-nav {
+    position: fixed; bottom: 0; width: 100%; background: rgba(255, 255, 255, 0.9);
+    height: 85px; display: flex; justify-content: space-around; align-items: center;
+    box-shadow: 0 -10px 30px rgba(157, 129, 137, 0.1); z-index: 1000;
+    backdrop-filter: blur(15px); border-top: 1px solid var(--soft-pink);
+}
+
+.nav-item { 
+    text-align: center; flex: 1; color: #b2b2c2; text-decoration: none; 
+    font-size: 10px; font-weight: 700; cursor: pointer; 
+}
+.nav-item i { font-size: 22px; margin-bottom: 6px; display: block; }
+.active { color: var(--deep-rose) !important; }
+
+.center-btn {
+    position: relative; top: -25px; background: var(--gradient-fem);
+    min-width: 80px; height: 80px; border-radius: 50%;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    color: white !important; box-shadow: 0 10px 20px rgba(214, 128, 140, 0.4); border: 6px solid var(--pearl);
+}
