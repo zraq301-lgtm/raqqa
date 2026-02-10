@@ -1,4 +1,4 @@
-/* الإعدادات العامة للمتصفح لمنع تداخل الشاشات */
+/* إعدادات تصفير المسافات ومنع تداخل الشاشات */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -9,18 +9,18 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #fdf6f9; /* لون خلفية كريمي وردي ناعم */
+  background-color: #fdf6f9; /* خلفية ناعمة تناسب البنات */
   direction: rtl;
-  overflow: hidden; /* منع التمرير الكلي للشاشة */
+  overflow: hidden; /* يمنع التمرير الخارجي لضمان ثبات القوائم */
 }
 
-/* الهيدر الثابت في الأعلى */
+/* الهيدر العلوي الثابت */
 .fixed-header {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   z-index: 1000;
-  box-shadow: 0 2px 15px rgba(255, 133, 162, 0.1);
-  padding-top: 10px;
+  box-shadow: 0 2px 10px rgba(255, 133, 162, 0.1);
+  padding-top: 5px;
 }
 
 .top-icon-nav {
@@ -37,10 +37,10 @@
   color: #9d81ba;
 }
 
-.emoji-icon { font-size: 24px; margin-bottom: 2px; }
-.btn-text { font-size: 10px; font-weight: bold; font-family: sans-serif; }
+.emoji-icon { font-size: 24px; }
+.btn-text { font-size: 10px; font-weight: bold; }
 
-/* منطقة المحتوى القابلة للتمرير بين الهيدر والفوتر */
+/* منطقة المحتوى: هي الوحيدة التي تتحرك عند التمرير */
 .main-scroll-area {
   flex: 1;
   overflow-y: auto;
@@ -48,20 +48,20 @@
   background-color: #fdf6f9;
 }
 
-/* الفوتر الثابت في الأسفل */
+/* الفوتر السفلي الثابت */
 .fixed-footer-nav {
   background: white;
   border-top: 1px solid #fce4ec;
-  padding-bottom: 5px;
   z-index: 1000;
   box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.03);
+  padding-bottom: env(safe-area-inset-bottom); /* لدعم هواتف الآيفون الحديثة */
 }
 
 .bottom-icon-grid {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  padding: 10px 5px;
+  padding: 10px 0;
 }
 
 .nav-item {
@@ -72,20 +72,14 @@
   flex: 1;
 }
 
-.emoji { font-size: 22px; }
-.label { 
-  font-size: 10px; 
-  color: #888; 
-  margin-top: 4px; 
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
+.emoji { font-size: 20px; }
+.label { font-size: 9px; color: #888; margin-top: 4px; }
 .label.active { color: #ff85a2; font-weight: bold; }
 
-/* تمييز أيقونة "صحتك" في المنتصف */
+/* تمييز أيقونة "صحتك" وجعلها بالمنتصف وبارزة */
 .highlight-item {
   position: relative;
-  top: -15px; /* رفع الأيقونة للأعلى لتبرز */
+  top: -15px;
 }
 
 .pulse-circle {
@@ -97,17 +91,11 @@
   justify-content: center;
   align-items: center;
   box-shadow: 0 4px 15px rgba(255, 133, 162, 0.4);
-  transition: transform 0.3s ease;
-}
-
-.pulse-circle:active {
-  transform: scale(0.9);
 }
 
 .page-view {
   text-align: center;
-  padding: 60px 20px;
+  padding: 50px 20px;
   color: #ff85a2;
-  font-size: 1.2rem;
   font-weight: bold;
 }
