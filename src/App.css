@@ -1,101 +1,127 @@
-/* إعدادات تصفير المسافات ومنع تداخل الشاشات */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* إعدادات عامة */
+:root {
+  --primary-pink: #ff6bad;
+  --soft-pink: #fff0f6;
+  --dark-pink: #d63384;
+  --text-gray: #757575;
+  --white: #ffffff;
+  --shadow: 0 -2px 15px rgba(0,0,0,0.05);
 }
 
-.app-viewport {
+.app-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #fcfcfc;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background-color: #fdf6f9; /* خلفية ناعمة تناسب البنات */
-  direction: rtl;
-  overflow: hidden; /* يمنع التمرير الخارجي لضمان ثبات القوائم */
 }
 
-/* الهيدر العلوي الثابت */
-.fixed-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
+/* القسم العلوي */
+.top-sticky-menu {
+  position: sticky;
+  top: 0;
+  background: var(--white);
   z-index: 1000;
-  box-shadow: 0 2px 10px rgba(255, 133, 162, 0.1);
-  padding-top: 5px;
+  padding: 10px 15px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.03);
 }
 
-.top-icon-nav {
+.top-cards-container {
   display: flex;
-  justify-content: space-around;
-  padding: 10px 0;
+  gap: 10px;
+  margin-top: 10px;
 }
 
-.icon-btn {
-  text-decoration: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #9d81ba;
-}
-
-.emoji-icon { font-size: 24px; }
-.btn-text { font-size: 10px; font-weight: bold; }
-
-/* منطقة المحتوى: هي الوحيدة التي تتحرك عند التمرير */
-.main-scroll-area {
+.top-card {
   flex: 1;
-  overflow-y: auto;
-  padding: 15px;
-  background-color: #fdf6f9;
+  background: var(--soft-pink);
+  border-radius: 15px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform 0.2s;
 }
 
-/* الفوتر السفلي الثابت */
-.fixed-footer-nav {
-  background: white;
-  border-top: 1px solid #fce4ec;
-  z-index: 1000;
-  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.03);
-  padding-bottom: env(safe-area-inset-bottom); /* لدعم هواتف الآيفون الحديثة */
+.top-card:active { transform: scale(0.95); }
+
+.card-icon { font-size: 1.5rem; margin-left: 10px; }
+
+.card-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--dark-pink);
 }
 
-.bottom-icon-grid {
+.card-sub {
+  font-size: 0.65rem;
+  color: var(--text-gray);
+  text-transform: lowercase;
+}
+
+/* المحتوى */
+.main-content {
+  flex: 1;
+  padding: 20px 15px 100px 15px; /* مساحة للسفلي */
+}
+
+/* القائمة السفلية */
+.bottom-sticky-menu {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: var(--white);
+  box-shadow: var(--shadow);
+  padding: 10px 0 20px 0;
+  border-radius: 25px 25px 0 0;
+}
+
+.nav-grid {
   display: flex;
   justify-content: space-around;
   align-items: flex-end;
-  padding: 10px 0;
 }
 
 .nav-item {
-  text-decoration: none;
   display: flex;
   flex-direction: column;
   align-items: center;
+  text-decoration: none;
   flex: 1;
 }
 
-.emoji { font-size: 20px; }
-.label { font-size: 9px; color: #888; margin-top: 4px; }
-.label.active { color: #ff85a2; font-weight: bold; }
+.nav-icon { font-size: 1.2rem; margin-bottom: 4px; }
 
-/* تمييز أيقونة "صحتك" وجعلها بالمنتصف وبارزة */
-.highlight-item {
-  position: relative;
-  top: -15px;
+.nav-label {
+  font-size: 0.75rem;
+  color: var(--dark-pink);
+  font-weight: 500;
 }
 
-.pulse-circle {
-  background: linear-gradient(135deg, #ff85a2, #ffb6c1);
-  width: 55px;
-  height: 55px;
+.nav-sub {
+  font-size: 0.6rem;
+  color: #bbb;
+}
+
+/* الأيقونة المركزية "صحتك" */
+.center-action {
+  position: relative;
+  top: -25px; /* ترفعها للأعلى مثل الصورة */
+}
+
+.center-circle {
+  background: linear-gradient(135deg, var(--primary-pink), #feb47b);
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
-  box-shadow: 0 4px 15px rgba(255, 133, 162, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 107, 173, 0.4);
+  border: 4px solid var(--white);
+  margin-bottom: 5px;
 }
 
-.page-view {
-  text-align: center;
-  padding: 50px 20px;
-  color: #ff85a2;
-  font-weight: bold;
-}
+.nav-icon.large { font-size: 1.8rem; color: white; }
+.bold { font-weight: bold; }
