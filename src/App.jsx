@@ -2,16 +2,16 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Header from './components/Header';
-import Health from './pages/Health';
-import Swing from './pages/Swing';
-import Insight from './pages/Insight';
-import './App.css';
+import Health from './pages/Health'; [cite: 2]
+import Swing from './pages/Swing'; [cite: 3]
+import Insight from './pages/Insight'; [cite: 3]
+import './App.css'; [cite: 3]
 
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [pathname]); [cite: 5]
   return null;
 }
 
@@ -20,37 +20,37 @@ function App() {
     <Router>
       <ScrollToTop />
       <div className="app-container">
-        <Header />
-
-        {/* الكروت العلوية: عالم رقة ومكتبة الفيديوهات */}
-        <div className="top-section">
-          <Link to="/virtual-world" className="card glass-card">عالم رقة الافتراضي <br/><span>raqqa virtual world</span></Link>
-          <Link to="/videos" className="card glass-card">مكتبة الفيديوهات <br/><span>video library</span></Link>
+        {/* شريط علوي ثابت */}
+        <div className="fixed-top">
+          <Header />
+          <div className="top-nav-cards">
+            <Link to="/videos" className="mini-card">video library</Link>
+            <Link to="/virtual-world" className="mini-card">virtual world</Link>
+          </div>
         </div>
         
-        <main className="content">
+        <main className="main-content">
           <Routes>
-            {/* جعل قسم الصحة هو الصفحة الرئيسية الافتراضية */}
-            <Route path="/" element={<Health />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="/swing-forum" element={<Swing />} />
-            <Route path="/insight" element={<Insight />} />
-            <Route path="/feelings" element={<div className="page-placeholder">عالم الأحاسيس</div>} />
-            <Route path="/intimacy" element={<div className="page-placeholder">المودة والخصوصية</div>} />
+            <Route path="/" element={<Health />} /> [cite: 6]
+            <Route path="/health" element={<Health />} /> [cite: 7]
+            <Route path="/swing-forum" element={<Swing />} /> [cite: 7]
+            <Route path="/insight" element={<Insight />} /> [cite: 7]
+            <Route path="/feelings" element={<div className="placeholder">عالم الأحاسيس</div>} />
+            <Route path="/intimacy" element={<div className="placeholder">المودة والخصوصية</div>} />
           </Routes>
         </main>
 
-        {/* الكروت السفلية: توزيع أنيق وجذاب */}
-        <div className="bottom-cards-grid">
-          <Link to="/feelings" className="card pink-card">المشاعر <br/><span>feelings</span></Link>
-          <Link to="/intimacy" className="card pink-card">الحميمية <br/><span>intimacy</span></Link>
-          {/* قسم الصحة في المنتصف بالأسفل */}
-          <Link to="/health" className="card main-health-card">صحتك <br/><span>health</span></Link>
-          <Link to="/swing-forum" className="card pink-card">منتدى الأرجوحة <br/><span>swing forum</span></Link>
-          <Link to="/insight" className="card pink-card">القفقة <br/><span>insight</span></Link>
+        {/* الكروت السفلية الثابتة فوق النيبار مباشرة */}
+        <div className="fixed-bottom-menu">
+          <div className="bottom-grid">
+            <Link to="/feelings" className="nav-card">المشاعر <span>feelings</span></Link>
+            <Link to="/intimacy" className="nav-card">الحميمية <span>intimacy</span></Link>
+            <Link to="/health" className="nav-card center-highlight">صحتك <span>health</span></Link>
+            <Link to="/swing-forum" className="nav-card">الأرجوحة <span>swing</span></Link>
+            <Link to="/insight" className="nav-card">القفقة <span>insight</span></Link>
+          </div>
+          <Navbar /> [cite: 7]
         </div>
-
-        <Navbar />
       </div>
     </Router>
   );
