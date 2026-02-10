@@ -1,78 +1,102 @@
+/* الألوان الأساسية */
 :root {
-  --main-pink: #ff85a2;
-  --soft-purple: #9d81ba;
-  --bg-cream: #fdf6f9;
+  --soft-pink: #ffafbd;
+  --deep-pink: #ff85a2;
+  --royal-purple: #9d81ba;
+  --bg-light: #fff5f7;
+  --glass: rgba(255, 255, 255, 0.85);
 }
 
 .app-container {
-  background-color: var(--bg-cream);
+  background-color: var(--bg-light);
   min-height: 100vh;
-  direction: rtl;
-  display: flex;
-  flex-direction: column;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  overflow-x: hidden;
 }
 
-/* تنسيق الكروت العلوية */
-.top-section {
-  display: flex;
-  gap: 10px;
-  padding: 15px;
-  justify-content: center;
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.6);
+/* تثبيت الجزء العلوي */
+.fixed-top {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  background: var(--glass);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  flex: 1;
-  font-size: 12px;
-  height: 60px;
+  border-bottom: 1px solid rgba(255, 133, 162, 0.2);
 }
 
-/* شبكة الكروت السفلية */
-.bottom-cards-grid {
+.top-nav-cards {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+  gap: 8px;
+}
+
+.mini-card {
+  background: white;
+  padding: 8px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--royal-purple);
+  font-size: 11px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid var(--soft-pink);
+}
+
+/* المحتوى الوسطي */
+.main-content {
+  padding-top: 130px; /* مساحة للهيدر الثابت */
+  padding-bottom: 220px; /* مساحة للكروت السفلية الثابتة */
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* تثبيت القائمة السفلية */
+.fixed-bottom-menu {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  z-index: 1000;
+  background: linear-gradient(to top, white, rgba(255, 255, 255, 0.9));
+  padding-bottom: 10px;
+}
+
+.bottom-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  padding: 20px;
-  margin-bottom: 80px;
+  gap: 8px;
+  padding: 10px;
 }
 
-.card {
-  text-decoration: none;
-  border-radius: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  box-shadow: 0 4px 15px rgba(255, 133, 162, 0.15);
-  transition: 0.3s;
-  font-weight: bold;
-}
-
-.pink-card {
+/* تصميم الكروت السفلية */
+.nav-card {
   background: white;
-  color: var(--main-pink);
-  padding: 15px;
-  font-size: 13px;
+  padding: 12px;
+  border-radius: 15px;
+  text-decoration: none;
+  text-align: center;
+  color: #555;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
 }
 
-.pink-card span, .glass-card span, .main-health-card span {
+.nav-card span {
+  display: block;
   font-size: 10px;
+  color: var(--deep-pink);
   font-weight: normal;
-  opacity: 0.8;
 }
 
-/* كارت الصحة المميز في المنتصف */
-.main-health-card {
-  grid-column: span 2; /* يأخذ العرض بالكامل ليكون بالمنتصف */
-  background: linear-gradient(135deg, #ff85a2, #ffb6c1);
+/* الكرت المميز (صحتك) */
+.center-highlight {
+  grid-column: span 2;
+  background: linear-gradient(135deg, var(--deep-pink), var(--soft-pink));
   color: white;
-  padding: 20px;
   font-size: 18px;
+  border: none;
 }
 
-.card:active {
-  scale: 0.95;
-}
+.center-highlight span { color: white; opacity: 0.9; }
