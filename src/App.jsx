@@ -1,12 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
-import Header from './components/Header';
+import Header from './components/Header'; 
 import Health from './pages/Health';
 import Swing from './pages/Swing';
 import Insight from './pages/Insight';
 import './App.css';
 
+// تأمين الانتقال للسلس لأعلى الصفحة عند تبديل الأقسام [cite: 4, 5]
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -20,18 +21,24 @@ function App() {
     <Router>
       <ScrollToTop />
       <div className="app-container">
-        {/* شريط علوي ثابت - يحتوي على الفيديوهات والعالم الافتراضي */}
-        <div className="fixed-top">
+        {/* القسم العلوي الثابت: مكتبة الفيديوهات وعالم رقة */}
+        <div className="top-sticky-menu">
           <Header />
-          <div className="top-nav-cards">
-            <Link to="/videos" className="mini-card">video library <br/><span>مكتبة الفيديوهات</span></Link>
-            <Link to="/virtual-world" className="mini-card">virtual world <br/><span>عالم رقة</span></Link>
+          <div className="top-icons-row">
+            <Link to="/videos" className="top-icon-item">
+              <span className="icon">🎬</span>
+              <span className="label">video library</span>
+            </Link>
+            <Link to="/virtual-world" className="top-icon-item">
+              <span className="icon">🎡</span>
+              <span className="label">virtual world</span>
+            </Link>
           </div>
         </div>
         
         <main className="main-content">
           <Routes>
-            {/* التطبيق يفتح دائماً على قسم الصحة (صحتك) */}
+            {/* التطبيق يفتح دائماً على قسم الصحة (صحتك)  */}
             <Route path="/" element={<Health />} />
             <Route path="/health" element={<Health />} />
             <Route path="/swing-forum" element={<Swing />} />
@@ -41,19 +48,36 @@ function App() {
           </Routes>
         </main>
 
-        {/* الكروت السفلية الثابتة - القفقة، المشاعر، الحميمية، الأرجوحة، وصحتك بالمنتصف */}
-        <div className="fixed-bottom-menu">
-          <div className="bottom-grid">
-            <Link to="/feelings" className="nav-card">المشاعر <span>feelings</span></Link>
-            <Link to="/intimacy" className="nav-card">الحميمية <span>intimacy</span></Link>
+        {/* القسم السفلي الثابت: الأيقونات الخمسة مع تمييز "صحتك" في المنتصف */}
+        <div className="bottom-sticky-menu">
+          <div className="bottom-icons-grid">
+            <Link to="/feelings" className="nav-icon-item">
+              <span className="icon">💖</span>
+              <span className="label">feelings</span>
+            </Link>
+            <Link to="/intimacy" className="nav-icon-item">
+              <span className="icon">🕯️</span>
+              <span className="label">intimacy</span>
+            </Link>
             
-            {/* قسم الصحة بالوسط وبالأسفل باسم "صحتك" */}
-            <Link to="/health" className="nav-card center-highlight">صحتك <span>health</span></Link>
-            
-            <Link to="/swing-forum" className="nav-card">الأرجوحة <span>swing forum</span></Link>
-            <Link to="/insight" className="nav-card">القفقة <span>insight</span></Link>
+            {/* أيقونة "صحتك" المميزة في المنتصف */}
+            <Link to="/health" className="nav-icon-item center-highlight">
+              <div className="center-circle">
+                <span className="icon">🩺</span>
+              </div>
+              <span className="label">صحتك</span>
+            </Link>
+
+            <Link to="/swing-forum" className="nav-icon-item">
+              <span className="icon">🧚</span>
+              <span className="label">swing forum</span>
+            </Link>
+            <Link to="/insight" className="nav-icon-item">
+              <span className="icon">✨</span>
+              <span className="label">القفقة</span>
+            </Link>
           </div>
-          <Navbar />
+          <Navbar /> {/* استدعاء النيبار الأصلي [cite: 2, 7] */}
         </div>
       </div>
     </Router>
