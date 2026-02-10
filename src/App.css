@@ -1,103 +1,96 @@
-/* الألوان الأساسية المتناسقة */
 :root {
-  --soft-pink: #ffafbd;
-  --deep-pink: #ff85a2;
-  --royal-purple: #9d81ba;
-  --bg-light: #fff5f7;
-  --glass: rgba(255, 255, 255, 0.85);
+  --feminine-pink: #ff85a2;
+  --soft-lavender: #9d81ba;
+  --bg-creamy: #fdf6f9;
+  --white-glass: rgba(255, 255, 255, 0.9);
 }
 
 .app-container {
-  background-color: var(--bg-light);
+  background-color: var(--bg-creamy);
   min-height: 100vh;
   direction: rtl;
-  overflow-x: hidden;
 }
 
-/* تثبيت الجزء العلوي */
-.fixed-top {
+/* تثبيت الهيدر والأيقونات العلوية */
+.top-sticky-menu {
   position: fixed;
   top: 0;
   width: 100%;
   z-index: 1000;
-  background: var(--glass);
+  background: var(--white-glass);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 133, 162, 0.2);
+  border-bottom: 1px solid #fce4ec;
 }
 
-.top-nav-cards {
+.top-icons-row {
   display: flex;
   justify-content: space-around;
-  padding: 10px;
-  gap: 8px;
+  padding: 10px 0;
 }
 
-.mini-card {
-  background: white;
-  padding: 8px 12px;
-  border-radius: 12px;
+.top-icon-item {
   text-decoration: none;
-  color: var(--royal-purple);
-  font-size: 11px;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  border: 1px solid var(--soft-pink);
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* المحتوى الوسطي */
+/* تنسيق المحتوى ليكون بين القوائم الثابتة */
 .main-content {
-  padding-top: 140px; /* مساحة للهيدر الثابت والكروت العلوية */
-  padding-bottom: 240px; /* مساحة للكروت السفلية الثابتة */
-  padding-left: 15px;
-  padding-right: 15px;
+  padding-top: 130px; /* مساحة للقائمة العلوية */
+  padding-bottom: 110px; /* مساحة للقائمة السفلية */
 }
 
-/* تثبيت القائمة السفلية والكروت */
-.fixed-bottom-menu {
+/* تثبيت القائمة السفلية */
+.bottom-sticky-menu {
   position: fixed;
   bottom: 0;
   width: 100%;
   z-index: 1000;
-  background: linear-gradient(to top, white, rgba(255, 255, 255, 0.9));
-  padding-bottom: 5px;
+  background: var(--white-glass);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
 }
 
-.bottom-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-  padding: 10px;
+.bottom-icons-grid {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 10px 5px;
 }
 
-/* تصميم كروت التنقل السفلية */
-.nav-card {
-  background: white;
-  padding: 10px;
-  border-radius: 15px;
+.nav-icon-item {
   text-decoration: none;
-  text-align: center;
-  color: #555;
-  font-size: 14px;
-  font-weight: 600;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-  border: 1px solid #fce4ec;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
 }
 
-.nav-card span {
-  display: block;
+.nav-icon-item .icon { font-size: 22px; }
+.nav-icon-item .label {
   font-size: 10px;
-  color: var(--deep-pink);
-  font-weight: normal;
+  color: #777;
+  margin-top: 4px;
 }
 
-/* الكرت المخصص لـ "صحتك" بالمنتصف */
+/* تمييز أيقونة "صحتك" بالمنتصف */
 .center-highlight {
-  grid-column: span 2;
-  background: linear-gradient(135deg, var(--deep-pink), var(--soft-pink));
-  color: white;
-  font-size: 18px;
-  border: none;
+  position: relative;
+  top: -15px; /* رفعها قليلاً لتبرز */
 }
 
-.center-highlight span { color: white; opacity: 0.9; }
+.center-circle {
+  background: linear-gradient(135deg, var(--feminine-pink), #ff4081);
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(255, 133, 162, 0.4);
+}
+
+.center-highlight .label {
+  color: var(--feminine-pink);
+  font-weight: bold;
+}
