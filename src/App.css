@@ -1,4 +1,4 @@
-/* الألوان الأساسية */
+/* الألوان الأساسية المتناسقة */
 :root {
   --soft-pink: #ffafbd;
   --deep-pink: #ff85a2;
@@ -10,7 +10,7 @@
 .app-container {
   background-color: var(--bg-light);
   min-height: 100vh;
-  font-family: 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
   overflow-x: hidden;
 }
 
@@ -39,27 +39,28 @@
   text-decoration: none;
   color: var(--royal-purple);
   font-size: 11px;
-  font-weight: bold;
+  text-align: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
   border: 1px solid var(--soft-pink);
+  flex: 1;
 }
 
 /* المحتوى الوسطي */
 .main-content {
-  padding-top: 130px; /* مساحة للهيدر الثابت */
-  padding-bottom: 220px; /* مساحة للكروت السفلية الثابتة */
+  padding-top: 140px; /* مساحة للهيدر الثابت والكروت العلوية */
+  padding-bottom: 240px; /* مساحة للكروت السفلية الثابتة */
   padding-left: 15px;
   padding-right: 15px;
 }
 
-/* تثبيت القائمة السفلية */
+/* تثبيت القائمة السفلية والكروت */
 .fixed-bottom-menu {
   position: fixed;
   bottom: 0;
   width: 100%;
   z-index: 1000;
   background: linear-gradient(to top, white, rgba(255, 255, 255, 0.9));
-  padding-bottom: 10px;
+  padding-bottom: 5px;
 }
 
 .bottom-grid {
@@ -69,10 +70,10 @@
   padding: 10px;
 }
 
-/* تصميم الكروت السفلية */
+/* تصميم كروت التنقل السفلية */
 .nav-card {
   background: white;
-  padding: 12px;
+  padding: 10px;
   border-radius: 15px;
   text-decoration: none;
   text-align: center;
@@ -80,7 +81,7 @@
   font-size: 14px;
   font-weight: 600;
   box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-  border: 1px solid #f0f0f0;
+  border: 1px solid #fce4ec;
 }
 
 .nav-card span {
@@ -90,7 +91,7 @@
   font-weight: normal;
 }
 
-/* الكرت المميز (صحتك) */
+/* الكرت المخصص لـ "صحتك" بالمنتصف */
 .center-highlight {
   grid-column: span 2;
   background: linear-gradient(135deg, var(--deep-pink), var(--soft-pink));
