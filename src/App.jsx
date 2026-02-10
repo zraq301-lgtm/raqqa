@@ -1,3 +1,5 @@
+import React from 'react';
+import ReactDOM from 'react-dom';
 import { BrowserRouter as Router, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
@@ -7,12 +9,9 @@ import Swing from './pages/Swing';
 import Insight from './pages/Insight';
 import './App.css';
 
-// تأمين الانتقال للسلس لأعلى الصفحة عند تبديل الأقسام [cite: 4, 5]
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
   return null;
 }
 
@@ -20,68 +19,74 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="app-container">
-        {/* القسم العلوي الثابت: مكتبة الفيديوهات وعالم رقة */}
-        <div className="top-sticky-menu">
+      <div className="app-viewport">
+        {/* الجزء العلوي الثابت */}
+        <header className="fixed-header">
           <Header />
-          <div className="top-icons-row">
-            <Link to="/videos" className="top-icon-item">
-              <span className="icon">🎬</span>
-              <span className="label">video library</span>
+          <div className="top-icon-nav">
+            <Link to="/videos" className="icon-btn">
+              <span className="emoji-icon">🎬</span>
+              <span className="btn-text">video library</span>
             </Link>
-            <Link to="/virtual-world" className="top-icon-item">
-              <span className="icon">🎡</span>
-              <span className="label">virtual world</span>
+            <Link to="/virtual-world" className="icon-btn">
+              <span className="emoji-icon">🎡</span>
+              <span className="btn-text">virtual world</span>
             </Link>
           </div>
-        </div>
+        </header>
         
-        <main className="main-content">
+        {/* المحتوى الوسطي المتغير */}
+        <main className="main-scroll-area">
           <Routes>
-            {/* التطبيق يفتح دائماً على قسم الصحة (صحتك)  */}
             <Route path="/" element={<Health />} />
             <Route path="/health" element={<Health />} />
             <Route path="/swing-forum" element={<Swing />} />
             <Route path="/insight" element={<Insight />} />
-            <Route path="/feelings" element={<div className="placeholder">عالم الأحاسيس</div>} />
-            <Route path="/intimacy" element={<div className="placeholder">المودة والخصوصية</div>} />
+            <Route path="/feelings" element={<div className="page-view">عالم الأحاسيس</div>} />
+            <Route path="/intimacy" element={<div className="page-view">المودة والخصوصية</div>} />
           </Routes>
         </main>
 
-        {/* القسم السفلي الثابت: الأيقونات الخمسة مع تمييز "صحتك" في المنتصف */}
-        <div className="bottom-sticky-menu">
-          <div className="bottom-icons-grid">
-            <Link to="/feelings" className="nav-icon-item">
-              <span className="icon">💖</span>
+        {/* الجزء السفلي الثابت مع أيقونة صحتك بالمنتصف */}
+        <footer className="fixed-footer-nav">
+          <div className="bottom-icon-grid">
+            <Link to="/feelings" className="nav-item">
+              <span className="emoji">💖</span>
               <span className="label">feelings</span>
             </Link>
-            <Link to="/intimacy" className="nav-icon-item">
-              <span className="icon">🕯️</span>
+            <Link to="/intimacy" className="nav-item">
+              <span className="emoji">🕯️</span>
               <span className="label">intimacy</span>
             </Link>
             
-            {/* أيقونة "صحتك" المميزة في المنتصف */}
-            <Link to="/health" className="nav-icon-item center-highlight">
-              <div className="center-circle">
-                <span className="icon">🩺</span>
+            <Link to="/health" className="nav-item highlight-item">
+              <div className="pulse-circle">
+                <span className="emoji">🩺</span>
               </div>
-              <span className="label">صحتك</span>
+              <span className="label active">صحتك</span>
             </Link>
 
-            <Link to="/swing-forum" className="nav-icon-item">
-              <span className="icon">🧚</span>
+            <Link to="/swing-forum" className="nav-item">
+              <span className="emoji">🧚</span>
               <span className="label">swing forum</span>
             </Link>
-            <Link to="/insight" className="nav-icon-item">
-              <span className="icon">✨</span>
+            <Link to="/insight" className="nav-item">
+              <span className="emoji">✨</span>
               <span className="label">القفقة</span>
             </Link>
           </div>
-          <Navbar /> {/* استدعاء النيبار الأصلي [cite: 2, 7] */}
-        </div>
+        </footer>
       </div>
     </Router>
   );
 }
+
+// كود الرندر لتعويض ملف main.jsx المحذوف
+ReactDOM.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+  document.getElementById('root')
+);
 
 export default App;
