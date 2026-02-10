@@ -1,13 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import Navbar from './components/Navbar';
-import Header from './components/Header'; 
+// استيراد المكونات والصفحات [cite: 2, 17]
 import Health from './pages/Health';
+import Feelings from './pages/Feelings';
+import Intimacy from './pages/Intimacy';
 import Swing from './pages/Swing';
 import Insight from './pages/Insight';
-import './App.css';
+import Videos from './pages/Videos';
+import VirtualWorld from './pages/VirtualWorld';
+import './App.css'; // [cite: 3, 18]
 
-// وظيفة لضمان صعود الصفحة للأعلى عند التنقل [cite: 4, 5]
+// وظيفة لضمان صعود الصفحة للأعلى عند التنقل [cite: 4, 19]
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -22,9 +25,8 @@ function App() {
       <ScrollToTop />
       <div className="app-container">
         
-        {/* القسم العلوي الثابت: مكتبة الفيديوهات وعالم رقة [cite: 6] */}
+        {/* القسم العلوي: مكتبة الفيديوهات وعالم رقة فقط [cite: 6, 7, 21, 22] */}
         <header className="top-sticky-menu">
-          <Header />
           <div className="top-cards-container">
             <Link to="/videos" className="top-card">
               <span className="card-icon">🎬</span>
@@ -43,19 +45,21 @@ function App() {
           </div>
         </header>
         
-        {/* المحتوى المتغير  */}
+        {/* المحتوى المتغير (المسارات السبعة) [cite: 9, 24] */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Navigate to="/health" />} />
             <Route path="/health" element={<Health />} />
+            <Route path="/feelings" element={<Feelings />} />
+            <Route path="/intimacy" element={<Intimacy />} />
             <Route path="/swing-forum" element={<Swing />} />
             <Route path="/insight" element={<Insight />} />
-            <Route path="/feelings" element={<div className="placeholder-page">عالم الأحاسيس</div>} />
-            <Route path="/intimacy" element={<div className="placeholder-page">المودة والخصوصية</div>} />
+            <Route path="/videos" element={<Videos />} />
+            <Route path="/virtual-world" element={<VirtualWorld />} />
           </Routes>
         </main>
 
-        {/* القسم السفلي الثابت: الأيقونات الخمسة [cite: 9, 10, 11, 12] */}
+        {/* القسم السفلي الثابت: الأقسام الخمسة [cite: 10, 11, 12, 13, 14, 25, 26, 27, 28, 29] */}
         <nav className="bottom-sticky-menu">
           <div className="nav-grid">
             <Link to="/feelings" className="nav-item">
@@ -70,7 +74,7 @@ function App() {
               <span className="nav-sub">intimacy</span>
             </Link>
             
-            {/* أيقونة "صحتك" المركزية المميزة  */}
+            {/* أيقونة "صحتك" المركزية [cite: 12, 27] */}
             <Link to="/health" className="nav-item center-action">
               <div className="center-circle">
                 <span className="nav-icon large">🩺</span>
@@ -81,7 +85,7 @@ function App() {
 
             <Link to="/swing-forum" className="nav-item">
               <span className="nav-icon">🧚</span>
-              <span className="nav-label">منتدى الأرجوحة</span>
+              <span className="nav-label">الأرجوحة</span>
               <span className="nav-sub">swing forum</span>
             </Link>
         
