@@ -38,6 +38,7 @@ function App() {
         {/* المحتوى الوسطي المتغير */}
         <main className="main-scroll-area">
           <Routes>
+            {/* التطبيق يفتح دائماً على قسم الصحة (صحتك) */}
             <Route path="/" element={<Health />} />
             <Route path="/health" element={<Health />} />
             <Route path="/swing-forum" element={<Swing />} />
@@ -81,7 +82,7 @@ function App() {
   );
 }
 
-// كود الرندر لتعويض ملف main.jsx المحذوف
+// هذا الجزء هو البديل لملف main.jsx المحذوف لربط التطبيق بـ index.html
 ReactDOM.render(
   <React.StrictMode>
     <App />
