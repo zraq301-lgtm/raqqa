@@ -1,13 +1,43 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>تطبيق رقة</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-  </head>
-  <body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>تطبيق رؤاقة - النسخة النسائية الفاخرة</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="App.css">
+    
+    <style>
+        /* إعدادات إضافية لضمان ثبات القوائم وتجربة مستخدم سلسة */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fcfcfc;
+            font-family: 'Tajawal', 'Cairo', sans-serif;
+            overflow-x: hidden; /* منع التمرير العرضي */
+            -webkit-tap-highlight-color: transparent; /* إزالة لون التحديد عند الضغط في الموبايل */
+        }
+
+        #root {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* تنسيق لتحسين ظهور الأيقونات والرموز التعبيرية */
+        .icon, .nav-icon {
+            font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+        }
+    </style>
+</head>
+<body>
+
     <div id="root"></div>
-    <script type="module" src="/src/App.jsx"></script>
-  </body>
+
+    <script type="module" src="/src/main.jsx"></script>
+
+</body>
 </html>
