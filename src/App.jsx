@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } f
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
 
-// استيراد المكونات والصفحات
+// استيراد المكونات والصفحات (دون تغيير)
 import Health from './pages/Health';
 import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
@@ -11,7 +11,7 @@ import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 
-// استيراد الأيقونات من المرجع الرئيسي المعتمد
+// استيراد الأيقونات (يمكنك استبدالها من iconMap.js لاحقاً إذا أردت)
 import { 
   Heart, 
   Sparkles, 
@@ -19,12 +19,13 @@ import {
   Activity, 
   Flower2, 
   Gem, 
-  MessageCircle 
+  MessageCircle,
+  Bell,
+  Menu
 } from 'lucide-react';
 
 import './App.css';
 
-// وظيفة لضمان صعود الصفحة للأعلى عند التنقل
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -34,15 +35,12 @@ function ScrollToTop() {
 }
 
 function App() {
-  // إدارة التحديثات وزر الرجوع في الأندرويد لضمان تجربة مستخدم سلسة
   useEffect(() => {
     const checkUpdates = async () => {
       console.log("التطبيق متصل الآن بمصدر التحديثات من جيت هب");
     };
-
     checkUpdates();
 
-    // العودة للصفحة السابقة عند ضغط زر الرجوع في الأندرويد
     CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) {
         CapApp.exitApp();
@@ -57,28 +55,26 @@ function App() {
       <ScrollToTop />
       <div className="app-container">
         
-        {/* القسم العلوي: مكتبة الفيديوهات وعالم رقة */}
-        <header className="top-sticky-menu">
-          <div className="top-cards-container">
-            <Link to="/videos" className="top-card">
-              <span className="card-icon"><Video size={24} /></span>
-              <div className="card-text">
-                <span className="card-label">مكتبة الفيديوهات</span>
-                <span className="card-sub">video library</span>
-              </div>
-            </Link>
-     
-            <Link to="/virtual-world" className="top-card">
-              <span className="card-icon"><Gem size={24} /></span>
-              <div className="card-text">
-                <span className="card-label">عالم رقة الافتراضي</span>
-                <span className="card-sub">virtual world</span>
-              </div>
-            </Link>
+        {/* الهيدر الجديد: يحتوي على الفيديوهات وعالم رقة لتوفير مساحة في المنتصف */}
+        <header className="professional-header">
+          <div className="header-top-row">
+            <button className="icon-btn"><Bell size={22} /></button>
+            <div className="header-chips">
+              <Link to="/videos" className="chip-btn">
+                <Video size={16} />
+                <span>المكتبة</span>
+              </Link>
+              <Link to="/virtual-world" className="chip-btn active">
+                <Gem size={16} />
+                <span>عالم رقة</span>
+              </Link>
+            </div>
+            <button className="icon-btn"><Menu size={22} /></button>
           </div>
+          <h1 className="brand-logo">رقة</h1>
         </header>
         
-        {/* المحتوى المتغير (المسارات السبعة) */}
+        {/* مساحة المحتوى الداخلي - أصبحت أكبر الآن */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Navigate to="/health" />} />
@@ -92,40 +88,37 @@ function App() {
           </Routes>
         </main>
 
-        {/* القسم السفلي الثابت: الأقسام الخمسة */}
+        {/* القائمة السفلية مع الأيقونة العائمة المصغرة */}
         <nav className="bottom-sticky-menu">
           <div className="nav-grid">
+            {/* أيقونات الجانب الأيمن */}
             <Link to="/feelings" className="nav-item">
               <span className="nav-icon"><Heart size={20} /></span>
               <span className="nav-label">المشاعر</span>
-              <span className="nav-sub">feelings</span>
             </Link>
 
             <Link to="/intimacy" className="nav-item">
               <span className="nav-icon"><Flower2 size={20} /></span>
               <span className="nav-label">الحميمية</span>
-              <span className="nav-sub">intimacy</span>
             </Link>
             
-            {/* أيقونة "صحتك" المركزية */}
+            {/* أيقونة الصحة العائمة (تم تصغيرها) */}
             <Link to="/health" className="nav-item center-action">
-              <div className="center-circle">
-                <span className="nav-icon large"><Activity size={28} /></span>
+              <div className="center-circle small-fab">
+                <span className="nav-icon"><Activity size={24} /></span>
               </div>
               <span className="nav-label bold">صحتك</span>
-              <span className="nav-sub">health</span>
             </Link>
 
+            {/* أيقونات الجانب الأيسر */}
             <Link to="/swing-forum" className="nav-item">
               <span className="nav-icon"><MessageCircle size={20} /></span>
               <span className="nav-label">الأرجوحة</span>
-              <span className="nav-sub">swing forum</span>
             </Link>
         
             <Link to="/insight" className="nav-item">
               <span className="nav-icon"><Sparkles size={20} /></span>
               <span className="nav-label">القفقة</span>
-              <span className="nav-sub">insight</span>
             </Link>
           </div>
         </nav>
