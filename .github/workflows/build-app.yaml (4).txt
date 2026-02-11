@@ -1,0 +1,100 @@
+name: Roqa Final Professional Build Fixed
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. جلب الكود
+        uses: actions/checkout@v4
+
+      - name: 2. إعداد البيئة (Node 22 & Java 17)
+        # تم تعديل Java إلى 17 ليتوافق مع Gradle 8.0.2 ويحل خطأ Unsupported class file major version 65
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17' 
+          distribution: 'temurin'
+
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 3. التنظيف وعزل الكود
+        run: |
+          rm -rf android node_modules 
+          npm install --legacy-peer-deps
+          mkdir -p dist_web
+          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
+          npm run build --if-present
+
+      - name: 4. إضافة منصة أندرويد وتحديثها
+        run: |
+          npx cap config set webDir dist_web
+          npx cap add android
+          npx cap sync android
+
+      - name: 5. إضافة صلاحيات الإنترنت والبيانات غير المشفرة
+        run: |
+          # إضافة تصريح الإنترنت للمانيفست لضمان عمل الـ APIs الخارجية 
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
+          
+          # تفعيل Cleartext Traffic للسماح بالاتصال بـ Neon/Vercel كما في المتصفح 
+          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
+
+      - name: 6. ضبط الأيقونات وفيديو شاشة البداية
+        run: |
+          npm install @capacitor/assets --save-dev
+          mkdir -p android/app/src/main/res/raw
+          if [ -f "resources/splash_video.mp4" ]; then
+            cp resources/splash_video.mp4 android/app/src/main/res/raw/
+            echo "✅ تم نقل الفيديو بنجاح"
+          else
+            echo "⚠️ تحذير: لم يتم العثور على resources/splash_video.mp4"
+          fi
+          npx capacitor-assets generate --android
+
+      - name: 7. بناء ملفات الـ APK و AAB
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
+
+      - name: 8. إنشاء ملف التوقيع وتوقيع الملفات
+        run: |
+          # إنشاء مفتاح توقيع جديد
+          keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
+          # تحديد مسارات الملفات الناتجة
+          APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+
+          # توقيع ملف APK
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
+            --ks-key-alias "roqa_alias" \
+            --ks-pass pass:"roqa_password_2026" \
+            --key-pass pass:"roqa_password_2026" \
+            --out Roqa-Final-Signed.apk \
+            "$APK_FILE"
+
+          # توقيع ملف AAB
+          jarsigner -keystore release_key.jks \
+            -storepass "roqa_password_2026" \
+            -keypass "roqa_password_2026" \
+            "$AAB_FILE" roqa_alias
+
+          cp "$AAB_FILE" Roqa-Final-Signed.aab
+
+      - name: 9. رفع الملفات الموقعة وملف التوقيع
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roqa-Full-Package-v${{ github.run_number }}
+          path: |
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
+            release_key.jks
