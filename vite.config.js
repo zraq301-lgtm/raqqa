@@ -2,43 +2,58 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
+// https://vitejs.dev/config/
 export default defineConfig({
-  // المجلد الرئيسي هو الجذر
-  root: './', 
-  
+  // تحديد المجلد الرئيسي للمشروع
+  root: './',
+
+  // تفعيل إضافات React
   plugins: [react()],
-  
-  server: {
-    port: 3000,
-    strictPort: true,
-    host: true,
-  },
+
+  // المسار الأساسي: تم تغييره من './' إلى '/' لإصلاح مشكلة الصفحة البيضاء على Vercel
+  base: '/',
 
   resolve: {
     alias: {
-      // التعديل: جعل @ تشير إلى src بدلاً من public لضمان عمل الاستيرادات (Imports)
+      // إعداد الاختصار @ ليشير إلى مجلد src لسهولة الاستيراد
       '@': resolve(__dirname, './src'),
     },
   },
 
+  server: {
+    port: 3000,
+    strictPort: true,
+    host: true, // للسماح بالوصول من الشبكة المحلية
+    open: true, // لفتح المتصفح تلقائياً عند التشغيل
+  },
+
   build: {
+    // تحديد مجلد المخرجات
     outDir: 'dist',
-    // التعديل: استخدام esbuild الافتراضي بدلاً من terser لسرعة البناء وتجنب أخطاء التثبيت
-    minify: 'esbuild', 
+    
+    // استخدام esbuild للضغط لضمان السرعة والتوافق
+    minify: 'esbuild',
+    
+    // تحسين استهلاك الذاكرة وسرعة البناء
+    sourcemap: false, 
+    chunkSizeWarningLimit: 1600,
+
     rollupOptions: {
       input: {
-        // التأكد من أن المسار يشير إلى index.html في المجلد الرئيسي
+        // المسار المطلق لملف المدخل الرئيسي
         main: resolve(__dirname, 'index.html'),
       },
       output: {
-        // تنظيم الملفات الناتجة لضمان عدم حدوث تضارب في المسارات على Vercel
+        // تنظيم مخرجات البناء في مجلدات فرعية واضحة (assets) لمنع تضارب الملفات
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
       },
     },
-    chunkSizeWarningLimit: 1000,
   },
-  // التأكد من أن القاعدة تبدأ من الجذر
-  base: './',
+
+  // تحسين أداء المعالجة المسبقة للمكتبات
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+  },
 })
