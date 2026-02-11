@@ -1,0 +1,104 @@
+:root {
+  --female-pink: #ff748d;
+  --soft-bg: #fff9fa;
+  --text-gray: #666;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--soft-bg);
+  font-family: 'Tajawal', sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ضبط الترويسة العلوية لتكون نحيفة وغير حاجزة للمساحة */
+.elegant-top-bar {
+  padding: 8px 15px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 116, 141, 0.1);
+}
+
+.top-nav-links {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.mini-card {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  text-decoration: none;
+  border: 1px solid #f0f0f0;
+  transition: 0.3s;
+}
+
+.mini-icon { font-size: 1rem; margin-left: 6px; }
+.mini-text { font-size: 0.75rem; color: var(--text-gray); }
+
+/* منطقة عرض المحتوى - مبرمجة لتكون واسعة وسلسة التمرير */
+.dynamic-content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  padding-bottom: 100px; /* مسافة لضمان عدم اختفاء المحتوى خلف المنيو */
+}
+
+/* شريط التنقل السفلي الأنيق */
+.elegant-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  height: 70px;
+  border-top: 1px solid rgba(0,0,0,0.03);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.02);
+}
+
+.nav-items-wrapper {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  height: 100%;
+}
+
+.nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-decoration: none;
+  flex: 1;
+}
+
+.icon-small { font-size: 1.1rem; margin-bottom: 3px; }
+.label-small { font-size: 0.65rem; color: #999; }
+
+/* تصميم دائرة "صحتك" المركزية بحجم أصغر وأكثر تناسقاً */
+.central-link {
+  transform: translateY(-12px);
+}
+
+.glowing-circle {
+  width: 50px;
+  height: 50px;
+  background: var(--female-pink);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 15px rgba(255, 116, 141, 0.3);
+  border: 3px solid white;
+}
+
+.icon-main { font-size: 1.5rem; }
+.bold-pink { color: var(--female-pink); font-weight: bold; }
