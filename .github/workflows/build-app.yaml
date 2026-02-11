@@ -1,7 +1,10 @@
 name: Roqa Final Professional Build Fixed
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main  # تفعيل البناء التلقائي عند أي تحديث في فرع main
+  workflow_dispatch: # الحفاظ على خيار التشغيل اليدوي أيضاً من GitHub Actions
 
 jobs:
   build:
@@ -48,7 +51,8 @@ jobs:
         run: |
           npm install @capacitor/assets --save-dev
           mkdir -p android/app/src/main/res/raw
-          if [ -f "resources/splash_video.mp4" ]; then
+          if [ -f "resources/splash_video.mp4" ];
+          then
             cp resources/splash_video.mp4 android/app/src/main/res/raw/
             echo "✅ تم نقل الفيديو بنجاح"
           else
