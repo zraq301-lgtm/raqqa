@@ -1,8 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { App as CapApp } from '@capacitor/app'; // إضافة مستورد Capacitor
+import { App as CapApp } from '@capacitor/app'; 
 
-[cite_start]// استيراد المكونات والصفحات [cite: 2, 3]
+// استيراد المكونات والصفحات
 import Health from './pages/Health';
 import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
@@ -11,7 +11,7 @@ import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 
-[cite_start]// استيراد الأيقونات من المرجع الرئيسي المعتمد [cite: 4]
+// استيراد الأيقونات من المرجع الرئيسي المعتمد
 import { 
   Heart, 
   Sparkles, 
@@ -22,9 +22,9 @@ import {
   MessageCircle 
 } from 'lucide-react';
 
-[cite_start]import './App.css'; [cite: 5]
+import './App.css';
 
-[cite_start]// وظيفة لضمان صعود الصفحة للأعلى عند التنقل [cite: 4, 6]
+// وظيفة لضمان صعود الصفحة للأعلى عند التنقل
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -34,17 +34,15 @@ function ScrollToTop() {
 }
 
 function App() {
-  // التعديل المضاف لإدارة التحديثات وزر الرجوع في الأندرويد
+  // إدارة التحديثات وزر الرجوع في الأندرويد لضمان تجربة مستخدم سلسة
   useEffect(() => {
-    // مراقبة حالة التطبيق للتأكد من تحديث المحتوى عند الفتح
     const checkUpdates = async () => {
-      // بما أن capacitor.config.json موجه للرابط الخارجي، سيعمل هذا السطر للتأكيد
       console.log("التطبيق متصل الآن بمصدر التحديثات من جيت هب");
     };
 
     checkUpdates();
 
-    // العودة للصفحة السابقة عند ضغط زر الرجوع في الأندرويد لضمان تجربة مستخدم سلسة
+    // العودة للصفحة السابقة عند ضغط زر الرجوع في الأندرويد
     CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) {
         CapApp.exitApp();
@@ -59,7 +57,7 @@ function App() {
       <ScrollToTop />
       <div className="app-container">
         
-        [cite_start]{/* القسم العلوي: مكتبة الفيديوهات وعالم رقة [cite: 6, 7, 8, 9, 10] */}
+        {/* القسم العلوي: مكتبة الفيديوهات وعالم رقة */}
         <header className="top-sticky-menu">
           <div className="top-cards-container">
             <Link to="/videos" className="top-card">
@@ -80,7 +78,7 @@ function App() {
           </div>
         </header>
         
-        [cite_start]{/* المحتوى المتغير (المسارات السبعة) [cite: 11, 12] */}
+        {/* المحتوى المتغير (المسارات السبعة) */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Navigate to="/health" />} />
@@ -94,7 +92,7 @@ function App() {
           </Routes>
         </main>
 
-        [cite_start]{/* القسم السفلي الثابت: الأقسام الخمسة [cite: 13, 14, 15, 16, 17] */}
+        {/* القسم السفلي الثابت: الأقسام الخمسة */}
         <nav className="bottom-sticky-menu">
           <div className="nav-grid">
             <Link to="/feelings" className="nav-item">
@@ -109,7 +107,7 @@ function App() {
               <span className="nav-sub">intimacy</span>
             </Link>
             
-            [cite_start]{/* أيقونة "صحتك" المركزية [cite: 14, 15] */}
+            {/* أيقونة "صحتك" المركزية */}
             <Link to="/health" className="nav-item center-action">
               <div className="center-circle">
                 <span className="nav-icon large"><Activity size={28} /></span>
@@ -136,4 +134,4 @@ function App() {
   );
 }
 
-[cite_start]export default App; [cite: 18]
+export default App;
