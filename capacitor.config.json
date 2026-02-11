@@ -1,9 +1,13 @@
 {
   "appId": "com.roqa.app",
   "appName": "raqqa",
-  "webDir": "dist_web", 
+  "webDir": "dist_web",
   "bundledWebRuntime": false,
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "url": "https://raqqa-v6cd-ocfjfig1h-raqqs-projects.vercel.app",
+    "allowNavigation": [
+      "raqqa-v6cd-ocfjfig1h-raqqs-projects.vercel.app"
+    ]
   }
 }
