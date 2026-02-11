@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
 export default defineConfig({
-  // تحديد المجلد الرئيسي للمشروع
+  // المجلد الرئيسي هو الجذر
   root: './', 
   
   plugins: [react()],
@@ -16,26 +16,22 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      // إخبار Vite أن علامة @ تشير إلى مجلد public الجديد
-      '@': resolve(__dirname, './public'),
+      // التعديل: جعل @ تشير إلى src بدلاً من public لضمان عمل الاستيرادات (Imports)
+      '@': resolve(__dirname, './src'),
     },
   },
 
   build: {
     outDir: 'dist',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    // التعديل: استخدام esbuild الافتراضي بدلاً من terser لسرعة البناء وتجنب أخطاء التثبيت
+    minify: 'esbuild', 
     rollupOptions: {
-      // تحديد ملف المدخل الرئيسي داخل مجلد public
       input: {
+        // التأكد من أن المسار يشير إلى index.html في المجلد الرئيسي
         main: resolve(__dirname, 'index.html'),
       },
       output: {
+        // تنظيم الملفات الناتجة لضمان عدم حدوث تضارب في المسارات على Vercel
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: 'assets/[ext]/[name]-[hash].[ext]',
@@ -43,5 +39,6 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000,
   },
-  base: '/',
+  // التأكد من أن القاعدة تبدأ من الجذر
+  base: './',
 })
