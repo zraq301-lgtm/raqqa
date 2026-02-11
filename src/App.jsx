@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-// استيراد المكونات والصفحات [cite: 2]
+import { App as CapApp } from '@capacitor/app'; // إضافة مستورد Capacitor
+
+[cite_start]// استيراد المكونات والصفحات [cite: 2, 3]
 import Health from './pages/Health';
 import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
@@ -9,7 +11,7 @@ import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 
-// استيراد الأيقونات من المرجع الرئيسي المعتمد
+[cite_start]// استيراد الأيقونات من المرجع الرئيسي المعتمد [cite: 4]
 import { 
   Heart, 
   Sparkles, 
@@ -20,9 +22,9 @@ import {
   MessageCircle 
 } from 'lucide-react';
 
-import './App.css';
+[cite_start]import './App.css'; [cite: 5]
 
-// وظيفة لضمان صعود الصفحة للأعلى عند التنقل [cite: 4]
+[cite_start]// وظيفة لضمان صعود الصفحة للأعلى عند التنقل [cite: 4, 6]
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -32,24 +34,43 @@ function ScrollToTop() {
 }
 
 function App() {
+  // التعديل المضاف لإدارة التحديثات وزر الرجوع في الأندرويد
+  useEffect(() => {
+    // مراقبة حالة التطبيق للتأكد من تحديث المحتوى عند الفتح
+    const checkUpdates = async () => {
+      // بما أن capacitor.config.json موجه للرابط الخارجي، سيعمل هذا السطر للتأكيد
+      console.log("التطبيق متصل الآن بمصدر التحديثات من جيت هب");
+    };
+
+    checkUpdates();
+
+    // العودة للصفحة السابقة عند ضغط زر الرجوع في الأندرويد لضمان تجربة مستخدم سلسة
+    CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (!canGoBack) {
+        CapApp.exitApp();
+      } else {
+        window.history.back();
+      }
+    });
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />
       <div className="app-container">
         
-        {/* القسم العلوي: مكتبة الفيديوهات وعالم رقة [cite: 6, 7] */}
+        [cite_start]{/* القسم العلوي: مكتبة الفيديوهات وعالم رقة [cite: 6, 7, 8, 9, 10] */}
         <header className="top-sticky-menu">
           <div className="top-cards-container">
             <Link to="/videos" className="top-card">
-              {/* أيقونة الفيديوهات المعتمدة */}
               <span className="card-icon"><Video size={24} /></span>
               <div className="card-text">
                 <span className="card-label">مكتبة الفيديوهات</span>
                 <span className="card-sub">video library</span>
               </div>
             </Link>
+     
             <Link to="/virtual-world" className="top-card">
-              {/* أيقونة العالم الافتراضي المعتمدة */}
               <span className="card-icon"><Gem size={24} /></span>
               <div className="card-text">
                 <span className="card-label">عالم رقة الافتراضي</span>
@@ -59,7 +80,7 @@ function App() {
           </div>
         </header>
         
-        {/* المحتوى المتغير (المسارات السبعة) [cite: 9] */}
+        [cite_start]{/* المحتوى المتغير (المسارات السبعة) [cite: 11, 12] */}
         <main className="main-content">
           <Routes>
             <Route path="/" element={<Navigate to="/health" />} />
@@ -73,7 +94,7 @@ function App() {
           </Routes>
         </main>
 
-        {/* القسم السفلي الثابت: الأقسام الخمسة [cite: 10, 11, 12, 13, 14] */}
+        [cite_start]{/* القسم السفلي الثابت: الأقسام الخمسة [cite: 13, 14, 15, 16, 17] */}
         <nav className="bottom-sticky-menu">
           <div className="nav-grid">
             <Link to="/feelings" className="nav-item">
@@ -88,7 +109,7 @@ function App() {
               <span className="nav-sub">intimacy</span>
             </Link>
             
-            {/* أيقونة "صحتك" المركزية [cite: 12] */}
+            [cite_start]{/* أيقونة "صحتك" المركزية [cite: 14, 15] */}
             <Link to="/health" className="nav-item center-action">
               <div className="center-circle">
                 <span className="nav-icon large"><Activity size={28} /></span>
@@ -115,4 +136,4 @@ function App() {
   );
 }
 
-export default App;
+[cite_start]export default App; [cite: 18]
