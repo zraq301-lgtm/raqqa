@@ -1,139 +1,174 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');
-
+/* الألوان الأساسية والمتغيرات */
 :root {
-  --bg-color: #F8F9FD;
-  --accent-pink: #FF748D;
-  --soft-blue: #E9F0FF;
-  --text-dark: #2D3142;
+  --female-pink: #ff748d;
+  --female-pink-light: rgba(255, 116, 141, 0.1);
+  --soft-bg: #fff9fa;
+  --text-gray: #666;
+  --glass-white: rgba(255, 255, 255, 0.85);
 }
 
 body {
   margin: 0;
-  background-color: var(--bg-color);
+  padding: 0;
+  background-color: var(--soft-bg);
   font-family: 'Tajawal', sans-serif;
   direction: rtl;
 }
 
-.dribbble-container {
+/* حاوية التطبيق الرئيسية */
+.app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
-/* Header Style */
-.dribbble-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 25px;
-  background: transparent;
-}
+/* --- التنسيق الجديد للصور والأيقونات --- */
 
-.top-circle-btn {
-  width: 45px;
-  height: 45px;
-  border-radius: 50%;
-  border: 1px solid #eee;
-  background: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: var(--text-dark);
-}
-
-.dribbble-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.brand-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--accent-pink);
-  border-radius: 50%;
-}
-
-.dribbble-brand h1 {
-  font-size: 22px;
-  margin: 0;
-  color: var(--text-dark);
-}
-
-/* Quick Access */
-.quick-access {
-  display: flex;
-  gap: 15px;
-  padding: 0 25px;
-  margin-bottom: 20px;
-}
-
-.access-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: white;
-  padding: 8px 15px;
-  border-radius: 30px;
-  text-decoration: none;
-  color: var(--text-dark);
-  font-size: 14px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-}
-
-.access-icon {
+.custom-img-icon {
   width: 32px;
   height: 32px;
   border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.custom-img-icon-nav {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 116, 141, 0.2);
+  transition: all 0.3s ease;
+}
+
+.custom-img-icon-main {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+/* تحسين شكل الدائرة المركزية (أيقونة الصحة) */
+.center-circle {
+  width: 60px;
+  height: 60px;
+  background: white;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid white;
+  box-shadow: 0 4px 12px rgba(255, 116, 141, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.v-bg { background: #FFF0F3; color: #FF4D6D; }
-.g-bg { background: #F0F4FF; color: #4D7BFF; }
+/* --- أنيميشن وحركات تفاعلية --- */
 
-/* Main Content Area */
-.dribbble-main {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 25px 100px 25px;
+/* حركة نبض خفيفة لأيقونة الصحة */
+.center-action:hover .center-circle {
+  transform: scale(1.1) translateY(-5px);
+  box-shadow: 0 8px 20px rgba(255, 116, 141, 0.5);
 }
 
-/* Navigation Bar */
-.dribbble-nav {
+/* حركة عند الضغط على أيقونات القائمة */
+.nav-item:active .custom-img-icon-nav {
+  transform: scale(0.8);
+  filter: brightness(0.9);
+}
+
+/* --- الهيدر العلوي (مكتبة الفيديوهات وعالم رقة) --- */
+.top-sticky-menu {
+  padding: 15px;
+  background: var(--glass-white);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--female-pink-light);
+}
+
+.top-cards-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.top-card {
+  display: flex;
+  align-items: center;
+  background: white;
+  padding: 8px 16px;
+  border-radius: 25px;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid var(--female-pink-light);
+  transition: 0.3s;
+}
+
+.top-card:hover {
+  background: var(--soft-bg);
+  transform: translateY(-2px);
+}
+
+.card-text {
+  margin-right: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-label {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: var(--female-pink);
+}
+
+.card-sub {
+  font-size: 0.65rem;
+  color: var(--text-gray);
+}
+
+/* --- القائمة السفلية --- */
+.bottom-sticky-menu {
   position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  height: 75px;
-  background: #FFFFFF;
-  border-radius: 40px;
+  bottom: 0;
+  width: 100%;
+  background: white;
+  padding: 10px 0 20px 0;
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.03);
+  border-radius: 30px 30px 0 0;
+}
+
+.nav-grid {
   display: flex;
   justify-content: space-around;
-  align-items: center;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+  align-items: flex-end;
 }
 
-.nav-link-custom {
+.nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-decoration: none;
-  color: #B0B3C7;
-  font-size: 11px;
+  color: var(--text-gray);
 }
 
-.floating-health {
-  width: 60px;
-  height: 60px;
-  background: var(--accent-pink);
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: -40px;
-  box-shadow: 0 8px 20px rgba(255, 116, 141, 0.4);
-  border: 5px solid var(--bg-color);
+.nav-label {
+  font-size: 0.75rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.bold { font-weight: bold; color: var(--female-pink); }
+
+.center-action {
+  position: relative;
+  top: -25px; /* رفع أيقونة الصحة للأعلى */
+}
+
+/* منطقة المحتوى */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 100px;
 }
