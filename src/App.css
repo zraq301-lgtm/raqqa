@@ -1,10 +1,11 @@
-/* الألوان الأساسية والمتغيرات */
+/* الألوان الأساسية والمتغيرات - تم تحديثها لتكون أكثر أنوثة وحيوية */
 :root {
-  --female-pink: #ff748d;
-  --female-pink-light: rgba(255, 116, 141, 0.1);
-  --soft-bg: #fff9fa;
-  --text-gray: #666;
-  --glass-white: rgba(255, 255, 255, 0.85);
+  --female-pink: #ff4d7d; /* وردي أعمق وأكثر حيوية */
+  --female-pink-light: rgba(255, 77, 125, 0.15);
+  --soft-bg: #fff5f7; /* خلفية وردية هادئة جداً */
+  --text-gray: #555;
+  --glass-white: rgba(255, 255, 255, 0.9);
+  --accent-purple: #9b59b6; /* لون بنفسجي مكمل للأنوثة */
 }
 
 body {
@@ -23,25 +24,25 @@ body {
   overflow: hidden;
 }
 
-/* --- التنسيق المعدل: تقليل الحجم بنسبة 30% --- */
+/* --- التنسيق المعدل: تكبير الحجم بنسبة 200% --- */
 
 /* أيقونات الهيدر العلوي (المكتبة وعالم رقة) */
 .custom-img-icon {
-  width: 28px;  /* تقليل الحجم */
-  height: 28px;
+  width: 56px;  /* تم التكبير من 28px إلى 56px */
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   transition: transform 0.3s ease;
-  border: 1px solid var(--female-pink-light);
+  border: 2px solid var(--female-pink); /* زيادة وضوح الحدود */
 }
 
 /* الأيقونات الجانبية في المنيو السفلي */
 .custom-img-icon-nav {
-  width: 26px;   /* حجم رقيق ومناسب */
-  height: 26px;  
+  width: 52px;   /* تم التكبير من 26px إلى 52px */
+  height: 52px;  
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid rgba(255, 116, 141, 0.1);
+  border: 2px solid var(--female-pink-light);
   transition: all 0.3s ease;
   background-color: white;
 }
@@ -54,15 +55,15 @@ body {
   object-fit: cover;
 }
 
-/* الدائرة المركزية - مقلصة لتكون متناسقة */
+/* الدائرة المركزية - تم تكبيرها لتتناسب مع التعديلات */
 .center-circle {
-  width: 45px;   /* تقليص الحجم ليصبح 45px */
-  height: 45px;
+  width: 90px;   /* تم التكبير من 45px إلى 90px */
+  height: 90px;
   background: white;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid white; 
-  box-shadow: 0 4px 10px rgba(255, 116, 141, 0.2);
+  border: 3px solid var(--female-pink); 
+  box-shadow: 0 6px 15px rgba(255, 77, 125, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -72,52 +73,53 @@ body {
 /* ضبط مكان الزر المركزي */
 .center-action {
   position: relative;
-  top: -18px; /* خفض الارتفاع ليتناسب مع الحجم الصغير */
+  top: -35px; /* رفع الإزاحة لتناسب الحجم الكبير الجديد */
 }
 
 /* ضبط حجم الخط للعناوين السفلية */
 .nav-label {
-  font-size: 0.7rem; 
-  margin-top: 4px;
-  font-weight: 500;
+  font-size: 0.9rem; /* تكبير الخط قليلاً ليتناسب مع الأيقونات الضخمة */
+  margin-top: 8px;
+  font-weight: 600;
+  color: var(--female-pink);
 }
 
 .bold { font-weight: bold; color: var(--female-pink); }
 
 /* --- الهيدر العلوي المعدل --- */
 .top-sticky-menu {
-  padding: 8px 12px;
+  padding: 15px 12px; /* زيادة البادينج لاستيعاب الأيقونات الكبيرة */
   background: var(--glass-white);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--female-pink-light);
+  border-bottom: 2px solid var(--female-pink-light);
 }
 
 .top-cards-container {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   justify-content: center;
 }
 
 .top-card {
   display: flex;
-  flex-direction: row; /* النص بجانب الأيقونة في الأحجام الصغيرة */
+  flex-direction: row; 
   align-items: center;
   background: white;
-  padding: 5px 12px;
-  border-radius: 18px;
+  padding: 8px 16px;
+  border-radius: 30px; /* زيادة الاستدارة لشكل أنثوي أكثر */
   text-decoration: none;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 10px rgba(255, 77, 125, 0.1);
   border: 1px solid var(--female-pink-light);
   transition: 0.3s;
 }
 
 .card-text {
-  margin-right: 8px;
+  margin-right: 12px;
   text-align: right;
 }
 
 .card-label {
-  font-size: 0.75rem;
+  font-size: 0.9rem;
   font-weight: bold;
   color: var(--female-pink);
 }
@@ -128,10 +130,10 @@ body {
   bottom: 0;
   width: 100%;
   background: white;
-  padding: 5px 0 10px 0;
-  box-shadow: 0 -4px 15px rgba(0,0,0,0.03);
-  border-radius: 20px 20px 0 0;
-  height: 65px; /* ارتفاع أنيق وموفر للمساحة */
+  padding: 10px 0 20px 0;
+  box-shadow: 0 -6px 20px rgba(255, 77, 125, 0.1);
+  border-radius: 30px 30px 0 0;
+  height: 110px; /* تم زيادة الارتفاع من 65px إلى 110px لاستيعاب الأيقونات الكبيرة */
 }
 
 .nav-grid {
@@ -154,13 +156,13 @@ body {
 .main-content {
   flex: 1;
   overflow-y: auto;
-  padding: 15px;
-  padding-bottom: 80px; /* مسافة أمان عادية */
+  padding: 20px;
+  padding-bottom: 130px; /* زيادة مسافة الأمان السفلية */
 }
 
 /* تفاعلات عند الضغط */
 .nav-item:active .custom-img-icon-nav,
 .center-action:active .center-circle,
 .top-card:active {
-  transform: scale(0.95);
+  transform: scale(0.9);
 }
