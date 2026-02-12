@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } f
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
 
-// استيراد المكونات والصفحات (دون تغيير)
+// استيراد المكونات والصفحات (كما هي تماماً)
 import Health from './pages/Health';
 import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
@@ -11,17 +11,15 @@ import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 
-// استيراد الأيقونات (يمكنك استبدالها من iconMap.js لاحقاً إذا أردت)
+// استيراد الأيقونات من lucide-react (لضمان ظهورها داخل المربعات)
 import { 
   Heart, 
   Sparkles, 
-  Video, 
   Activity, 
   Flower2, 
-  Gem, 
   MessageCircle,
-  Bell,
-  Menu
+  Video,
+  Gem
 } from 'lucide-react';
 
 import './App.css';
@@ -35,10 +33,12 @@ function ScrollToTop() {
 }
 
 function App() {
+  // الحفاظ على وظائف Capacitor كما هي
   useEffect(() => {
     const checkUpdates = async () => {
       console.log("التطبيق متصل الآن بمصدر التحديثات من جيت هب");
     };
+
     checkUpdates();
 
     CapApp.addListener('backButton', ({ canGoBack }) => {
@@ -53,75 +53,60 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-      <div className="app-container">
-        
-        {/* الهيدر الجديد: يحتوي على الفيديوهات وعالم رقة لتوفير مساحة في المنتصف */}
-        <header className="professional-header">
-          <div className="header-top-row">
-            <button className="icon-btn"><Bell size={22} /></button>
-            <div className="header-chips">
-              <Link to="/videos" className="chip-btn">
-                <Video size={16} />
-                <span>المكتبة</span>
-              </Link>
-              <Link to="/virtual-world" className="chip-btn active">
-                <Gem size={16} />
-                <span>عالم رقة</span>
-              </Link>
-            </div>
-            <button className="icon-btn"><Menu size={22} /></button>
+      
+      {/* التعديل الجديد للمنظر: محاكي الهاتف */}
+      <div className="phoneContainer">
+        <div className="screen">
+          
+          {/* الجزيرة التفاعلية (Dynamic Island) */}
+          <div className="camera"></div>
+
+          {/* هيدر بسيط علوي لعرض الروابط الإضافية دون زحام */}
+          <div className="dynamic-top-bar">
+             <Link to="/videos" className="top-link"><Video size={18} /></Link>
+             <h1 className="mini-logo">رقة</h1>
+             <Link to="/virtual-world" className="top-link"><Gem size={18} /></Link>
           </div>
-          <h1 className="brand-logo">رقة</h1>
-        </header>
-        
-        {/* مساحة المحتوى الداخلي - أصبحت أكبر الآن */}
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/health" />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="/feelings" element={<Feelings />} />
-            <Route path="/intimacy" element={<Intimacy />} />
-            <Route path="/swing-forum" element={<Swing />} />
-            <Route path="/insight" element={<Insight />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/virtual-world" element={<VirtualWorld />} />
-          </Routes>
-        </main>
 
-        {/* القائمة السفلية مع الأيقونة العائمة المصغرة */}
-        <nav className="bottom-sticky-menu">
-          <div className="nav-grid">
-            {/* أيقونات الجانب الأيمن */}
-            <Link to="/feelings" className="nav-item">
-              <span className="nav-icon"><Heart size={20} /></span>
-              <span className="nav-label">المشاعر</span>
-            </Link>
+          {/* منطقة المحتوى الداخلي السلسة */}
+          <div className="main-content-scrollable">
+            <Routes>
+              <Route path="/" element={<Navigate to="/health" />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/feelings" element={<Feelings />} />
+              <Route path="/intimacy" element={<Intimacy />} />
+              <Route path="/swing-forum" element={<Swing />} />
+              <Route path="/insight" element={<Insight />} />
+              <Route path="/videos" element={<Videos />} />
+              <Route path="/virtual-world" element={<VirtualWorld />} />
+            </Routes>
+          </div>
 
-            <Link to="/intimacy" className="nav-item">
-              <span className="nav-icon"><Flower2 size={20} /></span>
-              <span className="nav-label">الحميمية</span>
+          {/* شريط الأيقونات السفلي (MenuBar) كما في كود Uiverse */}
+          <div className="menuBar">
+            <Link to="/feelings" className="twoApp">
+              <Heart size={20} color="#ff748d" />
             </Link>
             
-            {/* أيقونة الصحة العائمة (تم تصغيرها) */}
-            <Link to="/health" className="nav-item center-action">
-              <div className="center-circle small-fab">
-                <span className="nav-icon"><Activity size={24} /></span>
-              </div>
-              <span className="nav-label bold">صحتك</span>
+            <Link to="/intimacy" className="twoApp">
+              <Flower2 size={20} color="#ff748d" />
             </Link>
 
-            {/* أيقونات الجانب الأيسر */}
-            <Link to="/swing-forum" className="nav-item">
-              <span className="nav-icon"><MessageCircle size={20} /></span>
-              <span className="nav-label">الأرجوحة</span>
+            {/* أيقونة الصحة في المنتصف (يمكن تمييزها) */}
+            <Link to="/health" className="twoApp health-active">
+              <Activity size={24} color="#fff" />
+            </Link>
+
+            <Link to="/swing-forum" className="twoApp">
+              <MessageCircle size={20} color="#ff748d" />
             </Link>
         
-            <Link to="/insight" className="nav-item">
-              <span className="nav-icon"><Sparkles size={20} /></span>
-              <span className="nav-label">القفقة</span>
+            <Link to="/insight" className="twoApp">
+              <Sparkles size={20} color="#ff748d" />
             </Link>
           </div>
-        </nav>
+
+        </div>
       </div>
     </Router>
   );
