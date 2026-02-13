@@ -1,125 +1,124 @@
-import React, { useState, Suspense, lazy } from 'react';
-import { iconMap } from '../constants/iconMap';
+[cite_start]import React, { useState, Suspense, lazy } from 'react'; [cite: 1]
+[cite_start]import { iconMap } from '../constants/iconMap'; [cite: 1]
 
-[cite_start]// استيراد الصفحات بنظام التحميل الكسول [cite: 16, 17, 18]
-const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
-const Advice = lazy(() => import('./HealthPages/Advice'));
-const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
-const LactationHub = lazy(() => import('./HealthPages/LactationHub'));
-const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
-const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
-const BeautyAesthetics = lazy(() => import('./HealthPages/BeautyAesthetics')); [cite_start]// ربط الأمومة بصفحة الجمال [cite: 2, 3]
+// استيراد الصفحات بنظام التحميل الكسول
+[cite_start]const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker')); [cite: 2]
+[cite_start]const Advice = lazy(() => import('./HealthPages/Advice')); [cite: 2]
+[cite_start]const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor')); [cite: 3]
+[cite_start]const LactationHub = lazy(() => import('./HealthPages/LactationHub')); [cite: 3]
+[cite_start]const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical')); [cite: 3]
+[cite_start]const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness')); [cite: 4]
+const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
 
-const Health = () => {
-  const [activeTab, setActiveTab] = useState(null);
+[cite_start]const Health = () => { [cite: 4]
+  [cite_start]const [activeTab, setActiveTab] = useState(null); [cite: 4]
 
-  const sections = [
-    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, pos: { gridColumn: '1', gridRow: '1' } },
-    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '2', gridRow: '1' } },
-    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, pos: { gridColumn: '3', gridRow: '1' } },
-    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: BeautyAesthetics, pos: { gridColumn: '2', gridRow: '2' } },
-    { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical, pos: { gridColumn: '3', gridRow: '3' } },
-    { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '3' } },
-    { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub, pos: { gridColumn: '1', gridRow: '3' } },
-  ];
+  [cite_start]const sections = [ [cite: 5]
+    [cite_start]{ id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, pos: { gridColumn: '1', gridRow: '1' } }, [cite: 5]
+    [cite_start]{ id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '2', gridRow: '1' } }, [cite: 5]
+    [cite_start]{ id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, pos: { gridColumn: '3', gridRow: '1' } }, [cite: 5]
+    [cite_start]{ id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: Motherhood, pos: { gridColumn: '2', gridRow: '2' } }, [cite: 5]
+    [cite_start]{ id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical, pos: { gridColumn: '3', gridRow: '3' } }, [cite: 5, 6]
+    [cite_start]{ id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '3' } }, [cite: 6]
+    [cite_start]{ id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub, pos: { gridColumn: '1', gridRow: '3' } }, [cite: 6]
+  [cite_start]]; [cite: 6]
 
-  const styles = {
-    container: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)', 
-      gap: '10px',
-      padding: '10px',
-      direction: 'rtl',
-      background: '#f9f9f9',
-      height: '100vh',
-      boxSizing: 'border-box'
-    },
-    fullScreenComponent: {
-      width: '100%',
-      height: '100vh',
-      background: '#fff',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      zIndex: 1000,
-      overflowY: 'auto'
-    },
-    card: {
-      background: '#fff',
-      borderRadius: '15px',
-      overflow: 'hidden', 
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      cursor: 'pointer',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      position: 'relative',
-      height: '100%' 
-    },
-    image: {
-      width: '100%',
-      height: '80%', 
-      objectFit: 'cover'
-    },
-    footer: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '5px',
-      padding: '5px',
-      height: '20%'
-    },
-    backButton: {
-      position: 'fixed',
-      bottom: '20px',
-      left: '20px',
-      padding: '10px 20px',
-      backgroundColor: '#ad1457',
-      color: 'white',
-      borderRadius: '25px',
-      border: 'none',
-      zIndex: 1001,
-      cursor: 'pointer'
-    }
-  };
+  [cite_start]const styles = { [cite: 7]
+    [cite_start]container: { [cite: 7]
+      [cite_start]display: 'grid', [cite: 7]
+      [cite_start]gridTemplateColumns: 'repeat(3, 1fr)', // عرض 3 أعمدة كما بالصورة [cite: 7]
+      [cite_start]gap: '10px', [cite: 7]
+      [cite_start]padding: '10px', [cite: 7]
+      [cite_start]direction: 'rtl', [cite: 7]
+      [cite_start]background: '#f9f9f9', [cite: 7]
+      [cite_start]height: '100vh', [cite: 7]
+      [cite_start]boxSizing: 'border-box' [cite: 7]
+    [cite_start]}, [cite: 7]
+    [cite_start]fullScreenComponent: { [cite: 7]
+      [cite_start]width: '100%', [cite: 7]
+      [cite_start]height: '100vh', [cite: 7]
+      [cite_start]background: '#fff', [cite: 8]
+      [cite_start]position: 'absolute', [cite: 8]
+      [cite_start]top: 0, [cite: 8]
+      [cite_start]left: 0, [cite: 8]
+      [cite_start]zIndex: 100, [cite: 8]
+      [cite_start]overflowY: 'auto' [cite: 8]
+    [cite_start]}, [cite: 8]
+    [cite_start]card: { [cite: 8]
+      [cite_start]background: '#fff', [cite: 8]
+      [cite_start]borderRadius: '15px', [cite: 8]
+      [cite_start]overflow: 'hidden', // لضمان عدم خروج الصورة عن حدود الكارت [cite: 8]
+      [cite_start]display: 'flex', [cite: 8]
+      [cite_start]flexDirection: 'column', [cite: 8]
+      [cite_start]alignItems: 'center', [cite: 8]
+      [cite_start]cursor: 'pointer', [cite: 9]
+      [cite_start]boxShadow: '0 2px 8px rgba(0,0,0,0.1)', [cite: 9]
+      [cite_start]position: 'relative', [cite: 9]
+      [cite_start]height: '100%' [cite: 9]
+    [cite_start]}, [cite: 9]
+    [cite_start]image: { [cite: 9]
+      [cite_start]width: '100%', [cite: 9]
+      [cite_start]height: '80%', // تأخذ الجزء الأكبر من الكارت [cite: 9]
+      [cite_start]objectFit: 'cover', // تجعل الصورة تغطي المساحة المخصصة بالكامل [cite: 9]
+    [cite_start]}, [cite: 9]
+    [cite_start]footer: { [cite: 9]
+      [cite_start]display: 'flex', [cite: 9]
+      [cite_start]alignItems: 'center', [cite: 9]
+      [cite_start]gap: '5px', [cite: 10]
+      [cite_start]padding: '5px', [cite: 10]
+      [cite_start]height: '20%' [cite: 10]
+    [cite_start]}, [cite: 10]
+    [cite_start]backButton: { [cite: 10]
+        [cite_start]position: 'fixed', [cite: 10]
+        [cite_start]bottom: '20px', [cite: 10]
+        [cite_start]left: '20px', [cite: 10]
+        [cite_start]padding: '10px 20px', [cite: 10]
+        [cite_start]backgroundColor: '#ad1457', [cite: 10]
+        [cite_start]color: 'white', [cite: 10]
+        [cite_start]borderRadius: '25px', [cite: 10]
+        [cite_start]border: 'none', [cite: 11]
+        [cite_start]zIndex: 101, [cite: 11]
+        [cite_start]cursor: 'pointer' [cite: 11]
+    [cite_start]} [cite: 11]
+  [cite_start]}; [cite: 11]
 
-  if (activeTab) {
-    const activeSection = sections.find(s => s.id === activeTab);
-    const ActiveComponent = activeSection?.component; // تعريف بمتغير يبدأ بحرف كبير لتلافي خطأ الترانزفورم
+  [cite_start]// إذا كان هناك قسم نشط، نعرضه هو فقط في كامل الشاشة [cite: 12]
+  [cite_start]if (activeTab) { [cite: 12]
+    [cite_start]const activeSection = sections.find(s => s.id === activeTab); [cite: 12]
+    [cite_start]return ( [cite: 13]
+      [cite_start]<div style={styles.fullScreenComponent}> [cite: 13]
+        [cite_start]<button style={styles.backButton} onClick={() => setActiveTab(null)}>عودة</button> [cite: 13]
+        [cite_start]<Suspense fallback={<p style={{textAlign: 'center', marginTop: '50px'}}>جاري التحميل...</p>}> [cite: 13]
+          {activeSection.component ? [cite_start]<activeSection.component /> : <div style={{padding: '20px', textAlign: 'center'}}>قريباً...</div>} [cite: 13]
+        [cite_start]</Suspense> [cite: 13]
+      [cite_start]</div> [cite: 13]
+    [cite_start]); [cite: 13]
+  [cite_start]} [cite: 14]
 
-    return (
-      <div style={styles.fullScreenComponent}>
-        <button style={styles.backButton} onClick={() => setActiveTab(null)}>عودة</button>
-        <Suspense fallback={<p style={{ textAlign: 'center', marginTop: '50px' }}>جاري التحميل...</p>}>
-          {ActiveComponent ? <ActiveComponent /> : <div style={{ padding: '20px', textAlign: 'center' }}>قريباً...</div>}
-        </Suspense>
-      </div>
-    );
-  }
+  [cite_start]return ( [cite: 14]
+    [cite_start]<div style={styles.container}> [cite: 14]
+      [cite_start]{sections.map((sec) => { [cite: 14]
+        [cite_start]const Icon = iconMap[sec.icon] || iconMap.insight; [cite: 14]
+        [cite_start]return ( [cite: 14]
+          [cite_start]<div [cite: 14]
+            [cite_start]key={sec.id} [cite: 14]
+            [cite_start]style={{ ...styles.card, ...sec.pos }} [cite: 14]
+            [cite_start]onClick={() => setActiveTab(sec.id)} [cite: 14]
+          > [cite_start][cite: 15]
+            [cite_start]<img [cite: 15]
+              [cite_start]src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} [cite: 15]
+              [cite_start]alt={sec.title} [cite: 15]
+              [cite_start]style={styles.image} [cite: 15]
+            [cite_start]/> [cite: 15]
+            [cite_start]<div style={styles.footer}> [cite: 15]
+              [cite_start]<Icon size={16} color="#ad1457" /> [cite: 16]
+              [cite_start]<span style={{ fontWeight: 'bold', color: '#333', fontSize: '12px' }}>{sec.title}</span> [cite: 16]
+            [cite_start]</div> [cite: 16]
+          [cite_start]</div> [cite: 16]
+        [cite_start]); [cite: 16]
+      [cite_start]})} [cite: 16]
+    [cite_start]</div> [cite: 16]
+  [cite_start]); [cite: 16]
+[cite_start]}; [cite: 17]
 
-  return (
-    <div style={styles.container}>
-      {sections.map((sec) => {
-        const Icon = iconMap[sec.icon] || iconMap.insight;
-        return (
-          <div 
-            key={sec.id} 
-            style={{ ...styles.card, ...sec.pos }}
-            onClick={() => setActiveTab(sec.id)}
-          >
-            <img 
-              src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
-              alt={sec.title} 
-              style={styles.image} 
-            />
-            <div style={styles.footer}>
-              <Icon size={16} color="#ad1457" />
-              <span style={{ fontWeight: 'bold', color: '#333', fontSize: '12px' }}>{sec.title}</span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
-
-export default Health;
+[cite_start]export default Health; [cite: 17]
