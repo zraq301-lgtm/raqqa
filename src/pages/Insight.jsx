@@ -1,71 +1,240 @@
 import React, { useState } from 'react';
-import Swal from 'sweetalert2';
+import { 
+  Heart, Sparkles, Video, Activity, Moon, MessageCircle, 
+  Settings, User, Flower2, Gem, LayoutDashboard, Bell,
+  BookOpen, ShieldCheck, Clock, Users, Coffee, Star
+} from 'lucide-react';
 
-const Insight = () => {
-    const [view, setView] = useState('emotions'); // 'emotions', 'fiqh', 'ai'
-    const [aiChat, setAiChat] = useState('ابدئي الفضفضة مع رقة هنا...');
-    const [aiInput, setAiInput] = useState('');
-
-    const emotionsData = [
-        { title: "المسار الإيماني", icon: "fa-pray", items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿"] },
-        { title: "الإيقاع الحيوي", icon: "fa-leaf", items: ["تقلبات المزاج 🎢", "وهن جسدي 💤", "تعب الحيض 🥀"] },
-        { title: "القلب الرحيم", icon: "fa-hands-holding-heart", items: ["بر الوالدين 🌳", "مودة الزوج ❤️", "رحمة الأبناء 🐣"] }
-        // ... يمكنك إضافة الباقي هنا من الكود الأصلي
-    ];
-
-    const processAction = async (cat, val) => {
-        setView('ai');
-        setAiChat('رقة تكتب لكِ...');
-        try {
-            await fetch('/api/save-health', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ user_id: 1, category: cat, value: 0, note: val })
-            });
-            const res = await fetch('/api/raqqa-ai', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ prompt: `بصفتك رقة، حللي هذه الحالة للمرأة المسلمة: ${cat} - ${val}. اذكرِ آية أو حديثاً.` })
-            });
-            const data = await res.json();
-            setAiChat(data.reply);
-        } catch (e) { setAiChat("تم حفظ اختياركِ بنجاح ✨"); }
-    };
-
-    const openPicker = (title, items, cat) => {
-        let opts = {}; items.forEach(i => opts[i] = i);
-        Swal.fire({
-            title: title, input: 'select', inputOptions: opts,
-            confirmButtonText: 'تحليل وحفظ ✨', confirmButtonColor: '#eb2f96'
-        }).then(r => { if(r.isConfirmed) processAction(cat, r.value); });
-    };
-
-    return (
-        <div style={{background: 'linear-gradient(135deg, #fff5f8 0%, #f3e7ff 100%)', minHeight: '100vh', padding: '15px'}}>
-            <div style={{display: 'flex', gap: '10px', marginBottom: '20px'}}>
-                <button onClick={()=>setView('emotions')} style={{flex: 1, padding: '10px', background: view === 'emotions' ? '#eb2f96' : 'white', color: view === 'emotions' ? 'white' : '#666', border: 'none', borderRadius: '15px'}}>المشاعر</button>
-                <button onClick={()=>setView('fiqh')} style={{flex: 1, padding: '10px', background: view === 'fiqh' ? '#eb2f96' : 'white', color: view === 'fiqh' ? 'white' : '#666', border: 'none', borderRadius: '15px'}}>الفقه</button>
-            </div>
-
-            {view !== 'ai' ? (
-                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
-                    {emotionsData.map(item => (
-                        <div key={item.title} onClick={() => openPicker(item.title, item.items, view)} style={{background: 'white', padding: '20px', borderRadius: '22px', textAlign: 'center'}}>
-                            <i className={`fas ${item.icon}`} style={{color: '#eb2f96', fontSize: '28px', marginBottom: '10px'}}></i>
-                            <div style={{fontSize: '14px', fontWeight: 'bold'}}>{item.title}</div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div style={{background: 'white', padding: '20px', borderRadius: '25px'}}>
-                    <div style={{minHeight: '200px', padding: '10px', border: '1px dashed #eee', marginBottom: '15px'}}>{aiChat}</div>
-                    <textarea value={aiInput} onChange={(e)=>setAiInput(e.target.value)} style={{width: '100%', height: '80px', borderRadius: '15px', padding: '10px'}} placeholder="اكتبي هنا..."></textarea>
-                    <button onClick={()=>processAction('عام', aiInput)} style={{width: '100%', background: '#eb2f96', color: 'white', padding: '12px', border: 'none', borderRadius: '15px', marginTop: '10px'}}>إرسال وتحليل ✨</button>
-                    <button onClick={()=>setView('emotions')} style={{width: '100%', background: 'none', border: 'none', color: '#999', marginTop: '10px'}}>العودة</button>
-                </div>
-            )}
-        </div>
-    );
+// --- نظام الأيقونات المستوحى من ملفك iconMap.js ---
+const customIconMap = {
+  purity: Flower2,    // فقه الطهارة (نظافة وجمال)
+  prayer: Sparkles,   // فقه الصلاة (نور وخشوع)
+  fasting: Moon,      // فقه الصيام
+  quran: BookOpen,    // فقه القرآن
+  dhikr: Bell,        // التسبيح والذكر
+  modesty: Gem,       // العفة والحجاب (قيمة وجوهرة)
+  family: Heart,      // المعاملات والبيوت
+  shield: ShieldCheck, // تجنب المحرمات
+  peace: Activity,    // الهدوء النفسي
+  deeds: User,        // الأعمال الصالحة
+  time: Clock,        // فقه الوقت
+  growth: LayoutDashboard, // الوعي والفكر
+  selfcare: Coffee,   // الرعاية الذاتية
+  giving: MessageCircle, // فقه العطاء
+  eternal: Star       // الاستعداد للقاء الله
 };
 
-export default Insight;
+const FiqhApp = () => {
+  const [activeTab, setActiveTab] = useState(0);
+  const [completedTasks, setCompletedTasks] = useState({});
+
+  const sections = [
+    { title: "فقه الطهارة (Purity)", icon: "purity", color: "#f8bbd0", items: ["سنن الفطرة ✨", "صفة الغسل 🚿", "الوضوء الجمالي 💧", "طهارة الثوب 👗", "طيب الرائحة 🌸"] },
+    { title: "فقه الصلاة (Sacred)", icon: "prayer", color: "#e1bee7", items: ["أوقات الصلاة 🕌", "السنن الرواتب 🌱", "سجدة الشكر 🤲", "لباس الصلاة الأنيق 🧕", "صلاة الوتر 🌌"] },
+    { title: "فقه الصيام (Fast)", icon: "fasting", color: "#c5cae9", items: ["صيام الاثنين والخميس 🌙", "قضاء ما فات 📅", "سحور البركة 🥣", "كف اللسان 🤐"] },
+    { title: "فقه العفة (Modesty)", icon: "modesty", color: "#b2ebf2", items: ["حجاب القلب 💎", "غض البصر 👁️", "الحياء في القول 🎀", "سمو الفكر 🧠"] },
+    { title: "الهدوء النفسي (Mind)", icon: "peace", color: "#dcedc8", items: ["تفريغ الانفعالات 🌬️", "الرضا بالقدر ⚖️", "حسن الظن بالله 🌈"] },
+    // يمكن إضافة باقي الـ 15 قائمة هنا بنفس النمط
+  ];
+
+  const toggleTask = (sectionIdx, taskIdx) => {
+    const key = `${sectionIdx}-${taskIdx}`;
+    setCompletedTasks(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const ActiveIcon = customIconMap[sections[activeTab].icon];
+
+  return (
+    <div style={styles.appContainer}>
+      {/* Sidebar Navigation */}
+      <nav style={styles.sidebar}>
+        <div style={styles.logoArea}>
+          <Flower2 size={32} color="#d63384" />
+          <h2 style={styles.logoText}>رَوْاقة الفقهية</h2>
+        </div>
+        {sections.map((section, idx) => {
+          const IconTag = customIconMap[section.icon];
+          return (
+            <button 
+              key={idx} 
+              onClick={() => setActiveTab(idx)}
+              style={{...styles.navItem, backgroundColor: activeTab === idx ? '#fff1f6' : 'transparent'}}
+            >
+              <IconTag size={20} color={activeTab === idx ? '#d63384' : '#666'} />
+              <span style={{marginRight: '10px'}}>{section.title}</span>
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* Main Content Area */}
+      <main style={styles.mainContent}>
+        <header style={styles.header}>
+          <div style={styles.headerTitle}>
+            <ActiveIcon size={40} color="#d63384" />
+            <h1 style={{marginRight: '15px'}}>{sections[activeTab].title}</h1>
+          </div>
+          <div style={styles.aiBadge}>تحليل الروح بالذكاء الاصطناعي 🧠✨</div>
+        </header>
+
+        <div style={styles.tasksGrid}>
+          {sections[activeTab].items.map((item, idx) => (
+            <div 
+              key={idx} 
+              onClick={() => toggleTask(activeTab, idx)}
+              style={{
+                ...styles.taskCard, 
+                borderRight: `5px solid ${sections[activeTab].color}`,
+                opacity: completedTasks[`${activeTab}-${idx}`] ? 0.6 : 1
+              }}
+            >
+              <span style={styles.taskText}>{item}</span>
+              <div style={{
+                ...styles.checkbox, 
+                backgroundColor: completedTasks[`${activeTab}-${idx}`] ? '#4caf50' : '#eee'
+              }}>
+                {completedTasks[`${activeTab}-${idx}`] && "✓"}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Floating Action Button - Al-Azhar */}
+        <a 
+          href="https://www.azhar.eg/fatwacenter" 
+          target="_blank" 
+          rel="noreferrer"
+          style={styles.fab}
+        >
+          <div style={styles.fabContent}>
+             <span style={{fontSize: '12px'}}>اسألي الأزهر</span>
+             <Sparkles size={20} />
+          </div>
+        </a>
+      </main>
+
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+        body { margin: 0; font-family: 'Tajawal', sans-serif; background: #fdf2f5; }
+      `}</style>
+    </div>
+  );
+};
+
+const styles = {
+  appContainer: {
+    display: 'flex',
+    height: '100vh',
+    direction: 'rtl',
+    backgroundColor: '#fdf2f5',
+  },
+  sidebar: {
+    width: '260px',
+    backgroundColor: '#fff',
+    borderLeft: '1px solid #eee',
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    overflowY: 'auto',
+  },
+  logoArea: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginBottom: '30px',
+    padding: '10px',
+  },
+  logoText: {
+    fontSize: '1.2rem',
+    color: '#d63384',
+    margin: 0,
+  },
+  navItem: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '12px 15px',
+    border: 'none',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    textAlign: 'right',
+    transition: '0.3s',
+    fontSize: '0.95rem',
+    color: '#444',
+  },
+  mainContent: {
+    flex: 1,
+    padding: '40px',
+    overflowY: 'auto',
+    position: 'relative',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '40px',
+  },
+  headerTitle: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  aiBadge: {
+    backgroundColor: '#fff',
+    padding: '10px 20px',
+    borderRadius: '25px',
+    fontSize: '0.85rem',
+    boxShadow: '0 4px 15px rgba(214, 51, 132, 0.1)',
+    color: '#d63384',
+    fontWeight: 'bold',
+  },
+  tasksGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gap: '20px',
+  },
+  taskCard: {
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '15px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    cursor: 'pointer',
+    transition: '0.2s',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+  },
+  taskText: {
+    fontSize: '1rem',
+    color: '#333',
+  },
+  checkbox: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    fontSize: '12px',
+  },
+  fab: {
+    position: 'fixed',
+    bottom: '30px',
+    left: '30px',
+    backgroundColor: '#d63384',
+    color: 'white',
+    padding: '15px 25px',
+    borderRadius: '30px',
+    textDecoration: 'none',
+    boxShadow: '0 10px 25px rgba(214, 51, 132, 0.3)',
+    transition: '0.3s transform',
+  },
+  fabContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    fontWeight: 'bold',
+  }
+};
+
+export default FiqhApp;
