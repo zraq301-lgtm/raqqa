@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { iconMap } from '../constants/iconMap';
+// التصحيح: الخروج مستويين للوصول من HealthPages إلى مجلد constants الرئيسي
+import { iconMap } from '../../constants/iconMap'; 
 
 const MenstrualTracker = () => {
   // استخدام أيقونة الصحة من الملف المرفوع
@@ -31,43 +32,41 @@ const MenstrualTracker = () => {
   const sections = [
     { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
     { id: 2, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
-    { id: 3, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "رغبة بالبكاء"] },
-    { id: 4, title: "الصحة الزوجية", emoji: "🥚", fields: ["تنبيهات الخصوبة", "تحذيرات طبية", "جفاف مهبلي"] },
-    { id: 5, title: "التغذية", emoji: "💧", fields: ["شرب الماء", "مغنيسيوم", "تجنب الكافيين"] },
-    { id: 6, title: "النشاط البدني", emoji: "🧘‍♀️", fields: ["يوغا", "مشي خفيف", "إطالة"] },
-    { id: 7, title: "النظافة الشخصية", emoji: "🧼", fields: ["سجل التغيير", "منتجات الرعاية"] },
+    { id: 3, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
+    { id: 4, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
   ];
 
-  // الستايلات المدمجة (Glassmorphism)
-  const glassStyle = {
+  const cardStyle = {
     background: 'rgba(255, 255, 255, 0.2)',
     backdropFilter: 'blur(10px)',
     borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
     padding: '20px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-    color: '#444'
+    color: '#fff',
+    direction: 'rtl'
   };
 
   const inputStyle = {
     width: '100%',
     padding: '8px',
-    margin: '5px 0',
     borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.5)',
-    background: 'rgba(255,255,255,0.4)'
+    border: 'none',
+    background: 'rgba(255,255,255,0.3)',
+    color: '#333',
+    marginTop: '5px'
   };
 
   return (
-    <div style={glassStyle}>
+    <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
-        <HealthIcon size={24} color="#ad1457" />
-        <h2 style={{ margin: 0, fontSize: '1.2rem' }}>نظام متابعة الحيض</h2>
+        <HealthIcon size={30} />
+        <h2 style={{ margin: 0 }}>متابعة الدورة الشهرية</h2>
       </div>
 
-      {/* حاسبة الدورة */}
-      <div style={{ background: 'rgba(255,255,255,0.3)', padding: '15px', borderRadius: '15px', marginBottom: '15px' }}>
-        <button onClick={calculateCycle} style={{ background: '#ad1457', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '8px', cursor: 'pointer' }}>
+      {/* حاسبة بسيطة */}
+      <div style={{ marginBottom: '20px', background: 'rgba(255,255,255,0.1)', padding: '15px', borderRadius: '15px' }}>
+        <button 
+          onClick={calculateCycle}
+          style={{ width: '100%', padding: '10px', background: '#ad1457', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>
           توقع الدورة القادمة
         </button>
         {prediction && <div style={{ marginTop: '10px', fontWeight: 'bold' }}>الموعد المتوقع: {prediction}</div>}
