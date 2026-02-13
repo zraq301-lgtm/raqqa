@@ -1,7 +1,7 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { iconMap } from '../constants/iconMap';
+import { iconMap } from '../constants/iconMap'; [cite: 1]
 
-// تحميل الأقسام بنظام Lazy Loading [cite: 2, 3, 4]
+// استيراد الصفحات بنفس المسارات الأصلية تماماً [cite: 2, 3, 4]
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -10,9 +10,9 @@ const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
 const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 
 const Health = () => {
-  const [activeTab, setActiveTab] = useState(null);
+  const [activeTab, setActiveTab] = useState(null); [cite: 5]
 
-  // توزيع العناصر بناءً على الصورة المرفقة 
+  // إعدادات الشبكة لتطابق الصورة المرفوعة (3 أعمدة × 3 صفوف) 
   const sections = [
     { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '1' } },
     { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '1', gridRow: '2' } },
@@ -26,96 +26,98 @@ const Health = () => {
   const styles = {
     container: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)', // 3 أعمدة مثل الصورة 
-      gap: '8px',
-      padding: '10px',
+      gridTemplateColumns: 'repeat(3, 1fr)', [cite: 8]
+      gap: '10px',
+      padding: '15px',
       direction: 'rtl',
-      background: '#000', // خلفية داكنة لتناسب الأجهزة الحديثة
+      background: '#000', // خلفية داكنة لتناسب أجهزة الجوال
       minHeight: '100vh',
       alignContent: 'center'
     },
     card: {
-      background: 'rgba(255, 255, 255, 0.15)',
+      background: 'rgba(255, 255, 255, 0.15)', [cite: 8]
       backdropFilter: 'blur(10px)',
-      borderRadius: '15px',
-      padding: '5px',
+      borderRadius: '20px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'flex-start',
-      cursor: 'pointer',
+      cursor: 'pointer', [cite: 9]
       overflow: 'hidden',
-      aspectRatio: '1 / 1.2', // تناسب الكارت مع شاشات الجوال [cite: 9]
+      aspectRatio: '1 / 1.1', // تصغير الحجم ليناسب الشاشة الواحدة
       border: '1px solid rgba(255, 255, 255, 0.1)'
     },
     image: {
-      width: '100%', // الصورة تأخذ عرض الكارت بالكامل [cite: 9]
-      height: '80%', // ترك مساحة بسيطة للاسم بالأسفل
-      objectFit: 'cover',
-      borderRadius: '12px'
+      width: '100%', // الصورة بحجم الكارت بالضبط
+      height: '80%', 
+      objectFit: 'cover' [cite: 9]
     },
-    label: {
-      fontSize: '11px',
-      fontWeight: 'bold',
-      color: '#fff',
-      marginTop: '4px',
-      textAlign: 'center'
+    labelContainer: {
+      height: '20%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '4px',
+      justifyContent: 'center'
     },
-    fullView: {
-      gridColumn: '1 / span 3',
-      gridRow: '1 / span 3',
+    fullScreenPage: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
       width: '100%',
-      minHeight: '80vh',
+      height: '100%',
       background: '#fff',
-      borderRadius: '20px',
+      zIndex: 2000,
       padding: '20px',
-      zIndex: 10
+      overflowY: 'auto'
+    },
+    closeBtn: {
+      padding: '10px',
+      background: '#ad1457',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '10px',
+      marginBottom: '15px'
     }
   };
 
   return (
     <div style={styles.container}>
       {sections.map((sec) => {
-        // ميزة إخفاء باقي الأقسام عند تفعيل أحدها 
+        // إخفاء باقي الأقسام عند فتح قسم معين 
         if (activeTab && activeTab !== sec.id) return null;
 
-        const Icon = iconMap[sec.icon] || iconMap.insight;
-        const isActive = activeTab === sec.id;
+        const Icon = iconMap[sec.icon] || iconMap.insight; 
 
         return (
-          <div 
-            key={sec.id} 
-            style={isActive ? styles.fullView : { ...styles.card, ...sec.pos }}
-            onClick={() => setActiveTab(isActive ? null : sec.id)}
-          >
-            {!isActive ? (
-              <>
+          <React.Fragment key={sec.id}>
+            {!activeTab ? (
+              <div 
+                style={{ ...styles.card, ...sec.pos }}
+                [cite_start]onClick={() => setActiveTab(sec.id)} 
+              >
                 <img 
-                  src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
+                  [cite_start]src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} [cite: 11]
                   alt={sec.title} 
                   style={styles.image} 
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <Icon size={12} color="#ff8a80" />
-                  <span style={styles.label}>{sec.title}</span>
+                <div style={styles.labelContainer}>
+                  <Icon size={14} color="#ff8a80" /> [cite: 12]
+                  <span style={{ fontSize: '11px', color: '#fff', fontWeight: 'bold' }}>{sec.title}</span>
                 </div>
-              </>
+              </div>
             ) : (
-              // عرض محتوى القسم عند الفتح [cite: 12, 13]
-              <div style={{ width: '100%' }}>
-                <div onClick={(e) => { e.stopPropagation(); setActiveTab(null); }} style={{ color: '#ad1457', marginBottom: '20px', fontWeight: 'bold' }}>
-                  ✕ إغلاق {sec.title}
-                </div>
-                <Suspense fallback={<p>جاري التحميل...</p>}>
-                  {sec.component && <sec.component />}
+              // عرض الصفحة المستدعاة شاشة كاملة 
+              <div style={styles.fullScreenPage}>
+                <button onClick={() => setActiveTab(null)} style={styles.closeBtn}>إغلاق ✕</button>
+                <Suspense fallback={<p>جاري التحميل...</p>}> 
+                  {sec.component ? <sec.component /> : <p style={{textAlign:'center'}}>محتوى {sec.title}</p>}
                 </Suspense>
               </div>
             )}
-          </div>
+          </React.Fragment>
         );
       })}
     </div>
   );
 };
 
-export default Health;
+export default Health; [cite: 14]
