@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { iconMap } from '../constants/iconMap';
+// التصحيح: الخروج مستويين للوصول إلى مجلد src ثم constants
+import { iconMap } from '../../constants/iconMap'; 
 
 const FitnessWellness = () => {
   const Icon = iconMap.health;
@@ -27,14 +28,23 @@ const FitnessWellness = () => {
       </div>
       {sections.map((sec, i) => (
         <div key={i} style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '15px', marginBottom: '8px', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+          <div 
+            style={{ padding: '12px 15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} 
+            onClick={() => setOpenIdx(openIdx === i ? null : i)}
+          >
             <span>{sec.emoji} {sec.title}</span>
             <span>{openIdx === i ? '▲' : '▼'}</span>
           </div>
           {openIdx === i && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '8px', padding: '15px' }}>
               {sec.fields.map(f => (
-                <input key={f} placeholder={f} style={{ padding: '8px', border: 'none', borderRadius: '8px', background: 'rgba(255,255,255,0.6)' }} value={data[f] || ''} onChange={e => setData({...data, [f]: e.target.value})} />
+                <input 
+                  key={f} 
+                  placeholder={f} 
+                  style={{ padding: '8px', border: 'none', borderRadius: '8px', background: 'rgba(255,255,255,0.6)' }} 
+                  value={data[f] || ''} 
+                  onChange={e => setData({...data, [f]: e.target.value})} 
+                />
               ))}
             </div>
           )}
