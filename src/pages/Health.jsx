@@ -1,7 +1,7 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { iconMap } from '../constants/iconMap'; 
 
-// استيراد المكونات
+// استيراد المكونات (تم الحفاظ عليها كما هي)
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -12,112 +12,141 @@ const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Health = () => {
   const [activeTab, setActiveTab] = useState(null);
 
+  // تعريف الأقسام مع إضافة ألوان مخصصة لكل كرت (Soft Pastel Palette)
   const sections = [
-    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker },
-    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice },
-    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor },
-    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: LactationHub },
-    { id: 'doctor', title: 'طبيبك', img: 'doctor.png', icon: 'insight', component: DoctorClinical },
-    { id: 'fitness', title: 'رشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness },
+    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, color: '#FFB7CE' }, // وردي ناعم
+    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, color: '#E0BBE4' }, // أرجواني لافندر
+    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, color: '#FFDFD3' }, // مشمشي هادئ
+    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: LactationHub, color: '#D5EDF5' }, // سماوي فاتح
+    { id: 'doctor', title: 'طبيبك', img: 'doctor.png', icon: 'insight', component: DoctorClinical, color: '#FCE1E4' }, // وردي باهت
+    { id: 'fitness', title: 'رشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, color: '#E2F0CB' }, // أخضر نعناعي
   ];
 
   const styles = {
     container: {
-      padding: '20px',
+      padding: '25px 15px',
       direction: 'rtl',
       minHeight: '100vh',
-      backgroundColor: '#f8f9fa'
+      background: 'linear-gradient(135deg, #fff5f7 0%, #f0f4ff 100%)', // خلفية متدرجة أنثوية
     },
-    // شبكة الكروت الصغيرة
     gridContainer: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+      gridTemplateColumns: 'repeat(2, 1fr)', // ترتيب كرتين في كل صف كما في التصاميم العصرية
       gap: '15px',
-      maxWidth: '600px',
+      maxWidth: '500px',
       margin: '0 auto'
     },
-    card: {
-      background: '#fff',
-      borderRadius: '15px',
-      padding: '10px',
+    card: (bgColor) => ({
+      background: '#ffffff',
+      borderRadius: '24px',
+      padding: '20px 10px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
       cursor: 'pointer',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      transition: 'transform 0.2s',
-      border: '1px solid #eee',
-      textAlign: 'center'
-    },
+      boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
+      transition: 'all 0.3s ease',
+      border: `2px solid ${bgColor}`, // إطار بلون القسم
+      position: 'relative',
+      overflow: 'hidden'
+    }),
+    iconBadge: (bgColor) => ({
+      backgroundColor: bgColor,
+      padding: '8px',
+      borderRadius: '12px',
+      marginBottom: '12px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      boxShadow: `0 4px 10px ${bgColor}66`
+    }),
     image: {
-      width: '50px', // حجم صغير للصور لتناسب الكروت
-      height: '50px',
+      width: '60px',
+      height: '60px',
       objectFit: 'contain',
-      marginBottom: '8px'
+      marginBottom: '10px',
+      filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.1))'
     },
     title: {
-      fontSize: '0.85rem',
-      fontWeight: 'bold',
-      color: '#333'
+      fontSize: '1rem',
+      fontWeight: '700',
+      color: '#4A4A4A',
+      marginTop: '5px'
     },
-    // حاوية الصفحة الكاملة عند الفتح
     fullPageContainer: {
       width: '100%',
-      animation: 'fadeIn 0.3s ease-in'
+      animation: 'slideUp 0.4s ease-out'
     },
-    closeButton: {
-      padding: '10px 20px',
-      backgroundColor: '#ad1457',
-      color: 'white',
-      border: 'none',
-      borderRadius: '10px',
+    backHeader: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
       marginBottom: '20px',
-      cursor: 'pointer',
-      fontWeight: 'bold'
+      padding: '10px',
+      background: '#fff',
+      borderRadius: '15px',
+      boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+      cursor: 'pointer'
     }
   };
 
   return (
     <div style={styles.container}>
-      {/* إذا لم يتم اختيار أي قسم، تظهر الشبكة */}
       {!activeTab ? (
-        <div style={styles.gridContainer}>
-          {sections.map((sec) => {
-            const Icon = iconMap[sec.icon] || iconMap.insight;
-            return (
-              <div 
-                key={sec.id} 
-                style={styles.card}
-                onClick={() => setActiveTab(sec.id)}
-              >
-                <img 
-                  src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
-                  alt={sec.title} 
-                  style={styles.image} 
-                />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <Icon size={14} color="#ad1457" />
+        <>
+          <h2 style={{ textAlign: 'center', color: '#ad1457', marginBottom: '25px', fontSize: '1.4rem' }}>
+             ركن الصحة والجمال 🌸
+          </h2>
+          <div style={styles.gridContainer}>
+            {sections.map((sec) => {
+              const Icon = iconMap[sec.icon] || iconMap.insight;
+              return (
+                <div 
+                  key={sec.id} 
+                  style={styles.card(sec.color)}
+                  onClick={() => setActiveTab(sec.id)}
+                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <div style={styles.iconBadge(sec.color)}>
+                    <Icon size={22} color="#fff" />
+                  </div>
+                  <img 
+                    src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
+                    alt={sec.title} 
+                    style={styles.image} 
+                  />
                   <span style={styles.title}>{sec.title}</span>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       ) : (
-        /* عند الضغط على قسم، تظهر هذه الحاوية ويختفي ما سبق */
         <div style={styles.fullPageContainer}>
-          <button style={styles.closeButton} onClick={() => setActiveTab(null)}>
-             إغلاق والعودة للقائمة الرئيسية ✖
-          </button>
+          <div style={styles.backHeader} onClick={() => setActiveTab(null)}>
+            <span style={{ fontSize: '1.2rem' }}>🔙</span>
+            <span style={{ fontWeight: 'bold', color: '#ad1457' }}>العودة للقائمة</span>
+          </div>
           
-          <Suspense fallback={<div style={{textAlign:'center', padding:'20px'}}>جاري التحميل...</div>}>
+          <Suspense fallback={<div style={{textAlign:'center', padding:'50px', color: '#ad1457'}}>✨ جاري تحضير صفحتك...</div>}>
             {sections.find(s => s.id === activeTab)?.component && (
               React.createElement(sections.find(s => s.id === activeTab).component)
             )}
           </Suspense>
         </div>
       )}
+
+      {/* إضافة انيميشن بسيط */}
+      <style>
+        {`
+          @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}
+      </style>
     </div>
   );
 };
