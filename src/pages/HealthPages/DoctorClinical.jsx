@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { iconMap } from '../constants/iconMap';
+// التصحيح: الخروج مستويين للوصول إلى مجلد src ثم الدخول إلى constants
+import { iconMap } from '../../constants/iconMap'; 
 
 const DoctorClinical = () => {
-  const Icon = iconMap.insight; // تعبر عن التبصر والتحليل الطبي
+  // استخدام أيقونة التبصر (insight) من خريطة الأيقونات المعرفة في iconMap.js
+  const Icon = iconMap.insight; 
   const [openIdx, setOpenIdx] = useState(null);
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_doctor')) || {});
 
@@ -21,9 +23,27 @@ const DoctorClinical = () => {
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
   const styles = {
-    card: { background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(15px)', borderRadius: '25px', padding: '20px', border: '1px solid rgba(255,255,255,0.3)', marginBottom: '20px' },
-    accItem: { background: 'rgba(255,255,255,0.2)', borderRadius: '15px', marginBottom: '8px' },
-    input: { width: '100%', padding: '8px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.5)', fontSize: '0.85rem' }
+    card: { 
+      background: 'rgba(255, 255, 255, 0.15)', 
+      backdropFilter: 'blur(15px)', 
+      borderRadius: '25px', 
+      padding: '20px', 
+      border: '1px solid rgba(255,255,255,0.3)', 
+      marginBottom: '20px' 
+    },
+    accItem: { 
+      background: 'rgba(255,255,255,0.2)', 
+      borderRadius: '15px', 
+      marginBottom: '8px' 
+    },
+    input: { 
+      width: '100%', 
+      padding: '8px', 
+      borderRadius: '8px', 
+      border: 'none', 
+      background: 'rgba(255,255,255,0.5)', 
+      fontSize: '0.85rem' 
+    }
   };
 
   return (
@@ -33,7 +53,10 @@ const DoctorClinical = () => {
       </div>
       {categories.map((cat, i) => (
         <div key={i} style={styles.accItem}>
-          <div style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+          <div 
+            style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} 
+            onClick={() => setOpenIdx(openIdx === i ? null : i)}
+          >
             <span>{cat.icon} عيادة {cat.name}</span>
             <span>{openIdx === i ? '−' : '+'}</span>
           </div>
@@ -42,7 +65,11 @@ const DoctorClinical = () => {
               {fields.map(f => (
                 <div key={f}>
                   <label style={{ fontSize: '0.7rem' }}>{f}</label>
-                  <input style={styles.input} value={data[`${cat.name}_${f}`] || ''} onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})} />
+                  <input 
+                    style={styles.input} 
+                    value={data[`${cat.name}_${f}`] || ''} 
+                    onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})} 
+                  />
                 </div>
               ))}
             </div>
