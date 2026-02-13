@@ -1,7 +1,7 @@
 import React, { useState, Suspense, lazy } from 'react';
 import { iconMap } from '../constants/iconMap'; 
 
-// استيراد المكونات (تم الحفاظ عليها كما هي)
+// استيراد المكونات
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -12,82 +12,83 @@ const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Health = () => {
   const [activeTab, setActiveTab] = useState(null);
 
-  // تعريف الأقسام مع إضافة ألوان مخصصة لكل كرت (Soft Pastel Palette)
   const sections = [
-    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, color: '#FFB7CE' }, // وردي ناعم
-    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, color: '#E0BBE4' }, // أرجواني لافندر
-    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, color: '#FFDFD3' }, // مشمشي هادئ
-    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: LactationHub, color: '#D5EDF5' }, // سماوي فاتح
-    { id: 'doctor', title: 'طبيبك', img: 'doctor.png', icon: 'insight', component: DoctorClinical, color: '#FCE1E4' }, // وردي باهت
-    { id: 'fitness', title: 'رشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, color: '#E2F0CB' }, // أخضر نعناعي
+    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, color: '#fce4ec', accent: '#f06292' },
+    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, color: '#f3e5f5', accent: '#ba68c8' },
+    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, color: '#fff3e0', accent: '#ffb74d' },
+    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: LactationHub, color: '#e1f5fe', accent: '#4fc3f7' },
+    { id: 'doctor', title: 'طبيبك', img: 'doctor.png', icon: 'insight', component: DoctorClinical, color: '#ede7f6', accent: '#9575cd' },
+    { id: 'fitness', title: 'رشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, color: '#f1f8e9', accent: '#aed581' },
   ];
 
   const styles = {
     container: {
-      padding: '25px 15px',
+      padding: '20px 15px',
       direction: 'rtl',
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #fff5f7 0%, #f0f4ff 100%)', // خلفية متدرجة أنثوية
+      background: '#fff', 
     },
     gridContainer: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(2, 1fr)', // ترتيب كرتين في كل صف كما في التصاميم العصرية
-      gap: '15px',
+      gridTemplateColumns: 'repeat(2, 1fr)', // كرتين في الصف لزيادة الحجم
+      gap: '12px',
       maxWidth: '500px',
       margin: '0 auto'
     },
-    card: (bgColor) => ({
-      background: '#ffffff',
-      borderRadius: '24px',
-      padding: '20px 10px',
+    card: (bgColor, accentColor) => ({
+      background: bgColor,
+      borderRadius: '20px',
+      height: '160px', // زيادة الارتفاع ليعطي مساحة للصورة
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       cursor: 'pointer',
-      boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s ease',
-      border: `2px solid ${bgColor}`, // إطار بلون القسم
-      position: 'relative',
-      overflow: 'hidden'
+      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+      border: `1.5px solid ${accentColor}44`,
+      overflow: 'hidden',
+      transition: 'transform 0.2s'
     }),
-    iconBadge: (bgColor) => ({
-      backgroundColor: bgColor,
-      padding: '8px',
-      borderRadius: '12px',
-      marginBottom: '12px',
+    imageWrapper: {
+      flex: 1, // يأخذ كل المساحة المتاحة في الكرت
+      width: '100%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: `0 4px 10px ${bgColor}66`
-    }),
+      padding: '10px 10px 0 10px',
+    },
     image: {
-      width: '60px',
-      height: '60px',
+      width: '90%', // الصورة تأخذ 90% من عرض الكرت
+      height: '90%', // و90% من مساحة الـ wrapper
       objectFit: 'contain',
-      marginBottom: '10px',
-      filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.1))'
+    },
+    labelArea: {
+      width: '100%',
+      padding: '8px 0',
+      background: 'rgba(255, 255, 255, 0.7)', // طبقة شفافة لاسم القسم
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '5px'
     },
     title: {
-      fontSize: '1rem',
-      fontWeight: '700',
-      color: '#4A4A4A',
-      marginTop: '5px'
+      fontSize: '0.95rem',
+      fontWeight: 'bold',
+      color: '#444'
     },
-    fullPageContainer: {
-      width: '100%',
-      animation: 'slideUp 0.4s ease-out'
-    },
-    backHeader: {
+    backBtn: {
       display: 'flex',
       alignItems: 'center',
       gap: '10px',
-      marginBottom: '20px',
-      padding: '10px',
-      background: '#fff',
-      borderRadius: '15px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-      cursor: 'pointer'
+      padding: '12px',
+      background: '#f8f9fa',
+      borderRadius: '12px',
+      marginBottom: '15px',
+      cursor: 'pointer',
+      border: 'none',
+      width: '100%',
+      color: '#ad1457',
+      fontWeight: 'bold'
     }
   };
 
@@ -95,58 +96,45 @@ const Health = () => {
     <div style={styles.container}>
       {!activeTab ? (
         <>
-          <h2 style={{ textAlign: 'center', color: '#ad1457', marginBottom: '25px', fontSize: '1.4rem' }}>
-             ركن الصحة والجمال 🌸
-          </h2>
+          <h2 style={{ textAlign: 'center', color: '#ad1457', marginBottom: '20px' }}>صحتي وعنايتي ✨</h2>
           <div style={styles.gridContainer}>
             {sections.map((sec) => {
               const Icon = iconMap[sec.icon] || iconMap.insight;
               return (
                 <div 
                   key={sec.id} 
-                  style={styles.card(sec.color)}
+                  style={styles.card(sec.color, sec.accent)}
                   onClick={() => setActiveTab(sec.id)}
-                  onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-                  onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
                 >
-                  <div style={styles.iconBadge(sec.color)}>
-                    <Icon size={22} color="#fff" />
+                  <div style={styles.imageWrapper}>
+                    <img 
+                      src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
+                      alt={sec.title} 
+                      style={styles.image} 
+                    />
                   </div>
-                  <img 
-                    src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
-                    alt={sec.title} 
-                    style={styles.image} 
-                  />
-                  <span style={styles.title}>{sec.title}</span>
+                  <div style={styles.labelArea}>
+                    <Icon size={16} color={sec.accent} />
+                    <span style={styles.title}>{sec.title}</span>
+                  </div>
                 </div>
               );
             })}
           </div>
         </>
       ) : (
-        <div style={styles.fullPageContainer}>
-          <div style={styles.backHeader} onClick={() => setActiveTab(null)}>
-            <span style={{ fontSize: '1.2rem' }}>🔙</span>
-            <span style={{ fontWeight: 'bold', color: '#ad1457' }}>العودة للقائمة</span>
-          </div>
+        <div style={{ animation: 'fadeIn 0.3s' }}>
+          <button style={styles.backBtn} onClick={() => setActiveTab(null)}>
+             ⬅ العودة للأقسام
+          </button>
           
-          <Suspense fallback={<div style={{textAlign:'center', padding:'50px', color: '#ad1457'}}>✨ جاري تحضير صفحتك...</div>}>
+          <Suspense fallback={<div style={{textAlign:'center', padding:'40px'}}>جاري التحميل...</div>}>
             {sections.find(s => s.id === activeTab)?.component && (
               React.createElement(sections.find(s => s.id === activeTab).component)
             )}
           </Suspense>
         </div>
       )}
-
-      {/* إضافة انيميشن بسيط */}
-      <style>
-        {`
-          @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-          }
-        `}
-      </style>
     </div>
   );
 };
