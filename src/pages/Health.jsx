@@ -1,7 +1,7 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { iconMap } from '../constants/iconMap'; //
+import { iconMap } from '../constants/iconMap'; 
 
-// تصحيح الاستيراد: التأكد من مطابقة أسماء الملفات الموجودة في مجلد HealthPages تماماً
+// استيراد المكونات
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -12,77 +12,112 @@ const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Health = () => {
   const [activeTab, setActiveTab] = useState(null);
 
-  // تنسيق الأقسام بناءً على التوزيع المطلوب في الصورة
   const sections = [
-    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, pos: { gridColumn: '1', gridRow: '1' } },
-    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '2', gridRow: '1' } },
-    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, pos: { gridColumn: '3', gridRow: '1' } },
-    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: null, pos: { gridColumn: '2', gridRow: '2' } },
-    { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical, pos: { gridColumn: '3', gridRow: '3' } },
-    { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '3' } },
-    { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub, pos: { gridColumn: '1', gridRow: '3' } },
+    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker },
+    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice },
+    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor },
+    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: LactationHub },
+    { id: 'doctor', title: 'طبيبك', img: 'doctor.png', icon: 'insight', component: DoctorClinical },
+    { id: 'fitness', title: 'رشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness },
   ];
 
   const styles = {
     container: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '15px',
       padding: '20px',
       direction: 'rtl',
-      background: '#f9f9f9',
-      minHeight: '100vh'
+      minHeight: '100vh',
+      backgroundColor: '#f8f9fa'
+    },
+    // شبكة الكروت الصغيرة
+    gridContainer: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
+      gap: '15px',
+      maxWidth: '600px',
+      margin: '0 auto'
     },
     card: {
-      background: 'rgba(255, 255, 255, 0.7)',
-      backdropFilter: 'blur(10px)',
-      borderRadius: '20px',
-      padding: '15px',
-      border: '1px solid #eee',
+      background: '#fff',
+      borderRadius: '15px',
+      padding: '10px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
+      justifyContent: 'center',
       cursor: 'pointer',
-      boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      transition: 'transform 0.2s',
+      border: '1px solid #eee',
+      textAlign: 'center'
     },
     image: {
-      width: '100px',
-      height: '100px',
+      width: '50px', // حجم صغير للصور لتناسب الكروت
+      height: '50px',
       objectFit: 'contain',
-      marginBottom: '10px'
+      marginBottom: '8px'
+    },
+    title: {
+      fontSize: '0.85rem',
+      fontWeight: 'bold',
+      color: '#333'
+    },
+    // حاوية الصفحة الكاملة عند الفتح
+    fullPageContainer: {
+      width: '100%',
+      animation: 'fadeIn 0.3s ease-in'
+    },
+    closeButton: {
+      padding: '10px 20px',
+      backgroundColor: '#ad1457',
+      color: 'white',
+      border: 'none',
+      borderRadius: '10px',
+      marginBottom: '20px',
+      cursor: 'pointer',
+      fontWeight: 'bold'
     }
   };
 
   return (
     <div style={styles.container}>
-      {sections.map((sec) => {
-        const Icon = iconMap[sec.icon] || iconMap.insight; //
-        return (
-          <div 
-            key={sec.id} 
-            style={{ ...styles.card, ...sec.pos }}
-            onClick={() => setActiveTab(activeTab === sec.id ? null : sec.id)}
-          >
-            <img 
-              src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
-              alt={sec.title} 
-              style={styles.image} 
-            />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <Icon size={20} color="#ad1457" />
-              <span style={{ fontWeight: 'bold', color: '#333' }}>{sec.title}</span>
-            </div>
-            
-            {activeTab === sec.id && sec.component && (
-              <div style={{ marginTop: '20px', width: '100%' }}>
-                <Suspense fallback={<p>جاري التحميل...</p>}>
-                  <sec.component />
-                </Suspense>
+      {/* إذا لم يتم اختيار أي قسم، تظهر الشبكة */}
+      {!activeTab ? (
+        <div style={styles.gridContainer}>
+          {sections.map((sec) => {
+            const Icon = iconMap[sec.icon] || iconMap.insight;
+            return (
+              <div 
+                key={sec.id} 
+                style={styles.card}
+                onClick={() => setActiveTab(sec.id)}
+              >
+                <img 
+                  src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
+                  alt={sec.title} 
+                  style={styles.image} 
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  <Icon size={14} color="#ad1457" />
+                  <span style={styles.title}>{sec.title}</span>
+                </div>
               </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* عند الضغط على قسم، تظهر هذه الحاوية ويختفي ما سبق */
+        <div style={styles.fullPageContainer}>
+          <button style={styles.closeButton} onClick={() => setActiveTab(null)}>
+             إغلاق والعودة للقائمة الرئيسية ✖
+          </button>
+          
+          <Suspense fallback={<div style={{textAlign:'center', padding:'20px'}}>جاري التحميل...</div>}>
+            {sections.find(s => s.id === activeTab)?.component && (
+              React.createElement(sections.find(s => s.id === activeTab).component)
             )}
-          </div>
-        );
-      })}
+          </Suspense>
+        </div>
+      )}
     </div>
   );
 };
