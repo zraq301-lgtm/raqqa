@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { iconMap } from '../constants/iconMap';
+// التصحيح: الخروج مستويين للوصول من HealthPages إلى src ثم constants
+import { iconMap } from '../../constants/iconMap'; 
 
 const LactationHub = () => {
+  // استخدام أيقونة المشاعر (feelings) من الخريطة المحددة [cite: 63, 118]
   const Icon = iconMap.feelings;
   const [openIdx, setOpenIdx] = useState(null);
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_lactation')) || {});
