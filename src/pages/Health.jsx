@@ -1,135 +1,90 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { iconMap } from '../constants/iconMap';
+import React, { useState, Suspense, lazy } from 'react';
+import { iconMap } from '../constants/iconMap'; //
 
-// استيراد المكونات ديناميكياً من مسار src/pages/HealthPages بناءً على أسماء الملفات في الصورة الثانية
-const MenstrualTracker = lazy(() => import('../pages/HealthPages/MenstrualTracker'));
-const Advice = lazy(() => import('../pages/HealthPages/Advice'));
-const PregnancyMonitor = lazy(() => import('../pages/HealthPages/PregnancyMonitor'));
-const LactationHub = lazy(() => import('../pages/HealthPages/LactationHub'));
-const DoctorClinical = lazy(() => import('../pages/HealthPages/DoctorClinical'));
-const FitnessWellness = lazy(() => import('../pages/HealthPages/FitnessWellness'));
-const BeautyAesthetics = lazy(() => import('../pages/HealthPages/BeautyAesthetics'));
+// تصحيح الاستيراد: التأكد من مطابقة أسماء الملفات الموجودة في مجلد HealthPages تماماً
+const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
+const Advice = lazy(() => import('./HealthPages/Advice'));
+const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
+const LactationHub = lazy(() => import('./HealthPages/LactationHub'));
+const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
+const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 
-// مخرن للمكونات لتسهيل استدعائها داخل الكرت
-const PageComponents = {
-  MenstrualTracker,
-  Advice,
-  PregnancyMonitor,
-  LactationHub,
-  DoctorClinical,
-  FitnessWellness,
-  BeautyAesthetics
-};
+const Health = () => {
+  const [activeTab, setActiveTab] = useState(null);
 
-const SectionCard = ({ title, iconKey, imageName, gridStyle, componentName }) => {
-  const Icon = iconMap[iconKey] || iconMap.insight;
-  const SelectedPage = PageComponents[componentName];
-  const [showDetails, setShowDetails] = useState(false);
+  // تنسيق الأقسام بناءً على التوزيع المطلوب في الصورة
+  const sections = [
+    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, pos: { gridColumn: '1', gridRow: '1' } },
+    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '2', gridRow: '1' } },
+    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, pos: { gridColumn: '3', gridRow: '1' } },
+    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: null, pos: { gridColumn: '2', gridRow: '2' } },
+    { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical, pos: { gridColumn: '3', gridRow: '3' } },
+    { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '3' } },
+    { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub, pos: { gridColumn: '1', gridRow: '3' } },
+  ];
 
-  // ستايل الكرت الزجاجي المدمج
-  const cardStyle = {
-    background: 'rgba(255, 255, 255, 0.2)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.3)',
-    padding: '20px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    textAlign: 'center',
-    transition: 'transform 0.3s ease',
-    cursor: 'pointer',
-    ...gridStyle
+  const styles = {
+    container: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '15px',
+      padding: '20px',
+      direction: 'rtl',
+      background: '#f9f9f9',
+      minHeight: '100vh'
+    },
+    card: {
+      background: 'rgba(255, 255, 255, 0.7)',
+      backdropFilter: 'blur(10px)',
+      borderRadius: '20px',
+      padding: '15px',
+      border: '1px solid #eee',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      cursor: 'pointer',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+    },
+    image: {
+      width: '100px',
+      height: '100px',
+      objectFit: 'contain',
+      marginBottom: '10px'
+    }
   };
 
   return (
-    <div style={cardStyle} onClick={() => setShowDetails(!showDetails)}>
-      {/* استدعاء الصور من مسار src/assets/health بناءً على الصورة الأولى */}
-      <img 
-        src={require(`../assets/health/${imageName}.png`)} 
-        alt={title}
-        style={{ width: '100%', maxHeight: '150px', objectFit: 'contain', marginBottom: '15px' }}
-      />
-      
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ad1457' }}>
-        <Icon size={22} />
-        <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{title}</h3>
-      </div>
-
-      {/* عرض الصفحة المخصصة عند النقر */}
-      {showDetails && (
-        <div style={{ marginTop: '15px', width: '100%', textAlign: 'right' }}>
-          <Suspense fallback={<div>جاري التحميل...</div>}>
-            <SelectedPage />
-          </Suspense>
-        </div>
-      )}
+    <div style={styles.container}>
+      {sections.map((sec) => {
+        const Icon = iconMap[sec.icon] || iconMap.insight; //
+        return (
+          <div 
+            key={sec.id} 
+            style={{ ...styles.card, ...sec.pos }}
+            onClick={() => setActiveTab(activeTab === sec.id ? null : sec.id)}
+          >
+            <img 
+              src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
+              alt={sec.title} 
+              style={styles.image} 
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Icon size={20} color="#ad1457" />
+              <span style={{ fontWeight: 'bold', color: '#333' }}>{sec.title}</span>
+            </div>
+            
+            {activeTab === sec.id && sec.component && (
+              <div style={{ marginTop: '20px', width: '100%' }}>
+                <Suspense fallback={<p>جاري التحميل...</p>}>
+                  <sec.component />
+                </Suspense>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 };
 
-export default function HealthDashboard() {
-  const containerStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '20px',
-    padding: '30px',
-    direction: 'rtl',
-    background: 'linear-gradient(135deg, #fce4ec 0%, #e1f5fe 100%)',
-    minHeight: '100vh'
-  };
-
-  return (
-    <div style={containerStyle}>
-      {/* الترتيب حسب طلبك: الحيض -> نصيحة -> حمل */}
-      <SectionCard 
-        title="متابعة الحيض" 
-        imageName="menstrual" 
-        iconKey="health" 
-        componentName="MenstrualTracker"
-      />
-      <SectionCard 
-        title="نصيحة طبيب" 
-        imageName="advice" 
-        iconKey="chat" 
-        componentName="Advice"
-      />
-      <SectionCard 
-        title="متابعة الحمل" 
-        imageName="pregnancy" 
-        iconKey="intimacy" 
-        componentName="PregnancyMonitor"
-      />
-
-      {/* الوسط: الأمومة */}
-      <SectionCard 
-        title="الأمومة" 
-        imageName="motherhood" 
-        iconKey="feelings" 
-        gridStyle={{ gridColumn: '2' }}
-        componentName="BeautyAesthetics" // تم ربطها كأقرب تمثيل للأناقة/الأمومة في صفحاتك
-      />
-
-      {/* الصف السفلي: الطبيب -> الرشاقة -> الرضاعة */}
-      <SectionCard 
-        title="متابعة الطبيب" 
-        imageName="doctor" 
-        iconKey="insight" 
-        componentName="DoctorClinical"
-      />
-      <SectionCard 
-        title="الرشاقة" 
-        imageName="fitness" 
-        iconKey="health" 
-        componentName="FitnessWellness"
-      />
-      <SectionCard 
-        title="نظام الرضاعة" 
-        imageName="lactation" 
-        iconKey="feelings" 
-        componentName="LactationHub"
-      />
-    </div>
-  );
-}
+export default Health;
