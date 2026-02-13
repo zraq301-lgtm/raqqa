@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { iconMap } from '../constants/iconMap';
+// التصحيح: الخروج مستويين للوصول من HealthPages إلى src ثم constants
+import { iconMap } from '../../constants/iconMap'; 
 
 const BeautyAesthetics = () => {
-  const Icon = iconMap.beauty;
+  // استخدام أيقونة الجمال (beauty) من الخريطة المرفوعة
+  const Icon = iconMap.beauty; 
   const [openIdx, setOpenIdx] = useState(null);
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_beauty')) || {});
 
@@ -27,7 +29,10 @@ const BeautyAesthetics = () => {
       </div>
       {sections.map((sec, i) => (
         <div key={i} style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '15px', marginBottom: '8px', overflow: 'hidden' }}>
-          <div style={{ padding: '12px 15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+          <div 
+            style={{ padding: '12px 15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} 
+            onClick={() => setOpenIdx(openIdx === i ? null : i)}
+          >
             <span>{sec.emoji} {sec.title}</span>
             <span>{openIdx === i ? '▲' : '▼'}</span>
           </div>
@@ -36,7 +41,11 @@ const BeautyAesthetics = () => {
               {sec.fields.map(f => (
                 <div key={f}>
                   <label style={{fontSize: '0.7rem'}}>{f}</label>
-                  <input style={{ width: '100%', padding: '6px', border: 'none', borderRadius: '8px', background: 'rgba(255,255,255,0.5)' }} value={data[f] || ''} onChange={e => setData({...data, [f]: e.target.value})} />
+                  <input 
+                    style={{ width: '100%', padding: '6px', border: 'none', borderRadius: '8px', background: 'rgba(255,255,255,0.5)' }} 
+                    value={data[f] || ''} 
+                    onChange={e => setData({...data, [f]: e.target.value})} 
+                  />
                 </div>
               ))}
             </div>
