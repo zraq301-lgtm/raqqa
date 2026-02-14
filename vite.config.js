@@ -10,8 +10,8 @@ export default defineConfig({
   plugins: [react()],
   
   build: {
-    // تحديد مجلد المخرجات ليتوافق مع ما ضبطناه في Capacitor
-    outDir: 'dist_web',
+    // تم التغيير إلى dist بناءً على طلبك للتوافق مع منصة فيرسل
+    outDir: 'dist',
     
     // تصغير الكود لضمان سرعة التحميل داخل الموبايل
     minify: 'terser',
@@ -21,7 +21,7 @@ export default defineConfig({
     
     rollupOptions: {
       output: {
-        // تنسيق أسماء الملفات لضمان عدم التداخل
+        // تنسيق أسماء الملفات لضمان عدم التداخل كما في كودك الأصلي
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/[name].js`,
         assetFileNames: `assets/[name].[ext]`
