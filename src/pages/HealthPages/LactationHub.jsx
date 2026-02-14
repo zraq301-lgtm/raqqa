@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-// التصحيح: الوصول إلى constants [cite: 11]
 import { iconMap } from '../../constants/iconMap';
 
 const LactationHub = () => {
-  // استخدام أيقونة المشاعر (feelings) [cite: 12]
   const Icon = iconMap.feelings;
   const [openIdx, setOpenIdx] = useState(null);
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_lactation')) || {});
@@ -12,7 +10,6 @@ const LactationHub = () => {
   const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('lactation_history')) || []);
   const fileInputRef = useRef(null);
 
-  // الأقسام كما هي في الكود الأصلي [cite: 14, 15]
   const sections = [
     { title: "الرضاعة الطبيعية", emoji: "🤱", fields: ["الوقت", "الجهة", "المدة", "راحة الأم", "معدل الرضاعة", "تاريخ اليوم", "بداية الرضعة", "نهاية الرضعة", "ملاحظات", "مستوى الشبع"] },
     { title: "الرضاعة الصناعية", emoji: "🍼", fields: ["الكمية مل", "نوع الحليب", "درجة الحرارة", "وقت التحضير", "مدة الرضعة", "نظافة الرضاعة", "تاريخ الانتهاء", "الماء المستخدم", "ملاحظات", "رد فعل الرضيع"] },
@@ -23,7 +20,6 @@ const LactationHub = () => {
     { title: "الحالة النفسية", emoji: "🫂", fields: ["دعم الزوج", "ساعات الراحة", "القلق", "الاكتئاب", "التواصل", "الخروج للمشي", "هوايات", "الاسترخاء", "ملاحظات", "درجة الرضا"] }
   ];
 
-  // دالة لتحديد نوع المدخل بناءً على الاسم
   const getInputType = (fieldName) => {
     if (fieldName.includes("تاريخ") || fieldName === "تاريخ اليوم") return "date";
     if (fieldName.includes("الوقت") || fieldName.includes("ساعة") || fieldName.includes("بداية") || fieldName.includes("نهاية")) return "time";
@@ -33,14 +29,12 @@ const LactationHub = () => {
   const handleSaveAndAnalyze = async () => {
     setLoading(true);
     try {
-      // 1. حفظ في Neon DB [رابط api/save-health]
       await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: 'lactation', data: data })
       });
 
-      // 2. تحليل البيانات عبر AI [رابط api/raqqa-ai]
       const prompt = `أنا مرضعة، هذه بياناتي الحالية: ${JSON.stringify(data)}. حلل الحالة كطبيب مختص وقدم نصائح محددة.`;
       const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
@@ -69,96 +63,129 @@ const LactationHub = () => {
 
   return (
     <div style={{ 
-      background: 'linear-gradient(145deg, rgba(232, 245, 233, 0.4), rgba(129, 199, 132, 0.2))', 
-      backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '25px', 
-      border: '1px solid rgba(255,255,255,0.4)', color: '#1b5e20', direction: 'rtl' 
+      background: 'linear-gradient(160deg, #96b896 0%, #739673 100%)', 
+      backdropFilter: 'blur(20px)', borderRadius: '40px', padding: '30px', 
+      border: '8px solid rgba(255,255,255,0.1)', color: '#fff', direction: 'rtl',
+      boxShadow: '0 20px 50px rgba(0,0,0,0.2)'
     }}>
       
-      {/* مؤشر الحالة (Progress Indicator) */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <div style={{ fontSize: '0.8rem', fontWeight: 'bold', marginBottom: '8px' }}>مؤشر كفاية الرضاعة اليومي</div>
-        <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.3)', borderRadius: '10px' }}>
-          <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, #4caf50, #81c784)', borderRadius: '10px', boxShadow: '0 0 10px rgba(76, 175, 80, 0.5)' }}></div>
+      {/* الجزء العلوي المستلهم من Dribbble الجديد */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+         <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={statCircleStyle}>28</div>
+            <div style={{...statCircleStyle, background: '#4e6d4e'}}>20</div>
+            <div style={statCircleStyle}><Icon size={18} /></div>
+         </div>
+         <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800' }}>سجل الإرضاع الذكي</h2>
+            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Lactation History Tracker</div>
+         </div>
+      </div>
+
+      {/* مؤشر الحالة المتوهج */}
+      <div style={{ marginBottom: '30px' }}>
+        <div style={{ width: '100%', height: '14px', background: 'rgba(0,0,0,0.1)', borderRadius: '20px', padding: '2px' }}>
+          <div style={{ 
+            width: '75%', height: '100%', 
+            background: 'linear-gradient(90deg, #c5e1a5, #fff)', 
+            borderRadius: '20px',
+            boxShadow: '0 0 15px rgba(255,255,255,0.4)' 
+          }}></div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Icon size={28} color="#2e7d32"/> 
-          <h2 style={{ margin: 0, fontSize: '1.2rem' }}>نظام الرضاعة الذكي</h2>
-        </div>
-        <button onClick={handleSaveAndAnalyze} style={{ padding: '8px 16px', borderRadius: '12px', border: 'none', background: '#2e7d32', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
-          {loading ? 'جاري التحليل...' : 'استشارة AI'}
-        </button>
-      </div>
-
-      {sections.map((sec, i) => (
-        <div key={i} style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '20px', marginBottom: '12px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.2)' }}>
-          <div style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-            <span>{sec.emoji} {sec.title}</span>
-            <span>{openIdx === i ? '▲' : '▼'}</span>
-          </div>
-          {openIdx === i && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '15px', background: 'rgba(255,255,255,0.1)' }}>
-              {sec.fields.map(f => (
-                <div key={f}>
-                  <label style={{ fontSize: '0.7rem', display: 'block', marginBottom: '4px', color: '#388e3c' }}>{f}</label>
-                  <input 
-                    type={getInputType(f)}
-                    style={{ 
-                      width: '100%', padding: '10px', borderRadius: '12px', border: '1px solid rgba(46, 125, 50, 0.2)', 
-                      background: 'rgba(255,255,255,0.8)', color: '#1b5e20', outline: 'none' 
-                    }} 
-                    value={data[f] || ''} 
-                    onChange={e => {
-                      const newData = {...data, [f]: e.target.value};
-                      setData(newData);
-                      localStorage.setItem('lady_lactation', JSON.stringify(newData));
-                    }}
-                  />
-                </div>
-              ))}
+      {/* القوائم المنسدلة بتصميم البطاقات */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        {sections.map((sec, i) => (
+          <div key={i} style={{ 
+            background: openIdx === i ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)', 
+            borderRadius: '25px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' 
+          }}>
+            <div style={{ padding: '18px 25px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} 
+                 onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+              <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{sec.emoji} {sec.title}</span>
+              <span style={{ background: '#fff', color: '#739673', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' }}>
+                {openIdx === i ? '✕' : '＋'}
+              </span>
             </div>
-          )}
-        </div>
-      ))}
+            
+            {openIdx === i && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '20px', background: 'rgba(0,0,0,0.05)' }}>
+                {sec.fields.map(f => (
+                  <div key={f}>
+                    <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '6px', paddingRight: '10px' }}>{f}</label>
+                    <input 
+                      type={getInputType(f)}
+                      style={{ 
+                        width: '100%', padding: '12px 15px', borderRadius: '20px', border: 'none', 
+                        background: '#fff', color: '#333', fontSize: '0.9rem', outline: 'none',
+                        boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
+                      }} 
+                      value={data[f] || ''} 
+                      onChange={e => {
+                        const newData = {...data, [f]: e.target.value};
+                        setData(newData);
+                        localStorage.setItem('lady_lactation', JSON.stringify(newData));
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
 
-      {/* منطقة الوسائط والردود */}
-      <div style={{ marginTop: '25px', borderTop: '2px solid rgba(255,255,255,0.3)', paddingTop: '20px' }}>
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
-          <button onClick={() => fileInputRef.current.click()} style={mediaBtnStyle} title="صورة">📷</button>
-          <button style={mediaBtnStyle} title="تسجيل صوتي">🎤</button>
+      {/* منطقة الأزرار والـ AI */}
+      <div style={{ marginTop: '30px', textAlign: 'center' }}>
+        <button onClick={handleSaveAndAnalyze} style={analyzeBtnStyle}>
+          {loading ? '...تحليل' : 'تحليل الحالة بالذكاء الاصطناعي'}
+        </button>
+
+        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', margin: '25px 0' }}>
+          <button onClick={() => fileInputRef.current.click()} style={roundBtnStyle}>📷</button>
+          <button style={roundBtnStyle}>🎤</button>
           <input type="file" ref={fileInputRef} hidden accept="image/*" />
         </div>
 
         {aiResponse && (
-          <div style={{ background: 'rgba(255, 255, 255, 0.5)', padding: '15px', borderRadius: '20px', borderLeft: '5px solid #2e7d32', marginBottom: '20px' }}>
-            <div style={{ fontWeight: 'bold', color: '#2e7d32', marginBottom: '5px' }}>👨‍⚕️ نصيحة الطبيب الذكي:</div>
-            <div style={{ fontSize: '0.9rem' }}>{aiResponse}</div>
+          <div style={{ background: '#fff', color: '#333', padding: '20px', borderRadius: '25px', textAlign: 'right', marginBottom: '20px', borderRight: '8px solid #c5e1a5' }}>
+            <strong style={{ color: '#739673' }}>👨‍⚕️ الطبيب الذكي:</strong>
+            <p style={{ margin: '10px 0 0', fontSize: '0.95rem', lineHeight: '1.6' }}>{aiResponse}</p>
           </div>
         )}
 
-        <div style={{ marginTop: '15px' }}>
-          <h3 style={{ fontSize: '1rem', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: '5px' }}>📜 الردود المحفوظة</h3>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {history.map(item => (
-              <div key={item.id} style={{ background: 'rgba(255,255,255,0.3)', padding: '10px', borderRadius: '15px', marginBottom: '10px', position: 'relative' }}>
-                <div style={{ fontSize: '0.7rem', color: '#666' }}>{item.date}</div>
-                <div style={{ fontSize: '0.85rem' }}>{item.text}</div>
-                <button onClick={() => deleteResponse(item.id)} style={{ position: 'absolute', top: '10px', left: '10px', border: 'none', background: 'none', cursor: 'pointer', color: '#d32f2f' }}>🗑️</button>
-              </div>
-            ))}
-          </div>
+        <div style={{ maxHeight: '200px', overflowY: 'auto', paddingLeft: '10px' }}>
+          {history.map(item => (
+            <div key={item.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '15px', borderRadius: '20px', marginBottom: '10px', position: 'relative', textAlign: 'right' }}>
+              <small style={{ opacity: 0.7, fontSize: '0.7rem' }}>{item.date}</small>
+              <div style={{ fontSize: '0.85rem', marginTop: '5px' }}>{item.text}</div>
+              <button onClick={() => deleteResponse(item.id)} style={{ position: 'absolute', top: '15px', left: '15px', border: 'none', background: 'none', color: '#ff8a80', cursor: 'pointer' }}>🗑️</button>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-const mediaBtnStyle = {
-  width: '55px', height: '55px', borderRadius: '50%', border: 'none', 
-  background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-  fontSize: '1.4rem', cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
+// أنماط العناصر المستلهمة من التصميم
+const statCircleStyle = {
+  width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold'
+};
+
+const analyzeBtnStyle = {
+  width: '100%', padding: '15px', borderRadius: '25px', border: 'none',
+  background: '#fff', color: '#739673', fontWeight: '800', fontSize: '1rem',
+  cursor: 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+};
+
+const roundBtnStyle = {
+  width: '60px', height: '60px', borderRadius: '50%', border: 'none',
+  background: 'rgba(255,255,255,0.2)', fontSize: '1.5rem', color: '#fff',
+  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  backdropFilter: 'blur(10px)', transition: '0.3s'
 };
 
 export default LactationHub;
