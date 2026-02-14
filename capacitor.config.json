@@ -2,9 +2,8 @@
   "appId": "com.roqa.app",
   "appName": "raqqa",
   "webDir": "dist_web",
+  "bundledWebRuntime": false,
   "server": {
-    "url": "https://raqqa-v6cd.vercel.app/health",
-    "cleartext": true,
     "androidScheme": "https"
   }
 }
