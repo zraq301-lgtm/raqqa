@@ -3,25 +3,24 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // 'base' هو أهم سطر لحل مشكلة الصفحة البيضاء في الأندرويد
-  // يجعل التطبيق يبحث عن الملفات بجانبه وليس في جذر النظام
+  // 'base' لضمان عمل المسارات بشكل صحيح في الأندرويد والرابط السحابي
   base: './', 
   
   plugins: [react()],
   
   build: {
-    // تم التغيير إلى dist بناءً على طلبك للتوافق مع منصة فيرسل
-    outDir: 'dist',
+    // تحديد مجلد المخرجات المطلوب
+    outDir: 'dist_web',
     
-    // تصغير الكود لضمان سرعة التحميل داخل الموبايل
+    // تصغير الكود لسرعة التحميل
     minify: 'terser',
     
-    // لضمان عدم حدوث مشاكل في المسارات عند التحديث
+    // تنظيف المجلد قبل كل بناء جديد
     emptyOutDir: true,
     
     rollupOptions: {
       output: {
-        // تنسيق أسماء الملفات لضمان عدم التداخل كما في كودك الأصلي
+        // الحفاظ على تنسيق الملفات كما هو في كودك الأصلي
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/[name].js`,
         assetFileNames: `assets/[name].[ext]`
