@@ -1,144 +1,225 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Send, Trash2, Mic, Camera, Image as ImageIcon, 
-  Sparkles, Star, Heart, Brain, Save, X, ChevronLeft 
+  Sparkles, Heart, Moon, BookOpen, Activity, 
+  ShieldCheck, Users, ShieldAlert, Wind, Gift, 
+  Clock, Brain, Flower2, Coins, Hourglass, 
+  Camera, Mic, Image, Trash2, Mosque, X 
 } from 'lucide-react';
 
-// القوائم الـ 15 مع مهامها (تم اختصارها للعرض، يمكنك توسيعها)
-const CATEGORIES = [
-  { id: 1, name: "فقه الطهارة", icon: "✨", color: "#FCE4EC", tasks: ["سنن الفطرة", "صفة الغسل", "الوضوء الجمالي", "طهارة الثوب"] },
-  { id: 2, name: "فقه الصلاة", icon: "🕌", color: "#E8F5E9", tasks: ["أوقات الصلاة", "السنن الرواتب", "سجدة الشكر"] },
-  { id: 3, name: "فقه الصيام", icon: "🌙", color: "#FFF3E0", tasks: ["صيام الاثنين", "قضاء ما فات", "سحور البركة"] },
-  { id: 4, name: "فقه القرآن", icon: "📖", color: "#E3F2FD", tasks: ["تلاوة يومية", "تدبر آية", "حفظ سورة"] },
-  { id: 5, name: "الذكر الذكي", icon: "📿", color: "#F3E5F5", tasks: ["أذكار الصباح", "أذكار المساء", "الاستغفار"] },
-  // أضف بقية القوائم هنا بنفس النمط...
-];
-
-const App = () => {
-  const [selectedCat, setSelectedCat] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
+// --- التطبيق الرئيسي بنظام ريأكت ---
+const RaqqaApp = () => {
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [inputs, setInputs] = useState({});
+  const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState([]);
 
-  // دالة الحفظ في نيون DB
-  const handleSave = async (data) => {
+  // هيكل البيانات الـ 15 قائمة
+  const menuData = [
+    { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: ["سنن الفطرة", "صفة الغسل", "الوضوء الجمالي", "طهارة الثوب", "طيب الرائحة"] },
+    { id: 2, title: "فقه الصلاة", icon: <Heart />, items: ["أوقات الصلاة", "السنن الرواتب", "سجدة الشكر", "لباس الصلاة", "صلاة الوتر"] },
+    { id: 3, title: "فقه الصيام", icon: <Moon />, items: ["صيام التطوع", "قضاء ما فات", "سحور البركة", "كف اللسان"] },
+    { id: 4, title: "فقه القرآن", icon: <BookOpen />, items: ["تلاوة يومية", "تدبر آية", "حفظ جديد", "الاستماع بإنصات"] },
+    { id: 5, title: "الذكر الذكي", icon: <Activity />, items: ["أذكار الصباح", "أذكار المساء", "الاستغفار", "الصلاة على النبي"] },
+    { id: 6, title: "العفة والحجاب", icon: <ShieldCheck />, items: ["حجاب القلب", "غض البصر", "الحياء في القول", "سمو الفكر"] },
+    { id: 7, title: "المعاملات والبيوت", icon: <Users />, items: ["بر الوالدين", "مودة الزوج", "رحمة الأبناء", "صلة الرحم"] },
+    { id: 8, title: "تجنب المحرمات", icon: <ShieldAlert />, items: ["محاربة الغيبة", "ترك النميمة", "تجنب الإباحية", "الصدق"] },
+    { id: 9, title: "الهدوء النفسي", icon: <Wind />, items: ["تفريغ الانفعالات", "الرضا بالقدر", "حسن الظن بالله"] },
+    { id: 10, title: "أعمال صالحة", icon: <Gift />, items: ["صدقة خفية", "إماطة الأذى", "إفشاء السلام", "نفع الناس"] },
+    { id: 11, title: "الوقت والإنجاز", icon: <Clock />, items: ["البكور", "تنظيم المهام", "ترك ما لا يعني"] },
+    { id: 12, title: "الوعي الفقهي", icon: <Brain />, items: ["مقاصد الشريعة", "قراءة السيرة", "فقه الواقع"] },
+    { id: 13, title: "الرعاية الذاتية", icon: <Flower2 />, items: ["النوم على طهارة", "الرياضة بنية القوة", "الأكل الطيب"] },
+    { id: 14, title: "العطاء والزكاة", icon: <Coins />, items: ["زكاة المال", "زكاة العلم", "زكاة الجمال"] },
+    { id: 15, title: "لقاء الله", icon: <Hourglass />, items: ["تجديد التوبة", "كتابة الوصية", "ذكر هادم اللذات"] },
+  ];
+
+  // وظيفة إرسال البيانات (الربط بـ Neon و Raqqa AI)
+  const handleProcess = async () => {
+    setLoading(true);
+    const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v}`).join(", ");
+
     try {
+      // 1. الحفظ في نيون عبر API الخاص بك
       await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
         method: 'POST',
-        body: JSON.stringify({ category: selectedCat.name, data, date: new Date() }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: "user_123", 
+          category: activeCategory.title,
+          value: summary,
+          note: "تم الإرسال من واجهة رقة الموحدة"
+        })
       });
-      alert("تم حفظ التقدم في قاعدة البيانات بنجاح 🌸");
-    } catch (err) { console.error(err); }
+
+      // 2. التحليل بواسطة Raqqa AI
+      const aiRes = await fetch('/api/raqqa-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: `بناءً على نشاطي في ${activeCategory.title}: (${summary})، قدمي لي نصيحة فقهية وروحية رقيقة ومفصلة.`
+        })
+      });
+      const data = await aiRes.json();
+      
+      setAiResponse(data.reply);
+      setHistory(prev => [data.reply, ...prev]);
+    } catch (error) {
+      setAiResponse("عذراً رفيقتي، حدث خطأ في الاتصال.. حاولي مرة أخرى 🌸");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // دالة تحليل الذكاء الاصطناعي
-  const handleAIAnalysis = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
-        method: 'POST',
-        body: JSON.stringify({ prompt: `حلل مستوى تقدمي في ${selectedCat.name}` }),
-      });
-      const data = await res.json();
-      setMessages([...messages, { role: 'ai', text: data.reply }]);
-    } catch (err) { console.error(err); }
-    setLoading(false);
+  const clearAll = () => {
+    setInputs({});
+    setAiResponse("");
+    setHistory([]);
   };
 
   return (
-    <div className="app-wrapper">
-      {/* Header */}
-      <header className="main-header">
-        <Heart className="heart-icon" fill="#f06292" />
-        <h1>رفيقة الدرب الرقمية</h1>
+    <div style={styles.appContainer}>
+      {/* الهيدر */}
+      <header style={styles.header}>
+        <h1 style={styles.title}>رقة ✨</h1>
+        <p style={styles.subtitle}>فقه المرأة.. حيث يلتقي الوعي بالجمال</p>
       </header>
 
-      {/* Grid of Icons (القوائم في شكل أيقونات) */}
-      <div className="icon-grid">
-        {CATEGORIES.map(cat => (
-          <motion.div 
-            whileHover={{ scale: 1.1 }}
-            key={cat.id} 
-            className="cat-card"
-            style={{ backgroundColor: cat.color }}
-            onClick={() => setSelectedCat(cat)}
-          >
-            <span className="cat-emoji">{cat.icon}</span>
-            <span className="cat-name">{cat.name}</span>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Modal / Overlay for Category Details (كارت المدخلات) */}
-      <AnimatePresence>
-        {selectedCat && (
-          <motion.div 
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="details-overlay"
-          >
-            <div className="details-card">
-              <div className="card-header">
-                <h2>{selectedCat.icon} {selectedCat.name}</h2>
-                <X onClick={() => setSelectedCat(null)} className="close-btn" />
-              </div>
-              
-              <div className="tasks-list">
-                {selectedCat.tasks.map((task, i) => (
-                  <div key={i} className="task-row">
-                    <span>{task}</span>
-                    <input type="checkbox" className="custom-check" />
-                  </div>
-                ))}
-              </div>
-
-              <div className="card-actions">
-                <button onClick={handleAIAnalysis} className="ai-btn">
-                  <Brain size={18} /> {loading ? "جاري التحليل..." : "تحليل الذكاء الصناعي"}
-                </button>
-                <button onClick={handleSave} className="save-btn">
-                  <Save size={18} /> حفظ البيانات
-                </button>
-              </div>
+      {/* عرض المجموعات الثلاث */}
+      {!activeCategory && (
+        <div style={styles.grid}>
+          {[0, 1, 2].map(colIndex => (
+            <div key={colIndex} style={styles.column}>
+              {menuData.slice(colIndex * 5, (colIndex + 1) * 5).map(cat => (
+                <div key={cat.id} style={styles.menuItem} onClick={() => setActiveCategory(cat)}>
+                  <span style={styles.iconWrapper}>{cat.icon}</span>
+                  <span style={styles.menuText}>{cat.title}</span>
+                </div>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Floating Chat Box (نظام المحادثة) */}
-      <div className="floating-chat">
-        <div className="chat-header">
-          <Sparkles size={18} /> رفيقتكِ الذكية
-          <Trash2 size={16} onClick={() => setMessages([])} className="clear-chat" />
-        </div>
-        <div className="chat-content">
-          {messages.map((m, i) => (
-            <div key={i} className={`msg ${m.role}`}>{m.text}</div>
           ))}
         </div>
-        <div className="token-input-container">
-          <input 
-            value={input} 
-            onChange={(e) => setInput(e.target.value)} 
-            placeholder="اسألي عن أي حكم..."
-          />
-          <div className="input-tools">
-            <Mic size={18} />
-            <Camera size={18} />
-            <ImageIcon size={18} />
-            <Send size={18} className="send-icon" />
-          </div>
-        </div>
-      </div>
+      )}
 
-      {/* Azhar Button */}
-      <a href="https://www.azhar.eg/fatwa" target="_blank" className="azhar-button">
-        اسألي الأزهر الشريف 🕌
+      {/* الكارت المستقل عند التفعيل */}
+      {activeCategory && (
+        <>
+          <div style={styles.overlay} onClick={() => setActiveCategory(null)} />
+          <div style={styles.activeCard}>
+            <div style={styles.cardHeader}>
+              <h2 style={styles.cardTitle}>{activeCategory.title}</h2>
+              <X style={{cursor: 'pointer'}} onClick={() => setActiveCategory(null)} />
+            </div>
+
+            <div style={styles.inputsContainer}>
+              {activeCategory.items.map((item, idx) => (
+                <div key={idx} style={styles.inputBox}>
+                  <label style={styles.label}>{item}</label>
+                  <input 
+                    style={styles.input} 
+                    placeholder="اكتبي هنا..."
+                    value={inputs[item] || ""}
+                    onChange={(e) => setInputs({...inputs, [item]: e.target.value})}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {/* أدوات الشات */}
+            <div style={styles.chatTools}>
+              <button style={styles.toolBtn}><Camera size={20} /></button>
+              <button style={styles.toolBtn}><Mic size={20} /></button>
+              <button style={styles.toolBtn}><Image size={20} /></button>
+              <button style={styles.toolBtn} onClick={clearAll}><Trash2 size={20} /></button>
+            </div>
+
+            <button style={styles.saveBtn} onClick={handleProcess} disabled={loading}>
+              {loading ? "جاري التحليل..." : "حفظ وتحليل بالذكاء الصناعي ✨"}
+            </button>
+
+            {aiResponse && (
+              <div style={styles.aiBox}>
+                <p><strong>رقة تحلل نموكِ الروحي:</strong></p>
+                <p>{aiResponse}</p>
+              </div>
+            )}
+            
+            <div style={styles.history}>
+              {history.map((h, i) => (
+                <div key={i} style={styles.historyItem}>{h}</div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* زر اسألي الأزهر */}
+      <a href="https://www.azhar.eg/fatwacenter" target="_blank" rel="noreferrer" style={styles.fabAzhar}>
+        <Mosque size={24} />
+        <span>اسألي الأزهر</span>
       </a>
     </div>
   );
 };
 
-export default App;
+// --- التنسيقات (CSS-in-JS) ---
+const styles = {
+  appContainer: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)',
+    padding: '20px',
+    fontFamily: 'Tajawal, sans-serif',
+    direction: 'rtl'
+  },
+  header: { textAlign: 'center', marginBottom: '40px' },
+  title: { color: '#f06292', fontSize: '2.5rem', fontFamily: 'Amiri' },
+  subtitle: { color: '#666', fontFamily: 'Amiri' },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: '20px',
+    maxWidth: '1200px',
+    margin: '0 auto'
+  },
+  column: { background: 'rgba(255,255,255,0.3)', padding: '15px', borderRadius: '20px' },
+  menuItem: {
+    background: 'white',
+    padding: '15px',
+    marginBottom: '15px',
+    borderRadius: '15px',
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    transition: '0.3s',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.05)'
+  },
+  iconWrapper: { color: '#f06292', marginLeft: '15px' },
+  menuText: { fontWeight: '500' },
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.3)', zIndex: 10 },
+  activeCard: {
+    position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+    width: '90%', maxWidth: '800px', maxHeight: '85vh', background: 'white',
+    borderRadius: '30px', padding: '30px', zIndex: 11, overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+  },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
+  cardTitle: { color: '#f06292', margin: 0 },
+  inputsContainer: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' },
+  inputBox: { display: 'flex', flexDirection: 'column' },
+  label: { fontSize: '0.8rem', marginBottom: '5px', color: '#888' },
+  input: { padding: '10px', borderRadius: '10px', border: '1px solid #eee', background: '#fff9c4' },
+  chatTools: { display: 'flex', gap: '10px', justifyContent: 'center', margin: '20px 0' },
+  toolBtn: { padding: '10px', borderRadius: '50%', border: 'none', background: '#f0f0f0', cursor: 'pointer' },
+  saveBtn: { 
+    width: '100%', padding: '15px', borderRadius: '50px', border: 'none', 
+    background: '#f06292', color: 'white', fontWeight: 'bold', cursor: 'pointer' 
+  },
+  aiBox: { marginTop: '20px', padding: '15px', background: '#e0f2f1', borderRadius: '15px', borderRight: '5px solid #f06292' },
+  history: { marginTop: '20px', fontSize: '0.9rem' },
+  historyItem: { padding: '10px', borderBottom: '1px solid #eee' },
+  fabAzhar: {
+    position: 'fixed', bottom: '30px', left: '30px', background: '#00897b',
+    color: 'white', padding: '15px 25px', borderRadius: '50px', textDecoration: 'none',
+    display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 10px 20px rgba(0,0,0,0.2)'
+  }
+};
+
+export default RaqqaApp;
