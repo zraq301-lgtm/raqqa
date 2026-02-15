@@ -1,12 +1,12 @@
 {
   "appId": "com.roqa.app",
-  "appName": "raqqa",
+  "appName": "Roqa",
   "webDir": "dist_web",
   "bundledWebRuntime": false,
   "server": {
+    "url": "https://raqqa-v6cd.vercel.app",
     "androidScheme": "https",
     "cleartext": true,
-    "hostname": "raqqa-v6cd.vercel.app",
     "allowNavigation": [
       "raqqa-v6cd.vercel.app",
       "*.vercel.app",
@@ -16,6 +16,12 @@
   },
   "android": {
     "allowMixedContent": true,
-    "webContentsDebuggingEnabled": true
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
   }
 }
