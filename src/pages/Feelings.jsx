@@ -29,8 +29,12 @@ const RaqqaFeelingsApp = () => {
 
   const handleProcess = async () => {
     setLoading(true);
-    const summary = Object.entries(inputs).filter(([k,v]) => v).map(([k, v]) => `${k}: ${v}`).join(", ");
-    
+    // تجميع المدخلات غير الفارغة فقط
+    const summary = Object.entries(inputs)
+      .filter(([k, v]) => v)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(", ");
+
     try {
       // 1. الحفظ في Neon DB
       await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
@@ -44,7 +48,7 @@ const RaqqaFeelingsApp = () => {
         })
       });
 
-      // 2. التحليل بواسطة Raqqa AI
+      // 2. التحليل بواسطة Raqqa AI - تم تعديل الاستقبال ليتناسب مع message 
       const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,9 +56,13 @@ const RaqqaFeelingsApp = () => {
           prompt: `أنا أنثى مسلمة، أشعر في قسم ${activeTab.title} بالآتي: (${summary}). حللي مشاعري بأسلوب طويل ومتخصص، مع ذكر آية أو حديث يناسب حالتي.`
         })
       });
+
       const data = await aiRes.json();
-      setAiResponse(data.reply);
-      setHistory(prev => [data.reply, ...prev]);
+      const responseText = data.message || data.reply; // لدعم كلا الحالتين 
+      
+      setAiResponse(responseText);
+      setHistory(prev => [responseText, ...prev]);
+
     } catch (err) {
       setAiResponse("حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸");
     } finally {
@@ -69,7 +77,6 @@ const RaqqaFeelingsApp = () => {
         <p style={styles.subtitle}>محلل مشاعر المرأة المسلمة الشامل</p>
       </header>
 
-      {/* عرض القوائم كأيقونات متراصة */}
       {!activeTab && (
         <div style={styles.grid}>
           {categories.map(cat => (
@@ -81,13 +88,12 @@ const RaqqaFeelingsApp = () => {
         </div>
       )}
 
-      {/* الكارت المستقل عند الضغط على أيقونة */}
       {activeTab && (
         <div style={styles.fullOverlay}>
           <div style={styles.activeContent}>
             <div style={styles.cardHeader}>
               <h2 style={{color: '#f06292'}}>{activeTab.title}</h2>
-              <X style={{cursor: 'pointer'}} onClick={() => {setActiveTab(null); setAiResponse("");}} />
+              <X style={{cursor: 'pointer'}} onClick={() => {setActiveTab(null); setAiResponse(""); setInputs({});}} />
             </div>
 
             <div style={styles.inputList}>
@@ -110,7 +116,7 @@ const RaqqaFeelingsApp = () => {
               <button style={styles.toolBtn} onClick={() => setHistory([])}><Trash2 /></button>
             </div>
 
-            <button style={styles.actionBtn} onClick={handleProcess} disabled={loading}>
+            <button style={styles.actionBtn} onClick={handleProcess} disabled={loading || Object.keys(inputs).length === 0}>
               {loading ? "جاري التحليل الإيماني..." : "تحليل المشاعر بالذكاء الصناعي ✨"}
             </button>
 
@@ -121,7 +127,7 @@ const RaqqaFeelingsApp = () => {
             )}
 
             <div style={styles.historyList}>
-              {history.length > 0 && <h4 style={{color: '#f06292'}}>الردود السابقة:</h4>}
+              {history.length > 0 && <h4 style={{color: '#f06292', marginTop: '20px'}}>الردود السابقة:</h4>}
               {history.map((h, i) => <div key={i} style={styles.historyItem}>{h.substring(0, 50)}...</div>)}
             </div>
           </div>
@@ -156,7 +162,7 @@ const styles = {
   actionBtn: { width: '100%', padding: '15px', borderRadius: '50px', border: 'none', background: '#f06292', color: 'white', fontSize: '1.1rem', cursor: 'pointer', fontWeight: 'bold' },
   responseBox: { marginTop: '20px', padding: '20px', background: '#fdf2f8', borderRadius: '15px', borderRight: '5px solid #f06292', lineHeight: '1.8' },
   historyItem: { padding: '10px', fontSize: '0.8rem', color: '#999', borderBottom: '1px solid #eee' },
-  azharBtn: { position: 'fixed', bottom: '20px', left: '20px', background: '#00897b', color: 'white', padding: '12px 20px', borderRadius: '50px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }
+  azharBtn: { position: 'fixed', bottom: '20px', left: '20px', background: '#00897b', color: 'white', padding: '12px 20px', borderRadius: '50px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 101 }
 };
 
 export default RaqqaFeelingsApp;
