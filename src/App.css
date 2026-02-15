@@ -24,21 +24,21 @@ body {
   overflow: hidden;
 }
 
-/* --- التنسيق المعدل: تكبير الحجم بنسبة 200% --- */
+/* --- التنسيق المعدل: الحفاظ على حجم الأيقونات وتقليل حجم الحاويات --- */
 
-/* أيقونات الهيدر العلوي (المكتبة وعالم رقة) */
+/* أيقونات الهيدر العلوي - الحفاظ على الحجم الكبير 56px */
 .custom-img-icon {
-  width: 56px;  /* تم التكبير من 28px إلى 56px */
+  width: 56px;  
   height: 56px;
   border-radius: 50%;
   object-fit: cover;
   transition: transform 0.3s ease;
-  border: 2px solid var(--female-pink); /* زيادة وضوح الحدود */
+  border: 2px solid var(--female-pink); 
 }
 
-/* الأيقونات الجانبية في المنيو السفلي */
+/* الأيقونات الجانبية في المنيو السفلي - الحفاظ على الحجم الكبير 52px */
 .custom-img-icon-nav {
-  width: 52px;   /* تم التكبير من 26px إلى 52px */
+  width: 52px;   
   height: 52px;  
   border-radius: 50%;
   object-fit: cover;
@@ -55,9 +55,9 @@ body {
   object-fit: cover;
 }
 
-/* الدائرة المركزية - تم تكبيرها لتتناسب مع التعديلات */
+/* الدائرة المركزية - الحفاظ على الحجم 90px */
 .center-circle {
-  width: 90px;   /* تم التكبير من 45px إلى 90px */
+  width: 90px;   
   height: 90px;
   background: white;
   border-radius: 50%;
@@ -70,25 +70,25 @@ body {
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* ضبط مكان الزر المركزي */
+/* ضبط مكان الزر المركزي - تقليل الرفع ليناسب تقليل حجم المنيو */
 .center-action {
   position: relative;
-  top: -35px; /* رفع الإزاحة لتناسب الحجم الكبير الجديد */
+  top: -20px; /* تم تقليل الرفع من -35px ليتناسب مع صغر المنيو */
 }
 
 /* ضبط حجم الخط للعناوين السفلية */
 .nav-label {
-  font-size: 0.9rem; /* تكبير الخط قليلاً ليتناسب مع الأيقونات الضخمة */
-  margin-top: 8px;
+  font-size: 0.8rem; /* تم تصغير الخط قليلاً لتوفير المساحة */
+  margin-top: 4px; /* تقليل المسافة العلوية */
   font-weight: 600;
   color: var(--female-pink);
 }
 
 .bold { font-weight: bold; color: var(--female-pink); }
 
-/* --- الهيدر العلوي المعدل --- */
+/* --- الهيدر العلوي المعدل: تقليل البادينج للنصف --- */
 .top-sticky-menu {
-  padding: 15px 12px; /* زيادة البادينج لاستيعاب الأيقونات الكبيرة */
+  padding: 8px 12px; /* تم تقليل البادينج من 15px إلى 8px لتصغير المساحة */
   background: var(--glass-white);
   backdrop-filter: blur(10px);
   border-bottom: 2px solid var(--female-pink-light);
@@ -105,8 +105,8 @@ body {
   flex-direction: row; 
   align-items: center;
   background: white;
-  padding: 8px 16px;
-  border-radius: 30px; /* زيادة الاستدارة لشكل أنثوي أكثر */
+  padding: 4px 12px; /* تقليل البادينج الداخلي لتصغير حجم البطاقة */
+  border-radius: 30px; 
   text-decoration: none;
   box-shadow: 0 4px 10px rgba(255, 77, 125, 0.1);
   border: 1px solid var(--female-pink-light);
@@ -119,21 +119,21 @@ body {
 }
 
 .card-label {
-  font-size: 0.9rem;
+  font-size: 0.8rem; /* تصغير الخط قليلاً */
   font-weight: bold;
   color: var(--female-pink);
 }
 
-/* --- القائمة السفلية المعدلة --- */
+/* --- القائمة السفلية المعدلة: تقليل الارتفاع للنصف تقريباً --- */
 .bottom-sticky-menu {
   position: fixed;
   bottom: 0;
   width: 100%;
   background: white;
-  padding: 10px 0 20px 0;
+  padding: 5px 0 10px 0; /* تقليل البادينج للنصف */
   box-shadow: 0 -6px 20px rgba(255, 77, 125, 0.1);
   border-radius: 30px 30px 0 0;
-  height: 110px; /* تم زيادة الارتفاع من 65px إلى 110px لاستيعاب الأيقونات الكبيرة */
+  height: 80px; /* تم تقليل الارتفاع من 110px إلى 80px لتصغير مساحة المنيو */
 }
 
 .nav-grid {
@@ -157,7 +157,7 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  padding-bottom: 130px; /* زيادة مسافة الأمان السفلية */
+  padding-bottom: 90px; /* تقليل مسافة الأمان لتناسب المنيو الأصغر */
 }
 
 /* تفاعلات عند الضغط */
