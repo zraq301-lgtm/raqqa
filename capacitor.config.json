@@ -5,6 +5,12 @@
   "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
-    "cleartext": true 
+    "cleartext": true,
+    "allowNavigation": [
+      "raqqa-v6cd.vercel.app"
+    ]
+  },
+  "android": {
+    "allowMixedContent": true
   }
 }
