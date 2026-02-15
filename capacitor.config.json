@@ -6,11 +6,16 @@
   "server": {
     "androidScheme": "https",
     "cleartext": true,
+    "hostname": "raqqa-v6cd.vercel.app",
     "allowNavigation": [
-      "raqqa-v6cd.vercel.app"
+      "raqqa-v6cd.vercel.app",
+      "*.vercel.app",
+      "*.openai.com",
+      "*.anthropic.com"
     ]
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "webContentsDebuggingEnabled": true
   }
 }
