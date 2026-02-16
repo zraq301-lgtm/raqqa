@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Heart, MessageCircle, Camera, Mic, Trash2, Save, 
   Send, Star, ShieldCheck, Flame, 
@@ -12,8 +12,18 @@ const MarriageApp = () => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // مرجع للتمرير التلقائي لأسفل الشات
+  const messagesEndRef = useRef(null);
 
-  // القوائم الـ 10
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, loading]);
+
   const categories = [
     { id: "bonding", title: "الود والاتصال العاطفي", icon: <Heart size={24} />, items: ["لغة الحوار 🗣️", "تبادل النظرات 👀", "كلمات التقدير 💌", "الهدايا 🎁", "الدعم وقت الأزمات 🤝", "الضحك المشترك 😂", "وقت خاص ☕", "اللمس العفوي 🤚", "الأمان 🛡️", "التسامح 🏳️"] },
     { id: "foreplay", title: "لغة الجسد والتمهيد", icon: <Flower2 size={24} />, items: ["القبلات 💋", "الأحضان 🫂", "الملاطفة 🌸", "لغة العيون ✨", "همس 👂", "تدليك 💆‍♂️", "نظافة 🧼", "تأنق 👗"] },
@@ -27,83 +37,91 @@ const MarriageApp = () => {
     { id: "spiritual", title: "الاطمئنان الروحي", icon: <Moon size={24} />, items: ["دعاء 🤲", "غسل 🚿", "شكر 🛐", "نية إعفاف 💎"] }
   ];
 
-  // وظيفة إرسال السؤال للذكاء الاصطناعي
+  // وظيفة إرسال السؤال للذكاء الاصطناعي (رقة)
   const askRaqqaAI = async (text) => {
+    if (!text.trim()) return;
+    
+    // إضافة رسالة المستخدم فوراً للشاشة
+    const newMsg = { role: 'user', text: text };
+    setMessages(prev => [...prev, newMsg]);
     setLoading(true);
+    
     try {
       const response = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text })
+        body: JSON.stringify({ prompt: text }) // إرسال البرمبت حسب ملف raqqa-ai.js
       });
       const data = await response.json();
-      setMessages(prev => [...prev, { role: 'ai', text: data.reply }]);
+      setMessages(prev => [...prev, { role: 'ai', text: data.reply || "عذراً، لم أستطع الرد حالياً." }]); // استقبال الرد من الحقل reply
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', text: "تعذر الاتصال بالذكاء الاصطناعي، يرجى المحاولة لاحقاً." }]);
+      setMessages(prev => [...prev, { role: 'ai', text: "حدث خطأ في الاتصال، حاولي مرة أخرى يا رفيقتي." }]);
     }
     setLoading(false);
+    setUserInput(""); // مسح صندوق الإدخال
   };
 
-  // وظيفة حفظ البيانات في نيون
+  // وظيفة حفظ البيانات في نيون (Neon)
   const saveToNeon = async (categoryTitle, note) => {
     try {
       await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: "user_mobile",
+          user_id: 1, // معرف افتراضي
           category: categoryTitle,
-          value: "تحليل ذكي",
+          value: "تحليل علاقة",
           note: note
-        })
+        }) // إرسال البيانات حسب هيكلية save-health.js
       });
-    } catch (e) { console.error("Save error", e); }
+    } catch (e) { console.error("Neon Save Error", e); }
   };
 
   const handleAnalysis = (cat) => {
     const selected = selectedItems[cat.id] || [];
-    const promptText = `بصفتك مستشارة علاقات، حللي المدخلات التالية في قائمة "${cat.title}": ${selected.join(', ')}. أعطني نصائح للمتعة والسعادة الزوجية.`;
+    const promptText = `أريد تحليل متخصص في العلاقات الزوجية. البيانات في قائمة "${cat.title}" هي: ${selected.join(', ')}. قدمي نصائح للمتعة والسعادة الدائمة بأسلوبك الرقيق.`;
     
     setShowChat(true);
-    setMessages(prev => [...prev, { role: 'user', text: `تحليل: ${cat.title}` }]);
     askRaqqaAI(promptText);
     saveToNeon(cat.title, `المختار: ${selected.join(' - ')}`);
     setActiveList(null);
   };
 
   return (
-    <div style={{ backgroundColor: '#fffaf0', minHeight: '100vh', direction: 'rtl', fontFamily: 'sans-serif', paddingBottom: '80px' }}>
+    <div style={{ backgroundColor: '#fffaf0', minHeight: '100vh', direction: 'rtl', fontFamily: 'sans-serif', paddingBottom: '20px' }}>
       
       {/* هيدر الصفحة */}
-      <header style={{ background: 'linear-gradient(135deg, #800020, #b03060)', color: '#d4af37', padding: '25px 15px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem' }}>مستشارك الذكي للسعادة الزوجية</h1>
+      <header style={{ background: 'linear-gradient(135deg, #800020, #b03060)', color: '#d4af37', padding: '20px 10px', textAlign: 'center', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
+        <h1 style={{ margin: 0, fontSize: '1.3rem' }}>محلل السعادة الزوجية الذكي</h1>
       </header>
 
-      {/* زر الشات العلوي العائم */}
+      {/* زر الشات العلوي */}
       <button 
         onClick={() => setShowChat(true)}
-        style={{ position: 'fixed', top: '20px', left: '20px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '55px', height: '55px', boxShadow: '0 4px 10px rgba(0,0,0,0.2)', zIndex: 100, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ position: 'fixed', top: '15px', left: '15px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', boxShadow: '0 4px 8px rgba(0,0,0,0.2)', zIndex: 100, cursor: 'pointer' }}
       >
-        <Sparkles color="#800020" size={28} />
+        <Sparkles color="#800020" size={24} />
       </button>
 
       {/* شبكة القوائم */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px', padding: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', padding: '15px' }}>
         {categories.map(cat => (
-          <div key={cat.id} onClick={() => setActiveList(cat)} style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '15px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
-            <div style={{ color: '#800020', marginBottom: '10px' }}>{cat.icon}</div>
-            <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{cat.title}</div>
+          <div key={cat.id} onClick={() => setActiveList(cat)} style={{ background: '#fff', border: '1px solid #eee', borderRadius: '12px', padding: '15px', textAlign: 'center', cursor: 'pointer' }}>
+            <div style={{ color: '#800020', marginBottom: '8px' }}>{cat.icon}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>{cat.title}</div>
           </div>
         ))}
       </div>
 
-      {/* مودال القوائم (نافذة منبثقة) */}
+      {/* نافذة اختيار البيانات */}
       {activeList && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '15px' }}>
-          <div style={{ background: '#fff', width: '100%', maxWidth: '500px', borderRadius: '20px', maxHeight: '90vh', overflowY: 'auto', padding: '20px', position: 'relative' }}>
-            <button onClick={() => setActiveList(null)} style={{ position: 'absolute', top: '15px', left: '15px', background: 'none', border: 'none' }}><X size={24} /></button>
-            <h2 style={{ color: '#800020', fontSize: '1.2rem', marginBottom: '20px' }}>{activeList.title}</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+          <div style={{ background: '#fff', width: '100%', maxWidth: '450px', borderRadius: '20px', maxHeight: '80vh', overflowY: 'auto', padding: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+              <h2 style={{ color: '#800020', fontSize: '1.1rem', margin: 0 }}>{activeList.title}</h2>
+              <X onClick={() => setActiveList(null)} style={{ cursor: 'pointer' }} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               {activeList.items.map(item => (
                 <div 
                   key={item}
@@ -111,7 +129,7 @@ const MarriageApp = () => {
                     const current = selectedItems[activeList.id] || [];
                     setSelectedItems({ ...selectedItems, [activeList.id]: current.includes(item) ? current.filter(i => i !== item) : [...current, item] });
                   }}
-                  style={{ padding: '10px', border: '1px solid #eee', borderRadius: '8px', fontSize: '0.85rem', cursor: 'pointer', backgroundColor: (selectedItems[activeList.id] || []).includes(item) ? '#800020' : '#f9f9f9', color: (selectedItems[activeList.id] || []).includes(item) ? '#fff' : '#333' }}
+                  style={{ padding: '8px', border: '1px solid #eee', borderRadius: '8px', fontSize: '0.8rem', backgroundColor: (selectedItems[activeList.id] || []).includes(item) ? '#800020' : '#f9f9f9', color: (selectedItems[activeList.id] || []).includes(item) ? '#fff' : '#333' }}
                 >
                   {item}
                 </div>
@@ -119,53 +137,60 @@ const MarriageApp = () => {
             </div>
             <button 
               onClick={() => handleAnalysis(activeList)}
-              style={{ width: '100%', marginTop: '20px', padding: '15px', background: '#800020', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}
+              style={{ width: '100%', marginTop: '15px', padding: '12px', background: '#800020', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold' }}
             >
-              تحليل وإرسال للذكاء الاصطناعي
+              تحليل الآن
             </button>
           </div>
         </div>
       )}
 
-      {/* نافذة الشات (متجاوبة تماماً) */}
+      {/* نافذة الشات المصلحة */}
       {showChat && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#fff', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>
-          {/* رأس الشات */}
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: '#fff', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>
+          {/* الرأس */}
           <div style={{ background: '#800020', color: '#d4af37', padding: '15px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontWeight: 'bold' }}>مستشارة رقة الذكية ✨</div>
-            <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', color: '#d4af37' }}><X size={24} /></button>
+            <div style={{ fontSize: '1rem', fontWeight: 'bold' }}>✨ مستشارة رقة الذكية</div>
+            <X onClick={() => setShowChat(false)} style={{ cursor: 'pointer' }} />
           </div>
 
-          {/* منطقة الرسائل */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px', background: '#fcf8f8' }}>
-            {messages.length === 0 && <div style={{ textAlign: 'center', color: '#999', marginTop: '20px' }}>ابدئي الحوار مع رقة...</div>}
+          {/* منطقة الرسائل مع Scroll تلقائي */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#fff9f9' }}>
             {messages.map((m, i) => (
-              <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#800020' : '#fff', color: m.role === 'user' ? '#fff' : '#333', padding: '12px', borderRadius: '15px', maxWidth: '85%', fontSize: '0.95rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+              <div key={i} style={{ 
+                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', 
+                background: m.role === 'user' ? '#800020' : '#f0f0f0', 
+                color: m.role === 'user' ? '#fff' : '#333', 
+                padding: '12px', borderRadius: '15px', marginBottom: '10px', 
+                maxWidth: '85%', marginLeft: m.role === 'user' ? 'auto' : '0',
+                fontSize: '0.9rem', lineHeight: '1.4'
+              }}>
                 {m.text}
               </div>
             ))}
-            {loading && <div style={{ color: '#800020', fontSize: '0.8rem', padding: '10px' }}>رقة تكتب الآن...</div>}
+            {loading && <div style={{ color: '#800020', fontSize: '0.8rem' }}>رقة تكتب الآن... ✨</div>}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* أدوات الميديا */}
-          <div style={{ display: 'flex', justifyContent: 'space-around', padding: '10px', borderTop: '1px solid #eee' }}>
-            <button style={{ background: 'none', border: 'none' }}><Camera size={22} color="#800020" /></button>
-            <button style={{ background: 'none', border: 'none' }}><Mic size={22} color="#800020" /></button>
-            <button style={{ background: 'none', border: 'none' }}><Paperclip size={22} color="#800020" /></button>
-            <button onClick={() => setMessages([])} style={{ background: 'none', border: 'none' }}><Trash2 size={22} color="#800020" /></button>
+          {/* شريط الأدوات المصلح (فوق الإدخال) */}
+          <div style={{ display: 'flex', justifyContent: 'space-around', padding: '10px', borderTop: '1px solid #eee', background: '#fff' }}>
+            <Trash2 onClick={() => setMessages([])} size={22} color="#800020" style={{cursor: 'pointer'}} />
+            <Paperclip size={22} color="#800020" />
+            <Mic size={22} color="#800020" />
+            <Camera size={22} color="#800020" />
           </div>
 
-          {/* صندوق الإدخال */}
-          <div style={{ padding: '10px 15px 25px', display: 'flex', gap: '10px', borderTop: '1px solid #eee' }}>
+          {/* صندوق الإدخال المصلح */}
+          <div style={{ padding: '10px 15px 20px', background: '#fff', display: 'flex', gap: '10px' }}>
             <input 
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
-              placeholder="اكتب رسالتك هنا..."
+              placeholder="اكتبي رسالتك هنا..."
               style={{ flex: 1, padding: '12px', borderRadius: '25px', border: '1px solid #ddd', outline: 'none' }}
-              onKeyPress={(e) => e.key === 'Enter' && (askRaqqaAI(userInput), setUserInput(""))}
+              onKeyPress={(e) => e.key === 'Enter' && askRaqqaAI(userInput)}
             />
             <button 
-              onClick={() => { if(userInput) { setMessages([...messages, {role: 'user', text: userInput}]); askRaqqaAI(userInput); setUserInput(""); } }}
+              onClick={() => askRaqqaAI(userInput)}
               style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <Send size={20} color="#800020" />
