@@ -4,7 +4,7 @@ import {
   Send, Star, ShieldCheck, Flame, 
   Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip
 } from 'lucide-react';
-// استيراد المحرك الأصلي لتجاوز قيود CORS في تطبيق الاندرويد
+// 1. استيراد المحرك الأصلي في أعلى الملف
 import { CapacitorHttp } from '@capacitor/core';
 
 const MarriageApp = () => {
@@ -37,15 +37,17 @@ const MarriageApp = () => {
     { id: "spiritual", title: "الاطمئنان الروحي", icon: <Moon size={24} />, items: ["دعاء 🤲", "غسل 🚿", "شكر 🛐", "نية 💎"] }
   ];
 
-  // 1. دالة طلب الذكاء الاصطناعي الموحدة (تستخدم CapacitorHttp)
-  const handleRaqqaRequest = async (userInputs, pageTitle) => {
+  // دالة المعالجة الموحدة باستخدام CapacitorHttp
+  const handleProcess = async (userInputs, pageTitle) => {
+    // تجميع البيانات إلى نص مفهوم
     const summary = Object.entries(userInputs)
       .filter(([key, value]) => value && value.length > 0)
       .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(" - ") : value}`)
       .join(", ");
 
     try {
-      const options = {
+      // إعداد خيارات الطلب للذكاء الاصطناعي
+      const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: {
@@ -53,38 +55,32 @@ const MarriageApp = () => {
         }
       };
 
-      const response = await CapacitorHttp.post(options);
-      // استخراج الرد باستخدام مفتاح 'reply' كما هو في ملف raqqa-ai (2).js
-      return response.data.reply || "شكراً لمشاركتكِ يا رفيقتي.";
-    } catch (err) {
-      console.error("خطأ في الاتصال الأصلي:", err);
-      return "حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸";
-    }
-  };
+      // الاتصال عبر المحرك الأصلي (تجاوز CORS)
+      const aiResponse = await CapacitorHttp.post(aiOptions);
+      
+      // النتيجة تكون في response.data مباشرة
+      const responseText = aiResponse.data.reply || aiResponse.data.message || "شكراً لمشاركتكِ يا رفيقتي.";
 
-  // 2. دالة حفظ البيانات في نيون (Neon) باستخدام CapacitorHttp
-  const saveToNeon = async (categoryTitle, selectedItemsList) => {
-    try {
-      const options = {
+      // حفظ البيانات في نيون بشكل متوازي
+      await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-health',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          user_id: 1, // المعرف كما يتوقعه ملف save-health (1).js
-          category: categoryTitle,
-          value: "تحليل ذكي للعلاقة",
-          note: `المختار: ${selectedItemsList.join(', ')}`
+          user_id: 1, // المعرف الافتراضي
+          category: pageTitle,
+          value: "تحليل قسم",
+          note: summary
         }
-      };
-      const response = await CapacitorHttp.post(options);
-      if (response.data.success) {
-        console.log("تم الحفظ وتلقي النصيحة:", response.data.advice);
-      }
-    } catch (e) {
-      console.error("خطأ في حفظ البيانات في نيون:", e);
+      });
+
+      return responseText;
+
+    } catch (err) {
+      console.error("فشل الاتصال الأصلي:", err);
+      return "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي.";
     }
   };
 
-  // معالجة التحليل عند اختيار العناصر
   const handleAnalysis = async (cat) => {
     const selected = selectedItems[cat.id] || [];
     if (selected.length === 0) return;
@@ -92,46 +88,40 @@ const MarriageApp = () => {
     setShowChat(true);
     setLoading(true);
     
-    // إرسال للذكاء الاصطناعي
-    const aiReply = await handleRaqqaRequest({ [cat.title]: selected }, "السعادة الزوجية");
+    // تشغيل عملية المعالجة
+    const result = await handleProcess({ [cat.title]: selected }, cat.title);
+    
     setMessages(prev => [
       ...prev, 
       { role: 'user', text: `تحليل قائمة: ${cat.title}` },
-      { role: 'ai', text: aiReply }
+      { role: 'ai', text: result }
     ]);
-    
-    // حفظ البيانات في قاعدة البيانات (Neon)
-    await saveToNeon(cat.title, selected);
     
     setLoading(false);
     setActiveList(null);
   };
 
-  // معالجة الدردشة اليدوية
   const handleManualChat = async (text) => {
     if (!text.trim()) return;
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setLoading(true);
     setUserInput("");
     
-    const aiReply = await handleRaqqaRequest({ "سؤال مباشر": text }, "دردشة حرة");
-    setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
+    const result = await handleProcess({ "سؤال": text }, "دردشة عامة");
+    setMessages(prev => [...prev, { role: 'ai', text: result }]);
     setLoading(false);
   };
 
   return (
     <div style={{ backgroundColor: '#fffaf0', minHeight: '100vh', direction: 'rtl', fontFamily: 'sans-serif' }}>
-      {/* الهيدر */}
       <header style={{ background: '#800020', color: '#d4af37', padding: '15px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 500 }}>
         <h1 style={{ margin: 0, fontSize: '1.2rem' }}>مستشارة رقة للسعادة الزوجية</h1>
       </header>
 
-      {/* زر الشات العائم */}
       <button onClick={() => setShowChat(true)} style={{ position: 'fixed', bottom: '25px', left: '25px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '60px', height: '60px', zIndex: 100, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
         <Sparkles color="#800020" size={30} />
       </button>
 
-      {/* عرض الأقسام */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '15px' }}>
         {categories.map(cat => (
           <div key={cat.id} onClick={() => setActiveList(cat)} style={{ background: '#fff', borderRadius: '15px', padding: '20px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer', border: '1px solid #f0e0e0' }}>
@@ -141,7 +131,6 @@ const MarriageApp = () => {
         ))}
       </div>
 
-      {/* نافذة الاختيارات */}
       {activeList && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div style={{ background: '#fff', width: '100%', maxWidth: '450px', borderRadius: '25px', maxHeight: '85vh', overflowY: 'auto', padding: '25px', position: 'relative' }}>
@@ -161,12 +150,11 @@ const MarriageApp = () => {
                 </button>
               ))}
             </div>
-            <button onClick={() => handleAnalysis(activeList)} style={{ width: '100%', marginTop: '20px', padding: '15px', background: '#800020', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>تحليل وحفظ البيانات</button>
+            <button onClick={() => handleAnalysis(activeList)} style={{ width: '100%', marginTop: '20px', padding: '15px', background: '#800020', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>تحليل وحفظ في رقة</button>
           </div>
         </div>
       )}
 
-      {/* واجهة الشات */}
       {showChat && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: '#fff', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>
           <div style={{ background: '#800020', color: '#d4af37', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -180,20 +168,11 @@ const MarriageApp = () => {
                 {m.text}
               </div>
             ))}
-            {loading && <div style={{ color: '#800020', fontSize: '0.8rem', textAlign: 'center' }}>رقة تكتب لكِ الآن... 🖋️</div>}
+            {loading && <div style={{ color: '#800020', fontSize: '0.8rem', textAlign: 'center' }}>رقة تراجع مكتبتها... 🖋️</div>}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* شريط أدوات الشات */}
-          <div style={{ display: 'flex', justifyContent: 'space-around', padding: '12px', borderTop: '1px solid #eee', background: '#fff' }}>
-            <Trash2 onClick={() => setMessages([])} size={24} color="#800020" style={{cursor:'pointer'}} />
-            <Paperclip size={24} color="#800020" />
-            <Mic size={24} color="#800020" />
-            <Camera size={24} color="#800020" />
-          </div>
-
-          {/* منطقة الإدخال */}
-          <div style={{ padding: '10px 15px 30px', background: '#fff', display: 'flex', gap: '12px' }}>
+          <div style={{ padding: '10px 15px 30px', background: '#fff', display: 'flex', gap: '12px', borderTop: '1px solid #eee' }}>
             <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, padding: '14px 20px', borderRadius: '30px', border: '1px solid #ddd', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && handleManualChat(userInput)} />
             <button onClick={() => handleManualChat(userInput)} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={22} color="#800020" /></button>
           </div>
