@@ -3,8 +3,10 @@ import {
   Sparkles, Heart, Moon, BookOpen, Activity, 
   ShieldCheck, Users, ShieldAlert, Wind, Gift, 
   Clock, Brain, Flower2, Coins, Hourglass, 
-  Camera, Mic, Image, Trash2, X, MapPin, Smile, Send
+  Camera, Mic, Image, Trash2, X, MapPin, Smile, Send, Stethoscope
 } from 'lucide-react';
+// استيراد CapacitorHttp للاتصال المتوافق مع الهواتف
+import { CapacitorHttp } from '@capacitor/core';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -13,6 +15,7 @@ const RaqqaFeelingsApp = () => {
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [showChat, setShowChat] = useState(false);
+  const [chatInput, setChatInput] = useState("");
 
   const categories = [
     { id: 1, title: "المشاعر الإيمانية", icon: <Sparkles />, items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "حلاوة الإيمان 🍯", "الرضا بالقضاء ✅", "حسن الظن بالله 🌈"] },
@@ -27,48 +30,44 @@ const RaqqaFeelingsApp = () => {
     { id: 10, title: "الإنجاز والعمل", icon: <Clock />, items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
   ];
 
-  const handleProcess = async () => {
+  // دالة المعالجة الرئيسية باستخدام CapacitorHttp
+  const handleProcess = async (customPrompt = null) => {
     setLoading(true);
-    setShowChat(true); 
-    
+    setShowChat(true);
+
     const summary = Object.entries(inputs)
       .filter(([k, v]) => v)
       .map(([k, v]) => `${k}: ${v}`)
       .join(", ");
 
+    // البرومبت المتخصص في طب المشاعر والعمق النفسي
+    const systemPrompt = customPrompt || `أنا أنثى مسلمة، أشعر في قسم ${activeTab?.title || "العام"} بالآتي: (${summary}). 
+    حللي مشاعري بأسلوب يجمع بين "طب المشاعر" والعمق النفسي التحليلي. 
+    قدمي نصائح عملية (Somatic tracking) وتوجيهات لترميم الذات، مع ذكر آية أو حديث يربط الجانب النفسي بالإيماني.`;
+
     try {
-      // 1. الحفظ في Neon DB
-      await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
-        method: 'POST',
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: "user_raqqa_feelings",
-          category: activeTab.title,
-          value: summary,
-          note: "تحليل مشاعر من الواجهة الجديدة"
-        })
-      });
+        data: { prompt: systemPrompt }
+      };
 
-      // 2. التحليل بواسطة Raqqa AI
-      const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `أنا أنثى مسلمة، أشعر في قسم ${activeTab.title} بالآتي: (${summary}). حللي مشاعري بأسلوب طويل ومتخصص، مع ذكر آية أو حديث يناسب حالتي.`
-        })
-      });
-
-      const data = await aiRes.json();
-      const responseText = data.message || data.reply || "شكراً لمشاركتكِ مشاعركِ يا رفيقتي.";
+      const response = await CapacitorHttp.post(options);
+      const responseText = response.data.reply || response.data.message || "شكراً لمشاركتكِ مشاعركِ يا رفيقتي.";
       
       setAiResponse(responseText);
       setHistory(prev => [responseText, ...prev]);
-
     } catch (err) {
-      setAiResponse("حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸");
+      console.error("فشل الاتصال:", err);
+      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي 🌸");
     } finally {
       setLoading(false);
     }
+  };
+
+  // وظائف أزرار الشات الإضافية
+  const handleFeatureNotImplemented = (feature) => {
+    alert(`خاصية ${feature} ستكون متاحة قريباً في التحديث القادم بإذن الله ✨`);
   };
 
   return (
@@ -76,6 +75,14 @@ const RaqqaFeelingsApp = () => {
       <header style={styles.header}>
         <h1 style={styles.title}>رقة ✨</h1>
         <p style={styles.subtitle}>محلل مشاعر المرأة المسلمة الشامل</p>
+        
+        {/* زر التحدث مع طبيب المشاعر الجديد */}
+        <button 
+          style={styles.doctorBtn} 
+          onClick={() => { setShowChat(true); setAiResponse("أهلاً بكِ في عيادة رقة النفسية.. كيف تشعرين اليوم؟"); }}
+        >
+          <Stethoscope size={20} /> تحدثي مع طبيب المشاعر الذكي
+        </button>
       </header>
 
       {!activeTab && (
@@ -103,7 +110,8 @@ const RaqqaFeelingsApp = () => {
                   <label style={styles.label}>{item}</label>
                   <input 
                     style={styles.inputField} 
-                    placeholder="صفي شعورك هنا..."
+                    placeholder="صفي شعورك بعمق..."
+                    value={inputs[item] || ""}
                     onChange={(e) => setInputs({...inputs, [item]: e.target.value})}
                   />
                 </div>
@@ -112,10 +120,10 @@ const RaqqaFeelingsApp = () => {
 
             <button 
               style={styles.actionBtn} 
-              onClick={handleProcess} 
+              onClick={() => handleProcess()} 
               disabled={loading || Object.keys(inputs).length === 0}
             >
-              {loading ? "جاري التحليل الإيماني..." : "تحليل المشاعر بالذكاء الصناعي ✨"}
+              {loading ? "جاري التحليل النفسي العميق..." : "تحليل المشاعر بالذكاء الصناعي ✨"}
             </button>
           </div>
         </div>
@@ -134,7 +142,7 @@ const RaqqaFeelingsApp = () => {
 
             <div style={styles.chatBody}>
               {loading ? (
-                <div style={styles.loadingPulse}>جاري استحضار الإجابة الإيمانية...</div>
+                <div style={styles.loadingPulse}>جاري استحضار الإجابة الإيمانية والنفسية...</div>
               ) : (
                 <>
                   <div style={styles.responseBox}>
@@ -143,7 +151,7 @@ const RaqqaFeelingsApp = () => {
                   
                   {history.length > 1 && (
                     <div style={styles.historySection}>
-                      <h4 style={styles.historyTitle}>الاستشارات السابقة:</h4>
+                      <h4 style={styles.historyTitle}>سجل الاستشفاء السابق:</h4>
                       {history.slice(1).map((h, i) => (
                         <div key={i} style={styles.historyItem}>
                           <div style={{flex: 1}}>{h.substring(0, 70)}...</div>
@@ -164,15 +172,26 @@ const RaqqaFeelingsApp = () => {
 
             <div style={styles.chatFooter}>
               <div style={styles.inputWrapper}>
-                <input style={styles.mainChatInput} placeholder="هل تريدين سؤال رقة عن شيء آخر؟" />
-                <button style={styles.sendBtn}><Send size={20} /></button>
+                <input 
+                  style={styles.mainChatInput} 
+                  placeholder="اسألي رقة عن أي وجع أو شعور..." 
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && chatInput && handleProcess(chatInput)}
+                />
+                <button 
+                  style={styles.sendBtn} 
+                  onClick={() => { if(chatInput) { handleProcess(chatInput); setChatInput(""); } }}
+                >
+                  <Send size={20} />
+                </button>
               </div>
               
               <div style={styles.chatToolbar}>
-                <button style={styles.toolBtnChat} title="كاميرا"><Camera size={22}/></button>
-                <button style={styles.toolBtnChat} title="تسجيل صوتي"><Mic size={22}/></button>
-                <button style={styles.toolBtnChat} title="إرفاق صورة"><Image size={22}/></button>
-                <button style={styles.toolBtnChat} onClick={() => setHistory([])} title="مسح السجل"><Trash2 size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("الكاميرا")} title="كاميرا"><Camera size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("التسجيل الصوتي")} title="تسجيل صوتي"><Mic size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("إرفاق صور")} title="إرفاق صورة"><Image size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => {setHistory([]); setAiResponse("تم مسح السجل بنجاح.");}} title="مسح السجل"><Trash2 size={22}/></button>
               </div>
             </div>
           </div>
@@ -188,9 +207,10 @@ const RaqqaFeelingsApp = () => {
 
 const styles = {
   container: { minHeight: '100vh', background: 'linear-gradient(to bottom, #fdf2f8, #ffffff)', padding: '20px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
-  header: { textAlign: 'center', marginBottom: '30px' },
-  title: { fontSize: '2.5rem', color: '#f06292', fontFamily: 'Amiri' },
-  subtitle: { color: '#888', fontStyle: 'italic' },
+  header: { textAlign: 'center', marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  title: { fontSize: '2.5rem', color: '#f06292', marginBottom: '5px' },
+  subtitle: { color: '#888', fontStyle: 'italic', marginBottom: '15px' },
+  doctorBtn: { background: '#f06292', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(240,98,146,0.3)' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', maxWidth: '1000px', margin: '0 auto' },
   iconCard: { background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(240,98,146,0.1)', transition: '0.3s' },
   iconLarge: { fontSize: '1.8rem', color: '#f06292', marginBottom: '10px' },
