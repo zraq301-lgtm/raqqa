@@ -1,224 +1,289 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Heart, 
-  Sparkles, 
-  Video, 
-  Activity, 
-  Moon, 
-  MessageCircle, 
-  Settings, 
-  User,
-  Flower2,
-  Gem,
-  LayoutDashboard,
-  Bell,
-  // الأيقونات الإضافية المطلوبة للواجهة
-  Flame, 
-  ShieldCheck, 
-  Send, 
-  Info, 
-  Lock, 
-  Eye, 
-  Zap, 
-  BookOpen, 
-  ChevronRight, 
-  X, 
-  PenTool, 
-  Save
+  Heart, MessageCircle, Camera, Mic, Trash2, Save, 
+  Send, ChevronRight, Star, ShieldCheck, Flame, 
+  Moon, Flower2, Sparkles, Brain, PlusCircle, X
 } from 'lucide-react';
 
-// --- القوائم الـ 10 الموسوعية للحميمية ---
-const INTIMACY_CATEGORIES = [
-  { id: 1, title: 'الود والاتصال العاطفي', icon: <Heart className="text-red-500"/>, items: ['لغة الحوار 🗣️', 'تبادل النظرات 👀', 'كلمات التقدير 💌', 'الهدايا الرمزية 🎁', 'الدعم وقت الأزمات 🤝', 'الضحك المشترك 😂', 'قضاء وقت خاص ☕', 'اللمس العفوي 🤚', 'الشعور بالأمان 🛡️', 'التسامح 🏳️', 'الإنصات العميق 🎧', 'المشاركة في الاهتمامات 🎨', 'الاحتواء النفسي 🫂', 'رسائل الشوق 📱', 'الدعم المعنوي 🌟'] },
-  { id: 2, title: 'لغة الجسد والتمهيد', icon: <Sparkles className="text-yellow-500"/>, items: ['القبلات العميقة 💋', 'الأحضان الدافئة 🫂', 'الملاطفة 🌸', 'لغة العيون ✨', 'الكلمات الهمسية 👂', 'التدليك الاسترخائي 💆‍♂️', 'النظافة الشخصية 🧼', 'التأنق للطرف الآخر 👗', 'العطور المثيرة 🧴', 'المداعبة الطويلة ⏳', 'التهيئة النفسية 🧘‍♀️', 'التلامس البصري 👀', 'لغة اليدين 🤝', 'الهمس العاطفي 🗣️', 'الابتسامة الجذابة 😊'] },
-  { id: 3, title: 'الصحة والتبادل الجنسي', icon: <Flame className="text-orange-600"/>, items: ['التوافق في الرغبة 🌡️', 'المبادرة المشتركة ⚡', 'استكشاف مناطق الإثارة 📍', 'التفاعل أثناء اللقاء 🔥', 'التعبير عن الاحتياجات 💬', 'الإشباع المتبادل ✅', 'طول مدة اللقاء ⏳', 'التناغم الحركي 💃', 'الجرأة المحببة 🦁', 'الاستجابة الجسدية 📈', 'التنفس المتناغم 🌬️', 'تلبية الرغبات 🎯', 'التحكم في الإيقاع 🕰️', 'التفاعل الصوتي 🔊', 'النشاط المشترك 🏃‍♂️'] },
-  { id: 4, title: 'النشوة وما بعدها', icon: <Zap className="text-purple-500"/>, items: ['الوصول للنشوة 🌟', 'التزامن العاطفي 💞', 'الحضن العميق بعد اللقاء 🫂', 'كلمات الحب بعد النشوة 🗣️', 'البقاء معاً لفترة طويلة 🧘‍♂️', 'مشاعر الرضا ✨', 'العناية بالطرف الآخر 🩹', 'الاسترخاء المشترك 💤', 'الحديث الهادئ 💬', 'الامتنان للطرف الآخر 🙌', 'الشعور بالسكينة 🌊', 'تعزيز الرابطة 🔗', 'الهدوء الجسدي 🍃', 'التقارب الروحي 🕊️', 'تبادل القبلات الرقيقة 😚'] },
-  { id: 5, title: 'أنواع الاستمتاع والابتكار', icon: <Moon className="text-indigo-400"/>, items: ['تغيير الأماكن 🏡', 'أوضاع جديدة مباحة 🔄', 'كسر الروتين 🔨', 'استخدام الروائح الذكية 🕯️', 'التفاعل السمعي 🔊', 'المفاجآت الجنسية 🎈', 'الإضاءة الخافتة 💡', 'الملابس التنكرية 🎭', 'الخيال المشترك 🌌', 'ألعاب زوجية مباحة 🎲', 'التغيير الزمني ⏰', 'الاستحمام المشترك 🚿', 'التدليل المتبادل 🍭', 'المغامرة العاطفية 🧭', 'تجديد العهد الحب 📜'] },
-  { id: 6, title: 'المحاذير والضوابط الشرعية', icon: <ShieldCheck className="text-green-600"/>, items: ['تجنب العلاقة أثناء الحيض 🚫', 'تجنب الإتيان من الدبر 🛑', 'احترام الخصوصية 🤐', 'تجنب العنف أو الإكراه ❌', 'الالتزام بالستر 🧺', 'غض البصر عن المحرمات 👁️', 'صون أسرار الفراش 🔒', 'التطهر بعد العلاقة 🚿', 'مراعاة الصحة البدنية 💊', 'الالتزام بالحلال 💍', 'تجنب الكلمات البذيئة ❌', 'احترام رغبة الطرف الآخر 🤝', 'تجنب التصوير أو التوثيق 📵', 'الحياء المتبادل 🙈', 'تقوى الله في الخلوة 🕋'] },
-  { id: 7, title: 'الصحة الجنسية والفسيولوجية', icon: <Activity className="text-red-600"/>, items: ['القدرة البدنية 💪', 'عدم وجود آلام 💊', 'توازن الهرمونات 🧬', 'ممارسة الرياضة 🏋️‍♂️', 'التغذية الداعمة 🥑', 'جودة النوم 😴', 'الابتعاد عن التدخين 🚭', 'شرب الماء الكافي 💧', 'الفحوصات الدورية 🩺', 'تجنب السمنة المفرطة ⚖️', 'الراحة النفسية 🧘‍♂️', 'النشاط اليومي 🚶‍♂️', 'الوعي بالدورة الشهرية 🩸', 'تجنب المنشطات الضارة 🚫', 'القوة الحيوية 🔋'] },
-  { id: 8, title: 'العوائق والمشكلات', icon: <Info className="text-gray-500"/>, items: ['الضغوط النفسية 🌪️', 'انشغال البال بالأبناء 🧒', 'التعب الجسدي 🔋', 'الملل الزوجي 💤', 'اضطراب صورة الجسد 🪞', 'مشكلات العمل 💼', 'التدخلات العائلية 🏠', 'نقص الثقافة الجنسية 📚', 'سرعة القذف أو البرود ⌛', 'الخلافات المستمرة 🗣️', 'إدمان الشاشات 📱', 'انعدام المبادرة 😶', 'الروتين القاتل 🔄', 'الخوف من الفشل 😨', 'غياب الحوار الصريح 🤐'] },
-  { id: 9, title: 'الثقافة الجنسية والوعي', icon: <BookOpen className="text-amber-600"/>, items: ['فهم سيكولوجية الرجل 🧠', 'فهم سيكولوجية المرأة 🌸', 'القراءة في كتب التنمية 📚', 'الوعي بنقاط المتعة 🎯', 'تعلم لغات الحب 💌', 'فهم التغيرات العمرية 🕰️', 'الوعي بالاحتياجات النفسية 💡', 'الثقافة الشرعية للحياة 💍', 'حضور دورات مختصة 🎓', 'الصدق في التعبير 🗣️', 'تطوير المهارات العاطفية ✨', 'فهم دور الهرمونات 🧬', 'الوعي بلغة الجسد 🕺', 'البحث عن المعلومة الصحيحة ✅', 'تصحيح المفاهيم الخاطئة ❌'] },
-  { id: 10, title: 'الاطمئنان الروحي', icon: <Flower2 className="text-blue-500"/>, items: ['الدعاء قبل العلاقة 🤲', 'الغسل المشترك 🚿', 'شكر الله على السكن 🛐', 'نية الإعفاف والاحتساب 💎', 'الاستغفار 📿', 'قراءة القرآن في البيت 📖', 'قيام الليل معاً 🌌', 'الذكر الدائم 🕊️', 'الإحسان للطرف الآخر 🌟', 'بناء بيت مسلم 🏡', 'التوكل على الله 🎯', 'الرضا بالنصيب ✅', 'البركة في الذرية 🐣', 'حب الله ورسوله ❤️', 'الوفاء بالعهود 📜'] }
-];
+// --- Styles (CSS-in-JS) ---
+const styles = {
+  container: {
+    backgroundColor: '#fffaf0',
+    minHeight: '100vh',
+    fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+    color: '#4a0e0e',
+    direction: 'rtl',
+    padding: '20px'
+  },
+  header: {
+    background: 'linear-gradient(135deg, #800020 0%, #b03060 100%)',
+    color: '#d4af37',
+    padding: '20px',
+    borderRadius: '15px',
+    textAlign: 'center',
+    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+    marginBottom: '30px',
+    position: 'relative'
+  },
+  grid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: '20px',
+    marginBottom: '40px'
+  },
+  card: {
+    background: '#fff',
+    border: '1px solid #d4af37',
+    borderRadius: '12px',
+    padding: '20px',
+    textAlign: 'center',
+    cursor: 'pointer',
+    transition: 'transform 0.3s ease',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '10px'
+  },
+  modal: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000
+  },
+  modalContent: {
+    background: 'white',
+    padding: '30px',
+    borderRadius: '20px',
+    width: '90%',
+    maxWidth: '600px',
+    maxHeight: '80vh',
+    overflowY: 'auto',
+    position: 'relative'
+  },
+  chatButton: {
+    position: 'fixed',
+    top: '20px',
+    left: '20px',
+    backgroundColor: '#d4af37',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '50%',
+    width: '60px',
+    height: '60px',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    cursor: 'pointer',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+    zIndex: 999
+  },
+  chatWindow: {
+    position: 'fixed',
+    bottom: '20px',
+    left: '20px',
+    width: '350px',
+    height: '500px',
+    backgroundColor: '#fff',
+    borderRadius: '15px',
+    boxShadow: '0 5px 25px rgba(0,0,0,0.2)',
+    display: 'flex',
+    flexDirection: 'column',
+    zIndex: 1001,
+    border: '2px solid #800020'
+  },
+  input: {
+    width: '100%',
+    padding: '10px',
+    margin: '10px 0',
+    borderRadius: '8px',
+    border: '1px solid #ddd'
+  },
+  button: {
+    backgroundColor: '#800020',
+    color: 'white',
+    padding: '10px 20px',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
+  }
+};
 
-const RaqqaHarmonyApp = () => {
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [activeCategory, setActiveCategory] = useState(null);
+const MarriageConsultant = () => {
+  const [activeList, setActiveList] = useState(null);
+  const [formData, setFormData] = useState({});
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [userInput, setUserInput] = useState("");
+  const [savedResponses, setSavedResponses] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [aiReport, setAiReport] = useState("");
-  const [note, setNote] = useState("");
-  const [secretDiary, setSecretDiary] = useState(""); // حالة مفكرة الأسرار
 
-  const handleAnalyze = async () => {
-    if (selectedItems.length === 0) return alert("يرجى اختيار بعض المدخلات للتحليل");
+  // القوائم الـ 10 المطلوبة
+  const categories = [
+    { id: 1, title: "الود والاتصال العاطفي", icon: <Heart color="#800020" />, items: ["لغة الحوار 🗣️", "تبادل النظرات 👀", "كلمات التقدير 💌", "الهدايا الرمزية 🎁", "الدعم وقت الأزمات 🤝", "الضحك المشترك 😂", "قضاء وقت خاص ☕", "اللمس العفوي 🤚", "الشعور بالأمان 🛡️", "التسامح 🏳️"] },
+    { id: 2, title: "لغة الجسد والتمهيد", icon: <Flower2 color="#800020" />, items: ["القبلات العميقة 💋", "الأحضان الدافئة 🫂", "الملاطفة 🌸", "لغة العيون ✨", "الكلمات الهمسية 👂", "التدليك الاسترخائي 💆‍♂️", "النظافة الشخصية 🧼", "التأنق 👗"] },
+    { id: 3, title: "الصحة والتبادل الجنسي", icon: <Flame color="#800020" />, items: ["التوافق في الرغبة 🌡️", "المبادرة المشتركة ⚡", "مناطق الإثارة 📍", "التفاعل 🔥", "التعبير عن الاحتياجات 💬", "الإشباع ✅", "طول المدة ⏳"] },
+    { id: 4, title: "النشوة وما بعدها", icon: <Star color="#800020" />, items: ["الوصول للنشوة 🌟", "التزامن العاطفي 💞", "الحضن بعد اللقاء 🫂", "كلمات الحب 🗣️", "البقاء معاً 🧘‍♂️", "مشاعر الرضا ✨"] },
+    { id: 5, title: "الابتكار والنشاط", icon: <Sparkles color="#800020" />, items: ["تغيير الأماكن 🏡", "أوضاع جديدة 🔄", "كسر الروتين 🔨", "الروائح والموسيقى 🕯️", "التفاعل السمعي 🔊", "المفاجآت 🎈"] },
+    { id: 6, title: "الضوابط الشرعية", icon: <ShieldCheck color="#800020" />, items: ["تجنب الحيض 🚫", "تجنب الدبر 🛑", "احترام الخصوصية 🤐", "تجنب الإكراه ❌", "الالتزام بالستر 🧺"] },
+    { id: 7, title: "الصحة الفسيولوجية", icon: <PlusCircle color="#800020" />, items: ["القدرة البدنية 💪", "عدم وجود آلام 💊", "توازن الهرمونات 🧬", "ممارسة الرياضة 🏋️‍♂️", "التغذية 🥑"] },
+    { id: 8, title: "العوائق والمشكلات", icon: <Brain color="#800020" />, items: ["الضغوط النفسية 🌪️", "انشغال البال بالأبناء 🧒", "التعب الجسدي 🔋", "الملل الزوجي 💤", "صورة الجسد 🪞"] },
+    { id: 9, title: "الثقافة والوعي", icon: <MessageCircle color="#800020" />, items: ["سيكولوجية الرجل 🧠", "سيكولوجية المرأة 🌸", "القراءة 📚", "نقاط المتعة 🎯"] },
+    { id: 10, title: "الاطمئنان الروحي", icon: <Moon color="#800020" />, items: ["الدعاء قبل العلاقة 🤲", "الغسل المشترك 🚿", "شكر الله 🛐", "نية الإعفاف 💎"] },
+  ];
+
+  // وظيفة الإرسال للذكاء الاصطناعي
+  const askAI = async (content) => {
     setLoading(true);
     try {
-      // حفظ في Neon DB
-      await fetch('/api/save-health', {
+      const response = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          user_id: "user_harmony_99",
-          category: "تحليل حميمية وتناغم",
-          value: selectedItems.length.toString(),
-          note: `المدخلات: ${selectedItems.join(', ')}. ملاحظات: ${note}. المفكرة: ${secretDiary}`
+          prompt: `أنت خبير علاقات زوجية. حلل المدخلات التالية وقدم نصيحة لزيادة المتعة والسعادة الزوجية وفق الضوابط الشرعية: ${content}`
         })
       });
-
-      // تحليل AI
-      const aiRes = await fetch('/api/raqqa-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `أنتِ مستشارة علاقات زوجية خبيرة بلمسة إيمانية. حللي هذه المدخلات: (${selectedItems.join(', ')}). ملاحظات إضافية: ${note}. ومن مفكرة الأسرار: ${secretDiary}. قدمي تقريراً دافئاً يشمل نقاط القوة، فجوات العلاقة، توصيات للمتعة والابتكار، ونصيحة إيمانية.`
-        })
-      });
-      const data = await aiRes.json();
-      setAiReport(data.reply);
+      const data = await response.json();
+      const aiReply = data.reply || "شكراً لمشاركتك. استمر في تعزيز المودة والرحمة بينكما.";
+      
+      setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
+      saveToDB(content, aiReply); // حفظ في قاعدة البيانات
     } catch (error) {
-      setAiReport("عذراً رفيقتي، حدث خطأ في التحليل.");
-    } finally {
-      setLoading(false);
-      setActiveCategory(null);
+      console.error("AI Error:", error);
     }
+    setLoading(false);
   };
 
-  const saveDiary = async () => {
-    alert("تم حفظ أسراركِ في المفكرة بأمان وخصوصية تامة ✨");
-    // يمكن هنا إضافة استدعاء API لحفظ المفكرة منفصلة إذا رغبتِ
+  // وظيفة الحفظ في قاعدة بيانات نيون
+  const saveToDB = async (input, output) => {
+    try {
+      await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
+        method: 'POST',
+        body: JSON.stringify({ input, output, timestamp: new Date() })
+      });
+    } catch (e) { console.error("DB Error", e); }
   };
 
-  const toggleItem = (item) => {
-    setSelectedItems(prev => prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]);
+  const handleSendMessage = () => {
+    if (!userInput) return;
+    setMessages([...messages, { role: 'user', text: userInput }]);
+    askAI(userInput);
+    setUserInput("");
   };
 
   return (
-    <div className="min-h-screen bg-[#fdf2f2] text-right font-['Tajawal']" dir="rtl">
-      
-      <nav className="fixed right-0 top-0 h-full w-16 bg-[#4a0e0e] flex flex-col items-center py-8 space-y-8 z-50 shadow-2xl">
-        <div className="text-gold-400 p-2"><Lock size={24} className="text-amber-400"/></div>
-        <div className="w-10 h-10 bg-red-900 rounded-full flex items-center justify-center text-white cursor-pointer"><Heart size={20}/></div>
-        <div className="mt-auto p-4 text-white/30"><Settings size={20}/></div>
-      </nav>
+    <div style={styles.container}>
+      {/* زر الشات العلوي */}
+      <button style={styles.chatButton} onClick={() => setShowChat(!showChat)}>
+        <MessageCircle size={30} />
+      </button>
 
-      <main className="mr-16 p-6 lg:p-12">
-        <header className="mb-12 flex flex-col md:flex-row justify-between items-center gap-6 bg-white/40 p-8 rounded-[40px] border border-white/60 shadow-xl backdrop-blur-md">
-          <div>
-            <h1 className="text-4xl font-black text-[#4a0e0e] mb-2 font-['Amiri']">مستشار الحميمية <span className="text-red-600 font-light italic">والتناغم الزوجي</span></h1>
-            <p className="text-gray-600">خصوصية تامة لتحليل وتطوير العلاقة المقدسة ومفكرة أسراركِ الخاصة ✨</p>
+      <header style={styles.header}>
+        <h1>The Intimacy & Harmony Analyzer</h1>
+        <p>مستشارك الذكي لعلاقة زوجية ملؤها المودة والرحمة</p>
+      </header>
+
+      {/* القوائم الرئيسية */}
+      <div style={styles.grid}>
+        {categories.map(cat => (
+          <div key={cat.id} style={styles.card} onClick={() => setActiveList(cat)}>
+            {cat.icon}
+            <h3 style={{fontSize: '1.1rem'}}>{cat.title}</h3>
+            <span style={{fontSize: '0.8rem', color: '#888'}}>اضغط للتقييم</span>
           </div>
-          <div className="flex gap-4">
-            <div className="px-6 py-3 bg-[#4a0e0e] text-white rounded-full font-bold flex items-center gap-2 shadow-lg hover:bg-red-900 transition-colors">
-              <Lock size={18} className="text-amber-400"/> مشفر تماماً
-            </div>
-          </div>
-        </header>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-7 space-y-6">
-            
-            {/* مفكرة الأسرار الزوجية */}
-            <div className="bg-white/80 backdrop-blur-md p-8 rounded-[40px] border-2 border-dashed border-red-200 shadow-sm relative overflow-hidden group">
-               <div className="flex items-center gap-3 mb-4 text-[#4a0e0e]">
-                 <PenTool size={22} className="group-hover:rotate-12 transition-transform" />
-                 <h3 className="text-xl font-bold">مفكرة الأسرار الزوجية</h3>
-               </div>
-               <textarea 
-                  value={secretDiary}
-                  onChange={(e) => setSecretDiary(e.target.value)}
-                  className="w-full bg-red-50/30 border-none p-4 rounded-2xl shadow-inner outline-none focus:ring-2 ring-red-100 min-h-[150px] font-['Amiri'] text-lg"
-                  placeholder="دوني هنا مشاعركِ الخاصة، لحظاتكما الجميلة، أو ما يقلقكِ بصراحة تامة... (محفوظة بخصوصية)"
-               />
-               <button onClick={saveDiary} className="mt-4 flex items-center gap-2 text-red-700 font-bold hover:text-red-900 transition-colors">
-                 <Save size={18}/> حفظ في المفكرة المشفرة
-               </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {INTIMACY_CATEGORIES.map((cat) => (
-                <button 
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat)}
-                  className="p-6 bg-white/80 backdrop-blur-sm border border-white rounded-[35px] shadow-sm hover:shadow-xl hover:translate-y-[-5px] transition-all text-right flex items-center justify-between group"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 bg-red-50 rounded-2xl group-hover:scale-110 transition-transform">{cat.icon}</div>
-                    <span className="text-lg font-bold text-gray-800">{cat.title}</span>
-                  </div>
-                  <ChevronRight className="text-gray-300 group-hover:text-red-400 transition-colors"/>
-                </button>
-              ))}
-            </div>
-
-            <button 
-              onClick={handleAnalyze}
-              className="w-full py-6 bg-gradient-to-r from-[#4a0e0e] to-red-800 text-white rounded-[35px] font-black text-2xl shadow-2xl hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3"
-            >
-              {loading ? "رقة تحلل بياناتكما..." : <><Flame fill="currentColor" size={24}/> ابدأي التحليل والحلول</>}
-            </button>
-          </div>
-
-          <div className="lg:col-span-5">
-            <div className="bg-[#4a0e0e] text-white rounded-[50px] p-8 shadow-2xl min-h-[600px] flex flex-col relative overflow-hidden border-4 border-red-900/50">
-              <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/10">
-                <Sparkles className="text-amber-400" size={24}/>
-                <h3 className="text-xl font-bold font-['Amiri']">رؤية رقة للتناغم السعيد</h3>
+      {/* مودال إدخال البيانات */}
+      {activeList && (
+        <div style={styles.modal}>
+          <div style={styles.modalContent}>
+            <button onClick={() => setActiveList(null)} style={{position:'absolute', top:10, left:10, border: 'none', background:'none', cursor:'pointer'}}><X /></button>
+            <h2 style={{color: '#800020', marginBottom: '20px'}}>{activeList.title}</h2>
+            {activeList.items.map((item, index) => (
+              <div key={index} style={{display:'flex', alignItems:'center', marginBottom: '10px', gap: '10px'}}>
+                <input type="checkbox" id={`item-${index}`} style={{width:'20px', height:'20px'}} />
+                <label htmlFor={`item-${index}`}>{item}</label>
               </div>
-
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                {aiReport ? (
-                  <div className="space-y-6 animate-fade-in leading-relaxed text-lg font-['Amiri']">
-                    {aiReport.split('\n').map((line, i) => (
-                      <p key={i} className="text-gray-200">{line}</p>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center text-center opacity-40 space-y-4">
-                    <MessageCircle size={60}/>
-                    <p className="text-lg italic">اكتبي في المفكرة واختاري من القوائم لتبدأ رقة في رسم خارطة السعادة لكما..</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            ))}
+            <textarea 
+              placeholder="ملاحظات إضافية..." 
+              style={styles.input} 
+              onBlur={(e) => setFormData({...formData, [activeList.id]: e.target.value})}
+            ></textarea>
+            <button style={styles.button} onClick={() => {
+              askAI(`تحليل للقائمة: ${activeList.title}`);
+              setShowChat(true);
+              setActiveList(null);
+            }}>إرسال للتحليل الذكي</button>
           </div>
         </div>
+      )}
 
-        {activeCategory && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-4">
-            <div className="bg-white rounded-[45px] w-full max-w-2xl shadow-2xl overflow-hidden border border-white/20">
-              <div className="bg-[#4a0e0e] p-8 text-white flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 bg-white/10 rounded-2xl">{activeCategory.icon}</div>
-                  <h2 className="text-2xl font-bold">{activeCategory.title}</h2>
-                </div>
-                <button onClick={() => setActiveCategory(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X/></button>
-              </div>
-
-              <div className="p-8 grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto">
-                {activeCategory.items.map(item => (
-                  <button 
-                    key={item}
-                    onClick={() => toggleItem(item)}
-                    className={`p-4 rounded-2xl text-sm font-bold transition-all text-center border ${
-                      selectedItems.includes(item) 
-                        ? 'bg-red-500 text-white border-red-400 shadow-lg' 
-                        : 'bg-gray-50 text-gray-600 border-gray-100 hover:bg-red-50 hover:text-red-700'
-                    }`}
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-8 bg-gray-50 flex justify-end">
-                <button onClick={() => setActiveCategory(null)} className="px-8 py-3 bg-[#4a0e0e] text-white rounded-full font-bold shadow-lg">إتمام الاختيار</button>
-              </div>
-            </div>
+      {/* نافذة الشات */}
+      {showChat && (
+        <div style={styles.chatWindow}>
+          <div style={{background: '#800020', color: '#fff', padding: '10px', display:'flex', justifyContent:'space-between', borderRadius: '13px 13px 0 0'}}>
+            <span>مستشارك الخاص</span>
+            <button onClick={() => setShowChat(false)} style={{color:'#fff', background:'none', border:'none'}}>X</button>
           </div>
-        )}
-      </main>
+          
+          <div style={{flex: 1, overflowY: 'auto', padding: '10px', display:'flex', flexDirection:'column', gap:'10px'}}>
+            {messages.map((m, i) => (
+              <div key={i} style={{
+                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                backgroundColor: m.role === 'user' ? '#e6ccb2' : '#f0f0f0',
+                padding: '8px 12px',
+                borderRadius: '10px',
+                maxWidth: '80%',
+                fontSize: '0.9rem'
+              }}>
+                {m.text}
+              </div>
+            ))}
+            {loading && <div style={{fontSize:'0.7rem'}}>جاري التحليل...</div>}
+          </div>
+
+          {/* أدوات الميديا */}
+          <div style={{display:'flex', justifyContent:'space-around', padding:'5px', borderTop:'1px solid #eee'}}>
+            <button title="فتح الكاميرا"><Camera size={18} /></button>
+            <button title="رفع صورة"><Save size={18} /></button>
+            <button title="تسجيل صوتي"><Mic size={18} /></button>
+            <button title="حفظ" onClick={() => setSavedResponses([...savedResponses, messages[messages.length-1]])}><Star size={18} /></button>
+            <button title="مسح" onClick={() => setMessages([])}><Trash2 size={18} /></button>
+          </div>
+
+          <div style={{padding: '10px', display:'flex', gap: '5px'}}>
+            <input 
+              style={{...styles.input, margin:0}} 
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder="اكتب هنا..."
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <button onClick={handleSendMessage} style={{background:'#d4af37', border:'none', borderRadius:'5px', padding:'0 10px'}}><Send size={18} color="#fff" /></button>
+          </div>
+        </div>
+      )}
+
+      {/* قائمة الردود المحفوظة */}
+      {savedResponses.length > 0 && (
+        <div style={{marginTop: '30px', background: '#fff', padding: '20px', borderRadius: '10px', border: '1px solid #d4af37'}}>
+          <h3><Star style={{display:'inline'}} /> الردود المحفوظة</h3>
+          {savedResponses.map((r, i) => (
+            <div key={i} style={{padding: '10px', borderBottom: '1px dashed #ccc'}}>
+              {r?.text.substring(0, 100)}...
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
-export default RaqqaHarmonyApp;
+export default MarriageConsultant;
