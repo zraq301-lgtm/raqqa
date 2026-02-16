@@ -4,6 +4,8 @@ import {
   Send, Star, ShieldCheck, Flame, 
   Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip
 } from 'lucide-react';
+// استيراد CapacitorHttp لتجاوز مشكلة الـ CORS في الـ APK
+import { CapacitorHttp } from '@capacitor/core';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -35,51 +37,53 @@ const MarriageApp = () => {
     { id: "spiritual", title: "الاطمئنان الروحي", icon: <Moon size={24} />, items: ["دعاء 🤲", "غسل 🚿", "شكر 🛐", "نية 💎"] }
   ];
 
-  // 1. وظيفة الذكاء الاصطناعي (محدثة لضمان الاتصال)
-  const askRaqqaAI = async (text) => {
+  // 1. دالة طلب الذكاء الاصطناعي باستخدام CapacitorHttp لتجاوز CORS
+  const handleAskAI = async (text) => {
     if (!text.trim()) return;
+    
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setLoading(true);
     setUserInput("");
 
-    try {
-      const response = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text }) // ملف raqqa-ai (2).js يتوقع prompt
-      });
+    const options = {
+      url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      headers: { 'Content-Type': 'application/json' },
+      data: { prompt: text }, // يطابق الحقل المطلوب في raqqa-ai (2).js
+    };
 
-      if (!response.ok) throw new Error('فشل الاتصال بالسيرفر');
-      
-      const data = await response.json();
-      // ملف raqqa-ai (2).js يرجع النتيجة في حقل reply
-      setMessages(prev => [...prev, { role: 'ai', text: data.reply || "عذراً رفيقتي، رقة لم تجد إجابة في مكتبتها." }]);
+    try {
+      const response = await CapacitorHttp.post(options);
+      // استلام الرد من حقل reply كما هو في Backend
+      const aiReply = response.data.reply || "عذراً رفيقتي، لم أستطع الرد حالياً.";
+      setMessages(prev => [...prev, { role: 'ai', text: aiReply }]);
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'ai', text: "يا رفيقتي، هناك مشكلة في الشبكة أو السيرفر. تأكدي من إعدادات Vercel." }]);
+      console.error("خطأ في الاتصال:", error);
+      setMessages(prev => [...prev, { role: 'ai', text: "عذراً رفيقتي، واجهت مشكلة في الاتصال بالسيرفر." }]);
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. وظيفة حفظ البيانات في نيون (تستخدم الحقول الصحيحة)
-  const saveToNeon = async (categoryTitle, selectedItemsList) => {
+  // 2. دالة حفظ البيانات الصحية باستخدام CapacitorHttp
+  const handleSaveHealth = async (categoryTitle, selectedItemsList) => {
+    const options = {
+      url: 'https://raqqa-v6cd.vercel.app/api/save-health',
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        user_id: 1, 
+        category: categoryTitle,
+        value: "تحليل علاقة",
+        note: `العناصر المختارة: ${selectedItemsList.join(' - ')}`
+      },
+    };
+
     try {
-      const response = await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          user_id: 1, // ملف save-health (1).js يتوقع user_id
-          category: categoryTitle, // يتوقع category
-          value: "تحليل علاقة", // يتوقع value
-          note: `المختار: ${selectedItemsList.join(', ')}` // يتوقع note
-        })
-      });
-      const resData = await response.json();
-      if (resData.success) {
-        console.log("تم الحفظ بنجاح:", resData.advice); // الحقل advice قادم من ملف save-health (1).js
+      const response = await CapacitorHttp.post(options);
+      if (response.data.success) {
+        console.log("تم الحفظ بنجاح:", response.data.advice);
       }
-    } catch (e) {
-      console.error("فشل الحفظ في نيون:", e);
+    } catch (error) {
+      console.error("خطأ في حفظ البيانات:", error);
     }
   };
 
@@ -90,8 +94,8 @@ const MarriageApp = () => {
     const promptText = `أنتِ مستشارة رقة. حللي هذه البيانات من قائمة ${cat.title}: (${selected.join('، ')}). قدمي نصيحة دافئة للمتعة والسعادة.`;
     
     setShowChat(true);
-    askRaqqaAI(promptText);
-    saveToNeon(cat.title, selected);
+    handleAskAI(promptText);
+    handleSaveHealth(cat.title, selected);
     setActiveList(null);
   };
 
@@ -101,7 +105,6 @@ const MarriageApp = () => {
         <h1 style={{ margin: 0, fontSize: '1.2rem' }}>مستشارة رقة للسعادة الزوجية</h1>
       </header>
 
-      {/* زر الشات العائم */}
       <button onClick={() => setShowChat(true)} style={{ position: 'fixed', bottom: '25px', left: '25px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '60px', height: '60px', zIndex: 100, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
         <Sparkles color="#800020" size={30} />
       </button>
@@ -134,7 +137,7 @@ const MarriageApp = () => {
                 </button>
               ))}
             </div>
-            <button onClick={() => handleAnalysis(activeList)} style={{ width: '100%', marginTop: '20px', padding: '15px', background: '#800020', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>تحليل وحفظ في نيون</button>
+            <button onClick={() => handleAnalysis(activeList)} style={{ width: '100%', marginTop: '20px', padding: '15px', background: '#800020', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>تحليل بالذكاء وحفظ البيانات</button>
           </div>
         </div>
       )}
@@ -152,7 +155,7 @@ const MarriageApp = () => {
                 {m.text}
               </div>
             ))}
-            {loading && <div style={{ color: '#800020', fontSize: '0.8rem', textAlign: 'center' }}>رقة تراجع مكتبتها الخاصة... 🖋️</div>}
+            {loading && <div style={{ color: '#800020', fontSize: '0.8rem', textAlign: 'center' }}>رقة تراجع مكتبتها... 🖋️</div>}
             <div ref={messagesEndRef} />
           </div>
 
@@ -164,8 +167,8 @@ const MarriageApp = () => {
           </div>
 
           <div style={{ padding: '10px 15px 30px', background: '#fff', display: 'flex', gap: '12px' }}>
-            <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, padding: '14px 20px', borderRadius: '30px', border: '1px solid #ddd', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && askRaqqaAI(userInput)} />
-            <button onClick={() => askRaqqaAI(userInput)} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={22} color="#800020" /></button>
+            <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, padding: '14px 20px', borderRadius: '30px', border: '1px solid #ddd', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && handleAskAI(userInput)} />
+            <button onClick={() => handleAskAI(userInput)} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={22} color="#800020" /></button>
           </div>
         </div>
       )}
