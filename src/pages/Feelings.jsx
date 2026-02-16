@@ -37,7 +37,7 @@ const RaqqaFeelingsApp = () => {
       .join(", ");
 
     try {
-      // 1. الحفظ في Neon DB [cite: 9]
+      // 1. الحفظ في Neon DB
       await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ const RaqqaFeelingsApp = () => {
         })
       });
 
-      // 2. التحليل بواسطة Raqqa AI [cite: 11]
+      // 2. التحليل بواسطة Raqqa AI
       const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,15 +59,15 @@ const RaqqaFeelingsApp = () => {
       });
 
       const data = await aiRes.json();
-      const responseText = data.message || data.reply; [cite: 12]
+      const responseText = data.message || data.reply || "شكراً لمشاركتكِ مشاعركِ يا رفيقتي.";
       
-      setAiResponse(responseText); [cite: 13]
-      setHistory(prev => [responseText, ...prev]); [cite: 14]
+      setAiResponse(responseText);
+      setHistory(prev => [responseText, ...prev]);
 
     } catch (err) {
-      setAiResponse("حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸"); [cite: 14]
+      setAiResponse("حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸");
     } finally {
-      setLoading(false); [cite: 15]
+      setLoading(false);
     }
   };
 
@@ -97,7 +97,6 @@ const RaqqaFeelingsApp = () => {
               <X style={{cursor: 'pointer'}} onClick={() => {setActiveTab(null); setInputs({});}} />
             </div>
 
-            {/* تم تعديل الحاوية هنا لتكون قائمة طويلة تحت بعضها مع تمرير داخلي */}
             <div style={styles.scrollableInputList}>
               {activeTab.items.map((item, idx) => (
                 <div key={idx} style={styles.inputRowFull}>
@@ -196,20 +195,14 @@ const styles = {
   iconCard: { background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(240,98,146,0.1)', transition: '0.3s' },
   iconLarge: { fontSize: '1.8rem', color: '#f06292', marginBottom: '10px' },
   iconTitle: { fontWeight: 'bold', color: '#444', fontSize: '0.9rem' },
-  
   fullOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '15px' },
   activeContent: { width: '100%', maxWidth: '500px', maxHeight: '90vh', background: 'white', borderRadius: '25px', padding: '25px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
-  
-  // القائمة الطويلة للمدخلات
   scrollableInputList: { flex: 1, overflowY: 'auto', marginBottom: '20px', paddingRight: '5px' },
   inputRowFull: { display: 'flex', flexDirection: 'column', marginBottom: '15px' },
   label: { fontSize: '0.85rem', color: '#f06292', marginBottom: '6px', fontWeight: 'bold' },
   inputField: { padding: '12px', borderRadius: '12px', border: '1px solid #fce4ec', background: '#fff9f9', outline: 'none' },
-  
   actionBtn: { width: '100%', padding: '14px', borderRadius: '50px', border: 'none', background: '#f06292', color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 'bold' },
-  
-  // صفحة الشات
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 200, display: 'flex', flexDirection: 'column' },
   chatContainer: { height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' },
   chatHeader: { padding: '15px 20px', borderBottom: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
@@ -221,7 +214,6 @@ const styles = {
   sendBtn: { background: '#f06292', color: 'white', border: 'none', width: '45px', height: '45px', borderRadius: '50%', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
   chatToolbar: { display: 'flex', gap: '25px', justifyContent: 'center' },
   toolBtnChat: { background: 'none', border: 'none', color: '#f06292', cursor: 'pointer', opacity: 0.8 },
-  
   historySection: { marginTop: '30px', borderTop: '1px dashed #eee', paddingTop: '20px' },
   historyTitle: { color: '#f06292', fontSize: '0.9rem', marginBottom: '12px' },
   historyItem: { display: 'flex', alignItems: 'center', padding: '12px', background: '#fff', borderRadius: '12px', marginBottom: '10px', fontSize: '0.8rem', color: '#777', border: '1px solid #f9f9f9' },
