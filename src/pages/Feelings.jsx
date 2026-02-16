@@ -12,7 +12,7 @@ const RaqqaFeelingsApp = () => {
   const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
-  const [showChat, setShowChat] = useState(false); // حالة للتحكم في ظهور صفحة الشات الكاملة
+  const [showChat, setShowChat] = useState(false);
 
   const categories = [
     { id: 1, title: "المشاعر الإيمانية", icon: <Sparkles />, items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "حلاوة الإيمان 🍯", "الرضا بالقضاء ✅", "حسن الظن بالله 🌈"] },
@@ -29,7 +29,7 @@ const RaqqaFeelingsApp = () => {
 
   const handleProcess = async () => {
     setLoading(true);
-    setShowChat(true); // فتح صفحة الشات عند بدء المعالجة
+    setShowChat(true); 
     
     const summary = Object.entries(inputs)
       .filter(([k, v]) => v)
@@ -37,7 +37,7 @@ const RaqqaFeelingsApp = () => {
       .join(", ");
 
     try {
-      // 1. الحفظ في Neon DB - تسجيل المدخلات والمشاعر
+      // 1. الحفظ في Neon DB [cite: 9]
       await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +49,7 @@ const RaqqaFeelingsApp = () => {
         })
       });
 
-      // 2. التحليل بواسطة Raqqa AI
+      // 2. التحليل بواسطة Raqqa AI [cite: 11]
       const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,15 +59,15 @@ const RaqqaFeelingsApp = () => {
       });
 
       const data = await aiRes.json();
-      const responseText = data.message || data.reply;
+      const responseText = data.message || data.reply; [cite: 12]
       
-      setAiResponse(responseText);
-      setHistory(prev => [responseText, ...prev]);
+      setAiResponse(responseText); [cite: 13]
+      setHistory(prev => [responseText, ...prev]); [cite: 14]
 
     } catch (err) {
-      setAiResponse("حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸");
+      setAiResponse("حدث خطأ في الاتصال، حاولي ثانية يا رفيقتي 🌸"); [cite: 14]
     } finally {
-      setLoading(false);
+      setLoading(false); [cite: 15]
     }
   };
 
@@ -78,7 +78,6 @@ const RaqqaFeelingsApp = () => {
         <p style={styles.subtitle}>محلل مشاعر المرأة المسلمة الشامل</p>
       </header>
 
-      {/* عرض الشبكة الرئيسية للأقسام */}
       {!activeTab && (
         <div style={styles.grid}>
           {categories.map(cat => (
@@ -90,7 +89,6 @@ const RaqqaFeelingsApp = () => {
         </div>
       )}
 
-      {/* واجهة إدخال البيانات للقسم المختار */}
       {activeTab && !showChat && (
         <div style={styles.fullOverlay}>
           <div style={styles.activeContent}>
@@ -99,9 +97,10 @@ const RaqqaFeelingsApp = () => {
               <X style={{cursor: 'pointer'}} onClick={() => {setActiveTab(null); setInputs({});}} />
             </div>
 
-            <div style={styles.inputList}>
+            {/* تم تعديل الحاوية هنا لتكون قائمة طويلة تحت بعضها مع تمرير داخلي */}
+            <div style={styles.scrollableInputList}>
               {activeTab.items.map((item, idx) => (
-                <div key={idx} style={styles.inputRow}>
+                <div key={idx} style={styles.inputRowFull}>
                   <label style={styles.label}>{item}</label>
                   <input 
                     style={styles.inputField} 
@@ -123,21 +122,20 @@ const RaqqaFeelingsApp = () => {
         </div>
       )}
 
-      {/* صفحة الشات الكاملة - تظهر بعد الضغط على تحليل */}
       {showChat && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatContainer}>
             <div style={styles.chatHeader}>
               <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                <Sparkles color="#f06292" />
-                <h3 style={{margin: 0, color: '#f06292'}}>محراب رقة للدردشة</h3>
+                <Sparkles color="#f06292" size={20} />
+                <h3 style={{margin: 0, color: '#f06292', fontSize: '1.1rem'}}>محراب رقة للدردشة</h3>
               </div>
               <X style={{cursor: 'pointer'}} onClick={() => setShowChat(false)} />
             </div>
 
             <div style={styles.chatBody}>
               {loading ? (
-                <div style={styles.loadingPulse}>جاري استحضار الإجابة...</div>
+                <div style={styles.loadingPulse}>جاري استحضار الإجابة الإيمانية...</div>
               ) : (
                 <>
                   <div style={styles.responseBox}>
@@ -146,15 +144,17 @@ const RaqqaFeelingsApp = () => {
                   
                   {history.length > 1 && (
                     <div style={styles.historySection}>
-                      <h4 style={styles.historyTitle}>السجل السابق:</h4>
+                      <h4 style={styles.historyTitle}>الاستشارات السابقة:</h4>
                       {history.slice(1).map((h, i) => (
                         <div key={i} style={styles.historyItem}>
-                          {h.substring(0, 80)}...
-                          <Trash2 size={14} style={{float: 'left', cursor: 'pointer'}} onClick={() => {
-                            const newHistory = [...history];
-                            newHistory.splice(i+1, 1);
-                            setHistory(newHistory);
-                          }} />
+                          <div style={{flex: 1}}>{h.substring(0, 70)}...</div>
+                          <Trash2 size={16} style={{color: '#ff8aae', cursor: 'pointer', marginRight: '10px'}} 
+                            onClick={() => {
+                              const newHistory = [...history];
+                              newHistory.splice(i+1, 1);
+                              setHistory(newHistory);
+                            }} 
+                          />
                         </div>
                       ))}
                     </div>
@@ -165,15 +165,15 @@ const RaqqaFeelingsApp = () => {
 
             <div style={styles.chatFooter}>
               <div style={styles.inputWrapper}>
-                <input style={styles.mainChatInput} placeholder="اسألي رقة شيئاً آخر..." />
+                <input style={styles.mainChatInput} placeholder="هل تريدين سؤال رقة عن شيء آخر؟" />
                 <button style={styles.sendBtn}><Send size={20} /></button>
               </div>
               
               <div style={styles.chatToolbar}>
-                <button style={styles.toolBtnChat} title="كاميرا"><Camera size={20}/></button>
-                <button style={styles.toolBtnChat} title="تسجيل صوتي"><Mic size={20}/></button>
-                <button style={styles.toolBtnChat} title="إرفاق صورة"><Image size={20}/></button>
-                <button style={styles.toolBtnChat} onClick={() => setHistory([])} title="مسح السجل"><Trash2 size={20}/></button>
+                <button style={styles.toolBtnChat} title="كاميرا"><Camera size={22}/></button>
+                <button style={styles.toolBtnChat} title="تسجيل صوتي"><Mic size={22}/></button>
+                <button style={styles.toolBtnChat} title="إرفاق صورة"><Image size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => setHistory([])} title="مسح السجل"><Trash2 size={22}/></button>
               </div>
             </div>
           </div>
@@ -192,36 +192,41 @@ const styles = {
   header: { textAlign: 'center', marginBottom: '30px' },
   title: { fontSize: '2.5rem', color: '#f06292', fontFamily: 'Amiri' },
   subtitle: { color: '#888', fontStyle: 'italic' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '20px', maxWidth: '1000px', margin: '0 auto' },
-  iconCard: { background: 'white', padding: '25px', borderRadius: '20px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(240,98,146,0.1)', transition: '0.3s' },
-  iconLarge: { fontSize: '2rem', color: '#f06292', marginBottom: '10px' },
-  iconTitle: { fontWeight: 'bold', color: '#444' },
-  fullOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.9)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' },
-  activeContent: { width: '100%', maxWidth: '700px', background: 'white', borderRadius: '30px', padding: '30px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  inputList: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' },
-  inputRow: { display: 'flex', flexDirection: 'column' },
-  label: { fontSize: '0.8rem', color: '#f06292', marginBottom: '5px' },
-  inputField: { padding: '10px', borderRadius: '10px', border: '1px solid #fce4ec', background: '#fff9f9' },
-  actionBtn: { width: '100%', padding: '15px', borderRadius: '50px', border: 'none', background: '#f06292', color: 'white', fontSize: '1.1rem', cursor: 'pointer', fontWeight: 'bold' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px', maxWidth: '1000px', margin: '0 auto' },
+  iconCard: { background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(240,98,146,0.1)', transition: '0.3s' },
+  iconLarge: { fontSize: '1.8rem', color: '#f06292', marginBottom: '10px' },
+  iconTitle: { fontWeight: 'bold', color: '#444', fontSize: '0.9rem' },
   
-  // تنسيقات صفحة الشات الجديدة
+  fullOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '15px' },
+  activeContent: { width: '100%', maxWidth: '500px', maxHeight: '90vh', background: 'white', borderRadius: '25px', padding: '25px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
+  
+  // القائمة الطويلة للمدخلات
+  scrollableInputList: { flex: 1, overflowY: 'auto', marginBottom: '20px', paddingRight: '5px' },
+  inputRowFull: { display: 'flex', flexDirection: 'column', marginBottom: '15px' },
+  label: { fontSize: '0.85rem', color: '#f06292', marginBottom: '6px', fontWeight: 'bold' },
+  inputField: { padding: '12px', borderRadius: '12px', border: '1px solid #fce4ec', background: '#fff9f9', outline: 'none' },
+  
+  actionBtn: { width: '100%', padding: '14px', borderRadius: '50px', border: 'none', background: '#f06292', color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 'bold' },
+  
+  // صفحة الشات
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 200, display: 'flex', flexDirection: 'column' },
-  chatContainer: { height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%', background: '#fff' },
-  chatHeader: { padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  chatBody: { flex: 1, overflowY: 'auto', padding: '20px', background: '#fafafa' },
-  responseBox: { background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderRight: '5px solid #f06292', color: '#444', lineHeight: '1.8' },
-  chatFooter: { padding: '20px', borderTop: '1px solid #eee', background: 'white' },
+  chatContainer: { height: '100%', display: 'flex', flexDirection: 'column', maxWidth: '800px', margin: '0 auto', width: '100%' },
+  chatHeader: { padding: '15px 20px', borderBottom: '1px solid #f5f5f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  chatBody: { flex: 1, overflowY: 'auto', padding: '20px', background: '#fcfcfc' },
+  responseBox: { background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(240,98,146,0.1)', borderRight: '5px solid #f06292', color: '#444', lineHeight: '1.8' },
+  chatFooter: { padding: '15px 20px', borderTop: '1px solid #f5f5f5', background: 'white' },
   inputWrapper: { display: 'flex', gap: '10px', marginBottom: '15px' },
-  mainChatInput: { flex: 1, padding: '15px', borderRadius: '30px', border: '1px solid #eee', outline: 'none', background: '#f9f9f9' },
-  sendBtn: { background: '#f06292', color: 'white', border: 'none', width: '50px', borderRadius: '50%', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  chatToolbar: { display: 'flex', gap: '20px', justifyContent: 'center' },
-  toolBtnChat: { background: 'none', border: 'none', color: '#f06292', cursor: 'pointer', transition: '0.2s' },
-  historySection: { marginTop: '30px' },
-  historyTitle: { color: '#f06292', fontSize: '0.9rem', marginBottom: '10px' },
-  historyItem: { padding: '12px', background: '#fff', borderRadius: '10px', marginBottom: '8px', fontSize: '0.85rem', color: '#777', border: '1px solid #f0f0f0' },
-  loadingPulse: { textAlign: 'center', padding: '40px', color: '#f06292', animate: 'pulse 2s infinite' },
-  azharBtn: { position: 'fixed', bottom: '20px', left: '20px', background: '#00897b', color: 'white', padding: '12px 20px', borderRadius: '50px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 101 }
+  mainChatInput: { flex: 1, padding: '12px 20px', borderRadius: '30px', border: '1px solid #eee', outline: 'none', background: '#f9f9f9' },
+  sendBtn: { background: '#f06292', color: 'white', border: 'none', width: '45px', height: '45px', borderRadius: '50%', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  chatToolbar: { display: 'flex', gap: '25px', justifyContent: 'center' },
+  toolBtnChat: { background: 'none', border: 'none', color: '#f06292', cursor: 'pointer', opacity: 0.8 },
+  
+  historySection: { marginTop: '30px', borderTop: '1px dashed #eee', paddingTop: '20px' },
+  historyTitle: { color: '#f06292', fontSize: '0.9rem', marginBottom: '12px' },
+  historyItem: { display: 'flex', alignItems: 'center', padding: '12px', background: '#fff', borderRadius: '12px', marginBottom: '10px', fontSize: '0.8rem', color: '#777', border: '1px solid #f9f9f9' },
+  loadingPulse: { textAlign: 'center', padding: '40px', color: '#f06292', fontWeight: 'bold' },
+  azharBtn: { position: 'fixed', bottom: '20px', left: '20px', background: '#00897b', color: 'white', padding: '12px 20px', borderRadius: '50px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 101, fontSize: '0.9rem' }
 };
 
 export default RaqqaFeelingsApp;
