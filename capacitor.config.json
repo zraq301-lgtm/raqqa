@@ -4,15 +4,8 @@
   "webDir": "dist_web",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://raqqa-v6cd.vercel.app",
     "androidScheme": "https",
-    "cleartext": true,
-    "allowNavigation": [
-      "raqqa-v6cd.vercel.app",
-      "*.vercel.app",
-      "*.openai.com",
-      "*.anthropic.com"
-    ]
+    "cleartext": true
   },
   "android": {
     "allowMixedContent": true,
