@@ -1,6 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
+// إضافة استيراد CapacitorHttp للتعامل مع طلبات الشبكة عبر النظام الأصلي
+import { CapacitorHttp } from '@capacitor/core'; 
 
 // استيراد الصور من مجلد الأصول (Assets) لضمان الربط الصحيح وعدم انكسار الروابط
 import healthImg from './assets/health.jpg';
