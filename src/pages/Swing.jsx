@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
-// استيراد الصفحات من المسار المحدد
-import MotherhoodHaven from './pages/Swing/MotherhoodHaven';
-import LittleOnesAcademy from './pages/Swing/LittleOnesAcademy';
-import WellnessOasis from './pages/Swing/WellnessOasis';
-import EleganceIcon from './pages/Swing/EleganceIcon';
-import CulinaryArts from './pages/Swing/CulinaryArts';
-import HomeCorners from './pages/Swing/HomeCorners';
-import EmpowermentPaths from './pages/Swing/EmpowermentPaths';
-import HarmonyBridges from './pages/Swing/HarmonyBridges';
-import PassionsCrafts from './pages/Swing/PassionsCrafts';
-import SoulsLounge from './pages/Swing/SoulsLounge';
+// استدعاء الصفحات من المسار الجديد المحدد: src/pages/Swing-page/
+import MotherhoodHaven from './pages/Swing-page/MotherhoodHaven';
+import LittleOnesAcademy from './pages/Swing-page/LittleOnesAcademy';
+import WellnessOasis from './pages/Swing-page/WellnessOasis';
+import EleganceIcon from './pages/Swing-page/EleganceIcon';
+import CulinaryArts from './pages/Swing-page/CulinaryArts';
+import HomeCorners from './pages/Swing-page/HomeCorners';
+import EmpowermentPaths from './pages/Swing-page/EmpowermentPaths';
+import HarmonyBridges from './pages/Swing-page/HarmonyBridges';
+import PassionsCrafts from './pages/Swing-page/PassionsCrafts';
+import SoulsLounge from './pages/Swing-page/SoulsLounge';
 
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
@@ -23,16 +23,16 @@ const App = () => {
   const [userInput, setUserInput] = useState('');
 
   const categories = [
-    { ar: "ملاذ الأمومة", path: "Motherhood-Haven" },
-    { ar: "أكاديمية الصغار", path: "Little-Ones-Academy" },
-    { ar: "واحة العافية", path: "Wellness-Oasis" },
-    { ar: "أيقونة الأناقة", path: "Elegance-Icon" },
-    { ar: "فن الطهي", path: "Culinary-Arts" },
-    { ar: "زوايا البيت", path: "Home-Corners" },
-    { ar: "مسارات التمكين", path: "Empowerment-Paths" },
-    { ar: "جسور المودة", path: "Harmony-Bridges" },
-    { ar: "شغف وحرف", path: "Passions-Crafts" },
-    { ar: "ملتقى الأرواح", path: "Souls-Lounge" }
+    { ar: "ملاذ الأمومة", path: "MotherhoodHaven" },
+    { ar: "أكاديمية الصغار", path: "LittleOnesAcademy" },
+    { ar: "واحة العافية", path: "WellnessOasis" },
+    { ar: "أيقونة الأناقة", path: "EleganceIcon" },
+    { ar: "فن الطهي", path: "CulinaryArts" },
+    { ar: "زوايا البيت", path: "HomeCorners" },
+    { ar: "مسارات التمكين", path: "EmpowermentPaths" },
+    { ar: "جسور المودة", path: "HarmonyBridges" },
+    { ar: "شغف وحرف", path: "PassionsCrafts" },
+    { ar: "ملتقى الأرواح", path: "SoulsLounge" }
   ];
 
   useEffect(() => {
@@ -43,10 +43,9 @@ const App = () => {
     try {
       const response = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
       setPosts(response.data.posts || []);
-    } catch (err) { console.error("Error fetching posts", err); }
+    } catch (err) { console.error("خطأ في جلب البيانات", err); }
   };
 
-  // دالة الدردشة مع رقة AI
   const handleChat = async () => {
     if (!userInput) return;
     const newMessage = { role: 'user', content: userInput, id: Date.now() };
@@ -57,7 +56,7 @@ const App = () => {
       const options = {
         url: `${API_BASE}/raqqa-ai`,
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة أبحث عن نصيحة: ${userInput}` }
+        data: { prompt: `أنا أنثى مسلمة: ${userInput}` }
       };
       const response = await CapacitorHttp.post(options);
       const aiReply = { 
@@ -65,122 +64,110 @@ const App = () => {
         content: response.data.reply || response.data.message, 
         id: Date.now() + 1 
       };
-      const updatedHistory = [...chatHistory, newMessage, aiReply];
-      setChatHistory(updatedHistory);
-      localStorage.setItem('raqqa_chats', JSON.stringify(updatedHistory));
-    } catch (err) {
-      alert("عذراً، واجهت رقة مشكلة في الاتصال.");
-    }
+      setChatHistory(prev => [...prev, aiReply]);
+      localStorage.setItem('raqqa_chats', JSON.stringify([...chatHistory, newMessage, aiReply]));
+    } catch (err) { alert("خطأ في الاتصال برقة AI"); }
   };
 
   const deleteChat = (id) => {
-    const filtered = chatHistory.filter(chat => chat.id !== id);
+    const filtered = chatHistory.filter(c => c.id !== id);
     setChatHistory(filtered);
     localStorage.setItem('raqqa_chats', JSON.stringify(filtered));
   };
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50 font-sans text-right" dir="rtl">
+      <div className="min-h-screen bg-gray-50 text-right" dir="rtl">
         
-        {/* شريط العناوين المتحرك */}
-        <div className="bg-pink-600 text-white py-2 overflow-hidden whitespace-nowrap">
-          <div className="animate-marquee inline-block text-sm font-bold">
+        {/* الشريط المتحرك العلوي */}
+        <div className="bg-pink-600 text-white py-3 overflow-hidden shadow-lg">
+          <div className="animate-marquee whitespace-nowrap inline-block font-bold">
             {categories.map((cat, i) => (
-              <Link key={i} to={`/Swing/${cat.path}`} className="mx-6 hover:text-pink-200">
+              <Link key={i} to={`/${cat.path}`} className="mx-8 hover:text-pink-200 transition">
                 {cat.ar}
               </Link>
             ))}
           </div>
         </div>
 
-        <main className="max-w-4xl mx-auto p-4">
+        <main className="max-w-5xl mx-auto p-4">
           <Routes>
             <Route path="/" element={
               <>
-                {/* كروت المحتوى الجديد */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {/* كروت المحتوى الجديد في الأعلى */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                   {posts.slice(0, 2).map((post, i) => (
-                    <div key={i} className="bg-gradient-to-l from-pink-500 to-rose-400 text-white p-5 rounded-2xl shadow-lg border-b-4 border-rose-600 animate-pulse">
-                      <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded">جديد الآن ✨</span>
-                      <p className="mt-2 line-clamp-2 font-medium">{post.content}</p>
+                    <div key={i} className="bg-gradient-to-br from-pink-500 to-rose-400 p-6 rounded-3xl text-white shadow-xl animate-pulse border-b-8 border-rose-600">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-white/30 text-[10px] px-2 py-1 rounded-full uppercase">Update</span>
+                      </div>
+                      <p className="text-lg font-bold leading-snug">{post.content || "محتوى جديد بانتظارك..."}</p>
                     </div>
                   ))}
                 </div>
 
-                {/* عرض المحتوى العام (التايم لاين) */}
-                <div className="space-y-4">
+                {/* تايم لاين المنشورات */}
+                <div className="columns-1 md:columns-2 gap-6 space-y-6">
                   {posts.map(post => (
-                    <div key={post.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                      <h4 className="text-pink-600 font-bold text-sm mb-2">{post.section}</h4>
-                      <p className="text-gray-700">{post.content}</p>
-                      {post.media_url && <img src={post.media_url} className="mt-3 rounded-lg w-full object-cover max-h-64" alt="Post" />}
+                    <div key={post.id} className="break-inside-avoid bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                      <span className="text-xs font-bold text-pink-500 mb-2 block">{post.section}</span>
+                      <p className="text-gray-700 leading-relaxed mb-4">{post.content}</p>
+                      {post.media_url && <img src={post.media_url} className="rounded-xl w-full object-cover" alt="Post" />}
                     </div>
                   ))}
                 </div>
               </>
             } />
 
-            {/* مسارات الصفحات العشرة */}
-            <Route path="/Swing/Motherhood-Haven" element={<MotherhoodHaven />} />
-            <Route path="/Swing/Little-Ones-Academy" element={<LittleOnesAcademy />} />
-            <Route path="/Swing/Wellness-Oasis" element={<WellnessOasis />} />
-            <Route path="/Swing/Elegance-Icon" element={<EleganceIcon />} />
-            <Route path="/Swing/Culinary-Arts" element={<CulinaryArts />} />
-            <Route path="/Swing/Home-Corners" element={<HomeCorners />} />
-            <Route path="/Swing/Empowerment-Paths" element={<EmpowermentPaths />} />
-            <Route path="/Swing/Harmony-Bridges" element={<HarmonyBridges />} />
-            <Route path="/Swing/Passions-Crafts" element={<PassionsCrafts />} />
-            <Route path="/Swing/Souls-Lounge" element={<SoulsLounge />} />
+            {/* المسارات الديناميكية لكل قسم */}
+            <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
+            <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
+            <Route path="/WellnessOasis" element={<WellnessOasis />} />
+            <Route path="/EleganceIcon" element={<EleganceIcon />} />
+            <Route path="/CulinaryArts" element={<CulinaryArts />} />
+            <Route path="/HomeCorners" element={<HomeCorners />} />
+            <Route path="/EmpowermentPaths" element={<EmpowermentPaths />} />
+            <Route path="/HarmonyBridges" element={<HarmonyBridges />} />
+            <Route path="/PassionsCrafts" element={<PassionsCrafts />} />
+            <Route path="/SoulsLounge" element={<SoulsLounge />} />
           </Routes>
         </main>
 
-        {/* الزر العائم للدردشة */}
-        <button 
-          onClick={() => setIsChatOpen(true)}
-          className="fixed bottom-6 left-6 bg-pink-600 text-white p-4 rounded-full shadow-2xl hover:scale-110 transition-transform z-50"
-        >
-          💬 اسألي رقة
-        </button>
+        {/* الزر العائم والدردشة */}
+        <button onClick={() => setIsChatOpen(true)} className="fixed bottom-8 left-8 bg-pink-600 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl hover:scale-110 z-50">💬</button>
 
-        {/* نافذة الدردشة */}
         {isChatOpen && (
-          <div className="fixed inset-0 bg-black/50 z-[60] flex items-end sm:items-center justify-center p-4">
-            <div className="bg-white w-full max-w-lg h-[80vh] rounded-t-3xl sm:rounded-3xl flex flex-col overflow-hidden shadow-2xl">
-              <div className="p-4 bg-pink-600 text-white flex justify-between items-center">
-                <span className="font-bold">مساعدة رقة الذكية</span>
-                <button onClick={() => setIsChatOpen(false)}>✕</button>
+          <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white w-full max-w-lg h-[85vh] rounded-[2rem] flex flex-col shadow-2xl overflow-hidden border border-pink-100">
+              <div className="p-5 bg-pink-600 text-white flex justify-between items-center shadow-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center italic font-serif">R</div>
+                  <span className="font-bold text-lg">دردشة رقة الذكية</span>
+                </div>
+                <button onClick={() => setIsChatOpen(false)} className="text-2xl hover:rotate-90 transition">✕</button>
               </div>
 
-              {/* منطقة الرسائل وحفظ الردود */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-gray-50">
                 {chatHistory.map((chat) => (
                   <div key={chat.id} className={`flex flex-col ${chat.role === 'user' ? 'items-start' : 'items-end'}`}>
-                    <div className={`p-3 rounded-2xl max-w-[80%] text-sm shadow-sm ${chat.role === 'user' ? 'bg-pink-100 text-pink-800' : 'bg-white text-gray-800 border'}`}>
+                    <div className={`p-4 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${chat.role === 'user' ? 'bg-pink-100 text-pink-900 self-start' : 'bg-white text-gray-800 self-end border border-pink-50'}`}>
                       {chat.content}
                     </div>
-                    <button onClick={() => deleteChat(chat.id)} className="text-[10px] text-red-400 mt-1 hover:underline">حذف</button>
+                    <button onClick={() => deleteChat(chat.id)} className="text-[10px] text-red-400 mt-1 mx-2 hover:font-bold">حذف الرد</button>
                   </div>
                 ))}
               </div>
 
-              {/* أزرار التحكم والوسائط */}
-              <div className="p-4 border-t bg-white">
-                <div className="flex gap-2 mb-3 overflow-x-auto pb-2">
-                  <button onClick={() => document.getElementById('chatFile').click()} className="bg-gray-100 p-2 rounded-lg text-xs">🖼️ صورة</button>
-                  <button onClick={() => alert("فتح الكاميرا...")} className="bg-gray-100 p-2 rounded-lg text-xs">📷 كاميرا</button>
-                  <button onClick={() => alert("تسجيل صوتي...")} className="bg-gray-100 p-2 rounded-lg text-xs">🎙️ ميك</button>
-                  <input type="file" id="chatFile" className="hidden" />
+              <div className="p-4 bg-white border-t space-y-3">
+                <div className="flex gap-2 justify-center pb-2 border-b border-gray-100">
+                  <button onClick={() => document.getElementById('chatImg').click()} className="flex-1 py-2 bg-gray-50 rounded-xl text-xs hover:bg-pink-50 transition">🖼️ أرفقي صورة</button>
+                  <button onClick={() => alert("فتح الكاميرا...")} className="flex-1 py-2 bg-gray-50 rounded-xl text-xs hover:bg-pink-50 transition">📷 الكاميرا</button>
+                  <button onClick={() => alert("الميكروفون قيد التشغيل...")} className="flex-1 py-2 bg-gray-50 rounded-xl text-xs hover:bg-pink-50 transition">🎙️ بصمة صوت</button>
+                  <input type="file" id="chatImg" className="hidden" />
                 </div>
                 <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    placeholder="اكتبي سؤالك هنا..."
-                    className="flex-1 border p-2 rounded-xl outline-none focus:border-pink-500"
-                  />
-                  <button onClick={handleChat} className="bg-pink-600 text-white px-4 rounded-xl font-bold">إرسال</button>
+                  <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا لرقة..." className="flex-1 bg-gray-100 p-3 rounded-2xl outline-none focus:ring-2 focus:ring-pink-400 text-sm" />
+                  <button onClick={handleChat} className="bg-pink-600 text-white px-6 rounded-2xl font-bold hover:bg-pink-700 transition">إرسال</button>
                 </div>
               </div>
             </div>
