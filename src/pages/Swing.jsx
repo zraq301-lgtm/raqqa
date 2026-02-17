@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
-// استدعاء الصفحات من المسار الجديد المحدد: src/pages/Swing-page/
-import MotherhoodHaven from './pages/Swing-page/MotherhoodHaven';
-import LittleOnesAcademy from './pages/Swing-page/LittleOnesAcademy';
-import WellnessOasis from './pages/Swing-page/WellnessOasis';
-import EleganceIcon from './pages/Swing-page/EleganceIcon';
-import CulinaryArts from './pages/Swing-page/CulinaryArts';
-import HomeCorners from './pages/Swing-page/HomeCorners';
-import EmpowermentPaths from './pages/Swing-page/EmpowermentPaths';
-import HarmonyBridges from './pages/Swing-page/HarmonyBridges';
-import PassionsCrafts from './pages/Swing-page/PassionsCrafts';
-import SoulsLounge from './pages/Swing-page/SoulsLounge';
+// الاستيراد الصحيح: بما أن Swing.jsx في مجلد pages، ندخل مباشرة لمجلد Swing-page
+import MotherhoodHaven from './Swing-page/MotherhoodHaven';
+import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
+import WellnessOasis from './Swing-page/WellnessOasis';
+import EleganceIcon from './Swing-page/EleganceIcon';
+import CulinaryArts from './Swing-page/CulinaryArts';
+import HomeCorners from './Swing-page/HomeCorners';
+import EmpowermentPaths from './Swing-page/EmpowermentPaths';
+import HarmonyBridges from './Swing-page/HarmonyBridges';
+import PassionsCrafts from './Swing-page/PassionsCrafts';
+import SoulsLounge from './Swing-page/SoulsLounge';
 
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
-const App = () => {
+const Swing = () => {
   const [posts, setPosts] = useState([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('raqqa_chats')) || []);
   const [userInput, setUserInput] = useState('');
+  const [content, setContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const categories = [
     { ar: "ملاذ الأمومة", path: "MotherhoodHaven" },
@@ -35,147 +37,153 @@ const App = () => {
     { ar: "ملتقى الأرواح", path: "SoulsLounge" }
   ];
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  useEffect(() => { fetchPosts(); }, []);
 
   const fetchPosts = async () => {
     try {
-      const response = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
-      setPosts(response.data.posts || []);
-    } catch (err) { console.error("خطأ في جلب البيانات", err); }
+      const res = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
+      setPosts(res.data.posts || []);
+    } catch (e) { console.error("Fetch error", e); }
+  };
+
+  const handleSavePost = async () => {
+    if (!content) return alert("اكتبي شيئاً أولاً");
+    try {
+      const formData = new FormData();
+      formData.append('content', content);
+      formData.append('section', 'الرئيسية');
+      if (selectedFile) formData.append('file', selectedFile);
+
+      await fetch(`${API_BASE}/save-post`, { method: 'POST', body: formData });
+      setContent(''); setSelectedFile(null); fetchPosts();
+    } catch (e) { alert("فشل النشر"); }
   };
 
   const handleChat = async () => {
     if (!userInput) return;
-    const newMessage = { role: 'user', content: userInput, id: Date.now() };
-    setChatHistory(prev => [...prev, newMessage]);
+    const userMsg = { role: 'user', content: userInput, id: Date.now() };
+    setChatHistory(prev => [...prev, userMsg]);
     setUserInput('');
 
     try {
-      const options = {
+      const res = await CapacitorHttp.post({
         url: `${API_BASE}/raqqa-ai`,
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة: ${userInput}` }
-      };
-      const response = await CapacitorHttp.post(options);
-      const aiReply = { 
-        role: 'ai', 
-        content: response.data.reply || response.data.message, 
-        id: Date.now() + 1 
-      };
-      setChatHistory(prev => [...prev, aiReply]);
-      localStorage.setItem('raqqa_chats', JSON.stringify([...chatHistory, newMessage, aiReply]));
-    } catch (err) { alert("خطأ في الاتصال برقة AI"); }
+        data: { prompt: userInput }
+      });
+      const aiMsg = { role: 'ai', content: res.data.reply, id: Date.now() + 1 };
+      const newHistory = [...chatHistory, userMsg, aiMsg];
+      setChatHistory(newHistory);
+      localStorage.setItem('raqqa_chats', JSON.stringify(newHistory));
+    } catch (e) { alert("خطأ في رد الذكاء"); }
   };
 
-  const deleteChat = (id) => {
-    const filtered = chatHistory.filter(c => c.id !== id);
+  const deleteMsg = (id) => {
+    const filtered = chatHistory.filter(m => m.id !== id);
     setChatHistory(filtered);
     localStorage.setItem('raqqa_chats', JSON.stringify(filtered));
   };
 
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-50 text-right" dir="rtl">
-        
-        {/* الشريط المتحرك العلوي */}
-        <div className="bg-pink-600 text-white py-3 overflow-hidden shadow-lg">
-          <div className="animate-marquee whitespace-nowrap inline-block font-bold">
-            {categories.map((cat, i) => (
-              <Link key={i} to={`/${cat.path}`} className="mx-8 hover:text-pink-200 transition">
-                {cat.ar}
-              </Link>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gray-50 text-right font-arabic" dir="rtl">
+      {/* شريط الأقسام المتحرك */}
+      <div className="bg-pink-600 text-white py-2 overflow-hidden shadow-md">
+        <div className="animate-marquee whitespace-nowrap inline-block font-bold text-sm">
+          {categories.map((c, i) => (
+            <Link key={i} to={`/Swing/${c.path}`} className="mx-6 hover:text-pink-200">{c.ar}</Link>
+          ))}
         </div>
+      </div>
 
-        <main className="max-w-5xl mx-auto p-4">
-          <Routes>
-            <Route path="/" element={
-              <>
-                {/* كروت المحتوى الجديد في الأعلى */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-                  {posts.slice(0, 2).map((post, i) => (
-                    <div key={i} className="bg-gradient-to-br from-pink-500 to-rose-400 p-6 rounded-3xl text-white shadow-xl animate-pulse border-b-8 border-rose-600">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-white/30 text-[10px] px-2 py-1 rounded-full uppercase">Update</span>
-                      </div>
-                      <p className="text-lg font-bold leading-snug">{post.content || "محتوى جديد بانتظارك..."}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* تايم لاين المنشورات */}
-                <div className="columns-1 md:columns-2 gap-6 space-y-6">
-                  {posts.map(post => (
-                    <div key={post.id} className="break-inside-avoid bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition">
-                      <span className="text-xs font-bold text-pink-500 mb-2 block">{post.section}</span>
-                      <p className="text-gray-700 leading-relaxed mb-4">{post.content}</p>
-                      {post.media_url && <img src={post.media_url} className="rounded-xl w-full object-cover" alt="Post" />}
-                    </div>
-                  ))}
-                </div>
-              </>
-            } />
-
-            {/* المسارات الديناميكية لكل قسم */}
-            <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
-            <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
-            <Route path="/WellnessOasis" element={<WellnessOasis />} />
-            <Route path="/EleganceIcon" element={<EleganceIcon />} />
-            <Route path="/CulinaryArts" element={<CulinaryArts />} />
-            <Route path="/HomeCorners" element={<HomeCorners />} />
-            <Route path="/EmpowermentPaths" element={<EmpowermentPaths />} />
-            <Route path="/HarmonyBridges" element={<HarmonyBridges />} />
-            <Route path="/PassionsCrafts" element={<PassionsCrafts />} />
-            <Route path="/SoulsLounge" element={<SoulsLounge />} />
-          </Routes>
-        </main>
-
-        {/* الزر العائم والدردشة */}
-        <button onClick={() => setIsChatOpen(true)} className="fixed bottom-8 left-8 bg-pink-600 text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl hover:scale-110 z-50">💬</button>
-
-        {isChatOpen && (
-          <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-            <div className="bg-white w-full max-w-lg h-[85vh] rounded-[2rem] flex flex-col shadow-2xl overflow-hidden border border-pink-100">
-              <div className="p-5 bg-pink-600 text-white flex justify-between items-center shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center italic font-serif">R</div>
-                  <span className="font-bold text-lg">دردشة رقة الذكية</span>
-                </div>
-                <button onClick={() => setIsChatOpen(false)} className="text-2xl hover:rotate-90 transition">✕</button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 space-y-5 bg-gray-50">
-                {chatHistory.map((chat) => (
-                  <div key={chat.id} className={`flex flex-col ${chat.role === 'user' ? 'items-start' : 'items-end'}`}>
-                    <div className={`p-4 rounded-2xl max-w-[85%] text-sm leading-relaxed shadow-sm ${chat.role === 'user' ? 'bg-pink-100 text-pink-900 self-start' : 'bg-white text-gray-800 self-end border border-pink-50'}`}>
-                      {chat.content}
-                    </div>
-                    <button onClick={() => deleteChat(chat.id)} className="text-[10px] text-red-400 mt-1 mx-2 hover:font-bold">حذف الرد</button>
+      <main className="max-w-4xl mx-auto p-4">
+        <Routes>
+          <Route path="/" element={
+            <>
+              {/* كروت المحتوى الجديد (أعلى الصفحة) */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {posts.slice(0, 2).map((p, i) => (
+                  <div key={i} className="bg-gradient-to-l from-pink-500 to-rose-400 p-5 rounded-2xl text-white shadow-lg animate-pulse">
+                    <span className="text-[10px] bg-white/20 px-2 py-1 rounded">جديد ✨</span>
+                    <p className="mt-2 text-sm font-bold">{p.content}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="p-4 bg-white border-t space-y-3">
-                <div className="flex gap-2 justify-center pb-2 border-b border-gray-100">
-                  <button onClick={() => document.getElementById('chatImg').click()} className="flex-1 py-2 bg-gray-50 rounded-xl text-xs hover:bg-pink-50 transition">🖼️ أرفقي صورة</button>
-                  <button onClick={() => alert("فتح الكاميرا...")} className="flex-1 py-2 bg-gray-50 rounded-xl text-xs hover:bg-pink-50 transition">📷 الكاميرا</button>
-                  <button onClick={() => alert("الميكروفون قيد التشغيل...")} className="flex-1 py-2 bg-gray-50 rounded-xl text-xs hover:bg-pink-50 transition">🎙️ بصمة صوت</button>
-                  <input type="file" id="chatImg" className="hidden" />
+              {/* صندوق الرفع (نص + صورة) */}
+              <div className="bg-white p-4 rounded-2xl shadow-sm mb-6 border border-pink-100">
+                <textarea 
+                  value={content} onChange={(e) => setContent(e.target.value)}
+                  className="w-full p-3 bg-gray-50 rounded-xl text-sm outline-none" placeholder="شاركينا منشورك الجديد..."
+                />
+                <div className="flex justify-between items-center mt-3">
+                  <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} className="text-xs" />
+                  <button onClick={handleSavePost} className="bg-pink-600 text-white px-6 py-2 rounded-xl text-sm font-bold">نشر</button>
                 </div>
-                <div className="flex gap-2">
-                  <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا لرقة..." className="flex-1 bg-gray-100 p-3 rounded-2xl outline-none focus:ring-2 focus:ring-pink-400 text-sm" />
-                  <button onClick={handleChat} className="bg-pink-600 text-white px-6 rounded-2xl font-bold hover:bg-pink-700 transition">إرسال</button>
+              </div>
+
+              {/* عرض المنشورات */}
+              <div className="space-y-4">
+                {posts.map(p => (
+                  <div key={p.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+                    <p className="text-gray-700 text-sm mb-3">{p.content}</p>
+                    {p.media_url && <img src={p.media_url} className="rounded-xl w-full max-h-80 object-cover" alt="Post" />}
+                  </div>
+                ))}
+              </div>
+            </>
+          } />
+
+          {/* المسارات لكل صفحة داخل Swing-page */}
+          <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
+          <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
+          <Route path="/WellnessOasis" element={<WellnessOasis />} />
+          <Route path="/EleganceIcon" element={<EleganceIcon />} />
+          <Route path="/CulinaryArts" element={<CulinaryArts />} />
+          <Route path="/HomeCorners" element={<HomeCorners />} />
+          <Route path="/EmpowermentPaths" element={<EmpowermentPaths />} />
+          <Route path="/HarmonyBridges" element={<HarmonyBridges />} />
+          <Route path="/PassionsCrafts" element={<PassionsCrafts />} />
+          <Route path="/SoulsLounge" element={<SoulsLounge />} />
+        </Routes>
+      </main>
+
+      {/* الزر العائم للدردشة */}
+      <button onClick={() => setIsChatOpen(true)} className="fixed bottom-6 left-6 bg-pink-600 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-xl z-50 animate-bounce">💬</button>
+
+      {/* مودال الدردشة */}
+      {isChatOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md h-[80vh] rounded-[2.5rem] flex flex-col shadow-2xl overflow-hidden">
+            <div className="p-4 bg-pink-600 text-white flex justify-between items-center">
+              <span className="font-bold">دردشة رقة</span>
+              <button onClick={() => setIsChatOpen(false)}>✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-pink-50/30">
+              {chatHistory.map(m => (
+                <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-start' : 'items-end'}`}>
+                  <div className={`p-3 rounded-2xl text-sm max-w-[85%] ${m.role === 'user' ? 'bg-white text-gray-800' : 'bg-pink-500 text-white'}`}>
+                    {m.content}
+                  </div>
+                  <button onClick={() => deleteMsg(m.id)} className="text-[10px] text-red-400 mt-1">حذف</button>
                 </div>
+              ))}
+            </div>
+            <div className="p-4 bg-white border-t">
+              <div className="flex gap-2 mb-3">
+                <button className="text-xs bg-gray-100 p-2 rounded-lg">🖼️ صورة</button>
+                <button className="text-xs bg-gray-100 p-2 rounded-lg">📷 كاميرا</button>
+                <button className="text-xs bg-gray-100 p-2 rounded-lg">🎙️ ميك</button>
+              </div>
+              <div className="flex gap-2">
+                <input type="text" value={userInput} onChange={e => setUserInput(e.target.value)} className="flex-1 border p-2 rounded-xl text-sm outline-none focus:border-pink-500" placeholder="اسألي رقة..." />
+                <button onClick={handleChat} className="bg-pink-600 text-white px-4 rounded-xl">إرسال</button>
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </Router>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default App;
+export default Swing;
