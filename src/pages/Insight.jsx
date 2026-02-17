@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+// استيراد كافة الأيقونات المستخدمة لضمان عدم حدوث خطأ
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
   ShieldCheck, Users, ShieldAlert, Wind, Gift, 
   Clock, Brain, Flower2, Coins, Hourglass, 
   Camera, Mic, Image, Trash2, X, MapPin, MessageCircle, Bookmark, List,
-  Check, Minus, Smile, Sun, Droplets, Utensils, Baby, Users2, Shield, 
-  Zap, Coffee, GraduationCap, Bath, Gem, Star
+  Check, Minus, Smile, Sun, Droplets, Utensils, Baby, Shield, 
+  Zap, Coffee, GraduationCap, Bath, Gem, Star, Calendar
 } from 'lucide-react';
 
 const RaqqaApp = () => {
@@ -23,7 +24,7 @@ const RaqqaApp = () => {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  // هيكل البيانات مع أيقونات مخصصة لكل عنصر داخلي
+  // هيكل البيانات المتكامل مع الأيقونات المخصصة
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
       { name: "سنن الفطرة", icon: <Smile size={16}/> }, { name: "صفة الغسل", icon: <Bath size={16}/> }, { name: "الوضوء الجمالي", icon: <Droplets size={16}/> }, 
@@ -90,7 +91,7 @@ const RaqqaApp = () => {
   const handleProcess = async (directMsg = null) => {
     setLoading(true);
     const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم' : 'لم يتم'}`).join(", ");
-    const promptText = directMsg || `أنا أنثى مسلمة، تقريري: (${summary}). حللي نموي الروحي بأسلوب رقة الديني والنفسي دون فتاوى.`;
+    const promptText = directMsg || `أنا أنثى مسلمة، تقريري: (${summary}). حللي نموي الروحي بأسلوب رقة الديني والنفسي الدافئ.`;
 
     try {
       const options = {
@@ -99,7 +100,7 @@ const RaqqaApp = () => {
         data: { prompt: promptText }
       };
       const response = await CapacitorHttp.post(options);
-      const reply = response.data.reply || response.data.message;
+      const reply = response.data.reply || response.data.message || "رد رقة الجميل";
       setAiResponse(reply);
       setHistory(prev => [{ role: 'ai', text: reply }, ...prev]);
     } catch (err) {
@@ -115,11 +116,10 @@ const RaqqaApp = () => {
         <h1 style={styles.title}>رقة ✨</h1>
         <p style={styles.subtitle}>فقه المرأة الوعي والجمال</p>
         
-        {/* الأزرار العلوية الثابتة */}
         <div style={styles.topActions}>
           <button style={styles.fقهرقةBtn} onClick={() => setShowChat(true)}>
             <MessageCircle size={18} />
-            <span>فقه رقة</span>
+            <span>دردشة فقه رقة</span>
           </button>
           <a href="https://www.azhar.eg/fatwacenter" target="_blank" rel="noreferrer" style={styles.azharBtn}>
             <MapPin size={18} />
@@ -133,7 +133,7 @@ const RaqqaApp = () => {
           {[0, 1, 2].map(colIndex => (
             <div key={colIndex} style={styles.column}>
               {menuData.slice(colIndex * 5, (colIndex + 1) * 5).map(cat => (
-                <div key={cat.id} style={styles.menuItem} onClick={() => {setActiveCategory(cat); setInputs({});}}>
+                <div key={cat.id} style={styles.menuItem} onClick={() => {setActiveCategory(cat); setInputs({}); setAiResponse("");}}>
                   <span style={styles.iconWrapper}>{cat.icon}</span>
                   <span style={styles.menuText}>{cat.title}</span>
                 </div>
@@ -160,12 +160,12 @@ const RaqqaApp = () => {
                   </div>
                   <div style={styles.stripActions}>
                     <button 
-                      onClick={() => setInputs({...inputs, [item.name]: 'yes'})}
-                      style={{...styles.yesBtn, opacity: inputs[item.name] === 'yes' ? 1 : 0.5}}
+                      onClick={() => setInputs(prev => ({...prev, [item.name]: 'yes'}))}
+                      style={{...styles.yesBtn, opacity: inputs[item.name] === 'yes' ? 1 : 0.4}}
                     >نعم</button>
                     <button 
-                      onClick={() => setInputs({...inputs, [item.name]: 'no'})}
-                      style={{...styles.noBtn, opacity: inputs[item.name] === 'no' ? 1 : 0.5}}
+                      onClick={() => setInputs(prev => ({...prev, [item.name]: 'no'}))}
+                      style={{...styles.noBtn, opacity: inputs[item.name] === 'no' ? 1 : 0.4}}
                     >لا</button>
                   </div>
                 </div>
@@ -179,22 +179,22 @@ const RaqqaApp = () => {
         </>
       )}
 
-      {/* مودال الشات (كما هو بدون تغيير في المنطق) */}
       {showChat && (
         <div style={styles.chatModal}>
           <div style={styles.chatContent}>
             <div style={styles.chatHeader}>
               <X onClick={() => setShowChat(false)} style={{cursor: 'pointer'}} />
               <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                <span style={{fontWeight: 'bold'}}>دردشة رقة الذكية</span>
+                <span style={{fontWeight: 'bold'}}>دردشة رقة</span>
                 <List size={20} onClick={() => setShowSavedList(!showSavedList)} style={{cursor: 'pointer'}} />
               </div>
               <Trash2 size={20} onClick={() => setHistory([])} style={{cursor: 'pointer'}} />
             </div>
             {showSavedList ? (
               <div style={styles.savedArea}>
+                <h3 style={{textAlign:'center', color:'#f06292'}}>المحفوظات 🌸</h3>
                 {savedReplies.map((r, i) => <div key={i} style={styles.savedItem}>{r}</div>)}
-                <button onClick={() => setShowSavedList(false)} style={styles.backBtn}>العودة</button>
+                <button onClick={() => setShowSavedList(false)} style={styles.backBtn}>العودة للدردشة</button>
               </div>
             ) : (
               <div style={styles.chatHistory}>
@@ -209,12 +209,12 @@ const RaqqaApp = () => {
             <div style={styles.chatFooter}>
               <div style={styles.mediaRow}>
                 <button style={styles.iconBtn} onClick={() => cameraInputRef.current.click()}><Camera size={20}/></button>
-                <button style={styles.iconBtn}><Mic size={20}/></button>
+                <button style={styles.iconBtn} onClick={() => alert("الميكروفون مفعل")}><Mic size={20}/></button>
                 <button style={styles.iconBtn} onClick={() => fileInputRef.current.click()}><Image size={20}/></button>
               </div>
               <div style={styles.inputRow}>
                 <input style={styles.chatInput} placeholder="اسألي رقة..." value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} />
-                <button style={styles.sendBtn} onClick={() => {setHistory([{role:'user', text:chatMessage}, ...history]); handleProcess(chatMessage); setChatMessage("");}}>إرسال</button>
+                <button style={styles.sendBtn} onClick={() => { if(!chatMessage) return; setHistory([{role:'user', text:chatMessage}, ...history]); handleProcess(chatMessage); setChatMessage(""); }}>إرسال</button>
               </div>
             </div>
             <input type="file" ref={cameraInputRef} capture="environment" style={{display:'none'}} />
@@ -230,44 +230,44 @@ const styles = {
   appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
   header: { textAlign: 'center', marginBottom: '30px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
-  subtitle: { color: '#888' },
+  subtitle: { color: '#888', fontSize: '0.9rem' },
   topActions: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px' },
   fقهرقةBtn: { background: '#f06292', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' },
   azharBtn: { background: '#00897b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px', maxWidth: '1200px', margin: '0 auto' },
   column: { background: 'rgba(240, 98, 146, 0.03)', padding: '15px', borderRadius: '20px' },
   menuItem: { background: 'white', padding: '15px', marginBottom: '10px', borderRadius: '15px', display: 'flex', alignItems: 'center', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.04)' },
   iconWrapper: { color: '#f06292', marginLeft: '12px' },
   menuText: { fontWeight: 'bold', color: '#444' },
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10, backdropFilter: 'blur(4px)' },
-  activeCard: { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '95%', maxWidth: '600px', maxHeight: '90vh', background: 'white', borderRadius: '25px', padding: '25px', zIndex: 11, overflowY: 'auto' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
-  cardTitle: { color: '#f06292', margin: 0 },
-  inputsList: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  inputStrip: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fdf2f8', padding: '12px 20px', borderRadius: '15px', border: '1px solid #fce4ec' },
-  stripInfo: { display: 'flex', alignItems: 'center', gap: '12px', color: '#f06292' },
-  stripLabel: { color: '#444', fontWeight: '500' },
-  stripActions: { display: 'flex', gap: '8px' },
-  yesBtn: { background: '#4caf50', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '10px', cursor: 'pointer' },
-  noBtn: { background: '#e91e63', color: 'white', border: 'none', padding: '5px 15px', borderRadius: '10px', cursor: 'pointer' },
-  submitBtn: { width: '100%', padding: '15px', background: '#f06292', color: 'white', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginTop: '20px' },
-  aiBox: { marginTop: '20px', padding: '15px', background: '#fdf2f8', borderRadius: '15px', lineHeight: '1.6' },
+  activeCard: { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '95%', maxWidth: '550px', maxHeight: '85vh', background: 'white', borderRadius: '25px', padding: '20px', zIndex: 11, overflowY: 'auto' },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' },
+  cardTitle: { color: '#f06292', fontSize: '1.2rem' },
+  inputsList: { display: 'flex', flexDirection: 'column', gap: '8px' },
+  inputStrip: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fdf2f8', padding: '10px 15px', borderRadius: '12px', border: '1px solid #fce4ec' },
+  stripInfo: { display: 'flex', alignItems: 'center', gap: '10px', color: '#f06292' },
+  stripLabel: { color: '#444', fontSize: '0.9rem' },
+  stripActions: { display: 'flex', gap: '5px' },
+  yesBtn: { background: '#4caf50', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' },
+  noBtn: { background: '#e91e63', color: 'white', border: 'none', padding: '4px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem' },
+  submitBtn: { width: '100%', padding: '12px', background: '#f06292', color: 'white', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginTop: '15px' },
+  aiBox: { marginTop: '15px', padding: '15px', background: '#fdf2f8', borderRadius: '12px', lineHeight: '1.6', fontSize: '0.9rem', whiteSpace: 'pre-wrap' },
   chatModal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  chatContent: { width: '95%', maxWidth: '500px', height: '85vh', background: 'white', borderRadius: '25px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  chatContent: { width: '95%', maxWidth: '450px', height: '80vh', background: 'white', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   chatHeader: { padding: '15px', background: '#f06292', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   chatHistory: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse', gap: '10px' },
-  aiMsg: { alignSelf: 'flex-start', background: '#fce4ec', padding: '10px 15px', borderRadius: '15px 15px 15px 0', maxWidth: '85%', position: 'relative' },
-  userMsg: { alignSelf: 'flex-end', background: '#eee', padding: '10px 15px', borderRadius: '15px 15px 0 15px', maxWidth: '85%' },
-  saveIcon: { position: 'absolute', bottom: '-20px', left: '5px', color: '#f06292', cursor: 'pointer' },
-  chatFooter: { padding: '15px', borderTop: '1px solid #eee' },
-  mediaRow: { display: 'flex', gap: '10px', marginBottom: '10px' },
-  inputRow: { display: 'flex', gap: '10px' },
-  chatInput: { flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd' },
-  sendBtn: { background: '#f06292', color: 'white', border: 'none', padding: '0 20px', borderRadius: '20px' },
-  iconBtn: { border: 'none', background: '#f8f9fa', color: '#f06292', padding: '8px', borderRadius: '50%' },
+  aiMsg: { alignSelf: 'flex-start', background: '#fce4ec', padding: '10px', borderRadius: '12px 12px 12px 0', maxWidth: '85%', position: 'relative', fontSize: '0.85rem' },
+  userMsg: { alignSelf: 'flex-end', background: '#eee', padding: '10px', borderRadius: '12px 12px 0 12px', maxWidth: '85%', fontSize: '0.85rem' },
+  saveIcon: { position: 'absolute', bottom: '-18px', left: '0', color: '#f06292', cursor: 'pointer' },
+  chatFooter: { padding: '12px', borderTop: '1px solid #eee' },
+  mediaRow: { display: 'flex', gap: '8px', marginBottom: '8px' },
+  inputRow: { display: 'flex', gap: '8px' },
+  chatInput: { flex: 1, padding: '8px 15px', borderRadius: '20px', border: '1px solid #ddd', fontSize: '0.9rem' },
+  sendBtn: { background: '#f06292', color: 'white', border: 'none', padding: '0 15px', borderRadius: '20px', cursor: 'pointer' },
+  iconBtn: { border: 'none', background: '#f8f9fa', color: '#f06292', padding: '6px', borderRadius: '50%', cursor: 'pointer' },
   savedArea: { flex: 1, padding: '15px', overflowY: 'auto' },
-  savedItem: { background: '#fdf2f8', padding: '10px', borderRadius: '10px', marginBottom: '10px', border: '1px solid #fce4ec' },
-  backBtn: { width: '100%', padding: '10px', background: '#f06292', color: 'white', border: 'none', borderRadius: '10px' }
+  savedItem: { background: '#fdf2f8', padding: '10px', borderRadius: '10px', marginBottom: '8px', border: '1px solid #fce4ec', fontSize: '0.85rem' },
+  backBtn: { width: '100%', padding: '10px', background: '#f06292', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }
 };
 
 export default RaqqaApp;
