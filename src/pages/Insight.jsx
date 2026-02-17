@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-// 1. استيراد المحرك الأصلي لضمان عمل الاتصال في كافة البيئات
+// استيراد المحرك الأصلي لضمان عمل الاتصال
 import { CapacitorHttp } from '@capacitor/core';
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
@@ -19,6 +19,7 @@ const RaqqaApp = () => {
   const [savedReplies, setSavedReplies] = useState([]);
   const [showSavedList, setShowSavedList] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false); // شاشة التحليل الجديدة
   const [chatMessage, setChatMessage] = useState("");
 
   const fileInputRef = useRef(null);
@@ -87,7 +88,6 @@ const RaqqaApp = () => {
     ]},
   ];
 
-  // دالة الاتصال المحدثة طبقا للمنطق المطلوب
   const handleProcess = async (directMsg = null) => {
     setLoading(true);
     const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم بحمد الله' : 'لم يتم'}`).join(", ");
@@ -100,14 +100,16 @@ const RaqqaApp = () => {
         data: { prompt: promptText }
       };
 
-      // الاتصال عبر CapacitorHttp لضمان تخطي مشاكل الـ CORS في التطبيقات
       const response = await CapacitorHttp.post(options);
-      
-      // استخراج الرد من response.data مباشرة كما في الدالة المطلوبة 
       const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
       
       setAiResponse(responseText);
       setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
+      
+      // إذا كان النداء من تحليل البيانات، نفتح شاشة التحليل
+      if (!directMsg) {
+          setShowAnalysisModal(true);
+      }
     } catch (err) {
       console.error("فشل الاتصال الأصلي:", err);
       setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت 🌸");
@@ -127,7 +129,6 @@ const RaqqaApp = () => {
             <MessageCircle size={18} />
             <span>دردشة فقه رقة</span>
           </button>
-          {/* زر اسألي الأزهر في الأعلى بجانب رقة الزكية [cite: 25] */}
           <a href="https://www.azhar.eg/fatwacenter" target="_blank" rel="noreferrer" style={styles.azharHeaderBtn}>
             <MapPin size={18} />
             <span>اسألي الأزهر</span>
@@ -181,11 +182,33 @@ const RaqqaApp = () => {
             <button style={styles.submitBtn} onClick={() => handleProcess()} disabled={loading}>
               {loading ? "جاري التحليل الروحاني..." : "حفظ وتحليل بالذكاء الصناعي ✨"}
             </button>
-            {aiResponse && <div style={styles.aiBox}>{aiResponse}</div>}
           </div>
         </>
       )}
 
+      {/* شاشة تحليل البيانات (بنفس شكل الدردشة) */}
+      {showAnalysisModal && (
+        <div style={styles.chatModal}>
+          <div style={styles.chatContent}>
+            <div style={styles.chatHeader}>
+              <X onClick={() => setShowAnalysisModal(false)} style={{cursor: 'pointer'}} />
+              <span style={{fontWeight: 'bold'}}>تحليل رقة الروحاني</span>
+              <div style={{width: 20}}></div> 
+            </div>
+            <div style={styles.chatHistory}>
+               <div style={styles.aiMsg}>
+                    {aiResponse}
+                    <Bookmark size={14} onClick={() => {setSavedReplies([...savedReplies, aiResponse]); alert("تم الحفظ!");}} style={styles.saveIcon} />
+               </div>
+            </div>
+            <div style={styles.chatFooter}>
+               <button style={styles.submitBtn} onClick={() => setShowAnalysisModal(false)}>شكراً رقة ✨</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* شاشة الدردشة الأصلية */}
       {showChat && (
         <div style={styles.chatModal}>
           <div style={styles.chatContent}>
@@ -257,14 +280,13 @@ const styles = {
   label: { fontSize: '0.9rem', color: '#444', fontWeight: '500' },
   btnGroup: { display: 'flex', gap: '5px' },
   toggleBtn: { padding: '5px 12px', borderRadius: '10px', border: '1px solid #ddd', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' },
-  submitBtn: { width: '100%', padding: '15px', background: '#f06292', color: 'white', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginTop: '20px' },
-  aiBox: { marginTop: '20px', padding: '15px', background: '#fdf2f8', borderRadius: '15px', whiteSpace: 'pre-wrap', fontSize: '0.9rem', color: '#444', lineHeight: '1.6' },
+  submitBtn: { width: '100%', padding: '15px', background: '#f06292', color: 'white', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginTop: '10px' },
   chatModal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center' },
   chatContent: { width: '90%', maxWidth: '450px', height: '80vh', background: 'white', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   chatHeader: { padding: '15px', background: '#f06292', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  chatHistory: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse', gap: '10px' },
-  aiMsg: { alignSelf: 'flex-start', background: '#fce4ec', padding: '10px', borderRadius: '12px 12px 12px 0', maxWidth: '85%', position: 'relative' },
-  userMsg: { alignSelf: 'flex-end', background: '#eee', padding: '10px', borderRadius: '12px 12px 0 12px', maxWidth: '85%' },
+  chatHistory: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' },
+  aiMsg: { alignSelf: 'flex-start', background: '#fce4ec', padding: '15px', borderRadius: '12px 12px 12px 0', maxWidth: '85%', position: 'relative', lineHeight: '1.6', fontSize: '0.9rem', color: '#444' },
+  userMsg: { alignSelf: 'flex-end', background: '#eee', padding: '10px', borderRadius: '12px 12px 0 12px', maxWidth: '85%', fontSize: '0.9rem' },
   saveIcon: { position: 'absolute', bottom: '-20px', left: '0', color: '#f06292', cursor: 'pointer' },
   chatFooter: { padding: '15px', borderTop: '1px solid #eee' },
   mediaRow: { display: 'flex', gap: '10px', marginBottom: '10px' },
