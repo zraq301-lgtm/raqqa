@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
+// 1. استيراد المحرك الأصلي لضمان عمل الاتصال في كافة البيئات
 import { CapacitorHttp } from '@capacitor/core';
-// تم استيراد كافة الأيقونات بدقة لتجنب الشاشة البيضاء
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
   ShieldCheck, Users, ShieldAlert, Wind, Gift, 
@@ -24,7 +24,6 @@ const RaqqaApp = () => {
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  // هيكل البيانات المطور مع أيقونات فريدة لكل مدخل
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
       {n: "سنن الفطرة", i: <Smile size={14}/>}, {n: "صفة الغسل", i: <Bath size={14}/>}, {n: "الوضوء الجمالي", i: <Droplets size={14}/>}, 
@@ -88,10 +87,11 @@ const RaqqaApp = () => {
     ]},
   ];
 
+  // دالة الاتصال المحدثة طبقا للمنطق المطلوب
   const handleProcess = async (directMsg = null) => {
     setLoading(true);
-    const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم' : 'لم يتم'}`).join(", ");
-    const promptText = directMsg || `أنا رقيقة أقوم بالآتي في ${activeCategory?.title}: (${summary}). حللي نمو روحي كطبيبة رقة بأسلوب متخصص ودافئ.`;
+    const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم بحمد الله' : 'لم يتم'}`).join(", ");
+    const promptText = directMsg || `أنا أنثى مسلمة، إليكِ تقريري في ${activeCategory?.title}: (${summary}). حللي نمو روحي بأسلوب ديني ونفسي دافئ دون فتاوى.`;
 
     try {
       const options = {
@@ -99,12 +99,18 @@ const RaqqaApp = () => {
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
       };
+
+      // الاتصال عبر CapacitorHttp لضمان تخطي مشاكل الـ CORS في التطبيقات
       const response = await CapacitorHttp.post(options);
-      const reply = response.data.reply || "رد رقة الجميل ✨";
-      setAiResponse(reply);
-      setHistory(prev => [{ role: 'ai', text: reply }, ...prev]);
+      
+      // استخراج الرد من response.data مباشرة كما في الدالة المطلوبة 
+      const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
+      
+      setAiResponse(responseText);
+      setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
     } catch (err) {
-      setAiResponse("عذراً رفيقتي، هناك مشكلة في الاتصال 🌸");
+      console.error("فشل الاتصال الأصلي:", err);
+      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت 🌸");
     } finally {
       setLoading(false);
     }
@@ -121,6 +127,7 @@ const RaqqaApp = () => {
             <MessageCircle size={18} />
             <span>دردشة فقه رقة</span>
           </button>
+          {/* زر اسألي الأزهر في الأعلى بجانب رقة الزكية [cite: 25] */}
           <a href="https://www.azhar.eg/fatwacenter" target="_blank" rel="noreferrer" style={styles.azharHeaderBtn}>
             <MapPin size={18} />
             <span>اسألي الأزهر</span>
@@ -161,18 +168,18 @@ const RaqqaApp = () => {
                   <div style={styles.btnGroup}>
                     <button 
                       onClick={() => setInputs({...inputs, [item.n]: 'yes'})}
-                      style={{...styles.toggleBtn, backgroundColor: inputs[item.n] === 'yes' ? '#4caf50' : '#fff', color: inputs[item.n] === 'yes' ? '#fff' : '#888'}}
+                      style={{...styles.toggleBtn, backgroundColor: inputs[item.n] === 'yes' ? '#4caf50' : '#fff', color: inputs[item.n] === 'yes' ? '#fff' : '#888', borderColor: inputs[item.n] === 'yes' ? '#4caf50' : '#ddd'}}
                     >نعم</button>
                     <button 
                       onClick={() => setInputs({...inputs, [item.n]: 'no'})}
-                      style={{...styles.toggleBtn, backgroundColor: inputs[item.n] === 'no' ? '#f06292' : '#fff', color: inputs[item.n] === 'no' ? '#fff' : '#888'}}
+                      style={{...styles.toggleBtn, backgroundColor: inputs[item.n] === 'no' ? '#f06292' : '#fff', color: inputs[item.n] === 'no' ? '#fff' : '#888', borderColor: inputs[item.n] === 'no' ? '#f06292' : '#ddd'}}
                     >لا</button>
                   </div>
                 </div>
               ))}
             </div>
             <button style={styles.submitBtn} onClick={() => handleProcess()} disabled={loading}>
-              {loading ? "جاري التحليل..." : "حفظ وتحليل بالذكاء الصناعي ✨"}
+              {loading ? "جاري التحليل الروحاني..." : "حفظ وتحليل بالذكاء الصناعي ✨"}
             </button>
             {aiResponse && <div style={styles.aiBox}>{aiResponse}</div>}
           </div>
@@ -247,11 +254,11 @@ const styles = {
   inputStrip: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: '#fff5f8', borderRadius: '15px', border: '1px solid #fce4ec' },
   stripLabelRow: { display: 'flex', alignItems: 'center', gap: '10px' },
   itemIcon: { color: '#f06292' },
-  label: { fontSize: '0.9rem', color: '#444' },
+  label: { fontSize: '0.9rem', color: '#444', fontWeight: '500' },
   btnGroup: { display: 'flex', gap: '5px' },
-  toggleBtn: { padding: '5px 12px', borderRadius: '10px', border: '1px solid #ddd', cursor: 'pointer', fontSize: '0.8rem' },
+  toggleBtn: { padding: '5px 12px', borderRadius: '10px', border: '1px solid #ddd', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' },
   submitBtn: { width: '100%', padding: '15px', background: '#f06292', color: 'white', borderRadius: '50px', border: 'none', cursor: 'pointer', fontWeight: 'bold', marginTop: '20px' },
-  aiBox: { marginTop: '20px', padding: '15px', background: '#fdf2f8', borderRadius: '15px', whiteSpace: 'pre-wrap', fontSize: '0.9rem' },
+  aiBox: { marginTop: '20px', padding: '15px', background: '#fdf2f8', borderRadius: '15px', whiteSpace: 'pre-wrap', fontSize: '0.9rem', color: '#444', lineHeight: '1.6' },
   chatModal: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center' },
   chatContent: { width: '90%', maxWidth: '450px', height: '80vh', background: 'white', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   chatHeader: { padding: '15px', background: '#f06292', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
