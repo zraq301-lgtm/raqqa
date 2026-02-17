@@ -1,64 +1,63 @@
 import React, { useState, useEffect } from 'react';
+[cite_start]// التصحيح النهائي للمسار: نخرج من HealthPages ثم من pages لنجد constants [cite: 1]
 import { iconMap } from '../../constants/iconMap';
-// استيراد CapacitorHttp للاتصال الأصلي بالمحرك
 import { CapacitorHttp } from '@capacitor/core';
 
 const MenstrualTracker = () => {
-  const HealthIcon = iconMap.health;
+  [cite_start]const HealthIcon = iconMap.health; [cite: 2]
 
-  // --- حالات البيانات ---
+  [cite_start]// --- حالات البيانات --- [cite: 3]
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('menstrual_data');
     return saved ? JSON.parse(saved) : {};
   });
 
-  const [openAccordion, setOpenAccordion] = useState(null);
+  [cite_start]const [openAccordion, setOpenAccordion] = useState(null); [cite: 4]
   const [prediction, setPrediction] = useState('');
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  
-  const [chatHistory, setChatHistory] = useState(() => {
+
+  [cite_start]const [chatHistory, setChatHistory] = useState(() => { [cite: 5]
     const savedChat = localStorage.getItem('chat_history');
     return savedChat ? JSON.parse(savedChat) : [];
   });
 
-  const [savedResponses, setSavedResponses] = useState(() => {
+  [cite_start]const [savedResponses, setSavedResponses] = useState(() => { [cite: 6]
     const saved = localStorage.getItem('saved_ai_responses');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // مزامنة التخزين المحلي
-  useEffect(() => {
+  [cite_start]useEffect(() => { [cite: 7]
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
     localStorage.setItem('saved_ai_responses', JSON.stringify(savedResponses));
   }, [data, chatHistory, savedResponses]);
 
-  // --- 1. حفظ البيانات في Neon DB عبر CapacitorHttp ---
+  [cite_start]// --- ربط API المزامنة (Neon DB) عبر CapacitorHttp --- [cite: 8]
   const syncHealthData = async (healthType, details) => {
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/save-health',
         headers: { 'Content-Type': 'application/json' },
         data: { 
-          user_id: 1, // معرف افتراضي، يمكن تغييره حسب النظام
+          user_id: 1, 
           category: healthType, 
           value: JSON.stringify(details),
           timestamp: new Date() 
         }
       };
       await CapacitorHttp.post(options);
-      console.log("تمت المزامنة بنجاح في نيون"); [cite: 8, 9]
+      [cite_start]console.log("تمت المزامنة بنجاح"); [cite: 9]
     } catch (err) {
-      console.error("فشلت المزامنة:", err);
+      console.error("فشلت المزامنة");
     }
   };
 
-  // --- 2. استشارة ذكاء رقة الاصطناعي عبر CapacitorHttp ---
+  [cite_start]// --- ربط API الذكاء الاصطناعي (Raqqa AI) عبر CapacitorHttp --- [cite: 10]
   const askRaqqaAI = async (userInput) => {
     setLoading(true);
     try {
-      const context = `أنا أنثى مسلمة، تحليل طبي لبياناتي: ${JSON.stringify(data)}. السؤال: ${userInput}`; [cite: 11]
+      const context = `تحليل طبي لبيانات: ${JSON.stringify(data)}. [cite_start]السؤال: ${userInput}`; [cite: 11]
       
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -67,36 +66,36 @@ const MenstrualTracker = () => {
       };
 
       const response = await CapacitorHttp.post(options);
-      const reply = response.data.reply || response.data.data || "لم أتمكن من التحليل حالياً."; [cite: 13]
+      [cite_start]const result = response.data; [cite: 13]
+      const reply = result.reply || result.data || "لم أتمكن من التحليل حالياً.";
 
       const newMessage = { 
         id: Date.now(),
         role: 'ai', 
         content: reply, 
         time: new Date().toLocaleTimeString('ar-EG') 
-      };
-
-      setChatHistory(prev => [...prev, { role: 'user', content: userInput }, newMessage]); [cite: 15]
+      [cite_start]}; [cite: 14]
+      [cite_start]setChatHistory(prev => [...prev, { role: 'user', content: userInput }, newMessage]); [cite: 15]
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
-      setChatHistory(prev => [...prev, { role: 'ai', content: "عذراً رقيقة، حدث خطأ في الاتصال بالشبكة." }]); [cite: 16]
+      [cite_start]setChatHistory(prev => [...prev, { role: 'ai', content: "عذراً، حدث خطأ في الاتصال بالذكاء الاصطناعي." }]); [cite: 16]
     } finally {
-      setLoading(false);
+      [cite_start]setLoading(false); [cite: 17]
     }
   };
 
-  const handleSaveAndAnalyze = async () => {
-    await syncHealthData('menstrual', data); [cite: 18]
+  [cite_start]const handleSaveAndAnalyze = async () => { [cite: 18]
+    await syncHealthData('menstrual', data);
     setShowChat(true);
-    askRaqqaAI("بناءً على بياناتي المسجلة، قدمي لي نصيحة طبية مفصلة كطبيب متخصص."); [cite: 19]
+    [cite_start]askRaqqaAI("بناءً على بياناتي المسجلة، قدمي لي نصيحة طبية مفصلة كطبيب متخصص."); [cite: 19]
   };
 
-  const calculateCycle = () => {
-    const startDate = data['سجل التواريخ_تاريخ البدء']; [cite: 20]
-    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || 28; [cite: 21]
+  [cite_start]const calculateCycle = () => { [cite: 20]
+    // إصلاح الخطأ البرمجي هنا باستخدام المفتاح الصحيح
+    [cite_start]const startDate = data['سجل التواريخ_تاريخ البدء']; [cite: 20]
+    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || [cite_start]28; [cite: 21]
     if (startDate) {
       const nextDate = new Date(startDate);
-      nextDate.setDate(nextDate.getDate() + duration); [cite: 22]
+      [cite_start]nextDate.setDate(nextDate.getDate() + duration); [cite: 22]
       setPrediction(nextDate.toLocaleDateString('ar-EG'));
     }
   };
@@ -110,37 +109,35 @@ const MenstrualTracker = () => {
     card: { background: '#fff', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 24px rgba(233, 30, 99, 0.08)', marginBottom: '15px' },
     btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' },
     chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 1000, display: 'flex', flexDirection: 'column' },
-    chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #eee' }, [cite: 23]
-    iconBtn: { background: '#fff', border: '1px solid #eee', borderRadius: '50%', width: '35px', height: '35px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }
+    [cite_start]chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid #eee' }, [cite: 23]
+    iconBtn: { background: '#fff', border: '1px solid #eee', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }
   };
 
-  const sections = [
-    { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] }, [cite: 24]
+  [cite_start]const sections = [ [cite: 24]
+    { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
     { id: 2, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
     { id: 3, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
     { id: 4, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
   ];
 
   return (
-    <div style={styles.container}>
-      {/* الهيدر */}
+    [cite_start]<div style={styles.container}> [cite: 25]
       <div style={styles.card}>
         <div style={{ textAlign: 'center' }}>
           <HealthIcon size={40} color="#E91E63" />
           <h2 style={{ color: '#ad1457' }}>متابعة رقية الذكية</h2>
         </div>
-        <button onClick={calculateCycle} style={{ ...styles.btnPrimary, background: '#fce4ec', color: '#ad1457', marginTop: '10px' }}>توقع الدورة القادمة</button> [cite: 25]
-        {prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold' }}>الموعد المتوقع: {prediction}</div>} [cite: 26]
+        <button onClick={calculateCycle} style={{ ...styles.btnPrimary, background: '#fce4ec', color: '#ad1457', marginTop: '10px' }}>توقع الدورة القادمة</button>
+        [cite_start]{prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold' }}>الموعد المتوقع: {prediction}</div>} [cite: 26]
       </div>
 
-      {/* الأقسام المنسدلة */}
       {sections.map((sec) => (
         <div key={sec.id} style={styles.card}>
           <div onClick={() => setOpenAccordion(openAccordion === sec.id ? null : sec.id)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
             <span style={{ fontWeight: '600' }}>{sec.emoji} {sec.title}</span>
             <span>{openAccordion === sec.id ? '▲' : '▼'}</span>
           </div>
-          {openAccordion === sec.id && ( [cite: 27]
+          [cite_start]{openAccordion === sec.id && ( [cite: 27]
             <div style={{ padding: '15px 0 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               {sec.fields.map(field => (
                 <div key={field}>
@@ -158,9 +155,8 @@ const MenstrualTracker = () => {
         </div>
       ))}
 
-      {/* أزرار الإجراءات */}
-      <button onClick={handleSaveAndAnalyze} style={styles.btnPrimary}>
-        {loading ? "جاري التحليل..." : "حفظ البيانات وتحليلها بالذكاء الاصطناعي"} [cite: 31, 32]
+      [cite_start]<button onClick={handleSaveAndAnalyze} style={styles.btnPrimary}> [cite: 31]
+        {loading ? [cite_start]"جاري التحليل..." : "حفظ البيانات وتحليلها بالذكاء الاصطناعي"} [cite: 32]
       </button>
 
       <button onClick={() => setShowChat(true)} style={{ ...styles.btnPrimary, background: '#ad1457' }}>
@@ -170,66 +166,50 @@ const MenstrualTracker = () => {
       {/* قائمة الردود المحفوظة */}
       {savedResponses.length > 0 && (
         <div style={styles.card}>
-          <h4 style={{ color: '#E91E63', marginBottom: '10px' }}>⭐ الردود المحفوظة</h4>
+          <h4 style={{ color: '#E91E63' }}>⭐ الردود المحفوظة</h4>
           {savedResponses.map((res) => (
-            <div key={res.id} style={{ borderBottom: '1px solid #eee', padding: '10px 0', fontSize: '13px' }}>
-              <p>{res.content}</p>
-              <button onClick={() => removeSavedResponse(res.id)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer', fontSize: '11px' }}>حذف من المحفوظات</button>
+            <div key={res.id} style={{ borderBottom: '1px solid #eee', padding: '10px 0' }}>
+              <p style={{ fontSize: '13px' }}>{res.content}</p>
+              <button onClick={() => removeSavedResponse(res.id)} style={{ color: 'red', border: 'none', background: 'none', cursor: 'pointer' }}>حذف</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* شات طبيبة رقة */}
-      {showChat && (
+      [cite_start]{showChat && ( [cite: 32]
         <div style={styles.chatOverlay}>
-          <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '20px' }}>✕</span>
-            <span style={{ fontWeight: 'bold' }}>طبيبة رقة الذكية</span>
-            <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>مسح الشات</button> [cite: 33]
+          <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between' }}>
+            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer' }}>✕</span>
+            <span style={{ fontWeight: 'bold' }}>استشارة رقية</span>
+            [cite_start]<button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff' }}>مسح</button> [cite: 33]
           </div>
-
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
             {chatHistory.map((msg, i) => (
               <div key={i} style={{ 
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                [cite_start]background: msg.role === 'user' ? '#E91E63' : '#fff', [cite: 34]
+                [cite_start]alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', [cite: 33]
+                background: msg.role === 'user' ? [cite_start]'#E91E63' : '#fff', [cite: 34]
                 color: msg.role === 'user' ? '#fff' : '#333',
-                padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '85%',
-                marginLeft: msg.role === 'user' ? [cite_start]'auto' : '0' [cite: 35]
+                padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '80%',
+                marginRight: msg.role === 'user' ? [cite_start]'auto' : '0' [cite: 35]
               }}>
                 {msg.content}
-                {msg.role === 'ai' && (
-                  <button 
-                    onClick={() => setSavedResponses([...savedResponses, msg])} 
-                    style={{ display: 'block', marginTop: '8px', fontSize: '11px', color: '#E91E63', border: 'none', background: 'none', fontWeight: 'bold' }}
-                  >
-                    ⭐ حفظ في المفضلة
-                  </button>
-                )}
+                {msg.role === 'ai' && <button onClick={() => setSavedResponses([...savedResponses, msg])} style={{ display: 'block', marginTop: '5px', fontSize: '10px', color: '#E91E63', border: 'none', background: 'none' }}>⭐ حفظ</button>}
               </div>
             ))}
-            {loading && <div style={{ color: '#888', fontSize: '12px' }}>رقة تكتب الآن...</div>}
           </div>
-
           <div style={styles.chatInputArea}>
-            <div style={styles.iconBtn} onClick={() => alert('فتح الكاميرا/المعرض')}>📷</div>
-            <div style={styles.iconBtn} onClick={() => alert('تشغيل الميكروفون')}>🎤</div>
+            [cite_start]<div style={styles.iconBtn} onClick={() => alert('📷 فتح الكاميرا')}>📷</div> [cite: 36]
+            <div style={styles.iconBtn} onClick={() => alert('🎤 سجل بصوتك')}>🎤</div>
             <input 
-              placeholder="اسألي طبيبة رقة..." 
-              [cite_start]style={{ flex: 1, border: '1px solid #ddd', padding: '10px', borderRadius: '20px', outline: 'none' }} [cite: 36, 37]
-              onKeyDown={(e) => { 
-                if(e.key === 'Enter' && e.target.value.trim()) { 
-                  askRaqqaAI(e.target.value);
-                  e.target.value = ''; [cite: 38]
-                } 
-              }}
+              placeholder="اسألي رقية..." 
+              [cite_start]style={{ flex: 1, border: 'none', padding: '10px', borderRadius: '20px' }} [cite: 37]
+              onKeyDown={(e) => { if(e.key === 'Enter') { askRaqqaAI(e.target.value); e.target.value = ''; [cite_start]} }} [cite: 38]
             />
           </div>
         </div>
       )}
     </div>
   );
-}; [cite: 39]
+[cite_start]}; [cite: 39]
 
 export default MenstrualTracker;
