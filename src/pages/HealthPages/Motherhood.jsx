@@ -11,7 +11,6 @@ const MotherhoodApp = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // تعريف البيانات: كروت ملونة بـ 10 مدخلات لكل منها
   const categories = [
     { id: 'physical', title: 'الجسدية', icon: <Activity />, color: '#FF6B6B', fields: ['جودة النوم', 'الشهية', 'النشاط الحركي', 'نمو الوزن', 'نمو الطول', 'المناعة', 'صحة الحواس', 'النظافة', 'شرب الماء', 'التنفس'] },
     { id: 'cognitive', title: 'المعرفة', icon: <Brain />, color: '#4D96FF', fields: ['التركيز', 'حل المشكلات', 'حب الاستطلاع', 'الذاكرة', 'اللغة', 'المنطق', 'الحساب', 'القراءة', 'اللغات', 'الاستنتاج'] },
@@ -37,7 +36,6 @@ const MotherhoodApp = () => {
 
   return (
     <div className="min-h-screen bg-[#F7F9FC] p-4 font-sans text-right" dir="rtl">
-      {/* Header الأنيق */}
       <header className="flex justify-between items-center mb-8 px-2">
         <div className="flex gap-3 items-center">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl shadow-lg flex items-center justify-center text-white">
@@ -53,11 +51,7 @@ const MotherhoodApp = () => {
 
       <AnimatePresence mode="wait">
         {!activeTab ? (
-          /* شبكة الكروت الملونة الصغيرة */
-          <motion.div 
-            key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="grid grid-cols-2 gap-3"
-          >
+          <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 gap-3">
             {categories.map((cat) => (
               <button
                 key={cat.id}
@@ -75,23 +69,20 @@ const MotherhoodApp = () => {
             ))}
           </motion.div>
         ) : (
-          /* واجهة الإدخال الفاخرة بالأشرطة الملونة */
           <motion.div 
             key="modal" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-50 bg-white flex flex-col"
           >
-            {/* Header المودال */}
             <div className="p-6 flex justify-between items-center border-b border-slate-50">
               <button onClick={() => setActiveTab(null)} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><X size={20}/></button>
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center text-center">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">تحديث البيانات</span>
                 <h2 className="text-lg font-black text-slate-800">{activeTab.title}</h2>
               </div>
               <div className="w-12"></div>
             </div>
 
-            {/* أشرطة المدخلات الملونة (أكثر من 7 مدخلات) */}
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 pb-32">
               {activeTab.fields.map((field, idx) => (
                 <div 
@@ -109,7 +100,7 @@ const MotherhoodApp = () => {
                     <p className="text-[10px] font-bold mb-0.5" style={{ color: activeTab.color }}>{field}</p>
                     <input 
                       type="text" 
-                      placeholder={`ملاحظاتك حول ${field}...`}
+                      placeholder={`اكتبي هنا...`}
                       value={inputs[activeTab.id][idx]}
                       onChange={(e) => handleUpdateInput(activeTab.id, idx, e.target.value)}
                       className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-300 font-medium"
@@ -119,7 +110,6 @@ const MotherhoodApp = () => {
               ))}
             </div>
 
-            {/* زر التحليل الذكي */}
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent">
               <button 
                 className="w-full py-5 rounded-[2.2rem] font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95"
@@ -129,7 +119,7 @@ const MotherhoodApp = () => {
                 }}
               >
                 <Sparkles size={20} />
-                تحليل البيانات بالذكاء الاصطناعي
+                تحليل البيانات
               </button>
             </div>
           </motion.div>
