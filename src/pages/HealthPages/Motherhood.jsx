@@ -1,141 +1,128 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Brain, Users, Star, Smile, Lightbulb, Activity, 
-  Send, Trash2, Camera, Mic, ChevronRight, MessageSquare, 
-  Sparkles, X, Bookmark, Image as ImageIcon
+  Send, Trash2, ChevronRight, MessageSquare, Sparkles, X, 
+  Settings, Bell, Search
 } from 'lucide-react';
-import { CapacitorHttp } from '@capacitor/core';
 
-const MotherhoodPage = () => {
+const MotherhoodApp = () => {
   const [activeTab, setActiveTab] = useState(null);
-  const [showChat, setShowChat] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('ai_history')) || []);
 
-  // تعريف الفئات مع الأيقونات والألوان [cite: 5, 6, 7]
   const categories = [
-    { id: 'physical', title: 'الاحتياجات الجسدية', icon: <Activity />, color: '#FF6B6B', fields: ['جودة النوم', 'الشهية', 'النشاط الحركي', 'نمو الوزن', 'نمو الطول', 'المناعة', 'صحة الحواس', 'النظافة', 'شرب الماء', 'التنفس'] },
-    { id: 'cognitive', title: 'التطور المعرفي', icon: <Brain />, color: '#4D96FF', fields: ['التركيز', 'حل المشكلات', 'حب الاستطلاع', 'الذاكرة', 'اللغة', 'المنطق', 'الحساب', 'القراءة', 'اللغات', 'الاستنتاج'] },
-    { id: 'emotional', title: 'الذكاء العاطفي', icon: <Heart />, color: '#FF87B2', fields: ['التعبير', 'الثقة', 'الفشل', 'المرونة', 'الضبط', 'التعاطف', 'الأمان', 'حب الذات', 'الخوف', 'الاستقرار'] },
-    { id: 'social', title: 'المهارات الاجتماعية', icon: <Users />, color: '#6BCB77', fields: ['آداب الحديث', 'المشاركة', 'الصداقات', 'احترام القوانين', 'القيادة', 'النزاعات', 'التعاون', 'الذكاء', 'الخصوصية', 'الحوار'] },
-    { id: 'values', title: 'القناعات والقيم', icon: <Star />, color: '#FFD93D', fields: ['الصدق', 'بر الوالدين', 'المسؤولية', 'الامتنان', 'التواضع', 'الرحمة', 'البيئة', 'الوقت', 'الصبر', 'العدل'] },
-    { id: 'behavior', title: 'السلوك والتهذيب', icon: <Smile />, color: '#92A9BD', fields: ['إدارة الغضب', 'العناد', 'المواعيد', 'الترتيب', 'الأماكن العامة', 'الاستقلال', 'الاعتذار', 'طلب الإذن', 'الاستماع', 'المبادرة'] },
-    { id: 'creative', title: 'المواهب والإبداع', icon: <Lightbulb />, color: '#B1AFFF', fields: ['الخيال', 'الرسم', 'الأشغال اليدوية', 'التمثيل', 'الابتكار', 'الموسيقى', 'التصوير', 'الكتابة', 'البرمجة', 'إعادة التدوير'] }
+    { id: 'physical', title: 'الاحتياجات الجسدية', icon: <Activity />, color: '#6366f1', fields: ['جودة النوم', 'الشهية', 'النشاط'] },
+    { id: 'cognitive', title: 'التطور المعرفي', icon: <Brain />, color: '#ec4899', fields: ['التركيز', 'اللغة', 'الذاكرة'] },
+    { id: 'emotional', title: 'الذكاء العاطفي', icon: <Heart />, color: '#f59e0b', fields: ['الثقة', 'التعبير', 'المرونة'] },
+    { id: 'social', title: 'المهارات الاجتماعية', icon: <Users />, color: '#10b981', fields: ['المشاركة', 'الصداقات', 'القيادة'] },
+    { id: 'values', title: 'القناعات والقيم', icon: <Star />, color: '#8b5cf6', fields: ['الصدق', 'المسؤولية', 'الامتنان'] },
+    { id: 'behavior', title: 'السلوك والتهذيب', icon: <Smile />, color: '#06b6d4', fields: ['الاستقلال', 'الترتيب', 'الهدوء'] }
   ];
 
-  const [inputs, setInputs] = useState(() => {
-    const state = {};
-    categories.forEach(cat => state[cat.id] = Array(10).fill(''));
-    return state;
-  });
-
-  // التعامل مع المدخلات [cite: 9]
-  const handleUpdateInput = (catId, idx, val) => {
-    setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
-  };
-
-  // إرسال البيانات للتحليل الذكي [cite: 12, 14, 15]
-  const runAiAnalysis = async (catIdx) => {
-    const category = categories[catIdx];
-    const dataString = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: ${v}` : '').filter(v => v).join(' | ');
-    if (!dataString) return;
-
-    setLoading(true);
-    setShowChat(true);
-
-    try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
-        headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `تحليل تربوي شامل لفئة (${category.title}): ${dataString}` }
-      });
-      const reply = response.data.reply || response.data.message;
-      const newMsg = { id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') };
-      setChatHistory(prev => [newMsg, ...prev]);
-      localStorage.setItem('ai_history', JSON.stringify([newMsg, ...chatHistory]));
-    } catch (err) { console.error("AI Error", err); }
-    setLoading(false);
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 font-sans text-right" dir="rtl">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-4xl font-black text-slate-800 dark:text-white">رقة الذكية</h1>
-          <p className="text-slate-500 mt-1">مساعدكِ التربوي المتكامل</p>
+    <div className="min-h-screen bg-[#F0F2F5] p-6 font-sans" dir="rtl">
+      {/* الشريط العلوي - مستوحى من تطبيقات Dribbble */}
+      <header className="max-w-4xl mx-auto flex justify-between items-center mb-10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-white flex items-center justify-center">
+            <Settings className="text-slate-400" size={20} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">رقة الذكية</h1>
+            <p className="text-xs text-slate-500">مرحباً بكِ، أمي المبدعة</p>
+          </div>
         </div>
-        <button onClick={() => setShowChat(true)} className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md transition-shadow">
-          <MessageSquare className="text-indigo-600" />
-        </button>
+        <div className="flex gap-3">
+            <button className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-white flex items-center justify-center text-slate-400">
+                <Search size={20} />
+            </button>
+            <button className="w-12 h-12 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 flex items-center justify-center text-white">
+                <Bell size={20} />
+            </button>
+        </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        {!activeTab && activeTab !== 0 ? (
-          /* شبكة القوائم (الرئيسية) [cite: 19, 20] */
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9 }}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-          >
-            {categories.map((cat, index) => (
-              <button key={cat.id} onClick={() => setActiveTab(index)}
-                className="group bg-white dark:bg-slate-900 p-8 rounded-[3rem] flex flex-col items-center gap-5 shadow-sm border-b-8 transition-all hover:-translate-y-2 active:scale-95"
-                style={{ borderBottomColor: cat.color }}
-              >
-                <div className="p-5 rounded-3xl transition-colors group-hover:scale-110" style={{ backgroundColor: `${cat.color}15`, color: cat.color }}>
-                  {React.cloneElement(cat.icon, { size: 32 })}
-                </div>
-                <span className="font-bold text-slate-800 dark:text-slate-200 text-lg">{cat.title}</span>
-              </button>
-            ))}
-          </motion.div>
-        ) : (
-          /* كارت إدخال البيانات (التفصيلي) [cite: 21, 23, 26] */
-          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}
-            className="max-w-2xl mx-auto bg-white dark:bg-slate-900 rounded-[4rem] shadow-2xl overflow-hidden"
-          >
-            <div className="p-8 text-white flex justify-between items-center" style={{ backgroundColor: categories[activeTab].color }}>
-              <div className="flex items-center gap-4">
-                <div className="bg-white/20 p-3 rounded-2xl">{categories[activeTab].icon}</div>
-                <h2 className="text-2xl font-bold">{categories[activeTab].title}</h2>
-              </div>
-              <button onClick={() => setActiveTab(null)} className="bg-black/10 hover:bg-black/20 p-3 rounded-full transition-colors"><X /></button>
-            </div>
-
-            <div className="p-8 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-              {categories[activeTab].fields.map((field, idx) => (
-                <div key={idx} className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-4 rounded-3xl group border border-transparent focus-within:border-indigo-200 transition-all">
-                  <span className="w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg" 
-                        style={{ backgroundColor: `${categories[activeTab].color}15`, color: categories[activeTab].color }}>
-                    {idx + 1}
-                  </span>
-                  <input 
-                    type="text" 
-                    placeholder={`اكتبي عن ${field}...`}
-                    value={inputs[categories[activeTab].id][idx]}
-                    onChange={(e) => handleUpdateInput(categories[activeTab].id, idx, e.target.value)}
-                    className="w-full bg-transparent outline-none text-slate-700 dark:text-slate-200 placeholder:text-slate-400 font-medium"
-                  />
-                </div>
+      <main className="max-w-4xl mx-auto">
+        <AnimatePresence mode="wait">
+          {!activeTab ? (
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            >
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveTab(cat)}
+                  className="group bg-white p-6 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:shadow-indigo-100 transition-all border border-transparent hover:border-indigo-50 flex items-center gap-6 text-right"
+                >
+                  <div 
+                    className="w-20 h-20 rounded-[1.8rem] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: `${cat.color}10`, color: cat.color }}
+                  >
+                    {React.cloneElement(cat.icon, { size: 32 })}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-slate-800 mb-1">{cat.title}</h3>
+                    <p className="text-sm text-slate-400">تابعي تطور طفلك في هذا الجانب</p>
+                  </div>
+                  <ChevronRight className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
+                </button>
               ))}
-            </div>
+            </motion.div>
+          ) : (
+            /* كارت إدخال البيانات - تصميم ناعم (Soft UI) */
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200 overflow-hidden border border-white"
+            >
+              <div className="p-8 flex justify-between items-center border-b border-slate-50">
+                <div className="flex items-center gap-4">
+                    <div className="p-4 rounded-2xl" style={{ backgroundColor: `${activeTab.color}15`, color: activeTab.color }}>
+                        {activeTab.icon}
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-bold text-slate-800">{activeTab.title}</h2>
+                        <span className="text-xs text-slate-400">إدخال البيانات اليومية</span>
+                    </div>
+                </div>
+                <button onClick={() => setActiveTab(null)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
+                    <X size={20} />
+                </button>
+              </div>
 
-            <div className="p-8 bg-slate-50 dark:bg-slate-900 border-t flex gap-4">
-              <button onClick={() => runAiAnalysis(activeTab)}
-                className="flex-1 py-5 rounded-[2rem] font-black text-white shadow-xl hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-3 text-lg"
-                style={{ backgroundColor: categories[activeTab].color }}
-              >
-                <Sparkles /> {loading ? 'جاري التحليل...' : 'تحليل البيانات'}
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              <div className="p-8 grid grid-cols-1 gap-4">
+                {activeTab.fields.map((field, idx) => (
+                  <div key={idx} className="relative">
+                    <label className="text-xs font-bold text-slate-400 mr-4 mb-2 block">{field}</label>
+                    <input 
+                      type="text" 
+                      placeholder="اكتبي ملاحظاتك هنا..."
+                      className="w-full bg-[#F8FAFC] border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-[1.5rem] py-4 px-6 outline-none transition-all text-slate-700 placeholder:text-slate-300"
+                    />
+                  </div>
+                ))}
+              </div>
 
-      {/* شاشة المحادثة (النتائج) - تظهر عند التحليل [cite: 29, 31, 35] */}
-      {/* ... (نفس منطق AnimatePresence لشاشة الشات في الكود الأصلي) */}
+              <div className="p-8 bg-slate-50/50 flex gap-4">
+                <button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-[2rem] shadow-lg shadow-indigo-100 flex items-center justify-center gap-3 transition-all active:scale-95">
+                  <Sparkles size={20} />
+                  تحليل النتائج بالذكاء الاصطناعي
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+
+      {/* زر المساعدة العائم */}
+      <button className="fixed bottom-8 left-8 w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center text-indigo-600 border border-indigo-50 hover:-translate-y-2 transition-transform">
+        <MessageSquare size={28} />
+      </button>
     </div>
   );
 };
 
-export default MotherhoodPage;
+export default MotherhoodApp;
