@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-// استيراد CapacitorHttp بشكل صحيح لتجنب خطأ الـ Build
+// 1. استيراد CapacitorHttp للاتصال الأصلي المتوافق مع الجوال
 import { CapacitorHttp } from '@capacitor/core';
 import { iconMap } from '../../constants/iconMap';
 
@@ -10,7 +10,7 @@ const IntegratedHealthHub = () => {
   const [openIdx, setOpenIdx] = useState(null);
   const [activeTab, setActiveTab] = useState('pregnancy');
   const [loading, setLoading] = useState(false);
-  const [showChat, setShowChat] = useState(false); 
+  const [showChat, setShowChat] = useState(false); // شاشة الشات المنبثقة
   const [aiResponse, setAiResponse] = useState('');
   const [chatHistory, setChatHistory] = useState(() => JSON.parse(localStorage.getItem('ai_chat_history')) || []);
   
@@ -45,26 +45,27 @@ const IntegratedHealthHub = () => {
     return "text";
   };
 
+  // دالة الحفظ والتحليل عبر CapacitorHttp
   const handleSaveAndAnalyze = async () => {
     setLoading(true);
-    setShowChat(true);
+    setShowChat(true); // فتح الشات فوراً
     
     try {
-      // 1. حفظ البيانات في Neon DB باستخدام CapacitorHttp
+      // 1. الحفظ في قاعدة بيانات نيون (Notifications)
       const saveOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
           category: activeTab,
-          value: "تحديث ملف صحي",
+          value: "تحديث بيانات طبية",
           note: JSON.stringify(data),
           user_id: 1
         }
       };
       await CapacitorHttp.post(saveOptions);
 
-      // 2. تحليل البيانات كطبيبة نساء وتوليد
-      const aiPrompt = `أنا طبيبة نساء وتوليد متخصصة في رقة. هذه بيانات مريضتي في مرحلة ${activeTab === 'pregnancy' ? 'الحمل' : 'الرضاعة'}: ${JSON.stringify(data)}. قدمي تحليلاً طبياً مفصلاً بأسلوب دافئ ومهني مع نصائح لكل مدخل.`;
+      // 2. تحليل البيانات كطبيبة نساء وتوليد متخصصة
+      const aiPrompt = `أنا طبيبة نساء وتوليد متخصصة في رقة. بصفتي خبيرة، سأقوم بتحليل هذه البيانات لمريضتي في مرحلة ${activeTab === 'pregnancy' ? 'الحمل' : 'الرضاعة'}. البيانات الحالية: ${JSON.stringify(data)}. المطلوب: تقديم تقرير طبي موسع وشامل، بأسلوب دافئ ومهني، يتضمن الحالة العامة ونصائح طبية دقيقة.`;
       
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -73,18 +74,24 @@ const IntegratedHealthHub = () => {
       };
 
       const response = await CapacitorHttp.post(aiOptions);
-      const responseText = response.data.reply || response.data.message || "عذراً، لم أتمكن من الحصول على رد حالياً.";
+      // النتيجة في response.data مباشرة
+      const responseText = response.data.reply || response.data.message || "عذراً، لم أتمكن من الحصول على رد طبي حالياً.";
       
-      const newResponse = { id: Date.now(), text: responseText, date: new Date().toLocaleString(), type: activeTab };
+      const newResponse = { 
+        id: Date.now(), 
+        text: responseText, 
+        date: new Date().toLocaleString(), 
+        type: activeTab 
+      };
+      
       setAiResponse(responseText);
-      
       const updatedHistory = [newResponse, ...chatHistory];
       setChatHistory(updatedHistory);
       localStorage.setItem('ai_chat_history', JSON.stringify(updatedHistory));
 
     } catch (err) {
-      console.error("Connection Error:", err);
-      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت.");
+      console.error("فشل الاتصال الأصلي:", err);
+      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي.");
     } finally {
       setLoading(false);
     }
@@ -98,6 +105,7 @@ const IntegratedHealthHub = () => {
 
   return (
     <div style={containerStyle}>
+      {/* تبديل الأقسام */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
         <button 
           onClick={() => setActiveTab('pregnancy')}
@@ -113,6 +121,7 @@ const IntegratedHealthHub = () => {
         </button>
       </div>
 
+      {/* قوائم المدخلات */}
       <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingLeft: '5px' }}>
         {currentSections.map((sec, i) => (
           <div key={i} style={sectionCardStyle}>
@@ -143,46 +152,52 @@ const IntegratedHealthHub = () => {
         ))}
       </div>
 
+      {/* الزر الرئيسي للتحليل */}
       <div style={{ marginTop: '20px' }}>
         <button onClick={handleSaveAndAnalyze} style={{ ...actionBtnStyle, background: activeTab === 'pregnancy' ? '#6a1b9a' : '#2e7d32' }}>
            تحليل البيانات مع طبيبة رقة 👩‍⚕️
         </button>
       </div>
 
+      {/* واجهة شاشة الشات المنبثقة */}
       {showChat && (
         <div style={chatOverlayStyle}>
           <div style={chatWindowStyle}>
             <div style={chatHeaderStyle}>
-              <span>👨‍⚕️ عيادة رقة الذكية</span>
+              <span>👩‍⚕️ عيادة طبيبة رقة المختصة</span>
               <button onClick={() => setShowChat(false)} style={closeBtnStyle}>✕</button>
             </div>
             <div style={chatBodyStyle}>
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>الطبيبة تقوم بمراجعة بياناتك... ✨</div>
+                <div style={{ textAlign: 'center', padding: '20px' }}>الطبيبة تراجع ملفك الصحي الآن... ✨</div>
               ) : (
                 <div style={messageBoxStyle}>
-                   <strong>التشخيص والنصيحة الطبية:</strong>
-                   <p style={{ marginTop: '10px' }}>{aiResponse}</p>
+                   <strong>تقرير الطبيبة المختصة:</strong>
+                   <p style={{ marginTop: '10px', fontSize: '0.9rem' }}>{aiResponse}</p>
                 </div>
               )}
             </div>
+            {/* أزرار الوسائط */}
             <div style={mediaContainerStyle}>
-              <button title="رفع أشعة" style={mediaBtnStyle} onClick={() => fileInputRef.current.click()}>📷</button>
-              <button title="تسجيل صوتي" style={mediaBtnStyle} onClick={() => alert("جاري الاتصال بالميكروفون...")}>🎤</button>
+              <button title="رفع أشعة/كاميرا" style={mediaBtnStyle} onClick={() => fileInputRef.current.click()}>📷</button>
+              <button title="فتح الميكروفون" style={mediaBtnStyle} onClick={() => alert("جاري الاتصال بالميكروفون...")}>🎤</button>
               <input type="file" ref={fileInputRef} hidden accept="image/*" />
             </div>
           </div>
         </div>
       )}
 
+      {/* سجل الاستشارات المحفوظة */}
       <div style={historySectionStyle}>
-        <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>📜 الاستشارات المحفوظة</h3>
+        <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>📜 سجل الاستشارات المحفوظة</h3>
         <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
           {chatHistory.map(res => (
             <div key={res.id} style={historyCardStyle}>
-              <small>{res.date}</small>
-              <p style={{ fontSize: '0.85rem' }}>{res.text.substring(0, 100)}...</p>
-              <button onClick={() => deleteResponse(res.id)} style={deleteBtnStyle}>🗑️ حذف</button>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <small style={{ color: '#666' }}>{res.date}</small>
+                <button onClick={() => deleteResponse(res.id)} style={deleteBtnStyle}>🗑️ حذف</button>
+              </div>
+              <p style={{ fontSize: '0.85rem', marginTop: '5px' }}>{res.text.substring(0, 100)}...</p>
             </div>
           ))}
         </div>
@@ -197,19 +212,19 @@ const sectionCardStyle = { background: 'rgba(255,255,255,0.25)', borderRadius: '
 const sectionHeaderStyle = { padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' };
 const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '15px' };
 const labelStyle = { fontSize: '0.75rem', marginBottom: '4px', display: 'block' };
-const inputStyle = { width: '100%', padding: '10px', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.5)', background: '#fff' };
+const inputStyle = { width: '100%', padding: '10px', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.5)', background: '#fff', outline: 'none' };
 const actionBtnStyle = { width: '100%', padding: '15px', borderRadius: '15px', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer' };
-const chatOverlayStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 };
-const chatWindowStyle = { width: '90%', maxWidth: '480px', background: '#fff', borderRadius: '25px', overflow: 'hidden' };
-const chatHeaderStyle = { background: '#6a1b9a', color: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between' };
-const chatBodyStyle = { padding: '20px', maxHeight: '400px', overflowY: 'auto' };
-const messageBoxStyle = { background: '#f5f5f5', padding: '15px', borderRadius: '15px', lineHeight: '1.6' };
-const mediaContainerStyle = { padding: '15px', display: 'flex', gap: '20px', justifyContent: 'center', borderTop: '1px solid #eee' };
-const mediaBtnStyle = { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#eee', fontSize: '1.2rem', cursor: 'pointer' };
-const closeBtnStyle = { background: 'none', border: 'none', color: '#fff', cursor: 'pointer', fontSize: '1.2rem' };
-const historySectionStyle = { marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: '15px' };
-const historyCardStyle = { background: 'rgba(255,255,255,0.4)', padding: '10px', borderRadius: '12px', marginBottom: '8px', position: 'relative' };
-const deleteBtnStyle = { border: 'none', background: 'none', color: '#d32f2f', fontSize: '0.75rem', cursor: 'pointer' };
 const tabBtnStyle = { flex: 1, padding: '10px', borderRadius: '15px', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' };
+const chatOverlayStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 };
+const chatWindowStyle = { width: '90%', maxWidth: '450px', background: '#fff', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' };
+const chatHeaderStyle = { background: '#6a1b9a', color: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const chatBodyStyle = { padding: '20px', maxHeight: '350px', overflowY: 'auto' };
+const messageBoxStyle = { background: '#f3e5f5', padding: '15px', borderRadius: '15px', lineHeight: '1.6' };
+const mediaContainerStyle = { padding: '15px', display: 'flex', gap: '15px', justifyContent: 'center', borderTop: '1px solid #eee' };
+const mediaBtnStyle = { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#f0f0f0', fontSize: '1.2rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const closeBtnStyle = { background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' };
+const historySectionStyle = { marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: '15px' };
+const historyCardStyle = { background: 'rgba(255,255,255,0.4)', padding: '12px', borderRadius: '15px', marginBottom: '10px' };
+const deleteBtnStyle = { border: 'none', background: 'none', color: '#d32f2f', fontSize: '0.75rem', cursor: 'pointer' };
 
 export default IntegratedHealthHub;
