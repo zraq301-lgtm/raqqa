@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Brain, Users, Star, Smile, Lightbulb, Activity, 
-  Send, Trash2, ChevronRight, MessageSquare, Sparkles, X, 
-  Settings, Bell, Search, Plus
+  Send, Trash2, Camera, Mic, ChevronRight, MessageSquare, 
+  Sparkles, X, Settings, Bell, Search, Plus, Image as ImageIcon, Save
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 
 const MotherhoodApp = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatHistory, setChatHistory] = useState(() => {
+    const saved = localStorage.getItem('raqqa_chat_history');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const categories = [
     { id: 'physical', title: 'الجسدية', icon: <Activity />, color: '#FF6B6B', fields: ['جودة النوم', 'الشهية', 'النشاط الحركي', 'نمو الوزن', 'نمو الطول', 'المناعة', 'صحة الحواس', 'النظافة', 'شرب الماء', 'التنفس'] },
@@ -22,105 +27,201 @@ const MotherhoodApp = () => {
   ];
 
   const [inputs, setInputs] = useState(() => {
-    const initialState = {};
-    categories.forEach(cat => { initialState[cat.id] = Array(10).fill(''); });
-    return initialState;
+    const state = {};
+    categories.forEach(cat => { state[cat.id] = Array(10).fill(''); });
+    return state;
   });
 
   const handleUpdateInput = (catId, idx, val) => {
-    setInputs(prev => ({
-      ...prev,
-      [catId]: prev[catId].map((item, i) => (i === idx ? val : item))
-    }));
+    setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
+  };
+
+  // 1. حفظ البيانات في قاعدة بيانات Neon
+  const saveToNeonDB = async (category, data) => {
+    try {
+      await CapacitorHttp.post({
+        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          title: `تحديث: ${category}`,
+          message: JSON.stringify(data),
+          type: 'motherhood_update'
+        }
+      });
+    } catch (err) { console.error("DB Save Error:", err); }
+  };
+
+  // 2. معالجة الذكاء الاصطناعي (طبيبة رقة للتربية)
+  const handleAiAnalysis = async (category) => {
+    const dataSummary = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: ${v}` : '').filter(v => v).join(', ');
+    if (!dataSummary) return;
+
+    setLoading(true);
+    try {
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          prompt: `أنتِ الآن "طبيبة رقة للتربية"، طبيبة متخصصة في تربية الأطفال وعلم النفس السلوكي. 
+          بناءً على البيانات التالية في قسم (${category.title}): ${dataSummary}، 
+          قدمي تحليلاً طبياً وتربوياً مفصلاً، متبوعاً بنصائح عملية ومطولة لكل نقطة، بأسلوب حنون ومهني.`
+        }
+      };
+
+      const response = await CapacitorHttp.post(options);
+      const responseText = response.data.reply || response.data.message;
+
+      const newEntry = {
+        id: Date.now(),
+        category: category.title,
+        query: dataSummary,
+        reply: responseText,
+        date: new Date().toLocaleString('ar-EG')
+      };
+
+      const updatedHistory = [newEntry, ...chatHistory];
+      setChatHistory(updatedHistory);
+      localStorage.setItem('raqqa_chat_history', JSON.stringify(updatedHistory));
+      
+      await saveToNeonDB(category.title, inputs[category.id]);
+      setShowChat(true);
+      setActiveTab(null);
+    } catch (err) {
+      alert("حدث خطأ في الاتصال، تأكدي من الإنترنت.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteResponse = (id) => {
+    const filtered = chatHistory.filter(item => item.id !== id);
+    setChatHistory(filtered);
+    localStorage.setItem('raqqa_chat_history', JSON.stringify(filtered));
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F9FC] p-4 font-sans text-right" dir="rtl">
-      <header className="flex justify-between items-center mb-8 px-2">
-        <div className="flex gap-3 items-center">
-          <div className="w-10 h-10 bg-indigo-600 rounded-xl shadow-lg flex items-center justify-center text-white">
+    <div className="min-h-screen bg-[#F8FAFC] p-4 font-sans text-right" dir="rtl">
+      {/* Header مع زر الطبيبة */}
+      <header className="flex justify-between items-center mb-6">
+        <button onClick={() => setShowChat(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-2xl shadow-lg shadow-indigo-200">
+          <Sparkles size={18} />
+          <span className="text-sm font-bold">طبيبة رقة للتربية</span>
+        </button>
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-black text-slate-800">رقة الذكية</h1>
+          <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-indigo-600">
             <Plus size={20} />
           </div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">رقة الذكية</h1>
-        </div>
-        <div className="flex gap-2">
-          <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Search size={18}/></button>
-          <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Settings size={18}/></button>
         </div>
       </header>
 
-      <AnimatePresence mode="wait">
-        {!activeTab ? (
-          <motion.div key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="grid grid-cols-2 gap-3">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveTab(cat)}
-                className="relative overflow-hidden bg-white p-4 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-start gap-3 transition-all active:scale-95"
-              >
-                <div className="p-3 rounded-2xl text-white shadow-md" style={{ backgroundColor: cat.color }}>
-                  {React.cloneElement(cat.icon, { size: 20 })}
-                </div>
-                <span className="font-bold text-slate-700 text-xs">{cat.title}</span>
-                <div className="absolute -bottom-2 -right-2 opacity-10" style={{ color: cat.color }}>
-                   {React.cloneElement(cat.icon, { size: 50 })}
-                </div>
-              </button>
-            ))}
-          </motion.div>
-        ) : (
-          <motion.div 
-            key="modal" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-50 bg-white flex flex-col"
+      {/* قوائم عمودية أسفل بعضها */}
+      <div className="space-y-3">
+        {categories.map((cat) => (
+          <motion.button
+            key={cat.id}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setActiveTab(cat)}
+            className="w-full bg-white p-4 rounded-[1.5rem] shadow-sm border border-slate-50 flex items-center justify-between group"
           >
-            <div className="p-6 flex justify-between items-center border-b border-slate-50">
-              <button onClick={() => setActiveTab(null)} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><X size={20}/></button>
-              <div className="flex flex-col items-center text-center">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">تحديث البيانات</span>
-                <h2 className="text-lg font-black text-slate-800">{activeTab.title}</h2>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-inner" style={{ backgroundColor: cat.color }}>
+                {cat.icon}
               </div>
-              <div className="w-12"></div>
+              <div className="text-right">
+                <h3 className="font-bold text-slate-800 text-sm">{cat.title}</h3>
+                <p className="text-[10px] text-slate-400">10 حقول تطور جاهزة</p>
+              </div>
             </div>
+            <ChevronRight className="text-slate-300 group-hover:text-indigo-500 transition-colors" size={18} />
+          </motion.button>
+        ))}
+      </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 pb-32">
+      <AnimatePresence>
+        {/* كارت إدخال البيانات الأنيق */}
+        {activeTab && (
+          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="fixed inset-0 z-40 bg-white flex flex-col">
+            <div className="p-6 flex justify-between items-center border-b border-slate-50">
+              <button onClick={() => setActiveTab(null)} className="p-2 bg-slate-50 rounded-xl"><X /></button>
+              <h2 className="font-black text-slate-800 tracking-tight">{activeTab.title}</h2>
+              <div className="w-8"></div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 pb-24">
               {activeTab.fields.map((field, idx) => (
-                <div 
-                  key={idx} 
-                  className="flex items-center gap-4 p-3 rounded-[1.5rem] shadow-sm border border-transparent focus-within:border-slate-200"
-                  style={{ backgroundColor: `${activeTab.color}08` }}
-                >
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shadow-sm shrink-0"
-                    style={{ backgroundColor: activeTab.color, color: '#fff' }}
-                  >
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1 text-right">
-                    <p className="text-[10px] font-bold mb-0.5" style={{ color: activeTab.color }}>{field}</p>
+                <div key={idx} className="flex items-center gap-3 p-3 rounded-2xl" style={{ backgroundColor: `${activeTab.color}08` }}>
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shadow-sm" style={{ backgroundColor: activeTab.color }}>{idx + 1}</span>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold mb-1 opacity-60" style={{ color: activeTab.color }}>{field}</p>
                     <input 
                       type="text" 
-                      placeholder={`اكتبي هنا...`}
                       value={inputs[activeTab.id][idx]}
                       onChange={(e) => handleUpdateInput(activeTab.id, idx, e.target.value)}
-                      className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-300 font-medium"
+                      placeholder="..." 
+                      className="w-full bg-transparent outline-none text-sm font-medium" 
                     />
                   </div>
                 </div>
               ))}
             </div>
-
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent">
+            <div className="p-6">
               <button 
-                className="w-full py-5 rounded-[2.2rem] font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95"
-                style={{ 
-                  backgroundColor: activeTab.color, 
-                  boxShadow: `0 15px 35px ${activeTab.color}40` 
-                }}
+                onClick={() => handleAiAnalysis(activeTab)}
+                disabled={loading}
+                className="w-full py-5 rounded-3xl text-white font-bold shadow-xl flex items-center justify-center gap-3"
+                style={{ backgroundColor: activeTab.color }}
               >
-                <Sparkles size={20} />
-                تحليل البيانات
+                {loading ? 'جاري الاستشارة...' : <><Sparkles size={20}/> استشارة الطبيبة</>}
               </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* صفحة شات الردود الذكية */}
+        {showChat && (
+          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-0 z-50 bg-[#F0F2F5] flex flex-col">
+            <div className="p-6 bg-white border-b flex justify-between items-center">
+              <button onClick={() => setShowChat(false)} className="p-2 bg-slate-100 rounded-xl"><X/></button>
+              <div className="text-center">
+                <h2 className="font-black text-slate-800">طبيبة رقة الذكية</h2>
+                <div className="flex items-center justify-center gap-1 text-[9px] text-green-500 font-bold uppercase"><div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"/>متصلة الآن</div>
+              </div>
+              <div className="w-10"></div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {chatHistory.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 opacity-40">
+                  <MessageSquare size={64} className="mb-4" />
+                  <p>لا توجد استشارات محفوظة بعد</p>
+                </div>
+              )}
+              {chatHistory.map((msg) => (
+                <div key={msg.id} className="space-y-2">
+                  <div className="bg-white p-5 rounded-[2rem] rounded-tr-none shadow-sm border border-slate-100">
+                    <div className="flex justify-between items-start mb-3 border-b border-slate-50 pb-2">
+                      <span className="text-[10px] font-bold text-indigo-500">قسم {msg.category}</span>
+                      <button onClick={() => deleteResponse(msg.id)} className="text-rose-400 p-1 hover:bg-rose-50 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                    </div>
+                    <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap">{msg.reply}</p>
+                    <div className="mt-4 flex justify-between items-center">
+                      <span className="text-[9px] text-slate-300 font-mono">{msg.date}</span>
+                      <button className="flex items-center gap-1 text-[10px] text-slate-400"><Save size={12}/> حفظ في التقارير</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* أدوات الشات المتطورة */}
+            <div className="p-6 bg-white border-t rounded-t-[3rem] shadow-2xl">
+              <div className="flex items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+                <button className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 transition-colors"><Camera size={20}/></button>
+                <button className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 transition-colors"><Mic size={20}/></button>
+                <button className="p-3 bg-white rounded-xl shadow-sm text-slate-400 hover:text-indigo-600 transition-colors"><ImageIcon size={20}/></button>
+                <input type="text" placeholder="اكتبي سؤالاً إضافياً للطبيبة..." className="flex-1 bg-transparent border-none outline-none text-xs font-medium px-2" />
+                <button className="p-3 bg-indigo-600 text-white rounded-xl shadow-lg shadow-indigo-100"><Send size={20}/></button>
+              </div>
             </div>
           </motion.div>
         )}
