@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-// استيراد أيقونات النظام
 import { iconMap } from '../../constants/iconMap';
 
 const PregnancyMonitor = () => {
   const Icon = iconMap.intimacy;
   const [openIdx, setOpenIdx] = useState(null);
   
-  // جلب البيانات من التخزين المحلي أو إنشاء كائن فارغ
   const [data, setData] = useState(() => {
     try {
       const saved = localStorage.getItem('lady_fitness');
@@ -16,7 +14,7 @@ const PregnancyMonitor = () => {
     }
   });
 
-  // القوائم العشر المخصصة للرشاقة مع 7 مدخلات لكل منها [cite: 3, 4]
+  // تم تنظيف المصفوفة تماماً لضمان عدم وجود أخطاء في الأقواس
   const sections = [
     { title: "القياسات الحيوية", emoji: "📏", fields: ["الوزن الحالي", "نسبة الدهون", "محيط الخصر", "محيط الورك", "كتلة الجسم BMI", "نسبة العضلات", "ملاحظات"] },
     { title: "النشاط البدني", emoji: "🏃‍♀️", fields: ["نوع التمرين", "مدة التمرين", "عدد الخطوات", "السعرات المحروقة", "مستوى الشدة", "وقت التمرين", "ملاحظات"] },
@@ -33,7 +31,7 @@ const PregnancyMonitor = () => {
   const updateData = (field, value) => {
     const newData = { ...data, [field]: value };
     setData(newData);
-    localStorage.setItem('lady_fitness', JSON.stringify(newData)); [cite: 9]
+    localStorage.setItem('lady_fitness', JSON.stringify(newData));
   };
 
   return (
@@ -44,24 +42,24 @@ const PregnancyMonitor = () => {
       </div>
       
       {sections.map((sec, i) => (
-        <div key={i} style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '15px', marginBottom: '10px', overflow: 'hidden' }}>
+        <div key={i} style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '15px', marginBottom: (i === sections.length - 1) ? '0' : '10px', overflow: 'hidden' }}>
           <div 
-            style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }} 
-            [cite_start]onClick={() => setOpenIdx(openIdx === i ? null : i)} [cite: 6]
+            style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold' }} 
+            onClick={() => setOpenIdx(openIdx === i ? null : i)}
           >
             <span>{sec.emoji} {sec.title}</span>
-            <span>{openIdx === i ? '▲' : '▼'}</span>
+            <span style={{ fontSize: '0.8rem' }}>{openIdx === i ? '▲' : '▼'}</span>
           </div>
           
           {openIdx === i && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '15px' }}>
-              {sec.fields.map(f => (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '15px', borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+              {sec.fields.map((f) => (
                 <div key={f}>
-                  <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>{f}</label>
+                  <label style={{ fontSize: '0.7rem', display: 'block', marginBottom: '4px', color: '#4a148c' }}>{f}</label>
                   <input 
-                    style={{ width: '100%', padding: '6px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.5)', boxSizing: 'border-box' }} 
+                    style={{ width: '100%', padding: '8px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box', fontSize: '0.85rem' }} 
                     value={data[f] || ''} 
-                    [cite_start]onChange={(e) => updateData(f, e.target.value)} [cite: 8, 9]
+                    onChange={(e) => updateData(f, e.target.value)}
                   />
                 </div>
               ))}
