@@ -1,103 +1,109 @@
 import React, { useState, useRef, useEffect } from 'react';
-// استيراد الأيقونات من المسار المحدد
+// 1. استيراد CapacitorHttp للاتصال الأصلي [تعديل مطلوب]
+import { CapacitorHttp } from '@capacitor/core';
 import { iconMap } from '../../constants/iconMap';
 
 const IntegratedHealthHub = () => {
-  // استخدام أيقونات الحمل والرضاعة
-  const PregnancyIcon = iconMap.intimacy;
-  const LactationIcon = iconMap.feelings;
+  const PregnancyIcon = iconMap.intimacy; [cite: 2]
+  const LactationIcon = iconMap.feelings; [cite: 3]
   
   const [openIdx, setOpenIdx] = useState(null);
-  const [activeTab, setActiveTab] = useState('pregnancy'); // التنقل بين الحمل والرضاعة
-  const [loading, setLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
-  const [chatHistory, setChatHistory] = useState(() => JSON.parse(localStorage.getItem('ai_chat_history')) || []);
+  const [activeTab, setActiveTab] = useState('pregnancy'); [cite: 3]
+  const [loading, setLoading] = useState(false); [cite: 4]
+  const [showChat, setShowChat] = useState(false); 
+  const [aiResponse, setAiResponse] = useState(''); [cite: 4]
+  const [chatHistory, setChatHistory] = useState(() => JSON.parse(localStorage.getItem('ai_chat_history')) || []); [cite: 5]
   
-  // دمج البيانات في حالة واحدة وحفظها في localStorage
   const [data, setData] = useState(() => {
-    const savedPregnancy = JSON.parse(localStorage.getItem('lady_pregnancy')) || {};
-    const savedLactation = JSON.parse(localStorage.getItem('lady_lactation')) || {};
-    return { ...savedPregnancy, ...savedLactation };
+    const savedPregnancy = JSON.parse(localStorage.getItem('lady_pregnancy')) || {}; [cite: 5]
+    const savedLactation = JSON.parse(localStorage.getItem('lady_lactation')) || {}; [cite: 5]
+    return { ...savedPregnancy, ...savedLactation }; [cite: 5]
   });
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef(null); [cite: 6]
 
-  // قوائم الحمل [cite: 3, 4]
   const pregnancySections = [
-    { title: "نمو الجنين", emoji: "⚖️", fields: ["الوزن", "الطول", "النبض", "الحركة", "حجم الرأس", "طول الفخذ", "وضعية الجنين", "كمية السائل", "ركلات اليوم", "ملاحظات"] },
-    { title: "صحة الأم", emoji: "🩺", fields: ["الضغط", "السكر", "الوزن", "الغثيان", "تورم القدم", "الصداع", "الشهية", "النوم", "الإرهاق", "ملاحظات"] },
-    { title: "الفحوصات", emoji: "🖥️", fields: ["السونار", "دم", "بول", "تاريخ الفحص", "اسم الطبيب", "المكان", "التكلفة", "النتيجة", "موعد القادم", "ملاحظات"] },
-    { title: "سجل المكملات", emoji: "💊", fields: ["فوليك", "حديد", "كالسيوم", "أوميجا3", "فيتامين د", "وقت الجرعة", "الكمية", "تاريخ البدء", "تاريخ الانتهاء", "ملاحظات"] },
-    { title: "الاستعداد للولادة", emoji: "👜", fields: ["حقيبة المشفى", "ملابس البيبي", "أغراض الأم", "أوراق رسمية", "خطة الولادة", "اسم المستشفى", "رقم الطوارئ", "تجهيز المنزل", "الميزانية", "ملاحظات"] },
-    { title: "تطور الأسابيع", emoji: "📅", fields: ["الأسبوع الحالي", "الشهر", "موعد الولادة", "أيام متبقية", "تطور المرحلة", "نصيحة الأسبوع", "تغيرات جسدية", "الحالة النفسية", "تاريخ اليوم", "ملاحظات"] },
-    { title: "التواصل مع الجنين", emoji: "🎈", fields: ["تفاعل مع الصوت", "تفاعل مع الضوء", "أغاني/أذكار", "كتابة رسالة", "اسم مقترح", "تجهيز الغرفة", "أول صورة سونار", "شعور الأب", "لحظات مميزة", "ملاحظات"] }
+    { title: "نمو الجنين", emoji: "⚖️", fields: ["الوزن", "الطول", "النبض", "الحركة", "حجم الرأس", "طول الفخذ", "وضعية الجنين", "كمية السائل", "ركلات اليوم", "ملاحظات"] }, [cite: 6]
+    { title: "صحة الأم", emoji: "🩺", fields: ["الضغط", "السكر", "الوزن", "الغثيان", "تورم القدم", "الصداع", "الشهية", "النوم", "الإرهاق", "ملاحظات"] }, [cite: 6]
+    { title: "الفحوصات", emoji: "🖥️", fields: ["السونار", "دم", "بول", "تاريخ الفحص", "اسم الطبيب", "المكان", "التكلفة", "النتيجة", "موعد القادم", "ملاحظات"] }, [cite: 6]
+    { title: "سجل المكملات", emoji: "💊", fields: ["فوليك", "حديد", "كالسيوم", "أوميجا3", "فيتامين د", "وقت الجرعة", "الكمية", "تاريخ البدء", "تاريخ الانتهاء", "ملاحظات"] }, [cite: 6, 7]
+    { title: "الاستعداد للولادة", emoji: "👜", fields: ["حقيبة المشفى", "ملابس البيبي", "أغراض الأم", "أوراق رسمية", "خطة الولادة", "اسم المستشفى", "رقم الطوارئ", "تجهيز المنزل", "الميزانية", "ملاحظات"] }, [cite: 6]
+    { title: "تطور الأسابيع", emoji: "📅", fields: ["الأسبوع الحالي", "الشهر", "موعد الولادة", "أيام متبقية", "تطور المرحلة", "نصيحة الأسبوع", "تغيرات جسدية", "الحالة النفسية", "تاريخ اليوم", "ملاحظات"] }, [cite: 6]
+    { title: "التواصل مع الجنين", emoji: "🎈", fields: ["تفاعل مع الصوت", "تفاعل مع الضوء", "أغاني/أذكار", "كتابة رسالة", "اسم مقترح", "تجهيز الغرفة", "أول صورة سونار", "شعور الأب", "لحظات مميزة", "ملاحظات"] } [cite: 6, 8]
   ];
 
-  // قوائم الرضاعة [cite: 14, 15]
   const lactationSections = [
-    { title: "الرضاعة الطبيعية", emoji: "🤱", fields: ["الوقت", "الجهة", "المدة", "راحة الأم", "معدل الرضاعة", "تاريخ اليوم", "بداية الرضعة", "نهاية الرضعة", "ملاحظات", "مستوى الشبع"] },
-    { title: "الرضاعة الصناعية", emoji: "🍼", fields: ["الكمية مل", "نوع الحليب", "درجة الحرارة", "وقت التحضير", "مدة الرضعة", "نظافة الرضاعة", "تاريخ الانتهاء", "الماء المستخدم", "ملاحظات", "رد فعل الرضيع"] },
-    { title: "صحة الثدي", emoji: "🧊", fields: ["تحجر", "تشققات", "تنظيف", "استخدام كريمات", "كمادات", "ألم", "احمرار", "حرارة", "ملاحظات", "فحص دوري"] },
-    { title: "تغذية المرضع", emoji: "🌿", fields: ["سوائل", "مدرات حليب", "حلبة", "يانسون", "وجبة الغذاء", "فيتامينات", "شمر", "تجنب منبهات", "ماء", "ملاحظات"] },
-    { title: "حالة الرضيع", emoji: "🧷", fields: ["الحفاضات", "لون البول", "جودة النوم", "الوزن", "الطول", "الغازات", "المغص", "الوعي", "الهدوء", "ملاحظات"] },
-    { title: "الشفط والتخزين", emoji: "펌", fields: ["كمية الشفط", "تاريخ التخزين", "ساعة الشفط", "جهة الثدي", "صلاحية العبوة", "درجة البرودة", "تاريخ الاستخدام", "نوع العبوة", "طريقة الإذابة", "ملاحظات"] },
-    { title: "الحالة النفسية", emoji: "🫂", fields: ["دعم الزوج", "ساعات الراحة", "القلق", "الاكتئاب", "التواصل", "الخروج للمشي", "هوايات", "الاسترخاء", "ملاحظات", "درجة الرضا"] }
+    { title: "الرضاعة الطبيعية", emoji: "🤱", fields: ["الوقت", "الجهة", "المدة", "راحة الأم", "معدل الرضاعة", "تاريخ اليوم", "بداية الرضعة", "نهاية الرضعة", "ملاحظات", "مستوى الشبع"] }, [cite: 8]
+    { title: "الرضاعة الصناعية", emoji: "🍼", fields: ["الكمية مل", "نوع الحليب", "درجة الحرارة", "وقت التحضير", "مدة الرضعة", "نظافة الرضاعة", "تاريخ الانتهاء", "الماء المستخدم", "ملاحظات", "رد فعل الرضيع"] }, [cite: 8]
+    { title: "صحة الثدي", emoji: "🧊", fields: ["تحجر", "تشققات", "تنظيف", "استخدام كريمات", "كمادات", "ألم", "احمرار", "حرارة", "ملاحظات", "فحص دوري"] }, [cite: 8]
+    { title: "تغذية المرضع", emoji: "🌿", fields: ["سوائل", "مدرات حليب", "حلبة", "يانسون", "وجبة الغذاء", "فيتامينات", "شمر", "تجنب منبهات", "ماء", "ملاحظات"] }, [cite: 9]
+    { title: "حالة الرضيع", emoji: "🧷", fields: ["الحفاضات", "لون البول", "جودة النوم", "الوزن", "الطول", "الغازات", "المغص", "الوعي", "الهدوء", "ملاحظات"] }, [cite: 9]
+    { title: "الشفط والتخزين", emoji: "펌", fields: ["كمية الشفط", "تاريخ التخزين", "ساعة الشفط", "جهة الثدي", "صلاحية العبوة", "درجة البرودة", "تاريخ الاستخدام", "نوع العبوة", "طريقة الإذابة", "ملاحظات"] }, [cite: 9]
+    { title: "الحالة النفسية", emoji: "🫂", fields: ["دعم الزوج", "ساعات الراحة", "القلق", "الاكتئاب", "التواصل", "الخروج للمشي", "هوايات", "الاسترخاء", "ملاحظات", "درجة الرضا"] } [cite: 9]
   ];
 
-  const currentSections = activeTab === 'pregnancy' ? pregnancySections : lactationSections;
+  const currentSections = activeTab === 'pregnancy' ? pregnancySections : lactationSections; [cite: 10]
 
-  // تحديد نوع المدخل (تاريخ/وقت/نص) بناءً على اسم الحقل
   const getInputType = (f) => {
-    if (f.includes("تاريخ") || f === "تاريخ اليوم" || f.includes("موعد")) return "date";
-    if (f.includes("وقت") || f.includes("ساعة") || f.includes("بداية") || f.includes("نهاية")) return "time";
-    return "text";
+    if (f.includes("تاريخ") || f === "تاريخ اليوم" || f.includes("موعد")) return "date"; [cite: 11]
+    if (f.includes("وقت") || f.includes("ساعة") || f.includes("بداية") || f.includes("نهاية")) return "time"; [cite: 12]
+    return "text"; [cite: 11]
   };
 
-  // دالة الحفظ والتحليل
+  // دالة الحفظ والتحليل باستخدام CapacitorHttp
   const handleSaveAndAnalyze = async () => {
     setLoading(true);
+    setShowChat(true);
+    
     try {
-      // 1. الحفظ في Neon DB
-      await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
-        method: 'POST',
+      // 1. حفظ البيانات في Neon DB عبر CapacitorHttp
+      const saveOptions = {
+        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ category: activeTab, data: data })
-      });
+        data: {
+          category: activeTab,
+          value: "تحديث ملف صحي",
+          note: JSON.stringify(data),
+          user_id: 1
+        }
+      };
+      await CapacitorHttp.post(saveOptions);
 
-      // 2. تحليل البيانات عبر AI
-      const prompt = `أنا في مرحلة ${activeTab === 'pregnancy' ? 'الحمل' : 'الرضاعة'}. هذه بياناتي الحالية: ${JSON.stringify(data)}. حلل حالتي كطبيب مختص وقدم نصيحة مفصلة وطويلة.`;
-      const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt })
-      });
-      const resData = await aiRes.json();
+      // 2. تحليل البيانات عبر AI (Raqqa-AI)
+      const aiPrompt = `أنا طبيبة نساء وتوليد متخصصة في رقة. هذه بيانات مريضتي في مرحلة ${activeTab === 'pregnancy' ? 'الحمل' : 'الرضاعة'}: ${JSON.stringify(data)}. حللي الحالة بأسلوب طبي مهني ومفصل وقدمي نصائح دقيقة.`;
       
-      const newResponse = { id: Date.now(), text: resData.reply, date: new Date().toLocaleString(), type: activeTab };
-      setAiResponse(resData.reply);
-      const updatedHistory = [newResponse, ...chatHistory];
-      setChatHistory(updatedHistory);
-      localStorage.setItem('ai_chat_history', JSON.stringify(updatedHistory));
+      const aiOptions = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: aiPrompt }
+      };
+
+      const response = await CapacitorHttp.post(aiOptions);
+      const responseText = response.data.reply || response.data.message; [cite: 18]
+      
+      const newResponse = { id: Date.now(), text: responseText, date: new Date().toLocaleString(), type: activeTab }; [cite: 18]
+      setAiResponse(responseText); [cite: 18]
+      
+      const updatedHistory = [newResponse, ...chatHistory]; [cite: 19]
+      setChatHistory(updatedHistory); [cite: 19]
+      localStorage.setItem('ai_chat_history', JSON.stringify(updatedHistory)); [cite: 19]
+
     } catch (err) {
-      console.error("Error:", err);
+      console.error("فشل الاتصال الأصلي:", err);
+      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي.");
     } finally {
       setLoading(false);
     }
   };
 
   const deleteResponse = (id) => {
-    const filtered = chatHistory.filter(r => r.id !== id);
-    setChatHistory(filtered);
-    localStorage.setItem('ai_chat_history', JSON.stringify(filtered));
+    const filtered = chatHistory.filter(r => r.id !== id); [cite: 21]
+    setChatHistory(filtered); [cite: 21]
+    localStorage.setItem('ai_chat_history', JSON.stringify(filtered)); [cite: 21]
   };
 
   return (
-    <div style={{ 
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1))', 
-      backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '25px', 
-      border: '1px solid rgba(255,255,255,0.3)', color: '#333', direction: 'rtl' 
-    }}>
-      
+    <div style={containerStyle}>
       {/* تبديل الأقسام */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
         <button 
@@ -114,30 +120,27 @@ const IntegratedHealthHub = () => {
         </button>
       </div>
 
-      {/* قوائم المدخلات [cite: 6, 7, 17] */}
-      <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingLeft: '5px' }}>
+      {/* قوائم المدخلات */}
+      <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingLeft: '5px' }}>
         {currentSections.map((sec, i) => (
-          <div key={i} style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '15px', marginBottom: '10px', overflow: 'hidden' }}>
-            <div style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+          <div key={i} style={sectionCardStyle}>
+            <div style={sectionHeaderStyle} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
               <span>{sec.emoji} {sec.title}</span>
-              <span>{openIdx === i ? '▲' : '▼'}</span>
+              <span>{openIdx === i ? '▲' : '▼'}</span> [cite: 26, 27]
             </div>
             {openIdx === i && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '15px' }}>
+              <div style={gridStyle}>
                 {sec.fields.map(f => (
                   <div key={f}>
-                    <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>{f}</label>
+                    <label style={labelStyle}>{f}</label> [cite: 28]
                     <input 
                       type={getInputType(f)}
-                      style={{ 
-                        width: '100%', padding: '10px', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.5)', 
-                        background: '#fff', color: '#333', outline: 'none', boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
-                      }} 
-                      value={data[f] || ''} 
+                      style={inputStyle} 
+                      value={data[f] || [cite_start]''} [cite: 29, 30]
                       onChange={e => {
-                        const newData = {...data, [f]: e.target.value};
-                        setData(newData);
-                        localStorage.setItem(activeTab === 'pregnancy' ? 'lady_pregnancy' : 'lady_lactation', JSON.stringify(newData));
+                        const newData = {...data, [f]: e.target.value}; [cite: 30]
+                        setData(newData); [cite: 30]
+                        localStorage.setItem(activeTab === 'pregnancy' ? 'lady_pregnancy' : 'lady_lactation', JSON.stringify(newData)); [cite: 31]
                       }}
                     />
                   </div>
@@ -148,57 +151,78 @@ const IntegratedHealthHub = () => {
         ))}
       </div>
 
-      {/* شات الذكاء الاصطناعي والوسائط */}
-      <div style={{ marginTop: '20px', borderTop: '2px solid rgba(255,255,255,0.3)', paddingTop: '20px' }}>
-        <button 
-          onClick={handleSaveAndAnalyze}
-          style={{ width: '100%', padding: '12px', borderRadius: '15px', border: 'none', background: activeTab === 'pregnancy' ? '#6a1b9a' : '#2e7d32', color: '#fff', fontWeight: 'bold', cursor: 'pointer', marginBottom: '15px' }}
-        >
-          {loading ? 'جاري الحفظ والتحليل...' : 'حفظ وتحليل الطبيب الذكي'}
+      {/* الزر الرئيسي */}
+      <div style={{ marginTop: '20px' }}>
+        <button onClick={handleSaveAndAnalyze} style={{ ...actionBtnStyle, background: activeTab === 'pregnancy' ? '#6a1b9a' : '#2e7d32' }}>
+           حفظ وتحليل الطبيب الذكي ✨
         </button>
+      </div>
 
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
-          <button title="فتح الكاميرا" style={mediaBtnStyle} onClick={() => fileInputRef.current.click()}>📷</button>
-          <button title="تحدث للذكاء" style={mediaBtnStyle}>🎤</button>
-          <input type="file" ref={fileInputRef} hidden accept="image/*" />
+      {/* نافذة الشات المنبثقة */}
+      {showChat && (
+        <div style={chatOverlayStyle}>
+          <div style={chatWindowStyle}>
+            <div style={chatHeaderStyle}>
+              <span>👨‍⚕️ الطبيبة الذكية - رقة</span>
+              <button onClick={() => setShowChat(false)} style={closeBtnStyle}>✕</button>
+            </div>
+            
+            <div style={chatBodyStyle}>
+              {loading ? (
+                <div style={{ textAlign: 'center', padding: '20px' }}>جاري الحفظ والتحليل كطبيبة مختصة... ⏳</div>
+              ) : (
+                <div style={{...messageBoxStyle, borderRight: `5px solid ${activeTab === 'pregnancy' ? '#6a1b9a' : '#2e7d32'}`}}>
+                   <strong>نصيحة الطبيبة المختصة:</strong> [cite: 36]
+                   <p style={{ marginTop: '10px', fontSize: '0.95rem' }}>{aiResponse}</p> [cite: 36]
+                </div>
+              )}
+            </div>
+
+            <div style={mediaContainerStyle}>
+              <button title="فتح الكاميرا" style={mediaBtnStyle} onClick={() => fileInputRef.current.click()}>📷</button>
+              <button title="تحدث للطبيبة" style={mediaBtnStyle} onClick={() => alert("الميكروفون قيد التفعيل...")}>🎤</button>
+              <input type="file" ref={fileInputRef} hidden accept="image/*" />
+            </div>
+          </div>
         </div>
+      )}
 
-        {aiResponse && (
-          <div style={{ background: '#fff', padding: '15px', borderRadius: '20px', marginBottom: '20px', borderRight: `5px solid ${activeTab === 'pregnancy' ? '#6a1b9a' : '#2e7d32'}` }}>
-            <strong style={{ display: 'block', marginBottom: '10px' }}>👨‍⚕️ نصيحة الطبيب المختص:</strong>
-            <p style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>{aiResponse}</p>
-          </div>
-        )}
-
-        {/* سجل الردود المحفوظة */}
-        <div style={{ marginTop: '10px' }}>
-          <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>📜 سجل الاستشارات</h3>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {chatHistory.map(res => (
-              <div key={res.id} style={{ background: 'rgba(255,255,255,0.4)', padding: '12px', borderRadius: '15px', marginBottom: '10px', position: 'relative' }}>
-                <small style={{ fontSize: '0.65rem', color: '#666' }}>{res.date} ({res.type === 'pregnancy' ? 'حمل' : 'رضاعة'})</small>
-                <p style={{ fontSize: '0.85rem', margin: '5px 0' }}>{res.text}</p>
-                <button 
-                  onClick={() => deleteResponse(res.id)}
-                  style={{ position: 'absolute', top: '5px', left: '10px', border: 'none', background: 'transparent', color: '#d32f2f', cursor: 'pointer' }}
-                >
-                  🗑️
-                </button>
-              </div>
-            ))}
-          </div>
+      {/* سجل الاستشارات */}
+      <div style={historySectionStyle}>
+        <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>📜 سجل الاستشارات</h3> [cite: 37]
+        <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+          {chatHistory.map(res => (
+            <div key={res.id} style={historyCardStyle}>
+              <small style={{ fontSize: '0.65rem', color: '#666' }}>{res.date} ({res.type === 'pregnancy' ? 'حمل' : 'رضاعة'})</small> [cite: 38]
+              <p style={{ fontSize: '0.85rem', margin: '5px 0' }}>{res.text.substring(0, 80)}...</p> [cite: 38]
+              <button onClick={() => deleteResponse(res.id)} style={deleteBtnStyle}>🗑️</button> [cite: 39]
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
-const tabBtnStyle = {
-  flex: 1, padding: '10px', borderRadius: '15px', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', transition: '0.3s'
-};
+// --- التنسيقات (Styles) ---
+const containerStyle = { background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1))', backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '25px', border: '1px solid rgba(255,255,255,0.3)', color: '#333', direction: 'rtl' }; [cite: 22]
+const sectionCardStyle = { background: 'rgba(255,255,255,0.25)', borderRadius: '15px', marginBottom: '10px', overflow: 'hidden' }; [cite: 24]
+const sectionHeaderStyle = { padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }; [cite: 25]
+const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '15px' }; [cite: 27]
+const labelStyle = { fontSize: '0.75rem', display: 'block', marginBottom: '4px' }; [cite: 28]
+const inputStyle = { width: '100%', padding: '10px', borderRadius: '12px', border: '2px solid rgba(255,255,255,0.5)', background: '#fff', outline: 'none' }; [cite: 29]
+const actionBtnStyle = { width: '100%', padding: '14px', borderRadius: '15px', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }; [cite: 34]
+const tabBtnStyle = { flex: 1, padding: '10px', borderRadius: '15px', border: 'none', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }; [cite: 41]
+const chatOverlayStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' };
+const chatWindowStyle = { width: '100%', maxWidth: '450px', background: '#fff', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 15px 35px rgba(0,0,0,0.2)' };
+const chatHeaderStyle = { background: '#6a1b9a', color: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
+const chatBodyStyle = { padding: '20px', maxHeight: '350px', overflowY: 'auto' };
+const messageBoxStyle = { background: '#f9f9f9', padding: '15px', borderRadius: '15px', lineHeight: '1.6' };
+const mediaContainerStyle = { padding: '15px', display: 'flex', gap: '20px', justifyContent: 'center', borderTop: '1px solid #eee' };
+const mediaBtnStyle = { width: '50px', height: '50px', borderRadius: '50%', border: 'none', background: '#f0f0f0', fontSize: '1.3rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }; [cite: 42]
+const closeBtnStyle = { background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' };
+const historySectionStyle = { marginTop: '20px', borderTop: '2px solid rgba(255,255,255,0.3)', paddingTop: '15px' }; [cite: 37]
+const historyCardStyle = { background: 'rgba(255,255,255,0.4)', padding: '12px', borderRadius: '15px', marginBottom: '10px', position: 'relative' }; [cite: 37]
+const deleteBtnStyle = { position: 'absolute', top: '5px', left: '10px', border: 'none', background: 'transparent', color: '#d32f2f', cursor: 'pointer' }; [cite: 39]
 
-const mediaBtnStyle = {
-  width: '50px', height: '50px', borderRadius: '50%', border: 'none', background: '#fff', fontSize: '1.2rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
-};
-
-export default IntegratedHealthHub;
+export default IntegratedHealthHub; [cite: 43]
