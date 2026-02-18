@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Brain, Users, Star, Smile, Lightbulb, Activity, 
@@ -7,15 +7,11 @@ import {
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 
-const MotherhoodPage = () => {
+const MotherhoodApp = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [chatHistory, setChatHistory] = useState(() => {
-    const saved = localStorage.getItem('ai_history');
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  [cite_start]// هيكلة الفئات مع 10 مدخلات تخصصية لكل فئة [cite: 5, 7]
+  // تعريف البيانات: كروت ملونة بـ 10 مدخلات لكل منها
   const categories = [
     { id: 'physical', title: 'الجسدية', icon: <Activity />, color: '#FF6B6B', fields: ['جودة النوم', 'الشهية', 'النشاط الحركي', 'نمو الوزن', 'نمو الطول', 'المناعة', 'صحة الحواس', 'النظافة', 'شرب الماء', 'التنفس'] },
     { id: 'cognitive', title: 'المعرفة', icon: <Brain />, color: '#4D96FF', fields: ['التركيز', 'حل المشكلات', 'حب الاستطلاع', 'الذاكرة', 'اللغة', 'المنطق', 'الحساب', 'القراءة', 'اللغات', 'الاستنتاج'] },
@@ -26,12 +22,9 @@ const MotherhoodPage = () => {
     { id: 'creative', title: 'الإبداع', icon: <Lightbulb />, color: '#B1AFFF', fields: ['الخيال', 'الرسم', 'الأشغال اليدوية', 'التمثيل', 'الابتكار', 'الموسيقى', 'التصوير', 'الكتابة', 'البرمجة', 'إعادة التدوير'] }
   ];
 
-  [cite_start]// تهيئة المدخلات بشكل صحيح لتجنب خطأ الـ Build [cite: 8, 9]
   const [inputs, setInputs] = useState(() => {
     const initialState = {};
-    categories.forEach(cat => {
-      initialState[cat.id] = Array(10).fill('');
-    });
+    categories.forEach(cat => { initialState[cat.id] = Array(10).fill(''); });
     return initialState;
   });
 
@@ -42,65 +35,39 @@ const MotherhoodPage = () => {
     }));
   };
 
-  const runAiAnalysis = async (category) => {
-    const dataString = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: ${v}` : '').filter(v => v).join(' | ');
-    if (!dataString) return;
-
-    setLoading(true);
-    try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
-        headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `تحليل تربوي شامل لفئة (${category.title}): ${dataString}` }
-      });
-      const reply = response.data.reply || response.data.message;
-      const newMsg = { id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') };
-      const updatedHistory = [newMsg, ...chatHistory];
-      setChatHistory(updatedHistory);
-      localStorage.setItem('ai_history', JSON.stringify(updatedHistory));
-    } catch (err) {
-      console.error("AI Error", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#F7F9FC] p-4 font-sans" dir="rtl">
-      {/* Header */}
+    <div className="min-h-screen bg-[#F7F9FC] p-4 font-sans text-right" dir="rtl">
+      {/* Header الأنيق */}
       <header className="flex justify-between items-center mb-8 px-2">
         <div className="flex gap-3 items-center">
           <div className="w-10 h-10 bg-indigo-600 rounded-xl shadow-lg flex items-center justify-center text-white">
             <Plus size={20} />
           </div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight text-right">رقة الذكية</h1>
+          <h1 className="text-xl font-black text-slate-800 tracking-tight">رقة الذكية</h1>
         </div>
         <div className="flex gap-2">
-            <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Search size={18}/></button>
-            <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Settings size={18}/></button>
+          <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Search size={18}/></button>
+          <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Settings size={18}/></button>
         </div>
       </header>
 
       <AnimatePresence mode="wait">
         {!activeTab ? (
-          /* الكروت الصغيرة الملونة */
+          /* شبكة الكروت الملونة الصغيرة */
           <motion.div 
-            key="grid"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            key="grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="grid grid-cols-2 gap-3"
           >
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setActiveTab(cat)}
-                className="relative overflow-hidden bg-white p-5 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-start gap-3 transition-all active:scale-95"
+                className="relative overflow-hidden bg-white p-4 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-start gap-3 transition-all active:scale-95"
               >
                 <div className="p-3 rounded-2xl text-white shadow-md" style={{ backgroundColor: cat.color }}>
-                  {React.cloneElement(cat.icon, { size: 22 })}
+                  {React.cloneElement(cat.icon, { size: 20 })}
                 </div>
-                <span className="font-bold text-slate-700 text-sm text-right">{cat.title}</span>
+                <span className="font-bold text-slate-700 text-xs">{cat.title}</span>
                 <div className="absolute -bottom-2 -right-2 opacity-10" style={{ color: cat.color }}>
                    {React.cloneElement(cat.icon, { size: 50 })}
                 </div>
@@ -108,28 +75,28 @@ const MotherhoodPage = () => {
             ))}
           </motion.div>
         ) : (
-          /* كارت الإدخال الأنيق بالأشرطة الملونة */
+          /* واجهة الإدخال الفاخرة بالأشرطة الملونة */
           <motion.div 
-            key="details"
-            initial={{ y: 50, opacity: 0 }} 
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 50, opacity: 0 }}
+            key="modal" initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed inset-0 z-50 bg-white flex flex-col"
           >
+            {/* Header المودال */}
             <div className="p-6 flex justify-between items-center border-b border-slate-50">
-                <button onClick={() => setActiveTab(null)} className="p-3 bg-slate-50 rounded-2xl text-slate-400 hover:bg-slate-100"><X size={20}/></button>
-                <div className="flex flex-col items-center">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">قسم التطور</span>
-                    <h2 className="text-lg font-black text-slate-800">{activeTab.title}</h2>
-                </div>
-                <div className="w-12"></div>
+              <button onClick={() => setActiveTab(null)} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><X size={20}/></button>
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">تحديث البيانات</span>
+                <h2 className="text-lg font-black text-slate-800">{activeTab.title}</h2>
+              </div>
+              <div className="w-12"></div>
             </div>
 
+            {/* أشرطة المدخلات الملونة (أكثر من 7 مدخلات) */}
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-3 pb-32">
               {activeTab.fields.map((field, idx) => (
                 <div 
                   key={idx} 
-                  className="flex items-center gap-4 p-3 rounded-[1.5rem] transition-all border border-transparent focus-within:border-slate-200"
+                  className="flex items-center gap-4 p-3 rounded-[1.5rem] shadow-sm border border-transparent focus-within:border-slate-200"
                   style={{ backgroundColor: `${activeTab.color}08` }}
                 >
                   <div 
@@ -142,7 +109,7 @@ const MotherhoodPage = () => {
                     <p className="text-[10px] font-bold mb-0.5" style={{ color: activeTab.color }}>{field}</p>
                     <input 
                       type="text" 
-                      placeholder={`أدخلي بيانات ${field}...`}
+                      placeholder={`ملاحظاتك حول ${field}...`}
                       value={inputs[activeTab.id][idx]}
                       onChange={(e) => handleUpdateInput(activeTab.id, idx, e.target.value)}
                       className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-300 font-medium"
@@ -152,19 +119,18 @@ const MotherhoodPage = () => {
               ))}
             </div>
 
+            {/* زر التحليل الذكي */}
             <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-white via-white to-transparent">
-                <button 
-                  onClick={() => runAiAnalysis(activeTab)}
-                  disabled={loading}
-                  className="w-full py-5 rounded-[2.2rem] font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95 disabled:opacity-50"
-                  style={{ 
-                    backgroundColor: activeTab.color, 
-                    boxShadow: `0 15px 35px ${activeTab.color}40` 
-                  }}
-                >
-                  <Sparkles size={20} />
-                  {loading ? 'جاري التحليل...' : 'بدء التحليل الذكي'}
-                </button>
+              <button 
+                className="w-full py-5 rounded-[2.2rem] font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95"
+                style={{ 
+                  backgroundColor: activeTab.color, 
+                  boxShadow: `0 15px 35px ${activeTab.color}40` 
+                }}
+              >
+                <Sparkles size={20} />
+                تحليل البيانات بالذكاء الاصطناعي
+              </button>
             </div>
           </motion.div>
         )}
@@ -173,4 +139,4 @@ const MotherhoodPage = () => {
   );
 };
 
-export default MotherhoodPage;
+export default MotherhoodApp;
