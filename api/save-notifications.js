@@ -1,20 +1,16 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-    // --- بداية إعدادات CORS ---
-    // السماح لجميع المصادر بالوصول (ضروري جداً لعمل الـ APK)
+    // --- إعدادات CORS ---
     res.setHeader('Access-Control-Allow-Origin', '*');
-    // السماح بطرق الإرسال المطلوبة
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    // السماح بالعناوين (Headers) التي يرسلها التطبيق
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-    // معالجة طلب الـ "Preflight" (المتصفحات والـ WebView ترسل طلب OPTIONS قبل الـ POST)
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
-    // --- نهاية إعدادات CORS ---
 
+    // التأكد من أن نوع الطلب POST (للحفظ)
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
@@ -22,12 +18,11 @@ export default async function handler(req, res) {
     const { user_id, category, value, note } = req.body;
 
     try {
-        // الاتصال بـ Neon
         const sql = neon(process.env.POSTGRES_URL);
 
         let aiAdvice = `تم تسجيل ${category} بنجاح في رقة ✨`;
 
-        // 1. جلب نصيحة رقيقة من GROQ لزيادة التفاعل
+        // 1. جلب نصيحة من AI (GROQ)
         try {
             const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -51,13 +46,14 @@ export default async function handler(req, res) {
             console.error("AI Error:", aiError);
         }
 
-        // 2. الحفظ في جدول notifications الموحد في Neon
+        // 2. الحفظ في جدول notifications (توجيه الإشعار للجدول المطلوب)
+        // تم التأكد من أن اسم الجدول هو notifications ليطابق منطق ملفات الجلب لديك
         await sql`
-            INSERT INTO notifications (user_id, title, body)
-            VALUES (${user_id || 1}, 'تنبيه من رقة ✨', ${aiAdvice});
+            INSERT INTO notifications (user_id, title, body, created_at)
+            VALUES (${user_id || 1}, 'تنبيه من رقة ✨', ${aiAdvice}, NOW());
         `;
 
-        // 3. إرسال البيانات إلى Pipedream للمزامنة الإضافية
+        // 3. مزامنة إضافية مع Pipedream
         try {
             await fetch('https://eoo9361730x7onl.m.pipedream.net', {
                 method: 'POST',
@@ -67,7 +63,8 @@ export default async function handler(req, res) {
                     title: 'تنبيه جديد من رقة',
                     body: aiAdvice,
                     category: category,
-                    value: value
+                    value: value,
+                    timestamp: new Date().toISOString()
                 })
             });
         } catch (pipeError) {
@@ -78,6 +75,6 @@ export default async function handler(req, res) {
 
     } catch (dbError) {
         console.error("Database Error:", dbError);
-        return res.status(500).json({ error: "فشل في تسجيل البيانات في نيون" });
+        return res.status(500).json({ error: "فشل في تسجيل البيانات في جدول notifications" });
     }
 }
