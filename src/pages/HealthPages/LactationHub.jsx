@@ -5,12 +5,20 @@ import { CapacitorHttp } from '@capacitor/core';
 const LactationHub = () => {
   const Icon = iconMap.feelings;
   const [openIdx, setOpenIdx] = useState(null);
-  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_lactation')) || {});
+  const [data, setData] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lady_lactation')) || {};
+    } catch { return {}; }
+  });
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
-  const [history, setHistory] = useState(() => JSON.parse(localStorage.getItem('lactation_history')) || []);
-  
+  const [history, setHistory] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('lactation_history')) || [];
+    } catch { return []; }
+  });
+
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
@@ -24,55 +32,45 @@ const LactationHub = () => {
     { title: "الحالة النفسية", emoji: "🫂", fields: ["دعم الزوج", "ساعات الراحة", "القلق", "الاكتئاب", "التواصل", "الخروج للمشي", "هوايات", "الاسترخاء", "ملاحظات", "درجة الرضا"] }
   ];
 
-  const getInputType = (fieldName) => {
-    if (fieldName.includes("تاريخ") || fieldName === "تاريخ اليوم") return "date";
-    if (fieldName.includes("الوقت") || fieldName.includes("ساعة") || fieldName.includes("بداية") || fieldName.includes("نهاية")) return "time";
-    return "text";
-  };
-
   const handleSaveAndAnalyze = async () => {
     setLoading(true);
     setShowChat(true);
-    setAiResponse("جاري تحليل بياناتك بعناية، انتظري قليلاً يا رفيقتي...");
+    setAiResponse("جاري تحليل بياناتك بعناية من قبل طبيبة رقة المختصة...");
 
     try {
-      // 1. إرسال الإشعارات والحفظ في DB نيون
+      // 1. الحفظ في نيون (Notifications)
       await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          category: 'Lactation & Pregnancy Analysis',
-          value: 'New Entry Submited',
-          note: JSON.stringify(data),
-          user_id: 1 // يمكن تغييره حسب المستخدم الفعلي
+          category: 'تحليل شامل (حمل وولادة ورضاعة)',
+          value: 'بيانات جديدة',
+          user_id: 1,
+          note: JSON.stringify(data)
         }
       });
 
-      // 2. تحليل البيانات عبر رقة AI (طبيبة متخصصة)
-      const promptText = `أنا أنثى مسلمة، إليكِ بياناتي الصحية الحالية المتعلقة بالرضاعة، الحمل، والولادة: ${JSON.stringify(data)}. 
-      بصفتك طبيبة نساء وتوليد متخصصة، حللي هذه البيانات بشكل موسع ودقيق. 
-      قدمي نصائح طبية، تربوية، ونفسية رقيقة. اهتمي بتفاصيل صحة الثدي، تغذية الرضيع، والحالة النفسية.`;
+      // 2. تحليل AI رقة
+      const promptText = `أنا طبيبة نساء وتوليد مختصة. إليكِ بيانات مريضتي: ${JSON.stringify(data)}. 
+      قومي بتحليل الحالة طبياً ونفسياً بشكل موسع، وقدمي نصائح للأم وللجنين/الرضيع بأسلوب رقيق ودافيء كما اعتدنا منكِ.`;
 
-      const aiOptions = {
+      const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
-      };
+      });
 
-      const response = await CapacitorHttp.post(aiOptions);
-      const responseText = response.data.reply || "عذراً، لم أستطع إتمام التحليل الآن.";
+      const result = response.data.reply || response.data.message || "حدث خطأ في استلام الرد.";
+      setAiResponse(result);
 
-      setAiResponse(responseText);
+      // 3. تحديث السجل
+      const newEntry = { id: Date.now(), text: result, date: new Date().toLocaleString() };
+      const updatedHistory = [newEntry, ...history];
+      setHistory(updatedHistory);
+      localStorage.setItem('lactation_history', JSON.stringify(updatedHistory));
 
-      // 3. حفظ في التاريخ المحلي
-      const newEntry = { id: Date.now(), text: responseText, date: new Date().toLocaleString() };
-      const newHistory = [newEntry, ...history];
-      setHistory(newHistory);
-      localStorage.setItem('lactation_history', JSON.stringify(newHistory));
-
-    } catch (err) {
-      console.error("Connection Error:", err);
-      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت.");
+    } catch (error) {
+      setAiResponse("عذراً رفيقتي، حدث خطأ في الاتصال. تأكدي من الإنترنت وحاولي مجدداً.");
     } finally {
       setLoading(false);
     }
@@ -84,109 +82,105 @@ const LactationHub = () => {
     localStorage.setItem('lactation_history', JSON.stringify(filtered));
   };
 
-  return (
-    <div style={containerStyle}>
-      {/* الجزء العلوي */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-         <div style={{ display: 'flex', gap: '10px' }}>
-            <div style={statCircleStyle}>28</div>
-            <div style={{...statCircleStyle, background: '#4e6d4e'}}>20</div>
-            <div style={statCircleStyle}><Icon size={18} /></div>
-         </div>
-         <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '800' }}>سجل الإرضاع الذكي</h2>
-            <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Lactation & Maternity Tracker</div>
-         </div>
-      </div>
+  // --- عناصر الواجهة الفرعية ---
+  const renderInput = (f) => (
+    <div key={f} style={{ marginBottom: '10px' }}>
+      <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label>
+      <input 
+        type={f.includes("تاريخ") ? "date" : f.includes("الوقت") || f.includes("ساعة") ? "time" : "text"}
+        style={styles.input} 
+        value={data[f] || ''} 
+        onChange={e => {
+          const newData = {...data, [f]: e.target.value};
+          setData(newData);
+          localStorage.setItem('lady_lactation', JSON.stringify(newData));
+        }}
+      />
+    </div>
+  );
 
-      {/* مؤشر الحالة */}
-      <div style={{ marginBottom: '30px' }}>
-        <div style={progressBgStyle}>
-          <div style={progressFillStyle}></div>
+  return (
+    <div style={styles.mainContainer}>
+      {/* الرأس */}
+      <div style={styles.header}>
+        <div style={styles.statsRow}>
+          <div style={styles.circle}>28</div>
+          <div style={{...styles.circle, background: '#4e6d4e'}}>20</div>
+          <div style={styles.circle}><Icon size={18} /></div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={styles.title}>سجل الإرضاع الذكي</h2>
+          <div style={styles.subtitle}>Maternity & Health AI Tracker</div>
         </div>
       </div>
 
-      {/* القوائم المنسدلة */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      {/* شريط التقدم */}
+      <div style={styles.progressContainer}>
+        <div style={styles.progressBar}><div style={styles.progressFill}></div></div>
+      </div>
+
+      {/* الأقسام */}
+      <div style={styles.sectionsList}>
         {sections.map((sec, i) => (
-          <div key={i} style={{ 
-            background: openIdx === i ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)', 
-            borderRadius: '25px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' 
-          }}>
-            <div style={sectionHeaderStyle} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-              <span style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{sec.emoji} {sec.title}</span>
-              <span style={toggleIconStyle}>{openIdx === i ? '✕' : '＋'}</span>
+          <div key={i} style={{...styles.sectionCard, background: openIdx === i ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)'}}>
+            <div style={styles.sectionHeader} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+              <span style={{ fontWeight: 'bold' }}>{sec.emoji} {sec.title}</span>
+              <span style={styles.plusIcon}>{openIdx === i ? '✕' : '＋'}</span>
             </div>
-            
             {openIdx === i && (
-              <div style={gridStyle}>
-                {sec.fields.map(f => (
-                  <div key={f}>
-                    <label style={labelStyle}>{f}</label>
-                    <input 
-                      type={getInputType(f)}
-                      style={inputStyle} 
-                      value={data[f] || ''} 
-                      onChange={e => {
-                        const newData = {...data, [f]: e.target.value};
-                        setData(newData);
-                        localStorage.setItem('lady_lactation', JSON.stringify(newData));
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
+              <div style={styles.fieldsGrid}>{sec.fields.map(f => renderInput(f))}</div>
             )}
           </div>
         ))}
       </div>
 
-      {/* منطقة الأزرار */}
-      <div style={{ marginTop: '30px', textAlign: 'center' }}>
-        <button onClick={handleSaveAndAnalyze} style={analyzeBtnStyle}>
-          {loading ? '...جاري التحليل' : 'تحليل الحالة (طبيبة رقة)'}
+      {/* التحكم والذكاء الاصطناعي */}
+      <div style={styles.footerControls}>
+        <button onClick={handleSaveAndAnalyze} style={styles.analyzeBtn}>
+          {loading ? 'جاري التحليل...' : 'طبيبة رقة: تحليل البيانات'}
         </button>
 
-        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', margin: '25px 0' }}>
-          <button onClick={() => fileInputRef.current.click()} style={roundBtnStyle} title="رفع صورة أشعة">📄</button>
-          <button onClick={() => cameraInputRef.current.click()} style={roundBtnStyle} title="فتح الكاميرا">📷</button>
-          <button onClick={() => alert("جاري تفعيل الميكروفون...")} style={roundBtnStyle} title="تسجيل صوتي">🎤</button>
-          
+        <div style={styles.actionButtons}>
+          <button onClick={() => fileInputRef.current.click()} style={styles.roundBtn}>📄</button>
+          <button onClick={() => cameraInputRef.current.click()} style={styles.roundBtn}>📷</button>
+          <button style={styles.roundBtn}>🎤</button>
           <input type="file" ref={fileInputRef} hidden accept="image/*,application/pdf" />
           <input type="file" ref={cameraInputRef} hidden accept="image/*" capture="environment" />
         </div>
 
-        {/* قائمة حفظ الردود السابقة */}
-        <h3 style={{ fontSize: '1rem', marginBottom: '15px' }}>الأرشيف الطبي 📚</h3>
-        <div style={historyContainerStyle}>
-          {history.length === 0 && <small>لا توجد سجلات سابقة</small>}
+        {/* السجل التاريخي */}
+        <div style={styles.historyBox}>
+          <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem' }}>استشاراتك السابقة</h4>
           {history.map(item => (
-            <div key={item.id} style={historyItemStyle}>
-              <small style={{ opacity: 0.7, fontSize: '0.7rem' }}>{item.date}</small>
-              <div style={{ fontSize: '0.85rem', marginTop: '5px' }}>{item.text.substring(0, 100)}...</div>
-              <button onClick={() => deleteResponse(item.id)} style={deleteBtnStyle}>🗑️</button>
+            <div key={item.id} style={styles.historyItem}>
+              <small style={{ opacity: 0.6 }}>{item.date}</small>
+              <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>{item.text.substring(0, 60)}...</div>
+              <button onClick={() => deleteResponse(item.id)} style={styles.delBtn}>🗑️</button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* شاشة الشات المنبثقة Overlay */}
+      {/* شاشة الشات المنسدلة (Overlay) */}
       {showChat && (
-        <div style={chatOverlayStyle}>
-          <div style={chatContentStyle}>
-            <div style={chatHeaderStyle}>
-              <span>👨‍⚕️ استشارة الطبيبة المتخصصة</span>
-              <button onClick={() => setShowChat(false)} style={closeChatBtn}>✕</button>
+        <div style={styles.overlay}>
+          <div style={styles.chatSheet}>
+            <div style={styles.chatHeader}>
+              <span style={{ fontWeight: '800' }}>👨‍⚕️ تقرير الطبيبة الذكية</span>
+              <button onClick={() => setShowChat(false)} style={styles.closeBtn}>✕</button>
             </div>
-            <div style={chatBodyStyle}>
+            <div style={styles.chatBody}>
               {loading ? (
-                <div style={{ textAlign: 'center', padding: '20px' }}>⏳ جاري الفحص والتحليل...</div>
+                <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                  <div style={styles.loader}></div>
+                  <p>أقوم بمراجعة بياناتك بدقة...</p>
+                </div>
               ) : (
                 <div style={{ whiteSpace: 'pre-line' }}>{aiResponse}</div>
               )}
             </div>
-            <div style={chatFooterStyle}>
-               <button onClick={() => setShowChat(false)} style={confirmBtnStyle}>شكراً رقة، فهمت</button>
+            <div style={styles.chatFooter}>
+              <button onClick={() => setShowChat(false)} style={styles.doneBtn}>فهمت، شكراً لكِ</button>
             </div>
           </div>
         </div>
@@ -195,61 +189,43 @@ const LactationHub = () => {
   );
 };
 
-// --- Styles ---
-const containerStyle = {
-  background: 'linear-gradient(160deg, #96b896 0%, #739673 100%)', 
-  backdropFilter: 'blur(20px)', borderRadius: '40px', padding: '30px', 
-  border: '8px solid rgba(255,255,255,0.1)', color: '#fff', direction: 'rtl',
-  boxShadow: '0 20px 50px rgba(0,0,0,0.2)', position: 'relative', minHeight: '600px'
+// --- الأنماط لضمان عدم ظهور شاشة بيضاء ---
+const styles = {
+  mainContainer: {
+    background: 'linear-gradient(160deg, #96b896 0%, #739673 100%)',
+    borderRadius: '35px', padding: '25px', color: '#fff', direction: 'rtl',
+    fontFamily: 'sans-serif', minHeight: '80vh', position: 'relative', overflow: 'hidden',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.2)', border: '6px solid rgba(255,255,255,0.1)'
+  },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  statsRow: { display: 'flex', gap: '8px' },
+  circle: { width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' },
+  title: { margin: 0, fontSize: '1.2rem', fontWeight: '800' },
+  subtitle: { fontSize: '0.65rem', opacity: 0.8 },
+  progressContainer: { marginBottom: '25px' },
+  progressBar: { width: '100%', height: '10px', background: 'rgba(0,0,0,0.1)', borderRadius: '10px' },
+  progressFill: { width: '70%', height: '100%', background: '#fff', borderRadius: '10px', boxShadow: '0 0 10px #fff' },
+  sectionsList: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  sectionCard: { borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', transition: '0.3s' },
+  sectionHeader: { padding: '15px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' },
+  plusIcon: { background: '#fff', color: '#739673', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem' },
+  fieldsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '15px', background: 'rgba(0,0,0,0.05)' },
+  input: { width: '100%', padding: '10px', borderRadius: '12px', border: 'none', background: '#fff', color: '#333', fontSize: '0.85rem' },
+  footerControls: { marginTop: '25px', textAlign: 'center' },
+  analyzeBtn: { width: '100%', padding: '14px', borderRadius: '20px', border: 'none', background: '#fff', color: '#739673', fontWeight: 'bold', cursor: 'pointer', marginBottom: '15px' },
+  actionButtons: { display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' },
+  roundBtn: { width: '50px', height: '50px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: '1.3rem', cursor: 'pointer' },
+  historyBox: { maxHeight: '120px', overflowY: 'auto', textAlign: 'right', padding: '10px' },
+  historyItem: { background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '15px', marginBottom: '8px', position: 'relative' },
+  delBtn: { position: 'absolute', left: '10px', top: '10px', background: 'none', border: 'none', color: '#ff8a80', cursor: 'pointer' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 100 },
+  chatSheet: { background: '#fff', width: '100%', height: '75%', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', color: '#333', display: 'flex', flexDirection: 'column' },
+  chatHeader: { padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', color: '#739673' },
+  closeBtn: { background: 'none', border: 'none', fontSize: '1.2rem', color: '#999', cursor: 'pointer' },
+  chatBody: { flex: 1, padding: '20px', overflowY: 'auto', fontSize: '0.9rem', lineHeight: '1.6', textAlign: 'right' },
+  chatFooter: { padding: '15px', borderTop: '1px solid #eee', textAlign: 'center' },
+  doneBtn: { background: '#739673', color: '#fff', border: 'none', padding: '10px 40px', borderRadius: '20px', fontWeight: 'bold' },
+  loader: { border: '4px solid #f3f3f3', borderTop: '4px solid #739673', borderRadius: '50%', width: '30px', height: '30px', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }
 };
-
-const chatOverlayStyle = {
-  position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex',
-  alignItems: 'flex-end', borderRadius: '40px', overflow: 'hidden'
-};
-
-const chatContentStyle = {
-  background: '#fff', width: '100%', height: '80%', borderTopLeftRadius: '30px',
-  borderTopRightRadius: '30px', display: 'flex', flexDirection: 'column', color: '#333'
-};
-
-const chatHeaderStyle = {
-  padding: '20px', borderBottom: '1px solid #eee', display: 'flex', 
-  justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#739673'
-};
-
-const chatBodyStyle = { padding: '20px', overflowY: 'auto', flex: 1, lineHeight: '1.6', fontSize: '0.95rem' };
-
-const chatFooterStyle = { padding: '15px', textAlign: 'center' };
-
-const confirmBtnStyle = { 
-  background: '#739673', color: '#fff', border: 'none', padding: '10px 30px', 
-  borderRadius: '20px', cursor: 'pointer', fontWeight: 'bold' 
-};
-
-const closeChatBtn = { background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#999' };
-
-const statCircleStyle = {
-  width: '35px', height: '35px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold'
-};
-
-const progressBgStyle = { width: '100%', height: '14px', background: 'rgba(0,0,0,0.1)', borderRadius: '20px', padding: '2px' };
-const progressFillStyle = { width: '75%', height: '100%', background: 'linear-gradient(90deg, #c5e1a5, #fff)', borderRadius: '20px', boxShadow: '0 0 15px rgba(255,255,255,0.4)' };
-
-const sectionHeaderStyle = { padding: '18px 25px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const toggleIconStyle = { background: '#fff', color: '#739673', width: '24px', height: '24px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem' };
-
-const gridStyle = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', padding: '20px', background: 'rgba(0,0,0,0.05)' };
-const labelStyle = { fontSize: '0.75rem', display: 'block', marginBottom: '6px', paddingRight: '10px' };
-const inputStyle = { width: '100%', padding: '12px 15px', borderRadius: '20px', border: 'none', background: '#fff', color: '#333', fontSize: '0.9rem', outline: 'none', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)' };
-
-const analyzeBtnStyle = { width: '100%', padding: '15px', borderRadius: '25px', border: 'none', background: '#fff', color: '#739673', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 10px 20px rgba(0,0,0,0.1)' };
-const roundBtnStyle = { width: '50px', height: '50px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.2)', fontSize: '1.2rem', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(10px)', transition: '0.3s' };
-
-const historyContainerStyle = { maxHeight: '150px', overflowY: 'auto', paddingLeft: '5px' };
-const historyItemStyle = { background: 'rgba(255,255,255,0.1)', padding: '15px', borderRadius: '20px', marginBottom: '10px', position: 'relative', textAlign: 'right' };
-const deleteBtnStyle = { position: 'absolute', top: '10px', left: '10px', border: 'none', background: 'none', color: '#ff8a80', cursor: 'pointer', fontSize: '1rem' };
 
 export default LactationHub;
