@@ -1,150 +1,180 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { iconMap } from '../../constants/iconMap';
+import React, { useState, useEffect } from 'react';
+import { iconMap } from '../../constants/iconMap'; [cite_start]// [cite: 1]
 
-const PregnancyMonitor = () => {
-  const Icon = iconMap.intimacy;
+const FitnessMonitor = () => {
+  [cite_start]// استخدام أيقونة الرشاقة من الخريطة المتاحة [cite: 2]
+  const Icon = iconMap.intimacy; 
   const [openIdx, setOpenIdx] = useState(null);
-  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_pregnancy')) || {});
-  const [loading, setLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
-  const [savedResponses, setSavedResponses] = useState(() => JSON.parse(localStorage.getItem('pregnancy_ai_history')) || []);
-  const fileInputRef = useRef(null);
+  
+  [cite_start]// نظام تخزين البيانات محلياً لضمان عدم الضياع [cite: 3, 9]
+  const [data, setData] = useState(() => {
+    const saved = localStorage.getItem('lady_fitness');
+    return saved ? JSON.parse(saved) : {};
+  });
 
+  // القوائم العشر المخصصة للرشاقة (كل قائمة تضم 7 مدخلات)
   const sections = [
-    { title: "نمو الجنين", emoji: "⚖️", fields: ["الوزن", "الطول", "النبض", "الحركة", "حجم الرأس", "طول الفخذ", "وضعية الجنين", "كمية السائل", "ركلات اليوم", "ملاحظات"] },
-    { title: "صحة الأم", emoji: "🩺", fields: ["الضغط", "السكر", "الوزن", "الغثيان", "تورم القدم", "الصداع", "الشهية", "النوم", "الإرهاق", "ملاحظات"] },
-    { title: "الفحوصات", emoji: "🖥️", fields: ["السونار", "دم", "بول", "تاريخ الفحص", "اسم الطبيب", "المكان", "التكلفة", "النتيجة", "موعد القادم", "ملاحظات"] },
-    { title: "سجل المكملات", emoji: "💊", fields: ["فوليك", "حديد", "كالسيوم", "أوميجا3", "فيتامين د", "وقت الجرعة", "الكمية", "تاريخ البدء", "تاريخ الانتهاء", "ملاحظات"] },
-    { title: "الاستعداد للولادة", emoji: "👜", fields: ["حقيبة المشفى", "ملابس البيبي", "أغراض الأم", "أوراق رسمية", "خطة الولادة", "اسم المستشفى", "رقم الطوارئ", "تجهيز المنزل", "الميزانية", "ملاحظات"] },
-    { title: "تطور الأسابيع", emoji: "📅", fields: ["الأسبوع الحالي", "الشهر", "موعد الولادة", "أيام متبقية", "تطور المرحلة", "نصيحة الأسبوع", "تغيرات جسدية", "الحالة النفسية", "تاريخ اليوم", "ملاحظات"] },
-    { title: "التواصل مع الجنين", emoji: "🎈", fields: ["تفاعل مع الصوت", "تفاعل مع الضوء", "أغاني/أذكار", "كتابة رسالة", "اسم مقترح", "تجهيز الغرفة", "أول صورة سونار", "شعور الأب", "لحظات مميزة", "ملاحظات"] }
+    { title: "القياسات الحيوية", emoji: "📏", fields: ["الوزن الحالي", "نسبة الدهون", "محيط الخصر", "محيط الورك", "كتلة الجسم BMI", "نسبة العضلات", "ملاحظات التطور"] },
+    { title: "النشاط البدني", emoji: "🏃‍♀️", fields: ["نوع التمرين", "مدة التمرين", "عدد الخطوات", "السعرات المحروقة", "مستوى الشدة", "وقت التمرين", "ملاحظات الأداء"] },
+    { title: "التغذية الصحية", emoji: "🥗", fields: ["عدد السعرات", "كمية البروتين", "الألياف", "الدهون الصحية", "الكربوهيدرات", "عدد الوجبات", "جودة الأكل"] },
+    { title: "الهيدرات والماء", emoji: "💧", fields: ["كمية الماء (لتر)", "مواعيد الشرب", "المشروبات العشبية", "مشروبات الديتوكس", "مستوى الترطيب", "تجنب السكريات", "ملاحظات"] },
+    { title: "جودة النوم", emoji: "😴", fields: ["ساعات النوم", "وقت الاستيقاظ", "جودة النوم", "وقت الاسترخاء", "تجنب الكافيين", "القيلولة", "مستوى الطاقة"] },
+    { title: "الصحة النفسية", emoji: "🧠", fields: ["مستوى التوتر", "تمارين التنفس", "الحالة المزاجية", "الدافعية اليومية", "التأمل", "عادات إيجابية", "تحديات نفسية"] },
+    { title: "المكملات والجمال", emoji: "✨", fields: ["فيتامينات الرشاقة", "صحة الجلد", "صحة الشعر", "الكولاجين", "معدل الحرق", "أوميجا 3", "ملاحظات طبية"] },
+    { title: "التحديات الأسبوعية", emoji: "🏆", fields: ["تحدي السكر", "تحدي الحركة", "الالتزام بالخطة", "أصعب عقبة", "إنجاز الأسبوع", "خطة الأسبوع القادم", "ملاحظات"] },
+    { title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "أعراض الرغبة بالأكل", "احتباس السوائل", "تغير الوزن الهرموني", "نوع الرياضة المناسب", "ألم الجسم", "الحالة العامة"] },
+    { title: "العادات اليومية", emoji: "✅", fields: ["الاستيقاظ مبكراً", "الصيام المتقطع", "الجلوس الصحي", "التعرض للشمس", "الحركة المكتبية", "مضغ الطعام جيداً", "ملاحظات إضافية"] }
   ];
 
-  // دالة حفظ البيانات في DB وتحليلها عبر AI
-  const handleSyncAndAnalyze = async () => {
-    setLoading(true);
-    try {
-      // 1. حفظ البيانات في Neon DB
-      await fetch('https://raqqa-v6cd.vercel.app/api/save-health', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'pregnancy', details: data })
-      });
-
-      // 2. تحليل البيانات عبر AI (كطبيب)
-      const aiQuery = `كمختص، حلل بيانات حملي الحالية واعطني نصيحة: ${JSON.stringify(data)}`;
-      const aiRes = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiQuery })
-      });
-      const aiData = await aiRes.json();
-      
-      const newResponse = { id: Date.now(), text: aiData.reply, date: new Date().toLocaleString() };
-      setAiResponse(aiData.reply);
-      const updatedHistory = [newResponse, ...savedResponses];
-      setSavedResponses(updatedHistory);
-      localStorage.setItem('pregnancy_ai_history', JSON.stringify(updatedHistory));
-
-    } catch (error) {
-      console.error("Error syncing data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteResponse = (id) => {
-    const filtered = savedResponses.filter(r => r.id !== id);
-    setSavedResponses(filtered);
-    localStorage.setItem('pregnancy_ai_history', JSON.stringify(filtered));
+  const handleInputChange = (field, value) => {
+    const newData = { ...data, [field]: value };
+    setData(newData);
+    localStorage.setItem('lady_fitness', JSON.stringify(newData)); [cite_start]// [cite: 9]
   };
 
   return (
-    <div style={{ 
-      background: 'linear-gradient(135deg, rgba(255,182,193,0.4), rgba(138,43,226,0.2))', 
-      backdropFilter: 'blur(20px)', borderRadius: '30px', padding: '25px', 
-      border: '1px solid rgba(255,255,255,0.4)', color: '#4a148c', fontFamily: 'Arial, sans-serif' 
-    }}>
-      
-      {/* مؤشر التقدم (Progress Tracker) مستوحى من Dribbble */}
-      <div style={{ textAlign: 'center', marginBottom: '25px' }}>
-        <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>تقدم المرحلة الحالية</div>
-        <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.3)', borderRadius: '10px', marginTop: '8px' }}>
-          <div style={{ width: '65%', height: '100%', background: 'linear-gradient(90deg, #ff4081, #7c4dff)', borderRadius: '10px', boxShadow: '0 0 10px rgba(124,77,255,0.5)' }}></div>
-        </div>
+    <div style={styles.container}>
+      {/* الرأس - Header */}
+      <div style={styles.header}>
+        <Icon size={32} color="#9c27b0" />
+        <h2 style={styles.title}>متابعة الرشاقة والجمال</h2>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Icon size={28} color="#7b1fa2"/> 
-          <h2 style={{ margin: 0, fontSize: '1.4rem' }}>متابعة الحمل الذكية</h2>
-        </div>
-        <button onClick={handleSyncAndAnalyze} style={{ padding: '8px 15px', borderRadius: '12px', border: 'none', background: '#7b1fa2', color: '#fff', cursor: 'pointer' }}>
-          {loading ? 'جاري التحليل...' : 'تحليل الطبيب AI'}
-        </button>
-      </div>
-      
-      {sections.map((sec, i) => (
-        <div key={i} style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '20px', marginBottom: '12px', border: '1px solid rgba(255,255,255,0.2)' }}>
-          <div style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-            <span style={{ fontWeight: '600' }}>{sec.emoji} {sec.title}</span>
-            <span style={{ fontSize: '0.8rem' }}>{openIdx === i ? '▲' : '▼'}</span>
-          </div>
-          {openIdx === i && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '15px', paddingTop: '0' }}>
-              {sec.fields.map(f => (
-                <div key={f}>
-                  <label style={{ fontSize: '0.7rem', display: 'block', marginBottom: '4px', opacity: 0.8 }}>{f}</label>
-                  <input 
-                    style={{ width: '100%', padding: '8px', borderRadius: '10px', border: 'none', background: 'rgba(255,255,255,0.6)', outline: 'none' }} 
-                    value={data[f] || ''} 
-                    onChange={e => {
-                      const newData = {...data, [f]: e.target.value};
-                      setData(newData);
-                      localStorage.setItem('lady_pregnancy', JSON.stringify(newData));
-                    }}
-                  />
-                </div>
-              ))}
+      {/* القوائم - Accordion Sections */}
+      <div style={styles.scrollArea}>
+        {sections.map((sec, i) => (
+          <div key={i} style={{
+            ...styles.sectionCard,
+            borderLeft: openIdx === i ? '5px solid #9c27b0' : '5px solid transparent'
+          }}>
+            <div 
+              style={styles.sectionHeader} 
+              [cite_start]onClick={() => setOpenIdx(openIdx === i ? null : i)} // [cite: 6]
+            >
+              <div style={styles.sectionLabel}>
+                <span style={styles.emoji}>{sec.emoji}</span>
+                <span style={styles.sectionTitle}>{sec.title}</span>
+              </div>
+              <span style={styles.arrow}>{openIdx === i ? '▲' : '▼'}</span>
             </div>
-          )}
-        </div>
-      ))}
 
-      {/* منطقة الأدوات والردود */}
-      <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.3)', paddingTop: '20px' }}>
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' }}>
-          <button title="فتح الكاميرا" style={actionBtnStyle} onClick={() => fileInputRef.current.click()}>📷</button>
-          <button title="تسجيل صوتي" style={actionBtnStyle}>🎤</button>
-          <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept="image/*" />
-        </div>
-
-        {aiResponse && (
-          <div style={{ background: 'rgba(123, 31, 162, 0.1)', padding: '15px', borderRadius: '15px', marginBottom: '20px', border: '1px solid #7b1fa2' }}>
-            <strong style={{ display: 'block', marginBottom: '5px' }}>👨‍⚕️ توصية الطبيب الذكي:</strong>
-            <p style={{ fontSize: '0.9rem', margin: 0 }}>{aiResponse}</p>
+            {/* الحقول - Input Fields */}
+            {openIdx === i && (
+              <div style={styles.gridContainer}>
+                {sec.fields.map(field => (
+                  <div key={field} style={styles.inputWrapper}>
+                    <label style={styles.label}>{field}</label>
+                    <input 
+                      style={styles.input} 
+                      placeholder="..."
+                      [cite_start]value={data[field] || ''} // [cite: 7, 8]
+                      onChange={(e) => handleInputChange(field, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-
-        <h3 style={{ fontSize: '1rem' }}>📜 سجل الردود السابقة</h3>
-        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-          {savedResponses.map(res => (
-            <div key={res.id} style={{ background: 'rgba(255,255,255,0.3)', padding: '10px', borderRadius: '12px', marginBottom: '8px', position: 'relative' }}>
-              <small style={{ fontSize: '0.6rem', color: '#666' }}>{res.date}</small>
-              <p style={{ fontSize: '0.85rem', margin: '5px 0' }}>{res.text}</p>
-              <button onClick={() => deleteResponse(res.id)} style={{ position: 'absolute', top: '5px', left: '10px', border: 'none', background: 'transparent', color: 'red', cursor: 'pointer' }}>🗑️</button>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );
 };
 
-const actionBtnStyle = {
-  width: '50px', height: '50px', borderRadius: '50%', border: 'none', 
-  background: 'white', fontSize: '1.2rem', cursor: 'pointer', 
-  boxShadow: '0 4px 15px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+// التنسيق المبهر - Professional CSS-in-JS
+const styles = {
+  container: {
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05))',
+    backdropFilter: 'blur(20px)',
+    borderRadius: '30px',
+    padding: '25px',
+    border: '1px solid rgba(255,255,255,0.4)',
+    maxWidth: '600px',
+    margin: '20px auto',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.1)',
+    fontFamily: 'system-ui, -apple-system, sans-serif',
+    direction: 'rtl'
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '15px',
+    marginBottom: '25px',
+    paddingBottom: '15px',
+    borderBottom: '1px solid rgba(156, 39, 176, 0.2)'
+  },
+  title: {
+    margin: 0,
+    fontSize: '1.5rem',
+    color: '#4a148c',
+    fontWeight: '800'
+  },
+  scrollArea: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '12px'
+  },
+  sectionCard: {
+    background: 'rgba(255,255,255,0.4)',
+    borderRadius: '18px',
+    transition: 'all 0.3s ease',
+    overflow: 'hidden',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
+  },
+  sectionHeader: {
+    padding: '18px',
+    cursor: 'pointer',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    background: 'rgba(255,255,255,0.3)'
+  },
+  sectionLabel: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px'
+  },
+  emoji: {
+    fontSize: '1.4rem'
+  },
+  sectionTitle: {
+    fontWeight: '700',
+    color: '#6a1b9a',
+    fontSize: '1rem'
+  },
+  arrow: {
+    fontSize: '0.8rem',
+    color: '#9c27b0'
+  },
+  gridContainer: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px',
+    padding: '15px',
+    background: 'rgba(255,255,255,0.2)'
+  },
+  inputWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px'
+  },
+  label: {
+    fontSize: '0.75rem',
+    color: '#7b1fa2',
+    paddingRight: '5px',
+    fontWeight: '600'
+  },
+  input: {
+    width: '100%',
+    padding: '10px',
+    borderRadius: '10px',
+    border: '1px solid rgba(156, 39, 176, 0.1)',
+    background: 'white',
+    outline: 'none',
+    fontSize: '0.9rem',
+    transition: 'border 0.3s',
+    boxSizing: 'border-box'
+  }
 };
 
-export default PregnancyMonitor;
+export default FitnessMonitor;
