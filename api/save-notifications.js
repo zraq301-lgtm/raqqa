@@ -10,7 +10,6 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // التأكد من أن نوع الطلب POST (للحفظ)
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method Not Allowed' });
     }
@@ -18,6 +17,7 @@ export default async function handler(req, res) {
     const { user_id, category, value, note } = req.body;
 
     try {
+        // استخدام المفتاح POSTGRES_URL كما يظهر في الصورة المرفقة
         const sql = neon(process.env.POSTGRES_URL);
 
         let aiAdvice = `تم تسجيل ${category} بنجاح في رقة ✨`;
@@ -46,8 +46,7 @@ export default async function handler(req, res) {
             console.error("AI Error:", aiError);
         }
 
-        // 2. الحفظ في جدول notifications (توجيه الإشعار للجدول المطلوب)
-        // تم التأكد من أن اسم الجدول هو notifications ليطابق منطق ملفات الجلب لديك
+        // 2. الحفظ في جدول notifications (باستخدام POSTGRES_URL)
         await sql`
             INSERT INTO notifications (user_id, title, body, created_at)
             VALUES (${user_id || 1}, 'تنبيه من رقة ✨', ${aiAdvice}, NOW());
@@ -75,6 +74,6 @@ export default async function handler(req, res) {
 
     } catch (dbError) {
         console.error("Database Error:", dbError);
-        return res.status(500).json({ error: "فشل في تسجيل البيانات في جدول notifications" });
+        return res.status(500).json({ error: "فشل في تسجيل البيانات باستخدام POSTGRES_URL" });
     }
 }
