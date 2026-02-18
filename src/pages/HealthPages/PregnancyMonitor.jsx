@@ -1,13 +1,22 @@
-import React, { useState, useEffect } from 'react';
-// التصحيح: الخروج مستويين للوصول من HealthPages إلى مجلد constants الرئيسي
-import { iconMap } from '../../constants/iconMap'; [cite: 1]
+import React, { useState } from 'react';
+// استيراد أيقونات النظام
+import { iconMap } from '../../constants/iconMap';
 
-const FitnessMonitor = () => {
-  const Icon = iconMap.intimacy; [cite: 2]
-  const [openIdx, setOpenIdx] = useState(null); [cite: 2]
-  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_fitness')) || {}); [cite: 3]
+const PregnancyMonitor = () => {
+  const Icon = iconMap.intimacy;
+  const [openIdx, setOpenIdx] = useState(null);
+  
+  // جلب البيانات من التخزين المحلي أو إنشاء كائن فارغ
+  const [data, setData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lady_fitness');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
 
-  // القوائم العشر المخصصة للرشاقة مع 7 مدخلات لكل منها
+  // القوائم العشر المخصصة للرشاقة مع 7 مدخلات لكل منها [cite: 3, 4]
   const sections = [
     { title: "القياسات الحيوية", emoji: "📏", fields: ["الوزن الحالي", "نسبة الدهون", "محيط الخصر", "محيط الورك", "كتلة الجسم BMI", "نسبة العضلات", "ملاحظات"] },
     { title: "النشاط البدني", emoji: "🏃‍♀️", fields: ["نوع التمرين", "مدة التمرين", "عدد الخطوات", "السعرات المحروقة", "مستوى الشدة", "وقت التمرين", "ملاحظات"] },
@@ -18,34 +27,41 @@ const FitnessMonitor = () => {
     { title: "المكملات والجمال", emoji: "✨", fields: ["الفيتامينات", "صحة الجلد", "صحة الشعر", "الكولاجين", "معدل الحرق", "أوميجا 3", "ملاحظات طبية"] },
     { title: "التحديات الأسبوعية", emoji: "🏆", fields: ["تحدي السكر", "تحدي الحركة", "الالتزام", "أصعب عقبة", "إنجاز الأسبوع", "خطة القادم", "ملاحظات"] },
     { title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة بالأكل", "احتباس السوائل", "تغير الوزن", "نوع الرياضة", "ألم الجسم", "الحالة العامة"] },
-    { title: "العادات اليومية", emoji: "✅", fields: ["الاستيقاظ مبكراً", "الصيام المتقطع", "الجلوس الصحي", "التعرض للشمس", "الحركة المكتبية", "مضغ الطعام", "ملاحظات"] }
-  ]; [cite: 3, 4, 5]
+    { title: "العادات اليومية", emoji: "✅", fields: ["الاستيقاظ مبكراً", "الصيام المتقطع", "الجلوس الصحي", "التعرض الشمس", "الحركة المكتبية", "مضغ الطعام", "ملاحظات"] }
+  ];
+
+  const updateData = (field, value) => {
+    const newData = { ...data, [field]: value };
+    setData(newData);
+    localStorage.setItem('lady_fitness', JSON.stringify(newData)); [cite: 9]
+  };
 
   return (
     <div style={{ background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(15px)', borderRadius: '25px', padding: '20px', border: '1px solid rgba(255,255,255,0.3)', direction: 'rtl' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#6a1b9a', marginBottom: '15px' }}>
-        <Icon size={24}/> <h2>متابعة الرشاقة والجمال</h2>
+        <Icon size={24}/> 
+        <h2 style={{ margin: 0 }}>متابعة الرشاقة</h2>
       </div>
       
       {sections.map((sec, i) => (
         <div key={i} style={{ background: 'rgba(255,255,255,0.25)', borderRadius: '15px', marginBottom: '10px', overflow: 'hidden' }}>
-          <div style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+          <div 
+            style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }} 
+            [cite_start]onClick={() => setOpenIdx(openIdx === i ? null : i)} [cite: 6]
+          >
             <span>{sec.emoji} {sec.title}</span>
             <span>{openIdx === i ? '▲' : '▼'}</span>
           </div>
+          
           {openIdx === i && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', padding: '15px' }}>
               {sec.fields.map(f => (
                 <div key={f}>
-                  <label style={{fontSize:'0.75rem', display: 'block', marginBottom: '4px'}}>{f}</label>
+                  <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>{f}</label>
                   <input 
                     style={{ width: '100%', padding: '6px', borderRadius: '8px', border: 'none', background: 'rgba(255,255,255,0.5)', boxSizing: 'border-box' }} 
                     value={data[f] || ''} 
-                    onChange={e => {
-                      const newData = {...data, [f]: e.target.value}; [cite: 8]
-                      setData(newData); [cite: 9]
-                      localStorage.setItem('lady_fitness', JSON.stringify(newData)); [cite: 9]
-                    }}
+                    [cite_start]onChange={(e) => updateData(f, e.target.value)} [cite: 8, 9]
                   />
                 </div>
               ))}
@@ -54,7 +70,7 @@ const FitnessMonitor = () => {
         </div>
       ))}
     </div>
-  ); [cite: 5, 6, 7, 8, 9]
+  );
 };
 
-export default FitnessMonitor; [cite: 10]
+export default PregnancyMonitor;
