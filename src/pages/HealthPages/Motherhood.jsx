@@ -1,126 +1,139 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Brain, Users, Star, Smile, Lightbulb, Activity, 
   Send, Trash2, ChevronRight, MessageSquare, Sparkles, X, 
-  Settings, Bell, Search
+  Settings, Bell, Search, Plus
 } from 'lucide-react';
+import { CapacitorHttp } from '@capacitor/core'; [cite: 3]
 
 const MotherhoodApp = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('ai_history')) || []); [cite: 4]
 
+  // الفئات مع زيادة عدد المدخلات إلى 10 لكل قائمة [cite: 5, 7]
   const categories = [
-    { id: 'physical', title: 'الاحتياجات الجسدية', icon: <Activity />, color: '#6366f1', fields: ['جودة النوم', 'الشهية', 'النشاط'] },
-    { id: 'cognitive', title: 'التطور المعرفي', icon: <Brain />, color: '#ec4899', fields: ['التركيز', 'اللغة', 'الذاكرة'] },
-    { id: 'emotional', title: 'الذكاء العاطفي', icon: <Heart />, color: '#f59e0b', fields: ['الثقة', 'التعبير', 'المرونة'] },
-    { id: 'social', title: 'المهارات الاجتماعية', icon: <Users />, color: '#10b981', fields: ['المشاركة', 'الصداقات', 'القيادة'] },
-    { id: 'values', title: 'القناعات والقيم', icon: <Star />, color: '#8b5cf6', fields: ['الصدق', 'المسؤولية', 'الامتنان'] },
-    { id: 'behavior', title: 'السلوك والتهذيب', icon: <Smile />, color: '#06b6d4', fields: ['الاستقلال', 'الترتيب', 'الهدوء'] }
+    { id: 'physical', title: 'الجسدية', icon: <Activity />, color: '#FF6B6B', fields: ['جودة النوم', 'الشهية', 'النشاط الحركي', 'نمو الوزن', 'نمو الطول', 'المناعة', 'صحة الحواس', 'النظافة', 'شرب الماء', 'التنفس'] },
+    { id: 'cognitive', title: 'المعرفة', icon: <Brain />, color: '#4D96FF', fields: ['التركيز', 'حل المشكلات', 'حب الاستطلاع', 'الذاكرة', 'اللغة', 'المنطق', 'الحساب', 'القراءة', 'اللغات', 'الاستنتاج'] },
+    { id: 'emotional', title: 'العاطفة', icon: <Heart />, color: '#FF87B2', fields: ['التعبير', 'الثقة', 'الفشل', 'المرونة', 'الضبط', 'التعاطف', 'الأمان', 'حب الذات', 'الخوف', 'الاستقرار'] },
+    { id: 'social', title: 'الاجتماعية', icon: <Users />, color: '#6BCB77', fields: ['آداب الحديث', 'المشاركة', 'الصداقات', 'احترام القوانين', 'القيادة', 'النزاعات', 'التعاون', 'الذكاء', 'الخصوصية', 'الحوار'] },
+    { id: 'values', title: 'القيم', icon: <Star />, color: '#FFD93D', fields: ['الصدق', 'بر الوالدين', 'المسؤولية', 'الامتنان', 'التواضع', 'الرحمة', 'البيئة', 'الوقت', 'الصبر', 'العدل'] },
+    { id: 'behavior', title: 'السلوك', icon: <Smile />, color: '#92A9BD', fields: ['إدارة الغضب', 'العناد', 'المواعيد', 'الترتيب', 'الأماكن العامة', 'الاستقلال', 'الاعتذار', 'طلب الإذن', 'الاستماع', 'المبادرة'] },
+    { id: 'creative', title: 'الإبداع', icon: <Lightbulb />, color: '#B1AFFF', fields: ['الخيال', 'الرسم', 'الأشغال اليدوية', 'التمثيل', 'الابتكار', 'الموسيقى', 'التصوير', 'الكتابة', 'البرمجة', 'إعادة التدوير'] }
   ];
 
+  const [inputs, setInputs] = useState(() => {
+    const state = {};
+    categories.forEach(cat => state[cat.id] = Array(10).fill('')); [cite: 8]
+    return state;
+  });
+
+  const handleUpdateInput = (catId, idx, val) => {
+    setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) })); [cite: 9]
+  };
+
+  const runAiAnalysis = async (cat) => {
+    setLoading(true);
+    // منطق التحليل باستخدام CapacitorHttp [cite: 14, 15]
+    setTimeout(() => setLoading(false), 2000); 
+  };
+
   return (
-    <div className="min-h-screen bg-[#F0F2F5] p-6 font-sans" dir="rtl">
-      {/* الشريط العلوي - مستوحى من تطبيقات Dribbble */}
-      <header className="max-w-4xl mx-auto flex justify-between items-center mb-10">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-white flex items-center justify-center">
-            <Settings className="text-slate-400" size={20} />
+    <div className="min-h-screen bg-[#F7F9FC] p-4 font-sans text-right" dir="rtl">
+      {/* Header الصغير الأنيق */}
+      <header className="flex justify-between items-center mb-8 px-2">
+        <div className="flex gap-3 items-center">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-100 flex items-center justify-center text-white">
+            <Plus size={20} />
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">رقة الذكية</h1>
-            <p className="text-xs text-slate-500">مرحباً بكِ، أمي المبدعة</p>
-          </div>
+          <h1 className="text-xl font-black text-slate-800 tracking-tight">رقة الذكية</h1>
         </div>
-        <div className="flex gap-3">
-            <button className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-white flex items-center justify-center text-slate-400">
-                <Search size={20} />
-            </button>
-            <button className="w-12 h-12 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 flex items-center justify-center text-white">
-                <Bell size={20} />
-            </button>
+        <div className="flex gap-2">
+            <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Search size={18}/></button>
+            <button className="p-2.5 bg-white rounded-xl shadow-sm border border-slate-100 text-slate-400"><Settings size={18}/></button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto">
-        <AnimatePresence mode="wait">
-          {!activeTab ? (
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
-            >
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveTab(cat)}
-                  className="group bg-white p-6 rounded-[2.5rem] shadow-sm hover:shadow-xl hover:shadow-indigo-100 transition-all border border-transparent hover:border-indigo-50 flex items-center gap-6 text-right"
+      {/* شبكة الكروت الصغيرة الملونة */}
+      <AnimatePresence mode="wait">
+        {!activeTab ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-3">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveTab(cat)}
+                className="relative overflow-hidden bg-white p-4 rounded-[2rem] shadow-sm border border-slate-50 flex flex-col items-start gap-3 transition-all active:scale-95"
+              >
+                <div className="p-3 rounded-2xl text-white shadow-md" style={{ backgroundColor: cat.color }}>
+                  {React.cloneElement(cat.icon, { size: 20 })}
+                </div>
+                <span className="font-bold text-slate-700 text-sm">{cat.title}</span>
+                <div className="absolute -bottom-2 -right-2 opacity-10" style={{ color: cat.color }}>
+                   {React.cloneElement(cat.icon, { size: 60 })}
+                </div>
+              </button>
+            ))}
+          </motion.div>
+        ) : (
+          /* كارت التفاصيل المفتوح - الأكثر أناقة */
+          <motion.div 
+            initial={{ y: 100, opacity: 0 }} 
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed inset-0 z-50 bg-white flex flex-col"
+          >
+            {/* Header الكارت المفتوح */}
+            <div className="p-6 flex justify-between items-center">
+                <button onClick={() => setActiveTab(null)} className="p-3 bg-slate-50 rounded-2xl text-slate-400"><X size={20}/></button>
+                <div className="flex flex-col items-center">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">قسم التطور</span>
+                    <h2 className="text-lg font-black text-slate-800">{activeTab.title}</h2>
+                </div>
+                <div className="w-12"></div>
+            </div>
+
+            {/* أشرطة المدخلات الملونة */}
+            <div className="flex-1 overflow-y-auto px-6 space-y-3 pb-28 custom-scrollbar">
+              {activeTab.fields.map((field, idx) => (
+                <div 
+                  key={idx} 
+                  className="flex items-center gap-4 p-2 rounded-[1.4rem] transition-all border border-transparent focus-within:border-slate-100 shadow-sm"
+                  style={{ backgroundColor: `${activeTab.color}08` }}
                 >
                   <div 
-                    className="w-20 h-20 rounded-[1.8rem] flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${cat.color}10`, color: cat.color }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black shadow-sm"
+                    style={{ backgroundColor: activeTab.color, color: '#fff' }}
                   >
-                    {React.cloneElement(cat.icon, { size: 32 })}
+                    {idx + 1}
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-slate-800 mb-1">{cat.title}</h3>
-                    <p className="text-sm text-slate-400">تابعي تطور طفلك في هذا الجانب</p>
-                  </div>
-                  <ChevronRight className="text-slate-300 group-hover:text-indigo-500 transition-colors" />
-                </button>
-              ))}
-            </motion.div>
-          ) : (
-            /* كارت إدخال البيانات - تصميم ناعم (Soft UI) */
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-white rounded-[3rem] shadow-2xl shadow-slate-200 overflow-hidden border border-white"
-            >
-              <div className="p-8 flex justify-between items-center border-b border-slate-50">
-                <div className="flex items-center gap-4">
-                    <div className="p-4 rounded-2xl" style={{ backgroundColor: `${activeTab.color}15`, color: activeTab.color }}>
-                        {activeTab.icon}
-                    </div>
-                    <div>
-                        <h2 className="text-2xl font-bold text-slate-800">{activeTab.title}</h2>
-                        <span className="text-xs text-slate-400">إدخال البيانات اليومية</span>
-                    </div>
-                </div>
-                <button onClick={() => setActiveTab(null)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 transition-colors">
-                    <X size={20} />
-                </button>
-              </div>
-
-              <div className="p-8 grid grid-cols-1 gap-4">
-                {activeTab.fields.map((field, idx) => (
-                  <div key={idx} className="relative">
-                    <label className="text-xs font-bold text-slate-400 mr-4 mb-2 block">{field}</label>
+                    <p className="text-[10px] font-bold mb-0.5" style={{ color: activeTab.color }}>{field}</p>
                     <input 
                       type="text" 
-                      placeholder="اكتبي ملاحظاتك هنا..."
-                      className="w-full bg-[#F8FAFC] border-2 border-transparent focus:border-indigo-100 focus:bg-white rounded-[1.5rem] py-4 px-6 outline-none transition-all text-slate-700 placeholder:text-slate-300"
+                      placeholder="أدخلي ملاحظاتك..."
+                      [cite_start]value={inputs[activeTab.id][idx]} [cite: 25]
+                      [cite_start]onChange={(e) => handleUpdateInput(activeTab.id, idx, e.target.value)} [cite: 26]
+                      className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-300 font-medium"
                     />
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
 
-              <div className="p-8 bg-slate-50/50 flex gap-4">
-                <button className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-[2rem] shadow-lg shadow-indigo-100 flex items-center justify-center gap-3 transition-all active:scale-95">
+            {/* زر التحليل العائم في الأسفل */}
+            <div className="absolute bottom-8 left-6 right-6">
+                <button 
+                  onClick={() => runAiAnalysis(activeTab)}
+                  className="w-full py-5 rounded-[2rem] font-black text-white shadow-2xl flex items-center justify-center gap-3 transition-transform active:scale-95"
+                  style={{ backgroundColor: activeTab.color, boxShadow: `0 20px 40px ${activeTab.color}40` }}
+                >
                   <Sparkles size={20} />
-                  تحليل النتائج بالذكاء الاصطناعي
+                  {loading ? 'جاري التحليل...' : 'تحليل وحفظ البيانات'} [cite: 28]
                 </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      {/* زر المساعدة العائم */}
-      <button className="fixed bottom-8 left-8 w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center text-indigo-600 border border-indigo-50 hover:-translate-y-2 transition-transform">
-        <MessageSquare size={28} />
-      </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
