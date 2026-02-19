@@ -1,224 +1,198 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Heart, Brain, Users, Star, Smile, Lightbulb, Activity, 
-  Send, Trash2, Camera, Mic, ChevronRight, MessageSquare, 
-  Sparkles, X, Settings, Bell, Search, Plus, Image as ImageIcon, Save
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { 
+  FaChild, FaHeart, FaBrain, FaBookOpen, FaAppleAlt, 
+  FaUsers, FaStar, FaSpa, FaShieldAlt, FaPalette,
+  FaRobot, FaMicrophone, FaCamera, FaImage, FaTrash, FaPaperPlane 
+} from 'react-icons/fa';
 
-const MotherhoodApp = () => {
-  const [activeTab, setActiveTab] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [chatHistory, setChatHistory] = useState(() => {
-    const saved = localStorage.getItem('raqqa_chat_history');
-    return saved ? JSON.parse(saved) : [];
-  });
+// --- ألوان وتنسيقات زجاجية ---
+const glassStyle = {
+  background: 'rgba(255, 255, 255, 0.2)',
+  backdropFilter: 'blur(15px)',
+  border: '1px solid rgba(255, 255, 255, 0.3)',
+  borderRadius: '25px',
+  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
+};
 
-  // هيكلة الفئات بـ 10 مدخلات لكل قسم
-  const categories = [
-    { id: 'physical', title: 'الجسدية', icon: <Activity size={24}/>, color: '#FF6B6B', fields: ['جودة النوم', 'الشهية', 'النشاط الحركي', 'نمو الوزن', 'نمو الطول', 'المناعة', 'صحة الحواس', 'النظافة', 'شرب الماء', 'التنفس'] },
-    { id: 'cognitive', title: 'المعرفة', icon: <Brain size={24}/>, color: '#4D96FF', fields: ['التركيز', 'حل المشكلات', 'حب الاستطلاع', 'الذاكرة', 'اللغة', 'المنطق', 'الحساب', 'القراءة', 'اللغات', 'الاستنتاج'] },
-    { id: 'emotional', title: 'العاطفة', icon: <Heart size={24}/>, color: '#FF87B2', fields: ['التعبير', 'الثقة', 'الفشل', 'المرونة', 'الضبط', 'التعاطف', 'الأمان', 'حب الذات', 'الخوف', 'الاستقرار'] },
-    { id: 'social', title: 'الاجتماعية', icon: <Users size={24}/>, color: '#6BCB77', fields: ['آداب الحديث', 'المشاركة', 'الصداقات', 'احترام القوانين', 'القيادة', 'النزاعات', 'التعاون', 'الذكاء', 'الخصوصية', 'الحوار'] },
-    { id: 'values', title: 'القيم', icon: <Star size={24}/>, color: '#FFD93D', fields: ['الصدق', 'بر الوالدين', 'المسؤولية', 'الامتنان', 'التواضع', 'الرحمة', 'البيئة', 'الوقت', 'الصبر', 'العدل'] },
-    { id: 'behavior', title: 'السلوك', icon: <Smile size={24}/>, color: '#92A9BD', fields: ['إدارة الغضب', 'العناد', 'المواعيد', 'الترتيب', 'الأماكن العامة', 'الاستقلال', 'الاعتذار', 'طلب الإذن', 'الاستماع', 'المبادرة'] },
-    { id: 'creative', title: 'الإبداع', icon: <Lightbulb size={24}/>, color: '#B1AFFF', fields: ['الخيال', 'الرسم', 'الأشغال اليدوية', 'التمثيل', 'الابتكار', 'الموسيقى', 'التصوير', 'الكتابة', 'البرمجة', 'إعادة التدوير'] }
+const App = () => {
+  const [selectedList, setSelectedList] = useState(0);
+  const [checkedState, setCheckedState] = useState({});
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputText, setInputText] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const data = [
+    { id: 0, title: "السلوك", icon: <FaChild />, items: ["التعزيز الإيجابي", "تجاهل المزعج", "عواقب منطقية", "حدود واضحة", "لوحة النجوم", "النمذجة", "وقت خاص", "استماع فعال", "بدائل لـ لا", "بيئة آمنة"] },
+    { id: 1, title: "القناعات", icon: <FaHeart />, items: ["الصدق", "الثقة بالقدرات", "احترام الآخر", "المشاركة", "الامتنان", "المثابرة", "حب التعلم", "المسؤولية", "الأمانة", "الرحمة"] },
+    { id: 2, title: "الذكاء", icon: <FaBrain />, items: ["تسمية المشاعر", "التعاطف", "تنفس الهدوء", "الاعتراف بالمشاعر", "حل النزاعات", "الثقة بالذات", "تجاوز الخوف", "لغة الجسد", "تحمل الإحباط", "التفاؤل"] },
+    { id: 3, title: "المعرفة", icon: <FaBookOpen />, items: ["قراءة يومية", "ألعاب ذكاء", "تجارب علمية", "لغة ثانية", "زيارة متاحف", "حساب ذهني", "نقاش مفتوح", "ثقافات عالمية", "تكنولوجيا", "هوايات"] },
+    { id: 4, title: "الصحة", icon: <FaAppleAlt />, items: ["غذاء متوازن", "نوم منتظم", "شرب الماء", "رياضة", "نظافة", "فحص دوري", "منع السكريات", "هواء طلق", "حركة كبرى", "سلامة جسدية"] },
+    { id: 5, title: "الاجتماع", icon: <FaUsers />, items: ["آداب التحية", "مشاركة", "آداب مائدة", "صداقات", "اعتذار", "استماع", "استئذان", "تعاون", "قيادة", "رأي حر"] },
+    { id: 6, title: "الاستقلال", icon: <FaStar />, items: ["لبس ملابس", "ترتيب سرير", "تجهيز وجبة", "قرار بسيط", "إدارة مصروف", "جدول يومي", "حل مشاكل", "عناية نبات", "تحمل نتيجة", "إسعافات"] },
+    { id: 7, title: "الأم", icon: <FaSpa />, items: ["وقت هدوء", "هواية", "طلب دعم", "تخطي الذنب", "نوم عميق", "قراءة", "تأمل", "أولويات", "احتفال", "تواصل"] },
+    { id: 8, title: "الأمان", icon: <FaShieldAlt />, items: ["لمسات الأمان", "طوارئ", "أمان منزلي", "أمان رقمي", "قواعد طريق", "غرباء", "عنوان منزل", "صدق تام", "مواجهة تنمر", "قواعد مسبح"] },
+    { id: 9, title: "الإبداع", icon: <FaPalette />, items: ["خيال", "لعب حر", "رسم", "إعادة تدوير", "تمثيل", "تأليف", "مكعبات", "طبيعة", "فنون", "ابتكار"] }
   ];
 
-  const [inputs, setInputs] = useState(() => {
-    const state = {};
-    categories.forEach(cat => { state[cat.id] = Array(10).fill(''); });
-    return state;
-  });
-
-  const handleUpdateInput = (catId, idx, val) => {
-    setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
-  };
-
-  // وظيفة حفظ البيانات في Neon DB
-  const saveToNeonDB = async (category, data) => {
+  // --- وظيفة حفظ البيانات في DB ونظام التنبيهات ---
+  const saveToDatabase = async (category, value) => {
     try {
-      await CapacitorHttp.post({
+      const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          title: `تحديث قسم ${category}`,
-          message: `تم إدخال بيانات جديدة في ${category}`,
-          type: 'motherhood_update'
+          user_id: 1, // معرف افتراضي
+          category: category,
+          value: value,
+          note: `تمت متابعة بند: ${value}`
         }
-      });
-    } catch (err) { console.error("Neon DB Error:", err); }
+      };
+      await CapacitorHttp.post(options);
+    } catch (err) {
+      console.error("خطأ في حفظ البيانات:", err);
+    }
   };
 
-  // وظيفة الذكاء الاصطناعي (طبيبة رقة)
-  const handleAiAnalysis = async (category) => {
-    const dataSummary = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: ${v}` : '').filter(v => v).join(', ');
-    if (!dataSummary) return alert("الرجاء إدخال بعض البيانات للتحليل");
+  const handleCheck = (listId, itemIndex, itemName) => {
+    const key = `${listId}-${itemIndex}`;
+    const newState = !checkedState[key];
+    setCheckedState(prev => ({ ...prev, [key]: newState }));
+    
+    if (newState) {
+      saveToDatabase(data[listId].title, itemName);
+    }
+  };
 
-    setLoading(true);
+  // --- نظام الذكاء الاصطناعي (طبيبة التربية) ---
+  const askAI = async (customPrompt = null) => {
+    const promptText = customPrompt || `بصفتك طبيبة تربية متخصصة، قمت اليوم بمتابعة بند "${data[selectedList].items.filter((_,i) => checkedState[`${selectedList}-${i}`]).join(', ')}" في فئة ${data[selectedList].title}. قدمي لي نصيحة تربوية مطولة وعميقة.`;
+    
+    setIsLoading(true);
+    setIsChatOpen(true);
+    
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          prompt: `أنتِ طبيبة رقة للتربية، متخصصة في طب أطفال وتربية. قدمي تحليلاً مطولاً ونصائح طبية لهذه البيانات في قسم ${category.title}: ${dataSummary}`
-        }
+        data: { prompt: promptText }
       };
 
       const response = await CapacitorHttp.post(options);
-      const responseText = response.data.reply || response.data.message;
-
-      const newEntry = {
-        id: Date.now(),
-        category: category.title,
-        reply: responseText,
-        date: new Date().toLocaleString('ar-EG')
-      };
-
-      const updatedHistory = [newEntry, ...chatHistory];
-      setChatHistory(updatedHistory);
-      localStorage.setItem('raqqa_chat_history', JSON.stringify(updatedHistory));
+      const aiReply = response.data.reply || "عذراً رفيقتي، حدث خطأ في معالجة النصيحة.";
       
-      await saveToNeonDB(category.title, inputs[category.id]);
-      setShowChat(true);
-      setActiveTab(null);
+      const newMsg = { id: Date.now(), text: aiReply, sender: 'ai' };
+      setMessages(prev => [...prev, newMsg]);
     } catch (err) {
-      console.error("AI Error:", err);
-    } finally { setLoading(false); }
+      setMessages(prev => [...prev, { id: Date.now(), text: "فشل الاتصال بطبيبة التربية، تأكدي من الإنترنت.", sender: 'ai' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteMessage = (id) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 font-sans text-right" dir="rtl">
-      {/* Header مع زر طبيبة رقة */}
-      <header className="flex justify-between items-center mb-6">
-        <button onClick={() => setShowChat(true)} className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-2xl shadow-lg shadow-indigo-100 transition-transform active:scale-95">
-          <Sparkles size={18} />
-          <span className="text-sm font-bold">طبيبة رقة للتربية</span>
+    <div className="app-container" style={{ direction: 'rtl', padding: '20px', minHeight: '100vh', background: 'url(https://source.unsplash.com/1600x900/?soft,pastel) no-repeat center center fixed', backgroundSize: 'cover' }}>
+      
+      {/* زر متخصص التربية العلوي */}
+      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+        <button 
+          onClick={() => askAI()}
+          style={{ ...glassStyle, padding: '12px 25px', color: '#6a5acd', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '1.1rem' }}>
+          <FaRobot /> متخصص التربية (تحليل ذكي)
         </button>
-        <div className="flex items-center gap-2">
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">رقة الذكية</h1>
-        </div>
-      </header>
-
-      {/* عرض القوائم عمودياً أسفل بعضها */}
-      <div className="flex flex-col gap-3">
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setActiveTab(cat)}
-            className="w-full bg-white p-4 rounded-[1.8rem] shadow-sm border border-slate-50 flex items-center justify-between transition-all active:bg-slate-50 group"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white" style={{ backgroundColor: cat.color }}>
-                {cat.icon}
-              </div>
-              <div className="text-right">
-                <h3 className="font-black text-slate-800 text-sm">{cat.title}</h3>
-                <p className="text-[10px] text-slate-400 font-medium">10 نقاط تطور متوفرة</p>
-              </div>
-            </div>
-            <div className="p-2 bg-slate-50 rounded-full group-hover:bg-indigo-50 transition-colors">
-              <ChevronRight className="text-slate-300 group-hover:text-indigo-600" size={20} />
-            </div>
-          </button>
-        ))}
       </div>
 
-      <AnimatePresence>
-        {/* كارت إدخال البيانات الحديث */}
-        {activeTab && (
-          <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} className="fixed inset-0 z-40 bg-white flex flex-col">
-            <div className="p-6 flex justify-between items-center border-b border-slate-50">
-              <button onClick={() => setActiveTab(null)} className="p-3 bg-slate-50 rounded-2xl text-slate-500"><X /></button>
-              <h2 className="font-black text-lg text-slate-800">{activeTab.title}</h2>
-              <div className="w-10 h-10 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                {activeTab.icon}
-              </div>
+      <div style={{ ...glassStyle, padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
+        {/* شريط الأيقونات العرضي */}
+        <div className="nav-scroll" style={{ display: 'flex', overflowX: 'auto', gap: '15px', paddingBottom: '15px' }}>
+          {data.map((cat) => (
+            <div 
+              key={cat.id} 
+              onClick={() => setSelectedList(cat.id)}
+              style={{ 
+                flex: '0 0 auto', width: '70px', height: '70px', borderRadius: '20px', 
+                background: selectedList === cat.id ? '#ff85a2' : 'rgba(255,255,255,0.4)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.3s'
+              }}>
+              <span style={{ fontSize: '1.5rem', color: selectedList === cat.id ? 'white' : '#6a5acd' }}>{cat.icon}</span>
+              <span style={{ fontSize: '0.6rem', fontWeight: 'bold', marginTop: '4px' }}>{cat.title}</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 pb-32">
-              {activeTab.fields.map((field, idx) => (
-                <div key={idx} className="flex flex-col gap-1.5 p-4 rounded-[1.5rem] border border-slate-100" style={{ backgroundColor: `${activeTab.color}05` }}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: activeTab.color }}>{idx + 1}</span>
-                    <label className="text-xs font-bold" style={{ color: activeTab.color }}>{field}</label>
-                  </div>
-                  <input 
-                    type="text" 
-                    value={inputs[activeTab.id][idx]}
-                    onChange={(e) => handleUpdateInput(activeTab.id, idx, e.target.value)}
-                    placeholder="اكتبي الملاحظات هنا..." 
-                    className="w-full bg-transparent outline-none text-sm font-medium py-1 placeholder:text-slate-300" 
-                  />
+          ))}
+        </div>
+
+        {/* الكارت الكبير */}
+        <div style={{ background: 'rgba(255,255,255,0.5)', borderRadius: '25px', padding: '25px', marginTop: '20px' }}>
+          <h2 style={{ color: '#6a5acd', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {data[selectedList].icon} {data[selectedList].title}
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginTop: '20px' }}>
+            {data[selectedList].items.map((item, index) => (
+              <label key={index} style={{ background: 'white', padding: '15px', borderRadius: '15px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={!!checkedState[`${selectedList}-${index}`]} 
+                  onChange={() => handleCheck(selectedList, index, item)}
+                  style={{ marginLeft: '12px', accentColor: '#ff85a2', width: '20px', height: '20px' }}
+                />
+                <span style={{ textDecoration: checkedState[`${selectedList}-${index}`] ? 'line-through' : 'none' }}>{item}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* صفحة الشات المنبثقة */}
+      {isChatOpen && (
+        <div style={{ position: 'fixed', bottom: '20px', left: '20px', right: '20px', top: '20px', zIndex: 1000, ...glassStyle, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div style={{ padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span><FaRobot /> طبيبة التربية المتخصصة</span>
+            <button onClick={() => setIsChatOpen(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+          </div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+            {messages.map(msg => (
+              <div key={msg.id} style={{ alignSelf: msg.sender === 'ai' ? 'flex-start' : 'flex-end', maxWidth: '80%' }}>
+                <div style={{ background: msg.sender === 'ai' ? 'white' : '#ff85a2', color: msg.sender === 'ai' ? '#333' : 'white', padding: '15px', borderRadius: '15px', position: 'relative', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                  {msg.text}
+                  <button onClick={() => deleteMessage(msg.id)} style={{ position: 'absolute', top: '-10px', right: '-10px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', cursor: 'pointer', fontSize: '0.7rem' }}>
+                    <FaTrash />
+                  </button>
                 </div>
-              ))}
+              </div>
+            ))}
+            {isLoading && <div style={{ color: '#6a5acd' }}>جاري التحليل التربوي... ✨</div>}
+          </div>
+
+          {/* أزرار التحكم بالشات */}
+          <div style={{ padding: '15px', background: 'rgba(255,255,255,0.8)', borderTop: '1px solid #ddd' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+              <button title="فتح الكاميرا" style={{ background: '#eee', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}><FaCamera /></button>
+              <button title="فتح الميكروفون" style={{ background: '#eee', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}><FaMicrophone /></button>
+              <button title="رفع صورة" style={{ background: '#eee', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }}><FaImage /></button>
             </div>
-            <div className="absolute bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md">
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="اسألي طبيبة التربية عن أي سلوك..."
+                style={{ flex: 1, padding: '12px', borderRadius: '10px', border: '1px solid #ddd' }}
+              />
               <button 
-                onClick={() => handleAiAnalysis(activeTab)}
-                disabled={loading}
-                className="w-full py-5 rounded-[2rem] text-white font-black shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
-                style={{ backgroundColor: activeTab.color, boxShadow: `0 15px 30px ${activeTab.color}40` }}
-              >
-                {loading ? 'جاري الاستشارة...' : <><Sparkles size={22}/> استشارة طبيبة رقة</>}
+                onClick={() => { if(inputText) { setMessages([...messages, {id: Date.now(), text: inputText, sender: 'user'}]); askAI(inputText); setInputText(""); } }}
+                style={{ background: '#6a5acd', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '10px', cursor: 'pointer' }}>
+                <FaPaperPlane />
               </button>
             </div>
-          </motion.div>
-        )}
-
-        {/* شاشة شات الطبيبة المتخصصة */}
-        {showChat && (
-          <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed inset-0 z-50 bg-[#F4F7F9] flex flex-col">
-            <div className="p-6 bg-white border-b flex justify-between items-center shadow-sm">
-              <button onClick={() => setShowChat(false)} className="p-3 bg-slate-100 rounded-2xl text-slate-500"><X/></button>
-              <div className="flex flex-col items-center">
-                <h2 className="font-black text-slate-800 text-lg">طبيبة رقة للتربية</h2>
-                <span className="text-[10px] font-bold text-green-500 uppercase tracking-tighter">● استشارية متصلة</span>
-              </div>
-              <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600"><MessageSquare size={20}/></div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24">
-              {chatHistory.map((msg) => (
-                <div key={msg.id} className="group animate-in fade-in slide-in-from-bottom-4">
-                  <div className="bg-white p-6 rounded-[2.2rem] rounded-tr-none shadow-sm border border-slate-100 relative">
-                    <div className="flex justify-between items-center mb-4 border-b border-slate-50 pb-3">
-                      <div className="flex items-center gap-2">
-                         <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-[10px]">{msg.category[0]}</div>
-                         <span className="text-[11px] font-black text-slate-500 uppercase tracking-wide">قسم {msg.category}</span>
-                      </div>
-                      <button onClick={() => {
-                        const filtered = chatHistory.filter(m => m.id !== msg.id);
-                        setChatHistory(filtered);
-                        localStorage.setItem('raqqa_chat_history', JSON.stringify(filtered));
-                      }} className="p-2 text-rose-400 hover:bg-rose-50 rounded-xl"><Trash2 size={16}/></button>
-                    </div>
-                    <p className="text-sm leading-relaxed text-slate-700 whitespace-pre-wrap font-medium">{msg.reply}</p>
-                    <div className="mt-5 flex justify-between items-center">
-                       <span className="text-[9px] text-slate-300 font-bold tracking-widest uppercase">{msg.date}</span>
-                       <button className="flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full"><Save size={12}/> حفظ الاستشارة</button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* صندوق أدوات الشات (كاميرا، ميكروفون، رفع صور) */}
-            <div className="p-6 bg-white rounded-t-[3rem] shadow-[0_-10px_40px_rgba(0,0,0,0.05)] border-t">
-              <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-[1.8rem] border border-slate-100">
-                <button className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-slate-400 hover:text-indigo-600"><Camera size={20}/></button>
-                <button className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-slate-400 hover:text-indigo-600"><Mic size={20}/></button>
-                <button className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-slate-400 hover:text-indigo-600"><ImageIcon size={20}/></button>
-                <input type="text" placeholder="اكتبي سؤالاً إضافياً للطبيبة..." className="flex-1 bg-transparent border-none outline-none text-xs font-bold px-2 text-slate-600" />
-                <button className="w-12 h-12 flex items-center justify-center bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200"><Send size={20}/></button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default MotherhoodApp;
+export default App;
