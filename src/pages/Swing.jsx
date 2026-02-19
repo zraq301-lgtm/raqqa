@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation } from 'framer-motion';
 import {
   Heart, MessageCircle, Share2, Send, X, Trash2, Image as ImageIcon,
-  Video, ChevronRight, Sparkles, RefreshCw, Plus
+  Video, ChevronRight, Sparkles, RefreshCw, Plus, ChevronDown, Camera, Mic
 } from 'lucide-react';
 
-// استيراد الصفحات الفرعية العشر
+// Sub-pages imports
 import MotherhoodHaven from './Swing-page/MotherhoodHaven';
 import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
 import WellnessOasis from './Swing-page/WellnessOasis';
@@ -21,20 +21,25 @@ import SoulsLounge from './Swing-page/SoulsLounge';
 
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
-// ==========================================
-//  CATEGORIES - التعريف المركزي للأقسام العشرة
-// ==========================================
+/* -------------------------------------------------------
+   DESIGN TOKENS
+   Deep Royal Purple: #4a148c
+   Soft Lavender:     #f3e5f5
+   Rose Gold:         #b76e79 / #e8b4b8
+   Glass:             rgba(255,255,255,0.55) + blur
+------------------------------------------------------- */
+
 const CATEGORIES = [
-  { ar: "ملاذ الأمومة", path: "MotherhoodHaven", icon: "🤱", gradient: "from-rose-400 to-pink-500", light: "bg-rose-50 text-rose-600 border-rose-200" },
-  { ar: "أكاديمية الصغار", path: "LittleOnesAcademy", icon: "👶", gradient: "from-sky-400 to-blue-500", light: "bg-sky-50 text-sky-600 border-sky-200" },
-  { ar: "واحة العافية", path: "WellnessOasis", icon: "🌿", gradient: "from-emerald-400 to-teal-500", light: "bg-emerald-50 text-emerald-600 border-emerald-200" },
-  { ar: "أيقونة الأناقة", path: "EleganceIcon", icon: "👗", gradient: "from-fuchsia-400 to-purple-500", light: "bg-fuchsia-50 text-fuchsia-600 border-fuchsia-200" },
-  { ar: "فن الطهي", path: "CulinaryArts", icon: "🍳", gradient: "from-orange-400 to-amber-500", light: "bg-orange-50 text-orange-600 border-orange-200" },
-  { ar: "زوايا البيت", path: "HomeCorners", icon: "🏡", gradient: "from-lime-400 to-green-500", light: "bg-lime-50 text-lime-600 border-lime-200" },
-  { ar: "مسارات التمكين", path: "EmpowermentPaths", icon: "💪", gradient: "from-violet-400 to-indigo-500", light: "bg-violet-50 text-violet-600 border-violet-200" },
-  { ar: "جسور المودة", path: "HarmonyBridges", icon: "💕", gradient: "from-pink-400 to-rose-500", light: "bg-pink-50 text-pink-600 border-pink-200" },
-  { ar: "شغف وحرف", path: "PassionsCrafts", icon: "🎨", gradient: "from-cyan-400 to-sky-500", light: "bg-cyan-50 text-cyan-600 border-cyan-200" },
-  { ar: "ملتقى الأرواح", path: "SoulsLounge", icon: "☕", gradient: "from-stone-400 to-neutral-600", light: "bg-stone-50 text-stone-600 border-stone-200" }
+  { ar: "ملاذ الأمومة",    path: "MotherhoodHaven",  icon: "\u{1F931}", color: "#e91e63", bg: "rgba(233,30,99,0.08)" },
+  { ar: "أكاديمية الصغار",  path: "LittleOnesAcademy", icon: "\u{1F476}", color: "#2196f3", bg: "rgba(33,150,243,0.08)" },
+  { ar: "واحة العافية",     path: "WellnessOasis",     icon: "\u{1F33F}", color: "#009688", bg: "rgba(0,150,136,0.08)" },
+  { ar: "أيقونة الأناقة",   path: "EleganceIcon",      icon: "\u{1F457}", color: "#9c27b0", bg: "rgba(156,39,176,0.08)" },
+  { ar: "فن الطهي",        path: "CulinaryArts",      icon: "\u{1F373}", color: "#ff9800", bg: "rgba(255,152,0,0.08)" },
+  { ar: "زوايا البيت",     path: "HomeCorners",       icon: "\u{1F3E1}", color: "#4caf50", bg: "rgba(76,175,80,0.08)" },
+  { ar: "مسارات التمكين",  path: "EmpowermentPaths",  icon: "\u{1F4AA}", color: "#673ab7", bg: "rgba(103,58,183,0.08)" },
+  { ar: "جسور المودة",     path: "HarmonyBridges",    icon: "\u{1F495}", color: "#f44336", bg: "rgba(244,67,54,0.08)" },
+  { ar: "شغف وحرف",       path: "PassionsCrafts",    icon: "\u{1F3A8}", color: "#00bcd4", bg: "rgba(0,188,212,0.08)" },
+  { ar: "ملتقى الأرواح",   path: "SoulsLounge",       icon: "\u2615",    color: "#795548", bg: "rgba(121,85,72,0.08)" }
 ];
 
 const AI_QUICK_PROMPTS = [
@@ -44,45 +49,144 @@ const AI_QUICK_PROMPTS = [
   'تمارين خفيفة للصباح'
 ];
 
-// ==========================================
-//  SKELETON LOADER
-// ==========================================
+/* -------------------------------------------------------
+   GLOBAL INLINE STYLES
+------------------------------------------------------- */
+const SWING_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+  .swing-root {
+    font-family: 'Tajawal', sans-serif;
+    --royal: #4a148c;
+    --royal-light: #6a1b9a;
+    --lavender: #f3e5f5;
+    --rose-gold: #b76e79;
+    --rose-gold-light: #e8b4b8;
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-border: rgba(255,255,255,0.65);
+  }
+
+  .swing-root * { box-sizing: border-box; }
+
+  .swing-root .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+  }
+
+  .swing-root .glass-nav {
+    background: rgba(255,255,255,0.72);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(74,20,140,0.06);
+  }
+
+  .swing-root .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+  .swing-root .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .swing-root .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(74,20,140,0.15); border-radius: 99px; }
+  .swing-root .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .swing-root .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .swing-root .masonry-feed {
+    columns: 1;
+    column-gap: 16px;
+  }
+  @media (min-width: 520px) {
+    .swing-root .masonry-feed {
+      columns: 2;
+    }
+  }
+  .swing-root .masonry-feed > * {
+    break-inside: avoid;
+    margin-bottom: 16px;
+  }
+
+  .swing-root .like-burst {
+    animation: likeBurst 0.5s ease-out forwards;
+  }
+  @keyframes likeBurst {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.35); }
+    60%  { transform: scale(0.9); }
+    100% { transform: scale(1); }
+  }
+
+  .swing-root .fab-glow {
+    box-shadow:
+      0 0 20px rgba(74,20,140,0.35),
+      0 0 60px rgba(183,110,121,0.15),
+      0 8px 32px rgba(74,20,140,0.2);
+  }
+
+  .swing-root .shimmer {
+    background: linear-gradient(
+      110deg,
+      rgba(243,229,245,0.4) 0%,
+      rgba(243,229,245,0.8) 40%,
+      rgba(243,229,245,0.4) 60%,
+      rgba(243,229,245,0.4) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .swing-root .bottomsheet-handle {
+    width: 40px;
+    height: 4px;
+    border-radius: 4px;
+    background: rgba(74,20,140,0.15);
+    margin: 0 auto 12px;
+  }
+`;
+
+/* -------------------------------------------------------
+   SKELETON CARD
+------------------------------------------------------- */
 const SkeletonCard = () => (
-  <div className="bg-white/80 backdrop-blur-sm p-5 rounded-3xl shadow-sm border border-purple-100/50 animate-pulse">
+  <div className="glass-card p-5" style={{ borderRadius: 24 }}>
     <div className="flex items-center gap-3 mb-4">
-      <div className="w-11 h-11 bg-gradient-to-br from-purple-200/60 to-pink-200/60 rounded-full" />
+      <div className="w-12 h-12 rounded-full shimmer" />
       <div className="flex-1 space-y-2">
-        <div className="h-3 bg-purple-200/50 rounded-full w-28" />
-        <div className="h-2 bg-purple-100/50 rounded-full w-20" />
+        <div className="h-3 shimmer rounded-full w-28" />
+        <div className="h-2.5 shimmer rounded-full w-20" />
       </div>
     </div>
     <div className="space-y-2.5 mb-4">
-      <div className="h-3 bg-purple-100/40 rounded-full w-full" />
-      <div className="h-3 bg-purple-100/40 rounded-full w-4/5" />
-      <div className="h-3 bg-purple-100/40 rounded-full w-3/5" />
+      <div className="h-3 shimmer rounded-full w-full" />
+      <div className="h-3 shimmer rounded-full w-4/5" />
+      <div className="h-3 shimmer rounded-full w-3/5" />
     </div>
-    <div className="h-52 bg-gradient-to-br from-purple-100/30 to-pink-100/30 rounded-2xl mb-4" />
-    <div className="flex gap-3 pt-3 border-t border-purple-50">
-      <div className="h-8 bg-purple-100/40 rounded-full w-20" />
-      <div className="h-8 bg-purple-100/40 rounded-full w-20" />
-      <div className="h-8 bg-purple-100/40 rounded-full w-20" />
+    <div className="h-48 shimmer mb-4" style={{ borderRadius: 20 }} />
+    <div className="flex gap-3 pt-3" style={{ borderTop: '1px solid rgba(74,20,140,0.06)' }}>
+      <div className="h-9 shimmer rounded-full w-20" />
+      <div className="h-9 shimmer rounded-full w-20" />
+      <div className="h-9 shimmer rounded-full w-20" />
     </div>
   </div>
 );
 
-// ==========================================
-//  POST CARD - بطاقة المنشور
-// ==========================================
+/* -------------------------------------------------------
+   POST CARD - Glassmorphism + micro-interactions
+------------------------------------------------------- */
 const PostCard = React.memo(({ post, index }) => {
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes || 0);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState(post.comments || []);
+  const [likeAnimating, setLikeAnimating] = useState(false);
 
   const handleLike = useCallback(() => {
     setLiked(prev => !prev);
     setLikesCount(prev => liked ? prev - 1 : prev + 1);
+    setLikeAnimating(true);
+    setTimeout(() => setLikeAnimating(false), 500);
   }, [liked]);
 
   const handleComment = useCallback(() => {
@@ -108,137 +212,166 @@ const PostCard = React.memo(({ post, index }) => {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="bg-white/95 backdrop-blur-md p-5 rounded-3xl shadow-[0_2px_16px_rgba(147,51,234,0.06)] border border-purple-100/40 hover:shadow-[0_4px_24px_rgba(147,51,234,0.1)] transition-shadow duration-300"
+      initial={{ opacity: 0, y: 40, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: index * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="glass-card overflow-hidden"
+      style={{ borderRadius: 24 }}
     >
-      {/* رأس المنشور */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold shadow-md shadow-purple-200/40 flex-shrink-0">
-          {post.author?.charAt(0) || 'ع'}
+      {/* Post header */}
+      <div className="p-5 pb-0">
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #4a148c, #b76e79)',
+              boxShadow: '0 4px 14px rgba(74,20,140,0.2)'
+            }}
+          >
+            {post.author?.charAt(0) || 'ع'}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold" style={{ color: '#2d1b4e' }}>{post.author || 'عضوة'}</p>
+            <p className="text-[10px]" style={{ color: '#9e9e9e' }}>
+              {post.created_at
+                ? new Date(post.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                : 'الآن'}
+            </p>
+          </div>
+          {post.section && (
+            <span
+              className="text-[10px] px-3 py-1.5 rounded-full font-bold flex-shrink-0"
+              style={{ background: 'var(--lavender)', color: 'var(--royal)' }}
+            >
+              {post.section}
+            </span>
+          )}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-800 truncate">{post.author || 'عضوة'}</p>
-          <p className="text-[10px] text-gray-400">
-            {post.created_at
-              ? new Date(post.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-              : 'الآن'}
+
+        {/* Content */}
+        {post.content && (
+          <p className="text-sm leading-[1.85] mb-3 whitespace-pre-wrap" style={{ color: '#37293f' }}>
+            {post.content}
           </p>
-        </div>
-        {post.section && (
-          <span className="text-[10px] bg-purple-100/80 text-purple-600 px-2.5 py-1 rounded-full font-semibold flex-shrink-0">
-            {post.section}
-          </span>
         )}
       </div>
 
-      {/* محتوى المنشور */}
-      {post.content && (
-        <p className="text-gray-700 text-sm leading-relaxed mb-3 whitespace-pre-wrap">{post.content}</p>
-      )}
-
-      {/* الوسائط */}
+      {/* Media */}
       {post.media_url && (
-        <div className="rounded-2xl overflow-hidden mb-3 bg-gray-50">
+        <div className="mx-3 mb-3 overflow-hidden" style={{ borderRadius: 20 }}>
           {post.type === 'فيديو' ? (
-            <video src={post.media_url} controls preload="metadata" className="w-full max-h-96 object-cover bg-black" />
+            <video src={post.media_url} controls preload="metadata" className="w-full max-h-96 object-cover" style={{ background: '#1a0a2e' }} />
           ) : (
             <img src={post.media_url} alt="محتوى المنشور" loading="lazy" className="w-full max-h-96 object-cover" />
           )}
         </div>
       )}
 
-      {/* أزرار التفاعل */}
-      <div className="flex items-center gap-1.5 pt-3 border-t border-purple-50/80">
-        <button
-          onClick={handleLike}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all duration-200 ${
-            liked
-              ? 'bg-pink-100 text-pink-600 shadow-sm shadow-pink-200/40'
-              : 'bg-gray-50 text-gray-500 hover:bg-pink-50 hover:text-pink-500'
-          }`}
-        >
-          <Heart className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
-          <span>{likesCount > 0 ? likesCount : 'أعجبني'}</span>
-        </button>
-
-        <button
-          onClick={() => setShowComments(prev => !prev)}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-gray-50 text-gray-500 hover:bg-purple-50 hover:text-purple-500 transition-all duration-200"
-        >
-          <MessageCircle className="w-4 h-4" />
-          <span>{comments.length > 0 ? comments.length : 'تعليق'}</span>
-        </button>
-
-        <button
-          onClick={handleShare}
-          className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-gray-50 text-gray-500 hover:bg-blue-50 hover:text-blue-500 transition-all duration-200"
-        >
-          <Share2 className="w-4 h-4" />
-          <span>مشاركة</span>
-        </button>
-      </div>
-
-      {/* قسم التعليقات */}
-      <AnimatePresence>
-        {showComments && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="overflow-hidden"
+      {/* Action buttons */}
+      <div className="px-5 pb-4">
+        <div className="flex items-center gap-2 pt-3" style={{ borderTop: '1px solid rgba(74,20,140,0.06)' }}>
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all duration-200 active:scale-90 ${likeAnimating ? 'like-burst' : ''}`}
+            style={{
+              borderRadius: 20,
+              background: liked ? 'rgba(183,110,121,0.12)' : 'rgba(74,20,140,0.04)',
+              color: liked ? '#b76e79' : '#78748c'
+            }}
           >
-            <div className="mt-3 pt-3 border-t border-purple-50">
-              {comments.length > 0 && (
-                <div className="space-y-2 mb-3 max-h-44 overflow-y-auto custom-scrollbar">
-                  {comments.map(c => (
-                    <div key={c.id} className="bg-purple-50/60 p-3 rounded-2xl">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-purple-600">{c.author}</span>
-                        <span className="text-[9px] text-gray-400">{c.time}</span>
+            <Heart className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} />
+            <span>{likesCount > 0 ? likesCount : 'أعجبني'}</span>
+          </button>
+
+          <button
+            onClick={() => setShowComments(prev => !prev)}
+            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all duration-200 active:scale-90"
+            style={{ borderRadius: 20, background: 'rgba(74,20,140,0.04)', color: '#78748c' }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>{comments.length > 0 ? comments.length : 'تعليق'}</span>
+          </button>
+
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all duration-200 active:scale-90"
+            style={{ borderRadius: 20, background: 'rgba(74,20,140,0.04)', color: '#78748c' }}
+          >
+            <Share2 className="w-4 h-4" />
+            <span>مشاركة</span>
+          </button>
+        </div>
+
+        {/* Comments section */}
+        <AnimatePresence>
+          {showComments && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(74,20,140,0.06)' }}>
+                {comments.length > 0 && (
+                  <div className="space-y-2 mb-3 max-h-44 overflow-y-auto custom-scrollbar">
+                    {comments.map(c => (
+                      <div key={c.id} className="p-3" style={{ borderRadius: 16, background: 'var(--lavender)' }}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] font-bold" style={{ color: 'var(--royal)' }}>{c.author}</span>
+                          <span className="text-[9px]" style={{ color: '#9e9e9e' }}>{c.time}</span>
+                        </div>
+                        <p className="text-xs leading-relaxed" style={{ color: '#4a3e5c' }}>{c.text}</p>
                       </div>
-                      <p className="text-xs text-gray-600 leading-relaxed">{c.text}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={commentText}
+                    onChange={e => setCommentText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleComment()}
+                    className="flex-1 text-xs p-3 outline-none transition-all"
+                    style={{
+                      borderRadius: 16,
+                      background: 'rgba(74,20,140,0.03)',
+                      border: '1px solid rgba(74,20,140,0.08)',
+                      color: '#37293f'
+                    }}
+                    placeholder="اكتبي تعليقك..."
+                  />
+                  <button
+                    onClick={handleComment}
+                    disabled={!commentText.trim()}
+                    className="text-white px-4 text-xs font-bold transition-all active:scale-90 disabled:opacity-40"
+                    style={{
+                      borderRadius: 16,
+                      background: 'linear-gradient(135deg, #4a148c, #b76e79)'
+                    }}
+                  >
+                    أرسلي
+                  </button>
                 </div>
-              )}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={commentText}
-                  onChange={e => setCommentText(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleComment()}
-                  className="flex-1 text-xs p-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-purple-300/50 transition-all placeholder:text-gray-400"
-                  placeholder="اكتبي تعليقك..."
-                />
-                <button
-                  onClick={handleComment}
-                  disabled={!commentText.trim()}
-                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-4 rounded-xl text-xs font-bold hover:shadow-md active:scale-95 transition-all disabled:opacity-40"
-                >
-                  أرسلي
-                </button>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.article>
   );
 });
 PostCard.displayName = 'PostCard';
 
-// ==========================================
-//  PUBLISH BOX - صندوق النشر
-// ==========================================
-const PublishBox = ({ onPostCreated }) => {
+/* -------------------------------------------------------
+   PUBLISH BOTTOM SHEET
+------------------------------------------------------- */
+const PublishBottomSheet = ({ onPostCreated }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -257,13 +390,9 @@ const PublishBox = ({ onPostCreated }) => {
       formData.append('section', 'الأرجوحة');
       formData.append('type', selectedFile ? (selectedFile.type?.startsWith('video') ? 'فيديو' : 'صورة') : 'نصي');
       if (selectedFile) formData.append('file', selectedFile);
-
       const response = await fetch(`${API_BASE}/save-post`, { method: 'POST', body: formData });
       if (response.ok) {
-        setContent('');
-        setSelectedFile(null);
-        setPreview(null);
-        setIsExpanded(false);
+        setContent(''); setSelectedFile(null); setPreview(null); setIsExpanded(false);
         onPostCreated?.();
       }
     } catch (e) {
@@ -276,158 +405,241 @@ const PublishBox = ({ onPostCreated }) => {
   const removeFile = () => { setSelectedFile(null); setPreview(null); };
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.15 }}
-      className="bg-white/95 backdrop-blur-md p-5 rounded-3xl shadow-[0_2px_16px_rgba(147,51,234,0.06)] border border-purple-100/40 mb-5"
-    >
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-md shadow-purple-200/40">
-          ع
-        </div>
-        <div className="flex-1">
-          <textarea
-            value={content}
-            onChange={e => setContent(e.target.value)}
-            onFocus={() => setIsExpanded(true)}
-            className="w-full p-3 bg-purple-50/40 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-purple-300/40 transition-all resize-none placeholder:text-gray-400"
-            placeholder="شاركينا ما يدور في خاطرك..."
-            rows={isExpanded ? 4 : 2}
-          />
-        </div>
-      </div>
-
-      {/* معاينة الملف المرفق */}
+    <>
+      {/* Overlay */}
       <AnimatePresence>
-        {preview && (
+        {isExpanded && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-3 relative overflow-hidden"
-          >
-            <div className="rounded-2xl overflow-hidden bg-gray-50 relative">
-              {selectedFile?.type?.startsWith('video') ? (
-                <video src={preview} className="w-full max-h-48 object-cover rounded-2xl" controls />
-              ) : (
-                <img src={preview} alt="معاينة" className="w-full max-h-48 object-cover rounded-2xl" />
-              )}
-              <button
-                onClick={removeFile}
-                className="absolute top-2 left-2 w-7 h-7 bg-black/50 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </motion.div>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60]"
+            style={{ background: 'rgba(20,5,40,0.35)', backdropFilter: 'blur(4px)' }}
+            onClick={() => setIsExpanded(false)}
+          />
         )}
       </AnimatePresence>
 
-      {/* شريط الأدوات */}
+      {/* Collapsed trigger */}
       <AnimatePresence>
-        {(isExpanded || content || selectedFile) && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
+        {!isExpanded && (
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            onClick={() => setIsExpanded(true)}
+            className="glass-card w-full flex items-center gap-3 p-4 mb-4 active:scale-[0.98] transition-transform"
+            style={{ borderRadius: 24, cursor: 'pointer' }}
           >
-            <div className="flex justify-between items-center mt-3 pt-3 border-t border-purple-50">
-              <div className="flex items-center gap-2">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center text-white flex-shrink-0"
+              style={{ background: 'linear-gradient(135deg, #4a148c, #b76e79)', boxShadow: '0 4px 12px rgba(74,20,140,0.2)' }}
+            >
+              <Plus className="w-5 h-5" />
+            </div>
+            <span className="text-sm font-bold" style={{ color: '#9e9e9e' }}>شاركينا ما يدور في خاطرك...</span>
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Expanded BottomSheet */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-[70] bg-white"
+            style={{
+              borderRadius: '28px 28px 0 0',
+              boxShadow: '0 -8px 40px rgba(74,20,140,0.12)',
+              maxHeight: '80vh',
+              paddingBottom: 'env(safe-area-inset-bottom, 16px)'
+            }}
+          >
+            <div className="p-5">
+              {/* Handle */}
+              <div className="bottomsheet-handle" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-bold" style={{ color: 'var(--royal)' }}>منشور جديد</h3>
                 <button
-                  onClick={() => fileRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-purple-50 text-purple-600 text-xs font-semibold hover:bg-purple-100 transition-colors"
+                  onClick={() => setIsExpanded(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                  style={{ background: 'var(--lavender)', color: 'var(--royal)' }}
+                  aria-label="إغلاق"
                 >
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  <span>صورة</span>
+                  <X className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => { fileRef.current?.setAttribute('accept', 'video/*'); fileRef.current?.click(); }}
-                  className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-pink-50 text-pink-600 text-xs font-semibold hover:bg-pink-100 transition-colors"
-                >
-                  <Video className="w-3.5 h-3.5" />
-                  <span>فيديو</span>
-                </button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*,video/*"
-                  onChange={e => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }}
-                  className="hidden"
-                />
-                {selectedFile && !preview && (
-                  <span className="text-[10px] text-purple-500 bg-purple-50 px-2 py-1 rounded-full truncate max-w-[120px]">
-                    {selectedFile.name}
-                  </span>
-                )}
               </div>
 
-              <button
-                onClick={handleSavePost}
-                disabled={isPublishing || (!content.trim() && !selectedFile)}
-                className="bg-gradient-to-r from-purple-600 to-pink-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold hover:shadow-lg hover:shadow-purple-300/30 active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-purple-200/30 flex items-center gap-2"
-              >
-                {isPublishing ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>جاري النشر</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>نشر</span>
-                  </>
+              {/* Textarea */}
+              <textarea
+                value={content}
+                onChange={e => setContent(e.target.value)}
+                autoFocus
+                className="w-full p-4 text-sm outline-none resize-none transition-all"
+                style={{
+                  borderRadius: 20,
+                  background: 'rgba(74,20,140,0.03)',
+                  border: '1.5px solid rgba(74,20,140,0.08)',
+                  minHeight: 120,
+                  color: '#37293f',
+                  lineHeight: 1.8,
+                  fontFamily: "'Tajawal', sans-serif"
+                }}
+                placeholder="ماذا تودين مشاركته مع الأخوات؟"
+              />
+
+              {/* File preview */}
+              <AnimatePresence>
+                {preview && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-3 relative overflow-hidden"
+                    style={{ borderRadius: 20 }}
+                  >
+                    <div className="overflow-hidden relative" style={{ borderRadius: 20, background: '#f7f0fa' }}>
+                      {selectedFile?.type?.startsWith('video') ? (
+                        <video src={preview} className="w-full max-h-44 object-cover" controls style={{ borderRadius: 20 }} />
+                      ) : (
+                        <img src={preview} alt="معاينة" className="w-full max-h-44 object-cover" style={{ borderRadius: 20 }} />
+                      )}
+                      <button
+                        onClick={removeFile}
+                        className="absolute top-2 left-2 w-7 h-7 rounded-full flex items-center justify-center text-white"
+                        style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </motion.div>
                 )}
-              </button>
+              </AnimatePresence>
+
+              {/* Toolbar */}
+              <div className="flex justify-between items-center mt-4 pt-4" style={{ borderTop: '1px solid rgba(74,20,140,0.06)' }}>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => { fileRef.current?.setAttribute('accept', 'image/*'); fileRef.current?.click(); }}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold transition-all active:scale-90"
+                    style={{ borderRadius: 16, background: 'var(--lavender)', color: 'var(--royal)' }}
+                  >
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>صورة</span>
+                  </button>
+                  <button
+                    onClick={() => { fileRef.current?.setAttribute('accept', 'video/*'); fileRef.current?.click(); }}
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold transition-all active:scale-90"
+                    style={{ borderRadius: 16, background: 'rgba(183,110,121,0.1)', color: 'var(--rose-gold)' }}
+                  >
+                    <Video className="w-3.5 h-3.5" />
+                    <span>فيديو</span>
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold transition-all active:scale-90"
+                    style={{ borderRadius: 16, background: 'rgba(74,20,140,0.04)', color: '#78748c' }}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    className="flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold transition-all active:scale-90"
+                    style={{ borderRadius: 16, background: 'rgba(74,20,140,0.04)', color: '#78748c' }}
+                  >
+                    <Mic className="w-3.5 h-3.5" />
+                  </button>
+                  <input
+                    ref={fileRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={e => { if (e.target.files?.[0]) setSelectedFile(e.target.files[0]); }}
+                    className="hidden"
+                  />
+                </div>
+
+                <button
+                  onClick={handleSavePost}
+                  disabled={isPublishing || (!content.trim() && !selectedFile)}
+                  className="text-white px-6 py-3 text-sm font-bold transition-all active:scale-90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                  style={{
+                    borderRadius: 20,
+                    background: 'linear-gradient(135deg, #4a148c, #b76e79)',
+                    boxShadow: '0 4px 16px rgba(74,20,140,0.25)'
+                  }}
+                >
+                  {isPublishing ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>جاري النشر</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>نشر</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </>
   );
 };
 
-// ==========================================
-//  CATEGORIES GRID - شبكة الأقسام السريعة
-// ==========================================
+/* -------------------------------------------------------
+   CATEGORIES GRID - Glassmorphism cards
+------------------------------------------------------- */
 const CategoriesGrid = () => (
   <motion.div
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    transition={{ delay: 0.08 }}
-    className="grid grid-cols-5 gap-2.5 mb-5"
+    transition={{ delay: 0.1, duration: 0.5 }}
+    className="grid grid-cols-5 gap-3 mb-6"
   >
     {CATEGORIES.map((c, i) => (
       <motion.div
         key={c.path}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.05 + i * 0.04 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.08 + i * 0.04, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       >
         <Link
           to={`/swing-forum/${c.path}`}
-          className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl bg-white/80 backdrop-blur-sm border border-purple-100/30 hover:shadow-lg hover:shadow-purple-200/20 transition-all duration-300 hover:-translate-y-0.5 active:scale-95 group"
+          className="flex flex-col items-center gap-2 p-3 glass-card transition-all duration-300 active:scale-90 group"
+          style={{ borderRadius: 20, textDecoration: 'none' }}
         >
-          <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${c.gradient} flex items-center justify-center text-lg shadow-md group-hover:shadow-lg transition-shadow`}>
+          <div
+            className="w-12 h-12 flex items-center justify-center text-xl transition-transform duration-300 group-hover:scale-110"
+            style={{ borderRadius: 16, background: c.bg }}
+          >
             {c.icon}
           </div>
-          <span className="text-[9px] font-bold text-gray-600 text-center leading-tight line-clamp-2">{c.ar}</span>
+          <span
+            className="text-[9px] font-bold text-center leading-tight"
+            style={{ color: '#4a3e5c', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+          >
+            {c.ar}
+          </span>
         </Link>
       </motion.div>
     ))}
   </motion.div>
 );
 
-// ==========================================
-//  MARQUEE NAV - شريط التنقل المتحرك
-// ==========================================
+/* -------------------------------------------------------
+   MARQUEE NAV - Horizontal scrolling pill navigation
+------------------------------------------------------- */
 const MarqueeNav = ({ activeCategory }) => {
   const scrollRef = useRef(null);
 
   return (
-    <div className="overflow-x-auto scrollbar-hide py-2.5 -mx-1" ref={scrollRef}>
+    <div className="overflow-x-auto scrollbar-hide py-3 -mx-1" ref={scrollRef}>
       <div className="flex gap-2 px-1 w-max">
         {CATEGORIES.map(c => {
           const isActive = activeCategory === c.path;
@@ -435,12 +647,24 @@ const MarqueeNav = ({ activeCategory }) => {
             <Link
               key={c.path}
               to={`/swing-forum/${c.path}`}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all duration-200 flex-shrink-0 active:scale-95 ${
-                isActive
-                  ? 'text-white shadow-lg shadow-purple-300/30'
-                  : 'bg-white/90 text-purple-700 border border-purple-100/50 hover:bg-purple-50 hover:border-purple-200'
-              }`}
-              style={isActive ? { background: 'linear-gradient(135deg, #7c3aed, #ec4899)' } : {}}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold transition-all duration-250 flex-shrink-0 active:scale-90"
+              style={{
+                borderRadius: 20,
+                textDecoration: 'none',
+                ...(isActive
+                  ? {
+                      background: 'linear-gradient(135deg, #4a148c, #b76e79)',
+                      color: '#fff',
+                      boxShadow: '0 4px 16px rgba(74,20,140,0.25)'
+                    }
+                  : {
+                      background: 'var(--glass-bg)',
+                      backdropFilter: 'blur(10px)',
+                      color: 'var(--royal)',
+                      border: '1px solid rgba(74,20,140,0.08)'
+                    }
+                )
+              }}
             >
               <span className="text-sm">{c.icon}</span>
               <span>{c.ar}</span>
@@ -452,9 +676,9 @@ const MarqueeNav = ({ activeCategory }) => {
   );
 };
 
-// ==========================================
-//  AI CHAT - دردشة طبيبة رقة
-// ==========================================
+/* -------------------------------------------------------
+   AI CHAT PANEL - Doctor Raqqa
+------------------------------------------------------- */
 const AiChatPanel = ({ isOpen, onClose }) => {
   const [chatHistory, setChatHistory] = useState(() => {
     try {
@@ -528,24 +752,33 @@ const AiChatPanel = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
+          style={{ background: 'rgba(20,5,40,0.45)', backdropFilter: 'blur(6px)' }}
           onClick={e => e.target === e.currentTarget && onClose()}
         >
           <motion.div
             initial={{ y: '100%', opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="bg-white w-full sm:max-w-md h-[85vh] sm:h-[80vh] rounded-t-[2rem] sm:rounded-[2rem] flex flex-col shadow-2xl overflow-hidden"
+            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+            className="bg-white w-full sm:max-w-md flex flex-col overflow-hidden"
+            style={{
+              height: '85vh',
+              borderRadius: '28px 28px 0 0',
+              boxShadow: '0 -8px 60px rgba(74,20,140,0.18)'
+            }}
             dir="rtl"
           >
-            {/* رأس الدردشة */}
+            {/* Chat header */}
             <div
               className="p-4 flex justify-between items-center flex-shrink-0"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)' }}
+              style={{ background: 'linear-gradient(135deg, #4a148c, #6a1b9a, #b76e79)' }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                <div
+                  className="w-11 h-11 rounded-full flex items-center justify-center"
+                  style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)' }}
+                >
                   <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -560,14 +793,16 @@ const AiChatPanel = ({ isOpen, onClose }) => {
                 {chatHistory.length > 0 && (
                   <button
                     onClick={clearChat}
-                    className="text-white/80 hover:text-white text-[10px] px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors font-semibold"
+                    className="text-white/80 hover:text-white text-[10px] px-3 py-1.5 rounded-full font-bold transition-colors"
+                    style={{ background: 'rgba(255,255,255,0.12)' }}
                   >
                     مسح الكل
                   </button>
                 )}
                 <button
                   onClick={onClose}
-                  className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-sm flex items-center justify-center text-white transition-colors"
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-colors"
+                  style={{ background: 'rgba(255,255,255,0.12)' }}
                   aria-label="إغلاق الدردشة"
                 >
                   <X className="w-4 h-4" />
@@ -575,18 +810,21 @@ const AiChatPanel = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            {/* محتوى الدردشة */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar" style={{ background: 'linear-gradient(180deg, #faf5ff 0%, #fdf2f8 50%, #f5f3ff 100%)' }}>
+            {/* Chat body */}
+            <div
+              className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar"
+              style={{ background: 'linear-gradient(180deg, #faf5ff 0%, #fce4ec 50%, #f3e5f5 100%)' }}
+            >
               {chatHistory.length === 0 && (
-                <div className="text-center py-8">
+                <div className="text-center py-10">
                   <div
                     className="w-20 h-20 mx-auto mb-4 rounded-full flex items-center justify-center"
-                    style={{ background: 'linear-gradient(135deg, #ede9fe, #fce7f3)' }}
+                    style={{ background: 'linear-gradient(135deg, var(--lavender), rgba(183,110,121,0.15))' }}
                   >
-                    <Sparkles className="w-9 h-9 text-purple-400" />
+                    <Sparkles className="w-9 h-9" style={{ color: 'var(--royal)' }} />
                   </div>
-                  <h4 className="text-sm font-bold text-gray-700 mb-1">أهلاً بكِ حبيبتي</h4>
-                  <p className="text-xs text-gray-400 leading-relaxed max-w-xs mx-auto mb-4">
+                  <h4 className="text-sm font-bold mb-2" style={{ color: '#2d1b4e' }}>أهلاً بكِ حبيبتي</h4>
+                  <p className="text-xs leading-relaxed max-w-xs mx-auto mb-5" style={{ color: '#9e9e9e' }}>
                     أنا طبيبة رقة، مستشارتك الذكية المتخصصة في شؤون المرأة المسلمة. اسأليني عن أي شيء!
                   </p>
                   <div className="flex flex-wrap justify-center gap-2">
@@ -594,7 +832,14 @@ const AiChatPanel = ({ isOpen, onClose }) => {
                       <button
                         key={i}
                         onClick={() => setUserInput(q)}
-                        className="text-[10px] px-3 py-2 rounded-full bg-white text-purple-600 border border-purple-200/50 hover:bg-purple-50 hover:border-purple-300 transition-colors font-semibold shadow-sm"
+                        className="text-[10px] px-3.5 py-2.5 font-bold transition-all active:scale-90"
+                        style={{
+                          borderRadius: 20,
+                          background: 'white',
+                          color: 'var(--royal)',
+                          border: '1px solid rgba(74,20,140,0.1)',
+                          boxShadow: '0 2px 8px rgba(74,20,140,0.04)'
+                        }}
                       >
                         {q}
                       </button>
@@ -606,24 +851,36 @@ const AiChatPanel = ({ isOpen, onClose }) => {
               {chatHistory.map(m => (
                 <motion.div
                   key={m.id}
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 12, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.25 }}
+                  transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                   className={`flex flex-col ${m.role === 'user' ? 'items-start' : 'items-end'}`}
                 >
                   <div
-                    className={`p-3.5 rounded-2xl text-sm max-w-[85%] leading-relaxed ${
-                      m.role === 'user'
-                        ? 'bg-white text-gray-800 rounded-tr-md border border-purple-100/50 shadow-sm'
-                        : 'text-white rounded-tl-md shadow-md shadow-purple-300/20'
-                    }`}
-                    style={m.role === 'ai' ? { background: 'linear-gradient(135deg, #7c3aed, #a855f7)' } : {}}
+                    className="p-4 text-sm max-w-[85%] leading-[1.8]"
+                    style={{
+                      borderRadius: m.role === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                      ...(m.role === 'user'
+                        ? {
+                            background: 'white',
+                            color: '#37293f',
+                            border: '1px solid rgba(74,20,140,0.06)',
+                            boxShadow: '0 2px 8px rgba(74,20,140,0.04)'
+                          }
+                        : {
+                            background: 'linear-gradient(135deg, #4a148c, #6a1b9a)',
+                            color: '#fff',
+                            boxShadow: '0 4px 16px rgba(74,20,140,0.2)'
+                          }
+                      )
+                    }}
                   >
                     <p className="whitespace-pre-wrap">{m.content}</p>
                   </div>
                   <button
                     onClick={() => deleteMsg(m.id)}
-                    className="text-[9px] text-gray-300 hover:text-red-400 mt-1 px-1 transition-colors flex items-center gap-0.5"
+                    className="text-[9px] mt-1 px-1 flex items-center gap-0.5 transition-colors hover:opacity-70"
+                    style={{ color: '#bfb8c8' }}
                   >
                     <Trash2 className="w-2.5 h-2.5" />
                     حذف
@@ -633,7 +890,14 @@ const AiChatPanel = ({ isOpen, onClose }) => {
 
               {isAiTyping && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-end justify-end">
-                  <div className="p-3.5 rounded-2xl rounded-tl-md text-white shadow-md" style={{ background: 'linear-gradient(135deg, #7c3aed, #a855f7)' }}>
+                  <div
+                    className="p-4"
+                    style={{
+                      borderRadius: '20px 20px 20px 4px',
+                      background: 'linear-gradient(135deg, #4a148c, #6a1b9a)',
+                      boxShadow: '0 4px 16px rgba(74,20,140,0.2)'
+                    }}
+                  >
                     <div className="flex gap-1.5">
                       <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                       <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -645,8 +909,8 @@ const AiChatPanel = ({ isOpen, onClose }) => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* حقل الإدخال */}
-            <div className="p-3 bg-white border-t border-purple-100/50 flex-shrink-0">
+            {/* Input */}
+            <div className="p-3 bg-white flex-shrink-0" style={{ borderTop: '1px solid rgba(74,20,140,0.06)' }}>
               <div className="flex gap-2 items-center">
                 <input
                   ref={inputRef}
@@ -654,15 +918,26 @@ const AiChatPanel = ({ isOpen, onClose }) => {
                   value={userInput}
                   onChange={e => setUserInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleChat()}
-                  className="flex-1 border border-purple-200/60 p-3 rounded-xl text-sm outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200/50 transition-all placeholder:text-gray-400 bg-purple-50/30"
+                  className="flex-1 p-3.5 text-sm outline-none transition-all"
+                  style={{
+                    borderRadius: 20,
+                    background: 'rgba(74,20,140,0.03)',
+                    border: '1.5px solid rgba(74,20,140,0.08)',
+                    color: '#37293f',
+                    fontFamily: "'Tajawal', sans-serif"
+                  }}
                   placeholder="اسألي طبيبة رقة..."
                   disabled={isAiTyping}
                 />
                 <button
                   onClick={handleChat}
                   disabled={!userInput.trim() || isAiTyping}
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-white transition-all hover:shadow-lg active:scale-95 disabled:opacity-40 shadow-md shadow-purple-200/30"
-                  style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)' }}
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-white transition-all active:scale-90 disabled:opacity-40"
+                  style={{
+                    background: 'linear-gradient(135deg, #4a148c, #b76e79)',
+                    boxShadow: '0 4px 16px rgba(74,20,140,0.25)',
+                    flexShrink: 0
+                  }}
                   aria-label="إرسال"
                 >
                   <Send className="w-5 h-5 rotate-180" />
@@ -676,9 +951,9 @@ const AiChatPanel = ({ isOpen, onClose }) => {
   );
 };
 
-// ==========================================
-//  MAIN FEED PAGE - الصفحة الرئيسية للفيد
-// ==========================================
+/* -------------------------------------------------------
+   MAIN FEED PAGE
+------------------------------------------------------- */
 const FeedPage = () => {
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -702,57 +977,73 @@ const FeedPage = () => {
 
   return (
     <>
-      {/* عنوان القسم */}
+      {/* Title */}
       <motion.div
-        initial={{ opacity: 0, y: -15 }}
+        initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-5"
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className="text-center mb-6 pt-1"
       >
-        <h1 className="text-2xl font-black bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 bg-clip-text text-transparent">
+        <h1
+          className="text-3xl font-black"
+          style={{
+            background: 'linear-gradient(135deg, #4a148c, #b76e79, #4a148c)',
+            backgroundSize: '200% auto',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}
+        >
           منتدى الأرجوحة
         </h1>
-        <p className="text-xs text-gray-400 mt-1">مساحتك الآمنة للمشاركة والتواصل</p>
+        <p className="text-xs mt-1.5" style={{ color: '#9e9e9e' }}>مساحتك الآمنة للمشاركة والتواصل</p>
       </motion.div>
 
-      {/* شبكة الأقسام */}
+      {/* Categories */}
       <CategoriesGrid />
 
-      {/* صندوق النشر */}
-      <PublishBox onPostCreated={() => fetchPosts(true)} />
+      {/* Publish BottomSheet trigger */}
+      <PublishBottomSheet onPostCreated={() => fetchPosts(true)} />
 
-      {/* زر التحديث */}
+      {/* Refresh button */}
       {posts.length > 0 && (
-        <div className="flex justify-center mb-4">
-          <button
+        <div className="flex justify-center mb-5">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={() => fetchPosts(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/80 text-purple-600 text-xs font-semibold border border-purple-100/50 hover:bg-purple-50 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold transition-all disabled:opacity-50 glass-card"
+            style={{ borderRadius: 20, color: 'var(--royal)' }}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             <span>{refreshing ? 'جاري التحديث...' : 'تحديث المنشورات'}</span>
-          </button>
+          </motion.button>
         </div>
       )}
 
-      {/* قائمة المنشورات */}
-      <div className="space-y-4">
+      {/* Posts - Masonry layout */}
+      <div className="masonry-feed">
         {isLoading ? (
           <>
+            <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
             <SkeletonCard />
           </>
         ) : posts.length === 0 ? (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-16"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16 col-span-full"
           >
-            <div className="w-24 h-24 mx-auto mb-5 rounded-full flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ede9fe, #fce7f3)' }}>
-              <Plus className="w-10 h-10 text-purple-300" />
+            <div
+              className="w-24 h-24 mx-auto mb-5 rounded-full flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, var(--lavender), rgba(183,110,121,0.12))' }}
+            >
+              <Plus className="w-10 h-10" style={{ color: 'rgba(74,20,140,0.25)' }} />
             </div>
-            <h3 className="text-lg font-bold text-gray-600 mb-2">لا توجد منشورات بعد</h3>
-            <p className="text-sm text-gray-400">كوني أول من يشارك في المنتدى!</p>
+            <h3 className="text-lg font-bold mb-2" style={{ color: '#4a3e5c' }}>لا توجد منشورات بعد</h3>
+            <p className="text-sm" style={{ color: '#9e9e9e' }}>كوني أول من يشارك في المنتدى!</p>
           </motion.div>
         ) : (
           posts.map((p, i) => <PostCard key={p.id || i} post={p} index={i} />)
@@ -762,9 +1053,9 @@ const FeedPage = () => {
   );
 };
 
-// ==========================================
-//  SWING - المكون الرئيسي
-// ==========================================
+/* -------------------------------------------------------
+   SWING - Main Component
+------------------------------------------------------- */
 const Swing = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const location = useLocation();
@@ -772,7 +1063,6 @@ const Swing = () => {
 
   const isMainPage = location.pathname === '/swing-forum' || location.pathname === '/swing-forum/';
 
-  // استخلاص القسم النشط من المسار
   const activeCategory = useMemo(() => {
     const match = location.pathname.match(/\/swing-forum\/(\w+)/);
     return match ? match[1] : null;
@@ -780,25 +1070,24 @@ const Swing = () => {
 
   return (
     <div
-      className="min-h-screen text-right font-sans"
+      className="swing-root min-h-screen text-right"
       dir="rtl"
-      style={{ background: 'linear-gradient(160deg, #f5f3ff 0%, #fdf2f8 40%, #f0f9ff 70%, #f5f3ff 100%)' }}
+      style={{
+        background: 'linear-gradient(160deg, #f3e5f5 0%, #fce4ec 35%, #ede7f6 65%, #f3e5f5 100%)',
+        paddingTop: 'env(safe-area-inset-top, 0px)'
+      }}
     >
-      {/* Custom scrollbar styles */}
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(147,51,234,0.2); border-radius: 99px; }
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
+      <style>{SWING_CSS}</style>
 
-      {/* ===== الشريط العلوي الثابت ===== */}
-      <div className="sticky top-0 z-50 bg-white/85 backdrop-blur-xl border-b border-purple-100/40 shadow-[0_1px_8px_rgba(147,51,234,0.04)]">
+      {/* ===== Sticky Glass Nav ===== */}
+      <div
+        className="sticky top-0 z-50 glass-nav"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="max-w-2xl mx-auto px-4">
           <MarqueeNav activeCategory={activeCategory} />
 
-          {/* زر العودة في الصفحات الفرعية */}
+          {/* Back button for sub-pages */}
           <AnimatePresence>
             {!isMainPage && (
               <motion.div
@@ -809,7 +1098,8 @@ const Swing = () => {
               >
                 <button
                   onClick={() => navigate('/swing-forum')}
-                  className="flex items-center gap-2 text-xs text-purple-600 font-bold hover:text-purple-800 transition-colors pb-2.5"
+                  className="flex items-center gap-2 text-xs font-bold transition-colors pb-3 active:scale-95"
+                  style={{ color: 'var(--royal)' }}
                 >
                   <ChevronRight className="w-4 h-4 rotate-180" />
                   <span>العودة للأرجوحة</span>
@@ -820,38 +1110,55 @@ const Swing = () => {
         </div>
       </div>
 
-      {/* ===== المحتوى الرئيسي ===== */}
-      <main className="max-w-2xl mx-auto px-4 py-5 pb-28">
-        <Routes>
-          <Route path="/" element={<FeedPage />} />
-          <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
-          <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
-          <Route path="/WellnessOasis" element={<WellnessOasis />} />
-          <Route path="/EleganceIcon" element={<EleganceIcon />} />
-          <Route path="/CulinaryArts" element={<CulinaryArts />} />
-          <Route path="/HomeCorners" element={<HomeCorners />} />
-          <Route path="/EmpowermentPaths" element={<EmpowermentPaths />} />
-          <Route path="/HarmonyBridges" element={<HarmonyBridges />} />
-          <Route path="/PassionsCrafts" element={<PassionsCrafts />} />
-          <Route path="/SoulsLounge" element={<SoulsLounge />} />
-        </Routes>
+      {/* ===== Content ===== */}
+      <main className="max-w-2xl mx-auto px-4 py-6 pb-32">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -30 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Routes>
+              <Route path="/" element={<FeedPage />} />
+              <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
+              <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
+              <Route path="/WellnessOasis" element={<WellnessOasis />} />
+              <Route path="/EleganceIcon" element={<EleganceIcon />} />
+              <Route path="/CulinaryArts" element={<CulinaryArts />} />
+              <Route path="/HomeCorners" element={<HomeCorners />} />
+              <Route path="/EmpowermentPaths" element={<EmpowermentPaths />} />
+              <Route path="/HarmonyBridges" element={<HarmonyBridges />} />
+              <Route path="/PassionsCrafts" element={<PassionsCrafts />} />
+              <Route path="/SoulsLounge" element={<SoulsLounge />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
       </main>
 
-      {/* ===== زر FAB لفتح دردشة طبيبة رقة ===== */}
+      {/* ===== FAB - Doctor Raqqa ===== */}
       <motion.button
         onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-24 left-5 z-50 w-14 h-14 rounded-full shadow-xl shadow-purple-400/30 flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #7c3aed, #ec4899)' }}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
-        animate={{ y: [0, -5, 0] }}
-        transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+        className="fixed bottom-24 left-5 z-50 w-14 h-14 rounded-full flex items-center justify-center fab-glow"
+        style={{ background: 'linear-gradient(135deg, #4a148c, #b76e79)' }}
+        whileHover={{ scale: 1.12 }}
+        whileTap={{ scale: 0.88 }}
+        animate={{
+          y: [0, -6, 0],
+          boxShadow: [
+            '0 0 20px rgba(74,20,140,0.35), 0 0 60px rgba(183,110,121,0.15), 0 8px 32px rgba(74,20,140,0.2)',
+            '0 0 30px rgba(74,20,140,0.45), 0 0 80px rgba(183,110,121,0.25), 0 12px 40px rgba(74,20,140,0.3)',
+            '0 0 20px rgba(74,20,140,0.35), 0 0 60px rgba(183,110,121,0.15), 0 8px 32px rgba(74,20,140,0.2)'
+          ]
+        }}
+        transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
         aria-label="فتح دردشة طبيبة رقة"
       >
         <Sparkles className="w-6 h-6 text-white" />
       </motion.button>
 
-      {/* ===== نافذة دردشة طبيبة رقة ===== */}
+      {/* ===== AI Chat Panel ===== */}
       <AiChatPanel isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </div>
   );
