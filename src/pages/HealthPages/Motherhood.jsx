@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 
-// ملاحظة: تأكدي من إضافة رابط FontAwesome في index.html للأيقونات [cite: 2]
+// ملاحظة: تأكدي من إضافة رابط FontAwesome في index.html للأيقونات
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 const App = () => {
-  const [selectedIdx, setSelectedIdx] = useState(0); [cite: 2]
-  const [checkedItems, setCheckedItems] = useState({}); [cite: 3]
-  const [isChatOpen, setIsChatOpen] = useState(false); [cite: 3]
-  const [messages, setMessages] = useState([]); [cite: 3]
-  const [isLoading, setIsLoading] = useState(false); [cite: 3]
-  const [inputText, setInputText] = useState(""); [cite: 4]
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [checkedItems, setCheckedItems] = useState({});
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputText, setInputText] = useState("");
 
-  const chatEndRef = useRef(null); [cite: 4]
+  const chatEndRef = useRef(null);
 
   const lists = [
     { title: "تعديل السلوك", icon: "fa-child", items: ["التعزيز الإيجابي", "تجاهل السلوكيات المزعجة", "العواقب المنطقية", "وضع حدود واضحة", "لوحة النجوم والمكافآت", "النمذجة والقدوة", "قضاء وقت خاص", "الاستماع الفعال", "بدائل كلمة لا", "توفير بيئة آمنة"] },
@@ -25,9 +25,8 @@ const App = () => {
     { title: "رعاية الأم", icon: "fa-spa", items: ["تخصيص وقت للراحة", "ممارسة هواية", "طلب المساعدة", "التواصل مع أمهات", "تخطي شعور الذنب", "نوم كافٍ", "قراءة تربوية", "التأمل واليوجا", "تحديد الأولويات", "الاحتفال بالإنجاز"] },
     { title: "الأمان والحماية", icon: "fa-shield-halved", items: ["لمسات الأمان", "حفظ أرقام الطوارئ", "سلامة المنزل", "الأمان الرقمي", "التصرف عند الضياع", "قواعد مع الغرباء", "قواعد المرور", "التواصل المفتوح", "معرفة العنوان", "مواجهة التنمر"] },
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
-  ]; [cite: 4, 5, 6, 7]
+  ];
 
-  // وظيفة الحفظ في نيون [cite: 8, 9]
   const saveDataToDB = async (selectedOnes) => {
     try {
       await CapacitorHttp.post({
@@ -37,67 +36,68 @@ const App = () => {
           user_id: 1,
           category: lists[selectedIdx].title,
           value: selectedOnes[0] || "إنجاز تربوي",
-          note: `تم اختيار ${selectedOnes.length} بند في قسم ${lists[selectedIdx].title}`
+          note: `تم تحليل بيانات قسم ${lists[selectedIdx].title}`
         }
       });
     } catch (e) {
-      console.error("خطأ في حفظ السجلات:", e); [cite: 11]
+      console.error("DB Save Error:", e);
     }
   };
 
-  // وظيفة تحليل الذكاء الاصطناعي وفتح الشات [cite: 12, 13]
   const getAIAnalysis = async (customPrompt = null) => {
     setIsLoading(true);
-    setIsChatOpen(true); // فتح صفحة الشات تلقائياً عند التحليل [cite: 13]
+    setIsChatOpen(true);
 
     const currentList = lists[selectedIdx];
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
     
-    // إرسال البيانات للحفظ في نيون بصمت [cite: 22]
     if (!customPrompt) saveDataToDB(selectedOnes);
 
     const promptMessage = customPrompt || 
-      `بصفتك متخصص تربوي خبير للأطفال، قمت اليوم بمتابعة: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. قدمي لي نصيحة تربوية متخصصة ومطولة.`; [cite: 14]
+      `أنا أم أطلب استشارة تربوية. لقد قمت بمتابعة: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. بصفتك متخصص تربوي خبير، حللي هذه المدخلات وقدمي نصائح عملية.`;
 
     try {
-      const response = await CapacitorHttp.post({
+      const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
-      });
+      };
 
-      if (response.data && response.data.reply) {
-        const newMsg = {
-          id: Date.now(),
-          text: response.data.reply,
-          sender: 'ai',
-          timestamp: new Date().toLocaleTimeString()
-        };
-        setMessages(prev => [...prev, newMsg]); [cite: 17]
-      }
-    } catch (error) {
-      setMessages(prev => [...prev, { id: Date.now(), text: "واجهت رقة صعوبة في الاتصال بالمتخصص حالياً.", sender: 'ai' }]); [cite: 19]
+      const response = await CapacitorHttp.post(options);
+      const responseText = response.data.reply || response.data.message || "لم أستطع الحصول على رد حالياً.";
+
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        text: responseText,
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString()
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: "حدث خطأ في الاتصال، يرجى المحاولة لاحقاً.", 
+        sender: 'ai' 
+      }]);
     } finally {
-      setIsLoading(false); [cite: 20]
+      setIsLoading(false);
     }
   };
 
   const deleteMessage = (id) => {
-    setMessages(prev => prev.filter(m => m.id !== id)); [cite: 23]
+    setMessages(prev => prev.filter(m => m.id !== id));
   };
 
-  const handleMedia = (type) => alert(`سيتم تفعيل ${type} للتحليل الذكي قريباً.`); [cite: 24]
+  const handleMedia = (type) => alert(`تم فتح ${type} بنجاح. (تحليل الوسائط سيفعل قريباً)`);
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); [cite: 25]
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div style={styles.container}>
-      {/* زر متخصص التربية في الأعلى  */}
       <div style={styles.topBar}>
         <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
-          <i className="fas fa-user-md"></i> شات متخصص التربية
+          <i className="fas fa-user-md"></i> متخصص تربوي
         </button>
       </div>
 
@@ -115,7 +115,7 @@ const App = () => {
             <i className={`fas ${list.icon}`}></i>
             <span>{list.title}</span>
           </button>
-        ))} [cite: 27, 28]
+        ))}
       </div>
 
       <div style={styles.card}>
@@ -127,27 +127,26 @@ const App = () => {
                 type="checkbox" 
                 checked={!!checkedItems[`${selectedIdx}-${item}`]}
                 onChange={() => setCheckedItems({...checkedItems, [`${selectedIdx}-${item}`]: !checkedItems[`${selectedIdx}-${item}`]})}
-              /> [cite: 29]
+              />
               <span style={checkedItems[`${selectedIdx}-${item}`] ? styles.done : {}}>{item}</span>
             </label>
           ))}
         </div>
         <button style={styles.analyzeBtn} onClick={() => getAIAnalysis()}>
           <i className="fas fa-brain"></i> التحليل والحفظ التربوي
-        </button> [cite: 30]
+        </button>
       </div>
 
-      {/* صفحة الشات [cite: 30] */}
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
               <span><i className="fas fa-comment-medical"></i> المتخصص التربوي</span>
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
-            </div> [cite: 31]
+            </div>
 
             <div style={styles.chatContent}>
-              {messages.length === 0 && <p style={styles.emptyMsg}>ابدئي استشارتكِ التربوية الآن...</p>}
+              {messages.length === 0 && <p style={styles.emptyMsg}>أهلاً بكِ.. كيف يمكنني مساعدتكِ تربوياً اليوم؟</p>}
               {messages.map(msg => (
                 <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                   <div style={styles.msgBubble}>
@@ -157,40 +156,38 @@ const App = () => {
                       <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn}>
                         <i className="fas fa-trash-alt"></i> حذف
                       </button>
-                    </div> 
+                    </div>
                   </div>
                 </div>
-              ))} [cite: 32]
-              {isLoading && <div style={styles.loading}>جاري التحليل التربوي... ✨</div>}
+              ))}
+              {isLoading && <div style={styles.loading}>جاري التحليل... ✨</div>}
               <div ref={chatEndRef} />
             </div>
 
             <div style={styles.chatInputArea}>
-              {/* أزرار الميديا [cite: 35] */}
               <div style={styles.mediaBar}>
                 <button style={styles.mediaIcon} onClick={() => handleMedia('الكاميرا')}><i className="fas fa-camera"></i></button>
                 <button style={styles.mediaIcon} onClick={() => handleMedia('الصور')}><i className="fas fa-image"></i></button>
                 <button style={styles.mediaIcon} onClick={() => handleMedia('الميكروفون')}><i className="fas fa-microphone"></i></button>
-              </div> [cite: 36]
-              
+              </div>
               <div style={styles.inputRow}>
                 <input 
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="اسألي المتخصص هنا..."
+                  placeholder="اكتبي سؤالكِ هنا..."
                   style={styles.input}
-                /> [cite: 37]
+                />
                 <button 
                   onClick={() => { 
-                    if(inputText) { 
-                      setMessages([...messages, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]);
+                    if(inputText.trim()) { 
+                      setMessages(prev => [...prev, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]);
                       getAIAnalysis(inputText); 
                       setInputText(""); 
                     } 
                   }}
                   style={styles.sendBtn}>
                   <i className="fas fa-paper-plane"></i>
-                </button> [cite: 38]
+                </button>
               </div>
             </div>
           </div>
@@ -202,36 +199,36 @@ const App = () => {
 
 const styles = {
   container: { direction: 'rtl', padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf7f9', minHeight: '100vh' },
-  topBar: { display: 'flex', justifyContent: 'center', marginBottom: '20px' },
-  specialistBtn: { padding: '12px 25px', borderRadius: '25px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(106, 90, 205, 0.3)' },
-  header: { textAlign: 'center', marginBottom: '30px', color: '#6a5acd' },
-  navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '15px' },
-  navBtn: { flex: '0 0 auto', padding: '10px 15px', borderRadius: '15px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }, [cite: 40, 41]
+  topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
+  specialistBtn: { padding: '10px 20px', borderRadius: '20px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
+  header: { textAlign: 'center', marginBottom: '20px', color: '#6a5acd' },
+  navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' },
+  navBtn: { flex: '0 0 auto', padding: '10px', borderRadius: '12px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' },
   activeNav: { background: '#ff85a2', color: 'white', borderColor: '#ff85a2' },
-  card: { background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', textAlign: 'center' },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'right', marginBottom: '20px' },
-  itemRow: { padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' },
+  card: { background: 'white', padding: '15px', borderRadius: '20px', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', textAlign: 'right', marginBottom: '15px' },
+  itemRow: { padding: '8px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #f9f9f9' },
   done: { textDecoration: 'line-through', color: '#ccc' },
-  analyzeBtn: { padding: '15px 30px', borderRadius: '30px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
-  chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }, [cite: 42]
-  chatBox: { width: '95%', maxWidth: '500px', height: '85vh', background: 'white', borderRadius: '25px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  chatHeader: { padding: '15px 20px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' },
-  chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f9f9f9' },
-  aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' },
-  userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' },
-  msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }, [cite: 43]
-  msgText: { margin: 0, lineHeight: '1.6', fontSize: '0.95rem', color: '#444' },
-  msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '5px' },
-  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' },
-  loading: { textAlign: 'center', color: '#6a5acd', margin: '10px' },
-  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' },
-  chatInputArea: { padding: '15px', borderTop: '1px solid #eee', background: 'white' },
-  mediaBar: { display: 'flex', gap: '20px', marginBottom: '12px', justifyContent: 'center' }, [cite: 44]
-  mediaIcon: { background: 'none', border: 'none', color: '#6a5acd', fontSize: '1.2rem', cursor: 'pointer' },
+  analyzeBtn: { width: '100%', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
+  chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
+  chatBox: { width: '100%', maxWidth: '500px', height: '90vh', background: 'white', borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column' },
+  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
+  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem' },
+  chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f8f9fa' },
+  aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
+  userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' },
+  msgBubble: { maxWidth: '80%', padding: '10px', borderRadius: '15px', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
+  msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.5' },
+  msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '0.7rem', color: '#999' },
+  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer' },
+  chatInputArea: { padding: '15px', borderTop: '1px solid #eee' },
+  mediaBar: { display: 'flex', justifyContent: 'center', gap: '25px', marginBottom: '10px' },
+  mediaIcon: { background: 'none', border: 'none', color: '#6a5acd', fontSize: '1.2rem' },
   inputRow: { display: 'flex', gap: '10px' },
-  input: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' },
-  sendBtn: { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white', cursor: 'pointer' }
+  input: { flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd' },
+  sendBtn: { width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white' },
+  loading: { textAlign: 'center', padding: '10px', color: '#6a5acd' },
+  emptyMsg: { textAlign: 'center', marginTop: '40px', color: '#ccc' }
 };
 
-export default App; [cite: 45]
+export default App;
