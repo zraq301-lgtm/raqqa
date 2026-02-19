@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // استيراد الأيقونات والمحرك الأصلي للكور
 import { iconMap } from '../../constants/iconMap';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../../utils/http';
 
 const MenstrualTracker = () => {
   const HealthIcon = iconMap.health;
@@ -29,14 +29,14 @@ const MenstrualTracker = () => {
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
 
-  // --- جلب الإشعارات من Neon DB (CapacitorHttp.get) ---
+  // --- جلب الإشعارات من Neon DB (HttpClient.get) ---
   const fetchNotifications = async () => {
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
         method: 'GET'
       };
-      const response = await CapacitorHttp.get(options);
+      const response = await HttpClient.get(options);
       if (response.data.success) {
         setNotifications(response.data.notifications);
       }
@@ -66,7 +66,7 @@ const MenstrualTracker = () => {
           note: 'تم التحديث من واجهة المتابعة'
         }
       };
-      await CapacitorHttp.post(saveOptions); // [cite: 8, 10]
+      await HttpClient.post(saveOptions); // [cite: 8, 10]
 
       // 2. مرحلة التحليل عبر API الذكاء الاصطناعي
       const promptText = userInput 
@@ -79,7 +79,7 @@ const MenstrualTracker = () => {
         data: { prompt: promptText }
       };
 
-      const response = await CapacitorHttp.post(aiOptions); // 
+      const response = await HttpClient.post(aiOptions); // 
       
       // النتيجة تكون في response.data مباشرة كما طلبت
       const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل.";

@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../../utils/http';
 
 const PregnancyMonitor = () => {
   const Icon = iconMap.intimacy;
@@ -48,7 +48,7 @@ const PregnancyMonitor = () => {
           note: "تحديث تلقائي من لوحة المتابعة"
         }
       };
-      await CapacitorHttp.post(options);
+      await HttpClient.post(options);
     } catch (err) {
       console.error("خطأ في حفظ البيانات سحابياً:", err);
     }
@@ -76,7 +76,7 @@ const PregnancyMonitor = () => {
           prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية الحالية: ${summary}. بصفتك طبيبة تغذية ورشاقة متخصصة، قدمي لي نصيحة مطولة وتحليلاً دقيقاً لطلبي التالي: ${prompt}`
         }
       };
-      const response = await CapacitorHttp.post(options);
+      const response = await HttpClient.post(options);
       const responseText = response.data.reply || response.data.message;
       const newChat = { id: Date.now(), query: prompt, reply: responseText };
       const updatedHistory = [newChat, ...chatHistory];

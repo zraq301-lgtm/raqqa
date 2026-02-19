@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../../utils/http';
 
 const LactationHub = () => {
   const Icon = iconMap.feelings;
@@ -39,7 +39,7 @@ const LactationHub = () => {
 
     try {
       // 1. الحفظ في نيون (Notifications)
-      await CapacitorHttp.post({
+      await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
@@ -54,7 +54,7 @@ const LactationHub = () => {
       const promptText = `أنا طبيبة نساء وتوليد مختصة. إليكِ بيانات مريضتي: ${JSON.stringify(data)}. 
       قومي بتحليل الحالة طبياً ونفسياً بشكل موسع، وقدمي نصائح للأم وللجنين/الرضيع بأسلوب رقيق ودافيء كما اعتدنا منكِ.`;
 
-      const response = await CapacitorHttp.post({
+      const response = await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }

@@ -5,7 +5,7 @@ import {
   Send, Trash2, Camera, Mic, ChevronRight, MessageSquare, 
   Sparkles, X, Bookmark, Stethoscope, Plus, Bell, Clock
 } from 'lucide-react';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../../utils/http';
 
 const PregnancyApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -40,7 +40,7 @@ const PregnancyApp = () => {
   // وظائف الاتصال والتحليل
   const saveToNeon = async (catTitle, aiReply) => {
     try {
-      await CapacitorHttp.post({
+      await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: { user_id: 1, category: catTitle, value: 'تقرير شامل', note: aiReply }
@@ -57,7 +57,7 @@ const PregnancyApp = () => {
     setShowChat(true);
 
     try {
-      const response = await CapacitorHttp.post({
+      const response = await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 [cite_start]// التصحيح: الوصول إلى مجلد src ثم الدخول إلى constants [cite: 1]
 import { iconMap } from '../../constants/iconMap';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../../utils/http';
 
 const DoctorClinical = () => {
   [cite_start]// استخدام أيقونة التبصر (insight) من خريطة الأيقونات المعرفة في iconMap.js [cite: 2]
@@ -81,13 +81,13 @@ const DoctorClinical = () => {
         data: { prompt: `أنا أنثى مسلمة، إليكِ بيانات عيادة ${catName}: ${summary}. قدمي تقريراً طبياً شاملاً ومتخصصاً.` }
       };
 
-      const aiRes = await CapacitorHttp.post(aiOptions);
+      const aiRes = await HttpClient.post(aiOptions);
       const responseText = aiRes.data.reply || aiRes.data.message;
       setAiResponse(responseText);
       setIsChatOpen(true);
 
       // 2. الحفظ في DB نيون عبر API الإشعارات
-      await CapacitorHttp.post({
+      await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: { user_id: 1, category: catName, value: summary, note: responseText }

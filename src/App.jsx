@@ -1,13 +1,8 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-// Capacitor imports - only used in native app context
-let CapApp = null;
-try {
-  const capAppModule = await import('@capacitor/app');
-  CapApp = capAppModule.App;
-} catch (e) {
-  // Running in web-only environment
-}
+// Capacitor App import removed for web compatibility
+// In native Capacitor builds, import { App as CapApp } from '@capacitor/app'
+const CapApp = null;
 
 // استيراد الصور من مجلد الأصول (Assets) لضمان الربط الصحيح وعدم انكسار الروابط
 import healthImg from './assets/health.jpg';

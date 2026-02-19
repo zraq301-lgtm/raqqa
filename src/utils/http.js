@@ -1,24 +1,9 @@
 // HTTP utility that provides the same interface as CapacitorHttp
-// Uses native CapacitorHttp in Capacitor apps, falls back to fetch in web
-
-let useNativeHttp = false;
-let NativeHttp = null;
-
-try {
-  const mod = await import('@capacitor/core');
-  if (mod.CapacitorHttp && mod.Capacitor?.isNativePlatform()) {
-    NativeHttp = mod.CapacitorHttp;
-    useNativeHttp = true;
-  }
-} catch (e) {
-  // Running in web environment, use fetch fallback
-}
+// Uses fetch for web environments. In native Capacitor builds,
+// you can swap this to use CapacitorHttp from @capacitor/core.
 
 const HttpClient = {
   async get(options) {
-    if (useNativeHttp && NativeHttp) {
-      return NativeHttp.get(options);
-    }
     const response = await fetch(options.url, {
       method: 'GET',
       headers: options.headers || {},
@@ -28,9 +13,6 @@ const HttpClient = {
   },
 
   async post(options) {
-    if (useNativeHttp && NativeHttp) {
-      return NativeHttp.post(options);
-    }
     const response = await fetch(options.url, {
       method: 'POST',
       headers: options.headers || { 'Content-Type': 'application/json' },

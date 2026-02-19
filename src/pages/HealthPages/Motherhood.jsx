@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../../utils/http';
 
 // ملاحظة: تأكدي من إضافة رابط FontAwesome في index.html للأيقونات
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -29,7 +29,7 @@ const App = () => {
 
   const saveDataToDB = async (selectedOnes) => {
     try {
-      await CapacitorHttp.post({
+      await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
@@ -63,7 +63,7 @@ const App = () => {
         data: { prompt: promptMessage }
       };
 
-      const response = await CapacitorHttp.post(options);
+      const response = await HttpClient.post(options);
       const responseText = response.data.reply || response.data.message || "لم أستطع الحصول على رد حالياً.";
 
       setMessages(prev => [...prev, {
