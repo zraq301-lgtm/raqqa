@@ -76,7 +76,7 @@ function App() {
             <Route path="/health" element={<Health />} />
             <Route path="/feelings" element={<Feelings />} />
             <Route path="/intimacy" element={<Intimacy />} />
-            <Route path="/swing-forum" element={<Swing />} />
+            <Route path="/swing-forum/*" element={<Swing />} />
             <Route path="/insight" element={<Insight />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/virtual-world" element={<VirtualWorld />} />
