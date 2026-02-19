@@ -11,7 +11,7 @@ const PregnancyMonitor = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
 
-  [cite_start]// تحميل البيانات والدردشات المحفوظة من localStorage [cite: 5]
+  // تحميل البيانات والدردشات المحفوظة من localStorage [cite: 5]
   const [data, setData] = useState(() => {
     try {
       const savedData = localStorage.getItem('lady_fitness');
@@ -23,6 +23,7 @@ const PregnancyMonitor = () => {
     }
   });
 
+  // تم تصحيح بناء المصفوفة هنا لتجنب خطأ Build 
   const sections = [
     { id: "bio", title: "القياسات الحيوية", emoji: "📏", fields: ["الوزن الحالي", "نسبة الدهون", "محيط الخصر", "محيط الورك", "BMI", "نسبة العضلات"] },
     { id: "fit", title: "النشاط البدني", emoji: "🏃‍♀️", fields: ["نوع التمرين", "مدة التمرين", "عدد الخطوات", "السعرات", "مستوى الشدة", "وقت التمرين"] },
@@ -34,14 +35,14 @@ const PregnancyMonitor = () => {
     { id: "cycle", title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة", "الاحتباس", "تغير الوزن", "الرياضة", "ألم الجسم"] }
   ];
 
-  [cite_start]// دالة حفظ البيانات في Neon DB [cite: 8, 9, 10]
+  // دالة حفظ البيانات في Neon DB [cite: 8, 9, 10]
   const saveToNeonDB = async (category, value) => {
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          user_id: "user_123", 
+          user_id: "user_123",
           category: category,
           value: value,
           note: "تحديث تلقائي من لوحة المتابعة"
@@ -57,17 +58,16 @@ const PregnancyMonitor = () => {
     setData(prev => {
       const newData = { ...prev, [field]: value };
       localStorage.setItem('lady_fitness', JSON.stringify(newData));
-      [cite_start]saveToNeonDB(field, value); // مزامنة مع Neon DB [cite: 11]
+      saveToNeonDB(field, value);
       return newData;
     });
   }, []);
 
-  [cite_start]// دالة معالجة الذكاء الاصطناعي (طبيبة رقة) [cite: 12-19]
+  // دالة معالجة الذكاء الاصطناعي (طبيبة رقة) [cite: 14, 15, 16, 17]
   const handleProcessAI = async () => {
     if (!prompt) return;
     setIsLoading(true);
     const summary = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(", ");
-
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -76,36 +76,32 @@ const PregnancyMonitor = () => {
           prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية الحالية: ${summary}. بصفتك طبيبة تغذية ورشاقة متخصصة، قدمي لي نصيحة مطولة وتحليلاً دقيقاً لطلبي التالي: ${prompt}`
         }
       };
-
       const response = await CapacitorHttp.post(options);
       const responseText = response.data.reply || response.data.message;
-      
       const newChat = { id: Date.now(), query: prompt, reply: responseText };
       const updatedHistory = [newChat, ...chatHistory];
-      
       setChatHistory(updatedHistory);
       localStorage.setItem('raqqa_ai_chats', JSON.stringify(updatedHistory));
       setAiResponse(responseText);
       setPrompt("");
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
       setAiResponse("عذراً رفيقتي، حدث خطأ في الاتصال. تأكدي من الإنترنت.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // تفعيل أزرار الأدوات
-  const handleToolAction = (type) => {
+  // تفعيل أدوات الوسائط (كاميرا، ميكروفون، ملفات) [cite: 33]
+  const handleMediaAction = (actionType) => {
     const input = document.createElement('input');
     input.type = 'file';
-    if (type === 'camera') input.setAttribute('capture', 'environment');
-    if (type === 'mic') input.accept = 'audio/*';
-    if (type === 'file') input.accept = 'image/*,application/pdf';
+    if (actionType === 'camera') input.setAttribute('capture', 'environment');
+    if (actionType === 'mic') input.accept = 'audio/*';
+    if (actionType === 'file') input.accept = 'image/*,application/pdf';
     
     input.onchange = (e) => {
       const file = e.target.files[0];
-      if (file) alert(`تم اختيار ملف: ${file.name} - سيتم دعمه في التحديث القادم`);
+      if (file) console.log(`تم اختيار ملف: ${file.name}`);
     };
     input.click();
   };
@@ -140,7 +136,6 @@ const PregnancyMonitor = () => {
               </div>
               <span style={{...styles.arrow, transform: openIdx === i ? 'rotate(180deg)' : 'rotate(0deg)'}}>▾</span>
             </div>
-            
             {openIdx === i && (
               <div style={styles.gridContainer}>
                 {sec.fields.map((f) => (
@@ -167,7 +162,6 @@ const PregnancyMonitor = () => {
               <span>استشارة طبيبة رقة 👩‍⚕️</span>
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
-            
             <div style={styles.chatContent}>
               {isLoading && <div style={styles.loading}>جاري تحليل بياناتك... ✨</div>}
               {aiResponse && !isLoading && (
@@ -176,7 +170,6 @@ const PregnancyMonitor = () => {
                   <p>{aiResponse}</p>
                 </div>
               )}
-              
               <div style={styles.historySection}>
                 <h4 style={{borderBottom: '1px solid #eee', paddingBottom: '5px'}}>سجل الاستشارات المحفوظة:</h4>
                 {chatHistory.map(chat => (
@@ -187,7 +180,6 @@ const PregnancyMonitor = () => {
                 ))}
               </div>
             </div>
-
             <div style={styles.chatFooter}>
               <textarea 
                 style={styles.chatInput} 
@@ -196,9 +188,9 @@ const PregnancyMonitor = () => {
                 onChange={(e) => setPrompt(e.target.value)}
               />
               <div style={styles.toolBar}>
-                <button style={styles.toolBtn} onClick={() => handleToolAction('camera')}>📷</button>
-                <button style={styles.toolBtn} onClick={() => handleToolAction('mic')}>🎤</button>
-                <button style={styles.toolBtn} onClick={() => handleToolAction('file')}>📁</button>
+                <button style={styles.toolBtn} onClick={() => handleMediaAction('camera')}>📷</button>
+                <button style={styles.toolBtn} onClick={() => handleMediaAction('mic')}>🎤</button>
+                <button style={styles.toolBtn} onClick={() => handleMediaAction('file')}>📁</button>
                 <button style={styles.sendBtn} onClick={handleProcessAI}>إرسال</button>
               </div>
             </div>
