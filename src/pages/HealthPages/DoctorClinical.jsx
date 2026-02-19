@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react';
-// التصحيح: الخروج مستويين للوصول إلى مجلد src ثم الدخول إلى constants
-import { iconMap } from '../../constants/iconMap'; [cite: 1]
-import { CapacitorHttp } from '@capacitor/core'; // استيراد المحرك الأصلي للاتصال
+[cite_start]// التصحيح: الوصول إلى مجلد src ثم الدخول إلى constants [cite: 1]
+import { iconMap } from '../../constants/iconMap';
+import { CapacitorHttp } from '@capacitor/core';
 
 const DoctorClinical = () => {
-  // استخدام أيقونة التبصر (insight) من خريطة الأيقونات المعرفة في iconMap.js [cite: 2]
+  [cite_start]// استخدام أيقونة التبصر (insight) من خريطة الأيقونات المعرفة في iconMap.js [cite: 2]
   const Icon = iconMap.insight;
-  const [openIdx, setOpenIdx] = useState(null); [cite: 3]
-  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_doctor')) || {}); [cite: 3]
+  const [openIdx, setOpenIdx] = useState(null);
+  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_doctor')) || {});
   
-  // حالات إضافية للذكاء الصناعي والشات
+  // حالات الذكاء الصناعي والشات
   const [aiResponse, setAiResponse] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedReports, setSavedReports] = useState(() => JSON.parse(localStorage.getItem('saved_reports')) || []);
 
   useEffect(() => {
-    localStorage.setItem('lady_doctor', JSON.stringify(data)); [cite: 4]
+    localStorage.setItem('lady_doctor', JSON.stringify(data));
   }, [data]);
 
   useEffect(() => {
     localStorage.setItem('saved_reports', JSON.stringify(savedReports));
   }, [savedReports]);
 
-  const categories = [ [cite: 5]
+  const categories = [
     { name: "العظام", icon: "🦴" }, { name: "العيون", icon: "👁️" }, 
     { name: "الأسنان", icon: "🦷" }, { name: "القلب", icon: "🫀" }, 
     { name: "التحاليل", icon: "📝" }, { name: "الجلدية", icon: "✨" },
@@ -31,7 +31,7 @@ const DoctorClinical = () => {
     { name: "الجراحة", icon: "🩹" }, { name: "الصيدلية", icon: "💊" }
   ];
 
-  const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"]; [cite: 6]
+  const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
   const styles = {
     card: { 
@@ -41,13 +41,13 @@ const DoctorClinical = () => {
       padding: '20px', 
       border: '1px solid rgba(255,255,255,0.3)', 
       marginBottom: '20px' 
-    }, [cite: 7]
+    },
     accItem: { 
       background: 'rgba(255,255,255,0.2)', 
       borderRadius: '15px', 
       marginBottom: '8px',
-      overflow: 'hidden'
-    }, [cite: 7, 8]
+      overflow: 'hidden' 
+    },
     input: { 
       width: '100%', 
       padding: '8px', 
@@ -55,45 +55,30 @@ const DoctorClinical = () => {
       border: 'none', 
       background: 'rgba(255,255,255,0.5)', 
       fontSize: '0.85rem' 
-    }, [cite: 8]
+    },
     aiBtn: {
       background: 'linear-gradient(45deg, #1565c0, #42a5f5)',
       color: 'white',
       border: 'none',
-      padding: '10px 15px',
+      padding: '10px',
       borderRadius: '12px',
       marginTop: '10px',
       cursor: 'pointer',
       width: '100%',
       fontWeight: 'bold'
-    },
-    chatOverlay: {
-      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-      background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
-    },
-    chatWindow: {
-      background: 'white', width: '90%', maxHeight: '80%', borderRadius: '20px',
-      padding: '20px', overflowY: 'auto', position: 'relative'
-    },
-    reportItem: {
-      background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '10px',
-      marginTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'
     }
   };
 
   const handleProcess = async (catName) => {
     setLoading(true);
-    // تجميع البيانات المدخلة في القسم المفتوح
-    const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'فارغ'}`).join(', ');
+    const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
 
     try {
-      // 1. استدعاء الذكاء الصناعي عبر CapacitorHttp
+      // 1. الاتصال بالذكاء الصناعي [تحقيقاً للمنطق المطلوب]
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          prompt: `أنا أنثى مسلمة، إليك تقرير عيادة ${catName}: ${summary}. قدمي لي تقريراً طبياً شاملاً ومتخصصاً بأسلوبك الرقيق.`
-        }
+        data: { prompt: `أنا أنثى مسلمة، إليكِ بيانات عيادة ${catName}: ${summary}. قدمي تقريراً طبياً شاملاً ومتخصصاً.` }
       };
 
       const aiRes = await CapacitorHttp.post(aiOptions);
@@ -101,26 +86,16 @@ const DoctorClinical = () => {
       setAiResponse(responseText);
       setIsChatOpen(true);
 
-      // 2. حفظ البيانات والإشعار في قاعدة البيانات نيون (Neon) 
-      const saveOptions = {
+      // 2. الحفظ في DB نيون عبر API الإشعارات
+      await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          user_id: 1, // معرف افتراضي
-          category: `عيادة ${catName}`,
-          value: summary,
-          note: responseText
-        }
-      };
-      await CapacitorHttp.post(saveOptions);
+        data: { user_id: 1, category: catName, value: summary, note: responseText }
+      });
 
-      // إضافة التقرير للقائمة المحلية المحفوظة
-      const newReport = { id: Date.now(), title: `تقرير ${catName}`, content: responseText };
-      setSavedReports([newReport, ...savedReports]);
-
+      setSavedReports(prev => [{ id: Date.now(), title: catName, text: responseText }, ...prev]);
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
-      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي.");
+      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت.");
       setIsChatOpen(true);
     } finally {
       setLoading(false);
@@ -134,74 +109,64 @@ const DoctorClinical = () => {
   return (
     <div style={styles.card}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#1565c0', marginBottom: '20px' }}>
-        <Icon size={24} /> <h2>متابعة الطبيب والعيادات الذكية</h2> [cite: 9]
+        <Icon size={24} /> <h2>متابعة الطبيب والعيادات</h2>
       </div>
 
       {categories.map((cat, i) => (
         <div key={i} style={styles.accItem}>
           <div 
             style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} 
-            [cite_start]onClick={() => setOpenIdx(openIdx === i ? null : i)} [cite: 9, 10]
+            onClick={() => setOpenIdx(openIdx === i ? null : i)}
           >
             <span>{cat.icon} عيادة {cat.name}</span>
-            <span>{openIdx === i ? '−' : '+'}</span> [cite: 10]
+            <span>{openIdx === i ? '−' : '+'}</span>
           </div>
-          
+
           {openIdx === i && (
-            <div style={{ padding: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}> [cite: 10, 11]
-              {fields.map(f => (
-                <div key={f}>
-                  <label style={{ fontSize: '0.7rem' }}>{f}</label> [cite: 11]
-                  <input 
-                    style={styles.input} 
-                    value={data[`${cat.name}_${f}`] || [cite_start]''} [cite: 12, 13]
-                    [cite_start]onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})} [cite: 13]
-                  />
-                </div>
-              ))}
-              <button 
-                style={styles.aiBtn} 
-                onClick={() => handleProcess(cat.name)}
-                disabled={loading}
-              >
-                {loading ? 'جاري التحليل...' : '✨ تحليل التقرير بالذكاء الصناعي'}
+            <div style={{ padding: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {fields.map(f => (
+                  <div key={f}>
+                    <label style={{ fontSize: '0.7rem' }}>{f}</label>
+                    <input 
+                      style={styles.input} 
+                      value={data[`${cat.name}_${f}`] || ''} 
+                      onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})} 
+                    />
+                  </div>
+                ))}
+              </div>
+              <button style={styles.aiBtn} onClick={() => handleProcess(cat.name)} disabled={loading}>
+                {loading ? 'جاري التحليل...' : '✨ تحليل ذكي متخصص'}
               </button>
             </div>
           )}
         </div>
       ))}
 
-      {/* قائمة حفظ الردود */}
+      {/* قائمة الردود المحفوظة */}
       {savedReports.length > 0 && (
         <div style={{ marginTop: '20px' }}>
-          <h3 style={{ color: '#1565c0', fontSize: '1rem' }}>التقارير المحفوظة:</h3>
-          {savedReports.map(report => (
-            <div key={report.id} style={styles.reportItem}>
-              <span style={{ fontSize: '0.8rem' }}>{report.title}</span>
-              <button onClick={() => deleteReport(report.id)} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer' }}>🗑️ حذف</button>
+          {savedReports.map(r => (
+            <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '10px', marginBottom: '5px' }}>
+              <span style={{ fontSize: '0.8rem' }}>تقرير {r.title}</span>
+              <button onClick={() => deleteReport(r.id)} style={{ border: 'none', background: 'none', color: 'red', cursor: 'pointer' }}>🗑️</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* نافذة الشات المنبثقة */}
+      {/* شاشة الشات المنبثقة */}
       {isChatOpen && (
-        <div style={styles.chatOverlay}>
-          <div style={styles.chatWindow}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
-              <span style={{ fontWeight: 'bold', color: '#1565c0' }}>رد رقة الذكي ✨</span>
-              <span onClick={() => setIsChatOpen(false)} style={{ cursor: 'pointer' }}>✖️</span>
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'white', width: '90%', maxHeight: '70%', borderRadius: '20px', padding: '20px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <strong>تقرير رقة الذكي</strong>
+              <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: 'none', cursor: 'pointer' }}>✖️</button>
             </div>
-            
-            <div style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#333', marginBottom: '20px' }}>
-              {aiResponse}
-            </div>
-
-            {/* أزرار الوسائط */}
-            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', borderTop: '1px solid #eee', paddingTop: '15px' }}>
-              <button style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }} title="فتح الكاميرا">📷</button>
-              <button style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }} title="فتح الميكروفون">🎤</button>
-              <button style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer' }} title="رفع صورة">🖼️</button>
+            <p style={{ fontSize: '0.9rem', lineHeight: '1.5' }}>{aiResponse}</p>
+            <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '15px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
+              <span>📷</span> <span>🎤</span> <span>🖼️</span>
             </div>
           </div>
         </div>
@@ -210,4 +175,4 @@ const DoctorClinical = () => {
   );
 };
 
-export default DoctorClinical; [cite: 15]
+export default DoctorClinical;
