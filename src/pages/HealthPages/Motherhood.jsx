@@ -1,17 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 
-// ملاحظة: تأكدي من وجود رابط FontAwesome في ملف index.html
+// ملاحظة: تأكدي من وجود رابط FontAwesome في index.html للأيقونات
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 const App = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [checkedItems, setCheckedItems] = useState({});
-  const [showChat, setShowChat] = useState(false);
-  const [aiResponse, setAiResponse] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]); // لحفظ الردود في القائمة
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputText, setInputText] = useState("");
 
-  // القوائم العشر الكاملة (100 مدخل)
+  const chatEndRef = useRef(null);
+
+  // القوائم العشر الكاملة
   const lists = [
     { title: "تعديل السلوك", icon: "fa-child", items: ["التعزيز الإيجابي", "تجاهل السلوكيات المزعجة", "العواقب المنطقية", "وضع حدود واضحة", "لوحة النجوم والمكافآت", "النمذجة والقدوة", "قضاء وقت خاص", "الاستماع الفعال", "بدائل كلمة لا", "توفير بيئة آمنة"] },
     { title: "غرس القناعات", icon: "fa-heart", items: ["قيمة الصدق", "الإيمان بالقدرات", "احترام الاختلاف", "العمل الجماعي", "قيمة الامتنان", "المثابرة", "حب التعلم", "المسؤولية البيئية", "الأمانة", "الرحمة بالضعفاء"] },
@@ -25,121 +28,147 @@ const App = () => {
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
 
-  const toggleCheck = (idx, item) => {
-    const key = `${idx}-${item}`;
-    setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // دالة الحفظ والتحليل المرتبطة بـ API الخاص بكِ
-  const handleAnalyzeAndSave = async () => {
-    setLoading(true);
-    setShowChat(true);
-    setAiResponse("رقة تقوم بتحليل خطواتكِ الرقيقة الآن... ✨");
-
+  // دالة طلب تحليل من الذكاء الاصطناعي
+  const askSpecialist = async (customPrompt = null) => {
+    setIsLoading(true);
+    setIsChatOpen(true);
+    
     const currentList = lists[selectedIdx];
-    // جمع العناصر المختارة فقط لإرسالها للتحليل
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
     
-    // بناء الطلب للذكاء الاصطناعي (raqqa-ai)
-    const promptMessage = `بصفتك مساعدة رقة، لقد أنجزت اليوم في قسم ${currentList.title} ما يلي: ${selectedOnes.join("، ")}. حللي هذا التقدم بناءً على مكتبتكِ.`;
+    // بناء الطلب ليكون متخصصاً ومطولاً
+    const promptMessage = customPrompt || `بصفتك متخصص تربوي خبير في سيكولوجية الطفل والأمومة، قمت اليوم بمتابعة النقاط التالية في قسم ${currentList.title}: (${selectedOnes.join(" - ")}). قدم لي نصيحة تربوية وتوعوية مطولة، عميقة، وشاملة تلامس دوري كأم وتساعدني في تطوير مهارات طفلي بشكل علمي ورقيق.`;
 
     try {
-      // 1. الحفظ في قاعدة البيانات عبر save-notifications
-      // هذا المسار يقوم بالحفظ في Neon وإرسال نسخة لـ Pipedream
-      const saveResponse = await CapacitorHttp.post({
+      // 1. إرسال إشعار للحفظ في قاعدة البيانات
+      await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          user_id: 1,
-          category: currentList.title,
-          value: selectedOnes.length > 0 ? selectedOnes[0] : "بدء المتابعة",
-          note: `تم إنجاز ${selectedOnes.length} بنود في ${currentList.title}`
-        }
+        data: { user_id: 1, category: currentList.title, value: selectedOnes[0] || "استشارة عامة", note: "طلب استشارة تربوية مطولة" }
       });
 
-      // 2. استدعاء التحليل الذكي من raqqa-ai
-      // هذا المسار يبحث في Mixedbread Store ID: 66de0209...
-      const aiRes = await CapacitorHttp.post({
+      // 2. استدعاء رد الذكاء الاصطناعي
+      const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
       });
 
-      // عرض نصيحة الـ AI المستمدة من سياق ملفاتك
-      setAiResponse(aiRes.data.reply || "تم حفظ إنجازكِ يا رفيقتي! استمري في رحلتكِ الرائعة.");
+      const reply = response.data.reply || "أهلاً بكِ يا رفيقتي، أنا هنا لأدعم رحلتكِ التربوية.";
+      const newMsg = { id: Date.now(), text: reply, sender: 'ai', timestamp: new Date().toLocaleTimeString() };
+      setMessages(prev => [...prev, newMsg]);
     } catch (error) {
-      console.error("Connection Error:", error);
-      setAiResponse("حفظتُ لكِ إنجازكِ في السجل، لكن رقة مشغولة قليلاً عن الرد الآن.");
+      setMessages(prev => [...prev, { id: Date.now(), text: "عذراً رفيقتي، يبدو أن هناك ضغطاً على المتخصص، حاولي لاحقاً.", sender: 'ai' }]);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  const deleteMessage = (id) => {
+    setMessages(prev => prev.filter(m => m.id !== id));
+  };
+
+  // دوال الوسائط (تفعيل وهمي للواجهة)
+  const handleMedia = (type) => {
+    alert(`سيتم فتح ${type} لمشاركة الصور أو الفيديوهات التربوية مع المتخصص.`);
+  };
+
   return (
-    <div style={styles.appContainer}>
+    <div style={styles.container}>
+      {/* زر متخصص التربية العلوي */}
+      <div style={styles.topBar}>
+        <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
+          <i className="fas fa-user-md"></i> شات متخصص التربية
+        </button>
+      </div>
+
       <header style={styles.header}>
-        <h1 style={styles.title}>موسوعة التربية الواعية</h1>
-        <p style={styles.subtitle}>دليلكِ الشامل لبناء جيل مبدع، متزن، وسعيد</p>
+        <h1>موسوعة رقة للتربية</h1>
+        <p>دليل الأم الواعية لبناء أجيال المستقبل</p>
       </header>
 
-      {/* شريط الأيقونات العرضي */}
+      {/* شريط التنقل */}
       <div style={styles.navScroll}>
         {lists.map((list, i) => (
           <button 
             key={i} 
             style={{...styles.navBtn, ...(selectedIdx === i ? styles.activeNav : {})}}
             onClick={() => setSelectedIdx(i)}>
-            <i className={`fas ${list.icon}`} style={{marginBottom: '5px'}}></i>
-            <span style={{fontSize: '0.7rem'}}>{list.title}</span>
+            <i className={`fas ${list.icon}`}></i>
+            <span>{list.title}</span>
           </button>
         ))}
       </div>
 
+      {/* محتوى القائمة */}
       <div style={styles.card}>
-        <h2 style={styles.cardTitle}>
-          <i className={`fas ${lists[selectedIdx].icon}`}></i> {lists[selectedIdx].title}
-        </h2>
-        <div style={styles.itemsGrid}>
+        <h2 style={styles.cardTitle}>{lists[selectedIdx].title}</h2>
+        <div style={styles.grid}>
           {lists[selectedIdx].items.map((item, i) => (
             <label key={i} style={styles.itemRow}>
               <input 
                 type="checkbox" 
                 checked={!!checkedItems[`${selectedIdx}-${item}`]}
-                onChange={() => toggleCheck(selectedIdx, item)}
-                style={styles.checkbox}
+                onChange={() => setCheckedItems({...checkedItems, [`${selectedIdx}-${item}`]: !checkedItems[`${selectedIdx}-${item}`]})}
               />
-              <span style={checkedItems[`${selectedIdx}-${item}`] ? styles.completed : {}}>{item}</span>
+              <span style={checkedItems[`${selectedIdx}-${item}`] ? styles.done : {}}>{item}</span>
             </label>
           ))}
         </div>
-
-        {/* زر التحليل والحفظ */}
-        <div style={styles.actionArea}>
-          <button style={styles.analyzeBtn} onClick={handleAnalyzeAndSave}>
-            <i className="fas fa-sparkles"></i> التحليل والحفظ الذكي
-          </button>
-        </div>
+        <button style={styles.analyzeBtn} onClick={() => askSpecialist()}>
+          <i className="fas fa-brain"></i> التحليل والحفظ التربوي
+        </button>
       </div>
 
-      {/* نافذة التحليل المنبثقة (رقة AI) */}
-      {showChat && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <div style={styles.modalHeader}>
-              <span><i className="fas fa-robot"></i> تحليل رقة الذكي</span>
-              <button onClick={() => setShowChat(false)} style={styles.closeBtn}>&times;</button>
+      {/* صفحة الشات المنبثقة */}
+      {isChatOpen && (
+        <div style={styles.chatOverlay}>
+          <div style={styles.chatBox}>
+            <div style={styles.chatHeader}>
+              <span><i className="fas fa-comment-medical"></i> المتخصص التربوي</span>
+              <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
             </div>
-            <div style={styles.modalBody}>
-              {loading ? (
-                <div style={styles.loadingArea}>
-                  <i className="fas fa-spinner fa-spin"></i> جاري استشارة مكتبتكِ...
+
+            {/* منطقة الرسائل (قائمة الردود المحفوظة) */}
+            <div style={styles.chatContent}>
+              {messages.length === 0 && <p style={styles.emptyMsg}>لا توجد استشارات سابقة. ابدئي بسؤال المتخصص...</p>}
+              {messages.map(msg => (
+                <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
+                  <div style={styles.msgBubble}>
+                    <p style={styles.msgText}>{msg.text}</p>
+                    <div style={styles.msgFooter}>
+                      <small>{msg.timestamp}</small>
+                      <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn}>
+                        <i className="fas fa-trash-alt"></i> حذف
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div style={styles.aiText}>{aiResponse}</div>
-              )}
-              {!loading && (
-                <button onClick={() => setShowChat(false)} style={styles.doneBtn}>فهمتُ ذلكِ ✨</button>
-              )}
+              ))}
+              {isLoading && <div style={styles.loading}>جاري صياغة النصيحة التربوية... ✨</div>}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* أدوات الميديا والإدخال */}
+            <div style={styles.chatInputArea}>
+              <div style={styles.mediaBar}>
+                <button onClick={() => handleMedia('الكاميرا')} title="فتح الكاميرا"><i className="fas fa-camera"></i></button>
+                <button onClick={() => handleMedia('الصور')} title="رفع صورة"><i className="fas fa-image"></i></button>
+                <button onClick={() => handleMedia('الميكروفون')} title="تسجيل صوتي"><i className="fas fa-microphone"></i></button>
+              </div>
+              <div style={styles.inputRow}>
+                <input 
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="اسألي عن سلوك طفلكِ هنا..."
+                  style={styles.input}
+                />
+                <button 
+                  onClick={() => { if(inputText) { setMessages([...messages, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]); askSpecialist(inputText); setInputText(""); } }}
+                  style={styles.sendBtn}>
+                  <i className="fas fa-paper-plane"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -148,125 +177,41 @@ const App = () => {
   );
 };
 
-// التنسيقات (Styles)
+// التنسيقات المتطورة
 const styles = {
-  appContainer: {
-    direction: 'rtl',
-    fontFamily: 'Segoe UI, Tahoma, sans-serif',
-    padding: '20px',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    backgroundColor: '#fdfdfd'
-  },
-  header: {
-    textAlign: 'center',
-    padding: '30px 20px',
-    background: 'linear-gradient(135deg, #ff85a2, #6a5acd)',
-    color: 'white',
-    borderRadius: '20px',
-    marginBottom: '25px',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
-  },
-  title: { margin: 0, fontSize: '1.8rem' },
-  subtitle: { margin: '10px 0 0', opacity: 0.9 },
-  navScroll: {
-    display: 'flex',
-    overflowX: 'auto',
-    gap: '12px',
-    paddingBottom: '15px',
-    marginBottom: '20px'
-  },
-  navBtn: {
-    flex: '0 0 auto',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '12px',
-    minWidth: '80px',
-    border: '1px solid #eee',
-    borderRadius: '15px',
-    backgroundColor: 'white',
-    color: '#6a5acd',
-    cursor: 'pointer',
-    transition: '0.3s'
-  },
-  activeNav: {
-    backgroundColor: '#ff85a2',
-    color: 'white',
-    borderColor: '#ff85a2'
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: '20px',
-    padding: '25px',
-    boxShadow: '0 2px 15px rgba(0,0,0,0.05)',
-    borderTop: '6px solid #ff85a2'
-  },
-  cardTitle: { color: '#6a5acd', marginBottom: '20px', borderBottom: '1px solid #fce4ec', paddingBottom: '10px' },
-  itemsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-    gap: '12px'
-  },
-  itemRow: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '12px',
-    backgroundColor: '#fff9fa',
-    borderRadius: '12px',
-    cursor: 'pointer'
-  },
-  checkbox: { marginLeft: '12px', accentColor: '#ff85a2', width: '18px', height: '18px' },
-  completed: { textDecoration: 'line-through', color: '#bbb' },
-  actionArea: { textAlign: 'center', marginTop: '30px' },
-  analyzeBtn: {
-    backgroundColor: '#6a5acd',
-    color: 'white',
-    border: 'none',
-    padding: '15px 35px',
-    borderRadius: '18px',
-    fontSize: '1rem',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(106, 90, 205, 0.3)'
-  },
-  modalOverlay: {
-    position: 'fixed',
-    top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-    backdropFilter: 'blur(5px)'
-  },
-  modal: {
-    backgroundColor: 'white',
-    width: '90%',
-    maxWidth: '500px',
-    borderRadius: '25px',
-    overflow: 'hidden'
-  },
-  modalHeader: {
-    backgroundColor: '#6a5acd',
-    color: 'white',
-    padding: '15px 20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
+  container: { direction: 'rtl', padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf7f9', minHeight: '100vh' },
+  topBar: { display: 'flex', justifyContent: 'center', marginBottom: '20px' },
+  specialistBtn: { padding: '12px 25px', borderRadius: '25px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(106, 90, 205, 0.3)' },
+  header: { textAlign: 'center', marginBottom: '30px', color: '#6a5acd' },
+  navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '15px' },
+  navBtn: { flex: '0 0 auto', padding: '10px 15px', borderRadius: '15px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' },
+  activeNav: { background: '#ff85a2', color: 'white', borderColor: '#ff85a2' },
+  card: { background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 5px 15px rgba(0,0,0,0.05)', textAlign: 'center' },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', textAlign: 'right', marginBottom: '20px' },
+  itemRow: { padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' },
+  done: { textDecoration: 'line-through', color: '#ccc' },
+  analyzeBtn: { padding: '15px 30px', borderRadius: '30px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
+  
+  // شات ستايل
+  chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  chatBox: { width: '95%', maxWidth: '500px', height: '85vh', background: 'white', borderRadius: '25px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  chatHeader: { padding: '15px 20px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem', cursor: 'pointer' },
-  modalBody: { padding: '25px', textAlign: 'center' },
-  aiText: { lineHeight: '1.6', color: '#444', marginBottom: '20px', whiteSpace: 'pre-wrap' },
-  loadingArea: { color: '#6a5acd', fontSize: '1.1rem' },
-  doneBtn: {
-    backgroundColor: '#ff85a2',
-    color: 'white',
-    border: 'none',
-    padding: '10px 25px',
-    borderRadius: '12px',
-    cursor: 'pointer'
-  }
+  chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f9f9f9' },
+  aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' },
+  userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' },
+  msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'relative' },
+  msgText: { margin: 0, lineHeight: '1.6', fontSize: '0.95rem', color: '#444', whiteSpace: 'pre-wrap' },
+  msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '5px' },
+  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' },
+  loading: { textAlign: 'center', color: '#6a5acd', margin: '10px' },
+  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' },
+  
+  chatInputArea: { padding: '15px', borderTop: '1px solid #eee', background: 'white' },
+  mediaBar: { display: 'flex', gap: '15px', marginBottom: '10px', justifyContent: 'center' },
+  inputRow: { display: 'flex', gap: '10px' },
+  input: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' },
+  sendBtn: { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white', cursor: 'pointer' }
 };
 
 export default App;
