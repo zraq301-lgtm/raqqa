@@ -1,20 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 
-// ملاحظة: تأكدي من وجود رابط FontAwesome في index.html للأيقونات
+// ملاحظة: تأكدي من إضافة رابط FontAwesome في index.html للأيقونات
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 const App = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [checkedItems, setCheckedItems] = useState({});
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState([]); // لحفظ الردود في القائمة
+  const [messages, setMessages] = useState([]); 
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
 
   const chatEndRef = useRef(null);
 
-  // القوائم العشر الكاملة
   const lists = [
     { title: "تعديل السلوك", icon: "fa-child", items: ["التعزيز الإيجابي", "تجاهل السلوكيات المزعجة", "العواقب المنطقية", "وضع حدود واضحة", "لوحة النجوم والمكافآت", "النمذجة والقدوة", "قضاء وقت خاص", "الاستماع الفعال", "بدائل كلمة لا", "توفير بيئة آمنة"] },
     { title: "غرس القناعات", icon: "fa-heart", items: ["قيمة الصدق", "الإيمان بالقدرات", "احترام الاختلاف", "العمل الجماعي", "قيمة الامتنان", "المثابرة", "حب التعلم", "المسؤولية البيئية", "الأمانة", "الرحمة بالضعفاء"] },
@@ -28,54 +27,82 @@ const App = () => {
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
 
-  // دالة طلب تحليل من الذكاء الاصطناعي
-  const askSpecialist = async (customPrompt = null) => {
-    setIsLoading(true);
-    setIsChatOpen(true);
-    
+  // 1. دالة حفظ البيانات فقط (معزولة)
+  const saveDataToDB = async () => {
     const currentList = lists[selectedIdx];
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
     
-    // بناء الطلب ليكون متخصصاً ومطولاً
-    const promptMessage = customPrompt || `بصفتك متخصص تربوي خبير في سيكولوجية الطفل والأمومة، قمت اليوم بمتابعة النقاط التالية في قسم ${currentList.title}: (${selectedOnes.join(" - ")}). قدم لي نصيحة تربوية وتوعوية مطولة، عميقة، وشاملة تلامس دوري كأم وتساعدني في تطوير مهارات طفلي بشكل علمي ورقيق.`;
-
     try {
-      // 1. إرسال إشعار للحفظ في قاعدة البيانات
       await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: { user_id: 1, category: currentList.title, value: selectedOnes[0] || "استشارة عامة", note: "طلب استشارة تربوية مطولة" }
+        data: {
+          user_id: 1,
+          category: currentList.title,
+          value: selectedOnes[0] || "إنجاز تربوي",
+          note: `تم اختيار ${selectedOnes.length} بند في قسم ${currentList.title}`
+        }
       });
+      console.log("تم حفظ الإنجاز بنجاح.");
+    } catch (e) {
+      console.error("خطأ في حفظ السجلات:", e);
+    }
+  };
 
-      // 2. استدعاء رد الذكاء الاصطناعي
+  // 2. دالة رد الذكاء الاصطناعي فقط (معزولة)
+  const getAIAnalysis = async (customPrompt = null) => {
+    setIsLoading(true);
+    setIsChatOpen(true);
+
+    const currentList = lists[selectedIdx];
+    const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
+    const promptMessage = customPrompt || `بصفتك متخصص تربوي خبير، قمت اليوم بمتابعة: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. قدمي لي نصيحة تربوية توعوية مطولة وشاملة.`;
+
+    try {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
       });
 
-      const reply = response.data.reply || "أهلاً بكِ يا رفيقتي، أنا هنا لأدعم رحلتكِ التربوية.";
-      const newMsg = { id: Date.now(), text: reply, sender: 'ai', timestamp: new Date().toLocaleTimeString() };
-      setMessages(prev => [...prev, newMsg]);
+      // التحقق من صحة الاستجابة لتجنب خطأ JSON
+      if (response.data && response.data.reply) {
+        const newMsg = {
+          id: Date.now(),
+          text: response.data.reply,
+          sender: 'ai',
+          timestamp: new Date().toLocaleTimeString()
+        };
+        setMessages(prev => [...prev, newMsg]);
+      } else {
+        throw new Error("Invalid JSON Response");
+      }
     } catch (error) {
-      setMessages(prev => [...prev, { id: Date.now(), text: "عذراً رفيقتي، يبدو أن هناك ضغطاً على المتخصص، حاولي لاحقاً.", sender: 'ai' }]);
+      console.error("AI Error:", error);
+      setMessages(prev => [...prev, { id: Date.now(), text: "رقة واجهت صعوبة في معالجة الطلب حالياً، تأكدي من استقرار الخادم.", sender: 'ai' }]);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // تنفيذ العمليتين معاً عند الضغط على الزر الرئيسي
+  const handleMainAction = () => {
+    saveDataToDB(); // حفظ البيانات في صمت
+    getAIAnalysis(); // طلب رد الذكاء الاصطناعي
   };
 
   const deleteMessage = (id) => {
     setMessages(prev => prev.filter(m => m.id !== id));
   };
 
-  // دوال الوسائط (تفعيل وهمي للواجهة)
-  const handleMedia = (type) => {
-    alert(`سيتم فتح ${type} لمشاركة الصور أو الفيديوهات التربوية مع المتخصص.`);
-  };
+  const handleMedia = (type) => alert(`سيتم تفعيل ${type} للتحليل الذكي قريباً.`);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <div style={styles.container}>
-      {/* زر متخصص التربية العلوي */}
       <div style={styles.topBar}>
         <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
           <i className="fas fa-user-md"></i> شات متخصص التربية
@@ -87,7 +114,6 @@ const App = () => {
         <p>دليل الأم الواعية لبناء أجيال المستقبل</p>
       </header>
 
-      {/* شريط التنقل */}
       <div style={styles.navScroll}>
         {lists.map((list, i) => (
           <button 
@@ -100,7 +126,6 @@ const App = () => {
         ))}
       </div>
 
-      {/* محتوى القائمة */}
       <div style={styles.card}>
         <h2 style={styles.cardTitle}>{lists[selectedIdx].title}</h2>
         <div style={styles.grid}>
@@ -115,12 +140,11 @@ const App = () => {
             </label>
           ))}
         </div>
-        <button style={styles.analyzeBtn} onClick={() => askSpecialist()}>
+        <button style={styles.analyzeBtn} onClick={handleMainAction}>
           <i className="fas fa-brain"></i> التحليل والحفظ التربوي
         </button>
       </div>
 
-      {/* صفحة الشات المنبثقة */}
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
@@ -129,9 +153,8 @@ const App = () => {
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
             </div>
 
-            {/* منطقة الرسائل (قائمة الردود المحفوظة) */}
             <div style={styles.chatContent}>
-              {messages.length === 0 && <p style={styles.emptyMsg}>لا توجد استشارات سابقة. ابدئي بسؤال المتخصص...</p>}
+              {messages.length === 0 && <p style={styles.emptyMsg}>ابدئي استشارتكِ التربوية الآن...</p>}
               {messages.map(msg => (
                 <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                   <div style={styles.msgBubble}>
@@ -145,26 +168,25 @@ const App = () => {
                   </div>
                 </div>
               ))}
-              {isLoading && <div style={styles.loading}>جاري صياغة النصيحة التربوية... ✨</div>}
+              {isLoading && <div style={styles.loading}>جاري التحليل التربوي... ✨</div>}
               <div ref={chatEndRef} />
             </div>
 
-            {/* أدوات الميديا والإدخال */}
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                <button onClick={() => handleMedia('الكاميرا')} title="فتح الكاميرا"><i className="fas fa-camera"></i></button>
-                <button onClick={() => handleMedia('الصور')} title="رفع صورة"><i className="fas fa-image"></i></button>
-                <button onClick={() => handleMedia('الميكروفون')} title="تسجيل صوتي"><i className="fas fa-microphone"></i></button>
+                <button onClick={() => handleMedia('الكاميرا')}><i className="fas fa-camera"></i></button>
+                <button onClick={() => handleMedia('الصور')}><i className="fas fa-image"></i></button>
+                <button onClick={() => handleMedia('الميكروفون')}><i className="fas fa-microphone"></i></button>
               </div>
               <div style={styles.inputRow}>
                 <input 
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="اسألي عن سلوك طفلكِ هنا..."
+                  placeholder="اسألي المتخصص هنا..."
                   style={styles.input}
                 />
                 <button 
-                  onClick={() => { if(inputText) { setMessages([...messages, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]); askSpecialist(inputText); setInputText(""); } }}
+                  onClick={() => { if(inputText) { setMessages([...messages, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]); getAIAnalysis(inputText); setInputText(""); } }}
                   style={styles.sendBtn}>
                   <i className="fas fa-paper-plane"></i>
                 </button>
@@ -177,7 +199,6 @@ const App = () => {
   );
 };
 
-// التنسيقات المتطورة
 const styles = {
   container: { direction: 'rtl', padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf7f9', minHeight: '100vh' },
   topBar: { display: 'flex', justifyContent: 'center', marginBottom: '20px' },
@@ -191,8 +212,6 @@ const styles = {
   itemRow: { padding: '10px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '10px' },
   done: { textDecoration: 'line-through', color: '#ccc' },
   analyzeBtn: { padding: '15px 30px', borderRadius: '30px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
-  
-  // شات ستايل
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' },
   chatBox: { width: '95%', maxWidth: '500px', height: '85vh', background: 'white', borderRadius: '25px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   chatHeader: { padding: '15px 20px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
@@ -200,13 +219,12 @@ const styles = {
   chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f9f9f9' },
   aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '15px' },
   userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' },
-  msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'relative' },
-  msgText: { margin: 0, lineHeight: '1.6', fontSize: '0.95rem', color: '#444', whiteSpace: 'pre-wrap' },
+  msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+  msgText: { margin: 0, lineHeight: '1.6', fontSize: '0.95rem', color: '#444' },
   msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '5px' },
   delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' },
   loading: { textAlign: 'center', color: '#6a5acd', margin: '10px' },
   emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' },
-  
   chatInputArea: { padding: '15px', borderTop: '1px solid #eee', background: 'white' },
   mediaBar: { display: 'flex', gap: '15px', marginBottom: '10px', justifyContent: 'center' },
   inputRow: { display: 'flex', gap: '10px' },
