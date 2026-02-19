@@ -5,7 +5,7 @@ import {
   Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip
 } from 'lucide-react';
 // 1. استيراد المحرك الأصلي في أعلى الملف
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../utils/http';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -37,7 +37,7 @@ const MarriageApp = () => {
     { id: "spiritual", title: "الاطمئنان الروحي", icon: <Moon size={24} />, items: ["دعاء 🤲", "غسل 🚿", "شكر 🛐", "نية 💎"] }
   ];
 
-  // دالة المعالجة الموحدة باستخدام CapacitorHttp
+  // دالة المعالجة الموحدة باستخدام HttpClient
   const handleProcess = async (userInputs, pageTitle) => {
     // تجميع البيانات إلى نص مفهوم
     const summary = Object.entries(userInputs)
@@ -56,13 +56,13 @@ const MarriageApp = () => {
       };
 
       // الاتصال عبر المحرك الأصلي (تجاوز CORS)
-      const aiResponse = await CapacitorHttp.post(aiOptions);
+      const aiResponse = await HttpClient.post(aiOptions);
       
       // النتيجة تكون في response.data مباشرة
       const responseText = aiResponse.data.reply || aiResponse.data.message || "شكراً لمشاركتكِ يا رفيقتي.";
 
       // حفظ البيانات في نيون بشكل متوازي
-      await CapacitorHttp.post({
+      await HttpClient.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-health',
         headers: { 'Content-Type': 'application/json' },
         data: {

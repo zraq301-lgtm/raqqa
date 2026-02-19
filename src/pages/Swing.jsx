@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../utils/http';
 
 // استيراد الصفحات الفرعية (نفس الأسماء المطلوبة)
 import MotherhoodHaven from './Swing-page/MotherhoodHaven';
@@ -47,7 +47,7 @@ const Swing = () => {
   // --- Functions (منطق جلب وحفظ البيانات) ---
   const fetchPosts = async () => {
     try {
-      const res = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
+      const res = await HttpClient.get({ url: `${API_BASE}/get-posts` });
       setPosts(res.data.posts || []);
     } catch (e) { console.error("Fetch error", e); }
   };
@@ -79,7 +79,7 @@ const Swing = () => {
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `أنا أنثى مسلمة... ${userInput}` }
       };
-      const res = await CapacitorHttp.post(options);
+      const res = await HttpClient.post(options);
       const aiMsg = { role: 'ai', content: res.data.reply || res.data.message, id: Date.now() + 1 };
       const finalHistory = [...updatedHistory, aiMsg];
       setChatHistory(finalHistory);

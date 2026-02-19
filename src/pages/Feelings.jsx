@@ -5,8 +5,8 @@ import {
   Clock, Brain, Flower2, Coins, Hourglass, 
   Camera, Mic, Image, Trash2, X, MapPin, Smile, Send, Stethoscope
 } from 'lucide-react';
-// استيراد CapacitorHttp للاتصال المتوافق مع الهواتف
-import { CapacitorHttp } from '@capacitor/core';
+// استيراد HttpClient للاتصال المتوافق مع الهواتف والويب
+import HttpClient from '../utils/http';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -30,7 +30,7 @@ const RaqqaFeelingsApp = () => {
     { id: 10, title: "الإنجاز والعمل", icon: <Clock />, items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
   ];
 
-  // دالة المعالجة الرئيسية باستخدام CapacitorHttp
+  // دالة المعالجة الرئيسية باستخدام HttpClient
   const handleProcess = async (customPrompt = null) => {
     setLoading(true);
     setShowChat(true);
@@ -52,7 +52,7 @@ const RaqqaFeelingsApp = () => {
         data: { prompt: systemPrompt }
       };
 
-      const response = await CapacitorHttp.post(options);
+      const response = await HttpClient.post(options);
       const responseText = response.data.reply || response.data.message || "شكراً لمشاركتكِ مشاعركِ يا رفيقتي.";
       
       setAiResponse(responseText);

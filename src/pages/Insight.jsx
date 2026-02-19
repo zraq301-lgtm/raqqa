@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 // استيراد المحرك الأصلي لضمان عمل الاتصال
-import { CapacitorHttp } from '@capacitor/core';
+import HttpClient from '../utils/http';
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
   ShieldCheck, Users, ShieldAlert, Wind, Gift, 
@@ -100,7 +100,7 @@ const RaqqaApp = () => {
         data: { prompt: promptText }
       };
 
-      const response = await CapacitorHttp.post(options);
+      const response = await HttpClient.post(options);
       const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
       
       setAiResponse(responseText);

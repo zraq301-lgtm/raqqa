@@ -1,8 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { App as CapApp } from '@capacitor/app'; 
-// إضافة استيراد CapacitorHttp للتعامل مع طلبات الشبكة عبر النظام الأصلي
-import { CapacitorHttp } from '@capacitor/core'; 
+// Capacitor imports - only used in native app context
+let CapApp = null;
+try {
+  const capAppModule = await import('@capacitor/app');
+  CapApp = capAppModule.App;
+} catch (e) {
+  // Running in web-only environment
+}
 
 // استيراد الصور من مجلد الأصول (Assets) لضمان الربط الصحيح وعدم انكسار الروابط
 import healthImg from './assets/health.jpg';
@@ -36,13 +41,15 @@ function ScrollToTop() {
 function App() {
   // إدارة زر الرجوع في الأندرويد لضمان تجربة مستخدم احترافية
   useEffect(() => {
-    CapApp.addListener('backButton', ({ canGoBack }) => {
-      if (!canGoBack) { 
-        CapApp.exitApp(); 
-      } else { 
-        window.history.back(); 
-      }
-    });
+    if (CapApp) {
+      CapApp.addListener('backButton', ({ canGoBack }) => {
+        if (!canGoBack) { 
+          CapApp.exitApp(); 
+        } else { 
+          window.history.back(); 
+        }
+      });
+    }
   }, []);
 
   return (
