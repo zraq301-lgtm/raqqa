@@ -21,7 +21,11 @@
     "@capacitor/core": "^5.7.0",
     "@capacitor/android": "^5.7.0",
     "@capacitor/app": "^5.0.7",
-    "@vercel/postgres": "^0.10.0" 
+    "@vercel/postgres": "^0.10.0",
+    "@vercel/blob": "^0.23.4",
+    "@neondatabase/serverless": "^0.9.4",
+    "formidable": "^3.5.1",
+    "fs": "0.0.1-security"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
