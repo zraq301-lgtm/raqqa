@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
-// استيراد الصفحات الفرعية
+// استيراد الصفحات الفرعية - تأكدي من وجود هذه الملفات في مجلد Swing-page [cite: 1, 2, 3, 4]
 import MotherhoodHaven from './Swing-page/MotherhoodHaven';
 import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
 import WellnessOasis from './Swing-page/WellnessOasis';
@@ -14,20 +14,21 @@ import HarmonyBridges from './Swing-page/HarmonyBridges';
 import PassionsCrafts from './Swing-page/PassionsCrafts';
 import SoulsLounge from './Swing-page/SoulsLounge';
 
-const API_BASE = "https://raqqa-v6cd.vercel.app/api";
+const API_BASE = "https://raqqa-v6cd.vercel.app/api"; // [cite: 4]
 
 const Swing = () => {
-  const [posts, setPosts] = useState([]);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [posts, setPosts] = useState([]); // [cite: 5]
+  const [isChatOpen, setIsChatOpen] = useState(false); // [cite: 5]
   const [chatHistory, setChatHistory] = useState(() => {
     const saved = localStorage.getItem('raqqa_chats');
     return saved ? JSON.parse(saved) : [];
-  });
-  const [userInput, setUserInput] = useState('');
+  }); // [cite: 6]
+  const [userInput, setUserInput] = useState(''); // [cite: 7]
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [likes, setLikes] = useState({});
 
+  // الأقسام العشرة مع الأيقونات وتكبير الخط [cite: 8, 9]
   const categories = [
     { name: "الأمومة", path: "MotherhoodHaven", icon: "🌸" },
     { name: "الصغار", path: "LittleOnesAcademy", icon: "🧸" },
@@ -41,20 +42,24 @@ const Swing = () => {
     { name: "الملتقى", path: "SoulsLounge", icon: "✨" }
   ];
 
-  [cite_start]// دالة أمنية لمنع جلب الروابط الخارجية من قاعدة البيانات [cite: 10, 33]
+  // منع جلب الروابط الخارجية من قاعدة البيانات
   const sanitizeContent = (text) => {
     if (!text) return "";
     const urlPattern = /(https?:\/\/[^\s]+)/g;
     return text.replace(urlPattern, "[محتوى محمي 🔒]"); 
   };
 
-  useEffect(() => { fetchPosts(); }, []);
+  useEffect(() => {
+    fetchPosts();
+  }, []); // [cite: 9]
 
   const fetchPosts = async () => {
     try {
-      const res = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
-      setPosts(res.data.posts || []);
-    } catch (e) { console.error("Fetch error", e); }
+      const res = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` }); // [cite: 10]
+      setPosts(res.data.posts || []); // [cite: 11]
+    } catch (e) {
+      console.error("Fetch error", e); // [cite: 11]
+    }
   };
 
   const handleLike = (id) => setLikes(prev => ({ ...prev, [id]: !prev[id] }));
@@ -63,177 +68,161 @@ const Swing = () => {
     if (navigator.share) {
       try { await navigator.share({ title: 'رقة', text: p.content, url: window.location.href }); } 
       catch (e) { console.log("Share failed"); }
-    } else { alert("تم نسخ المحتوى لمشاركته 🎀"); }
+    } else { alert("تم نسخ المحتوى 🎀"); }
   };
 
   const handleSavePost = async () => {
-    if (!content && !selectedFile) return alert("اكتبي شيئاً أولاً");
+    if (!content && !selectedFile) return alert("اكتبي شيئاً أولاً"); // [cite: 12]
     try {
-      const formData = new FormData();
-      formData.append('content', content);
-      formData.append('section', 'الرئيسية');
-      formData.append('type', selectedFile ? 'مرفق' : 'نصي');
-      if (selectedFile) formData.append('file', selectedFile);
-      const res = await fetch(`${API_BASE}/save-post`, { method: 'POST', body: formData });
-      if (res.ok) { setContent(''); setSelectedFile(null); fetchPosts(); }
-    } catch (e) { alert("فشل النشر"); }
+      const formData = new FormData(); // [cite: 13]
+      formData.append('content', content); // [cite: 13]
+      formData.append('section', 'الرئيسية'); // [cite: 13]
+      formData.append('type', selectedFile ? 'مرفق' : 'نصي'); // [cite: 14]
+      if (selectedFile) formData.append('file', selectedFile); // [cite: 14]
+      const response = await fetch(`${API_BASE}/save-post`, { method: 'POST', body: formData }); // [cite: 15]
+      if (response.ok) { setContent(''); setSelectedFile(null); fetchPosts(); } // [cite: 16]
+    } catch (e) { alert("فشل النشر"); } // [cite: 17]
   };
 
   const handleChat = async () => {
-    if (!userInput) return;
-    const userMsg = { role: 'user', content: userInput, id: Date.now() };
-    setChatHistory(prev => [...prev, userMsg]);
-    const tempInput = userInput; setUserInput('');
+    if (!userInput) return; // [cite: 18]
+    const userMsg = { role: 'user', content: userInput, id: Date.now() }; // [cite: 19]
+    const updatedHistory = [...chatHistory, userMsg]; // [cite: 19]
+    setChatHistory(updatedHistory);
+    const tempInput = userInput; // [cite: 20]
+    setUserInput(''); // [cite: 20]
     try {
       const res = await CapacitorHttp.post({
         url: `${API_BASE}/raqqa-ai`,
         data: { prompt: `أنا أنثى مسلمة... ${tempInput}` }
-      });
-      const aiMsg = { role: 'ai', content: res.data.reply || res.data.message, id: Date.now() + 1 };
-      setChatHistory(prev => {
-        const newH = [...prev, aiMsg];
-        localStorage.setItem('raqqa_chats', JSON.stringify(newH));
-        return newH;
-      });
-    } catch (e) { alert("خطأ في الاتصال"); }
+      }); // [cite: 20, 21]
+      const aiMsg = { role: 'ai', content: res.data.reply || res.data.message, id: Date.now() + 1 }; // [cite: 21, 22]
+      const finalHistory = [...updatedHistory, aiMsg]; // [cite: 23]
+      setChatHistory(finalHistory); // [cite: 23]
+      localStorage.setItem('raqqa_chats', JSON.stringify(finalHistory)); // [cite: 23]
+    } catch (e) { alert("خطأ في الاتصال"); } // [cite: 24]
   };
 
   return (
-    <div className="min-h-screen bg-[#FFF9FA] text-right font-sans pb-24" dir="rtl">
+    <div className="min-h-screen bg-[#FFF9FA] text-right font-sans pb-20" dir="rtl">
       <style>{`
-        .top-nav-box {
+        .top-nav-wrapper {
           display: flex;
           overflow-x: auto;
-          padding: 8px 10px;
+          padding: 10px;
           gap: 12px;
           background: #fff;
           border-bottom: 2px solid #FFE4ED;
-          margin-top: -12px; /* رفع الشريط لأعلى */
+          margin-top: -10px;
         }
-        .top-nav-box::-webkit-scrollbar { display: none; }
-        .cat-card-elegant {
-          min-width: 85px;
-          height: 95px;
+        .top-nav-wrapper::-webkit-scrollbar { display: none; }
+        .category-card {
+          min-width: 80px;
+          height: 90px;
           background: #fff;
-          border-radius: 24px;
+          border-radius: 22px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           border: 1.5px solid #FFD1E3;
-          box-shadow: 0 2px 10px rgba(255, 182, 193, 0.1);
+          box-shadow: 0 2px 8px rgba(255,182,193,0.1);
         }
-        .cat-title-lg {
-          font-size: 17px; /* تكبير الخط جداً */
+        .cat-name-lg {
+          font-size: 16px; /* خط كبير جداً */
           font-weight: 900;
           color: #D81B60;
           margin-top: 4px;
-          line-height: 1;
         }
-        .elegant-post {
+        .post-card-elegant {
           max-width: 500px;
           margin: 0 auto;
           background: #fff;
-          border-radius: 32px;
+          border-radius: 28px;
           border: 1px solid #FFF0F5;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+          box-shadow: 0 4px 15px rgba(0,0,0,0.02);
         }
-        .media-unified-box {
-          width: 100%;
-          max-height: 420px;
-          object-fit: cover;
-          border-radius: 26px;
-          background: #fdf2f8;
-        }
-        .interaction-row {
+        .interaction-bar {
           display: flex;
           justify-content: space-around;
           padding: 12px 0;
-          border-top: 1px solid #FFF5F7;
           background: #FFFBFC;
-          border-radius: 0 0 32px 32px;
+          border-top: 1px solid #FFF5F7;
+          border-radius: 0 0 28px 28px;
         }
-        .btn-fem {
+        .action-btn-fem {
           display: flex;
           align-items: center;
-          gap: 8px;
-          font-size: 14px;
-          font-weight: 800;
-          color: #A5A5A5;
-          transition: 0.3s;
+          gap: 6px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #A0A0A0;
         }
-        .btn-fem.active-heart { color: #E91E63; }
+        .action-btn-fem.liked { color: #E91E63; }
+        .media-container { width: 100%; max-height: 400px; object-fit: cover; border-radius: 22px; }
       `}</style>
 
-      {/* شريط الأقسام المرفوع بتصميم الخط الكبير */}
-      <nav className="sticky top-0 z-50 top-nav-box shadow-sm">
+      {/* شريط الأقسام [cite: 26, 27, 28] */}
+      <nav className="sticky top-0 z-50 top-nav-wrapper shadow-sm">
         {categories.map((c, i) => (
-          <Link key={i} to={`/Swing/${c.path}`} className="cat-card-elegant active:scale-95 transition-transform">
-            <span className="text-2xl">{c.icon}</span>
-            <span className="cat-title-lg">{c.name}</span>
+          <Link key={i} to={`/Swing/${c.path}`} className="category-card active:scale-95 transition-transform">
+            <span className="text-xl">{c.icon}</span>
+            <span className="cat-name-lg">{c.name}</span>
           </Link>
         ))}
       </nav>
 
-      <main className="p-4 space-y-10">
+      <main className="p-4 space-y-8">
         <Routes>
           <Route path="/" element={
             <>
-              {/* صندوق النشر الأنيق */}
-              <div className="elegant-post p-6 border-b-4 border-pink-100 mb-8">
+              {/* صندوق النشر [cite: 29, 30, 31, 32] */}
+              <div className="post-card-elegant p-6 border-b-4 border-pink-100 mb-6">
                 <textarea 
                   value={content} onChange={e => setContent(e.target.value)}
-                  className="w-full p-5 bg-[#FFFBFD] rounded-3xl text-sm outline-none border-none placeholder-pink-200 shadow-inner"
-                  placeholder="ماذا يدور في خاطركِ يا رقة؟ ✍️" rows="3"
+                  className="w-full p-4 bg-[#FFFBFD] rounded-2xl text-sm outline-none border-none placeholder-pink-200 shadow-inner"
+                  placeholder="انثري كلماتكِ الرقيقة هنا... ✍️" rows="3"
                 />
                 <div className="flex justify-between items-center mt-4">
                   <label className="cursor-pointer text-xs font-bold text-pink-400 flex items-center gap-2">
-                    🖼️ معرض الرقة <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} />
+                    🖼️ إضافة وسائط <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} />
                   </label>
-                  <button onClick={handleSavePost} className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-12 py-2.5 rounded-full text-xs font-bold shadow-lg shadow-pink-100">نشر</button>
+                  <button onClick={handleSavePost} className="bg-pink-600 text-white px-10 py-2 rounded-full text-xs font-bold shadow-lg">نشر</button>
                 </div>
               </div>
 
-              [cite_start]{/* المنشورات مع تفعيل الفيديو والصور والروابط المحمية [cite: 33] */}
-              <div className="space-y-12">
+              {/* المنشورات [cite: 33, 34] */}
+              <div className="space-y-10">
                 {posts.map(p => (
-                  <div key={p.id} className="elegant-post overflow-hidden">
+                  <div key={p.id} className="post-card-elegant overflow-hidden">
                     <div className="p-6">
-                      <div className="flex items-center gap-4 mb-5">
-                        <div className="w-12 h-12 bg-pink-100 rounded-full border-2 border-white flex items-center justify-center text-pink-500 font-black shadow-sm text-lg">ر</div>
-                        <div>
-                           <p className="text-sm font-black text-gray-800 italic">رقة</p>
-                           <p className="text-[11px] text-gray-400 font-semibold">{new Date(p.created_at).toLocaleDateString('ar-EG')}</p>
-                        </div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center text-pink-500 font-bold shadow-sm">ر</div>
+                        <span className="text-sm font-black text-gray-700 italic">رقة</span>
                       </div>
-                      
-                      {p.content && (
-                        <p className="text-[15px] text-gray-600 leading-relaxed mb-6 px-1">
-                          {sanitizeContent(p.content)}
-                        </p>
-                      )}
-
+                      <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
+                        {sanitizeContent(p.content)}
+                      </p>
                       {p.media_url && (
-                        <div className="rounded-3xl overflow-hidden border border-pink-50 shadow-inner">
+                        <div className="rounded-2xl overflow-hidden border border-pink-50 shadow-inner">
                           {p.media_url.match(/\.(mp4|webm|mov|blomp)$/i) ? (
-                            <video src={p.media_url} controls className="media-unified-box" />
+                            <video src={p.media_url} controls className="media-container" />
                           ) : (
-                            <img src={p.media_url} alt="محتوى رقة" className="media-unified-box" />
+                            <img src={p.media_url} alt="محتوى رقة" className="media-container" />
                           )}
                         </div>
                       )}
                     </div>
-
-                    {/* الأزرار العرضية الأنيقة (تفاعل مفعل) */}
-                    <div className="interaction-row">
-                      <button onClick={() => handleLike(p.id)} className={`btn-fem ${likes[p.id] ? 'active-heart' : ''}`}>
+                    {/* أزرار التفاعل العرضية الأنيقة */}
+                    <div className="interaction-bar">
+                      <button onClick={() => handleLike(p.id)} className={`action-btn-fem ${likes[p.id] ? 'liked' : ''}`}>
                         {likes[p.id] ? '💖' : '🤍'} <span>حب</span>
                       </button>
-                      <button className="btn-fem hover:text-pink-400">
-                        💌 <span>رد</span>
+                      <button className="action-btn-fem hover:text-pink-400">
+                        💬 <span>رد</span>
                       </button>
-                      <button onClick={() => handleShare(p)} className="btn-fem hover:text-pink-400">
-                        🎀 <span>إهداء</span>
+                      <button onClick={() => handleShare(p)} className="action-btn-fem hover:text-pink-400">
+                        🔗 <span>إهداء</span>
                       </button>
                     </div>
                   </div>
@@ -241,8 +230,8 @@ const Swing = () => {
               </div>
             </>
           } />
-          
-          [cite_start]{/* المسارات الفرعية من الصورة المرفقة [cite: 8, 9] */}
+
+          {/* المسارات الفرعية [cite: 35, 36] */}
           <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
           <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
           <Route path="/WellnessOasis" element={<WellnessOasis />} />
@@ -256,21 +245,16 @@ const Swing = () => {
         </Routes>
       </main>
 
-      {/* زر AI عائم */}
-      <button 
-        onClick={() => setIsChatOpen(true)} 
-        className="fixed bottom-8 left-8 bg-pink-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 animate-bounce"
-      >
-        ✨
-      </button>
+      {/* زر AI عائم [cite: 37] */}
+      <button onClick={() => setIsChatOpen(true)} className="fixed bottom-8 left-8 bg-pink-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 animate-bounce">✨</button>
 
-      [cite_start]{/* نافذة الدردشة الذكية [cite: 38-44] */}
+      {/* نافذة AI [cite: 38, 39, 40, 41, 42, 43, 44] */}
       {isChatOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md h-[78vh] rounded-[3.5rem] flex flex-col shadow-2xl overflow-hidden border-4 border-white">
+          <div className="bg-white w-full max-w-md h-[75vh] rounded-[3rem] flex flex-col shadow-2xl overflow-hidden border-4 border-white">
             <div className="p-5 bg-pink-600 text-white flex justify-between items-center shadow-md font-bold">
               <span>دردشة رقة 🤖</span>
-              <button onClick={() => setIsChatOpen(false)} className="text-xl">✕</button>
+              <button onClick={() => setIsChatOpen(false)}>✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-pink-50/20">
               {chatHistory.map(m => (
@@ -281,9 +265,9 @@ const Swing = () => {
                 </div>
               ))}
             </div>
-            <div className="p-5 bg-white border-t flex gap-2">
-              <input value={userInput} onChange={e => setUserInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleChat()} className="flex-1 bg-gray-50 p-4 rounded-2xl text-sm outline-none shadow-inner" placeholder="اسألي رقة..." />
-              <button onClick={handleChat} className="bg-pink-600 text-white px-8 rounded-2xl font-bold shadow-md">إرسال</button>
+            <div className="p-4 bg-white border-t flex gap-2">
+              <input value={userInput} onChange={e => setUserInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleChat()} className="flex-1 bg-gray-50 p-4 rounded-2xl text-sm outline-none" placeholder="اسألي رقة..." />
+              <button onClick={handleChat} className="bg-pink-600 text-white px-8 rounded-2xl font-bold">إرسال</button>
             </div>
           </div>
         </div>
