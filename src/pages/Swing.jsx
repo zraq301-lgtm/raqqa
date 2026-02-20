@@ -1,12 +1,12 @@
-[cite_start][cite: 214] import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react"; [cite: 1]
 import {
   BrowserRouter,
   Routes,
   Route,
   useNavigate,
   useLocation,
-} from "react-router-dom";
-[cite_start][cite: 215] import {
+} from "react-router-dom"; [cite: 1]
+import {
   Heart,
   MessageCircle,
   Share2,
@@ -30,17 +30,17 @@ import {
   Coffee,
   ChevronDown,
   Loader2,
-} from "lucide-react";
+} from "lucide-react"; [cite: 2]
 
 // ---- Constants ---- //
-[cite_start][cite: 216] const API_BASE = "https://raqqa-v6cd.vercel.app/api";
+const API_BASE = "https://raqqa-v6cd.vercel.app/api"; [cite: 3]
 
 interface Section {
   id: string;
   label: string;
   icon: React.ReactNode;
   path: string;
-  [cite_start]color: string; [cite: 217]
+  color: string; [cite: 4]
   description: string;
 }
 
@@ -64,7 +64,7 @@ const SECTIONS: Section[] = [
   {
     id: "wellness",
     label: "العافية",
-    [cite_start]icon: <HeartPulse size={20} />, [cite: 218]
+    icon: <HeartPulse size={20} />, [cite: 5]
     path: "/wellness",
     color: "#00BCD4",
     description: "واحة الصحة والجمال",
@@ -86,9 +86,9 @@ const SECTIONS: Section[] = [
     description: "فنون الطبخ والحلويات",
   },
   {
-    id: "home",
+    id: "home", [cite: 6]
     label: "المنزل",
-    [cite_start]icon: <Home size={20} />, [cite: 219]
+    icon: <Home size={20} />,
     path: "/home-decor",
     color: "#795548",
     description: "ديكور وأركان المنزل",
@@ -106,7 +106,7 @@ const SECTIONS: Section[] = [
     label: "العلاقات",
     icon: <Users size={20} />,
     path: "/relationships",
-    [cite_start]color: "#F44336", [cite: 220]
+    color: "#F44336", [cite: 7]
     description: "جسور التواصل والعلاقات",
   },
   {
@@ -128,25 +128,25 @@ const SECTIONS: Section[] = [
 ];
 
 // ---- Helpers ---- //
-[cite_start][cite: 221] function strictSanitize(text: string): string {
+function strictSanitize(text: string): string { [cite: 8]
   if (!text) return "";
-  return text
+  return text [cite: 9]
     .replace(/https?:\/\/[^\s]+/g, "[رابط محذوف]")
     .replace(/<[^>]*>/g, "")
     .replace(/javascript:/gi, "")
-    [cite_start].replace(/on\w+=/gi, ""); [cite: 222, 223]
-}
+    .replace(/on\w+=/gi, "");
+} [cite: 10]
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  [cite_start]if (mins < 1) return "الآن"; [cite: 224]
+  if (mins < 1) return "الآن"; [cite: 11]
   if (mins < 60) return `منذ ${mins} دقيقة`;
   const hours = Math.floor(mins / 60);
-  [cite_start]if (hours < 24) return `منذ ${hours} ساعة`; [cite: 225]
+  if (hours < 24) return `منذ ${hours} ساعة`; [cite: 12]
   const days = Math.floor(hours / 24);
-  [cite_start]return `منذ ${days} يوم`; [cite: 226]
-}
+  return `منذ ${days} يوم`;
+} [cite: 13]
 
 // ---- Types ---- //
 interface Post {
@@ -156,7 +156,7 @@ interface Post {
   section: string;
   type?: string;
   file?: string;
-  [cite_start]createdAt?: string; [cite: 227]
+  createdAt?: string; [cite: 14]
   likes?: number;
 }
 
@@ -165,22 +165,22 @@ interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: number;
-[cite_start]} [cite: 228]
+} [cite: 15]
 
 // ---- Post Card Component ---- //
 function PostCard({ post, index }: { post: Post; index: number }) {
   const [liked, setLiked] = useState(false);
-  [cite_start]const [likeCount, setLikeCount] = useState(post.likes || 0); [cite: 229]
+  const [likeCount, setLikeCount] = useState(post.likes || 0); [cite: 16]
   const [showComment, setShowComment] = useState(false);
   const [comment, setComment] = useState("");
-  [cite_start]const [comments, setComments] = useState<string[]>([]); [cite: 230]
+  const [comments, setComments] = useState<string[]>([]); [cite: 17]
 
   const handleLike = () => {
     setLiked(!liked);
-    [cite_start]setLikeCount((prev) => (liked ? prev - 1 : prev + 1)); [cite: 231]
+    setLikeCount((prev) => (liked ? prev - 1 : prev + 1)); [cite: 18]
   };
 
-  [cite_start]const handleShare = async () => { [cite: 232]
+  const handleShare = async () => { [cite: 19]
     if (navigator.share) {
       try {
         await navigator.share({
@@ -188,16 +188,16 @@ function PostCard({ post, index }: { post: Post; index: number }) {
           text: strictSanitize(post.content).substring(0, 100),
           url: window.location.href,
         });
-      [cite_start]} catch { [cite: 233]
+      } catch { [cite: 20]
         /* user cancelled */
       }
     }
   };
 
-  [cite_start]const handleComment = () => { [cite: 234]
+  const handleComment = () => { [cite: 21]
     if (comment.trim()) {
       setComments((prev) => [...prev, comment.trim()]);
-      [cite_start]setComment(""); [cite: 235]
+      setComment(""); [cite: 22]
     }
   };
 
@@ -213,88 +213,114 @@ function PostCard({ post, index }: { post: Post; index: number }) {
         border: "1px solid var(--glass-border)",
         borderRadius: "var(--radius)",
         padding: "20px",
-        [cite_start]marginBottom: "16px", [cite: 236]
+        marginBottom: "16px", [cite: 23]
         boxShadow: "var(--card-shadow)",
         transition: "transform 0.2s, box-shadow 0.2s",
       }}
     >
-      [cite_start]<div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "14px" }}> [cite: 237]
-        <div style={{
-          width: 40, height: 40, borderRadius: "50%",
-          background: `linear-gradient(135deg, var(--primary), var(--rose-gold))`,
-          [cite_start]display: "flex", alignItems: "center", justifyContent: "center", [cite: 238]
-          color: "#fff", fontWeight: 700, fontSize: 14, flexShrink: 0,
-        }}>
-          {post.section?.[0]?.toUpperCase() || [cite_start]"م"} [cite: 239, 240]
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "12px",
+          marginBottom: "14px", [cite: 24]
+        }}
+      >
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            background: `linear-gradient(135deg, var(--primary), var(--rose-gold))`,
+            display: "flex", [cite: 25]
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#fff",
+            fontWeight: 700,
+            fontSize: 14,
+            flexShrink: 0,
+          }}
+        >
+          {post.section?.[0]?.toUpperCase() || "م"} [cite: 26, 27]
         </div>
         <div style={{ flex: 1 }}>
-          [cite_start]<div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}>عضوة المنتدى</div> [cite: 241]
-          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-            [cite_start]{post.createdAt ? timeAgo(post.createdAt) : "منذ قليل"} [cite: 242, 243]
+          <div style={{ fontWeight: 600, fontSize: 14, color: "var(--text)" }}> [cite: 28]
+            عضوة المنتدى
+          </div>
+          <div style={{ fontSize: 12, color: "var(--text-secondary)" }}> [cite: 29]
+            {post.createdAt ? timeAgo(post.createdAt) : "منذ قليل"} [cite: 30]
           </div>
         </div>
       </div>
 
-      [cite_start]<p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--text)", marginBottom: "16px", wordBreak: "break-word" }}> [cite: 244]
+      <p style={{ fontSize: 15, lineHeight: 1.7, color: "var(--text)", marginBottom: "16px", wordBreak: "break-word" }}> [cite: 31]
         {strictSanitize(post.content)}
       </p>
 
       {post.file && (
-        [cite_start]<div style={{ borderRadius: "var(--radius-sm)", overflow: "hidden", marginBottom: "16px" }}> [cite: 245]
+        <div style={{ borderRadius: "var(--radius-sm)", overflow: "hidden", marginBottom: "16px" }}> [cite: 32]
           <img src={post.file} alt="محتوى المنشور" crossOrigin="anonymous"
-            [cite_start]style={{ width: "100%", maxHeight: 300, objectFit: "cover", display: "block" }} loading="lazy" /> [cite: 246]
+            style={{ width: "100%", maxHeight: 300, objectFit: "cover", display: "block" }} [cite: 33]
+            loading="lazy" />
         </div>
       )}
 
-      [cite_start]<div style={{ display: "flex", alignItems: "center", gap: "8px", paddingTop: "12px", borderTop: "1px solid rgba(0,0,0,0.05)" }}> [cite: 247]
-        <button onClick={handleLike} aria-label={liked ? [cite_start]"إزالة الإعجاب" : "إعجاب"} [cite: 248, 249]
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingTop: "12px", borderTop: "1px solid rgba(0,0,0,0.05)" }}> [cite: 34]
+        <button onClick={handleLike} aria-label={liked ? "إزالة الإعجاب" : "إعجاب"} [cite: 35, 36]
           style={{
             display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none",
-            background: liked ? [cite_start]"rgba(216, 27, 96, 0.1)" : "rgba(0,0,0,0.03)", [cite: 250]
-            color: liked ? [cite_start]"var(--primary)" : "var(--text-secondary)", [cite: 251]
+            background: liked ? "rgba(216, 27, 96, 0.1)" : "rgba(0,0,0,0.03)", [cite: 37]
+            color: liked ? "var(--primary)" : "var(--text-secondary)", [cite: 38]
             cursor: "pointer", fontSize: 13, fontWeight: 500, fontFamily: "inherit", transition: "all 0.2s",
           }}>
-          <Heart size={16} fill={liked ? "var(--primary)" : "none"} stroke={liked ? [cite_start]"var(--primary)" : "currentColor"} /> [cite: 252, 253, 254]
-          [cite_start]<span>{likeCount > 0 ? likeCount : ""}</span> [cite: 255]
+          <Heart size={16} fill={liked ? "var(--primary)" : "none"} stroke={liked ? "var(--primary)" : "currentColor"} /> [cite: 39, 40, 41]
+          <span>{likeCount > 0 ? likeCount : ""}</span> [cite: 42]
         </button>
 
-        [cite_start]<button onClick={() => setShowComment(!showComment)} aria-label="تعليق" [cite: 256]
+        <button onClick={() => setShowComment(!showComment)} aria-label="تعليق"
           style={{
-            display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none",
-            background: showComment ? [cite_start]"rgba(216, 27, 96, 0.1)" : "rgba(0,0,0,0.03)", [cite: 257]
-            color: showComment ? [cite_start]"var(--primary)" : "var(--text-secondary)", [cite: 258]
+            display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", [cite: 43]
+            borderRadius: "var(--radius-sm)", border: "none",
+            background: showComment ? "rgba(216, 27, 96, 0.1)" : "rgba(0,0,0,0.03)", [cite: 44]
+            color: showComment ? "var(--primary)" : "var(--text-secondary)", [cite: 45]
             cursor: "pointer", fontSize: 13, fontWeight: 500, fontFamily: "inherit", transition: "all 0.2s",
           }}>
           <MessageCircle size={16} />
-          [cite_start]<span>{comments.length > 0 ? comments.length : ""}</span> [cite: 259, 260]
+          <span>{comments.length > 0 ? comments.length : ""}</span> [cite: 46, 47]
         </button>
 
-        [cite_start]<button onClick={handleShare} aria-label="مشاركة" [cite: 261]
+        <button onClick={handleShare} aria-label="مشاركة"
           style={{
-            display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "var(--radius-sm)", border: "none",
-            [cite_start]background: "rgba(0,0,0,0.03)", color: "var(--text-secondary)", cursor: "pointer", fontSize: 13, fontWeight: 500, [cite: 262]
-            fontFamily: "inherit", transition: "all 0.2s", marginRight: "auto",
+            display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", [cite: 48]
+            borderRadius: "var(--radius-sm)", border: "none", background: "rgba(0,0,0,0.03)",
+            color: "var(--text-secondary)", cursor: "pointer", fontSize: 13, fontWeight: 500,
+            fontFamily: "inherit", transition: "all 0.2s", marginRight: "auto", [cite: 49]
           }}>
           <Share2 size={16} />
         </button>
       </div>
 
       {showComment && (
-        [cite_start]<div className="animate-fade-in" style={{ marginTop: "12px" }}> [cite: 263]
+        <div className="animate-fade-in" style={{ marginTop: "12px" }}> [cite: 50]
           {comments.map((c, i) => (
-            [cite_start]<div key={i} style={{ padding: "10px 14px", background: "rgba(0,0,0,0.02)", borderRadius: "var(--radius-sm)", marginBottom: "8px", fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}> [cite: 264, 265]
+            <div key={i} style={{ padding: "10px 14px", background: "rgba(0,0,0,0.02)", borderRadius: "var(--radius-sm)", marginBottom: "8px", fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}> [cite: 51, 52]
               {c}
             </div>
           ))}
           <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-            [cite_start]<input value={comment} onChange={(e) => setComment(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleComment()} [cite: 266]
-              [cite_start]placeholder="اكتبي تعليقك..." style={{ flex: 1, padding: "10px 14px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(0,0,0,0.08)", background: "#fff", fontSize: 13, fontFamily: "inherit", outline: "none", direction: "rtl" }} /> [cite: 267, 268]
-            [cite_start]<button onClick={handleComment} aria-label="إرسال التعليق" style={{ padding: "10px 14px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center" }}> [cite: 269, 270]
+            <input value={comment} onChange={(e) => setComment(e.target.value)} [cite: 53]
+              onKeyDown={(e) => e.key === "Enter" && handleComment()} placeholder="اكتبي تعليقك..."
+              style={{ flex: 1, padding: "10px 14px", borderRadius: "var(--radius-sm)", [cite: 54]
+                border: "1px solid rgba(0,0,0,0.08)", background: "#fff", fontSize: 13, fontFamily: "inherit",
+                outline: "none", direction: "rtl" }} [cite: 55] />
+            <button onClick={handleComment} aria-label="إرسال التعليق"
+              style={{ padding: "10px 14px", borderRadius: "var(--radius-sm)", [cite: 56]
+                border: "none", background: "var(--primary)", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center" }}> [cite: 57]
               <Send size={16} />
             </button>
           </div>
         </div>
-      )}
+      )} [cite: 58]
     </article>
   );
 }
@@ -302,19 +328,19 @@ function PostCard({ post, index }: { post: Post; index: number }) {
 // ---- Section Page Component ---- //
 function SectionPage({ section }: { section: Section }) {
   const [posts, setPosts] = useState<Post[]>([]);
-  [cite_start]const [loading, setLoading] = useState(true); [cite: 272]
+  const [loading, setLoading] = useState(true); [cite: 59]
   const [showPublish, setShowPublish] = useState(false);
   const [newContent, setNewContent] = useState("");
   const [publishing, setPublishing] = useState(false);
 
-  [cite_start]const fetchPosts = useCallback(async () => { [cite: 273]
+  const fetchPosts = useCallback(async () => { [cite: 60]
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/get-posts`);
       if (res.ok) {
         const data = await res.json();
         const allPosts = data.posts || data || [];
-        [cite_start]const filtered = allPosts.filter((p: Post) => p.section?.toLowerCase() === section.id.toLowerCase()); [cite: 274]
+        const filtered = allPosts.filter((p: Post) => p.section?.toLowerCase() === section.id.toLowerCase()); [cite: 61]
         setPosts(filtered);
       }
     } catch (err) {
@@ -324,103 +350,136 @@ function SectionPage({ section }: { section: Section }) {
     }
   }, [section.id]);
 
-  [cite_start]useEffect(() => { fetchPosts(); }, [fetchPosts]); [cite: 275]
+  useEffect(() => { fetchPosts(); }, [fetchPosts]); [cite: 62]
 
-  [cite_start]const handlePublish = async () => { [cite: 276]
+  const handlePublish = async () => { [cite: 63]
     if (!newContent.trim() || publishing) return;
     setPublishing(true);
-    [cite_start]try { [cite: 277]
+    try { [cite: 64]
       const formData = new FormData();
       formData.append("content", newContent.trim());
       formData.append("section", section.id);
       formData.append("type", "text");
-      [cite_start]await fetch(`${API_BASE}/save-post`, { method: "POST", body: formData }); [cite: 278]
-      [cite_start]setNewContent(""); [cite: 279]
+      await fetch(`${API_BASE}/save-post`, { method: "POST", body: formData }); [cite: 65]
+      setNewContent(""); [cite: 66]
       setShowPublish(false);
       fetchPosts();
     } catch (err) {
       console.error("Error publishing:", err);
-    } finally {
-      [cite_start]setPublishing(false); [cite: 280]
+    } finally { [cite: 67]
+      setPublishing(false);
     }
   };
 
-  return (
-    [cite_start]<div style={{ padding: "20px 16px 40px" }}> [cite: 281]
+  return ( [cite: 68]
+    <div style={{ padding: "20px 16px 40px" }}>
       <div className="animate-fade-in-up" style={{ textAlign: "center", padding: "28px 16px 20px" }}>
-        [cite_start]<div style={{ width: 56, height: 56, borderRadius: "50%", background: `linear-gradient(135deg, ${section.color}22, ${section.color}44)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: section.color }}> [cite: 282, 283]
+        <div style={{ width: 56, height: 56, [cite: 69]
+          borderRadius: "50%", background: `linear-gradient(135deg, ${section.color}22, ${section.color}44)`,
+          display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", color: section.color }}> [cite: 70]
           {section.icon}
         </div>
-        [cite_start]<h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>{section.label}</h2> [cite: 284]
-        [cite_start]<p style={{ fontSize: 14, color: "var(--text-secondary)" }}>{section.description}</p> [cite: 285]
+        <h2 style={{ fontSize: 22, fontWeight: 700, color: "var(--text)", marginBottom: 4 }}>{section.label}</h2> [cite: 71]
+        <p style={{ fontSize: 14, color: "var(--text-secondary)" }}>{section.description}</p> [cite: 72]
       </div>
 
       <button onClick={() => setShowPublish(!showPublish)}
-        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", width: "100%", padding: "14px", borderRadius: "var(--radius)", border: "2px dashed rgba(216,27,96,0.2)", background: showPublish ? [cite_start]"rgba(216,27,96,0.05)" : "transparent", color: "var(--primary)", cursor: "pointer", fontSize: 14, fontWeight: 600, fontFamily: "inherit", marginBottom: "16px", transition: "all 0.2s" }}> [cite: 286, 287]
-        [cite_start]<Plus size={18} /> أضيفي منشورًا جديدًا [cite: 288]
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", [cite: 73]
+          width: "100%", padding: "14px", borderRadius: "var(--radius)", border: "2px dashed rgba(216,27,96,0.2)",
+          background: showPublish ? "rgba(216,27,96,0.05)" : "transparent", [cite: 74]
+          color: "var(--primary)", cursor: "pointer", fontSize: 14, fontWeight: 600,
+          fontFamily: "inherit", marginBottom: "16px", transition: "all 0.2s" }}>
+        <Plus size={18} /> [cite: 75]
+        أضيفي منشورًا جديدًا
       </button>
 
       {showPublish && (
-        [cite_start]<div className="glass animate-fade-in" style={{ borderRadius: "var(--radius)", padding: "16px", marginBottom: "16px" }}> [cite: 289]
-          <textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="شاركي أفكارك مع المجتمع..." rows={4}
-            [cite_start]style={{ width: "100%", padding: "12px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(0,0,0,0.08)", background: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none", resize: "vertical", direction: "rtl", lineHeight: 1.7 }} /> [cite: 290, 291]
-          [cite_start]<div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-start" }}> [cite: 292]
-            <button onClick={handlePublish} disabled={publishing || !newContent.trim()}
-              style={{ padding: "10px 24px", borderRadius: "var(--radius-sm)", border: "none", background: "var(--primary)", color: "#fff", cursor: publishing ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600, fontFamily: "inherit", opacity: publishing || !newContent.trim() ? [cite_start]0.6 : 1, display: "flex", alignItems: "center", gap: "6px" }}> [cite: 293, 294, 295, 296, 297]
-              [cite_start]{publishing && <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />} نشر [cite: 298]
+        <div className="glass animate-fade-in" style={{ borderRadius: "var(--radius)", padding: "16px", marginBottom: "16px" }}> [cite: 76]
+          <textarea value={newContent} onChange={(e) => setNewContent(e.target.value)}
+            placeholder="شاركي أفكارك مع المجتمع..." rows={4}
+            style={{ width: "100%", padding: "12px", borderRadius: "var(--radius-sm)", [cite: 77]
+              border: "1px solid rgba(0,0,0,0.08)", background: "#fff", fontSize: 14, fontFamily: "inherit", [cite: 78]
+              outline: "none", resize: "vertical", direction: "rtl", lineHeight: 1.7 }} />
+          <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-start" }}> [cite: 79]
+            <button onClick={handlePublish} disabled={publishing || !newContent.trim()} [cite: 80, 81]
+              style={{ padding: "10px 24px", borderRadius: "var(--radius-sm)", border: "none",
+                background: "var(--primary)", color: "#fff", cursor: publishing ? "not-allowed" : "pointer", [cite: 82, 83]
+                fontSize: 14, fontWeight: 600, fontFamily: "inherit", opacity: publishing || !newContent.trim() ? 0.6 : 1, [cite: 84]
+                display: "flex", alignItems: "center", gap: "6px" }}>
+              {publishing && <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />} [cite: 85]
+              نشر
             </button>
-            <button onClick={() => { setShowPublish(false); setNewContent(""); }}
-              [cite_start]style={{ padding: "10px 20px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(0,0,0,0.08)", background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}> [cite: 299, 300, 301]
-              إلغاء
+            <button onClick={() => { setShowPublish(false); setNewContent(""); }} [cite: 86]
+              style={{ padding: "10px 20px", borderRadius: "var(--radius-sm)", border: "1px solid rgba(0,0,0,0.08)",
+                background: "transparent", color: "var(--text-secondary)", cursor: "pointer", fontSize: 14, fontFamily: "inherit" }}> [cite: 87]
+              إلغاء [cite: 88]
             </button>
           </div>
         </div>
       )}
 
-      {loading ? (
+      {loading ? ( [cite: 89]
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          [cite_start]{[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 140, borderRadius: "var(--radius)" }} />)} [cite: 302, 303]
+          {[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 140, borderRadius: "var(--radius)" }} />)} [cite: 90]
         </div>
-      ) : posts.length === 0 ? (
-        [cite_start]<div className="glass animate-fade-in" style={{ textAlign: "center", padding: "48px 24px", borderRadius: "var(--radius)" }}> [cite: 304]
-          [cite_start]<div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>{section.icon}</div> [cite: 305]
-          [cite_start]<p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.7 }}>لا توجد منشورات بعد في هذا القسم.<br />كوني أول من يشارك!</p> [cite: 306, 307]
+      ) : posts.length === 0 ? ( [cite: 91]
+        <div className="glass animate-fade-in" style={{ textAlign: "center", padding: "48px 24px", borderRadius: "var(--radius)" }}>
+          <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}> [cite: 92]
+            {section.icon}
+          </div>
+          <p style={{ color: "var(--text-secondary)", fontSize: 15, lineHeight: 1.7 }}> [cite: 93]
+            لا توجد منشورات بعد في هذا القسم.<br />كوني أول من يشارك! [cite: 94]
+          </p>
         </div>
       ) : (
         posts.map((post, i) => <PostCard key={post._id || post.id || i} post={post} index={i} />)
-      )}
+      )} [cite: 95]
     </div>
   );
 }
 
 // ---- Home Page ---- //
 function HomePage() {
-  [cite_start]const navigate = useNavigate(); [cite: 308]
-  return (
-    [cite_start]<div style={{ padding: "20px 16px 40px" }}> [cite: 309]
+  const navigate = useNavigate();
+  return ( [cite: 96]
+    <div style={{ padding: "20px 16px 40px" }}>
       <div className="animate-fade-in-up" style={{ textAlign: "center", padding: "32px 16px 24px" }}>
-        [cite_start]<div style={{ width: 72, height: 72, borderRadius: "50%", background: "linear-gradient(135deg, var(--primary), var(--rose-gold))", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: "0 8px 24px rgba(216, 27, 96, 0.2)" }}> [cite: 310, 311]
+        <div style={{ width: 72, height: 72, [cite: 97]
+          borderRadius: "50%", background: "linear-gradient(135deg, var(--primary), var(--rose-gold))",
+          display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", [cite: 98]
+          boxShadow: "0 8px 24px rgba(216, 27, 96, 0.2)" }}>
           <Sparkles size={32} color="#fff" />
         </div>
-        [cite_start]<h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 8, lineHeight: 1.3 }}>منتدى المرأة العربية</h1> [cite: 312]
-        [cite_start]<p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.7, maxWidth: 320, margin: "0 auto" }}>مجتمع نسائي راقٍ يجمعكِ مع نساء ملهمات من كل مكان</p> [cite: 313, 314]
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: "var(--text)", marginBottom: 8, lineHeight: 1.3 }}> [cite: 99]
+          منتدى المرأة العربية
+        </h1>
+        <p style={{ fontSize: 15, color: "var(--text-secondary)", lineHeight: 1.7, maxWidth: 320, margin: "0 auto" }}> [cite: 100]
+          مجتمع نسائي راقٍ يجمعكِ مع نساء ملهمات من كل مكان [cite: 101]
+        </p>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "12px" }}>
-        [cite_start]{SECTIONS.map((section, i) => ( [cite: 315]
+        {SECTIONS.map((section, i) => ( [cite: 102]
           <button key={section.id} onClick={() => navigate(section.path)} className="animate-fade-in-up"
-            [cite_start]style={{ animationDelay: `${i * 60}ms`, opacity: 0, background: "var(--glass-bg)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid var(--glass-border)", borderRadius: "var(--radius)", padding: "20px 16px", cursor: "pointer", textAlign: "center", transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "var(--card-shadow)", fontFamily: "inherit" }}> [cite: 316, 317]
-            [cite_start]<div style={{ width: 48, height: 48, borderRadius: "50%", background: `${section.color}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", color: section.color, transition: "transform 0.2s" }}> [cite: 318, 319, 320]
+            style={{ animationDelay: `${i * 60}ms`, opacity: 0, background: "var(--glass-bg)", [cite: 103]
+              backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", border: "1px solid var(--glass-border)",
+              borderRadius: "var(--radius)", padding: "20px 16px", cursor: "pointer", textAlign: "center", [cite: 104]
+              transition: "transform 0.2s, box-shadow 0.2s", boxShadow: "var(--card-shadow)", fontFamily: "inherit" }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: `${section.color}15`, [cite: 105]
+              display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", [cite: 106]
+              color: section.color, transition: "transform 0.2s" }}> [cite: 107]
               {section.icon}
             </div>
-            [cite_start]<div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", marginBottom: 4 }}>{section.label}</div> [cite: 321]
-            [cite_start]<div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{section.description}</div> [cite: 322, 323]
+            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", marginBottom: 4 }}>{section.label}</div> [cite: 108]
+            <div style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}> [cite: 109]
+              {section.description} [cite: 110]
+            </div>
           </button>
         ))}
       </div>
     </div>
   );
-}
+} [cite: 111]
 
 // ---- AI Chat Overlay ---- //
 function AIChatOverlay({ isOpen, onClose }: { isOpen: boolean; onClose: () => void; }) {
@@ -429,190 +488,267 @@ function AIChatOverlay({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
       const saved = localStorage.getItem("raqqa_chats");
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
-  [cite_start]}); [cite: 324]
-  [cite_start]const [input, setInput] = useState(""); [cite: 325]
+  });
+  const [input, setInput] = useState(""); [cite: 112]
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  useEffect(() => { [cite: 113]
     try { localStorage.setItem("raqqa_chats", JSON.stringify(messages)); } catch { }
-  [cite_start]}, [messages]); [cite: 326]
+  }, [messages]);
 
-  [cite_start]useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]); [cite: 327]
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]); [cite: 114]
 
-  [cite_start]useEffect(() => { if (isOpen) setTimeout(() => inputRef.current?.focus(), 300); }, [isOpen]); [cite: 328]
+  useEffect(() => { if (isOpen) { setTimeout(() => inputRef.current?.focus(), 300); } }, [isOpen]); [cite: 115]
 
-  [cite_start]const handleChat = async () => { [cite: 329]
+  const handleChat = async () => { [cite: 116]
     if (!input.trim() || isLoading) return;
-    [cite_start]const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: input.trim(), timestamp: Date.now() }; [cite: 330]
-    [cite_start]setMessages((prev) => [...prev, userMsg]); [cite: 331]
+    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: input.trim(), timestamp: Date.now() }; [cite: 117]
+    setMessages((prev) => [...prev, userMsg]); [cite: 118]
     setInput("");
     setIsLoading(true);
     try {
       const res = await fetch(`${API_BASE}/raqqa-ai`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: userMsg.content }) });
-      [cite_start]if (res.ok) { [cite: 332]
+      if (res.ok) { [cite: 119]
         const data = await res.json();
-        const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: data.reply || data.message || data.response || [cite_start]"...", timestamp: Date.now() }; [cite: 333, 334, 335]
-        setMessages((prev) => [...prev, aiMsg]);
+        const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: data.reply || data.message || data.response || "...", timestamp: Date.now() }; [cite: 120, 121]
+        setMessages((prev) => [...prev, aiMsg]); [cite: 122]
       }
-    } catch (err) {
-      [cite_start]const errMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: "عذرًا، حدث خطأ في الاتصال. حاولي مرة أخرى.", timestamp: Date.now() }; [cite: 336, 337]
-      setMessages((prev) => [...prev, errMsg]);
-    } finally { setIsLoading(false); }
+    } catch (err) { [cite: 123]
+      const errMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: "عذرًا، حدث خطأ في الاتصال. حاولي مرة أخرى.", timestamp: Date.now() };
+      setMessages((prev) => [...prev, errMsg]); [cite: 124]
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const deleteMessage = (id: string) => { setMessages((prev) => prev.filter((m) => m.id !== id)); [cite_start]}; [cite: 338]
+  const deleteMessage = (id: string) => { setMessages((prev) => prev.filter((m) => m.id !== id)); }; [cite: 125]
 
-  [cite_start]if (!isOpen) return null; [cite: 339]
+  if (!isOpen) return null; [cite: 126]
 
   return (
     <div className="animate-fade-in" style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", flexDirection: "column" }}>
-      [cite_start]<div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }} /> [cite: 340]
-      [cite_start]<div className="animate-slide-up" style={{ position: "relative", marginTop: "auto", height: "85dvh", background: "var(--bg)", borderRadius: "var(--radius-lg) var(--radius-lg) 0 0", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 -8px 40px rgba(0,0,0,0.15)" }}> [cite: 341, 342]
-        [cite_start]<div style={{ padding: "16px 20px", background: "linear-gradient(135deg, var(--primary), var(--rose-gold))", color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}> [cite: 343]
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }} /> [cite: 127]
+      <div className="animate-slide-up" style={{ position: "relative", [cite: 128]
+          marginTop: "auto", height: "85dvh", background: "var(--bg)", borderRadius: "var(--radius-lg) var(--radius-lg) 0 0",
+          display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 -8px 40px rgba(0,0,0,0.15)" }}> [cite: 129]
+        <div style={{ padding: "16px 20px", background: "linear-gradient(135deg, var(--primary), var(--rose-gold))",
+            color: "#fff", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}> [cite: 130]
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            [cite_start]<div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}><Sparkles size={20} /></div> [cite: 344, 345]
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", [cite: 131]
+                alignItems: "center", justifyContent: "center" }}> [cite: 132]
+              <Sparkles size={20} />
+            </div>
             <div>
-              [cite_start]<div style={{ fontWeight: 700, fontSize: 16 }}>المساعدة الذكية</div> [cite: 346]
-              <div style={{ fontSize: 12, opacity: 0.85 }}>{isLoading ? [cite_start]"تكتب..." : "متصلة"}</div> [cite: 347]
+              <div style={{ fontWeight: 700, fontSize: 16 }}>المساعدة الذكية</div> [cite: 133]
+              <div style={{ fontSize: 12, opacity: 0.85 }}>{isLoading ? "تكتب..." : "متصلة"}</div> [cite: 134]
             </div>
           </div>
-          [cite_start]<button onClick={onClose} aria-label="إغلاق المحادثة" style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", cursor: "pointer", borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={20} /></button> [cite: 348, 349]
+          <button onClick={onClose} aria-label="إغلاق المحادثة"
+            style={{ background: "rgba(255,255,255,0.15)", [cite: 135]
+              border: "none", color: "#fff", cursor: "pointer", borderRadius: "50%", width: 36, height: 36,
+              display: "flex", alignItems: "center", justifyContent: "center" }}> [cite: 136]
+            <X size={20} />
+          </button>
         </div>
-        [cite_start]<div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}> [cite: 350, 351]
+        <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "12px" }}> [cite: 137, 138]
           {messages.length === 0 && (
-            [cite_start]<div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-secondary)" }}> [cite: 352]
-              [cite_start]<Sparkles size={40} style={{ margin: "0 auto 12px", opacity: 0.3, display: "block" }} /> [cite: 353]
-              <p style={{ fontSize: 15, lineHeight: 1.7 }}>مرحبًا بكِ! [cite_start]أنا مساعدتكِ الذكية.<br />اسأليني أي شيء وسأكون سعيدة بمساعدتكِ.</p> [cite: 354, 355]
+            <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-secondary)" }}> [cite: 139]
+              <Sparkles size={40} style={{ margin: "0 auto 12px", opacity: 0.3, display: "block" }} /> [cite: 140]
+              <p style={{ fontSize: 15, lineHeight: 1.7 }}>مرحبًا بكِ! أنا مساعدتكِ الذكية.<br />اسأليني أي شيء وسأكون سعيدة بمساعدتكِ.</p> [cite: 141, 142]
             </div>
           )}
           {messages.map((msg) => (
-            [cite_start]<div key={msg.id} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-start" : "flex-end", alignItems: "flex-end", gap: "8px" }}> [cite: 356]
-              {msg.role === "user" && (
-                [cite_start]<button onClick={() => deleteMessage(msg.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 4, opacity: 0.4, flexShrink: 0 }}><Trash2 size={14} /></button> [cite: 357, 358, 359, 360]
-              )}
-              <div style={{ maxWidth: "80%", padding: "12px 16px", borderRadius: msg.role === "user" ? "var(--radius) var(--radius) 4px var(--radius)" : "var(--radius) var(--radius) var(--radius) 4px", background: msg.role === "user" ? "var(--primary)" : "var(--glass-bg)", color: msg.role === "user" ? "#fff" : "var(--text)", fontSize: 14, lineHeight: 1.7, backdropFilter: msg.role === "assistant" ? "blur(16px)" : undefined, border: msg.role === "assistant" ? "1px solid var(--glass-border)" : "none", boxShadow: msg.role === "assistant" ? [cite_start]"var(--card-shadow)" : "none" }}> [cite: 361, 362, 363, 364, 365, 366, 367]
+            <div key={msg.id} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-start" : "flex-end", [cite: 143]
+                alignItems: "flex-end", gap: "8px" }}>
+              {msg.role === "user" && ( [cite: 144]
+                <button onClick={() => deleteMessage(msg.id)} aria-label="حذف الرسالة"
+                  style={{ background: "none", [cite: 145]
+                    border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 4,
+                    opacity: 0.4, flexShrink: 0 }}> [cite: 146]
+                  <Trash2 size={14} />
+                </button>
+              )} [cite: 147]
+              <div style={{ maxWidth: "80%", padding: "12px 16px", borderRadius: msg.role === "user" ? [cite: 148]
+                    "var(--radius) var(--radius) 4px var(--radius)" : "var(--radius) var(--radius) var(--radius) 4px", [cite: 149]
+                  background: msg.role === "user" ? "var(--primary)" : "var(--glass-bg)", [cite: 150]
+                  color: msg.role === "user" ? "#fff" : "var(--text)", fontSize: 14, lineHeight: 1.7, [cite: 151]
+                  backdropFilter: msg.role === "assistant" ? "blur(16px)" : undefined, [cite: 152]
+                  border: msg.role === "assistant" ? "1px solid var(--glass-border)" : "none", [cite: 153]
+                  boxShadow: msg.role === "assistant" ? "var(--card-shadow)" : "none", }}> [cite: 154]
                 {msg.content}
               </div>
               {msg.role === "assistant" && (
-                [cite_start]<button onClick={() => deleteMessage(msg.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 4, opacity: 0.4, flexShrink: 0 }}><Trash2 size={14} /></button> [cite: 368, 369, 370, 371]
+                <button onClick={() => deleteMessage(msg.id)} aria-label="حذف الرسالة" [cite: 155]
+                  style={{ background: "none", border: "none", cursor: "pointer", [cite: 156]
+                    color: "var(--text-secondary)", padding: 4, opacity: 0.4, flexShrink: 0 }}> [cite: 157]
+                  <Trash2 size={14} />
+                </button>
               )}
             </div>
-          ))}
+          ))} [cite: 158]
           {isLoading && (
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              [cite_start]<div className="glass" style={{ padding: "12px 20px", borderRadius: "var(--radius)", display: "flex", gap: "6px", alignItems: "center" }}> [cite: 372, 373]
-                [cite_start]<span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", animation: "pulse-soft 1s infinite" }} /> [cite: 374]
-                [cite_start]<span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", animation: "pulse-soft 1s infinite 0.2s" }} /> [cite: 375, 376]
-                [cite_start]<span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", animation: "pulse-soft 1s infinite 0.4s" }} /> [cite: 377, 378]
+              <div className="glass" style={{ padding: "12px 20px", [cite: 159]
+                  borderRadius: "var(--radius)", display: "flex", gap: "6px", alignItems: "center" }}> [cite: 160]
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", [cite: 161]
+                    animation: "pulse-soft 1s infinite" }} />
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", [cite: 162, 163]
+                    animation: "pulse-soft 1s infinite 0.2s" }} />
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", [cite: 164]
+                    animation: "pulse-soft 1s infinite 0.4s" }} /> [cite: 165]
               </div>
             </div>
           )}
           <div ref={messagesEndRef} />
         </div>
-        [cite_start]<div className="safe-bottom" style={{ padding: "12px 16px", borderTop: "1px solid rgba(0,0,0,0.06)", background: "#fff", flexShrink: 0 }}> [cite: 379, 380]
-          [cite_start]<div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}> [cite: 381]
-            [cite_start]<button style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.04)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Camera size={16} /></button> [cite: 382, 383]
-            [cite_start]<button style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.04)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Mic size={16} /></button> [cite: 384, 385, 386]
-            [cite_start]<button style={{ width: 36, height: 36, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.04)", color: "var(--text-secondary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><ImageIcon size={16} /></button> [cite: 387, 388, 389]
-          </div>
+        <div className="safe-bottom" style={{ padding: "12px 16px", [cite: 166]
+            borderTop: "1px solid rgba(0,0,0,0.06)", background: "#fff", flexShrink: 0 }}> [cite: 167]
+          <div style={{ display: "flex", gap: "8px", marginBottom: "10px" }}> [cite: 168]
+            <button aria-label="كاميرا" style={{ width: 36, height: 36, borderRadius: "50%", [cite: 169]
+                border: "none", background: "rgba(0,0,0,0.04)", color: "var(--text-secondary)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center" }}> [cite: 170]
+              <Camera size={16} />
+            </button>
+            <button aria-label="ميكروفون" style={{ width: 36, height: 36, borderRadius: "50%", border: "none", [cite: 171]
+                background: "rgba(0,0,0,0.04)", color: "var(--text-secondary)", cursor: "pointer", [cite: 172]
+                display: "flex", alignItems: "center", justifyContent: "center" }}> [cite: 173]
+              <Mic size={16} />
+            </button>
+            <button aria-label="صور" style={{ width: 36, height: 36, borderRadius: "50%", border: "none", [cite: 174, 175]
+                background: "rgba(0,0,0,0.04)", color: "var(--text-secondary)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <ImageIcon size={16} />
+            </button>
+          </div> [cite: 176]
           <div style={{ display: "flex", gap: "8px" }}>
-            [cite_start]<input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleChat()} placeholder="اكتبي رسالتكِ..." style={{ flex: 1, padding: "12px 16px", borderRadius: "var(--radius-lg)", border: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)", fontSize: 14, fontFamily: "inherit", outline: "none", direction: "rtl" }} /> [cite: 390, 391, 392]
-            <button onClick={handleChat} disabled={!input.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", background: !input.trim() || isLoading ? "rgba(0,0,0,0.06)" : "var(--primary)", color: !input.trim() || isLoading ? "var(--text-secondary)" : "#fff", cursor: !input.trim() || isLoading ? [cite_start]"not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}><Send size={18} /></button> [cite: 393, 394, 395, 396, 397, 398, 399]
+            <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleChat()} placeholder="اكتبي رسالتكِ..." [cite: 177]
+              style={{ flex: 1, padding: "12px 16px", borderRadius: "var(--radius-lg)", [cite: 178]
+                border: "1px solid rgba(0,0,0,0.08)", background: "rgba(0,0,0,0.02)", fontSize: 14, fontFamily: "inherit",
+                outline: "none", direction: "rtl" }} /> [cite: 179]
+            <button onClick={handleChat} disabled={!input.trim() || isLoading} aria-label="إرسال" [cite: 180, 181]
+              style={{ width: 44, height: 44, borderRadius: "50%", border: "none", [cite: 182]
+                background: !input.trim() || isLoading ? "rgba(0,0,0,0.06)" : "var(--primary)", [cite: 183]
+                color: !input.trim() || isLoading ? "var(--text-secondary)" : "#fff", [cite: 184]
+                cursor: !input.trim() || isLoading ? "not-allowed" : "pointer", [cite: 185]
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "all 0.2s" }}> [cite: 186]
+              <Send size={18} />
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
-}
+} [cite: 187]
 
 // ---- Navigation Bar (Moved to TOP) ---- //
 function GlassNav() {
   const navigate = useNavigate();
-  [cite_start]const location = useLocation(); [cite: 400, 401]
+  const location = useLocation();
+  const navRef = useRef<HTMLDivElement>(null); [cite: 188]
 
   return (
-    <nav className="glass hide-scrollbar"
+    <nav
+      ref={navRef}
+      className="glass hide-scrollbar"
       style={{
-        position: "sticky",
-        top: 64, // Just below Header
+        position: "sticky", // Changed to sticky for Top Placement
+        top: 64, // Just under Header
         left: 0,
         right: 0,
-        zIndex: 850,
+        zIndex: 900,
         overflowX: "auto",
         whiteSpace: "nowrap",
-        display: "flex",
+        display: "flex", [cite: 189]
         alignItems: "center",
         gap: "4px",
         padding: "10px 12px",
-        [cite_start]borderBottom: "1px solid rgba(255,255,255,0.3)", [cite: 402]
-      }}>
+        borderBottom: "1px solid rgba(255,255,255,0.3)", // Bottom border for top nav
+      }}
+    >
       <button onClick={() => navigate("/")}
-        style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", padding: "6px 12px", borderRadius: "var(--radius-sm)", border: "none", background: location.pathname === "/" ? "rgba(216,27,96,0.12)" : "transparent", color: location.pathname === "/" ? [cite_start]"var(--primary)" : "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0, transition: "all 0.2s" }}> [cite: 403, 404, 405]
-        <Sparkles size={18} /> <span style={{ fontSize: 11, fontWeight: 600 }}>الرئيسية</span>
+        style={{ display: "flex", flexDirection: "column", [cite: 190]
+          alignItems: "center", gap: "4px", padding: "6px 12px", borderRadius: "var(--radius-sm)", border: "none",
+          background: location.pathname === "/" ? "rgba(216,27,96,0.12)" : "transparent", [cite: 191]
+          color: location.pathname === "/" ? "var(--primary)" : "var(--text-secondary)",
+          cursor: "pointer", fontFamily: "inherit", flexShrink: 0, transition: "all 0.2s" }}> [cite: 192]
+        <Sparkles size={18} />
+        <span style={{ fontSize: 11, fontWeight: 600 }}>الرئيسية</span>
       </button>
+
       {SECTIONS.map((sec) => (
         <button key={sec.id} onClick={() => navigate(sec.path)}
-          [cite_start]style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", padding: "6px 12px", borderRadius: "var(--radius-sm)", border: "none", background: location.pathname === sec.path ? `${sec.color}18` : "transparent", color: location.pathname === sec.path ? sec.color : "var(--text-secondary)", cursor: "pointer", fontFamily: "inherit", flexShrink: 0, transition: "all 0.2s" }}> [cite: 406, 407, 408, 409]
-          [cite_start]{sec.icon} <span style={{ fontSize: 11, fontWeight: 600 }}>{sec.label}</span> [cite: 410]
+          style={{ display: "flex", [cite: 193]
+            flexDirection: "column", alignItems: "center", gap: "4px", padding: "6px 12px", borderRadius: "var(--radius-sm)",
+            border: "none", background: location.pathname === sec.path ? `${sec.color}18` : "transparent", [cite: 194, 195]
+            color: location.pathname === sec.path ? sec.color : "var(--text-secondary)", [cite: 196]
+            cursor: "pointer", fontFamily: "inherit", flexShrink: 0, transition: "all 0.2s" }}>
+          {sec.icon}
+          <span style={{ fontSize: 11, fontWeight: 600 }}>{sec.label}</span> [cite: 197]
         </button>
       ))}
     </nav>
   );
-}
+} [cite: 198]
 
 // ---- Header ---- //
 function AppHeader({ onChatOpen }: { onChatOpen: () => void; }) {
-  [cite_start]const location = useLocation(); [cite: 411]
-  [cite_start]const navigate = useNavigate(); [cite: 412]
-  [cite_start]const currentSection = SECTIONS.find((s) => s.path === location.pathname); [cite: 413]
-  return (
-    [cite_start]<header className="glass" style={{ position: "sticky", top: 0, zIndex: 900, height: 64, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.3)" }}> [cite: 414]
+  const location = useLocation();
+  const navigate = useNavigate(); [cite: 199]
+  const currentSection = SECTIONS.find((s) => s.path === location.pathname);
+  return ( [cite: 200]
+    <header className="glass"
+      style={{ position: "sticky", top: 0, zIndex: 800, padding: "12px 20px", display: "flex",
+        alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.3)" }}> [cite: 201]
       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
         {currentSection && (
-          [cite_start]<button onClick={() => navigate("/")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-secondary)", padding: 4, display: "flex", fontFamily: "inherit" }}> [cite: 415]
-            [cite_start]<ChevronDown size={20} style={{ transform: "rotate(90deg)" }} /> [cite: 416]
+          <button onClick={() => navigate("/")}
+            style={{ background: "none", border: "none", cursor: "pointer", [cite: 202]
+              color: "var(--text-secondary)", padding: 4, display: "flex", fontFamily: "inherit" }}>
+            <ChevronDown size={20} style={{ transform: "rotate(90deg)" }} /> [cite: 203]
           </button>
         )}
-        [cite_start]<h1 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)" }}>{currentSection ? currentSection.label : "منتدى المرأة"}</h1> [cite: 417, 418]
+        <h1 style={{ fontSize: 17, fontWeight: 700, color: "var(--text)" }}> [cite: 204]
+          {currentSection ? currentSection.label : "منتدى المرأة"} [cite: 205]
+        </h1>
       </div>
-      [cite_start]<button onClick={onChatOpen} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "linear-gradient(135deg, var(--primary), var(--rose-gold))", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(216, 27, 96, 0.25)", transition: "transform 0.2s" }}> [cite: 419, 420]
+
+      <button onClick={onChatOpen} aria-label="فتح المحادثة الذكية"
+        style={{ width: 40, height: 40, borderRadius: "50%", border: "none", [cite: 206]
+          background: "linear-gradient(135deg, var(--primary), var(--rose-gold))", color: "#fff",
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 4px 16px rgba(216, 27, 96, 0.25)", transition: "transform 0.2s" }}> [cite: 207]
         <Sparkles size={18} />
       </button>
     </header>
   );
-}
+} [cite: 208]
 
 // ---- Main App Layout ---- //
 function AppLayout() {
-  [cite_start]const [chatOpen, setChatOpen] = useState(false); [cite: 421, 422]
-  return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", maxWidth: 480, margin: "0 auto", width: "100%", position: "relative", background: "var(--bg)" }}>
+  const [chatOpen, setChatOpen] = useState(false);
+  return ( [cite: 209]
+    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", maxWidth: 480, margin: "0 auto", width: "100%", position: "relative" }}>
       <AppHeader onChatOpen={() => setChatOpen(true)} />
+      
+      {/* Navigation moved here to be at top */}
       <GlassNav />
-      [cite_start]<main style={{ flex: 1 }}> [cite: 423]
+
+      <main style={{ flex: 1 }}> [cite: 210]
         <Routes>
           <Route path="/" element={<HomePage />} />
           {SECTIONS.map((sec) => (
-            [cite_start]<Route key={sec.id} path={sec.path} element={<SectionPage section={sec} />} /> [cite: 424]
+            <Route key={sec.id} path={sec.path} element={<SectionPage section={sec} />} /> [cite: 211]
           ))}
         </Routes>
       </main>
+
       <AIChatOverlay isOpen={chatOpen} onClose={() => setChatOpen(false)} />
-      
-      {/* CSS Styles Integrated */}
+
+      {/* Embedded CSS */}
       <style>{`
-        #root { max-width: 1280px; margin: 0 auto; padding: 2rem; text-align: center; }
-        .logo { height: 6em; padding: 1.5em; will-change: filter; transition: filter 300ms; }
-        .logo:hover { filter: drop-shadow(0 0 2em #646cffaa); }
-        .logo.react:hover { filter: drop-shadow(0 0 2em #61dafbaa); }
-        @keyframes logo-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @media (prefers-reduced-motion: no-preference) { a:nth-of-type(2) .logo { animation: logo-spin infinite 20s linear; } }
-        .card { padding: 2em; }
-        .read-the-docs { color: #888; }
-        
-        /* App Specific Styles */
         :root {
           --primary: #D81B60;
           --rose-gold: #E5B7A1;
@@ -626,6 +762,14 @@ function AppLayout() {
           --radius-lg: 28px;
           --card-shadow: 0 8px 32px rgba(0,0,0,0.04);
         }
+        #root { max-width: 1280px; margin: 0 auto; padding: 2rem; text-align: center; }
+        .logo { height: 6em; padding: 1.5em; will-change: filter; transition: filter 300ms; }
+        .logo:hover { filter: drop-shadow(0 0 2em #646cffaa); }
+        .logo.react:hover { filter: drop-shadow(0 0 2em #61dafbaa); }
+        @keyframes logo-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: no-preference) { a:nth-of-type(2) .logo { animation: logo-spin infinite 20s linear; } }
+        .card { padding: 2em; }
+        .read-the-docs { color: #888; }
         .glass { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); }
         .animate-fade-in-up { animation: fadeInUp 0.5s ease forwards; }
         .animate-fade-in { animation: fadeIn 0.3s ease forwards; }
@@ -640,13 +784,13 @@ function AppLayout() {
       `}</style>
     </div>
   );
-}
+} [cite: 212]
 
 // ---- Root Export ---- //
 export default function Swing() {
   return (
-    [cite_start]<BrowserRouter> [cite: 425]
+    <BrowserRouter>
       <AppLayout />
-    [cite_start]</BrowserRouter> [cite: 426]
+    </BrowserRouter>
   );
-}
+} [cite: 213]
