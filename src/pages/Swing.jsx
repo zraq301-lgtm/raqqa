@@ -2,6 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
+// استيراد الصفحات الفرعية
+import MotherhoodHaven from './Swing-page/MotherhoodHaven';
+import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
+import WellnessOasis from './Swing-page/WellnessOasis';
+import EleganceIcon from './Swing-page/EleganceIcon';
+import CulinaryArts from './Swing-page/CulinaryArts';
+import HomeCorners from './Swing-page/HomeCorners';
+import EmpowermentPaths from './Swing-page/EmpowermentPaths';
+import HarmonyBridges from './Swing-page/HarmonyBridges';
+import PassionsCrafts from './Swing-page/PassionsCrafts';
+import SoulsLounge from './Swing-page/SoulsLounge';
+
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
 const Swing = () => {
@@ -15,21 +27,21 @@ const Swing = () => {
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [likes, setLikes] = useState({});
-  const [showComments, setShowComments] = useState({});
   const [isPublishing, setIsPublishing] = useState(false);
+  const [openCommentId, setOpenCommentId] = useState(null); // لإظهار صندوق التعليقات
 
   useEffect(() => { fetchPosts(); }, []);
 
   const fetchPosts = async () => {
     try {
       const res = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
-      setPosts(res.data.posts || []);
-    } catch (e) { console.error("Error:", e); }
+      const validPosts = (res.data.posts || []).filter(p => p.type !== 'رابط');
+      setPosts(validPosts);
+    } catch (e) { console.error("Error fetching posts:", e); }
   };
 
-  // دالة النشر مع معالجة خطأ السيرفر
   const handlePublish = async () => {
-    if (!content && !selectedFile) return alert("اكتبِ شيئاً أولاً..");
+    if (!content && !selectedFile) return alert("اكتبي شيئاً أولاً يا جميلة");
     setIsPublishing(true);
     
     try {
@@ -44,31 +56,27 @@ const Swing = () => {
         body: formData,
       });
 
-      if (!res.ok) throw new Error('فشل في الاتصال بالسيرفر');
-      
-      alert('تم النشر بنجاح ✨');
-      setContent('');
-      setSelectedFile(null);
-      fetchPosts();
+      if (res.ok) {
+        alert('تم حفظ بوحكِ في الذاكرة بنجاح ✨');
+        setContent('');
+        setSelectedFile(null);
+        fetchPosts();
+      }
     } catch (e) {
-      alert("تأكدي من تثبيت @vercel/blob في السيرفر أو حاولي لاحقاً");
+      alert("عذراً، تعثر النشر.. تأكدي من إعدادات السيرفر");
     } finally {
       setIsPublishing(false);
     }
   };
 
-  const handleShare = async (post) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'رقة', text: post.content, url: window.location.href });
-      } catch (e) { console.log(e); }
-    } else { alert("تم نسخ الرابط!"); }
-  };
-
   const handleChat = async () => {
     if (!userInput) return;
     const userMsg = { role: 'user', content: userInput, id: Date.now() };
-    setChatHistory(prev => [...prev, userMsg]);
+    setChatHistory(prev => {
+        const updated = [...prev, userMsg];
+        localStorage.setItem('raqqa_chats', JSON.stringify(updated));
+        return updated;
+    });
     const tempInput = userInput; setUserInput('');
 
     try {
@@ -76,137 +84,205 @@ const Swing = () => {
         url: `${API_BASE}/raqqa-ai`,
         data: { prompt: tempInput }
       });
-      const aiMsg = { role: 'ai', content: res.data.reply || "معكِ دائماً..", id: Date.now() + 1 };
+      const aiMsg = { role: 'ai', content: res.data.reply || "أنا معكِ دائماً..", id: Date.now() + 1 };
       setChatHistory(prev => {
         const updated = [...prev, aiMsg];
         localStorage.setItem('raqqa_chats', JSON.stringify(updated));
         return updated;
       });
-    } catch (e) { alert("رقة منشغلة حالياً.."); }
+    } catch (e) { alert("رقة منشغلة حالياً، سأرد قريباً.."); }
+  };
+
+  const deleteMsg = (id) => {
+    const filtered = chatHistory.filter(m => m.id !== id);
+    setChatHistory(filtered);
+    localStorage.setItem('raqqa_chats', JSON.stringify(filtered));
+  };
+
+  const handleShare = async (post) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'بوح من تطبيق رقة',
+          text: post.content,
+          url: window.location.href,
+        });
+      } else {
+        alert("نسخ الرابط: " + window.location.href);
+      }
+    } catch (err) { console.log(err); }
   };
 
   return (
     <div className="min-h-screen bg-[#FFF9FA] text-right font-sans pb-24" dir="rtl">
       <style>{`
-        .writer-card { width: 92%; margin: 15px auto; background: #fff; border-radius: 25px; border: 2px solid #FFE4ED; padding: 18px; box-shadow: 0 8px 20px rgba(255, 182, 193, 0.1); }
-        .post-card { width: 92%; margin: 0 auto 15px; background: #fff; border-radius: 25px; overflow: hidden; border: 1px solid #FFF5F7; }
-        .ai-card { position: fixed; bottom: 80px; left: 4%; right: 4%; height: 60vh; background: white; z-index: 1000; border-radius: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); border: 2px solid #FFB6C1; display: flex; flex-direction: column; overflow: hidden; }
-        .glass-btn { background: rgba(255,107,149,0.1); color: #D81B60; padding: 6px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; }
+        .glass-nav { display: flex; overflow-x: auto; padding: 15px; gap: 12px; background: rgba(255,255,255,0.7); backdrop-filter: blur(15px); sticky top-0 z-50; border-bottom: 1px solid #FFE4ED; }
+        .glass-nav::-webkit-scrollbar { display: none; }
+        .cat-btn { min-width: 90px; height: 100px; background: #fff; border-radius: 25px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 1px solid #FFD1E3; flex-shrink: 0; }
+        
+        .writer-card { width: 95%; max-width: 450px; margin: 20px auto; background: #fff; border-radius: 35px; border: 2px solid #FFF0F5; box-shadow: 0 10px 30px rgba(255, 182, 193, 0.1); padding: 20px; position: relative; }
+        .input-area { width: 100%; min-height: 120px; border: none; outline: none; background: #FFFBFD; border-radius: 20px; padding: 15px; font-size: 15px; resize: none; color: #555; }
+        
+        .content-card { width: 95%; max-width: 450px; margin: 0 auto 20px; background: #fff; border-radius: 30px; border: 1px solid #FFF5F7; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+        .content-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; }
+
+        .ai-float-btn { background: linear-gradient(45deg, #FF6B95, #D81B60); color: white; padding: 8px 15px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+
+        /* تنسيق كارت الشات المنبثق الانيق */
+        .chat-overlay { position: fixed; inset: 0; background: rgba(255,182,193,0.2); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: flex-end; justify-content: center; }
+        .chat-card-popup { width: 100%; height: 85vh; background: white; border-radius: 40px 40px 0 0; display: flex; flex-direction: column; box-shadow: 0 -20px 50px rgba(0,0,0,0.1); border: 1px solid #FFE4ED; animation: slideUp 0.4s ease-out; }
+        
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
       `}</style>
 
-      {/* Navigation */}
-      <nav className="flex overflow-x-auto p-4 gap-3 sticky top-0 bg-white/80 backdrop-blur-md z-40 border-b border-pink-50">
-        {["ملاذ الأمومة", "أكاديمية الصغار", "واحة العافية", "أيقونة الأناقة"].map((cat, i) => (
-          <button key={i} className="flex-shrink-0 bg-white border border-pink-100 px-4 py-2 rounded-2xl text-[12px] font-bold text-pink-600">{cat}</button>
+      <nav className="glass-nav">
+        {[
+          { ar: "ملاذ الأمومة", path: "MotherhoodHaven", icon: "🌸" },
+          { ar: "أكاديمية الصغار", path: "LittleOnesAcademy", icon: "🧸" },
+          { ar: "واحة العافية", path: "WellnessOasis", icon: "🌿" },
+          { ar: "أيقونة الأناقة", path: "EleganceIcon", icon: "💄" },
+          { ar: "فن الطهي", path: "CulinaryArts", icon: "👩‍🍳" },
+          { ar: "زوايا البيت", path: "HomeCorners", icon: "🏡" },
+          { ar: "ملتقى الأرواح", path: "SoulsLounge", icon: "✨" }
+        ].map((c, i) => (
+          <Link key={i} to={`/Swing/${c.path}`} className="cat-btn">
+            <span className="text-2xl">{c.icon}</span>
+            <span className="text-[11px] font-bold text-pink-600 mt-1">{c.ar}</span>
+          </Link>
         ))}
       </nav>
 
       <main className="p-2">
-        {/* كارت الكتابة المطور */}
-        <div className="writer-card">
-          <div className="flex justify-between items-center mb-4">
-             <div className="flex items-center gap-2">
-               <div className="w-10 h-10 bg-pink-500 rounded-full flex items-center justify-center text-white text-lg">🌸</div>
-               <span className="font-bold text-gray-700 italic">نادي رقة</span>
-             </div>
-             <button onClick={() => setIsChatOpen(true)} className="bg-gradient-to-r from-pink-500 to-rose-400 text-white px-4 py-2 rounded-xl text-[11px] font-bold shadow-md">✨ استشارة ذكية</button>
-          </div>
-          
-          <textarea 
-            value={content} onChange={e => setContent(e.target.value)}
-            className="w-full h-24 p-3 bg-pink-50/30 rounded-2xl outline-none text-sm border border-transparent focus:border-pink-200"
-            placeholder="اكتبي بوحكِ هنا يا جميلة... 🎀"
-          />
-          
-          <div className="flex justify-between items-center mt-3 pt-3 border-t border-pink-50">
-            <div className="flex gap-4 text-pink-400">
-              <label className="cursor-pointer text-xl">🖼️ <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} /></label>
-              <button className="text-xl">🎙️</button>
-            </div>
-            <button onClick={handlePublish} className="bg-pink-600 text-white px-8 py-2 rounded-full font-bold text-sm">
-              {isPublishing ? "جاري..." : "نشر"}
-            </button>
-          </div>
-        </div>
-
-        {/* المنشورات */}
-        <div className="space-y-4 mt-6">
-          {posts.map(p => (
-            <div key={p.id} className="post-card shadow-sm">
-              <div className="p-4 flex items-center gap-2">
-                <div className="w-8 h-8 bg-pink-50 rounded-full flex items-center justify-center border border-pink-100">🦋</div>
-                <span className="font-bold text-gray-700 text-xs">رقة</span>
-              </div>
-              <p className="px-5 pb-3 text-gray-600 text-[14px] leading-relaxed">{p.content}</p>
-              {p.media_url && <img src={p.media_url} className="w-full aspect-square object-cover" alt="Content" />}
-              
-              <div className="flex justify-around p-3 bg-pink-50/10 border-t border-pink-50">
-                <button onClick={() => setLikes(v=>({...v, [p.id]:!v[p.id]}))} className="flex flex-col items-center">
-                  <span className="text-xl">{likes[p.id] ? '❤️' : '🤍'}</span>
-                  <span className="text-[10px] text-pink-500 font-bold">أحببت</span>
-                </button>
-                <button onClick={() => setShowComments(v=>({...v, [p.id]:!v[p.id]}))} className="flex flex-col items-center">
-                  <span className="text-xl">💬</span>
-                  <span className="text-[10px] text-pink-500 font-bold">حوار</span>
-                </button>
-                <button onClick={() => handleShare(p)} className="flex flex-col items-center">
-                  <span className="text-xl">🔗</span>
-                  <span className="text-[10px] text-pink-500 font-bold">مشاركة</span>
-                </button>
-              </div>
-
-              {/* قسم التعليقات البسيط */}
-              {showComments[p.id] && (
-                <div className="p-3 bg-gray-50 border-t border-pink-50 animate-in slide-in-from-top duration-300">
-                  <input className="w-full p-2 text-xs rounded-full border border-pink-100 outline-none" placeholder="اكتبي تعليقكِ..." />
+        <Routes>
+          <Route path="/" element={
+            <>
+              <div className="writer-card">
+                <div className="flex justify-between items-center mb-3">
+                  <button onClick={() => setIsChatOpen(true)} className="ai-float-btn animate-pulse">✨ اسألي رقة</button>
+                  <div className="flex items-center gap-2 text-pink-500 font-bold italic">
+                    <span>نادي رقة</span>
+                    <div className="w-8 h-8 bg-pink-100 rounded-full flex items-center justify-center">🌹</div>
+                  </div>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+                
+                <textarea 
+                  value={content} onChange={e => setContent(e.target.value)}
+                  className="input-area"
+                  placeholder="انثري عطركِ بكلمات رقيقة هنا... 🎀"
+                />
+                
+                <div className="flex justify-between items-center mt-3 border-t pt-3 border-pink-50">
+                  <div className="flex gap-4">
+                    <label className="text-xl cursor-pointer">🖼️ <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} /></label>
+                    <button className="text-xl" onClick={() => alert("فتح الميكروفون...")}>🎙️</button>
+                    <button className="text-xl" onClick={() => alert("فتح الكاميرا...")}>📷</button>
+                  </div>
+                  <button 
+                    onClick={handlePublish}
+                    disabled={isPublishing}
+                    className="bg-pink-600 text-white px-10 py-2 rounded-full font-bold shadow-lg active:scale-95 transition"
+                  >
+                    {isPublishing ? "جاري النشر..." : "نشر"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                {posts.map(p => (
+                  <div key={p.id} className="content-card">
+                    <div className="p-4 flex items-center gap-2">
+                      <div className="w-9 h-9 bg-pink-50 rounded-full flex items-center justify-center border border-pink-100">🦋</div>
+                      <span className="font-bold text-gray-700 text-sm italic">رقة</span>
+                    </div>
+                    
+                    <p className="px-5 pb-3 text-gray-600 text-[14px] leading-relaxed">
+                      {p.content}
+                    </p>
+
+                    {p.media_url && (
+                      <div className="bg-gray-100">
+                        <img src={p.media_url} className="content-img" alt="بوح" />
+                      </div>
+                    )}
+
+                    <div className="flex justify-around p-3 border-t border-pink-50">
+                      <button onClick={() => setLikes(v=>({...v, [p.id]:!v[p.id]}))} className="flex flex-col items-center group">
+                        <span className={`text-xl transition-transform ${likes[p.id] ? 'scale-125' : ''}`}>
+                            {likes[p.id] ? '❤️' : '🤍'}
+                        </span>
+                        <span className="text-[10px] text-pink-400 font-bold">أحببت</span>
+                      </button>
+                      <button onClick={() => setOpenCommentId(openCommentId === p.id ? null : p.id)} className="flex flex-col items-center">
+                        <span className="text-xl">💬</span>
+                        <span className="text-[10px] text-pink-400 font-bold">تعليق</span>
+                      </button>
+                      <button onClick={() => handleShare(p)} className="flex flex-col items-center">
+                        <span className="text-xl">🔗</span>
+                        <span className="text-[10px] text-pink-400 font-bold">مشاركة</span>
+                      </button>
+                    </div>
+
+                    {openCommentId === p.id && (
+                        <div className="p-4 bg-pink-50/20 border-t border-pink-50 animate-in fade-in slide-in-from-top-2">
+                            <input className="w-full p-3 rounded-full border border-pink-100 text-sm outline-none" placeholder="اكتبي تعليقكِ الرقيق..." />
+                        </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          } />
+        </Routes>
       </main>
 
-      {/* كارت الدردشة المستقل (Floating Chat Card) */}
+      {/* نافذة الدردشة (الكارت الأنيق المستقل) */}
       {isChatOpen && (
-        <div className="ai-card animate-in fade-in zoom-in duration-300">
-          <div className="p-4 border-b border-pink-100 flex justify-between items-center bg-pink-50/50">
-            <span className="font-bold text-pink-600 italic">مستشارة رقة الأدبية ✨</span>
-            <button onClick={() => setIsChatOpen(false)} className="text-pink-300 text-xl">✕</button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {chatHistory.map(m => (
-              <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-start' : 'items-end'}`}>
-                <div className={`p-3 rounded-2xl max-w-[85%] text-[13px] shadow-sm ${
-                  m.role === 'user' ? 'bg-white border border-pink-100' : 'bg-pink-600 text-white italic'
-                }`}>
-                  {m.content}
+        <div className="chat-overlay" onClick={() => setIsChatOpen(false)}>
+          <div className="chat-card-popup" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b-2 border-pink-50 flex justify-between items-center bg-white rounded-t-[40px]">
+                <button onClick={() => setIsChatOpen(false)} className="text-pink-200 text-3xl">✕</button>
+                <div className="text-right">
+                    <h2 className="text-lg font-black text-pink-600">رقة الذكية</h2>
+                    <p className="text-[10px] text-gray-400 italic">مستشارتكِ الأدبية الخاصة</p>
                 </div>
-                <button onClick={() => {
-                  const updated = chatHistory.filter(msg => msg.id !== m.id);
-                  setChatHistory(updated);
-                  localStorage.setItem('raqqa_chats', JSON.stringify(updated));
-                }} className="text-[9px] text-red-300 mt-1 mr-1">حذف 🗑️</button>
-              </div>
-            ))}
-          </div>
-
-          <div className="p-3 border-t border-pink-50 bg-white">
-            <div className="flex justify-center gap-4 mb-3">
-              <button className="text-lg bg-pink-50 w-9 h-9 rounded-full">📷</button>
-              <button className="text-lg bg-pink-50 w-9 h-9 rounded-full">🎙️</button>
-              <label className="text-lg bg-pink-50 w-9 h-9 rounded-full flex items-center justify-center cursor-pointer">
-                🖼️ <input type="file" className="hidden" />
-              </label>
             </div>
-            <div className="flex gap-2">
-              <input 
-                value={userInput} onChange={e => setUserInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleChat()}
-                className="flex-1 bg-pink-50/50 rounded-full px-4 text-xs outline-none"
-                placeholder="تحدثي مع رقة..."
-              />
-              <button onClick={handleChat} className="bg-pink-600 text-white w-10 h-10 rounded-full flex items-center justify-center">🕊️</button>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#FFFBFD]">
+              {chatHistory.length === 0 && (
+                <div className="text-center mt-20 text-pink-200 italic font-light">
+                    <span className="text-4xl block mb-4">🕊️</span>
+                    أهلاً بكِ في عالم رقة.. كيف يمكنني أن أزين يومكِ؟
+                </div>
+              )}
+              {chatHistory.map(m => (
+                <div key={m.id} className={`flex flex-col ${m.role === 'user' ? 'items-start' : 'items-end'}`}>
+                  <div className={`p-5 rounded-[2rem] max-w-[85%] text-[15px] shadow-sm leading-relaxed ${
+                    m.role === 'user' ? 'bg-white border border-pink-100 text-gray-700 rounded-bl-none' : 'bg-gradient-to-r from-pink-500 to-rose-600 text-white italic rounded-br-none'
+                  }`}>
+                    {m.content}
+                  </div>
+                  <button onClick={() => deleteMsg(m.id)} className="text-[10px] text-red-300 mt-2 px-3 hover:text-red-500 transition">حذف الرد 🗑️</button>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-6 bg-white border-t border-pink-50 shadow-2xl">
+              <div className="flex gap-4 items-center mb-4 justify-center">
+                <button className="w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center text-xl shadow-inner" onClick={() => alert("فتح الميكروفون...")}>🎙️</button>
+                <button className="w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center text-xl shadow-inner" onClick={() => alert("فتح الكاميرا...")}>📷</button>
+                <label className="w-12 h-12 bg-pink-50 rounded-full flex items-center justify-center text-xl shadow-inner cursor-pointer">
+                  🖼️ <input type="file" className="hidden" />
+                </label>
+              </div>
+              <div className="flex gap-3 items-center">
+                <input 
+                  value={userInput} onChange={e => setUserInput(e.target.value)}
+                  onKeyPress={e => e.key === 'Enter' && handleChat()}
+                  className="flex-1 p-5 bg-pink-50/50 rounded-full outline-none text-sm font-medium placeholder-pink-200"
+                  placeholder="اكتبي سؤالكِ هنا..."
+                />
+                <button onClick={handleChat} className="bg-pink-600 w-14 h-14 rounded-full text-white shadow-xl flex items-center justify-center active:scale-90 transition transform">🕊️</button>
+              </div>
             </div>
           </div>
         </div>
