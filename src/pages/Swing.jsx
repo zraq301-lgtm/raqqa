@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
-// استيراد الصفحات الفرعية بناءً على الملفات المرفوعة
+// استيراد الصفحات الفرعية
 import MotherhoodHaven from './Swing-page/MotherhoodHaven';
 import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
 import WellnessOasis from './Swing-page/WellnessOasis';
@@ -41,11 +41,11 @@ const Swing = () => {
     { name: "الملتقى", path: "SoulsLounge", icon: "✨" }
   ];
 
-  // دالة تنظيف المحتوى لمنع جلب الروابط النصية الخارجية من البيانات 
+  [cite_start]// دالة أمنية لمنع جلب الروابط الخارجية من قاعدة البيانات [cite: 10, 33]
   const sanitizeContent = (text) => {
     if (!text) return "";
     const urlPattern = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlPattern, "[محتوى محمي]"); 
+    return text.replace(urlPattern, "[محتوى محمي 🔒]"); 
   };
 
   useEffect(() => { fetchPosts(); }, []);
@@ -53,100 +53,124 @@ const Swing = () => {
   const fetchPosts = async () => {
     try {
       const res = await CapacitorHttp.get({ url: `${API_BASE}/get-posts` });
-      setPosts(res.data.posts || []); // جلب البيانات من Neon 
+      setPosts(res.data.posts || []);
     } catch (e) { console.error("Fetch error", e); }
   };
 
-  const handleLike = (id) => {
-    setLikes(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  const handleLike = (id) => setLikes(prev => ({ ...prev, [id]: !prev[id] }));
 
   const handleShare = async (p) => {
-    try {
-      await navigator.share({ title: 'رقة', text: p.content, url: window.location.href });
-    } catch (e) { alert("تم نسخ الرابط لمشاركته مع من تحبين 🎀"); }
+    if (navigator.share) {
+      try { await navigator.share({ title: 'رقة', text: p.content, url: window.location.href }); } 
+      catch (e) { console.log("Share failed"); }
+    } else { alert("تم نسخ المحتوى لمشاركته 🎀"); }
   };
 
   const handleSavePost = async () => {
-    if (!content && !selectedFile) return alert("اكتبي شيئاً أو أرفقي ملفاً أولاً");
+    if (!content && !selectedFile) return alert("اكتبي شيئاً أولاً");
     try {
       const formData = new FormData();
       formData.append('content', content);
       formData.append('section', 'الرئيسية');
-      formData.append('type', selectedFile ? 'مرفق' : 'نصي'); [cite: 14]
+      formData.append('type', selectedFile ? 'مرفق' : 'نصي');
       if (selectedFile) formData.append('file', selectedFile);
-      const res = await fetch(`${API_BASE}/save-post`, { method: 'POST', body: formData }); [cite: 15]
+      const res = await fetch(`${API_BASE}/save-post`, { method: 'POST', body: formData });
       if (res.ok) { setContent(''); setSelectedFile(null); fetchPosts(); }
     } catch (e) { alert("فشل النشر"); }
+  };
+
+  const handleChat = async () => {
+    if (!userInput) return;
+    const userMsg = { role: 'user', content: userInput, id: Date.now() };
+    setChatHistory(prev => [...prev, userMsg]);
+    const tempInput = userInput; setUserInput('');
+    try {
+      const res = await CapacitorHttp.post({
+        url: `${API_BASE}/raqqa-ai`,
+        data: { prompt: `أنا أنثى مسلمة... ${tempInput}` }
+      });
+      const aiMsg = { role: 'ai', content: res.data.reply || res.data.message, id: Date.now() + 1 };
+      setChatHistory(prev => {
+        const newH = [...prev, aiMsg];
+        localStorage.setItem('raqqa_chats', JSON.stringify(newH));
+        return newH;
+      });
+    } catch (e) { alert("خطأ في الاتصال"); }
   };
 
   return (
     <div className="min-h-screen bg-[#FFF9FA] text-right font-sans pb-24" dir="rtl">
       <style>{`
-        .nav-scroller {
+        .top-nav-box {
           display: flex;
           overflow-x: auto;
-          padding: 12px 8px;
-          gap: 14px;
+          padding: 8px 10px;
+          gap: 12px;
           background: #fff;
           border-bottom: 2px solid #FFE4ED;
-          margin-top: -10px;
+          margin-top: -12px; /* رفع الشريط لأعلى */
         }
-        .nav-scroller::-webkit-scrollbar { display: none; }
-        .category-item {
-          min-width: 80px;
-          height: 90px;
-          background: #FFF;
-          border-radius: 22px;
+        .top-nav-box::-webkit-scrollbar { display: none; }
+        .cat-card-elegant {
+          min-width: 85px;
+          height: 95px;
+          background: #fff;
+          border-radius: 24px;
           display: flex;
           flex-direction: column;
           align-items: center;
           justify-content: center;
           border: 1.5px solid #FFD1E3;
-          box-shadow: 0 2px 8px rgba(255, 182, 193, 0.1);
+          box-shadow: 0 2px 10px rgba(255, 182, 193, 0.1);
         }
-        .cat-text { font-size: 16px; font-weight: 900; color: #D81B60; margin-top: 5px; }
-        .content-card { 
-          max-width: 500px; 
-          margin: 0 auto; 
-          background: #fff; 
-          border-radius: 30px; 
+        .cat-title-lg {
+          font-size: 17px; /* تكبير الخط جداً */
+          font-weight: 900;
+          color: #D81B60;
+          margin-top: 4px;
+          line-height: 1;
+        }
+        .elegant-post {
+          max-width: 500px;
+          margin: 0 auto;
+          background: #fff;
+          border-radius: 32px;
           border: 1px solid #FFF0F5;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.02);
         }
-        .media-display { 
-          width: 100%; 
-          max-height: 400px; 
-          object-fit: cover; 
-          border-radius: 24px; 
+        .media-unified-box {
+          width: 100%;
+          max-height: 420px;
+          object-fit: cover;
+          border-radius: 26px;
           background: #fdf2f8;
         }
-        .action-bar {
+        .interaction-row {
           display: flex;
           justify-content: space-around;
           padding: 12px 0;
           border-top: 1px solid #FFF5F7;
           background: #FFFBFC;
-          border-radius: 0 0 30px 30px;
+          border-radius: 0 0 32px 32px;
         }
-        .action-btn {
+        .btn-fem {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #A0A0A0;
-          transition: 0.2s;
+          gap: 8px;
+          font-size: 14px;
+          font-weight: 800;
+          color: #A5A5A5;
+          transition: 0.3s;
         }
-        .action-btn.active { color: #E91E63; }
+        .btn-fem.active-heart { color: #E91E63; }
       `}</style>
 
-      {/* شريط الأقسام المرفوع */}
-      <nav className="sticky top-0 z-50 nav-scroller shadow-sm">
+      {/* شريط الأقسام المرفوع بتصميم الخط الكبير */}
+      <nav className="sticky top-0 z-50 top-nav-box shadow-sm">
         {categories.map((c, i) => (
-          <Link key={i} to={`/Swing/${c.path}`} className="category-item active:scale-95 transition-transform">
-            <span className="text-xl">{c.icon}</span>
-            <span className="cat-text">{c.name}</span>
+          <Link key={i} to={`/Swing/${c.path}`} className="cat-card-elegant active:scale-95 transition-transform">
+            <span className="text-2xl">{c.icon}</span>
+            <span className="cat-title-lg">{c.name}</span>
           </Link>
         ))}
       </nav>
@@ -156,61 +180,60 @@ const Swing = () => {
           <Route path="/" element={
             <>
               {/* صندوق النشر الأنيق */}
-              <div className="content-card p-6 border-b-4 border-pink-100 mb-8">
+              <div className="elegant-post p-6 border-b-4 border-pink-100 mb-8">
                 <textarea 
                   value={content} onChange={e => setContent(e.target.value)}
-                  className="w-full p-4 bg-[#FFFBFD] rounded-2xl text-sm outline-none border-none placeholder-pink-200 shadow-inner"
-                  placeholder="انثري كلماتكِ الرقيقة هنا... ✍️" rows="3"
+                  className="w-full p-5 bg-[#FFFBFD] rounded-3xl text-sm outline-none border-none placeholder-pink-200 shadow-inner"
+                  placeholder="ماذا يدور في خاطركِ يا رقة؟ ✍️" rows="3"
                 />
                 <div className="flex justify-between items-center mt-4">
                   <label className="cursor-pointer text-xs font-bold text-pink-400 flex items-center gap-2">
-                    🖼️ إضافة وسائط <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} />
+                    🖼️ معرض الرقة <input type="file" className="hidden" onChange={e => setSelectedFile(e.target.files[0])} />
                   </label>
-                  <button onClick={handleSavePost} className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-10 py-2 rounded-full text-xs font-bold shadow-lg shadow-pink-100">نشر</button>
+                  <button onClick={handleSavePost} className="bg-gradient-to-r from-rose-400 to-pink-500 text-white px-12 py-2.5 rounded-full text-xs font-bold shadow-lg shadow-pink-100">نشر</button>
                 </div>
               </div>
 
-              {/* قائمة المنشورات الديناميكية [cite: 32, 33] */}
-              <div className="space-y-10">
+              [cite_start]{/* المنشورات مع تفعيل الفيديو والصور والروابط المحمية [cite: 33] */}
+              <div className="space-y-12">
                 {posts.map(p => (
-                  <div key={p.id} className="content-card overflow-hidden">
+                  <div key={p.id} className="elegant-post overflow-hidden">
                     <div className="p-6">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-11 h-11 bg-pink-100 rounded-full border-2 border-white flex items-center justify-center text-pink-500 font-bold shadow-sm">ر</div>
+                      <div className="flex items-center gap-4 mb-5">
+                        <div className="w-12 h-12 bg-pink-100 rounded-full border-2 border-white flex items-center justify-center text-pink-500 font-black shadow-sm text-lg">ر</div>
                         <div>
                            <p className="text-sm font-black text-gray-800 italic">رقة</p>
-                           <p className="text-[10px] text-gray-400 font-medium">{new Date(p.created_at).toLocaleDateString('ar-EG')}</p> [cite: 34]
+                           <p className="text-[11px] text-gray-400 font-semibold">{new Date(p.created_at).toLocaleDateString('ar-EG')}</p>
                         </div>
                       </div>
                       
                       {p.content && (
-                        <p className="text-[15px] text-gray-600 leading-relaxed mb-5 px-1">
-                          {sanitizeContent(p.content)} 
+                        <p className="text-[15px] text-gray-600 leading-relaxed mb-6 px-1">
+                          {sanitizeContent(p.content)}
                         </p>
                       )}
 
-                      {/* عرض الفيديوهات أو الصور بشكل ذكي */}
                       {p.media_url && (
-                        <div className="shadow-inner rounded-2xl overflow-hidden border border-pink-50">
+                        <div className="rounded-3xl overflow-hidden border border-pink-50 shadow-inner">
                           {p.media_url.match(/\.(mp4|webm|mov|blomp)$/i) ? (
-                            <video src={p.media_url} controls className="media-display" />
+                            <video src={p.media_url} controls className="media-unified-box" />
                           ) : (
-                            <img src={p.media_url} alt="محتوى رقة" className="media-display" />
+                            <img src={p.media_url} alt="محتوى رقة" className="media-unified-box" />
                           )}
                         </div>
                       )}
                     </div>
 
-                    {/* أزرار التفاعل العرضية الأنيقة */}
-                    <div className="action-bar">
-                      <button onClick={() => handleLike(p.id)} className={`action-btn ${likes[p.id] ? 'active' : ''}`}>
+                    {/* الأزرار العرضية الأنيقة (تفاعل مفعل) */}
+                    <div className="interaction-row">
+                      <button onClick={() => handleLike(p.id)} className={`btn-fem ${likes[p.id] ? 'active-heart' : ''}`}>
                         {likes[p.id] ? '💖' : '🤍'} <span>حب</span>
                       </button>
-                      <button className="action-btn hover:text-pink-400">
-                        💬 <span>رد</span>
+                      <button className="btn-fem hover:text-pink-400">
+                        💌 <span>رد</span>
                       </button>
-                      <button onClick={() => handleShare(p)} className="action-btn hover:text-pink-400">
-                        🔗 <span>إهداء</span>
+                      <button onClick={() => handleShare(p)} className="btn-fem hover:text-pink-400">
+                        🎀 <span>إهداء</span>
                       </button>
                     </div>
                   </div>
@@ -219,7 +242,7 @@ const Swing = () => {
             </>
           } />
           
-          {/* مسارات الأقسام الفرعية */}
+          [cite_start]{/* المسارات الفرعية من الصورة المرفقة [cite: 8, 9] */}
           <Route path="/MotherhoodHaven" element={<MotherhoodHaven />} />
           <Route path="/LittleOnesAcademy" element={<LittleOnesAcademy />} />
           <Route path="/WellnessOasis" element={<WellnessOasis />} />
@@ -233,7 +256,7 @@ const Swing = () => {
         </Routes>
       </main>
 
-      {/* زر الدردشة الذكية العائم [cite: 37] */}
+      {/* زر AI عائم */}
       <button 
         onClick={() => setIsChatOpen(true)} 
         className="fixed bottom-8 left-8 bg-pink-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl z-50 animate-bounce"
@@ -241,13 +264,13 @@ const Swing = () => {
         ✨
       </button>
 
-      {/* نافذة الدردشة [cite: 38] */}
+      [cite_start]{/* نافذة الدردشة الذكية [cite: 38-44] */}
       {isChatOpen && (
         <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md h-[75vh] rounded-[3rem] flex flex-col shadow-2xl overflow-hidden border-4 border-white">
-            <div className="p-5 bg-pink-600 text-white flex justify-between items-center shadow-md">
-              <span className="font-bold">دردشة رقة 🤖</span>
-              <button onClick={() => setIsChatOpen(false)} className="text-xl p-1">✕</button>
+          <div className="bg-white w-full max-w-md h-[78vh] rounded-[3.5rem] flex flex-col shadow-2xl overflow-hidden border-4 border-white">
+            <div className="p-5 bg-pink-600 text-white flex justify-between items-center shadow-md font-bold">
+              <span>دردشة رقة 🤖</span>
+              <button onClick={() => setIsChatOpen(false)} className="text-xl">✕</button>
             </div>
             <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-pink-50/20">
               {chatHistory.map(m => (
@@ -258,9 +281,9 @@ const Swing = () => {
                 </div>
               ))}
             </div>
-            <div className="p-4 bg-white border-t flex gap-2">
+            <div className="p-5 bg-white border-t flex gap-2">
               <input value={userInput} onChange={e => setUserInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleChat()} className="flex-1 bg-gray-50 p-4 rounded-2xl text-sm outline-none shadow-inner" placeholder="اسألي رقة..." />
-              <button onClick={handleChat} className="bg-pink-600 text-white px-8 rounded-2xl font-bold">إرسال</button>
+              <button onClick={handleChat} className="bg-pink-600 text-white px-8 rounded-2xl font-bold shadow-md">إرسال</button>
             </div>
           </div>
         </div>
