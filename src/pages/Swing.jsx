@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { 
   Heart, MessageCircle, Share2, Send, Sparkles, X, 
-  Image as ImageIcon 
+  Image as ImageIcon, Camera, Loader2 
 } from 'lucide-react';
 
-// استيراد الصفحات - تم تصحيح المسار ليتناسب مع هيكلة المجلدات لديك
+// استيراد الأقسام العشرة من المسار الصحيح (نفس المجلد)
 import MotherhoodHaven from './Swing-page/MotherhoodHaven';
 import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
 import WellnessOasis from './Swing-page/WellnessOasis';
@@ -38,25 +38,49 @@ const Swing = () => {
   const [posts, setPosts] = useState([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('raqqa_chats');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+    try { return JSON.parse(localStorage.getItem('raqqa_chats')) || []; } catch { return []; }
   });
+  
+  // حالات كتابة المنشور
+  const [newPostContent, setNewPostContent] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [userInput, setUserInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  useEffect(() => { fetchPosts(); }, []);
 
   const fetchPosts = async () => {
     try {
       const res = await fetch(`${API_BASE}/get-posts`);
       const data = await res.json();
       setPosts(Array.isArray(data) ? data : (data.posts || []));
+    } catch (err) { setPosts([]); }
+  };
+
+  // وظيفة حفظ المنشور في DB نيون
+  const handlePublish = async () => {
+    if (!newPostContent.trim() && !selectedImage) return;
+    setIsPublishing(true);
+    try {
+      const formData = new FormData();
+      formData.append('content', newPostContent);
+      if (selectedImage) formData.append('file', selectedImage);
+      formData.append('section', 'general');
+
+      const res = await fetch(`${API_BASE}/save-post`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (res.ok) {
+        setNewPostContent('');
+        setSelectedImage(null);
+        fetchPosts(); // تحديث القائمة
+      }
     } catch (err) {
-      setPosts([]);
+      console.error("خطأ في الحفظ:", err);
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -65,70 +89,66 @@ const Swing = () => {
     const userMsg = { id: Date.now(), role: 'user', content: userInput };
     setChatHistory(prev => [...prev, userMsg]);
     setUserInput('');
-    setIsTyping(true);
-
     try {
       const res = await fetch(`${API_BASE}/raqqa-ai`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message: userInput,
-          prompt: "أنتِ خبيرة اجتماعية في منتدى 'رقة' للسيدات. ردي كأنكِ صديقة مقربة ملمة بأمور الأطفال، الطبخ، الصحة النفسية، والجمال. كوني ودودة جداً وتفهمي طبيعة ثرثرة النساء واحتياجاتهن العاطفية."
+          context: "أنتِ خبيرة في منتدى نسائي، متخصصة في تربية الأطفال، الطبخ، الموضة، والدعم النفسي. ردي كصديقة حكيمة."
         })
       });
       const data = await res.json();
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: data.reply || data.message };
-      setChatHistory(prev => [...prev, aiMsg]);
-      localStorage.setItem('raqqa_chats', JSON.stringify([...chatHistory, userMsg, aiMsg]));
-    } catch (err) {
-      console.error("AI Error");
-    } finally {
-      setIsTyping(false);
-    }
+      setChatHistory(prev => {
+        const updated = [...prev, aiMsg];
+        localStorage.setItem('raqqa_chats', JSON.stringify(updated));
+        return updated;
+      });
+    } catch (err) { console.error(err); }
   };
 
   return (
-    <div style={{ direction: 'rtl', backgroundColor: '#fff9fb', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+    <div style={{ direction: 'rtl', backgroundColor: '#fff9fb', minHeight: '100vh', fontFamily: 'system-ui' }}>
       
-      {/* هيدر ثابت يحتوي على أيقونة الذكاء في الأعلى */}
+      {/* 1. هيدر علوي - أيقونة الذكاء في الأعلى */}
       <header style={{
-        position: 'fixed', top: 0, left: 0, right: 0, height: '60px',
+        position: 'fixed', top: 0, left: 0, right: 0, height: '65px',
         backgroundColor: '#fff', display: 'flex', alignItems: 'center', 
         justifyContent: 'space-between', padding: '0 20px', zIndex: 1100,
         boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
       }}>
-        <div style={{ color: '#D81B60', fontSize: '22px', fontWeight: '900' }}>رقة</div>
+        <div style={{ color: '#D81B60', fontSize: '24px', fontWeight: '900' }}>رقة</div>
         <button 
           onClick={() => setIsChatOpen(true)}
           style={{
             background: 'linear-gradient(45deg, #D81B60, #f06292)',
-            border: 'none', color: '#fff', padding: '8px 18px', borderRadius: '25px',
-            display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
-            fontWeight: 'bold'
+            border: 'none', color: '#fff', width: '45px', height: '45px', borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(216, 27, 96, 0.3)'
           }}
         >
-          <Sparkles size={18} />
-          <span>استشارة الخبيرة</span>
+          <Sparkles size={22} />
         </button>
       </header>
 
-      {/* شريط الأقسام - تم إنزاله ليكون تحت الهيدر بوضوح (top: 60px) */}
+      {/* 2. شريط الأقسام - منزاح للأسفل (70px) لعدم التغطية */}
       <nav style={{
-        position: 'fixed', top: '60px', left: 0, right: 0,
-        backgroundColor: '#fff', borderBottom: '1px solid #ffe4ec',
-        padding: '12px 0', overflowX: 'auto', display: 'flex', zIndex: 1050,
-        whiteSpace: 'nowrap', scrollbarWidth: 'none', boxShadow: '0 2px 5px rgba(0,0,0,0.02)'
+        position: 'fixed', top: '65px', left: 0, right: 0,
+        backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid #ffe4ec', padding: '12px 0', overflowX: 'auto', 
+        display: 'flex', zIndex: 1050, whiteSpace: 'nowrap', scrollbarWidth: 'none'
       }}>
         {CATEGORIES.map((cat, index) => (
           <Link 
             key={index} 
             to={cat.path}
             style={{
-              textDecoration: 'none', padding: '7px 20px', margin: '0 6px',
-              borderRadius: '20px', fontSize: '14px', fontWeight: 'bold',
+              textDecoration: 'none', padding: '8px 22px', margin: '0 6px',
+              borderRadius: '25px', fontSize: '14px', fontWeight: 'bold',
               color: location.pathname === cat.path ? '#fff' : '#D81B60',
-              backgroundColor: location.pathname === cat.path ? '#D81B60' : '#fff0f5',
-              border: '1px solid #ffe4ec', transition: '0.3s'
+              backgroundColor: location.pathname === cat.path ? '#D81B60' : '#fff',
+              border: '1px solid #D81B60', transition: '0.3s'
             }}
           >
             {cat.ar}
@@ -136,14 +156,49 @@ const Swing = () => {
         ))}
       </nav>
 
-      {/* المحتوى الرئيسي */}
-      <main style={{ paddingTop: '140px', paddingBottom: '50px', maxWidth: '600px', margin: '0 auto' }}>
+      {/* 3. المحتوى الرئيسي */}
+      <main style={{ paddingTop: '150px', paddingBottom: '40px', maxWidth: '550px', margin: '0 auto' }}>
+        
+        {/* كارت كتابة منشور جديد بالاعلي */}
+        <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '15px', marginBottom: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', margin: '0 15px 25px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eee' }}></div>
+            <textarea 
+              value={newPostContent}
+              onChange={(e) => setNewPostContent(e.target.value)}
+              placeholder="شاركينا تجربتكِ أو سؤالكِ اليوم..."
+              style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', fontSize: '15px', padding: '10px' }}
+            />
+          </div>
+          
+          {selectedImage && (
+            <div style={{ position: 'relative', marginBottom: '10px' }}>
+              <img src={URL.createObjectURL(selectedImage)} style={{ width: '100%', borderRadius: '15px' }} alt="preview" />
+              <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', p: '5px' }}><X size={16}/></button>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5', paddingTop: '10px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', cursor: 'pointer', fontSize: '13px' }}>
+              <ImageIcon size={20} color="#D81B60" />
+              <span>صورة</span>
+              <input type="file" hidden accept="image/*" onChange={(e) => setSelectedImage(e.target.files[0])} />
+            </label>
+            <button 
+              onClick={handlePublish}
+              disabled={isPublishing}
+              style={{ background: '#D81B60', color: '#fff', border: 'none', padding: '8px 25px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+            >
+              {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              نشر
+            </button>
+          </div>
+        </div>
+
         <Routes>
           <Route path="/" element={
             <div style={{ padding: '0 15px' }}>
-              {posts.length > 0 ? posts.map((post, i) => (
-                <PostCard key={i} post={post} />
-              )) : <div style={{textAlign:'center', color:'#999', marginTop:'50px'}}>جاري تحميل عالمكِ الجميل...</div>}
+              {posts.map((post, i) => <PostCard key={i} post={post} />)}
             </div>
           } />
           {CATEGORIES.map((cat, i) => (
@@ -152,50 +207,24 @@ const Swing = () => {
         </Routes>
       </main>
 
-      {/* نافذة الدردشة الذكية */}
+      {/* 4. نافذة الدردشة */}
       {isChatOpen && (
-        <div style={{
-          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.4)', 
-          zIndex: 2000, display: 'flex', alignItems: 'flex-end', backdropFilter: 'blur(3px)'
-        }}>
-          <div style={{
-            width: '100%', height: '85%', backgroundColor: '#fff', 
-            borderRadius: '30px 30px 0 0', display: 'flex', flexDirection: 'column',
-            boxShadow: '0 -5px 25px rgba(0,0,0,0.1)'
-          }}>
-            <div style={{ padding: '20px', background: '#D81B60', color: '#fff', borderRadius: '30px 30px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ background: '#fff', padding: '5px', borderRadius: '50%', color: '#D81B60' }}><Sparkles size={20}/></div>
-                <span style={{ fontWeight: 'bold' }}>رقة AI - مستشارتكِ الخاصة</span>
-              </div>
-              <button onClick={() => setIsChatOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}><X /></button>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }}>
+          <div style={{ width: '100%', height: '85%', backgroundColor: '#fff', borderRadius: '30px 30px 0 0', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '20px', background: '#D81B60', color: '#fff', borderRadius: '30px 30px 0 0', display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 'bold' }}>استشارة الخبيرة</span>
+              <button onClick={() => setIsChatOpen(false)} style={{ background: 'none', border: 'none', color: '#fff' }}><X /></button>
             </div>
-            
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
               {chatHistory.map(m => (
-                <div key={m.id} style={{ 
-                  alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                  backgroundColor: m.role === 'user' ? '#D81B60' : '#f0f0f0',
-                  color: m.role === 'user' ? '#fff' : '#333',
-                  padding: '12px 16px', borderRadius: m.role === 'user' ? '18px 18px 2px 18px' : '18px 18px 18px 2px',
-                  maxWidth: '80%', fontSize: '14px', lineHeight: '1.6'
-                }}>
+                <div key={m.id} style={{ alignSelf: m.role === 'user' ? 'flex-start' : 'flex-end', backgroundColor: m.role === 'user' ? '#f0f0f0' : '#ffe4ec', padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '80%' }}>
                   {m.content}
                 </div>
               ))}
-              {isTyping && <div style={{ fontSize: '12px', color: '#D81B60', animate: 'pulse' }}>الخبيرة تفكر في رد يليق بكِ...</div>}
             </div>
-
-            <div style={{ padding: '15px', borderTop: '1px solid #eee', display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" value={userInput} onChange={e => setUserInput(e.target.value)}
-                onKeyPress={e => e.key === 'Enter' && handleChat()}
-                placeholder="اسألي عن التربية، الموضة، أو حتى بوحِ بسر..."
-                style={{ flex: 1, padding: '12px 20px', borderRadius: '25px', border: '1px solid #ddd', outline: 'none', fontSize: '14px' }}
-              />
-              <button onClick={handleChat} style={{ background: '#D81B60', color: '#fff', border: 'none', width: '45px', height: '45px', borderRadius: '50%', cursor: 'pointer' }}>
-                <Send size={20} />
-              </button>
+            <div style={{ padding: '15px', display: 'flex', gap: '10px', borderTop: '1px solid #eee' }}>
+              <input value={userInput} onChange={e => setUserInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleChat()} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, padding: '10px 20px', borderRadius: '25px', border: '1px solid #ddd' }} />
+              <button onClick={handleChat} style={{ background: '#D81B60', color: '#fff', border: 'none', width: '45px', height: '45px', borderRadius: '50%' }}><Send size={20}/></button>
             </div>
           </div>
         </div>
@@ -204,49 +233,37 @@ const Swing = () => {
   );
 };
 
-// مكون المنشور مع التفاعلات المفعلة
+// مكون المنشور مع زر التعليق المفعل
 const PostCard = ({ post }) => {
-  const [likes, setLikes] = useState(Math.floor(Math.random() * 100) + 10);
-  const [isLiked, setIsLiked] = useState(false);
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({ title: 'منتدى رقة', text: post.content, url: window.location.href });
-    }
-  };
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [comment, setComment] = useState('');
 
   return (
-    <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '18px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', border: '1px solid #fdf0f4' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-        <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(45deg, #f06292, #ffb74d)', border: '2px solid #fff' }}></div>
-        <div>
-          <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#333' }}>سيدة رقيقة</div>
-          <div style={{ fontSize: '11px', color: '#999' }}>منذ قليل</div>
-        </div>
+    <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '18px', marginBottom: '20px', border: '1px solid #fdf0f4' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+        <div style={{ width: '35px', height: '35px', borderRadius: '50%', background: '#fce4ec' }}></div>
+        <span style={{ fontWeight: 'bold', fontSize: '14px' }}>عضوة متألقة</span>
       </div>
-      <p style={{ fontSize: '15px', color: '#444', marginBottom: '15px', lineHeight: '1.7' }}>{post.content}</p>
-      {post.file && <img src={post.file} alt="محتوى" style={{ width: '100%', borderRadius: '15px', marginBottom: '15px' }} />}
+      <p style={{ fontSize: '15px', color: '#444', lineHeight: '1.6' }}>{post.content}</p>
+      {post.file && <img src={post.file} alt="post" style={{ width: '100%', borderRadius: '15px', marginTop: '10px' }} />}
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f9f9f9', paddingTop: '12px' }}>
-        <button 
-          onClick={() => { setIsLiked(!isLiked); setLikes(prev => isLiked ? prev - 1 : prev + 1); }}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: isLiked ? '#D81B60' : '#777', cursor: 'pointer', transition: '0.2s' }}
-        >
-          <Heart size={20} fill={isLiked ? '#D81B60' : 'none'} />
-          <span style={{fontWeight: 'bold'}}>{likes}</span>
-        </button>
-        <button style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#777', cursor: 'pointer' }}>
-          <MessageCircle size={20} />
-          <span>تعليق</span>
-        </button>
-        <button 
-          onClick={handleShare}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#777', cursor: 'pointer' }}
-        >
-          <Share2 size={20} />
-          <span>مشاركة</span>
-        </button>
+      <div style={{ display: 'flex', gap: '20px', marginTop: '15px', borderTop: '1px solid #f9f9f9', paddingTop: '10px' }}>
+        <button style={{ background: 'none', border: 'none', color: '#777', display: 'flex', gap: '5px', cursor: 'pointer' }}><Heart size={18}/> إعجاب</button>
+        <button onClick={() => setShowCommentInput(!showCommentInput)} style={{ background: 'none', border: 'none', color: '#777', display: 'flex', gap: '5px', cursor: 'pointer' }}><MessageCircle size={18}/> تعليق</button>
+        <button style={{ background: 'none', border: 'none', color: '#777', display: 'flex', gap: '5px', cursor: 'pointer' }}><Share2 size={18}/> مشاركة</button>
       </div>
+
+      {showCommentInput && (
+        <div style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
+          <input 
+            value={comment} 
+            onChange={e => setComment(e.target.value)}
+            placeholder="اكتبي تعليقكِ..." 
+            style={{ flex: 1, background: '#f8f8f8', border: 'none', padding: '8px 15px', borderRadius: '15px', fontSize: '13px' }}
+          />
+          <button style={{ background: '#D81B60', color: '#fff', border: 'none', borderRadius: '12px', padding: '5px 12px' }}><Send size={14}/></button>
+        </div>
+      )}
     </div>
   );
 };
