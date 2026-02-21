@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Camera, Loader2 
 } from 'lucide-react';
 
-// تصحيح الاستيراد ليتوافق مع اسم المجلد الفعلي في صورتك (SwingPage) مع إضافة .jsx
+// استيراد الأقسام من المسار الصحيح الموضح في صورة الهيكل (SwingPage)
 import MotherhoodHaven from './SwingPage/MotherhoodHaven.jsx';
 import LittleOnesAcademy from './SwingPage/LittleOnesAcademy.jsx';
 import WellnessOasis from './SwingPage/WellnessOasis.jsx';
@@ -152,41 +152,48 @@ const Swing = () => {
       </nav>
 
       <main style={{ paddingTop: '150px', paddingBottom: '40px', maxWidth: '550px', margin: '0 auto' }}>
+        
+        {/* كارت كتابة منشور جديد (يظهر فقط في الرئيسية) */}
+        {location.pathname === "/" && (
+          <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '15px', marginBottom: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', margin: '0 15px 25px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eee' }}></div>
+              <textarea 
+                value={newPostContent}
+                onChange={(e) => setNewPostContent(e.target.value)}
+                placeholder="شاركينا تجربتكِ أو سؤالكِ اليوم..."
+                style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', fontSize: '15px', padding: '10px' }}
+              />
+            </div>
+            
+            {selectedImage && (
+              <div style={{ position: 'relative', marginBottom: '10px' }}>
+                <img src={URL.createObjectURL(selectedImage)} style={{ width: '100%', borderRadius: '15px' }} alt="preview" />
+                <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', padding: '5px' }}><X size={16}/></button>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5', paddingTop: '10px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', cursor: 'pointer', fontSize: '13px' }}>
+                <ImageIcon size={20} color="#D81B60" />
+                <span>صورة</span>
+                <input type="file" hidden accept="image/*" onChange={(e) => setSelectedImage(e.target.files[0])} />
+              </label>
+              <button 
+                onClick={handlePublish}
+                disabled={isPublishing}
+                style={{ background: '#D81B60', color: '#fff', border: 'none', padding: '8px 25px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                نشر
+              </button>
+            </div>
+          </div>
+        )}
+
         <Routes>
           <Route path="/" element={
             <div style={{ padding: '0 15px' }}>
-              <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '15px', marginBottom: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eee' }}></div>
-                  <textarea 
-                    value={newPostContent}
-                    onChange={(e) => setNewPostContent(e.target.value)}
-                    placeholder="شاركينا تجربتكِ أو سؤالكِ اليوم..."
-                    style={{ flex: 1, border: 'none', outline: 'none', resize: 'none', fontSize: '15px', padding: '10px' }}
-                  />
-                </div>
-                {selectedImage && (
-                  <div style={{ position: 'relative', marginBottom: '10px' }}>
-                    <img src={URL.createObjectURL(selectedImage)} style={{ width: '100%', borderRadius: '15px' }} alt="preview" />
-                    <button onClick={() => setSelectedImage(null)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', padding: '5px' }}><X size={16}/></button>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5', paddingTop: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#666', cursor: 'pointer', fontSize: '13px' }}>
-                    <ImageIcon size={20} color="#D81B60" />
-                    <span>صورة</span>
-                    <input type="file" hidden accept="image/*" onChange={(e) => setSelectedImage(e.target.files[0])} />
-                  </label>
-                  <button 
-                    onClick={handlePublish}
-                    disabled={isPublishing}
-                    style={{ background: '#D81B60', color: '#fff', border: 'none', padding: '8px 25px', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
-                  >
-                    {isPublishing ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-                    نشر
-                  </button>
-                </div>
-              </div>
               {posts.map((post, i) => <PostCard key={i} post={post} />)}
             </div>
           } />
@@ -196,6 +203,7 @@ const Swing = () => {
         </Routes>
       </main>
 
+      {/* نافذة الدردشة الذكية */}
       {isChatOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }}>
           <div style={{ width: '100%', height: '85%', backgroundColor: '#fff', borderRadius: '30px 30px 0 0', display: 'flex', flexDirection: 'column' }}>
@@ -224,6 +232,7 @@ const Swing = () => {
 const PostCard = ({ post }) => {
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [comment, setComment] = useState('');
+
   return (
     <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '18px', marginBottom: '20px', border: '1px solid #fdf0f4' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
@@ -232,14 +241,21 @@ const PostCard = ({ post }) => {
       </div>
       <p style={{ fontSize: '15px', color: '#444', lineHeight: '1.6' }}>{post.content}</p>
       {post.file && <img src={post.file} alt="post" style={{ width: '100%', borderRadius: '15px', marginTop: '10px' }} />}
+      
       <div style={{ display: 'flex', gap: '20px', marginTop: '15px', borderTop: '1px solid #f9f9f9', paddingTop: '10px' }}>
         <button style={{ background: 'none', border: 'none', color: '#777', display: 'flex', gap: '5px', cursor: 'pointer' }}><Heart size={18}/> إعجاب</button>
         <button onClick={() => setShowCommentInput(!showCommentInput)} style={{ background: 'none', border: 'none', color: '#777', display: 'flex', gap: '5px', cursor: 'pointer' }}><MessageCircle size={18}/> تعليق</button>
         <button style={{ background: 'none', border: 'none', color: '#777', display: 'flex', gap: '5px', cursor: 'pointer' }}><Share2 size={18}/> مشاركة</button>
       </div>
+
       {showCommentInput && (
         <div style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
-          <input value={comment} onChange={e => setComment(e.target.value)} placeholder="اكتبي تعليقكِ..." style={{ flex: 1, background: '#f8f8f8', border: 'none', padding: '8px 15px', borderRadius: '15px', fontSize: '13px' }} />
+          <input 
+            value={comment} 
+            onChange={e => setComment(e.target.value)}
+            placeholder="اكتبي تعليقكِ..." 
+            style={{ flex: 1, background: '#f8f8f8', border: 'none', padding: '8px 15px', borderRadius: '15px', fontSize: '13px' }}
+          />
           <button style={{ background: '#D81B60', color: '#fff', border: 'none', borderRadius: '12px', padding: '5px 12px' }}><Send size={14}/></button>
         </div>
       )}
