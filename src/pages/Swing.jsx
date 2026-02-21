@@ -5,17 +5,17 @@ import {
   Image as ImageIcon, Camera, Loader2 
 } from 'lucide-react';
 
-// استيراد الأقسام من المجلد الصحيح كما في ملفك: Swing-page
-import MotherhoodHaven from './Swing-page/MotherhoodHaven';
-import LittleOnesAcademy from './Swing-page/LittleOnesAcademy';
-import WellnessOasis from './Swing-page/WellnessOasis';
-import EleganceIcon from './Swing-page/EleganceIcon';
-import CulinaryArts from './Swing-page/CulinaryArts';
-import HomeCorners from './Swing-page/HomeCorners';
-import EmpowermentPaths from './Swing-page/EmpowermentPaths';
-import HarmonyBridges from './Swing-page/HarmonyBridges';
-import PassionsCrafts from './Swing-page/PassionsCrafts';
-import SoulsLounge from './Swing-page/SoulsLounge';
+// تم تعديل المسارات لتطابق src/pages/SwingPage وإضافة الامتداد .jsx لضمان نجاح الـ Build
+import MotherhoodHaven from './SwingPage/MotherhoodHaven.jsx';
+import LittleOnesAcademy from './SwingPage/LittleOnesAcademy.jsx';
+import WellnessOasis from './SwingPage/WellnessOasis.jsx';
+import EleganceIcon from './SwingPage/EleganceIcon.jsx';
+import CulinaryArts from './SwingPage/CulinaryArts.jsx';
+import HomeCorners from './SwingPage/HomeCorners.jsx';
+import EmpowermentPaths from './SwingPage/EmpowermentPaths.jsx';
+import HarmonyBridges from './SwingPage/HarmonyBridges.jsx';
+import PassionsCrafts from './SwingPage/PassionsCrafts.jsx';
+import SoulsLounge from './SwingPage/SoulsLounge.jsx';
 
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
@@ -155,7 +155,6 @@ const Swing = () => {
         <Routes>
           <Route path="/" element={
             <div style={{ padding: '0 15px' }}>
-              {/* كارت كتابة منشور */}
               <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '15px', marginBottom: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eee' }}></div>
@@ -197,7 +196,6 @@ const Swing = () => {
         </Routes>
       </main>
 
-      {/* نافذة الدردشة */}
       {isChatOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }}>
           <div style={{ width: '100%', height: '85%', backgroundColor: '#fff', borderRadius: '30px 30px 0 0', display: 'flex', flexDirection: 'column' }}>
