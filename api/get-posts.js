@@ -1,42 +1,56 @@
-// File: api/get-posts.js
-import { sql } from '@vercel/postgres';
+import { put } from '@vercel/blob';
+import { neon } from '@neondatabase/serverless';
+import formidable from 'formidable';
+import fs from 'fs';
 
-export default async function handler(request, response) {
+export const config = {
+  api: { bodyParser: false }, 
+};
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // تغيير اسم المفتاح إلى raqqa_POSTGRES_URL كما في الصورة
+  const connectionString = process.env.raqqa_POSTGRES_URL; 
+  
+  if (!connectionString) {
+    return res.status(500).json({ error: "خطأ: لم يتم العثور على رابط raqqa_POSTGRES_URL" });
+  }
+
+  const form = formidable({});
+  const sql = neon(connectionString);
+
+  try {
+    const [fields, files] = await form.parse(req);
     
-    // إعدادات CORS للسماح بالوصول من المتصفح
-    response.setHeader('Access-Control-Allow-Origin', '*'); 
-    response.setHeader('Access-Control-Allow-Methods', 'GET');
-    
-    if (request.method !== 'GET') {
-        return response.status(405).json({ error: 'Method Not Allowed, use GET' });
+    const content = fields.content?.[0] || "";
+    const section = fields.section?.[0] || "bouh-display-1";
+    const type = fields.type?.[0] || "نصي";
+    let mediaUrl = "";
+
+    if (type === "رابط") {
+      mediaUrl = fields.external_link?.[0] || fields.file?.[0] || "";
+    } 
+    else if (files.file && files.file[0]) {
+      const file = files.file[0];
+      const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
+        access: 'public',
+        contentType: file.mimetype,
+        // تأكد أن هذا المفتاح موجود في Vercel بنفس هذا الاسم أو قم بتغييره لـ raqqa_BLOB_READ_WRITE_TOKEN إذا لزم الأمر
+        token: process.env.BLOB_READ_WRITE_TOKEN 
+      });
+      mediaUrl = blob.url;
     }
 
-    try {
-        // الاستعلام المحدث لجلب محتوى الوسائط
-        // تأكدي من وجود عمود media_url في جدول posts في Neon
-        const { rows } = await sql`
-            SELECT 
-                id, 
-                content, 
-                section, 
-                type, 
-                media_url, 
-                created_at 
-            FROM posts 
-            ORDER BY created_at DESC;
-        `;
+    await sql`
+      INSERT INTO posts (content, media_url, section, type, created_at)
+      VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
+    `;
 
-        // إرسال البيانات إلى التطبيق
-        return response.status(200).json({ posts: rows });
+    return res.status(200).json({ success: true, url: mediaUrl });
 
-    } catch (error) {
-        // تسجيل الخطأ التفصيلي في Vercel Logs
-        console.error('Database Fetch Error:', error);
-        
-        // رسالة خطأ واضحة في حال فقدان عمود media_url
-        return response.status(500).json({ 
-            error: 'Database Error', 
-            details: error.message 
-        });
-    }
+  } catch (error) {
+    console.error("Error:", error);
+    return res.status(500).json({ error: "حدث خطأ: " + error.message });
+  }
 }
