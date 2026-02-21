@@ -5,17 +5,17 @@ import {
   Image as ImageIcon, Camera, Loader2 
 } from 'lucide-react';
 
-// استيراد الأقسام العشرة بالمسارات الصحيحة والامتدادات المطلوبة
-import MotherhoodHaven from './Swing-page/MotherhoodHaven.jsx';
-import LittleOnesAcademy from './Swing-page/LittleOnesAcademy.jsx';
-import WellnessOasis from './Swing-page/WellnessOasis.jsx';
-import EleganceIcon from './Swing-page/EleganceIcon.jsx';
-import CulinaryArts from './Swing-page/CulinaryArts.jsx';
-import HomeCorners from './Swing-page/HomeCorners.jsx';
-import EmpowermentPaths from './Swing-page/EmpowermentPaths.jsx';
-import HarmonyBridges from './Swing-page/HarmonyBridges.jsx';
-import PassionsCrafts from './Swing-page/PassionsCrafts.jsx';
-import SoulsLounge from './Swing-page/SoulsLounge.jsx';
+// استيراد الأقسام العشرة من المسار المطلوب: src/pages/SwingPage
+import MotherhoodHaven from './SwingPage/MotherhoodHaven.jsx';
+import LittleOnesAcademy from './SwingPage/LittleOnesAcademy.jsx';
+import WellnessOasis from './SwingPage/WellnessOasis.jsx';
+import EleganceIcon from './SwingPage/EleganceIcon.jsx';
+import CulinaryArts from './SwingPage/CulinaryArts.jsx';
+import HomeCorners from './SwingPage/HomeCorners.jsx';
+import EmpowermentPaths from './SwingPage/EmpowermentPaths.jsx';
+import HarmonyBridges from './SwingPage/HarmonyBridges.jsx';
+import PassionsCrafts from './SwingPage/PassionsCrafts.jsx';
+import SoulsLounge from './SwingPage/SoulsLounge.jsx';
 
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
@@ -119,7 +119,6 @@ const Swing = () => {
   return (
     <div style={{ direction: 'rtl', backgroundColor: '#fff9fb', minHeight: '100vh', fontFamily: 'system-ui' }}>
       
-      {/* Header */}
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '65px',
         backgroundColor: '#fff', display: 'flex', alignItems: 'center', 
@@ -140,7 +139,6 @@ const Swing = () => {
         </button>
       </header>
 
-      {/* Navigation */}
       <nav style={{
         position: 'fixed', top: '65px', left: 0, right: 0,
         backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(10px)',
@@ -164,10 +162,8 @@ const Swing = () => {
         ))}
       </nav>
 
-      {/* Main Content */}
       <main style={{ paddingTop: '150px', paddingBottom: '40px', maxWidth: '550px', margin: '0 auto' }}>
         
-        {/* Post Creation Card */}
         <div style={{ backgroundColor: '#fff', borderRadius: '20px', padding: '15px', marginBottom: '25px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', margin: '0 15px 25px' }}>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#eee' }}></div>
@@ -217,7 +213,6 @@ const Swing = () => {
         </Routes>
       </main>
 
-      {/* Chat Window */}
       {isChatOpen && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'flex-end' }}>
           <div style={{ width: '100%', height: '85%', backgroundColor: '#fff', borderRadius: '30px 30px 0 0', display: 'flex', flexDirection: 'column' }}>
@@ -255,7 +250,6 @@ const Swing = () => {
   );
 };
 
-// PostCard Component مع تفعيل التعليقات
 const PostCard = ({ post }) => {
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [comment, setComment] = useState('');
