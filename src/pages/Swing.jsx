@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 
-// استدعاء الصفحات من نفس المجلد الحالي src/pages/
-import Home from './Home';
-import MotherhoodHaven from './MotherhoodHaven';
-import LittleOnesAcademy from './LittleOnesAcademy';
-import WellnessOasis from './WellnessOasis';
-import EleganceIcon from './EleganceIcon';
-import CulinaryArts from './CulinaryArts';
-import EmpowermentPaths from './EmpowermentPaths';
-import HomeCorners from './HomeCorners';
-import PassionsCrafts from './PassionsCrafts';
-import SoulsLounge from './SoulsLounge';
+// استدعاء الصفحات من المسار المحدد: src/pages/SwingPage
+import Home from '../pages/SwingPage/Home';
+import MotherhoodHaven from '../pages/SwingPage/MotherhoodHaven';
+import LittleOnesAcademy from '../pages/SwingPage/LittleOnesAcademy';
+import WellnessOasis from '../pages/SwingPage/WellnessOasis';
+import EleganceIcon from '../pages/SwingPage/EleganceIcon';
+import CulinaryArts from '../pages/SwingPage/CulinaryArts';
+import EmpowermentPaths from '../pages/SwingPage/EmpowermentPaths';
+import HomeCorners from '../pages/SwingPage/HomeCorners';
+import PassionsCrafts from '../pages/SwingPage/PassionsCrafts';
+import SoulsLounge from '../pages/SwingPage/SoulsLounge';
 
-const SwingPage = () => {
-  // الحالة الافتراضية لفتح صفحة Home
+const SwingForum = () => {
+  // الافتراضي هو صفحة Home
   const [activeTab, setActiveTab] = useState('Home');
 
-  // قائمة الأقسام مع الأيقونات
+  // مصفوفة الأقسام
   const sections = [
     { id: 'Home', label: 'الرئيسية', icon: '🏠' },
     { id: 'MotherhoodHaven', label: 'ملاذ الأمومة', icon: '🍼' },
@@ -30,8 +30,7 @@ const SwingPage = () => {
     { id: 'SoulsLounge', label: 'رواق الأرواح', icon: '✨' },
   ];
 
-  // دالة التبديل بين المكونات
-  const renderPage = () => {
+  const renderCurrentPage = () => {
     switch (activeTab) {
       case 'Home': return <Home />;
       case 'MotherhoodHaven': return <MotherhoodHaven />;
@@ -49,7 +48,7 @@ const SwingPage = () => {
 
   return (
     <div className="app-container">
-      {/* دمج تنسيقات CSS الحيوية والأنثوية */}
+      {/* دمج تنسيق الـ CSS الخاص بك مع لمسات زجاجية للعنوان */}
       <style>{`
         :root {
           --female-pink: #ff4d7d;
@@ -58,103 +57,99 @@ const SwingPage = () => {
           --glass-white: rgba(255, 255, 255, 0.9);
         }
 
-        body {
-          margin: 0;
-          background-color: var(--soft-bg);
-          font-family: 'Tajawal', sans-serif;
-          direction: rtl;
-        }
-
         .app-container {
           display: flex;
           flex-direction: column;
           height: 100vh;
+          background-color: var(--soft-bg);
+          direction: rtl;
+          font-family: 'Tajawal', sans-serif;
         }
 
-        /* شريط الأيقونات الزجاجي العلوي */
-        .glass-nav-bar {
+        /* شريط الأقسام العلوي - تصميم أيقونات زجاجية */
+        .glass-header-nav {
           display: flex;
           overflow-x: auto;
-          padding: 12px 8px;
+          padding: 15px 10px;
           background: var(--glass-white);
-          backdrop-filter: blur(10px);
+          backdrop-filter: blur(12px);
           border-bottom: 2px solid var(--female-pink-light);
-          gap: 10px;
-          scrollbar-width: none; 
+          gap: 12px;
+          scrollbar-width: none;
           position: sticky;
           top: 0;
-          z-index: 100;
+          z-index: 1000;
         }
 
-        .glass-nav-bar::-webkit-scrollbar { display: none; }
+        .glass-header-nav::-webkit-scrollbar { display: none; }
 
-        .nav-pill {
+        .section-item {
           flex: 0 0 auto;
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 10px 18px;
+          padding: 10px 20px;
           background: white;
-          border-radius: 25px;
+          border-radius: 20px;
           border: 1px solid var(--female-pink-light);
           cursor: pointer;
-          transition: all 0.3s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .nav-pill.active {
+        .section-item.active {
           background: var(--female-pink);
-          box-shadow: 0 4px 15px rgba(255, 77, 125, 0.3);
-          transform: translateY(-2px);
+          transform: translateY(-3px);
+          box-shadow: 0 5px 15px rgba(255, 77, 125, 0.3);
         }
 
-        .nav-pill.active .pill-label, .nav-pill.active .pill-icon {
+        .section-item.active .s-label, .section-item.active .s-icon {
           color: white;
         }
 
-        .pill-icon { font-size: 1.4rem; margin-bottom: 4px; }
-        .pill-label { font-size: 0.8rem; font-weight: bold; color: var(--female-pink); }
+        .s-icon { font-size: 1.6rem; margin-bottom: 5px; }
+        .s-label { font-size: 0.85rem; font-weight: bold; color: var(--female-pink); }
 
-        .forum-header-title {
+        .forum-banner {
           text-align: center;
-          margin: 0;
-          padding: 15px 0;
+          padding: 12px;
+          background: #fff;
           color: var(--female-pink);
-          font-weight: 800;
-          background: linear-gradient(to bottom, #ffffff, var(--soft-bg));
+          font-size: 1.3rem;
+          font-weight: 900;
+          margin: 0;
           border-bottom: 1px dashed var(--female-pink);
         }
 
-        .content-area {
+        .main-display-area {
           flex: 1;
           overflow-y: auto;
           padding: 20px;
-          background: var(--soft-bg);
         }
       `}</style>
 
-      {/* شريط التنقل العلوي الزجاجي */}
-      <nav className="glass-nav-bar">
-        {sections.map((item) => (
+      {/* شريط الأقسام العلوي */}
+      <nav className="glass-header-nav">
+        {sections.map((sec) => (
           <div 
-            key={item.id} 
-            className={`nav-pill ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(item.id)}
+            key={sec.id} 
+            className={`section-item ${activeTab === sec.id ? 'active' : ''}`}
+            onClick={() => setActiveTab(sec.id)}
           >
-            <span className="pill-icon">{item.icon}</span>
-            <span className="pill-label">{item.label}</span>
+            <span className="s-icon">{sec.icon}</span>
+            <span className="s-label">{sec.label}</span>
           </div>
         ))}
       </nav>
 
       {/* اسم المنتدى أسفل شريط الأقسام */}
-      <h1 className="forum-header-title">منتدي الأرجوحة</h1>
+      <div className="forum-banner">منتدي الأرجوحة</div>
 
-      {/* عرض الصفحة المستدعاة */}
-      <div className="content-area">
-        {renderPage()}
+      {/* منطقة استدعاء الصفحات */}
+      <div className="main-display-area">
+        {renderCurrentPage()}
       </div>
     </div>
   );
 };
 
-export default SwingPage;
+export default SwingForum;
