@@ -1,132 +1,137 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
+import { 
+  Heart, MessageCircle, Share2, Send, Sparkles, X, 
+  ChevronRight, ChevronLeft, Image as ImageIcon 
+} from 'lucide-react';
 
-// ---- الإعدادات والثوابت ----
+// استيراد الصفحات من المسار المحدد
+import MotherhoodHaven from './pages/Swing-page/MotherhoodHaven';
+import LittleOnesAcademy from './pages/Swing-page/LittleOnesAcademy';
+import WellnessOasis from './pages/Swing-page/WellnessOasis';
+import EleganceIcon from './pages/Swing-page/EleganceIcon';
+import CulinaryArts from './pages/Swing-page/CulinaryArts';
+import HomeCorners from './pages/Swing-page/HomeCorners';
+import EmpowermentPaths from './pages/Swing-page/EmpowermentPaths';
+import HarmonyBridges from './pages/Swing-page/HarmonyBridges';
+import PassionsCrafts from './pages/Swing-page/PassionsCrafts';
+import SoulsLounge from './pages/Swing-page/SoulsLounge';
+
 const API_BASE = "https://raqqa-v6cd.vercel.app/api";
 
 const CATEGORIES = [
-  { ar: "الرئيسية", path: "/", color: "#D81B60" },
-  { ar: "ملاذ الأمومة", path: "/MotherhoodHaven", color: "#E91E63" },
-  { ar: "أكاديمية الصغار", path: "/LittleOnesAcademy", color: "#9C27B0" },
-  { ar: "واحة العافية", path: "/WellnessOasis", color: "#00BCD4" },
-  { ar: "أيقونة الأناقة", path: "/EleganceIcon", color: "#B76E79" },
-  { ar: "فنون الطهي", path: "/CulinaryArts", color: "#FF5722" },
-  { ar: "أركان المنزل", path: "/HomeCorners", color: "#795548" },
-  { ar: "مسارات التمكين", path: "/EmpowermentPaths", color: "#FF9800" },
-  { ar: "جسور الوئام", path: "/HarmonyBridges", color: "#F44336" },
-  { ar: "حرف الشغف", path: "/PassionsCrafts", color: "#4CAF50" },
-  { ar: "ردهة الأرواح", path: "/SoulsLounge", color: "#607D8B" },
+  { ar: "الرئيسية", path: "/", component: null },
+  { ar: "ملاذ الأمومة", path: "/MotherhoodHaven", component: <MotherhoodHaven /> },
+  { ar: "أكاديمية الصغار", path: "/LittleOnesAcademy", component: <LittleOnesAcademy /> },
+  { ar: "واحة العافية", path: "/WellnessOasis", component: <WellnessOasis /> },
+  { ar: "أيقونة الأناقة", path: "/EleganceIcon", component: <EleganceIcon /> },
+  { ar: "فنون الطهي", path: "/CulinaryArts", component: <CulinaryArts /> },
+  { ar: "أركان المنزل", path: "/HomeCorners", component: <HomeCorners /> },
+  { ar: "مسارات التمكين", path: "/EmpowermentPaths", component: <EmpowermentPaths /> },
+  { ar: "جسور الوئام", path: "/HarmonyBridges", component: <HarmonyBridges /> },
+  { ar: "حرف الشغف", path: "/PassionsCrafts", component: <PassionsCrafts /> },
+  { ar: "ردهة الأرواح", path: "/SoulsLounge", component: <SoulsLounge /> },
 ];
-
-// ---- مكونات الصفحات الفرعية (لحماية التطبيق من الانهيار) ----
-const PlaceholderPage = ({ title }) => (
-  <div style={{ padding: '20px', textAlign: 'center', marginTop: '100px' }}>
-    <h2 style={{ color: '#D81B60' }}>{title}</h2>
-    <p>محتوى القسم سيظهر هنا...</p>
-  </div>
-);
 
 const Swing = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // States
   const [posts, setPosts] = useState([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatHistory, setChatHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem('raqqa_chats');
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) { return []; }
+    const saved = localStorage.getItem('raqqa_chats');
+    return saved ? JSON.parse(saved) : [];
   });
   const [userInput, setUserInput] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
-  // التمرير التلقائي للدردشة
-  const chatEndRef = useRef(null);
+  // جلب المنشورات مع تلافي خطأ الصفحة البيضاء
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatHistory]);
-
-  // جلب المنشورات
-  const fetchPosts = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/get-posts`);
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setPosts(Array.isArray(data) ? data : (data.posts || []));
-    } catch (err) {
-      console.error("خطأ في جلب البيانات", err);
-      setPosts([]); // تفادي الشاشة البيضاء
-    }
-  };
-
-  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/get-posts`);
+        const data = await res.json();
+        setPosts(Array.isArray(data) ? data : (data.posts || []));
+      } catch (err) {
+        console.error("Fetch Error:", err);
+        setPosts([]);
+      }
+    };
     fetchPosts();
   }, []);
 
-  // وظيفة الدردشة
+  // تفعيل الذكاء الاصطناعي بالشخصية المطلوبة
   const handleChat = async () => {
     if (!userInput.trim()) return;
+    
     const userMsg = { id: Date.now(), role: 'user', content: userInput };
-    const updatedHistory = [...chatHistory, userMsg];
-    setChatHistory(updatedHistory);
+    setChatHistory(prev => [...prev, userMsg]);
     setUserInput('');
+    setIsTyping(true);
 
     try {
       const res = await fetch(`${API_BASE}/raqqa-ai`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userInput })
+        body: JSON.stringify({ 
+          message: userInput,
+          system_prompt: "أنتِ خبيرة متخصصة في منتدى سيدات. ردي بأسلوب صديقة مقربة، خبيرة في تربية الأطفال، فنون الطبخ، الموضة، الصحة النفسية، والعلاقات الزوجية. لغتكِ دافئة، تفهم ثرثرة النساء واحتياجاتهن الخاصة وتفاصيل حياتهن اليومية."
+        })
       });
       const data = await res.json();
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: data.reply || data.message };
-      const finalHistory = [...updatedHistory, aiMsg];
-      setChatHistory(finalHistory);
-      localStorage.setItem('raqqa_chats', JSON.stringify(finalHistory));
+      setChatHistory(prev => [...prev, aiMsg]);
+      localStorage.setItem('raqqa_chats', JSON.stringify([...chatHistory, userMsg, aiMsg]));
     } catch (err) {
       console.error("AI Error");
+    } finally {
+      setIsTyping(false);
     }
   };
 
-  const deleteMsg = (id) => {
-    const filtered = chatHistory.filter(m => m.id !== id);
-    setChatHistory(filtered);
-    localStorage.setItem('raqqa_chats', JSON.stringify(filtered));
-  };
-
   return (
-    <div style={{ direction: 'rtl', fontFamily: 'sans-serif', backgroundColor: '#fff5f7', minHeight: '100vh' }}>
+    <div style={{ direction: 'rtl', backgroundColor: '#fff9fb', minHeight: '100vh' }}>
       
-      {/* 1. شريط الأقسام العلوي (Fixed Header) */}
+      {/* 1. الهيدر العلوي ويحتوي على أيقونة الذكاء */}
+      <header style={{
+        position: 'fixed', top: 0, left: 0, right: 0, height: '60px',
+        backgroundColor: '#fff', display: 'flex', alignItems: 'center', 
+        justifyContent: 'space-between', padding: '0 20px', zIndex: 1001,
+        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+      }}>
+        <h1 style={{ color: '#D81B60', fontSize: '20px', fontWeight: 'bold' }}>رقة</h1>
+        <button 
+          onClick={() => setIsChatOpen(true)}
+          style={{
+            background: 'linear-gradient(45deg, #D81B60, #FF4081)',
+            border: 'none', color: '#fff', padding: '8px 15px', borderRadius: '20px',
+            display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer',
+            boxShadow: '0 3px 10px rgba(216, 27, 96, 0.3)'
+          }}
+        >
+          <Sparkles size={18} />
+          <span style={{ fontSize: '14px' }}>اسألي خبيرة رقة</span>
+        </button>
+      </header>
+
+      {/* 2. شريط الأقسام - تم إنزاله قليلاً (marginTop) لعدم التغطية */}
       <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zUnit: 1000,
-        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid #ffe4ec',
-        padding: '10px 0',
-        overflowX: 'auto',
-        display: 'flex',
-        whiteSpace: 'nowrap',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
+        position: 'fixed', top: '60px', left: 0, right: 0,
+        backgroundColor: '#fff', borderBottom: '1px solid #eee',
+        padding: '10px 0', overflowX: 'auto', display: 'flex', zIndex: 1000,
+        whiteSpace: 'nowrap', scrollbarWidth: 'none'
       }}>
         {CATEGORIES.map((cat, index) => (
           <Link 
             key={index} 
             to={cat.path}
             style={{
-              textDecoration: 'none',
-              padding: '8px 16px',
-              margin: '0 5px',
-              borderRadius: '20px',
-              fontSize: '14px',
-              fontWeight: 'bold',
-              color: location.pathname === cat.path ? '#fff' : cat.color,
-              backgroundColor: location.pathname === cat.path ? cat.color : 'transparent',
-              border: `1px solid ${cat.color}`,
-              transition: 'all 0.3s ease'
+              textDecoration: 'none', padding: '6px 18px', margin: '0 5px',
+              borderRadius: '15px', fontSize: '14px', fontWeight: '500',
+              color: location.pathname === cat.path ? '#fff' : '#666',
+              backgroundColor: location.pathname === cat.path ? '#D81B60' : '#f5f5f5',
+              transition: 'all 0.3s'
             }}
           >
             {cat.ar}
@@ -134,105 +139,110 @@ const Swing = () => {
         ))}
       </nav>
 
-      {/* محتوى الصفحة الرئيسي مع تعويض المساحة للعلو */}
-      <div style={{ pt: '70px', padding: '80px 15px 100px' }}>
+      {/* 3. محتوى الصفحات */}
+      <main style={{ paddingTop: '130px', paddingBottom: '30px', maxWidth: '600px', margin: '0 auto' }}>
         <Routes>
           <Route path="/" element={
-            <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-              {/* واجهة النشر */}
-              <div style={{ background: '#white', padding: '15px', borderRadius: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '20px' }}>
-                <textarea 
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="ماذا يدور في ذهنك يا ملكة؟"
-                  style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', minHeight: '80px', fontSize: '16px' }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #eee', pt: '10px' }}>
-                   <input type="file" onChange={(e) => setSelectedFile(e.target.files[0])} style={{ fontSize: '12px' }} />
-                   <button 
-                    onClick={() => { /* وظيفة النشر */ }}
-                    style={{ background: '#D81B60', color: '#fff', border: 'none', padding: '8px 20px', borderRadius: '10px', cursor: 'pointer' }}
-                   >نشر</button>
-                </div>
-              </div>
-
-              {/* عرض المنشورات */}
-              {posts.length > 0 ? posts.map((post, i) => (
-                <div key={i} style={{ background: '#fff', padding: '15px', borderRadius: '15px', marginBottom: '15px', border: '1px solid #ffe4ec' }}>
-                  <p style={{ fontSize: '15px', color: '#444', lineHeight: '1.6' }}>{post.content}</p>
-                  {post.file && <img src={post.file} alt="post" style={{ width: '100%', borderRadius: '10px', marginTop: '10px' }} />}
-                </div>
-              )) : <div style={{ textAlign: 'center', color: '#888' }}>لا توجد منشورات حالياً</div>}
+            <div style={{ padding: '0 15px' }}>
+              {posts.map((post, i) => (
+                <PostCard key={i} post={post} />
+              ))}
             </div>
           } />
-          
-          {/* مسارات الأقسام */}
           {CATEGORIES.map((cat, i) => (
-             <Route key={i} path={cat.path} element={<PlaceholderPage title={cat.ar} />} />
+            cat.component && <Route key={i} path={cat.path} element={cat.component} />
           ))}
         </Routes>
-      </div>
+      </main>
 
-      {/* زر المساعدة الذكية العائم */}
-      <button 
-        onClick={() => setIsChatOpen(true)}
-        style={{
-          position: 'fixed', bottom: '30px', left: '30px',
-          width: '60px', height: '60px', borderRadius: '50%',
-          backgroundColor: '#D81B60', color: '#fff', border: 'none',
-          boxShadow: '0 4px 15px rgba(216, 27, 96, 0.4)', cursor: 'pointer', zIndex: 999
-        }}
-      >
-        ✨
-      </button>
-
-      {/* نافذة الدردشة */}
+      {/* 4. نافذة الدردشة */}
       {isChatOpen && (
         <div style={{
-          position: 'fixed', bottom: '0', left: '0', right: '0', top: '0',
-          backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'flex-end'
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', 
+          zIndex: 2000, display: 'flex', alignItems: 'flex-end'
         }}>
           <div style={{
-            width: '100%', height: '80%', backgroundColor: '#fff', 
-            borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column'
+            width: '100%', height: '90%', backgroundColor: '#fff', 
+            borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column'
           }}>
-            <div style={{ padding: '15px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#D81B60', color: '#fff', borderRadius: '20px 20px 0 0' }}>
-              <span style={{ fontWeight: 'bold' }}>مساعدة رقة الذكية</span>
-              <button onClick={() => setIsChatOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '20px' }}>✕</button>
+            <div style={{ padding: '20px', background: '#D81B60', color: '#fff', borderRadius: '25px 25px 0 0', display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Sparkles />
+                <div>
+                  <div style={{ fontWeight: 'bold' }}>خبيرة رقة الذكية</div>
+                  <div style={{ fontSize: '10px', opacity: 0.8 }}>متصلة الآن لمساعدتكِ</div>
+                </div>
+              </div>
+              <button onClick={() => setIsChatOpen(false)} style={{ background: 'none', border: 'none', color: '#fff' }}><X /></button>
             </div>
             
-            <div style={{ flex: 1, overflowY: 'auto', padding: '15px' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {chatHistory.map(m => (
-                <div key={m.id} style={{ marginBottom: '15px', textAlign: m.role === 'user' ? 'left' : 'right' }}>
-                  <div style={{
-                    display: 'inline-block', padding: '10px 15px', borderRadius: '15px',
-                    backgroundColor: m.role === 'user' ? '#f0f0f0' : '#D81B60',
-                    color: m.role === 'user' ? '#333' : '#fff',
-                    maxWidth: '80%', fontSize: '14px'
-                  }}>
-                    {m.content}
-                  </div>
-                  <div onClick={() => deleteMsg(m.id)} style={{ fontSize: '10px', color: '#ff4d4d', cursor: 'pointer', marginTop: '4px' }}>حذف</div>
+                <div key={m.id} style={{ 
+                  alignSelf: m.role === 'user' ? 'flex-start' : 'flex-end',
+                  backgroundColor: m.role === 'user' ? '#f0f0f0' : '#ffe4ec',
+                  padding: '12px 16px', borderRadius: '18px', maxWidth: '85%',
+                  fontSize: '14px', lineHeight: '1.5', color: '#333'
+                }}>
+                  {m.content}
                 </div>
               ))}
-              <div ref={chatEndRef} />
+              {isTyping && <div style={{ fontSize: '12px', color: '#D81B60' }}>الخبيرة تكتب الآن...</div>}
             </div>
 
             <div style={{ padding: '15px', borderTop: '1px solid #eee', display: 'flex', gap: '10px' }}>
               <input 
-                type="text" 
-                value={userInput}
-                onChange={e => setUserInput(e.target.value)}
+                type="text" value={userInput} onChange={e => setUserInput(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && handleChat()}
-                placeholder="اسألي رقة عن أي شيء..."
-                style={{ flex: 1, padding: '12px', borderRadius: '25px', border: '1px solid #ddd', outline: 'none' }}
+                placeholder="اسألي عن الطبخ، الأطفال، أو جمالك..."
+                style={{ flex: 1, padding: '12px 20px', borderRadius: '25px', border: '1px solid #ddd', outline: 'none' }}
               />
-              <button onClick={handleChat} style={{ background: '#D81B60', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '25px' }}>إرسال</button>
+              <button onClick={handleChat} style={{ background: '#D81B60', color: '#fff', border: 'none', width: '45px', height: '45px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Send size={20} />
+              </button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  );
+};
 
+// مكون المنشور مع أزرار التفاعل
+const PostCard = ({ post }) => {
+  const [likes, setLikes] = useState(Math.floor(Math.random() * 50));
+  const [isLiked, setIsLiked] = useState(false);
+
+  return (
+    <div style={{ backgroundColor: '#fff', borderRadius: '15px', padding: '15px', marginBottom: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', border: '1px solid #f0f0f0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#FFC107' }}></div>
+        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>عضوة رقة</div>
+      </div>
+      <p style={{ fontSize: '15px', color: '#444', marginBottom: '15px', lineHeight: '1.6' }}>{post.content}</p>
+      {post.file && <img src={post.file} alt="post" style={{ width: '100%', borderRadius: '10px', marginBottom: '15px' }} />}
+      
+      {/* أزرار التفاعل */}
+      <div style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid #f9f9f9', pt: '10px' }}>
+        <button 
+          onClick={() => { setIsLiked(!isLiked); setLikes(prev => isLiked ? prev - 1 : prev + 1); }}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', color: isLiked ? '#D81B60' : '#666', cursor: 'pointer' }}
+        >
+          <Heart size={20} fill={isLiked ? '#D81B60' : 'none'} />
+          <span>{likes}</span>
+        </button>
+        <button style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', color: '#666' }}>
+          <MessageCircle size={20} />
+          <span>تعليق</span>
+        </button>
+        <button 
+          onClick={() => navigator.share?.({ title: 'منتدى رقة', text: post.content, url: window.location.href })}
+          style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', color: '#666' }}
+        >
+          <Share2 size={20} />
+          <span>مشاركة</span>
+        </button>
+      </div>
     </div>
   );
 };
