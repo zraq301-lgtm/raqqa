@@ -5,7 +5,7 @@ import {
   Image as ImageIcon, Camera, Loader2 
 } from 'lucide-react';
 
-// تم تعديل المسارات لتطابق src/pages/SwingPage وإضافة الامتداد .jsx لضمان نجاح الـ Build
+// تصحيح الاستيراد ليتوافق مع اسم المجلد الفعلي في صورتك (SwingPage) مع إضافة .jsx
 import MotherhoodHaven from './SwingPage/MotherhoodHaven.jsx';
 import LittleOnesAcademy from './SwingPage/LittleOnesAcademy.jsx';
 import WellnessOasis from './SwingPage/WellnessOasis.jsx';
