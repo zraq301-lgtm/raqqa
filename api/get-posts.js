@@ -1,4 +1,4 @@
-// File: api/get-posts.js
+File: api/get-posts.js
 import { neon } from '@neondatabase/serverless'; // استخدام neon مباشرة أضمن مع DATABASE_URL
 
 export default async function handler(request, response) {
