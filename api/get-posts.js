@@ -1,9 +1,7 @@
 // File: api/get-posts.js
-import { sql } from '@vercel/postgres';
+import { neon } from '@neondatabase/serverless'; // استخدام neon مباشرة أضمن مع DATABASE_URL
 
 export default async function handler(request, response) {
-    
-    // إعدادات CORS للسماح بالوصول من المتصفح
     response.setHeader('Access-Control-Allow-Origin', '*'); 
     response.setHeader('Access-Control-Allow-Methods', 'GET');
     
@@ -12,9 +10,10 @@ export default async function handler(request, response) {
     }
 
     try {
-        // الاستعلام المحدث لجلب محتوى الوسائط
-        // تأكدي من وجود عمود media_url في جدول posts في Neon
-        const { rows } = await sql`
+        // استخدام المفتاح الموجود في صورتك
+        const sql = neon(process.env.DATABASE_URL);
+        
+        const rows = await sql`
             SELECT 
                 id, 
                 content, 
@@ -26,14 +25,10 @@ export default async function handler(request, response) {
             ORDER BY created_at DESC;
         `;
 
-        // إرسال البيانات إلى التطبيق
         return response.status(200).json({ posts: rows });
 
     } catch (error) {
-        // تسجيل الخطأ التفصيلي في Vercel Logs
         console.error('Database Fetch Error:', error);
-        
-        // رسالة خطأ واضحة في حال فقدان عمود media_url
         return response.status(500).json({ 
             error: 'Database Error', 
             details: error.message 
