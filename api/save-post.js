@@ -4,23 +4,20 @@ import formidable from 'formidable';
 import fs from 'fs';
 
 export const config = {
-  api: { bodyParser: false }, 
+  api: { bodyParser: false }, // ضروري لاستخدام formidable
 };
 
 export default async function handler(req, res) {
+  // إعدادات الوصول CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // تم تحديث المفتاح هنا ليتطابق مع DATABASE_URL الموجود في إعدادات Vercel الخاصة بك
-  const connectionString = process.env.DATABASE_URL; 
-  
-  if (!connectionString) {
-    return res.status(500).json({ 
-      error: "خطأ: لم يتم العثور على رابط DATABASE_URL. تأكد من ربط Integration الخاص بـ Neon بشكل صحيح." 
-    });
-  }
-
+  const sql = neon(process.env.DATABASE_URL);
   const form = formidable({});
-  const sql = neon(connectionString);
 
   try {
     const [fields, files] = await form.parse(req);
@@ -30,10 +27,11 @@ export default async function handler(req, res) {
     const type = fields.type?.[0] || "نصي";
     let mediaUrl = "";
 
-    // معالجة الرابط الخارجي أو الملف المرفوع
+    // 1. معالجة الرابط الخارجي (إذا كان المستخدم وضع رابط صورة/فيديو من الإنترنت)
     if (type === "رابط") {
       mediaUrl = fields.external_link?.[0] || fields.file?.[0] || "";
     } 
+    // 2. معالجة الملف المرفوع (إذا قام المستخدم برفع صورة من جهازه)
     else if (files.file && files.file[0]) {
       const file = files.file[0];
       const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
@@ -44,16 +42,17 @@ export default async function handler(req, res) {
       mediaUrl = blob.url;
     }
 
-    // إدخال البيانات في قاعدة بيانات نيون
-    await sql`
+    // 3. الحفظ في قاعدة بيانات Neon
+    const result = await sql`
       INSERT INTO posts (content, media_url, section, type, created_at)
       VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
+      RETURNING id;
     `;
 
-    return res.status(200).json({ success: true, url: mediaUrl });
+    return res.status(200).json({ success: true, postId: result[0].id });
 
   } catch (error) {
-    console.error("Database Error:", error);
-    return res.status(500).json({ error: "حدث خطأ أثناء الحفظ: " + error.message });
+    console.error('Save Post Error:', error);
+    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 }
