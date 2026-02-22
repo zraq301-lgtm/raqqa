@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { Camera, CameraResultType } from '@capacitor/camera';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -7,13 +8,11 @@ const Home = () => {
   const [mediaUrl, setMediaUrl] = useState("");
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
-
-  // حالات الدردشة الذكية والتفاعلات
-  const [showAiChat, setShowAiChat] = useState(false);
-  const [aiResponse, setAiResponse] = useState("");
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [likedPosts, setLikedPosts] = useState({});
-  const [activeCommentId, setActiveCommentId] = useState(null);
+  
+  // حالات الدردشة الذكية
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState(JSON.parse(localStorage.getItem('saved_ai_chats')) || []);
+  const [currentAiMsg, setCurrentAiMsg] = useState("");
 
   const API_GET = "https://raqqa-v6cd.vercel.app/api/get-posts";
   const API_SAVE = "https://raqqa-v6cd.vercel.app/api/save-post";
@@ -30,180 +29,166 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // وظيفة دردشة الأرجوحة (تحليل العضوة)
-  const handleAiChat = async () => {
-    setIsAiLoading(true);
-    setShowAiChat(true);
-    try {
-      // تحليل الشخصية بناءً على محتوى المنشورات المجلوبة
-      const userContext = posts.slice(0, 5).map(p => p.content).join(" | ");
-      const options = {
-        url: API_AI,
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          prompt: `أنتِ "صديقة الأرجوحة" الذكية. حللي شخصية العضوة بناءً على هذه المنشورات: (${userContext}). ردي عليها كصديقة مقربة تنصحها وتدعمها بأسلوب أنثوي رقيق جداً.`
-        }
-      };
-      const response = await CapacitorHttp.post(options);
-      setAiResponse(response.data.reply || response.data.message);
-    } catch (err) {
-      setAiResponse("عذراً رفيقتي، واجهت مشكلة في الاتصال بمشاعركِ الآن. حاولي لاحقاً 🌸");
-    } finally { setIsAiLoading(false); }
-  };
-
+  // وظيفة الرفع المعدلة (إصلاح مشكلة عدم وصول البيانات)
   const handlePublish = async () => {
     if (!newContent.trim()) return;
     setLoading(true);
     try {
-      // إرسال البيانات لتطابق ملف save-post.js
-      const options = {
-        url: API_SAVE,
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          content: newContent,
-          section: selectedSection,
-          type: mediaUrl ? "رابط" : "نصي",
-          external_link: mediaUrl 
-        }
-      };
-      await CapacitorHttp.post(options);
-      setNewContent(""); setMediaUrl(""); fetchPosts();
+      // استخدام FormData ليتوافق مع formidable في السيرفر
+      const formData = new FormData();
+      formData.append('content', newContent);
+      formData.append('section', selectedSection);
+      formData.append('type', mediaUrl ? "رابط" : "نصي");
+      formData.append('external_link', mediaUrl);
+
+      // إرسال الطلب عبر fetch العادي لأن CapacitorHttp يحتاج صياغة خاصة للـ FormData
+      const response = await fetch(API_SAVE, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        setNewContent(""); setMediaUrl(""); fetchPosts();
+      }
     } catch (err) { console.error("Save Error:", err); }
     finally { setLoading(false); }
   };
 
-  const renderMedia = (url) => {
-    if (!url) return null;
-    const isVideo = url.toLowerCase().includes('.mp4') || url.includes('youtube.com');
-    return isVideo ? (
-      <video controls className="post-media-fixed"><source src={url} type="video/mp4" /></video>
-    ) : (
-      <img src={url} alt="post" className="post-media-fixed" />
-    );
+  // وظائف شاشة الدردشة الذكية
+  const openCamera = async () => {
+    await Camera.getPhoto({ quality: 90, allowEditing: true, resultType: CameraResultType.Uri });
+  };
+
+  const handleAiChat = async (text) => {
+    if(!text) return;
+    setCurrentAiMsg("جاري التفكير...");
+    try {
+      const response = await CapacitorHttp.post({
+        url: API_AI,
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: text }
+      });
+      const reply = response.data.reply || response.data.message;
+      setCurrentAiMsg(reply);
+      // حفظ تلقائي
+      const newChat = { id: Date.now(), user: text, ai: reply };
+      const updatedChats = [newChat, ...chatMessages];
+      setChatMessages(updatedChats);
+      localStorage.setItem('saved_ai_chats', JSON.stringify(updatedChats));
+    } catch (err) { setCurrentAiMsg("فشل الاتصال"); }
+  };
+
+  const deleteSavedChat = (id) => {
+    const filtered = chatMessages.filter(c => c.id !== id);
+    setChatMessages(filtered);
+    localStorage.setItem('saved_ai_chats', JSON.stringify(filtered));
   };
 
   return (
     <div className="home-main">
       <style>{`
-        .home-main { direction: rtl; font-family: 'Tajawal', sans-serif; }
+        .home-main { direction: rtl; font-family: 'Tajawal', sans-serif; background: var(--soft-bg); }
+        .ai-chat-fixed { 
+          position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+          background: white; z-index: 9999; display: flex; flex-direction: column; 
+          animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
         
-        /* زر دردشة الأرجوحة العلوي */
-        .ai-chat-trigger {
-          background: white; border: 2px solid var(--female-pink);
-          color: var(--female-pink); width: 92%; margin: 15px auto;
-          padding: 12px; border-radius: 20px; font-weight: bold;
-          display: flex; align-items: center; justify-content: center; gap: 10px;
-          cursor: pointer; box-shadow: 0 4px 10px var(--female-pink-light);
-        }
-
-        /* كارت النشر المتوافق مع النمط */
-        .publish-box {
-          background: white; margin: 10px; padding: 15px; border-radius: 25px;
-          border: 1px solid var(--female-pink-light);
-        }
-        .section-dropdown {
-          width: 100%; padding: 8px; border-radius: 12px; margin-bottom: 10px;
-          border: 1px solid var(--female-pink-light); color: var(--female-pink);
-        }
-
-        /* نمط المنشورات كما في الصورة المرفوعة */
-        .post-card-style {
-          background: white; margin: 20px 15px; border-radius: 35px;
+        .chat-header { background: var(--female-pink); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-body { flex: 1; overflow-y: auto; padding: 15px; }
+        .chat-footer { padding: 10px; border-top: 1px solid #eee; background: #fff; }
+        
+        /* نمط كروت المنشورات بناءً على الصورة */
+        .post-card-new { 
+          background: white; margin: 15px; border-radius: 35px; 
           border: 1px solid var(--female-pink-light); overflow: hidden;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+          box-shadow: 0 4px 15px var(--female-pink-light);
         }
-        .post-info { padding: 15px; text-align: right; border-bottom: 1px solid #fdf2f4; }
-        .post-media-fixed { width: 100%; max-height: 380px; object-fit: cover; display: block; }
-        
-        .interaction-bar {
-          display: flex; justify-content: space-around; padding: 12px;
-          background: #fff;
-        }
-        .int-btn {
-          background: none; border: none; color: var(--female-pink);
-          font-family: 'Tajawal'; font-weight: bold; cursor: pointer;
-          display: flex; flex-direction: column; align-items: center; gap: 4px;
-        }
-        .ai-display {
-          background: var(--soft-bg); margin: 10px; padding: 15px;
-          border-radius: 20px; border: 1px dashed var(--female-pink);
-        }
+        .media-box { width: 100%; max-height: 400px; object-fit: cover; background: #000; }
+        .saved-item { background: var(--soft-bg); border-radius: 15px; padding: 10px; margin-bottom: 10px; position: relative; }
+        .del-btn { position: absolute; left: 10px; top: 10px; color: red; border: none; background: none; font-size: 1.2rem; }
       `}</style>
 
-      {/* زر دردشة الأرجوحة */}
-      <button className="ai-chat-trigger" onClick={handleAiChat}>
-        <span>✨ دردشة الأرجوحة (صديقتكِ الذكية)</span>
-      </button>
+      {/* زر الدردشة العلوي */}
+      <div style={{padding: '10px'}}>
+        <button className="top-card" style={{width: '100%', border: 'none'}} onClick={() => setIsChatOpen(true)}>
+          <span className="card-label">✨ دردشة الأرجوحة الذكية</span>
+        </button>
+      </div>
 
-      {showAiChat && (
-        <div className="ai-display">
-          <small style={{color: 'var(--accent-purple)'}}>🌸 تحليل صديقتكِ لشخصيتكِ:</small>
-          <p style={{fontSize: '0.9rem', marginTop: '5px'}}>
-            {isAiLoading ? "جاري قراءة كلماتكِ الرقيقة..." : aiResponse}
-          </p>
-          <button onClick={()=>setShowAiChat(false)} style={{border:'none', background:'none', color:'#999', fontSize:'0.7rem'}}>إغلاق</button>
+      {/* شاشة الدردشة كاملة الحجم */}
+      {isChatOpen && (
+        <div className="ai-chat-fixed">
+          <div className="chat-header">
+            <span>دردشة الأرجوحة</span>
+            <button onClick={() => setIsChatOpen(false)} style={{background: 'none', border: 'none', color: 'white', fontWeight: 'bold'}}>إغلاق</button>
+          </div>
+          
+          <div className="chat-body">
+            {currentAiMsg && <div className="saved-item" style={{border: '2px solid var(--female-pink)'}}><strong>الصديقة:</strong> {currentAiMsg}</div>}
+            
+            <h5 style={{color: 'var(--female-pink)'}}>المحادثات المحفوظة:</h5>
+            {chatMessages.map(chat => (
+              <div key={chat.id} className="saved-item">
+                <button className="del-btn" onClick={() => deleteSavedChat(chat.id)}>×</button>
+                <p><strong>أنتِ:</strong> {chat.user}</p>
+                <p style={{color: 'var(--accent-purple)'}}><strong>الأرجوحة:</strong> {chat.ai}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="chat-footer">
+            <div style={{display: 'flex', gap: '10px', marginBottom: '10px', justifyContent: 'center'}}>
+              <button onClick={openCamera} className="int-btn">📷 كاميرا</button>
+              <button className="int-btn">🖼️ معرض</button>
+              <button className="int-btn">🎤 ميك</button>
+            </div>
+            <div style={{display: 'flex', gap: '5px'}}>
+              <input id="aiInput" placeholder="اسألي صديقتكِ..." style={{flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd'}} />
+              <button onClick={() => handleAiChat(document.getElementById('aiInput').value)} 
+                      style={{background: 'var(--female-pink)', color: 'white', border: 'none', borderRadius: '50%', width: '40px', height: '40px'}}>⏎</button>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* كارت النشر */}
-      <div className="publish-box">
-        <select className="section-dropdown" value={selectedSection} onChange={(e)=>setSelectedSection(e.target.value)}>
+      {/* واجهة النشر */}
+      <div className="publish-box" style={{background: '#fff', margin: '15px', padding: '15px', borderRadius: '25px', border: '1px solid var(--female-pink-light)'}}>
+        <select value={selectedSection} onChange={(e) => setSelectedSection(e.target.value)} 
+                style={{width: '100%', marginBottom: '10px', padding: '8px', borderRadius: '10px', border: '1px solid #eee'}}>
           <option value="bouh-display-1">حكايات لا تنتهي (1)</option>
           <option value="bouh-display-2">ملاذ القلوب (2)</option>
-          <option value="bouh-display-3">قوة لترعيك (3)</option>
-          <option value="bouh-display-4">لمسة مليئة (4)</option>
-          <option value="bouh-display-5">ذكاء ووعي (5)</option>
         </select>
-        <textarea 
-          style={{width:'100%', border:'none', outline:'none', minHeight:'60px'}}
-          placeholder="ماذا يدور في خاطركِ يا جميلة؟"
-          value={newContent}
-          onChange={(e)=>setNewContent(e.target.value)}
-        />
-        <input 
-          style={{width:'100%', padding:'5px', border:'1px solid #f9f9f9', fontSize:'0.8rem'}}
-          placeholder="رابط خارجي (صورة أو فيديو mp4)..."
-          value={mediaUrl}
-          onChange={(e)=>setMediaUrl(e.target.value)}
-        />
-        <button 
-          style={{float:'left', background:'var(--female-pink)', color:'white', border:'none', padding:'6px 20px', borderRadius:'15px', marginTop:'10px'}}
-          onClick={handlePublish} disabled={loading}
-        >
+        <textarea placeholder="ماذا يدور في خاطركِ؟" value={newContent} onChange={(e) => setNewContent(e.target.value)}
+                  style={{width: '100%', border: 'none', minHeight: '60px', outline: 'none'}} />
+        <input placeholder="رابط خارجي..." value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)}
+               style={{width: '100%', padding: '5px', border: '1px solid #f9f9f9', fontSize: '0.8rem'}} />
+        <button onClick={handlePublish} disabled={loading}
+                style={{float: 'left', background: 'var(--female-pink)', color: '#fff', border: 'none', padding: '8px 25px', borderRadius: '20px', fontWeight: 'bold'}}>
           {loading ? "جاري..." : "نشر"}
         </button>
-        <div style={{clear:'both'}}></div>
+        <div style={{clear: 'both'}}></div>
       </div>
 
-      {/* عرض المنشورات بنمط الصورة المرفوعة */}
-      <div className="feed">
+      {/* عرض المنشورات بنمط الصورة */}
+      <div className="feed" style={{paddingBottom: '100px'}}>
         {posts.map((post) => (
-          <div key={post.id} className="post-card-style">
-            <div className="post-info">
-              <span style={{fontSize:'0.7rem', color:'#bbb'}}>{post.section}</span>
-              <p style={{color: 'var(--text-gray)', marginTop: '5px'}}>{post.content}</p>
+          <div key={post.id} className="post-card-new">
+            <div style={{padding: '15px'}}>
+               <span style={{fontSize: '0.7rem', color: 'var(--female-pink)'}}>{post.section}</span>
+               <p style={{margin: '10px 0', color: 'var(--text-gray)'}}>{post.content}</p>
             </div>
-            
-            {renderMedia(post.media_url)}
-
-            <div className="interaction-bar">
-              <button className="int-btn" onClick={()=>setLikedPosts({...likedPosts, [post.id]: (likedPosts[post.id]||0)+1})}>
-                ❤️ <span style={{fontSize:'0.8rem'}}>{likedPosts[post.id] || 0} إعجاب</span>
-              </button>
-              <button className="int-btn" onClick={()=>setActiveCommentId(post.id)}>
-                💬 <span style={{fontSize:'0.8rem'}}>تعليق</span>
-              </button>
-              <button className="int-btn">
-                🔗 <span style={{fontSize:'0.8rem'}}>مشاركة</span>
-              </button>
-            </div>
-
-            {activeCommentId === post.id && (
-              <div style={{padding:'10px', background:'#fcfcfc', borderTop:'1px solid #eee'}}>
-                <input placeholder="اكتبي ردكِ..." style={{width:'80%', padding:'5px', borderRadius:'10px', border:'1px solid #ddd'}} />
-                <button style={{border:'none', background:'none', color:'var(--female-pink)', fontWeight:'bold'}}>رد</button>
-              </div>
+            {post.media_url && (
+              post.media_url.includes('.mp4') ? 
+              <video src={post.media_url} controls className="media-box" /> : 
+              <img src={post.media_url} alt="media" className="media-box" />
             )}
+            <div style={{display: 'flex', justifyContent: 'space-around', padding: '12px', borderTop: '1px solid #fdf2f4'}}>
+               <button className="int-btn">❤️ إعجاب</button>
+               <button className="int-btn">💬 تعليق</button>
+               <button className="int-btn">🔗 مشاركة</button>
+            </div>
           </div>
         ))}
       </div>
