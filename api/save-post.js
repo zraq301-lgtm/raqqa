@@ -10,10 +10,11 @@ export const config = {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const connectionString = process.env.POSTGRES_URL; 
+  // تغيير اسم المفتاح إلى raqqa_POSTGRES_URL كما في الصورة
+  const connectionString = process.env.raqqa_POSTGRES_URL; 
   
   if (!connectionString) {
-    return res.status(500).json({ error: "خطأ: لم يتم العثور على رابط POSTGRES_URL" });
+    return res.status(500).json({ error: "خطأ: لم يتم العثور على رابط raqqa_POSTGRES_URL" });
   }
 
   const form = formidable({});
@@ -27,23 +28,20 @@ export default async function handler(req, res) {
     const type = fields.type?.[0] || "نصي";
     let mediaUrl = "";
 
-    // --- الإضافة الجديدة لمعالجة الرابط الخارجي ---
     if (type === "رابط") {
-      // إذا كان النوع رابط، نأخذ القيمة من حقل external_url أو من حقل file إذا أُرسل كنص
       mediaUrl = fields.external_link?.[0] || fields.file?.[0] || "";
     } 
-    // --- منطق رفع الملفات الأصلي كما هو ---
     else if (files.file && files.file[0]) {
       const file = files.file[0];
       const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
         access: 'public',
         contentType: file.mimetype,
+        // تأكد أن هذا المفتاح موجود في Vercel بنفس هذا الاسم أو قم بتغييره لـ raqqa_BLOB_READ_WRITE_TOKEN إذا لزم الأمر
         token: process.env.BLOB_READ_WRITE_TOKEN 
       });
       mediaUrl = blob.url;
     }
 
-    // الحفظ في الجدول - الآن mediaUrl سيحتوي على الرابط الكامل سواء كان مرفوعاً أو خارجياً
     await sql`
       INSERT INTO posts (content, media_url, section, type, created_at)
       VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
