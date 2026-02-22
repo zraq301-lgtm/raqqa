@@ -3,199 +3,196 @@ import { CapacitorHttp } from '@capacitor/core';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
-  const [newPost, setNewPost] = useState("");
-  const [imageFile, setImageFile] = useState(null);
+  const [newContent, setNewContent] = useState("");
+  const [mediaUrl, setMediaUrl] = useState(""); // للروابط الخارجية
   const [loading, setLoading] = useState(false);
 
   const GET_POSTS_URL = "https://raqqa-v6cd.vercel.app/api/get-posts";
   const SAVE_POST_URL = "https://raqqa-v6cd.vercel.app/api/save-post";
 
-  // 1. جلب المنشورات عند تحميل الصفحة باستخدام CapacitorHttp
   useEffect(() => {
     fetchPosts();
   }, []);
 
+  // 1. جلب المنشورات (GET)
   const fetchPosts = async () => {
     try {
       const options = {
         url: GET_POSTS_URL,
         headers: { 'Content-Type': 'application/json' }
       };
-      
       const response = await CapacitorHttp.get(options);
       
-      // في CapacitorHttp البيانات تكون داخل response.data
-      if (response.data && Array.isArray(response.data)) {
-        setPosts(response.data.reverse()); // الأحدث أولاً
+      // السيرفر يعيد البيانات داخل كائن posts
+      if (response.data && response.data.posts) {
+        setPosts(response.data.posts);
       }
     } catch (error) {
-      console.error("فشل جلب المنشورات:", error);
+      console.error("خطأ في جلب البيانات:", error);
     }
   };
 
-  // 2. منطق النشر باستخدام CapacitorHttp
-  const handleUpload = async () => {
-    if (!newPost && !imageFile) return;
+  // 2. حفظ منشور جديد (POST)
+  const handlePublish = async () => {
+    if (!newContent) {
+      alert("الرجاء كتابة محتوى أولاً");
+      return;
+    }
     setLoading(true);
 
     try {
-      // ملاحظة: لرفع الصور عبر CapacitorHttp يفضل إرسالها كـ Base64 أو استخدام FormData 
-      // هنا سنعتمد إرسال البيانات كنص وصورة (إذا توفرت)
+      // بناءً على كود save-post.js، الحقول المطلوبة هي content, section, type
       const options = {
         url: SAVE_POST_URL,
         headers: { 'Content-Type': 'application/json' },
         data: {
-          text: newPost,
-          image: imageFile ? imageFile : null, // تأكد من معالجة الصورة قبل الإرسال
-          date: new Date().toISOString()
+          content: newContent,
+          type: mediaUrl ? "رابط" : "نصي", // تحديد النوع بناءً على وجود رابط
+          external_link: mediaUrl, // الحقل الذي يتوقعه السيرفر للروابط
+          section: "Home" 
         }
       };
 
       const response = await CapacitorHttp.post(options);
 
-      if (response.status === 200 || response.status === 201) {
-        setNewPost("");
-        setImageFile(null);
-        fetchPosts(); // تحديث القائمة
+      if (response.status === 200) {
+        setNewContent("");
+        setMediaUrl("");
+        fetchPosts(); // تحديث القائمة فوراً
       }
     } catch (err) {
       console.error("فشل النشر:", err);
-      alert("عذراً، تعذر نشر المنشور الآن.");
     } finally {
       setLoading(false);
     }
   };
 
-  // دالة عرض الوسائط (فيديو أو صور)
+  // وظيفة عرض الميديا (صورة أو فيديو) بناءً على الرابط المجلوب من media_url
   const renderMedia = (url) => {
     if (!url) return null;
-    const isVideo = url.match(/\.(mp4|webm|ogg)$/) || url.includes('youtube.com');
+    const isVideo = url.includes('youtube.com') || url.includes('youtu.be') || url.match(/\.(mp4|webm)$/);
     
-    return isVideo ? (
-      <video controls className="post-media-content">
-        <source src={url} type="video/mp4" />
-      </video>
-    ) : (
-      <img src={url} alt="Post Content" className="post-media-content" />
-    );
+    if (isVideo) {
+      return (
+        <div className="media-container">
+          <video src={url} controls className="post-media-element" />
+        </div>
+      );
+    }
+    return <img src={url} alt="محتوى" className="post-media-element" />;
   };
 
   return (
-    <div className="home-feed-container">
+    <div className="home-wrapper">
       <style>{`
-        .home-feed-container { max-width: 100%; padding-bottom: 100px; }
+        .home-wrapper { padding-bottom: 80px; direction: rtl; }
         
-        /* كارت النشر العلوي */
-        .publish-card {
-          background: white;
-          margin: 10px;
-          padding: 15px;
+        /* كارت الرفع الجديد */
+        .upload-section {
+          background: #fff;
+          margin: 15px;
+          padding: 20px;
           border-radius: 25px;
           border: 1px solid var(--female-pink-light);
-          box-shadow: 0 4px 12px rgba(255, 77, 125, 0.08);
+          box-shadow: 0 4px 15px rgba(255, 77, 125, 0.05);
         }
-        .publish-input {
+        .post-textarea {
           width: 100%;
           border: none;
           outline: none;
           font-family: 'Tajawal';
           font-size: 1.1rem;
-          min-height: 60px;
-          color: var(--text-gray);
+          min-height: 80px;
+          resize: none;
         }
-        .publish-footer {
+        .url-input {
+          width: 100%;
+          border: 1px solid #f0f0f0;
+          padding: 8px;
+          border-radius: 10px;
+          margin: 10px 0;
+          font-size: 0.9rem;
+        }
+        .upload-footer {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 10px;
-          border-top: 1px solid #f5f5f5;
-          padding-top: 10px;
+          justify-content: flex-end;
+          border-top: 1px solid #eee;
+          padding-top: 12px;
+        }
+        .publish-btn {
+          background: var(--female-pink);
+          color: white;
+          border: none;
+          padding: 8px 30px;
+          border-radius: 20px;
+          font-weight: bold;
+          cursor: pointer;
         }
 
-        /* تنسيق المنشورات */
-        .post-item {
+        /* كارت عرض المنشورات */
+        .post-card-item {
           background: white;
-          margin: 15px 10px;
+          margin: 15px;
           border-radius: 20px;
           border: 1px solid var(--female-pink-light);
           overflow: hidden;
         }
-        .post-text-body {
-          padding: 15px;
-          font-size: 1rem;
-          color: #444;
-          line-height: 1.6;
-          text-align: right;
-        }
-        .post-media-content {
-          width: 100%;
-          display: block;
-          max-height: 350px;
-          object-fit: cover;
-        }
-
-        /* أزرار التفاعل */
-        .post-actions-bar {
+        .post-body { padding: 15px; font-size: 1.05rem; color: var(--text-gray); line-height: 1.7; }
+        .post-media-element { width: 100%; display: block; max-height: 400px; object-fit: cover; }
+        
+        .interaction-row {
           display: flex;
           justify-content: space-around;
           padding: 12px;
-          background: #fffafb;
-          border-top: 1px solid var(--female-pink-light);
+          background: #fff;
+          border-top: 1px solid #f9f9f9;
         }
-        .action-btn {
+        .act-btn {
           background: none;
           border: none;
-          font-family: 'Tajawal';
           color: var(--female-pink);
+          font-family: 'Tajawal';
           font-weight: 600;
           cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .btn-send {
-          background: var(--female-pink);
-          color: white;
-          border: none;
-          padding: 6px 20px;
-          border-radius: 20px;
-          font-weight: bold;
         }
       `}</style>
 
-      {/* منطقة كتابة منشور جديد */}
-      <div className="publish-card">
+      {/* واجهة إضافة منشور (POST) */}
+      <div className="upload-section">
         <textarea 
-          className="publish-input"
-          placeholder="ماذا يدور في خاطركِ يا رقيقة؟"
-          value={newPost}
-          onChange={(e) => setNewPost(e.target.value)}
+          className="post-textarea"
+          placeholder="اكتبي منشوراً جديداً..."
+          value={newContent}
+          onChange={(e) => setNewContent(e.target.value)}
         />
-        <div className="publish-footer">
-          <label style={{color: 'var(--accent-purple)', fontSize: '0.9rem', cursor: 'pointer'}}>
-            🖼️ إضافة صورة
-            <input type="file" hidden onChange={(e) => setImageFile(e.target.files[0])} />
-          </label>
-          <button className="btn-send" onClick={handleUpload} disabled={loading}>
-            {loading ? "جاري..." : "نشر"}
+        <input 
+          className="url-input"
+          placeholder="أضيفي رابط صورة أو فيديو (اختياري)"
+          value={mediaUrl}
+          onChange={(e) => setMediaUrl(e.target.value)}
+        />
+        <div className="upload-footer">
+          <button className="publish-btn" onClick={handlePublish} disabled={loading}>
+            {loading ? "جاري النشر..." : "نشر الآن"}
           </button>
         </div>
       </div>
 
-      {/* عرض المنشورات المجلوبة */}
-      <div className="posts-list">
-        {posts.map((post, index) => (
-          <div key={post.id || index} className="post-item">
-            <div className="post-text-body">
-              {post.text}
+      {/* واجهة عرض المنشورات (GET) */}
+      <div className="posts-feed">
+        {posts.map((post) => (
+          <div key={post.id} className="post-card-item">
+            <div className="post-body">
+              {post.content}
             </div>
             
-            {renderMedia(post.image_url || post.url)}
+            {/* عرض الميديا من حقل media_url المجلوب */}
+            {renderMedia(post.media_url)}
 
-            <div className="post-actions-bar">
-              <button className="action-btn" onClick={() => alert('أعجبني')}>❤️ إعجاب</button>
-              <button className="action-btn" onClick={() => alert('تعليق')}>💬 تعليق</button>
-              <button className="action-btn" onClick={() => alert('مشاركة')}>🔗 مشاركة</button>
+            <div className="interaction-row">
+              <button className="act-btn">❤️ إعجاب</button>
+              <button className="act-btn">💬 تعليق</button>
+              <button className="act-btn">🔗 مشاركة</button>
             </div>
           </div>
         ))}
