@@ -10,10 +10,13 @@ export const config = {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const connectionString = process.env.POSTGRES_URL; 
+  // تم تحديث المفتاح هنا ليتطابق مع DATABASE_URL الموجود في إعدادات Vercel الخاصة بك
+  const connectionString = process.env.DATABASE_URL; 
   
   if (!connectionString) {
-    return res.status(500).json({ error: "خطأ: لم يتم العثور على رابط POSTGRES_URL" });
+    return res.status(500).json({ 
+      error: "خطأ: لم يتم العثور على رابط DATABASE_URL. تأكد من ربط Integration الخاص بـ Neon بشكل صحيح." 
+    });
   }
 
   const form = formidable({});
@@ -27,12 +30,10 @@ export default async function handler(req, res) {
     const type = fields.type?.[0] || "نصي";
     let mediaUrl = "";
 
-    // --- الإضافة الجديدة لمعالجة الرابط الخارجي ---
+    // معالجة الرابط الخارجي أو الملف المرفوع
     if (type === "رابط") {
-      // إذا كان النوع رابط، نأخذ القيمة من حقل external_url أو من حقل file إذا أُرسل كنص
       mediaUrl = fields.external_link?.[0] || fields.file?.[0] || "";
     } 
-    // --- منطق رفع الملفات الأصلي كما هو ---
     else if (files.file && files.file[0]) {
       const file = files.file[0];
       const blob = await put(file.originalFilename, fs.createReadStream(file.filepath), {
@@ -43,7 +44,7 @@ export default async function handler(req, res) {
       mediaUrl = blob.url;
     }
 
-    // الحفظ في الجدول - الآن mediaUrl سيحتوي على الرابط الكامل سواء كان مرفوعاً أو خارجياً
+    // إدخال البيانات في قاعدة بيانات نيون
     await sql`
       INSERT INTO posts (content, media_url, section, type, created_at)
       VALUES (${content}, ${mediaUrl}, ${section}, ${type}, NOW())
@@ -52,7 +53,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, url: mediaUrl });
 
   } catch (error) {
-    console.error("Error:", error);
-    return res.status(500).json({ error: "حدث خطأ: " + error.message });
+    console.error("Database Error:", error);
+    return res.status(500).json({ error: "حدث خطأ أثناء الحفظ: " + error.message });
   }
 }
