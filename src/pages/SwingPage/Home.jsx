@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CapacitorHttp } from '@capacitor/core';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -6,200 +7,195 @@ const Home = () => {
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const GET_POSTS_API = "https://raqqa-v6cd.vercel.app/api/get-posts";
-  const SAVE_POST_API = "https://raqqa-v6cd.vercel.app/api/save-post";
+  const GET_POSTS_URL = "https://raqqa-v6cd.vercel.app/api/get-posts";
+  const SAVE_POST_URL = "https://raqqa-v6cd.vercel.app/api/save-post";
 
-  // 1. جلب المنشورات عند تحميل الصفحة
+  // 1. جلب المنشورات عند تحميل الصفحة باستخدام CapacitorHttp
   useEffect(() => {
     fetchPosts();
   }, []);
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch(GET_POSTS_API);
-      const data = await response.json();
-      // الترتيب من الأحدث للأقدم
-      setPosts(data.reverse());
+      const options = {
+        url: GET_POSTS_URL,
+        headers: { 'Content-Type': 'application/json' }
+      };
+      
+      const response = await CapacitorHttp.get(options);
+      
+      // في CapacitorHttp البيانات تكون داخل response.data
+      if (response.data && Array.isArray(response.data)) {
+        setPosts(response.data.reverse()); // الأحدث أولاً
+      }
     } catch (error) {
-      console.error("خطأ في جلب البيانات:", error);
+      console.error("فشل جلب المنشورات:", error);
     }
   };
 
-  // 2. معالجة رفع المنشور الجديد
+  // 2. منطق النشر باستخدام CapacitorHttp
   const handleUpload = async () => {
     if (!newPost && !imageFile) return;
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append("text", newPost);
-    if (imageFile) formData.append("image", imageFile);
-
     try {
-      const response = await fetch(SAVE_POST_API, {
-        method: 'POST',
-        body: formData, // نرسل فورم داتا لدعم الصور والنصوص
-      });
+      // ملاحظة: لرفع الصور عبر CapacitorHttp يفضل إرسالها كـ Base64 أو استخدام FormData 
+      // هنا سنعتمد إرسال البيانات كنص وصورة (إذا توفرت)
+      const options = {
+        url: SAVE_POST_URL,
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          text: newPost,
+          image: imageFile ? imageFile : null, // تأكد من معالجة الصورة قبل الإرسال
+          date: new Date().toISOString()
+        }
+      };
 
-      if (response.ok) {
+      const response = await CapacitorHttp.post(options);
+
+      if (response.status === 200 || response.status === 201) {
         setNewPost("");
         setImageFile(null);
-        fetchPosts(); // تحديث القائمة بعد النشر
+        fetchPosts(); // تحديث القائمة
       }
-    } catch (error) {
-      alert("حدث خطأ أثناء النشر");
+    } catch (err) {
+      console.error("فشل النشر:", err);
+      alert("عذراً، تعذر نشر المنشور الآن.");
     } finally {
       setLoading(false);
     }
   };
 
-  // دالة لتحديد نوع المحتوى (فيديو أو صورة) بناءً على الرابط
+  // دالة عرض الوسائط (فيديو أو صور)
   const renderMedia = (url) => {
     if (!url) return null;
-    const isVideo = url.match(/\.(mp4|webm|ogg)$/) || url.includes('youtube.com') || url.includes('youtu.be');
+    const isVideo = url.match(/\.(mp4|webm|ogg)$/) || url.includes('youtube.com');
     
-    if (isVideo) {
-      return (
-        <video controls className="post-media">
-          <source src={url} type="video/mp4" />
-          متصفحك لا يدعم تشغيل الفيديو.
-        </video>
-      );
-    }
-    return <img src={url} alt="محتوى المنشور" className="post-media" />;
+    return isVideo ? (
+      <video controls className="post-media-content">
+        <source src={url} type="video/mp4" />
+      </video>
+    ) : (
+      <img src={url} alt="Post Content" className="post-media-content" />
+    );
   };
 
   return (
-    <div className="home-container">
-      {/* دمج تنسيقات CSS الإضافية للبوستات */}
+    <div className="home-feed-container">
       <style>{`
-        .home-container { max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
+        .home-feed-container { max-width: 100%; padding-bottom: 100px; }
         
-        /* كارت كتابة منشور */
-        .upload-card {
+        /* كارت النشر العلوي */
+        .publish-card {
           background: white;
+          margin: 10px;
           padding: 15px;
-          border-radius: 20px;
-          box-shadow: 0 4px 15px var(--female-pink-light);
-          margin-bottom: 25px;
+          border-radius: 25px;
           border: 1px solid var(--female-pink-light);
+          box-shadow: 0 4px 12px rgba(255, 77, 125, 0.08);
         }
-        .upload-card textarea {
+        .publish-input {
           width: 100%;
           border: none;
           outline: none;
-          resize: none;
           font-family: 'Tajawal';
-          font-size: 1rem;
-          min-height: 80px;
+          font-size: 1.1rem;
+          min-height: 60px;
+          color: var(--text-gray);
         }
-        .upload-actions {
+        .publish-footer {
           display: flex;
           justify-content: space-between;
           align-items: center;
           margin-top: 10px;
-          border-top: 1px solid #eee;
+          border-top: 1px solid #f5f5f5;
           padding-top: 10px;
         }
-        .btn-post {
-          background: var(--female-pink);
-          color: white;
-          border: none;
-          padding: 8px 25px;
-          border-radius: 15px;
-          font-weight: bold;
-          cursor: pointer;
+
+        /* تنسيق المنشورات */
+        .post-item {
+          background: white;
+          margin: 15px 10px;
+          border-radius: 20px;
+          border: 1px solid var(--female-pink-light);
+          overflow: hidden;
+        }
+        .post-text-body {
+          padding: 15px;
+          font-size: 1rem;
+          color: #444;
+          line-height: 1.6;
+          text-align: right;
+        }
+        .post-media-content {
+          width: 100%;
+          display: block;
+          max-height: 350px;
+          object-fit: cover;
         }
 
-        /* كارت المنشور */
-        .post-card {
-          background: white;
-          border-radius: 20px;
-          margin-bottom: 20px;
-          overflow: hidden;
-          border: 1px solid var(--female-pink-light);
-          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .post-header { padding: 15px; display: flex; align-items: center; gap: 10px; }
-        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eee; }
-        .post-content { padding: 0 15px 15px 15px; color: var(--text-gray); line-height: 1.6; }
-        .post-media { width: 100%; max-height: 400px; object-fit: cover; }
-        
         /* أزرار التفاعل */
-        .post-interactions {
+        .post-actions-bar {
           display: flex;
           justify-content: space-around;
-          padding: 10px;
-          border-top: 1px solid #f9f9f9;
+          padding: 12px;
+          background: #fffafb;
+          border-top: 1px solid var(--female-pink-light);
         }
-        .interaction-btn {
+        .action-btn {
           background: none;
           border: none;
-          color: var(--text-gray);
           font-family: 'Tajawal';
-          font-size: 0.9rem;
+          color: var(--female-pink);
+          font-weight: 600;
           cursor: pointer;
           display: flex;
           align-items: center;
-          gap: 5px;
-          transition: 0.3s;
+          gap: 6px;
         }
-        .interaction-btn:hover { color: var(--female-pink); }
-        .interaction-btn.active { color: var(--female-pink); font-weight: bold; }
+        .btn-send {
+          background: var(--female-pink);
+          color: white;
+          border: none;
+          padding: 6px 20px;
+          border-radius: 20px;
+          font-weight: bold;
+        }
       `}</style>
 
-      {/* 1. كارت إضافة منشور جديد */}
-      <div className="upload-card">
+      {/* منطقة كتابة منشور جديد */}
+      <div className="publish-card">
         <textarea 
-          placeholder="بماذا تشعرين اليوم يا جميلة؟..." 
+          className="publish-input"
+          placeholder="ماذا يدور في خاطركِ يا رقيقة؟"
           value={newPost}
           onChange={(e) => setNewPost(e.target.value)}
         />
-        <div className="upload-actions">
-          <label style={{cursor: 'pointer', color: 'var(--accent-purple)'}}>
-            📷 إضافة صورة/فيديو
-            <input 
-              type="file" 
-              hidden 
-              onChange={(e) => setImageFile(e.target.files[0])} 
-              accept="image/*,video/*"
-            />
+        <div className="publish-footer">
+          <label style={{color: 'var(--accent-purple)', fontSize: '0.9rem', cursor: 'pointer'}}>
+            🖼️ إضافة صورة
+            <input type="file" hidden onChange={(e) => setImageFile(e.target.files[0])} />
           </label>
-          <button className="btn-post" onClick={handleUpload} disabled={loading}>
-            {loading ? "جاري النشر..." : "نشر"}
+          <button className="btn-send" onClick={handleUpload} disabled={loading}>
+            {loading ? "جاري..." : "نشر"}
           </button>
         </div>
-        {imageFile && <p style={{fontSize: '0.8rem', color: 'green'}}>تم اختيار: {imageFile.name}</p>}
       </div>
 
-      {/* 2. عرض المنشورات */}
-      <div className="feed">
-        {posts.map((post) => (
-          <div key={post.id} className="post-card">
-            <div className="post-header">
-              <div className="user-avatar" style={{background: `url('https://ui-avatars.com/api/?name=User&background=ff4d7d&color=fff')`, backgroundSize: 'cover'}}></div>
-              <div>
-                <div className="card-label">عضوة الأرجوحة</div>
-                <small style={{color: '#999'}}>منذ قليل</small>
-              </div>
-            </div>
-
-            <div className="post-content">
+      {/* عرض المنشورات المجلوبة */}
+      <div className="posts-list">
+        {posts.map((post, index) => (
+          <div key={post.id || index} className="post-item">
+            <div className="post-text-body">
               {post.text}
             </div>
+            
+            {renderMedia(post.image_url || post.url)}
 
-            {/* عرض الميديا سواء صورة أو فيديو أو رابط */}
-            {renderMedia(post.image_url || post.video_url || post.url)}
-
-            <div className="post-interactions">
-              <button className="interaction-btn" onClick={() => alert('تم الإعجاب')}>
-                ❤️ إعجاب
-              </button>
-              <button className="interaction-btn" onClick={() => alert('فتح التعليقات')}>
-                💬 تعليق
-              </button>
-              <button className="interaction-btn" onClick={() => alert('تمت المشاركة')}>
-                🔗 مشاركة
-              </button>
+            <div className="post-actions-bar">
+              <button className="action-btn" onClick={() => alert('أعجبني')}>❤️ إعجاب</button>
+              <button className="action-btn" onClick={() => alert('تعليق')}>💬 تعليق</button>
+              <button className="action-btn" onClick={() => alert('مشاركة')}>🔗 مشاركة</button>
             </div>
           </div>
         ))}
