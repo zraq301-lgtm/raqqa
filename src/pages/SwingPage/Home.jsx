@@ -1,188 +1,169 @@
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { Share } from '@capacitor/share'; // تأكد من تثبيت @capacitor/share
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [newContent, setNewContent] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
+  const [selectedSection, setSelectedSection] = useState("bouh-display-1"); // السكشن الافتراضي
   const [loading, setLoading] = useState(false);
-  const [likedPosts, setLikedPosts] = useState(new Set());
+  
+  // حالات التعليقات والإعجابات (محلياً للعرض)
+  const [likedPosts, setLikedPosts] = useState({});
+  const [activeCommentId, setActiveCommentId] = useState(null);
+  const [comments, setComments] = useState({}); // لتخزين التعليقات محلياً
 
   const GET_POSTS_URL = "https://raqqa-v6cd.vercel.app/api/get-posts";
   const SAVE_POST_URL = "https://raqqa-v6cd.vercel.app/api/save-post";
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
+  useEffect(() => { fetchPosts(); }, []);
 
   const fetchPosts = async () => {
     try {
-      const options = { url: GET_POSTS_URL };
-      const response = await CapacitorHttp.get(options);
+      const response = await CapacitorHttp.get({ url: GET_POSTS_URL });
       if (response.data && response.data.posts) {
         setPosts(response.data.posts);
       }
-    } catch (error) {
-      console.error("Error fetching posts:", error);
-    }
+    } catch (error) { console.error("Error fetching:", error); }
   };
 
+  // وظيفة النشر مع السكشن المختار
   const handlePublish = async () => {
     if (!newContent.trim()) return;
     setLoading(true);
     try {
-      const options = {
+      await CapacitorHttp.post({
         url: SAVE_POST_URL,
         headers: { 'Content-Type': 'application/json' },
         data: {
           content: newContent,
-          section: "Home",
-          type: mediaUrl ? "رابط" : "نصي",
+          section: selectedSection, // السكشن الذي يحدد مكان الظهور
+          type: mediaUrl ? (mediaUrl.endsWith('.mp4') ? "فيديو" : "صورة") : "نصي",
           external_link: mediaUrl
         }
-      };
-      await CapacitorHttp.post(options);
-      setNewContent("");
-      setMediaUrl("");
-      fetchPosts();
-    } catch (err) {
-      console.error("Publish error:", err);
-    } finally {
-      setLoading(false);
-    }
+      });
+      setNewContent(""); setMediaUrl(""); fetchPosts();
+    } catch (err) { console.error("Publish error:", err); }
+    finally { setLoading(false); }
   };
 
-  // دالة معالجة عرض الفيديو والروابط الخارجية
+  // وظيفة المشاركة الرسمية
+  const handleShare = async (post) => {
+    try {
+      await Share.share({
+        title: 'مشاركة من منتدي الأرجوحة',
+        text: post.content,
+        url: post.media_url || '',
+        dialogTitle: 'أنشري الجمال مع صديقاتك',
+      });
+    } catch (err) { console.error("Share error:", err); }
+  };
+
+  // منطق الإعجاب (عداد)
+  const handleLike = (id) => {
+    setLikedPosts(prev => ({
+      ...prev,
+      [id]: (prev[id] || 0) + 1
+    }));
+  };
+
   const renderMedia = (url) => {
     if (!url) return null;
-    
-    // تنظيف الرابط من أي مسافات
-    const cleanUrl = url.trim();
-    
-    // التحقق مما إذا كان الرابط فيديو (mp4, webm, أو روابط خارجية مثل youtube)
-    const isVideo = cleanUrl.toLowerCase().endsWith('.mp4') || 
-                    cleanUrl.toLowerCase().endsWith('.webm') || 
-                    cleanUrl.includes('youtube.com') || 
-                    cleanUrl.includes('youtu.be');
-
-    if (isVideo) {
-      return (
-        <div className="video-wrapper">
-          <video 
-            key={cleanUrl} 
-            controls 
-            className="media-item"
-            playsInline
-            preload="metadata"
-          >
-            <source src={cleanUrl} type="video/mp4" />
-            عذراً، متصفحك لا يدعم تشغيل هذا الفيديو.
-          </video>
-        </div>
-      );
-    }
-
-    // إذا لم يكن فيديو، نفترض أنها صورة
-    return <img src={cleanUrl} alt="Post media" className="media-item" />;
-  };
-
-  const toggleLike = (id) => {
-    const newLikes = new Set(likedPosts);
-    if (newLikes.has(id)) newLikes.delete(id);
-    else newLikes.add(id);
-    setLikedPosts(newLikes);
+    const isVideo = url.includes('.mp4') || url.includes('youtube') || url.includes('youtu.be');
+    return isVideo ? (
+      <video key={url} controls className="p-media" playsInline><source src={url} type="video/mp4" /></video>
+    ) : (
+      <img src={url} alt="media" className="p-media" />
+    );
   };
 
   return (
-    <div className="home-content">
+    <div className="home-container">
       <style>{`
-        .home-content { max-width: 100%; direction: rtl; font-family: 'Tajawal', sans-serif; }
+        .home-container { direction: rtl; font-family: 'Tajawal', sans-serif; padding-bottom: 90px; }
         
-        /* كارت الكتابة */
-        .write-card {
-          background: #fff;
-          margin: 12px;
-          padding: 15px;
-          border-radius: 25px;
-          border: 1px solid var(--female-pink-light);
-          box-shadow: 0 4px 12px rgba(255, 77, 125, 0.1);
+        /* كارت النشر المطور */
+        .publish-card {
+          background: #fff; margin: 10px; padding: 15px; border-radius: 25px;
+          border: 1px solid var(--female-pink-light); box-shadow: 0 4px 12px rgba(255, 77, 125, 0.1);
         }
-        .write-card textarea {
-          width: 100%; border: none; outline: none; font-size: 1rem;
-          min-height: 80px; resize: none; color: var(--text-gray);
+        .section-selector {
+          width: 100%; padding: 8px; margin-bottom: 10px; border-radius: 12px;
+          border: 1px solid var(--female-pink-light); color: var(--female-pink); font-weight: bold;
         }
-        .write-card input {
-          width: 100%; border: 1px solid #f0f0f0; padding: 8px;
-          border-radius: 12px; margin: 10px 0; font-size: 0.85rem;
-        }
-        .btn-row { display: flex; justify-content: flex-end; }
-        .btn-publish {
-          background: var(--female-pink); color: #fff; border: none;
-          padding: 8px 25px; border-radius: 20px; font-weight: bold;
-        }
+        .publish-card textarea { width: 100%; border: none; outline: none; min-height: 80px; resize: none; }
+        .publish-card input { width: 100%; border: 1px solid #f0f0f0; padding: 8px; border-radius: 10px; margin: 5px 0; }
+        .btn-pub { background: var(--female-pink); color: white; border: none; padding: 8px 25px; border-radius: 20px; font-weight: bold; cursor: pointer; float: left; }
 
-        /* كارت المنشور */
-        .post-card {
-          background: #fff; margin: 15px 12px; border-radius: 20px;
-          border: 1px solid var(--female-pink-light); overflow: hidden;
-        }
-        .post-text { padding: 15px; font-size: 1rem; line-height: 1.6; color: #444; }
-        .media-item { width: 100%; display: block; max-height: 450px; object-fit: contain; background: #000; }
+        /* المنشورات والتعليقات */
+        .post-box { background: #fff; margin: 15px 10px; border-radius: 20px; border: 1px solid var(--female-pink-light); overflow: hidden; }
+        .p-content { padding: 15px; line-height: 1.6; color: var(--text-gray); }
+        .p-media { width: 100%; max-height: 400px; object-fit: cover; background: #000; }
+        .action-row { display: flex; justify-content: space-around; padding: 10px; border-top: 1px solid #f9f9f9; }
+        .act-btn { background: none; border: none; color: var(--female-pink); font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
         
-        /* شريط التفاعل */
-        .action-bar {
-          display: flex; justify-content: space-around; padding: 10px;
-          border-top: 1px solid #f9f9f9; background: #fff;
-        }
-        .action-btn {
-          background: none; border: none; display: flex; align-items: center;
-          gap: 5px; cursor: pointer; color: var(--text-gray);
-          font-weight: 600; font-family: 'Tajawal';
-        }
-        .action-btn.active { color: var(--female-pink); }
+        /* نظام التعليقات */
+        .comment-section { background: #fffafb; padding: 10px; border-top: 1px solid #eee; }
+        .comment-input-area { display: flex; gap: 5px; margin-bottom: 10px; }
+        .comment-input-area input { flex: 1; padding: 8px; border-radius: 20px; border: 1px solid #ddd; }
+        .reply-box { margin-right: 20px; border-right: 2px solid var(--female-pink-light); padding-right: 10px; margin-top: 5px; font-size: 0.85rem; }
       `}</style>
 
-      {/* منطقة كتابة منشور */}
-      <div className="write-card">
-        <textarea 
-          placeholder="ماذا يدور في خاطركِ يا رقيقة؟" 
-          value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-        />
-        <input 
-          placeholder="ضعِ رابط الفيديو (mp4) أو الصورة هنا..." 
-          value={mediaUrl}
-          onChange={(e) => setMediaUrl(e.target.value)}
-        />
-        <div className="btn-row">
-          <button className="btn-publish" onClick={handlePublish} disabled={loading}>
-            {loading ? "جاري النشر..." : "نشر في الأرجوحة"}
-          </button>
-        </div>
+      {/* واجهة النشر مع اختيار السكشن */}
+      <div className="publish-card">
+        <select 
+          className="section-selector" 
+          value={selectedSection} 
+          onChange={(e) => setSelectedSection(e.target.value)}
+        >
+          <option value="bouh-display-1">حكايات لا تنتهي (1)</option>
+          <option value="bouh-display-2">ملاذ القلوب (2)</option>
+          <option value="bouh-display-3">قوة لترعيك (3)</option>
+          <option value="bouh-display-4">لمسة مليئة (4)</option>
+          <option value="bouh-display-5">ذكاء ووعي (5)</option>
+        </select>
+        <textarea placeholder="اكتبي منشورك هنا..." value={newContent} onChange={(e)=>setNewContent(e.target.value)} />
+        <input placeholder="رابط فيديو mp4 أو صورة..." value={mediaUrl} onChange={(e)=>setMediaUrl(e.target.value)} />
+        <button className="btn-pub" onClick={handlePublish} disabled={loading}>{loading ? "جاري..." : "نشر الآن"}</button>
+        <div style={{clear:'both'}}></div>
       </div>
 
-      {/* عرض المنشورات */}
-      <div className="feed-list">
+      {/* عرض الخلاصات */}
+      <div className="feed">
         {posts.map((post) => (
-          <div key={post.id} className="post-card">
-            <div className="post-text">{post.content}</div>
-            
+          <div key={post.id} className="post-box">
+            <div className="p-content">{post.content}</div>
             {renderMedia(post.media_url)}
-
-            <div className="action-bar">
-              <button 
-                className={`action-btn ${likedPosts.has(post.id) ? 'active' : ''}`}
-                onClick={() => toggleLike(post.id)}
-              >
-                {likedPosts.has(post.id) ? '❤️' : '🤍'} إعجاب
+            
+            <div className="action-row">
+              <button className="act-btn" onClick={() => handleLike(post.id)}>
+                ❤️ {likedPosts[post.id] || 0}
               </button>
-              <button className="action-btn" onClick={() => alert('قريباً: ميزة التعليقات')}>
+              <button className="act-btn" onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)}>
                 💬 تعليق
               </button>
-              <button className="action-btn" onClick={() => alert('تم نسخ رابط المنشور')}>
+              <button className="act-btn" onClick={() => handleShare(post)}>
                 🔗 مشاركة
               </button>
             </div>
+
+            {/* شريط التعليقات المنسدل */}
+            {activeCommentId === post.id && (
+              <div className="comment-section">
+                <div className="comment-input-area">
+                  <input placeholder="اكتبي تعليقك..." />
+                  <button className="act-btn">إرسال</button>
+                </div>
+                <div className="existing-comments">
+                   <div className="single-comment">
+                      <strong>عضوة:</strong> أحسنتِ النشر! 
+                      <button className="act-btn" style={{fontSize:'0.7rem'}}>رد</button>
+                      <div className="reply-box"><strong>رد:</strong> شكراً لكِ يا رقيقة 🌸</div>
+                   </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
