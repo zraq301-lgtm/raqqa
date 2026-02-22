@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Camera, CameraResultType } from '@capacitor/camera';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -29,19 +28,17 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // وظيفة الرفع المعدلة (إصلاح مشكلة عدم وصول البيانات)
+  // وظيفة الرفع (إصلاح مشكلة عدم وصول البيانات للسيرفر)
   const handlePublish = async () => {
     if (!newContent.trim()) return;
     setLoading(true);
     try {
-      // استخدام FormData ليتوافق مع formidable في السيرفر
       const formData = new FormData();
       formData.append('content', newContent);
       formData.append('section', selectedSection);
       formData.append('type', mediaUrl ? "رابط" : "نصي");
       formData.append('external_link', mediaUrl);
 
-      // إرسال الطلب عبر fetch العادي لأن CapacitorHttp يحتاج صياغة خاصة للـ FormData
       const response = await fetch(API_SAVE, {
         method: 'POST',
         body: formData
@@ -54,9 +51,9 @@ const Home = () => {
     finally { setLoading(false); }
   };
 
-  // وظائف شاشة الدردشة الذكية
-  const openCamera = async () => {
-    await Camera.getPhoto({ quality: 90, allowEditing: true, resultType: CameraResultType.Uri });
+  // وظيفة فتح الكاميرا البديلة (لحل خطأ الـ Build)
+  const triggerCamera = () => {
+    document.getElementById('hiddenCameraInput').click();
   };
 
   const handleAiChat = async (text) => {
@@ -70,7 +67,6 @@ const Home = () => {
       });
       const reply = response.data.reply || response.data.message;
       setCurrentAiMsg(reply);
-      // حفظ تلقائي
       const newChat = { id: Date.now(), user: text, ai: reply };
       const updatedChats = [newChat, ...chatMessages];
       setChatMessages(updatedChats);
@@ -87,19 +83,14 @@ const Home = () => {
   return (
     <div className="home-main">
       <style>{`
-        .home-main { direction: rtl; font-family: 'Tajawal', sans-serif; background: var(--soft-bg); }
+        .home-main { direction: rtl; font-family: 'Tajawal', sans-serif; }
         .ai-chat-fixed { 
           position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
           background: white; z-index: 9999; display: flex; flex-direction: column; 
-          animation: slideUp 0.3s ease-out;
         }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        
         .chat-header { background: var(--female-pink); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .chat-body { flex: 1; overflow-y: auto; padding: 15px; }
         .chat-footer { padding: 10px; border-top: 1px solid #eee; background: #fff; }
-        
-        /* نمط كروت المنشورات بناءً على الصورة */
         .post-card-new { 
           background: white; margin: 15px; border-radius: 35px; 
           border: 1px solid var(--female-pink-light); overflow: hidden;
@@ -108,12 +99,13 @@ const Home = () => {
         .media-box { width: 100%; max-height: 400px; object-fit: cover; background: #000; }
         .saved-item { background: var(--soft-bg); border-radius: 15px; padding: 10px; margin-bottom: 10px; position: relative; }
         .del-btn { position: absolute; left: 10px; top: 10px; color: red; border: none; background: none; font-size: 1.2rem; }
+        .int-btn { background: none; border: none; color: var(--female-pink); font-weight: bold; cursor: pointer; }
       `}</style>
 
       {/* زر الدردشة العلوي */}
       <div style={{padding: '10px'}}>
-        <button className="top-card" style={{width: '100%', border: 'none'}} onClick={() => setIsChatOpen(true)}>
-          <span className="card-label">✨ دردشة الأرجوحة الذكية</span>
+        <button className="top-card" style={{width: '100%', border: 'none', background:'white', padding:'10px', borderRadius:'15px'}} onClick={() => setIsChatOpen(true)}>
+          <span style={{color:'var(--female-pink)', fontWeight:'bold'}}>✨ دردشة الأرجوحة الذكية</span>
         </button>
       </div>
 
@@ -127,7 +119,6 @@ const Home = () => {
           
           <div className="chat-body">
             {currentAiMsg && <div className="saved-item" style={{border: '2px solid var(--female-pink)'}}><strong>الصديقة:</strong> {currentAiMsg}</div>}
-            
             <h5 style={{color: 'var(--female-pink)'}}>المحادثات المحفوظة:</h5>
             {chatMessages.map(chat => (
               <div key={chat.id} className="saved-item">
@@ -139,9 +130,12 @@ const Home = () => {
           </div>
 
           <div className="chat-footer">
+            {/* مدخل الكاميرا المخفي */}
+            <input type="file" id="hiddenCameraInput" accept="image/*" capture="environment" style={{display:'none'}} />
+            
             <div style={{display: 'flex', gap: '10px', marginBottom: '10px', justifyContent: 'center'}}>
-              <button onClick={openCamera} className="int-btn">📷 كاميرا</button>
-              <button className="int-btn">🖼️ معرض</button>
+              <button onClick={triggerCamera} className="int-btn">📷 كاميرا</button>
+              <button onClick={() => document.getElementById('hiddenCameraInput').click()} className="int-btn">🖼️ معرض</button>
               <button className="int-btn">🎤 ميك</button>
             </div>
             <div style={{display: 'flex', gap: '5px'}}>
@@ -159,10 +153,13 @@ const Home = () => {
                 style={{width: '100%', marginBottom: '10px', padding: '8px', borderRadius: '10px', border: '1px solid #eee'}}>
           <option value="bouh-display-1">حكايات لا تنتهي (1)</option>
           <option value="bouh-display-2">ملاذ القلوب (2)</option>
+          <option value="bouh-display-3">قوة لترعيك (3)</option>
+          <option value="bouh-display-4">لمسة مليئة (4)</option>
+          <option value="bouh-display-5">ذكاء ووعي (5)</option>
         </select>
         <textarea placeholder="ماذا يدور في خاطركِ؟" value={newContent} onChange={(e) => setNewContent(e.target.value)}
                   style={{width: '100%', border: 'none', minHeight: '60px', outline: 'none'}} />
-        <input placeholder="رابط خارجي..." value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)}
+        <input placeholder="رابط خارجي (صورة أو فيديو)..." value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)}
                style={{width: '100%', padding: '5px', border: '1px solid #f9f9f9', fontSize: '0.8rem'}} />
         <button onClick={handlePublish} disabled={loading}
                 style={{float: 'left', background: 'var(--female-pink)', color: '#fff', border: 'none', padding: '8px 25px', borderRadius: '20px', fontWeight: 'bold'}}>
@@ -171,7 +168,7 @@ const Home = () => {
         <div style={{clear: 'both'}}></div>
       </div>
 
-      {/* عرض المنشورات بنمط الصورة */}
+      {/* عرض المنشورات */}
       <div className="feed" style={{paddingBottom: '100px'}}>
         {posts.map((post) => (
           <div key={post.id} className="post-card-new">
