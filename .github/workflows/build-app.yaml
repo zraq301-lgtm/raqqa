@@ -1,4 +1,4 @@
-[cite_start]name: Roqa Final Professional Build Fixed [cite: 1]
+name: Roqa Final Professional Build Fixed
 
 on:
   push:
@@ -10,37 +10,37 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - [cite_start]name: 1. جلب الكود [cite: 1]
+      - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - [cite_start]name: 2. إعداد البيئة (Node 22 & Java 17) [cite: 1]
+      - name: 2. إعداد البيئة (Node 22 & Java 17)
         uses: actions/setup-java@v4
         with:
-          [cite_start]java-version: '17' [cite: 1]
-          [cite_start]distribution: 'temurin' [cite: 2]
+          java-version: '17'
+          distribution: 'temurin'
 
-      - [cite_start]name: إعداد Node.js [cite: 2]
+      - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - [cite_start]name: 3. التنظيف وعزل الكود [cite: 2]
+      - name: 3. التنظيف وعزل الكود
         run: |
-          rm -rf android node_modules [cite: 3]
-          npm install --legacy-peer-deps [cite: 3]
-          mkdir -p dist_web [cite: 3]
-          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web [cite: 3, 4]
-          npm run build --if-present [cite: 4]
+          rm -rf android node_modules
+          npm install --legacy-peer-deps
+          mkdir -p dist_web
+          rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
+          npm run build --if-present
 
-      - [cite_start]name: 4. إضافة منصة أندرويد وتحديثها [cite: 4]
+      - name: 4. إضافة منصة أندرويد وتحديثها
         run: |
-          npx cap config set webDir dist_web [cite: 5]
-          npx cap add android [cite: 5]
-          npx cap sync android [cite: 5]
+          npx cap config set webDir dist_web
+          npx cap add android
+          npx cap sync android
 
       - name: 5. ضبط أمن الشبكة وتفعيل معالجة الصور والصوت الشاملة
         run: |
-          # 1. إنشاء ملف أمن الشبكة [cite: 6]
+          # 1. إنشاء ملف أمن الشبكة برمجياً
           mkdir -p android/app/src/main/res/xml
           echo '<?xml version="1.0" encoding="utf-8"?>
           <network-security-config>
@@ -53,7 +53,7 @@ jobs:
                       <certificates src="user" />
                   </trust-anchors>
               </base-config>
-          </network-security-config>' > android/app/src/main/res/xml/network_security_config.xml [cite: 6, 8]
+          </network-security-config>' > android/app/src/main/res/xml/network_security_config.xml
 
           # 2. إنشاء FileProvider لحل مشكلة "تعذر معالجة الصورة"
           echo '<?xml version="1.0" encoding="utf-8"?>
@@ -62,8 +62,8 @@ jobs:
               <cache-path name="my_cache" path="." />
           </paths>' > android/app/src/main/res/xml/file_paths.xml
 
-          # 3. إضافة التصاريح الشاملة (كاميرا، صوت، تخزين) 
-          [cite_start]sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml [cite: 8]
+          # 3. إضافة التصاريح الشاملة للـ Manifest
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
@@ -71,60 +71,58 @@ jobs:
           sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />' android/app/src/main/AndroidManifest.xml
 
-          # 4. تحديث وسم application وإضافة provider معالجة الصور 
-          [cite_start]sed -i 's/<application/<application android:networkSecurityConfig="@xml\/network_security_config" android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml [cite: 8]
-          
-          # إضافة الـ Provider داخل وسم application لتمكين مشاركة الصور
+          # 4. تحديث وسم application وإضافة مزود الملفات (Provider)
+          sed -i 's/<application/<application android:networkSecurityConfig="@xml\/network_security_config" android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
           sed -i '/<\/application>/i \    <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"> <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /> </provider>' android/app/src/main/AndroidManifest.xml
 
-      - [cite_start]name: 6. ضبط الأيقونات وفيديو شاشة البداية [cite: 9]
+      - name: 6. ضبط الأيقونات وفيديو شاشة البداية
         run: |
-          npm install @capacitor/assets --save-dev [cite: 10]
-          mkdir -p android/app/src/main/res/raw [cite: 10]
-          if [ -f "resources/splash_video.mp4" ]; [cite: 10]
-          then [cite: 11]
-            cp resources/splash_video.mp4 android/app/src/main/res/raw/ [cite: 11]
-            echo "✅ تم نقل الفيديو بنجاح" [cite: 11]
+          npm install @capacitor/assets --save-dev
+          mkdir -p android/app/src/main/res/raw
+          if [ -f "resources/splash_video.mp4" ];
+          then
+            cp resources/splash_video.mp4 android/app/src/main/res/raw/
+            echo "✅ تم نقل الفيديو بنجاح"
           else
-            echo "⚠️ تحذير: لم يتم العثور على resources/splash_video.mp4" [cite: 11]
+            echo "⚠️ تحذير: لم يتم العثور على resources/splash_video.mp4"
           fi
-          npx capacitor-assets generate --android [cite: 11]
+          npx capacitor-assets generate --android
 
-      - [cite_start]name: 7. بناء ملفات الـ APK و AAB [cite: 11]
+      - name: 7. بناء ملفات الـ APK و AAB
         run: |
-          cd android [cite: 12]
-          chmod +x gradlew [cite: 12]
-          ./gradlew assembleRelease [cite: 12]
-          ./gradlew bundleRelease [cite: 12]
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
 
-      - [cite_start]name: 8. إنشاء ملف التوقيع وتوقيع الملفات [cite: 12]
+      - name: 8. إنشاء ملف التوقيع وتوقيع الملفات
         run: |
           keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 13]
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          [cite_start]APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1) [cite: 13]
-          [cite_start]AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1) [cite: 13]
+          APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
 
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks \
             --ks-key-alias "roqa_alias" \
             --ks-pass pass:"roqa_password_2026" \
             --key-pass pass:"roqa_password_2026" \
             --out Roqa-Final-Signed.apk \
-            [cite_start]"$APK_FILE" [cite: 14]
+            "$APK_FILE"
 
           jarsigner -keystore release_key.jks \
             -storepass "roqa_password_2026" \
             -keypass "roqa_password_2026" \
-            [cite_start]"$AAB_FILE" roqa_alias [cite: 14, 15]
+            "$AAB_FILE" roqa_alias
 
-          [cite_start]cp "$AAB_FILE" Roqa-Final-Signed.aab [cite: 15]
+          cp "$AAB_FILE" Roqa-Final-Signed.aab
 
-      - [cite_start]name: 9. رفع الملفات الموقعة وملف التوقيع [cite: 15]
+      - name: 9. رفع الملفات الموقعة وملف التوقيع
         uses: actions/upload-artifact@v4
         with:
-          [cite_start]name: Roqa-Full-Package-v${{ github.run_number }} [cite: 15]
+          name: Roqa-Full-Package-v${{ github.run_number }}
           path: |
-            Roqa-Final-Signed.apk [cite: 16]
-            Roqa-Final-Signed.aab [cite: 16]
-            release_key.jks [cite: 16]
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
+            release_key.jks
