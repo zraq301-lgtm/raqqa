@@ -24,7 +24,7 @@
     "@capacitor/share": "^6.0.2",
     "@capacitor/camera": "^6.0.2",
     "@capacitor/filesystem": "^6.0.0",
-    "capacitor-voice-recorder": "5.0.0",
+    "capacitor-voice-recorder": "^6.0.0",
     "@vercel/postgres": "^0.10.0",
     "@vercel/blob": "^0.23.4",
     "@neondatabase/serverless": "^0.9.4",
@@ -39,5 +39,8 @@
     "tailwindcss": "^3.4.1",
     "vite": "^5.0.0",
     "terser": "^5.27.0"
+  },
+  "overrides": {
+    "@capacitor/core": "$@capacitor/core"
   }
 }
