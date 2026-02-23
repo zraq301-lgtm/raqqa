@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { Share } from '@capacitor/share'; // استيراد مكتبة المشاركة الأصلية
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -8,7 +9,6 @@ const Home = () => {
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
 
-  // حالات الدردشة والتفاعلات
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState(JSON.parse(localStorage.getItem('saved_ai_chats')) || []);
   const [userInput, setUserInput] = useState("");
@@ -30,11 +30,19 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // الدالة الجديدة المحدثة لتشغيل الميديا داخل التطبيق ودعم ملء الشاشة
+  // دالة تكبير الفيديو للملء التلقائي عند الضغط
+  const toggleFullScreen = (e) => {
+    const videoElem = e.target.parentElement.querySelector('video') || e.target.parentElement.querySelector('iframe');
+    if (videoElem) {
+      if (videoElem.requestFullscreen) videoElem.requestFullscreen();
+      else if (videoElem.webkitRequestFullscreen) videoElem.webkitRequestFullscreen();
+      else if (videoElem.msRequestFullscreen) videoElem.msRequestFullscreen();
+    }
+  };
+
   const renderMediaInApp = (url) => {
     if (!url) return null;
 
-    // 1. معالجة روابط اليوتيوب (لتعمل داخل التطبيق)
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
       let videoId = "";
       if (url.includes('v=')) {
@@ -42,46 +50,40 @@ const Home = () => {
       } else {
         videoId = url.split('/').pop();
       }
-
+      
       return (
-        <div style={{ width: '100%', aspectRatio: '16/9', background: '#000' }}>
+        <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', position: 'relative' }}>
           <iframe
-            width="100%"
-            height="100%"
+            width="100%" height="100%"
             src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`}
-            title="YouTube video player"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            title="YouTube video player" frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           ></iframe>
+          {/* زر تكبير الشاشة المخصص */}
+          <button onClick={toggleFullScreen} style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(255, 77, 125, 0.8)', color: 'white', border: 'none', borderRadius: '5px', padding: '5px 10px', fontSize: '0.7rem', zIndex: 10 }}>
+            تكبير ⛶
+          </button>
         </div>
       );
     }
 
-    // 2. معالجة روابط الفيديو المباشرة (MP4, WebM)
     const isDirectVideo = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/) || url.includes('video');
     if (isDirectVideo) {
       return (
-        <div style={{ width: '100%', background: '#000' }}>
-          <video 
-            controls 
-            playsInline 
-            style={{ width: '100%', maxHeight: '400px' }}
-            preload="metadata"
-          >
+        <div style={{ width: '100%', background: '#000', position: 'relative' }}>
+          <video controls playsInline style={{ width: '100%', maxHeight: '400px' }} preload="metadata">
             <source src={url} />
-            متصفحك لا يدعم تشغيل هذا الفيديو.
           </video>
+          <button onClick={toggleFullScreen} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0, 0, 0, 0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', zIndex: 10 }}>
+            ⛶
+          </button>
         </div>
       );
     }
 
-    // 3. إذا كان الرابط صورة
     return (
-      <img 
-        src={url} 
-        style={{ width: '100%', display: 'block', objectFit: 'cover' }} 
-        alt="رقة - محتوى"
+      <img src={url} style={{ width: '100%', display: 'block' }} alt="رقة - محتوى"
         onError={(e) => e.target.parentElement.style.display = 'none'} 
       />
     );
@@ -102,6 +104,20 @@ const Home = () => {
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
+  // تحديث دالة المشاركة لتستخدم Capacitor Share الأصلي ليعمل على APK
+  const handleShare = async (post) => {
+    try {
+      await Share.share({
+        title: 'رقة - الناشر الأصلي',
+        text: post.content,
+        url: post.media_url || 'https://raqqa.app', // ضع رابط موقعك هنا
+        dialogTitle: 'شاركي جمال رقة مع صديقاتكِ',
+      });
+    } catch (error) {
+      console.log('خطأ في المشاركة:', error);
+    }
+  };
+
   const startVoice = () => {
     const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Speech) return alert("المتصفح لا يدعم التسجيل");
@@ -111,16 +127,6 @@ const Home = () => {
     rec.onend = () => setIsListening(false);
     rec.onresult = (e) => setUserInput(e.results[0][0].transcript);
     rec.start();
-  };
-
-  const handleShare = async (post) => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'رقة - الناشر الأصلي',
-        text: post.content,
-        url: post.media_url || window.location.href
-      }).catch(() => {});
-    }
   };
 
   const lastVideo = posts.find(p => p.media_url && (p.media_url.includes('mp4') || p.media_url.includes('video')));
@@ -220,7 +226,6 @@ const Home = () => {
               <p style={{ margin: '8px 0', lineHeight: '1.6', color: '#333', fontSize: '1rem' }}>{post.content}</p>
             </div>
             
-            {/* استدعاء الدالة الجديدة لعرض الميديا داخل الكارت */}
             {renderMediaInApp(post.media_url)}
 
             <div style={{ display: 'flex', justifyContent: 'space-around', padding: '15px', borderTop: '1px solid #fff5f7' }}>
