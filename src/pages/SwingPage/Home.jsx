@@ -7,7 +7,7 @@ const Home = () => {
   const [mediaUrl, setMediaUrl] = useState("");
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
-  
+
   // حالات الدردشة والتفاعلات
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState(JSON.parse(localStorage.getItem('saved_ai_chats')) || []);
@@ -30,44 +30,59 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // دالة HTML ذكية لعرض الفيديو أو المحتوى الخارجي ومنع الروابط المكسورة
-  const renderMedia = (url) => {
+  // الدالة الجديدة المحدثة لتشغيل الميديا داخل التطبيق ودعم ملء الشاشة
+  const renderMediaInApp = (url) => {
     if (!url) return null;
 
-    const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || url.includes('video') || url.includes('stream');
-    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+    // 1. معالجة روابط اليوتيوب (لتعمل داخل التطبيق)
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      let videoId = "";
+      if (url.includes('v=')) {
+        videoId = url.split('v=')[1].split('&')[0];
+      } else {
+        videoId = url.split('/').pop();
+      }
 
-    if (isVideo) {
       return (
-        <div className="media-container">
-          <video controls className="html-video" playsInline preload="metadata">
-            <source src={url} />
-            عذراً، الرابط لا يدعم التشغيل المباشر.
-          </video>
-        </div>
-      );
-    }
-
-    if (isYouTube) {
-      const videoId = url.split('v=')[1] || url.split('/').pop();
-      return (
-        <div className="media-container">
-          <iframe 
-            src={`https://www.youtube.com/embed/${videoId}`} 
-            className="html-video" 
-            frameBorder="0" 
+        <div style={{ width: '100%', aspectRatio: '16/9', background: '#000' }}>
+          <iframe
+            width="100%"
+            height="100%"
+            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&playsinline=1`}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           ></iframe>
         </div>
       );
     }
 
+    // 2. معالجة روابط الفيديو المباشرة (MP4, WebM)
+    const isDirectVideo = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/) || url.includes('video');
+    if (isDirectVideo) {
+      return (
+        <div style={{ width: '100%', background: '#000' }}>
+          <video 
+            controls 
+            playsInline 
+            style={{ width: '100%', maxHeight: '400px' }}
+            preload="metadata"
+          >
+            <source src={url} />
+            متصفحك لا يدعم تشغيل هذا الفيديو.
+          </video>
+        </div>
+      );
+    }
+
+    // 3. إذا كان الرابط صورة
     return (
       <img 
         src={url} 
-        className="media-box" 
-        onError={(e) => { e.target.parentElement.style.display = 'none'; }} 
-        alt="رقة محتوى"
+        style={{ width: '100%', display: 'block', objectFit: 'cover' }} 
+        alt="رقة - محتوى"
+        onError={(e) => e.target.parentElement.style.display = 'none'} 
       />
     );
   };
@@ -118,9 +133,6 @@ const Home = () => {
         .ad-banner { background: white; margin: 0 15px 15px; border-radius: 20px; border: 2px solid #ff4d7d; overflow: hidden; height: 110px; display: flex; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .chat-full { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10000; display: flex; flex-direction: column; }
         .post-card { background: white; margin: 15px; border-radius: 30px; border: 1px solid #ff4d7d1a; overflow: hidden; box-shadow: 0 5px 15px rgba(255, 77, 125, 0.05); }
-        .media-container { width: 100%; background: #000; line-height: 0; }
-        .html-video { width: 100%; max-height: 380px; aspect-ratio: 16/9; }
-        .media-box { width: 100%; object-fit: cover; display: block; }
         .action-btn { background: none; border: none; color: #ff4d7d; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; }
         .publish-area { transform: translateY(-10%); margin-top: 10px; z-index: 5; position: relative; }
       `}</style>
@@ -147,7 +159,8 @@ const Home = () => {
           <option value="bouh-display-2">ملاذ القلوب</option>
           <option value="bouh-display-3">قوة لترعيك</option>
         </select>
-        <textarea placeholder="ماذا يدور في خاطركِ يا رقة؟" value={newContent} onChange={(e) => setNewContent(e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', minHeight: '45px', fontSize: '1rem' }} />
+        <textarea placeholder="ماذا يدور في خاطركِ يا رقة؟"
+          value={newContent} onChange={(e) => setNewContent(e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', minHeight: '45px', fontSize: '1rem' }} />
         <input placeholder="رابط فيديو HTML أو صورة..." value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} style={{ width: '100%', padding: '5px', fontSize: '0.8rem', border: 'none', background: '#fcfcfc' }} />
         <button onClick={handlePublish} disabled={loading} style={{ float: 'left', background: '#ff4d7d', color: '#fff', border: 'none', padding: '10px 30px', borderRadius: '25px', fontWeight: 'bold', marginTop: '10px' }}>
           {loading ? "جاري..." : "نشر"}
@@ -207,7 +220,8 @@ const Home = () => {
               <p style={{ margin: '8px 0', lineHeight: '1.6', color: '#333', fontSize: '1rem' }}>{post.content}</p>
             </div>
             
-            {renderMedia(post.media_url)}
+            {/* استدعاء الدالة الجديدة لعرض الميديا داخل الكارت */}
+            {renderMediaInApp(post.media_url)}
 
             <div style={{ display: 'flex', justifyContent: 'space-around', padding: '15px', borderTop: '1px solid #fff5f7' }}>
               <button className="action-btn" onClick={() => setLikedPosts({ ...likedPosts, [post.id]: (likedPosts[post.id] || 0) + 1 })}>
