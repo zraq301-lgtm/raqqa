@@ -1,5 +1,4 @@
-{
-  "name": "raqqa-react-app",
+name": "raqqa-react-app",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -38,3 +37,4 @@
     "terser": "^5.27.0"
   }
 }
+
