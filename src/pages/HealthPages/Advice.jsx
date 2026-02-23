@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Send, Image as ImageIcon, Camera, Mic, MicOff, Loader2 } from 'lucide-react';
-// استيراد الخدمات المحدثة لدعم الصوت والكاميرا وطلب الأذونات
+import { Send, Image as ImageIcon, Camera, Mic, MicOff, Loader2, Paperclip } from 'lucide-react';
+// استيراد الخدمات من MediaService لضمان عمل الوسائط ورفع الملفات
 import { 
   fetchImage, 
   takePhoto, 
-  requestAudioPermissions, // إضافة دالة طلب الإذن
+  requestAudioPermissions, 
   startRecording, 
   stopRecording, 
   uploadToVercel 
@@ -20,14 +20,17 @@ const AdviceChat = () => {
   const [isRecording, setIsRecording] = useState(false);
   const scrollRef = useRef(null);
 
+  // تمرير تلقائي لأسفل الشات
   useEffect(() => { 
     scrollRef.current?.scrollIntoView({ behavior: "smooth" }); 
   }, [messages]);
 
+  // معالجة إرسال الرسائل والملفات للسيرفر
   const handleProcess = async (textOverride = null, attachment = null) => {
     const content = textOverride || input;
     if (!content.trim() && !attachment) return;
 
+    // عرض رسالة المستخدم مع المرفقات إن وجدت في الواجهة
     setMessages(prev => [...prev, { 
       id: Date.now(), 
       text: content, 
@@ -58,7 +61,7 @@ const AdviceChat = () => {
     }
   };
 
-  // وظيفة التعامل مع الصور (كاميرا أو استوديو)
+  // وظيفة التعامل مع الكاميرا ومعرض الصور
   const handleImageAction = async (type = 'gallery') => {
     try {
       const photoBase64 = type === 'camera' ? await takePhoto() : await fetchImage();
@@ -74,15 +77,14 @@ const AdviceChat = () => {
     }
   };
 
-  // وظيفة التعامل مع تسجيل الصوت مع تفعيل صلاحيات الميكروفون
+  // وظيفة تسجيل الصوت مع طلب الإذن الإجباري للـ APK
   const toggleRecording = async () => {
     try {
       if (!isRecording) {
-        // طلب الإذن برمجياً قبل بدء التسجيل 
         const permission = await requestAudioPermissions();
         
         if (permission !== 'granted') {
-          alert("لا يمكن التسجيل بدون منح صلاحية الميكروفون. يرجى الموافقة على طلب الإذن الذي سيظهر الآن أو تفعيله من إعدادات الهاتف.");
+          alert("يرجى منح صلاحية الميكروفون لتتمكني من التسجيل.");
           return;
         }
 
@@ -93,16 +95,15 @@ const AdviceChat = () => {
         setIsRecording(false);
         setIsProcessing(true);
         
-        // رفع ملف الصوت بعد التأكد من وجود بيانات 
         if (audioData && audioData.value) {
-           const uploadRes = await uploadToVercel(audioData.value, `voice_${Date.now()}.wav`, 'audio/wav');
-           handleProcess("لقد أرسلتُ تسجيلاً صوتياً.", { type: 'audio', url: uploadRes.url });
+          const uploadRes = await uploadToVercel(audioData.value, `voice_${Date.now()}.wav`, 'audio/wav');
+          handleProcess("لقد أرسلتُ تسجيلاً صوتياً.", { type: 'audio', url: uploadRes.url });
         }
       }
     } catch (err) {
       console.error("خطأ في التسجيل:", err);
       setIsRecording(false);
-      alert("حدث خطأ أثناء محاولة استخدام الميكروفون. تأكدي من منح الصلاحيات اللازمة.");
+      alert("حدث خطأ في الميكروفون.");
     } finally {
       setIsProcessing(false);
     }
@@ -110,14 +111,19 @@ const AdviceChat = () => {
 
   return (
     <div className="flex flex-col h-screen bg-pink-50">
+      {/* عرض الرسائل */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`p-3 rounded-lg max-w-[80%] shadow-sm ${
               m.sender === 'user' ? 'bg-pink-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'
             }`}>
-              {m.image && <img src={m.image} alt="upload" className="mb-2 rounded-md max-w-full" />}
-              {m.audio && <audio src={m.audio} controls className="mb-2 max-w-full" />}
+              {m.image && <img src={m.image} alt="upload" className="mb-2 rounded-md max-w-full h-auto border border-pink-200" />}
+              {m.audio && (
+                <div className="bg-pink-100 p-2 rounded mb-2">
+                  <audio src={m.audio} controls className="w-full h-8" />
+                </div>
+              )}
               <p className="text-right leading-relaxed" dir="rtl">{m.text}</p>
             </div>
           </div>
@@ -125,16 +131,17 @@ const AdviceChat = () => {
         <div ref={scrollRef} />
       </div>
 
-      <div className="p-4 bg-white flex flex-col gap-2 border-t shadow-lg">
-        <div className="flex gap-4 justify-center mb-2 border-b pb-2">
+      {/* شريط الأدوات والمدخلات */}
+      <div className="p-4 bg-white border-t shadow-lg">
+        <div className="flex gap-4 justify-center mb-3 border-b pb-2">
           <button onClick={() => handleImageAction('camera')} className="text-pink-600 flex flex-col items-center">
-            <Camera size={20} /> <span className="text-[10px]">كاميرا</span>
+            <Camera size={22} /> <span className="text-[10px]">كاميرا</span>
           </button>
           <button onClick={() => handleImageAction('gallery')} className="text-pink-600 flex flex-col items-center">
-            <ImageIcon size={20} /> <span className="text-[10px]">معرض</span>
+            <ImageIcon size={22} /> <span className="text-[10px]">معرض</span>
           </button>
           <button onClick={toggleRecording} className={`${isRecording ? 'text-red-500 animate-pulse' : 'text-pink-600'} flex flex-col items-center`}>
-            {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+            {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
             <span className="text-[10px]">{isRecording ? 'إيقاف' : 'تسجيل'}</span>
           </button>
         </div>
@@ -143,11 +150,16 @@ const AdviceChat = () => {
           <input 
             value={input} 
             onChange={e => setInput(e.target.value)}
-            className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-right focus:outline-none bg-gray-50" 
+            onKeyDown={(e) => e.key === 'Enter' && !isProcessing && handleProcess()}
+            className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-right focus:outline-none bg-gray-50 focus:border-pink-500" 
             placeholder="اكتبي رسالتكِ..."
             dir="rtl"
           />
-          <button onClick={() => handleProcess()} disabled={isProcessing || (!input.trim() && !isRecording)} className="p-2 bg-pink-600 text-white rounded-full">
+          <button 
+            onClick={() => handleProcess()} 
+            disabled={isProcessing || (!input.trim() && !isRecording)}
+            className="p-2 bg-pink-600 text-white rounded-full shadow-md disabled:bg-gray-300"
+          >
             {isProcessing ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} className="rotate-180" />}
           </button>
         </div>
