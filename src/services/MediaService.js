@@ -8,13 +8,37 @@ class MediaService {
     this.uploadUrl = "https://raqqa-v6cd.vercel.app/api/upload";
   }
 
-  // --- الصوت ---
+  // --- قسم إدارة صلاحيات الصوت (الميكروفون) ---
+  
+  // دالة لطلب الإذن من المستخدم - ضرورية جداً لتجاوز رسالة "يرجى منح صلاحية"
   async requestAudioPermissions() {
-    const status = await VoiceRecorder.requestAudioRecordingPermission();
-    return status.value;
+    try {
+      const status = await VoiceRecorder.requestAudioRecordingPermission();
+      return status.value; // سيعيد 'granted' في حال موافقة المستخدم
+    } catch (error) {
+      console.error("خطأ أثناء طلب صلاحيات الميكروفون:", error);
+      return 'denied';
+    }
   }
 
+  // دالة للتحقق من الحالة الحالية للصلاحيات
+  async checkAudioPermissions() {
+    try {
+      const status = await VoiceRecorder.hasAudioRecordingPermission();
+      return status.value;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // --- إدارة تسجيل الصوت ---
   async startRecording() {
+    // التحقق من الإذن قبل البدء لضمان عدم تعطل التطبيق
+    const hasPermission = await this.checkAudioPermissions();
+    if (!hasPermission) {
+      const request = await this.requestAudioPermissions();
+      if (request !== 'granted') throw new Error("لم يتم منح صلاحية الميكروفون");
+    }
     return (await VoiceRecorder.startRecording()).value;
   }
 
@@ -48,7 +72,7 @@ class MediaService {
     }
   }
 
-  // --- دالة الرفع المطلوبة بالاسم المحدد في الخطأ ---
+  // --- رفع الملفات إلى Vercel ---
   async uploadToVercel(base64Data, fileName, contentType) {
     try {
       const blob = this.base64ToBlob(base64Data, contentType);
@@ -68,7 +92,7 @@ class MediaService {
     }
   }
 
-  // دالة مساعدة
+  // دالة مساعدة لتحويل Base64 إلى Blob
   base64ToBlob(base64, contentType = "") {
     const byteCharacters = atob(base64);
     const byteArrays = [];
@@ -88,9 +112,11 @@ class MediaService {
 const mediaServiceInstance = new MediaService();
 export default mediaServiceInstance;
 
-// التصدير بالأسماء التي تطلبها صفحاتك (Named Exports)
-export const fetchImage = () => mediaServiceInstance.fetchImage();
-export const takePhoto = () => mediaServiceInstance.takePhoto();
+// التصدير المباشر للدوال لاستخدامها في واجهة التطبيق
+export const requestAudioPermissions = () => mediaServiceInstance.requestAudioPermissions();
+export const checkAudioPermissions = () => mediaServiceInstance.checkAudioPermissions();
 export const startRecording = () => mediaServiceInstance.startRecording();
 export const stopRecording = () => mediaServiceInstance.stopRecording();
+export const fetchImage = () => mediaServiceInstance.fetchImage();
+export const takePhoto = () => mediaServiceInstance.takePhoto();
 export const uploadToVercel = (data, name, type) => mediaServiceInstance.uploadToVercel(data, name, type);
