@@ -1,85 +1,75 @@
 import { VoiceRecorder } from "capacitor-voice-recorder";
 import { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
 import { Filesystem, Directory } from "@capacitor/filesystem";
+import axios from "axios";
 
 class MediaService {
-  // --- قسم إدارة الصوت (Voice Recorder) ---
+  constructor() {
+    this.uploadUrl = "https://raqqa-v6cd.vercel.app/api/upload";
+  }
 
-  // التحقق من توفر التسجيل ومنح الصلاحيات
+  // --- إدارة الصوت (Voice Recorder) ---
   async requestAudioPermissions() {
     const status = await VoiceRecorder.requestAudioRecordingPermission();
     return status.value;
   }
 
   async startRecording() {
-    try {
-      const { value } = await VoiceRecorder.startRecording();
-      return value;
-    } catch (error) {
-      console.error("خطأ أثناء بدء تسجيل الصوت:", error);
-      throw error;
-    }
+    return (await VoiceRecorder.startRecording()).value;
   }
 
   async stopRecording() {
-    try {
-      const result = await VoiceRecorder.stopRecording();
-      // النتيجة تحتوي على ملف base64، مدة التسجيل، ونوع الملف
-      return result.value; 
-    } catch (error) {
-      console.error("خطأ أثناء إيقاف تسجيل الصوت:", error);
-      throw error;
-    }
+    return (await VoiceRecorder.stopRecording()).value;
   }
 
-  // --- قسم الكاميرا والصور (Camera & Gallery) ---
-
+  // --- إدارة الكاميرا والصور ---
   async takePhoto() {
+    const image = await Camera.getPhoto({
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Base64,
+      source: CameraSource.Camera
+    });
+    return image.base64String;
+  }
+
+  // الدالة المطلوبة لصفحة Advice.jsx
+  async fetchImage() {
     try {
       const image = await Camera.getPhoto({
         quality: 90,
         allowEditing: false,
-        resultType: CameraResultType.Base64, // نستخدم Base64 لسهولة العرض والرفع
-        source: CameraSource.Camera // فتح الكاميرا مباشرة
-      });
-      return image.base64String;
-    } catch (error) {
-      console.error("خطأ أثناء التقاط الصورة:", error);
-      throw error;
-    }
-  }
-
-  async pickFromGallery() {
-    try {
-      const image = await Camera.getPhoto({
-        quality: 90,
         resultType: CameraResultType.Base64,
-        source: CameraSource.Photos // فتح معرض الصور
+        source: CameraSource.Photos
       });
       return image.base64String;
     } catch (error) {
-      console.error("خطأ أثناء اختيار صورة من المعرض:", error);
+      console.error("Error fetching image:", error);
       throw error;
     }
   }
 
-  // --- قسم حفظ الملفات (Filesystem) ---
-
-  async saveFileToDevice(fileName, dataBase64) {
+  // --- دالة الرفع إلى الرابط المذكور ---
+  async uploadFile(base64Data, fileName, contentType) {
     try {
-      const result = await Filesystem.writeFile({
-        path: fileName,
-        data: dataBase64,
-        directory: Directory.Documents,
+      const blob = this.base64ToBlob(base64Data, contentType);
+      const formData = new FormData();
+      formData.append("file", blob, fileName);
+
+      const response = await axios.post(this.uploadUrl, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
-      return result.uri;
+
+      return response.data; // سيعيد رابط الملف المرفوع من Vercel
     } catch (error) {
-      console.error("خطأ أثناء حفظ الملف:", error);
+      console.error("خطأ أثناء رفع الملف:", error);
       throw error;
     }
   }
 
-  // دالة مساعدة لتحويل Base64 إلى Blob (مفيد لرفع الملفات للسيرفر)
+  // --- دالة مساعدة لتحويل Base64 إلى Blob ---
   base64ToBlob(base64, contentType = "") {
     const byteCharacters = atob(base64);
     const byteArrays = [];
@@ -96,4 +86,13 @@ class MediaService {
   }
 }
 
-export default new MediaService();
+// تصدير النسخة الافتراضية
+const mediaServiceInstance = new MediaService();
+export default mediaServiceInstance;
+
+// تصدير الدوال بشكل منفرد لإصلاح أخطاء الـ Import في الصفحات
+export const fetchImage = () => mediaServiceInstance.fetchImage();
+export const takePhoto = () => mediaServiceInstance.takePhoto();
+export const startRecording = () => mediaServiceInstance.startRecording();
+export const stopRecording = () => mediaServiceInstance.stopRecording();
+export const uploadFile = (data, name, type) => mediaServiceInstance.uploadFile(data, name, type);
