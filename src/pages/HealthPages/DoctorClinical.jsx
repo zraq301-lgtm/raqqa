@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-[cite_start]// التصحيح: الوصول إلى مجلد src ثم الدخول إلى constants [cite: 1]
+// التصحيح: الوصول إلى مجلد src ثم الدخول إلى constants [cite: 1]
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 
 const DoctorClinical = () => {
-  [cite_start]// استخدام أيقونة التبصر (insight) من خريطة الأيقونات المعرفة في iconMap.js [cite: 2]
+  // استخدام أيقونة التبصر (insight) من خريطة الأيقونات المعرفة في iconMap.js [cite: 2]
   const Icon = iconMap.insight;
   const [openIdx, setOpenIdx] = useState(null);
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_doctor')) || {});
-  
   // حالات الذكاء الصناعي والشات
   const [aiResponse, setAiResponse] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -72,9 +71,9 @@ const DoctorClinical = () => {
   const handleProcess = async (catName) => {
     setLoading(true);
     const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
-
+    
     try {
-      // 1. الاتصال بالذكاء الصناعي [تحقيقاً للمنطق المطلوب]
+      // 1. الاتصال بالذكاء الصناعي للحصول على التقرير [cite: 15, 16]
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
@@ -86,11 +85,16 @@ const DoctorClinical = () => {
       setAiResponse(responseText);
       setIsChatOpen(true);
 
-      // 2. الحفظ في DB نيون عبر API الإشعارات
+      // 2. الحفظ في نيون عبر رابط save-health الجديد كما هو مطلوب [التعديل هنا]
       await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
+        url: 'https://raqqa-v6cd.vercel.app/api/save-health',
         headers: { 'Content-Type': 'application/json' },
-        data: { user_id: 1, category: catName, value: summary, note: responseText }
+        data: { 
+            user_id: 1, 
+            category: catName, 
+            value: summary, 
+            note: responseText 
+        }
       });
 
       setSavedReports(prev => [{ id: Date.now(), title: catName, text: responseText }, ...prev]);
@@ -136,6 +140,7 @@ const DoctorClinical = () => {
                   </div>
                 ))}
               </div>
+    
               <button style={styles.aiBtn} onClick={() => handleProcess(cat.name)} disabled={loading}>
                 {loading ? 'جاري التحليل...' : '✨ تحليل ذكي متخصص'}
               </button>
