@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Send, Image as ImageIcon, Camera, Mic, MicOff, Loader2 } from 'lucide-react';
-// استيراد الخدمات المحدثة لدعم الصوت والكاميرا
+// استيراد الخدمات المحدثة لدعم الصوت والكاميرا وطلب الأذونات
 import { 
   fetchImage, 
   takePhoto, 
+  requestAudioPermissions, // إضافة دالة طلب الإذن
   startRecording, 
   stopRecording, 
   uploadToVercel 
@@ -73,10 +74,18 @@ const AdviceChat = () => {
     }
   };
 
-  // وظيفة التعامل مع تسجيل الصوت
+  // وظيفة التعامل مع تسجيل الصوت مع تفعيل صلاحيات الميكروفون
   const toggleRecording = async () => {
     try {
       if (!isRecording) {
+        // طلب الإذن برمجياً قبل بدء التسجيل 
+        const permission = await requestAudioPermissions();
+        
+        if (permission !== 'granted') {
+          alert("لا يمكن التسجيل بدون منح صلاحية الميكروفون. يرجى الموافقة على طلب الإذن الذي سيظهر الآن أو تفعيله من إعدادات الهاتف.");
+          return;
+        }
+
         await startRecording();
         setIsRecording(true);
       } else {
@@ -84,14 +93,16 @@ const AdviceChat = () => {
         setIsRecording(false);
         setIsProcessing(true);
         
-        // رفع ملف الصوت
-        const uploadRes = await uploadToVercel(audioData.value, `voice_${Date.now()}.wav`, 'audio/wav');
-        handleProcess("لقد أرسلتُ تسجيلاً صوتياً.", { type: 'audio', url: uploadRes.url });
+        // رفع ملف الصوت بعد التأكد من وجود بيانات 
+        if (audioData && audioData.value) {
+           const uploadRes = await uploadToVercel(audioData.value, `voice_${Date.now()}.wav`, 'audio/wav');
+           handleProcess("لقد أرسلتُ تسجيلاً صوتياً.", { type: 'audio', url: uploadRes.url });
+        }
       }
     } catch (err) {
       console.error("خطأ في التسجيل:", err);
       setIsRecording(false);
-      alert("يرجى منح صلاحية الميكروفون.");
+      alert("حدث خطأ أثناء محاولة استخدام الميكروفون. تأكدي من منح الصلاحيات اللازمة.");
     } finally {
       setIsProcessing(false);
     }
@@ -115,7 +126,6 @@ const AdviceChat = () => {
       </div>
 
       <div className="p-4 bg-white flex flex-col gap-2 border-t shadow-lg">
-        {/* أزرار الوسائط الإضافية */}
         <div className="flex gap-4 justify-center mb-2 border-b pb-2">
           <button onClick={() => handleImageAction('camera')} className="text-pink-600 flex flex-col items-center">
             <Camera size={20} /> <span className="text-[10px]">كاميرا</span>
