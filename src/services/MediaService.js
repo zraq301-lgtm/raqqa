@@ -8,7 +8,7 @@ class MediaService {
     this.uploadUrl = "https://raqqa-v6cd.vercel.app/api/upload";
   }
 
-  // --- إدارة الصوت (Voice Recorder) ---
+  // --- الصوت ---
   async requestAudioPermissions() {
     const status = await VoiceRecorder.requestAudioRecordingPermission();
     return status.value;
@@ -22,7 +22,7 @@ class MediaService {
     return (await VoiceRecorder.stopRecording()).value;
   }
 
-  // --- إدارة الكاميرا والصور ---
+  // --- الكاميرا والصور ---
   async takePhoto() {
     const image = await Camera.getPhoto({
       quality: 90,
@@ -33,7 +33,6 @@ class MediaService {
     return image.base64String;
   }
 
-  // الدالة المطلوبة لصفحة Advice.jsx
   async fetchImage() {
     try {
       const image = await Camera.getPhoto({
@@ -49,8 +48,8 @@ class MediaService {
     }
   }
 
-  // --- دالة الرفع إلى الرابط المذكور ---
-  async uploadFile(base64Data, fileName, contentType) {
+  // --- دالة الرفع المطلوبة بالاسم المحدد في الخطأ ---
+  async uploadToVercel(base64Data, fileName, contentType) {
     try {
       const blob = this.base64ToBlob(base64Data, contentType);
       const formData = new FormData();
@@ -62,14 +61,14 @@ class MediaService {
         },
       });
 
-      return response.data; // سيعيد رابط الملف المرفوع من Vercel
+      return response.data; 
     } catch (error) {
-      console.error("خطأ أثناء رفع الملف:", error);
+      console.error("خطأ أثناء الرفع إلى Vercel:", error);
       throw error;
     }
   }
 
-  // --- دالة مساعدة لتحويل Base64 إلى Blob ---
+  // دالة مساعدة
   base64ToBlob(base64, contentType = "") {
     const byteCharacters = atob(base64);
     const byteArrays = [];
@@ -86,13 +85,12 @@ class MediaService {
   }
 }
 
-// تصدير النسخة الافتراضية
 const mediaServiceInstance = new MediaService();
 export default mediaServiceInstance;
 
-// تصدير الدوال بشكل منفرد لإصلاح أخطاء الـ Import في الصفحات
+// التصدير بالأسماء التي تطلبها صفحاتك (Named Exports)
 export const fetchImage = () => mediaServiceInstance.fetchImage();
 export const takePhoto = () => mediaServiceInstance.takePhoto();
 export const startRecording = () => mediaServiceInstance.startRecording();
 export const stopRecording = () => mediaServiceInstance.stopRecording();
-export const uploadFile = (data, name, type) => mediaServiceInstance.uploadFile(data, name, type);
+export const uploadToVercel = (data, name, type) => mediaServiceInstance.uploadToVercel(data, name, type);
