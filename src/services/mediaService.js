@@ -1,80 +1,70 @@
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { upload } from '@vercel/blob/client';
 
+// رابط الـ API الخاص بك على Vercel كما حددته
+const UPLOAD_API_URL = 'https://raqqa-v6cd.vercel.app/api/upload';
+
 /**
- * دالة طلب الأذونات باستخدام مكتبة الكاميرا نفسها
- * Capacitor 6 يقوم بإدارة الأذونات داخلياً عبر وظائف المكتبة
+ * دالة طلب الأذونات - ضرورية جداً لعمل الكاميرا على أجهزة أندرويد (APK)
  */
 export const requestCameraPermissions = async () => {
   try {
-    // التحقق من حالة الأذونات الحالية
     const permissions = await Camera.checkPermissions();
-    
-    // إذا لم تكن الأذونات ممنوحة، نطلبها من المستخدم
     if (permissions.camera !== 'granted' || permissions.photos !== 'granted') {
-      const status = await Camera.requestPermissions();
-      return status.camera === 'granted';
+      await Camera.requestPermissions();
     }
-    
-    return true;
   } catch (error) {
-    console.error("حدث خطأ أثناء طلب الأذونات:", error);
-    return false;
+    console.error("فشل في طلب أذونات الكاميرا:", error);
   }
 };
 
 /**
- * دالة التقاط صورة أو اختيارها من المعرض
+ * دالة التقاط الصورة من الكاميرا أو اختيارها من المعرض
  */
 export const fetchImage = async () => {
   try {
-    // التأكد من الأذونات أولاً
-    const hasPermission = await requestCameraPermissions();
-    if (!hasPermission) {
-      console.warn("الأذونات مرفوضة من قبل المستخدم");
-      return null;
-    }
+    // التأكد من وجود الأذونات قبل البدء
+    await requestCameraPermissions();
 
     const image = await Camera.getPhoto({
-      quality: 80,
-      allowEditing: false, 
-      resultType: CameraResultType.Uri, // نستخدم URI للتعامل مع الصور في تطبيقات الموبايل
-      source: CameraSource.Prompt, // يظهر نافذة اختيار (كاميرا أو معرض)
+      quality: 90,
+      allowEditing: false,
+      resultType: CameraResultType.Uri, // تعيد مسار الصورة لاستخدامه في الرفع
+      source: CameraSource.Prompt, // تظهر خيارات (كاميرا / معرض الصور)
       saveToGallery: true
     });
 
     return image;
   } catch (error) {
-    // في حال قام المستخدم بإلغاء العملية (Cancel) لن يظهر خطأ مخيف في السجل
-    console.log("تم إلغاء عملية التقاط الصورة أو حدث خطأ:", error);
+    console.error("خطأ أثناء التقاط الصورة:", error);
     return null;
   }
 };
 
 /**
- * دالة الرفع إلى Vercel Blob
- * @param {string} imageUri - المسار المحلي الذي تعيده الكاميرا (photo.webPath)
+ * دالة الرفع إلى Vercel Blob باستخدام الرابط الكامل
  */
 export const uploadToVercel = async (imageUri) => {
   try {
-    // 1. جلب بيانات الصورة من المسار المحلي وتحويلها إلى Blob
+    // 1. تحويل مسار الصورة المحلي (webPath) إلى Blob ثم إلى File Object
     const response = await fetch(imageUri);
     const blob = await response.blob();
     
-    // 2. تجهيز اسم الملف بصيغة فريدة
-    const fileName = `chat_${Date.now()}.jpg`;
+    // إنشاء اسم ملف فريد باستخدام الوقت الحالي
+    const fileName = `capture_${Date.now()}.jpg`;
     const file = new File([blob], fileName, { type: "image/jpeg" });
 
-    // 3. الرفع مباشرة باستخدام مكتبة العميل
-    // ملاحظة: handleUploadUrl يجب أن يطابق مسار ملف الـ API في مشروعك
+    // 2. عملية الرفع عبر استدعاء الـ API الخاص بك
+    // ستقوم مكتبة العميل بالاتصال بـ UPLOAD_API_URL لتوليد التوكن ثم الرفع
     const newBlob = await upload(file.name, file, {
       access: 'public',
-      handleUploadUrl: '/api/upload', 
+      handleUploadUrl: UPLOAD_API_URL, 
     });
 
-    return newBlob.url; // يعيد رابط الصورة النهائي (https://...)
+    console.log('تم الرفع بنجاح، رابط الملف:', newBlob.url);
+    return newBlob.url; // يعيد رابط الصورة النهائي
   } catch (error) {
-    console.error("فشل رفع الملف إلى Vercel Blob:", error);
+    console.error("خطأ في الاتصال بـ API الرفع أو عملية الرفع نفسها:", error);
     throw error;
   }
 };
