@@ -1,111 +1,142 @@
-import React from 'react';
-// التصحيح: المسار الصحيح للوصول لملف الأيقونات من مجلد HealthPages
-import { iconMap } from '../../constants/iconMap'; 
+import React, { useState, useRef, useEffect } from 'react';
+import { CapacitorHttp } from '@capacitor/core';
+import { Send, Image as ImageIcon, Loader2, User, Bot } from 'lucide-react';
+import { fetchImage, uploadToVercel } from './services/MediaService';
 
-const MedicalArticle = () => {
-  // استخدام أيقونة الدردشة/النصيحة (chat)
-  const Icon = iconMap.chat; 
+const ChatInterface = () => {
+  const [messages, setMessages] = useState([
+    { id: 1, text: "مرحباً بكِ، أنا رقة. كيف يمكنني مساعدتكِ اليوم؟", sender: 'ai' }
+  ]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const scrollRef = useRef(null);
+
+  // التمرير التلقائي لآخر رسالة
+  useEffect(() => {
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // دالة إرسال الرسائل النصية والاتصال بـ AI
+  const handleSendMessage = async (textOverride = null) => {
+    const messageText = textOverride || input;
+    if (!messageText.trim()) return;
+
+    const userMsg = { id: Date.now(), text: messageText, sender: 'user' };
+    setMessages(prev => [...prev, userMsg]);
+    setInput('');
+    setLoading(true);
+
+    try {
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          prompt: `أنا أنثى مسلمة... ${messageText}` 
+        }
+      };
+
+      // استخدام CapacitorHttp الموصى به لتطبيقات APK
+      const response = await CapacitorHttp.post(options);
+      const responseText = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك.";
+
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: responseText, sender: 'ai' }]);
+    } catch (err) {
+      console.error("فشل الاتصال:", err);
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت.", sender: 'ai' }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // دالة التعامل مع رفع الصور
+  const handleImagePick = async () => {
+    const photo = await fetchImage();
+    if (photo && photo.webPath) {
+      setIsUploading(true);
+      try {
+        const imageUrl = await uploadToVercel(photo.webPath);
+        // إرسال الصورة كرسالة تحتوي على رابط
+        const imageMsg = { id: Date.now(), text: "📷 صورة مرفقة", image: imageUrl, sender: 'user' };
+        setMessages(prev => [...prev, imageMsg]);
+        
+        // اختيارياً: إخبار الذكاء الاصطناعي أنه تم رفع صورة
+        handleSendMessage("لقد قمت برفع صورة لكِ، هل يمكنكِ رؤيتها؟");
+      } catch (error) {
+        alert("فشل رفع الصورة، يرجى المحاولة مرة أخرى.");
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
 
   return (
-    <div style={styles.pageBackground}>
-      <article style={styles.container}>
-        {/* Header Section */}
-        <header style={styles.header}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
-             {Icon && <Icon size={40} color="#d63384" />}
-          </div>
-          <div style={styles.badge}>مقالات طبية متخصصة</div>
-          <h1 style={styles.mainTitle}>المرأة: قلب المجتمع النابض وصحّتها هي "الاستثمار الرابح"</h1>
-          <p style={styles.author}>بقلم: د. أحمد المعتز (طبيب استشاري)</p>
-        </header>
-
-        {/* Featured Image */}
-        <div style={styles.imageContainer}>
-          <img 
-            src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=80" 
-            alt="صحة المرأة واليوغا" 
-            style={styles.image}
-          />
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* Header */}
+      <div className="p-4 bg-white border-b shadow-sm flex items-center gap-3">
+        <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+          <Bot className="text-pink-500" />
         </div>
+        <h1 className="font-bold text-gray-800">رقة AI</h1>
+      </div>
 
-        {/* Introduction */}
-        <section style={styles.introSection}>
-          <p style={styles.paragraph}>
-            دائمًا ما أقول لمرضايا في العيادة: <span style={styles.highlight}>"إن صحة المرأة ليست مجرد غياب للمرض، بل هي حالة من الحيوية التي تمنح الحياة لمن حولها."</span> عندما تهتم المرأة بنفسها، هي لا تفعل ذلك من أجل "الأنانية"، بل هي تبني الأساس الذي يقوم عليه استقرار الأسرة وتوازن المجتمع.
-          </p>
-        </section>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {messages.map((msg) => (
+          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] p-3 rounded-2xl ${
+              msg.sender === 'user' ? 'bg-pink-500 text-white rounded-tr-none' : 'bg-white border rounded-tl-none text-gray-800 shadow-sm'
+            }`}>
+              {msg.image && (
+                <img src={msg.image} alt="Uploaded" className="rounded-lg mb-2 max-h-60 w-full object-cover" />
+              )}
+              <p dir="rtl">{msg.text}</p>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
+              <span className="text-sm text-gray-500">رقة تفكر...</span>
+            </div>
+          </div>
+        )}
+        <div ref={scrollRef} />
+      </div>
 
-        {/* Tips Section */}
-        <section style={styles.content}>
-          <h2 style={styles.subTitle}>خلاصات طبية لحياة متزنة</h2>
+      {/* Input Area */}
+      <div className="p-4 bg-white border-t">
+        <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-full">
+          <button 
+            onClick={handleImagePick}
+            disabled={isUploading}
+            className="p-2 text-gray-500 hover:text-pink-500 transition-colors"
+          >
+            {isUploading ? <Loader2 className="animate-spin" /> : <ImageIcon size={24} />}
+          </button>
           
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>1. قاعدة "المثلث الذهبي" للتمثيل الغذائي</h3>
-            <p>السر يكمن في التوازن الهرموني، وهو ما يتطلب:</p>
-            <ul>
-              <li><strong>البروتين الكافي:</strong> للحفاظ على الكتلة العضلية وكثافة العظام.</li>
-              <li><strong>الدهون الصحية:</strong> أوميغا 3 هو صديق الدماغ والهرمونات الأول.</li>
-              <li><strong>الألياف:</strong> "المكنسة" التي تخلص الجسم من السموم.</li>
-            </ul>
-          </div>
-
-          <div style={styles.card}>
-            <h3 style={styles.cardTitle}>2. النشاط البدني: "دواء" مجاني</h3>
-            <p>الرياضة هي أقوى مضاد اكتئاب طبيعي. ممارسة المقاومة مرتين أسبوعياً تحمي من هشاشة العظام، والمشي السريع يحسن التدفق الدموي.</p>
-          </div>
-        </section>
-
-        {/* Table Section */}
-        <section style={styles.tableSection}>
-          <h2 style={styles.subTitle}>جدول الفحوصات الدورية</h2>
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.tableHeader}>
-                <th style={styles.th}>الفحص</th>
-                <th style={styles.th}>التكرار الموصى به</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={styles.td}>صورة الدم (CBC) وفيتامين د</td>
-                <td style={styles.td}>سنوياً</td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-
-        <footer style={styles.footerQuote}>
-          <p>
-            <blockquote>
-              "تذكري أن الكوب الفارغ لا يمكنه سقي الآخرين. اهتمامك بصحتك ليس رفاهية، بل هو المحرك الأساسي للعطاء."
-            </blockquote>
-          </p>
-        </footer>
-      </article>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            placeholder="اكتبي رسالتكِ هنا..."
+            className="flex-1 bg-transparent border-none focus:ring-0 text-right py-2 px-1"
+            dir="rtl"
+          />
+          
+          <button 
+            onClick={() => handleSendMessage()}
+            disabled={loading || !input.trim()}
+            className="p-2 bg-pink-500 text-white rounded-full disabled:bg-gray-300 transition-all shadow-md"
+          >
+            <Send size={20} className="rotate-180" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
-// CSS in JS Styles
-const styles = {
-  pageBackground: { backgroundColor: '#f9f5f6', padding: '40px 20px', fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif', direction: 'rtl' },
-  container: { maxWidth: '800px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', overflow: 'hidden', padding: '40px' },
-  header: { textAlign: 'center', marginBottom: '30px' },
-  badge: { display: 'inline-block', padding: '5px 15px', backgroundColor: '#ffecf1', color: '#d63384', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '10px' },
-  mainTitle: { color: '#2c3e50', fontSize: '2.2rem', lineHeight: '1.4', margin: '10px 0' },
-  author: { color: '#7f8c8d', fontStyle: 'italic' },
-  imageContainer: { width: '100%', height: '350px', borderRadius: '15px', overflow: 'hidden', marginBottom: '30px' },
-  image: { width: '100%', height: '100%', objectFit: 'cover' },
-  introSection: { borderRight: '5px solid #d63384', paddingRight: '20px', margin: '30px 0', fontSize: '1.2rem', lineHeight: '1.8', color: '#34495e' },
-  highlight: { color: '#d63384', fontWeight: 'bold' },
-  subTitle: { color: '#d63384', fontSize: '1.6rem', borderBottom: '2px solid #fce4ec', paddingBottom: '10px', marginBottom: '20px' },
-  card: { backgroundColor: '#fff9fa', padding: '20px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #ffecf1' },
-  cardTitle: { color: '#2c3e50', marginTop: '0' },
-  tableSection: { marginTop: '40px' },
-  table: { width: '100%', borderCollapse: 'collapse', marginTop: '20px' },
-  th: { backgroundColor: '#d63384', color: 'white', padding: '12px', textAlign: 'right' },
-  td: { padding: '12px', borderBottom: '1px solid #eee' },
-  footerQuote: { marginTop: '50px', textAlign: 'center', padding: '30px', backgroundColor: '#2c3e50', color: 'white', borderRadius: '15px', fontSize: '1.3rem', lineHeight: '1.6' }
-};
-
-export default MedicalArticle;
+export default ChatInterface;
