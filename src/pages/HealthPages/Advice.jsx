@@ -1,142 +1,133 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Send, Image as ImageIcon, Loader2, User, Bot } from 'lucide-react';
-import { fetchImage, uploadToVercel } from './services/MediaService';
+import { Send, Image as ImageIcon, Loader2 } from 'lucide-react';
+// تصحيح المسار: نخرج من HealthPages ثم من pages للوصول إلى services
+import { fetchImage, uploadToVercel } from '../../services/MediaService'; 
 
-const ChatInterface = () => {
+const AdviceChat = () => {
   const [messages, setMessages] = useState([
-    { id: 1, text: "مرحباً بكِ، أنا رقة. كيف يمكنني مساعدتكِ اليوم؟", sender: 'ai' }
+    { id: 1, text: "أهلاً بكِ في قسم الاستشارات، كيف أساعدكِ؟", sender: 'ai' }
   ]);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const scrollRef = useRef(null);
 
-  // التمرير التلقائي لآخر رسالة
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  // تمرير تلقائي لأسفل الشات عند إضافة رسائل جديدة
+  useEffect(() => { 
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" }); 
   }, [messages]);
 
-  // دالة إرسال الرسائل النصية والاتصال بـ AI
-  const handleSendMessage = async (textOverride = null) => {
-    const messageText = textOverride || input;
-    if (!messageText.trim()) return;
+  const handleProcess = async (textOverride = null) => {
+    const content = textOverride || input;
+    if (!content.trim()) return;
 
-    const userMsg = { id: Date.now(), text: messageText, sender: 'user' };
-    setMessages(prev => [...prev, userMsg]);
+    // إضافة رسالة المستخدم للواجهة
+    setMessages(prev => [...prev, { id: Date.now(), text: content, sender: 'user' }]);
     setInput('');
-    setLoading(true);
+    setIsProcessing(true);
 
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          prompt: `أنا أنثى مسلمة... ${messageText}` 
-        }
+        data: { prompt: `أنا أنثى مسلمة... ${content}` }
       };
 
-      // استخدام CapacitorHttp الموصى به لتطبيقات APK
+      // الاتصال عبر CapacitorHttp لضمان العمل على APK وتجاوز CORS
       const response = await CapacitorHttp.post(options);
-      const responseText = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك.";
-
+      const responseText = response.data.reply || response.data.message;
+      
       setMessages(prev => [...prev, { id: Date.now() + 1, text: responseText, sender: 'ai' }]);
     } catch (err) {
-      console.error("فشل الاتصال:", err);
-      setMessages(prev => [...prev, { id: Date.now() + 1, text: "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت.", sender: 'ai' }]);
+      console.error("خطأ في الاتصال:", err);
+      setMessages(prev => [...prev, { id: Date.now() + 1, text: "حدث خطأ في الاتصال بالسيرفر، يرجى التأكد من الإنترنت.", sender: 'ai' }]);
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
-  // دالة التعامل مع رفع الصور
-  const handleImagePick = async () => {
+  const handleMedia = async () => {
+    // فتح الكاميرا أو الاستوديو
     const photo = await fetchImage();
-    if (photo && photo.webPath) {
-      setIsUploading(true);
+    
+    if (photo?.webPath) {
+      setIsProcessing(true);
       try {
-        const imageUrl = await uploadToVercel(photo.webPath);
-        // إرسال الصورة كرسالة تحتوي على رابط
-        const imageMsg = { id: Date.now(), text: "📷 صورة مرفقة", image: imageUrl, sender: 'user' };
-        setMessages(prev => [...prev, imageMsg]);
+        // رفع الصورة إلى Vercel Blob باستخدام الرابط الموجود في MediaService
+        const url = await uploadToVercel(photo.webPath);
         
-        // اختيارياً: إخبار الذكاء الاصطناعي أنه تم رفع صورة
-        handleSendMessage("لقد قمت برفع صورة لكِ، هل يمكنكِ رؤيتها؟");
-      } catch (error) {
-        alert("فشل رفع الصورة، يرجى المحاولة مرة أخرى.");
+        // عرض الصورة في الشات
+        setMessages(prev => [...prev, { 
+          id: Date.now(), 
+          text: "📷 صورة مرفقة", 
+          image: url, 
+          sender: 'user' 
+        }]);
+
+        // إرسال تنبيه للذكاء الاصطناعي بوجود صورة
+        handleProcess("لقد أرسلت لكِ صورة لتحليلها.");
+      } catch (err) {
+        console.error("خطأ في الرفع:", err);
+        alert("فشل رفع الصورة، يرجى المحاولة لاحقاً.");
       } finally {
-        setIsUploading(false);
+        setIsProcessing(false);
       }
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="p-4 bg-white border-b shadow-sm flex items-center gap-3">
-        <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
-          <Bot className="text-pink-500" />
-        </div>
-        <h1 className="font-bold text-gray-800">رقة AI</h1>
-      </div>
-
-      {/* Messages Area */}
+    <div className="flex flex-col h-screen bg-pink-50">
+      {/* منطقة الرسائل */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-3 rounded-2xl ${
-              msg.sender === 'user' ? 'bg-pink-500 text-white rounded-tr-none' : 'bg-white border rounded-tl-none text-gray-800 shadow-sm'
+        {messages.map(m => (
+          <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`p-3 rounded-lg max-w-[80%] shadow-sm ${
+              m.sender === 'user' ? 'bg-pink-600 text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none'
             }`}>
-              {msg.image && (
-                <img src={msg.image} alt="Uploaded" className="rounded-lg mb-2 max-h-60 w-full object-cover" />
+              {m.image && (
+                <img src={m.image} alt="uploaded" className="mb-2 rounded-md max-w-full h-auto border border-pink-200" />
               )}
-              <p dir="rtl">{msg.text}</p>
+              <p className="text-right leading-relaxed" dir="rtl">{m.text}</p>
             </div>
           </div>
         ))}
-        {loading && (
-          <div className="flex justify-start">
-            <div className="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin text-pink-500" />
-              <span className="text-sm text-gray-500">رقة تفكر...</span>
-            </div>
-          </div>
-        )}
         <div ref={scrollRef} />
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 bg-white border-t">
-        <div className="flex items-center gap-2 bg-gray-100 p-2 rounded-full">
-          <button 
-            onClick={handleImagePick}
-            disabled={isUploading}
-            className="p-2 text-gray-500 hover:text-pink-500 transition-colors"
-          >
-            {isUploading ? <Loader2 className="animate-spin" /> : <ImageIcon size={24} />}
-          </button>
-          
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-            placeholder="اكتبي رسالتكِ هنا..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-right py-2 px-1"
-            dir="rtl"
-          />
-          
-          <button 
-            onClick={() => handleSendMessage()}
-            disabled={loading || !input.trim()}
-            className="p-2 bg-pink-500 text-white rounded-full disabled:bg-gray-300 transition-all shadow-md"
-          >
+      {/* منطقة الإدخال */}
+      <div className="p-4 bg-white flex gap-2 items-center border-t shadow-lg">
+        <button 
+          onClick={handleMedia} 
+          disabled={isProcessing}
+          className="p-2 text-pink-600 hover:bg-pink-50 rounded-full transition-colors"
+          title="إرفاق صورة"
+        >
+          <ImageIcon size={24} />
+        </button>
+        
+        <input 
+          value={input} 
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && !isProcessing && handleProcess()}
+          className="flex-1 border border-gray-200 rounded-full px-4 py-2 text-right focus:outline-none focus:border-pink-500 bg-gray-50" 
+          placeholder="اكتبي رسالتكِ هنا..."
+          dir="rtl"
+        />
+        
+        <button 
+          onClick={() => handleProcess()} 
+          disabled={isProcessing || !input.trim()} 
+          className="p-2 bg-pink-600 text-white rounded-full disabled:bg-gray-300 shadow-md hover:bg-pink-700 transition-all"
+        >
+          {isProcessing ? (
+            <Loader2 className="animate-spin" size={20} />
+          ) : (
             <Send size={20} className="rotate-180" />
-          </button>
-        </div>
+          )}
+        </button>
       </div>
     </div>
   );
 };
 
-export default ChatInterface;
+export default AdviceChat;
