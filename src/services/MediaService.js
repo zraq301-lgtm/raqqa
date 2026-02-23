@@ -1,39 +1,44 @@
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { VoiceRecorder } from '@capacitor-community/voice-recorder';
 import { upload } from '@vercel/blob/client';
 
 // رابط الـ API الخاص بك على Vercel كما حددته
 const UPLOAD_API_URL = 'https://raqqa-v6cd.vercel.app/api/upload';
 
 /**
- * دالة طلب الأذونات - ضرورية جداً لعمل الكاميرا على أجهزة أندرويد (APK)
+ * دالة طلب الأذونات - تشمل الآن الكاميرا والميكروفون
  */
-export const requestCameraPermissions = async () => {
+export const requestAllPermissions = async () => {
   try {
-    const permissions = await Camera.checkPermissions();
-    if (permissions.camera !== 'granted' || permissions.photos !== 'granted') {
+    // أذونات الكاميرا والصور
+    const cameraPerms = await Camera.checkPermissions();
+    if (cameraPerms.camera !== 'granted' || cameraPerms.photos !== 'granted') {
       await Camera.requestPermissions();
     }
+
+    // أذونات الميكروفون
+    const voicePerms = await VoiceRecorder.hasAudioRecordingPermission();
+    if (!voicePerms.value) {
+      await VoiceRecorder.requestAudioRecordingPermission();
+    }
   } catch (error) {
-    console.error("فشل في طلب أذونات الكاميرا:", error);
+    console.error("فشل في طلب الأذونات:", error);
   }
 };
 
 /**
- * دالة التقاط الصورة من الكاميرا أو اختيارها من المعرض
+ * دالة التقاط الصورة الفوتوغرافية
  */
 export const fetchImage = async () => {
   try {
-    // التأكد من وجود الأذونات قبل البدء
-    await requestCameraPermissions();
-
+    await requestAllPermissions();
     const image = await Camera.getPhoto({
       quality: 90,
       allowEditing: false,
-      resultType: CameraResultType.Uri, // تعيد مسار الصورة لاستخدامه في الرفع
-      source: CameraSource.Prompt, // تظهر خيارات (كاميرا / معرض الصور)
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Prompt, 
       saveToGallery: true
     });
-
     return image;
   } catch (error) {
     console.error("خطأ أثناء التقاط الصورة:", error);
@@ -42,29 +47,65 @@ export const fetchImage = async () => {
 };
 
 /**
- * دالة الرفع إلى Vercel Blob باستخدام الرابط الكامل
+ * دالة فتح الكاميرا لتصوير فيديو مباشر
  */
-export const uploadToVercel = async (imageUri) => {
+export const captureVideo = async () => {
   try {
-    // 1. تحويل مسار الصورة المحلي (webPath) إلى Blob ثم إلى File Object
-    const response = await fetch(imageUri);
+    await requestAllPermissions();
+    const video = await Camera.pickVideo({
+      source: CameraSource.Camera, // فتح الكاميرا مباشرة للتصوير
+    });
+    return video;
+  } catch (error) {
+    console.error("خطأ أثناء تصوير الفيديو:", error);
+    return null;
+  }
+};
+
+/**
+ * دوال تسجيل الصوت (الميكروفون)
+ */
+export const startRecording = async () => {
+  try {
+    await requestAllPermissions();
+    const result = await VoiceRecorder.startRecording();
+    return result;
+  } catch (error) {
+    console.error("فشل بدء التسجيل:", error);
+  }
+};
+
+export const stopRecording = async () => {
+  try {
+    const result = await VoiceRecorder.stopRecording();
+    // النتيجة تعيد بيانات Base64 للصوت
+    return result.value; 
+  } catch (error) {
+    console.error("فشل إيقاف التسجيل:", error);
+    return null;
+  }
+};
+
+/**
+ * دالة الرفع إلى Vercel Blob (تدعم الصور، الفيديو، والصوت)
+ */
+export const uploadToVercel = async (mediaUri, fileType = 'image/jpeg', extension = 'jpg') => {
+  try {
+    const response = await fetch(mediaUri);
     const blob = await response.blob();
     
-    // إنشاء اسم ملف فريد باستخدام الوقت الحالي
-    const fileName = `capture_${Date.now()}.jpg`;
-    const file = new File([blob], fileName, { type: "image/jpeg" });
+    const fileName = `media_${Date.now()}.${extension}`;
+    const file = new File([blob], fileName, { type: fileType });
 
-    // 2. عملية الرفع عبر استدعاء الـ API الخاص بك
-    // ستقوم مكتبة العميل بالاتصال بـ UPLOAD_API_URL لتوليد التوكن ثم الرفع
     const newBlob = await upload(file.name, file, {
       access: 'public',
       handleUploadUrl: UPLOAD_API_URL, 
     });
 
     console.log('تم الرفع بنجاح، رابط الملف:', newBlob.url);
-    return newBlob.url; // يعيد رابط الصورة النهائي
+    return newBlob.url;
   } catch (error) {
-    console.error("خطأ في الاتصال بـ API الرفع أو عملية الرفع نفسها:", error);
+    console.error("خطأ في عملية الرفع:", error);
     throw error;
   }
 };
