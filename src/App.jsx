@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react'; // أضفنا useState هنا
+import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
+// إضافة استيراد CapacitorHttp للتعامل مع طلبات الشبكة عبر النظام الأصلي
 import { CapacitorHttp } from '@capacitor/core';
+// استيراد الصور من مجلد الأصول (Assets) لضمان الربط الصحيح وعدم انكسار الروابط
 import healthImg from './assets/health.jpg';
 import feelingsImg from './assets/feelings.jpg';
 import intimacyImg from './assets/intimacy.jpg';
@@ -9,6 +11,7 @@ import swingImg from './assets/swing.jpg';
 import insightImg from './assets/insight.jpg';
 import videosImg from './assets/videos.jpg';
 import virtualImg from './assets/virtual.jpg';
+// استيراد الصفحات والمكونات
 import Health from './pages/Health';
 import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
@@ -16,9 +19,11 @@ import Swing from './pages/Swing';
 import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
+import ProfileSetup from './pages/ProfileSetup'; // إضافة استيراد صفحة البروفايل
 
 import './App.css';
 
+// وظيفة لضمان صعود التمرير للأعلى عند تغيير الصفحة
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => { 
@@ -27,45 +32,8 @@ function ScrollToTop() {
   return null;
 }
 
-// --- مكون صفحة البروفيل الإجبارية ---
-function ProfileSetup({ onComplete }) {
-  const [name, setName] = useState('');
-  
-  const handleSubmit = () => {
-    if (name.trim() !== '') {
-      localStorage.setItem('user_profile_complete', 'true');
-      onComplete();
-    } else {
-      alert("الرجاء إدخال الاسم للمتابعة");
-    }
-  };
-
-  return (
-    <div className="profile-setup-container" style={{ padding: '50px', textAlign: 'center' }}>
-      <h2>مرحباً بكِ في رقة</h2>
-      <p>يرجى إدخال اسمكِ لإعداد ملفكِ الشخصي</p>
-      <input 
-        type="text" 
-        value={name} 
-        onChange={(e) => setName(e.target.value)} 
-        placeholder="اسمكِ هنا..."
-        style={{ padding: '10px', borderRadius: '8px', border: '1px solid #ccc', marginBottom: '20px', width: '80%' }}
-      />
-      <br />
-      <button 
-        onClick={handleSubmit}
-        style={{ padding: '10px 30px', backgroundColor: '#e91e63', color: 'white', border: 'none', borderRadius: '20px' }}
-      >
-        تأكيد ودخول
-      </button>
-    </div>
-  );
-}
-
 function App() {
-  // حالة التحقق من اكتمال البروفيل
-  const [isProfileDone, setIsProfileDone] = useState(localStorage.getItem('user_profile_complete') === 'true');
-
+  // إدارة زر الرجوع في الأندرويد لضمان تجربة مستخدم احترافية
   useEffect(() => {
     CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) { 
@@ -76,16 +44,12 @@ function App() {
     });
   }, []);
 
-  // إذا لم يتم ملء البيانات، تظهر صفحة البروفيل فقط
-  if (!isProfileDone) {
-    return <ProfileSetup onComplete={() => setIsProfileDone(true)} />;
-  }
-
   return (
     <Router>
       <ScrollToTop />
       <div className="app-container">
         
+        {/* الترويسة العلوية (Header) - تحتوي على المكتبة وعالم رقة */}
         <header className="top-sticky-menu">
           <div className="top-cards-container">
             <Link to="/videos" className="top-card">
@@ -104,8 +68,10 @@ function App() {
           </div>
         </header>
         
+        {/* منطقة عرض المحتوى الرئيسي */}
         <main className="main-content">
           <Routes>
+            {/* التوجيه عند فتح التطبيق ليفتح على صفحة الصحة */}
             <Route path="/" element={<Navigate to="/health" />} />
             <Route path="/health" element={<Health />} />
             <Route path="/feelings" element={<Feelings />} />
@@ -114,22 +80,28 @@ function App() {
             <Route path="/insight" element={<Insight />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/virtual-world" element={<VirtualWorld />} />
+            {/* إضافة مسار صفحة إعداد البروفايل */}
+            <Route path="/profile-setup" element={<ProfileSetup />} />
           </Routes>
         </main>
 
+        {/* شريط التنقل السفلي (Navigation Bar) */}
         <nav className="bottom-sticky-menu">
           <div className="nav-grid">
             
+            {/* المشاعر */}
             <Link to="/feelings" className="nav-item">
               <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
               <span className="nav-label">المشاعر</span>
             </Link>
 
+            {/* الحميمية */}
             <Link to="/intimacy" className="nav-item">
               <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
               <span className="nav-label">الحميمية</span>
             </Link>
             
+            {/* أيقونة الصحة المركزية (صحتك) */}
             <Link to="/health" className="nav-item center-action">
               <div className="center-circle">
                 <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
@@ -137,11 +109,13 @@ function App() {
               <span className="nav-label bold">صحتك</span>
             </Link>
 
+            {/* الأرجوحة */}
             <Link to="/swing-forum" className="nav-item">
               <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
               <span className="nav-label">الأرجوحة</span>
             </Link>
 
+            {/* القفقة / البصيرة */}
             <Link to="/insight" className="nav-item">
               <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
               <span className="nav-label">القفقة</span>
