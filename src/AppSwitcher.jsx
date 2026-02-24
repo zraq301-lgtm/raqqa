@@ -1,28 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import App from './App'; // ملف التطبيق الرئيسي
-import ProfileSetup from './pages/ProfileSetup'; // صفحة البروفايل بنظام الكروت
+import React, { useState } from 'react';
+import App from './App';
+import ProfileSetup from './pages/ProfileSetup';
 
 function AppSwitcher() {
-  const [isRegistered, setIsRegistered] = useState(null);
+  // جلب الحالة مباشرة عند التحميل لتجنب الـ null
+  const [isRegistered, setIsRegistered] = useState(() => {
+    return localStorage.getItem('isProfileComplete') === 'true';
+  });
 
-  useEffect(() => {
-    // التحقق من ذاكرة الهاتف إذا كان البروفايل مكتملاً
-    const userStatus = localStorage.getItem('isProfileComplete');
-    setIsRegistered(userStatus === 'true');
-  }, []);
+  const handleComplete = () => {
+    localStorage.setItem('isProfileComplete', 'true');
+    setIsRegistered(true);
+  };
 
-  // حالة التحميل الأولية
-  if (isRegistered === null) return null;
-
-  return (
-    <>
-      {isRegistered ? (
-        <App />
-      ) : (
-        <ProfileSetup onComplete={() => setIsRegistered(true)} />
-      )}
-    </>
-  );
+  // عرض صفحة البروفايل أو التطبيق مباشرة
+  return isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />;
 }
 
 export default AppSwitcher;
