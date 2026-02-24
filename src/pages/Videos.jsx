@@ -1,147 +1,149 @@
 import React, { useState, useEffect } from 'react';
+import './App (6).css'; // التأكد من استدعاء ملف التنسيق الخاص بك
 
 const VideoLibrary = () => {
-  const [videos, setVideos] = useState([]);
+  const [allVideos, setAllVideos] = useState([]);
+  const [filteredVideos, setFilteredVideos] = useState([]);
+  const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
 
-  // وظيفة ذكية لتحويل أي رابط يوتيوب إلى رابط صالح للعرض داخل التطبيق
-  const getEmbedUrl = (url) => {
-    if (!url) return '';
-    let videoId = '';
-    if (url.includes('v=')) {
-      videoId = url.split('v=')[1].split('&')[0];
-    } else if (url.includes('youtu.be/')) {
-      videoId = url.split('youtu.be/')[1].split('?')[0];
+  // تعريف الأقسام بالأسماء الراقية التي اخترناها
+  const categories = [
+    { id: 'all', label: '🏠 الكل' },
+    { id: 'health', label: '🍎 جسدك أمانة' },
+    { id: 'religion', label: '📖 نور وبصيرة' },
+    { id: 'mental', label: '🌱 ملاذ الروح' },
+    { id: 'intimacy', label: '🕯️ أسرار الفراش' }
+  ];
+
+  useEffect(() => {
+    // جلب البيانات من ملف list.json في مجلد public
+    fetch('/list.json')
+      .then(res => res.json())
+      .then(data => {
+        setAllVideos(data);
+        setFilteredVideos(data);
+        setLoading(false);
+      })
+      .catch(err => console.error("خطأ في تحميل الفيديوهات", err));
+  }, []);
+
+  const filterVideos = (categoryId) => {
+    setActiveTab(categoryId);
+    if (categoryId === 'all') {
+      setFilteredVideos(allVideos);
+    } else {
+      const filtered = allVideos.filter(v => v.category === categoryId);
+      setFilteredVideos(filtered);
     }
+  };
+
+  // وظيفة لتحويل الرابط لفتح المشغل مباشرة داخل التطبيق
+  const formatEmbedUrl = (url) => {
+    const videoId = url.split('v=')[1] || url.split('/').pop();
     return `https://www.youtube.com/embed/${videoId}`;
   };
 
-  useEffect(() => {
-    // استدعاء البيانات من ملف list.json الموجود في مجلد public
-    fetch('/list.json')
-      .then((response) => response.json())
-      .then((data) => {
-        setVideos(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error('Error loading videos:', error);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <div style={styles.loader}>جاري تحميل المكتبة...</div>;
+  if (loading) return <div className="loader">جاري تهيئة واحتك الخاصة...</div>;
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <h1 style={styles.title}>مكتبة الفيديوهات الصحية</h1>
-        <p style={styles.subtitle}>كل ما يهم صحة المرأة والأسرة في مكان واحد</p>
+    <div className="app-container" style={{ background: 'var(--soft-bg)' }}>
+      {/* الهيدر العلوي - مستوحى من ملف CSS الخاص بك */}
+      <header className="top-sticky-menu">
+        <h2 style={{ textAlign: 'center', color: 'var(--female-pink)', margin: '10px 0' }}>
+          مكتبة فِكر تاني
+        </h2>
+        <div className="top-cards-container" style={{ overflowX: 'auto', paddingBottom: '10px' }}>
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => filterVideos(cat.id)}
+              className={`top-card ${activeTab === cat.id ? 'active-tab' : ''}`}
+              style={{
+                border: activeTab === cat.id ? '2px solid var(--female-pink)' : '1px solid var(--female-pink-light)',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <span className="card-label">{cat.label}</span>
+            </button>
+          ))}
+        </div>
       </header>
 
-      <div style={styles.grid}>
-        {videos.map((video, index) => (
-          <div key={index} style={styles.card}>
-            <div style={styles.videoWrapper}>
-              <iframe
-                src={getEmbedUrl(video[1])}
-                title={video[0]}
-                style={styles.iframe}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-            <div style={styles.cardInfo}>
-              <h3 style={styles.videoTitle}>{video[0]}</h3>
-              <button 
-                onClick={() => window.open(video[1], '_blank')}
-                style={styles.button}
-              >
-                مشاهدة على يوتيوب
-              </button>
-            </div>
+      {/* منطقة عرض الفيديوهات */}
+      <main className="main-content">
+        <div className="video-grid" style={gridStyle}>
+          {filteredVideos.length > 0 ? (
+            filteredVideos.map((video, index) => (
+              <div key={index} className="video-card-elegant">
+                <div className="video-frame">
+                  <iframe
+                    src={formatEmbedUrl(video.url)}
+                    title={video.title}
+                    frameBorder="0"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+                <div className="video-info">
+                  <span className="category-badge">{categories.find(c => c.id === video.category)?.label || 'عام'}</span>
+                  <h3 className="video-title-text">{video.title}</h3>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p style={{ textAlign: 'center', width: '100%', color: 'var(--text-gray)' }}>قريباً سيتم إضافة فيديوهات في هذا القسم..</p>
+          )}
+        </div>
+      </main>
+
+      {/* المنيو السفلي - بناءً على تنسيق ملفك 80px */}
+      <nav className="bottom-sticky-menu">
+        <div className="nav-grid">
+          <div className="nav-item">
+             <div className="custom-img-icon-nav" style={{display:'flex', justifyContent:'center', alignItems:'center'}}>🏠</div>
+             <span className="nav-label">الرئيسية</span>
           </div>
-        ))}
-      </div>
+          <div className="center-action">
+            <div className="center-circle">
+               <div className="custom-img-icon-main" style={{display:'flex', justifyContent:'center', alignItems:'center', fontSize:'2rem'}}>🌸</div>
+            </div>
+            <span className="nav-label bold" style={{textAlign:'center', display:'block'}}>صحتك</span>
+          </div>
+          <div className="nav-item">
+             <div className="custom-img-icon-nav" style={{display:'flex', justifyContent:'center', alignItems:'center'}}>🔔</div>
+             <span className="nav-label">تنبيهات</span>
+          </div>
+        </div>
+      </nav>
+
+      {/* إضافة تنسيقات إضافية للكروت لم تكن موجودة في ملفك الأصلي */}
+      <style>{`
+        .active-tab { background: var(--female-pink-light) !important; transform: scale(1.05); }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .video-card-elegant { 
+          background: white; border-radius: 20px; overflow: hidden; 
+          box-shadow: 0 10px 20px rgba(255, 77, 125, 0.08); border: 1px solid var(--female-pink-light);
+        }
+        .video-frame { position: relative; padding-bottom: 56.25%; height: 0; }
+        .video-frame iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .video-info { padding: 15px; text-align: right; }
+        .category-badge { 
+          background: var(--soft-bg); color: var(--female-pink); 
+          padding: 2px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold;
+        }
+        .video-title-text { font-size: 0.95rem; margin-top: 8px; color: var(--text-gray); font-weight: 600; }
+        .loader { display: flex; justify-content: center; align-items: center; height: 100vh; color: var(--female-pink); font-family: 'Tajawal'; }
+      `}</style>
     </div>
   );
 };
 
-// تنسيقات الصفحة (Styles)
-const styles = {
-  container: {
-    padding: '20px',
-    backgroundColor: '#f9f9f9',
-    minHeight: '100vh',
-    direction: 'rtl', // لدعم اللغة العربية
-    fontFamily: 'Arial, sans-serif'
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '40px'
-  },
-  title: {
-    color: '#2c3e50',
-    fontSize: '2rem'
-  },
-  subtitle: {
-    color: '#7f8c8d'
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-    gap: '25px',
-    maxWidth: '1200px',
-    margin: '0 auto'
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: '12px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-    transition: 'transform 0.3s ease'
-  },
-  videoWrapper: {
-    position: 'relative',
-    paddingBottom: '56.25%', // نسبة 16:9
-    height: 0,
-    overflow: 'hidden'
-  },
-  iframe: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%'
-  },
-  cardInfo: {
-    padding: '15px'
-  },
-  videoTitle: {
-    fontSize: '1.1rem',
-    color: '#34495e',
-    marginBottom: '10px',
-    lineHeight: '1.4'
-  },
-  button: {
-    backgroundColor: '#e74c3c',
-    color: '#fff',
-    border: 'none',
-    padding: '8px 15px',
-    borderRadius: '5px',
-    cursor: 'pointer',
-    fontSize: '0.9rem',
-    width: '100%'
-  },
-  loader: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100vh',
-    fontSize: '1.5rem',
-    color: '#3498db'
-  }
+const gridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+  gap: '20px',
+  paddingBottom: '20px'
 };
 
 export default VideoLibrary;
