@@ -19,7 +19,7 @@ import Swing from './pages/Swing';
 import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
-import ProfileSetup from './pages/ProfileSetup'; // إضافة استيراد صفحة البروفايل
+import ProfileSetup from './pages/ProfileSetup'; 
 
 import './App.css';
 
@@ -71,8 +71,9 @@ function App() {
         {/* منطقة عرض المحتوى الرئيسي */}
         <main className="main-content">
           <Routes>
-            {/* التوجيه عند فتح التطبيق ليفتح على صفحة الصحة */}
-            <Route path="/" element={<Navigate to="/health" />} />
+            {/* تم التعديل هنا ليفتح التطبيق مباشرة على صفحة البروفايل */}
+            <Route path="/" element={<Navigate to="/profile-setup" />} />
+            
             <Route path="/health" element={<Health />} />
             <Route path="/feelings" element={<Feelings />} />
             <Route path="/intimacy" element={<Intimacy />} />
@@ -80,7 +81,6 @@ function App() {
             <Route path="/insight" element={<Insight />} />
             <Route path="/videos" element={<Videos />} />
             <Route path="/virtual-world" element={<VirtualWorld />} />
-            {/* إضافة مسار صفحة إعداد البروفايل */}
             <Route path="/profile-setup" element={<ProfileSetup />} />
           </Routes>
         </main>
