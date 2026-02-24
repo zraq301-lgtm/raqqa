@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// تأكد أنك قمت بتسمية الملف App.css ووضعه في نفس المجلد
-import './App.css'; 
 
 const VideoLibrary = () => {
   const [allVideos, setAllVideos] = useState([]);
@@ -17,19 +15,15 @@ const VideoLibrary = () => {
   ];
 
   useEffect(() => {
-    // جلب البيانات من المسار الجذري (root) لضمان العمل على فيرسل
     fetch('/list.json')
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
         setAllVideos(data);
         setFilteredVideos(data);
         setLoading(false);
       })
       .catch(err => {
-        console.error("خطأ في تحميل الفيديوهات:", err);
+        console.error("Error:", err);
         setLoading(false);
       });
   }, []);
@@ -46,71 +40,211 @@ const VideoLibrary = () => {
 
   const formatEmbedUrl = (url) => {
     if(!url) return "";
-    // تحويل روابط يوتيوب العادية والمختصرة إلى روابط Embed
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
     const videoId = (match && match[2].length === 11) ? match[2] : null;
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
-  if (loading) return <div className="loader">جاري تهيئة واحتك الخاصة...</div>;
+  if (loading) return <div style={{textAlign:'center', marginTop:'50px', color:'#ff4d7d'}}>جاري تهيئة واحتك الخاصة...</div>;
 
   return (
-    <div className="app-container">
-      <header className="top-sticky-menu">
-        <h2 style={{ textAlign: 'center', color: 'var(--female-pink)', margin: '10px 0' }}>مكتبة فِكر تاني</h2>
-        <div className="top-cards-container" style={{ overflowX: 'auto', display: 'flex', whiteSpace: 'nowrap' }}>
+    <div style={containerStyle}>
+      {/* التنسيقات العامة (CSS-in-JS) */}
+      <style>{`
+        :root {
+          --female-pink: #ff4d7d;
+          --female-pink-light: rgba(255, 77, 125, 0.15);
+          --soft-bg: #fff5f7;
+        }
+        .video-card-elegant {
+          background: white;
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 10px 20px rgba(255, 77, 125, 0.08);
+          border: 1px solid var(--female-pink-light);
+          transition: transform 0.3s ease;
+        }
+        .video-card-elegant:hover { transform: translateY(-5px); }
+        .active-tab { 
+          background-color: var(--female-pink) !important; 
+          color: white !important;
+          box-shadow: 0 4px 10px rgba(255, 77, 125, 0.3);
+        }
+        .top-card {
+          display: flex;
+          align-items: center;
+          background: white;
+          padding: 8px 16px;
+          border-radius: 30px;
+          border: 1px solid var(--female-pink-light);
+          cursor: pointer;
+          white-space: nowrap;
+          font-weight: bold;
+          color: var(--female-pink);
+          transition: 0.3s;
+        }
+        ::-webkit-scrollbar { display: none; }
+      `}</style>
+
+      {/* الهيدر العلوي */}
+      <header style={headerStyle}>
+        <h2 style={{ textAlign: 'center', color: '#ff4d7d', marginBottom: '15px' }}>مكتبة فِكر تاني</h2>
+        <div style={tabsContainerStyle}>
           {categories.map(cat => (
             <button
               key={cat.id}
               onClick={() => filterVideos(cat.id)}
               className={`top-card ${activeTab === cat.id ? 'active-tab' : ''}`}
             >
-              <span className="card-label">{cat.label}</span>
+              {cat.label}
             </button>
           ))}
         </div>
       </header>
 
-      <main className="main-content">
-        <div className="video-grid">
+      {/* محتوى الفيديوهات */}
+      <main style={mainContentStyle}>
+        <div style={videoGridStyle}>
           {filteredVideos.map((video, index) => (
             <div key={index} className="video-card-elegant">
-              <div className="video-frame">
+              <div style={videoFrameWrapper}>
                 <iframe
                   src={formatEmbedUrl(video.url)}
                   title={video.title}
+                  style={iframeStyle}
                   frameBorder="0"
                   allowFullScreen
                 ></iframe>
               </div>
-              <div className="video-info">
-                <span className="category-badge">
+              <div style={videoInfoStyle}>
+                <span style={badgeStyle}>
                   {categories.find(c => c.id === video.category)?.label.split(' ')[1] || 'عام'}
                 </span>
-                <h3 className="video-title-text">{video.title}</h3>
+                <h3 style={videoTitleStyle}>{video.title}</h3>
               </div>
             </div>
           ))}
         </div>
       </main>
-      
-      {/* ستايل إضافي لضمان عمل الجريد بشكل صحيح */}
-      <style>{`
-        .video-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 20px;
-          padding: 10px;
-        }
-        .active-tab {
-          background-color: var(--female-pink) !important;
-          color: white !important;
-        }
-        .active-tab .card-label { color: white !important; }
-      `}</style>
+
+      {/* المنيو السفلي المدمج */}
+      <nav style={bottomNavStyle}>
+        <div style={navGridStyle}>
+          <div style={navItemStyle}><span>🏠</span><span style={labelStyle}>الرئيسية</span></div>
+          <div style={centerActionStyle}>
+            <div style={centerCircleStyle}>🌸</div>
+            <span style={{fontSize:'0.8rem', fontWeight:'bold', color:'#ff4d7d'}}>صحتك</span>
+          </div>
+          <div style={navItemStyle}><span>🔔</span><span style={labelStyle}>تنبيهات</span></div>
+        </div>
+      </nav>
     </div>
   );
+};
+
+/* --- كائنات التنسيق (Styles) --- */
+const containerStyle = {
+  direction: 'rtl',
+  backgroundColor: '#fff5f7',
+  minHeight: '100vh',
+  fontFamily: 'Tajawal, sans-serif'
+};
+
+const headerStyle = {
+  position: 'sticky',
+  top: 0,
+  zIndex: 100,
+  backgroundColor: 'rgba(255, 255, 255, 0.9)',
+  backdropFilter: 'blur(10px)',
+  padding: '10px',
+  borderBottom: '2px solid rgba(255, 77, 125, 0.15)'
+};
+
+const tabsContainerStyle = {
+  display: 'flex',
+  gap: '10px',
+  overflowX: 'auto',
+  padding: '5px'
+};
+
+const mainContentStyle = {
+  padding: '20px',
+  paddingBottom: '100px'
+};
+
+const videoGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+  gap: '20px'
+};
+
+const videoFrameWrapper = {
+  position: 'relative',
+  paddingBottom: '56.25%',
+  height: 0
+};
+
+const iframeStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%'
+};
+
+const videoInfoStyle = { padding: '15px' };
+
+const badgeStyle = {
+  backgroundColor: 'rgba(255, 77, 125, 0.1)',
+  color: '#ff4d7d',
+  padding: '2px 10px',
+  borderRadius: '10px',
+  fontSize: '0.75rem',
+  fontWeight: 'bold'
+};
+
+const videoTitleStyle = {
+  fontSize: '0.95rem',
+  marginTop: '10px',
+  color: '#555',
+  lineHeight: '1.4'
+};
+
+const bottomNavStyle = {
+  position: 'fixed',
+  bottom: 0,
+  width: '100%',
+  height: '80px',
+  backgroundColor: 'white',
+  boxShadow: '0 -4px 15px rgba(0,0,0,0.05)',
+  borderRadius: '25px 25px 0 0'
+};
+
+const navGridStyle = {
+  display: 'flex',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  height: '100%'
+};
+
+const navItemStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', fontSize: '1.2rem' };
+
+const labelStyle = { fontSize: '0.75rem', marginTop: '4px', color: '#777' };
+
+const centerActionStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '-30px' };
+
+const centerCircleStyle = {
+  width: '60px',
+  height: '60px',
+  backgroundColor: 'white',
+  borderRadius: '50%',
+  border: '3px solid #ff4d7d',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  fontSize: '1.8rem',
+  boxShadow: '0 4px 10px rgba(255, 77, 125, 0.2)'
 };
 
 export default VideoLibrary;
