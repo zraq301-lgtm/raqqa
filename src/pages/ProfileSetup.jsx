@@ -1,147 +1,100 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core';
 
-const ProfileSetup = ({ onComplete }) => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
+// استيراد الصور
+import healthImg from './assets/health.jpg';
+import feelingsImg from './assets/feelings.jpg';
+import intimacyImg from './assets/intimacy.jpg';
+import swingImg from './assets/swing.jpg';
+import insightImg from './assets/insight.jpg';
+import videosImg from './assets/videos.jpg';
+import virtualImg from './assets/virtual.jpg';
 
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    social_status: 'متزوجة',
-    health_status: 'عزباء',
-    education_level: 'جامعي',
-    hobbies: '',
-    life_mission: '',
-    weight: '',
-    children_count: 0,
-    chronic_diseases: 'لا يوجد',
-    last_period: '',
-  });
+// استيراد الصفحات
+import Health from './pages/Health';
+import Feelings from './pages/Feelings';
+import Intimacy from './pages/Intimacy';
+import Swing from './pages/Swing';
+import Insight from './pages/Insight';
+import Videos from './pages/Videos';
+import VirtualWorld from './pages/VirtualWorld';
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
+import './App.css';
 
-  const handleFinalSubmit = async (e) => {
-    if (e) e.preventDefault();
-    setLoading(true);
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
-    const finalData = {
-      user_id: 'user-' + Math.random().toString(36).substr(2, 9),
-      ...formData,
-      created_at: new Date().toISOString()
-    };
-
-    try {
-      // حفظ محلي فوري
-      localStorage.setItem('isProfileComplete', 'true');
-      localStorage.setItem('user_data', JSON.stringify(finalData));
-
-      // محاولة الإرسال للسيرفر
-      await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: finalData 
-      });
-
-    } catch (err) {
-      console.error("خطأ في الحفظ السحابي، تم الحفظ محلياً:", err);
-    } finally {
-      setLoading(false);
-      // استخدام آلية مزدوجة للتأكد من الانتقال
-      if (onComplete) {
-        onComplete();
-      } else {
-        window.location.href = '/health'; // حل أخير لضمان الانتقال
-      }
-    }
-  };
+function App() {
+  useEffect(() => {
+    CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (!canGoBack) { CapApp.exitApp(); } else { window.history.back(); }
+    });
+  }, []);
 
   return (
-    <div className="setup-wrapper">
-      <style>{`
-        .setup-wrapper { direction: rtl; background: #fff5f7; min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; }
-        .setup-card { background: white; width: 100%; max-width: 400px; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(255,77,125,0.1); border: 1px solid #ff4d7d30; }
-        .setup-card h2 { color: #ff4d7d; text-align: center; margin-bottom: 20px; }
-        .input-group { margin-bottom: 15px; text-align: right; }
-        label { display: block; margin-bottom: 5px; color: #ff4d7d; font-weight: bold; font-size: 0.9rem; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1.5px solid #eee; border-radius: 12px; box-sizing: border-box; }
-        .btn-main { background: #ff4d7d; color: white; border: none; padding: 15px; border-radius: 15px; width: 100%; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-sub { background: none; color: #888; border: none; width: 100%; margin-top: 10px; cursor: pointer; }
-      `}</style>
+    // تم حذف <Router> من هنا لأنه موجود في main.jsx
+    <div className="app-container">
+      <ScrollToTop />
+      
+      <header className="top-sticky-menu">
+        <div className="top-cards-container">
+          <Link to="/videos" className="top-card">
+            <img src={videosImg} alt="المكتبة" className="custom-img-icon" />
+            <div className="card-text"><span className="card-label">المكتبة</span></div>
+          </Link>
+          <Link to="/virtual-world" className="top-card">
+            <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
+            <div className="card-text"><span className="card-label">عالم رقة</span></div>
+          </Link>
+        </div>
+      </header>
+      
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Navigate to="/health" />} />
+          <Route path="/health" element={<Health />} />
+          <Route path="/feelings" element={<Feelings />} />
+          <Route path="/intimacy" element={<Intimacy />} />
+          <Route path="/swing-forum" element={<Swing />} />
+          <Route path="/insight" element={<Insight />} />
+          <Route path="/videos" element={<Videos />} />
+          <Route path="/virtual-world" element={<VirtualWorld />} />
+        </Routes>
+      </main>
 
-      <div className="setup-card">
-        {step === 1 && (
-          <div>
-            <h2>مرحباً بكِ ✨</h2>
-            <div className="input-group">
-              <label>الاسم الكامل</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="كيف نناديكِ؟" />
+      <nav className="bottom-sticky-menu">
+        <div className="nav-grid">
+          <Link to="/feelings" className="nav-item">
+            <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
+            <span className="nav-label">المشاعر</span>
+          </Link>
+          <Link to="/intimacy" className="nav-item">
+            <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
+            <span className="nav-label">الحميمية</span>
+          </Link>
+          <Link to="/health" className="nav-item center-action">
+            <div className="center-circle">
+              <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
             </div>
-            <div style={{display:'flex', gap:'10px'}}>
-               <div className="input-group">
-                 <label>العمر</label>
-                 <input type="number" name="age" value={formData.age} onChange={handleChange} />
-               </div>
-               <div className="input-group">
-                 <label>الوزن</label>
-                 <input type="number" name="weight" value={formData.weight} onChange={handleChange} />
-               </div>
-            </div>
-            <button className="btn-main" onClick={() => setStep(2)} disabled={!formData.name}>التالي</button>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div>
-            <h2>بيانات تهمنا</h2>
-            <div className="input-group">
-              <label>الحالة الاجتماعية</label>
-              <select name="social_status" value={formData.social_status} onChange={handleChange}>
-                <option value="دراسة">دراسة</option>
-                <option value="مخطوبة">مخطوبة</option>
-                <option value="متزوجة">متزوجة</option>
-                <option value="مطلقة">مطلقة</option>
-                <option value="أرملة">أرملة</option>
-              </select>
-            </div>
-            <div className="input-group">
-              <label>الحالة الصحية</label>
-              <select name="health_status" value={formData.health_status} onChange={handleChange}>
-                <option value="عزباء">عزباء</option>
-                <option value="حامل">حامل</option>
-                <option value="مرضعة">مرضعة</option>
-              </select>
-            </div>
-            <button className="btn-main" onClick={() => setStep(3)}>التالي</button>
-            <button className="btn-sub" onClick={() => setStep(1)}>رجوع</button>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div>
-            <h2>الخطوة الأخيرة</h2>
-            <div className="input-group">
-              <label>تاريخ آخر دورة</label>
-              <input type="date" name="last_period" value={formData.last_period} onChange={handleChange} />
-            </div>
-            <div className="input-group">
-              <label>رسالتكِ في الحياة</label>
-              <textarea name="life_mission" rows="3" value={formData.life_mission} onChange={handleChange} placeholder="طموحاتك..."></textarea>
-            </div>
-            <button className="btn-main" onClick={handleFinalSubmit} disabled={loading}>
-              {loading ? 'جاري الحفظ...' : 'حفظ والدخول لرقة'}
-            </button>
-            <button className="btn-sub" onClick={() => setStep(2)}>رجوع</button>
-          </div>
-        )}
-      </div>
+            <span className="nav-label bold">صحتك</span>
+          </Link>
+          <Link to="/swing-forum" className="nav-item">
+            <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
+            <span className="nav-label">الأرجوحة</span>
+          </Link>
+          <Link to="/insight" className="nav-item">
+            <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
+            <span className="nav-label">القفقة</span>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
-};
+}
 
-export default ProfileSetup;
+export default App;
