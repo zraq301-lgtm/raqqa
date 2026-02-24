@@ -1,4 +1,4 @@
-name: Roqa Final Build Fixed
+name: Roqa Build Fixed
 
 on:
   push:
@@ -10,21 +10,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. جلب الكود
+      - name: 1. Checkout Code
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة
+      - name: 2. Setup Java and Node
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: إعداد Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. التنظيف الشامل
+      - name: 3. Clean and Install
         run: |
           rm -rf android node_modules
           npm install --legacy-peer-deps
@@ -32,68 +32,64 @@ jobs:
           rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
           npm run build --if-present
 
-      - name: 4. إعداد منصة أندرويد
+      - name: 4. Capacitor Sync
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           npx cap sync android
 
-      - name: 5. حل مشكلة معالجة الصور وأمن الشبكة
+      - name: 5. Fix Image Processing and Permissions
         run: |
           mkdir -p android/app/src/main/res/xml
           
-          # [cite_start]إعداد أمن الشبكة بناءً على نطاقك [cite: 6, 8]
           echo '<?xml version="1.0" encoding="utf-8"?>
           <network-security-config>
-              <domain-config cleartextTrafficPermitted="true">
-                  <domain includeSubdomains="true">raqqa-v6cd.vercel.app</domain>
-              </domain-config>
-              <base-config cleartextTrafficPermitted="true">
-                  <trust-anchors>
-                      <certificates src="system" /><certificates src="user" />
-                  </trust-anchors>
-              </base-config>
+            <domain-config cleartextTrafficPermitted="true">
+              <domain includeSubdomains="true">raqqa-v6cd.vercel.app</domain>
+            </domain-config>
+            <base-config cleartextTrafficPermitted="true">
+              <trust-anchors>
+                <certificates src="system" /><certificates src="user" />
+              </trust-anchors>
+            </base-config>
           </network-security-config>' > android/app/src/main/res/xml/network_security_config.xml
 
-          # إضافة FileProvider (الحل الجذري لمشكلة معالجة الصور)
           echo '<?xml version="1.0" encoding="utf-8"?>
           <paths>
-              <external-path name="my_images" path="." />
-              <cache-path name="my_cache" path="." />
-              <files-path name="my_files" path="." />
+            <external-path name="my_images" path="." />
+            <cache-path name="my_cache" path="." />
+            <files-path name="my_files" path="." />
           </paths>' > android/app/src/main/res/xml/file_paths.xml
 
-          # [cite_start]إضافة كافة التصاريح اللازمة [cite: 8]
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />' android/app/src/main/AndroidManifest.xml
 
-          # تحديث إعدادات التطبيق وحقن الـ Provider
           sed -i 's/<application/<application android:networkSecurityConfig="@xml\/network_security_config" android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
           
-          PROVIDER_TAG='<provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>'
-          sed -i "/<\/application>/i $PROVIDER_TAG" android/app/src/main/AndroidManifest.xml
+          PROVIDER_STUB='<provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>'
+          sed -i "/<\/application>/i $PROVIDER_STUB" android/app/src/main/AndroidManifest.xml
 
-      - name: 6. بناء وتوقيع التطبيق
+      - name: 6. Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
-          ./gradlew bundleRelease
           cd ..
           
-          keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
-            [cite_start]-dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 13]
+          keytool -genkey -v -keystore release.jks -alias roqa -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa123456" -keypass "roqa123456" \
+            -dname "CN=Roqa, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          [cite_start]/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks --ks-key-alias "roqa_alias" --ks-pass pass:"roqa_password_2026" --key-pass pass:"roqa_password_2026" --out Roqa-Signed.apk "$APK_FILE" [cite: 14]
+          APK_PATH=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release.jks --ks-key-alias "roqa" --ks-pass pass:"roqa123456" --key-pass pass:"roqa123456" --out Roqa-Signed.apk "$APK_PATH"
 
-      - name: 7. رفع الملف الناتج
+      - name: 7. Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-App-v${{ github.run_number }}
-          [cite_start]path: Roqa-Signed.apk [cite: 16]
+          name: Roqa-Release
+          path: Roqa-Signed.apk
