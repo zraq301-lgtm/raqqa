@@ -1,4 +1,4 @@
-name: Roqa Final Professional Build Fixed
+name: Roqa Final Build Fixed
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. التنظيف وعزل الكود
+      - name: 3. التنظيف الشامل
         run: |
           rm -rf android node_modules
           npm install --legacy-peer-deps
@@ -32,16 +32,17 @@ jobs:
           rsync -av . dist_web/ --exclude android --exclude "*.txt" --exclude node_modules --exclude .git --exclude dist_web
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد
+      - name: 4. إعداد منصة أندرويد
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           npx cap sync android
 
-      - name: 5. ضبط أمن الشبكة ومعالجة الصور
+      - name: 5. حل مشكلة معالجة الصور وأمن الشبكة
         run: |
           mkdir -p android/app/src/main/res/xml
           
+          # [cite_start]إعداد أمن الشبكة بناءً على نطاقك [cite: 6, 8]
           echo '<?xml version="1.0" encoding="utf-8"?>
           <network-security-config>
               <domain-config cleartextTrafficPermitted="true">
@@ -54,56 +55,45 @@ jobs:
               </base-config>
           </network-security-config>' > android/app/src/main/res/xml/network_security_config.xml
 
+          # إضافة FileProvider (الحل الجذري لمشكلة معالجة الصور)
           echo '<?xml version="1.0" encoding="utf-8"?>
           <paths>
               <external-path name="my_images" path="." />
               <cache-path name="my_cache" path="." />
-              <external-files-path name="external_files" path="." />
+              <files-path name="my_files" path="." />
           </paths>' > android/app/src/main/res/xml/file_paths.xml
 
+          # [cite_start]إضافة كافة التصاريح اللازمة [cite: 8]
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' android/app/src/main/AndroidManifest.xml
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' android/app/src/main/AndroidManifest.xml
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />' android/app/src/main/AndroidManifest.xml
           sed -i '/<application/i \    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />' android/app/src/main/AndroidManifest.xml
 
+          # تحديث إعدادات التطبيق وحقن الـ Provider
           sed -i 's/<application/<application android:networkSecurityConfig="@xml\/network_security_config" android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
           
-          PROVIDER_TEXT='<provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>'
-          sed -i "/<\/application>/i $PROVIDER_TEXT" android/app/src/main/AndroidManifest.xml
+          PROVIDER_TAG='<provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>'
+          sed -i "/<\/application>/i $PROVIDER_TAG" android/app/src/main/AndroidManifest.xml
 
-      - name: 6. الأيقونات والوسائط
-        run: |
-          npm install @capacitor/assets --save-dev
-          npx capacitor-assets generate --android
-
-      - name: 7. بناء الملفات
+      - name: 6. بناء وتوقيع التطبيق
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean
           ./gradlew assembleRelease
           ./gradlew bundleRelease
-
-      - name: 8. التوقيع النهائي
-        run: |
+          cd ..
+          
           keytool -genkey -v -keystore release_key.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_password_2026" -keypass "roqa_password_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+            [cite_start]-dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 13]
           
           APK_FILE=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          AAB_FILE=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          [cite_start]/usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks --ks-key-alias "roqa_alias" --ks-pass pass:"roqa_password_2026" --key-pass pass:"roqa_password_2026" --out Roqa-Signed.apk "$APK_FILE" [cite: 14]
 
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release_key.jks --ks-key-alias "roqa_alias" --ks-pass pass:"roqa_password_2026" --key-pass pass:"roqa_password_2026" --out Roqa-Final-Signed.apk "$APK_FILE"
-          jarsigner -keystore release_key.jks -storepass "roqa_password_2026" -keypass "roqa_password_2026" "$AAB_FILE" roqa_alias
-          cp "$AAB_FILE" Roqa-Final-Signed.aab
-
-      - name: 9. رفع النتائج
+      - name: 7. رفع الملف الناتج
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Full-Package-v${{ github.run_number }}
-          path: |
-            Roqa-Final-Signed.apk
-            Roqa-Final-Signed.aab
-            release_key.jks
+          name: Roqa-App-v${{ github.run_number }}
+          [cite_start]path: Roqa-Signed.apk [cite: 16]
