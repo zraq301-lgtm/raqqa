@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+     import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
@@ -6,7 +6,7 @@ const ProfileSetup = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  // حالة البيانات الأولية للحقول المطلوبة
+  // حالة البيانات الأولية للحقول المطلوبة [cite: 43]
   const [formData, setFormData] = useState({
     name: '',
     age: '',
@@ -21,23 +21,24 @@ const ProfileSetup = () => {
     last_period: '',
   });
 
-  // دالة لتوليد معرف فريد (UUID) تلقائياً
+  // دالة لتوليد معرف فريد (UUID) تلقائياً [cite: 44]
   const generateUserId = () => {
     return 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData({ ...formData, [name]: value }); [cite: 46]
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const userId = generateUserId();
+    const userId = generateUserId(); [cite: 47]
     const createdAt = new Date().toISOString();
 
+    // تجميع البيانات النهائية للإرسال
     const finalData = {
       user_id: userId,
       ...formData,
@@ -45,23 +46,26 @@ const ProfileSetup = () => {
     };
 
     try {
+      // منطق الاتصال الخارجي المفعّل عبر CapacitorHttp 
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: finalData
+        data: finalData // إرسال بيانات البروفايل كاملة
       };
 
-      const response = await CapacitorHttp.post(options);
+      const response = await CapacitorHttp.post(options); [cite: 49]
 
+      // التحقق من نجاح الاستجابة [cite: 49]
       if (response.status === 200 || response.status === 201) {
         console.log("تم حفظ البيانات بنجاح:", response.data);
+        // التوجيه إلى صفحة الصحة بعد النجاح 
         navigate('/health');
       } else {
         alert("حدث خطأ أثناء حفظ البيانات، يرجى المحاولة مرة أخرى.");
       }
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
-      alert("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت.");
+      console.error("فشل الاتصال الأصلي:", err); [cite: 51]
+      alert("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت."); [cite: 52]
     } finally {
       setLoading(false);
     }
@@ -69,7 +73,7 @@ const ProfileSetup = () => {
 
   return (
     <div className="profile-setup-container">
-      {/* دمج التنسيقات مباشرة لحل مشكلة Build failed */}
+      {/* التنسيقات المدمجة لضمان استمرارية التصميم [cite: 53, 54] */}
       <style>{`
         :root {
           --female-pink: #ff4d7d;
