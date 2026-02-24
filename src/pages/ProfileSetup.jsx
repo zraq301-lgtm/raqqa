@@ -1,272 +1,218 @@
-     import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1); // نظام التتبع للكروت
 
-  // حالة البيانات الأولية للحقول المطلوبة [cite: 43]
   const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    social_status: 'دراسة',
-    health_status: 'عزباء',
-    education_level: 'جامعي',
-    hobbies: '',
-    life_mission: '',
-    weight: '',
-    children_count: 0,
-    chronic_diseases: 'لا يوجد',
-    last_period: '',
+    name: '', age: '', social_status: 'دراسة', health_status: 'عزباء',
+    education_level: 'جامعي', hobbies: '', life_mission: '', weight: '',
+    children_count: 0, chronic_diseases: 'لا يوجد', last_period: '',
   });
 
-  // دالة لتوليد معرف فريد (UUID) تلقائياً [cite: 44]
+  const totalSteps = 4; // عدد الكروت الإجمالي
+
   const generateUserId = () => {
     return 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value }); [cite: 46]
+    setFormData({ ...formData, [name]: value });
   };
+
+  const nextStep = () => setCurrentStep((prev) => prev + 1);
+  const prevStep = () => setCurrentStep((prev) => prev - 1);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const userId = generateUserId(); [cite: 47]
-    const createdAt = new Date().toISOString();
-
-    // تجميع البيانات النهائية للإرسال
     const finalData = {
-      user_id: userId,
+      user_id: generateUserId(),
       ...formData,
-      created_at: createdAt
+      created_at: new Date().toISOString()
     };
 
     try {
-      // منطق الاتصال الخارجي المفعّل عبر CapacitorHttp 
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: finalData // إرسال بيانات البروفايل كاملة
+        data: finalData
       };
 
-      const response = await CapacitorHttp.post(options); [cite: 49]
-
-      // التحقق من نجاح الاستجابة [cite: 49]
+      const response = await CapacitorHttp.post(options);
       if (response.status === 200 || response.status === 201) {
-        console.log("تم حفظ البيانات بنجاح:", response.data);
-        // التوجيه إلى صفحة الصحة بعد النجاح 
-        navigate('/health');
+        navigate('/health'); // العودة لصفحة الصحة بعد الحفظ [cite: 50]
       } else {
-        alert("حدث خطأ أثناء حفظ البيانات، يرجى المحاولة مرة أخرى.");
+        alert("حدث خطأ أثناء حفظ البيانات.");
       }
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err); [cite: 51]
-      alert("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت."); [cite: 52]
+      alert("حدث خطأ في الشبكة.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="profile-setup-container">
-      {/* التنسيقات المدمجة لضمان استمرارية التصميم [cite: 53, 54] */}
+    <div className="profile-wizard-container">
       <style>{`
-        :root {
-          --female-pink: #ff4d7d;
-          --female-pink-light: rgba(255, 77, 125, 0.15);
-          --soft-bg: #fff5f7;
-          --glass-white: rgba(255, 255, 255, 0.95);
-        }
-
-        .profile-setup-container {
+        .profile-wizard-container {
           direction: rtl;
-          background-color: var(--soft-bg);
+          background-color: #fff5f7;
           min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           padding: 20px;
-          padding-bottom: 40px;
           font-family: 'Tajawal', sans-serif;
         }
-
-        .profile-header {
+        .step-card {
+          background: white;
+          width: 100%;
+          max-width: 450px;
+          padding: 40px 30px;
+          border-radius: 30px;
+          box-shadow: 0 15px 35px rgba(255, 77, 125, 0.15);
           text-align: center;
+          position: relative;
+          border: 2px solid #ff4d7d20;
+        }
+        .progress-bar {
+          height: 6px;
+          background: #eee;
+          border-radius: 10px;
           margin-bottom: 30px;
-          padding-top: 20px;
+          overflow: hidden;
         }
-
-        .profile-header h2 {
-          color: var(--female-pink);
-          font-size: 1.8rem;
-          margin-bottom: 10px;
+        .progress-fill {
+          height: 100%;
+          background: #ff4d7d;
+          transition: width 0.4s ease;
         }
-
-        .profile-header p {
-          color: #666;
-          font-size: 1rem;
-        }
-
-        .profile-form {
-          background: var(--glass-white);
-          padding: 25px;
-          border-radius: 25px;
-          box-shadow: 0 10px 25px rgba(255, 77, 125, 0.1);
-          max-width: 500px;
-          margin: 0 auto;
-          border: 1px solid var(--female-pink-light);
-        }
-
-        .form-group {
-          margin-bottom: 18px;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .form-row {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 15px;
-        }
-
-        label {
-          color: var(--female-pink);
-          font-weight: 600;
-          margin-bottom: 8px;
-          font-size: 0.95rem;
-          display: block;
-        }
-
+        h2 { color: #ff4d7d; margin-bottom: 20px; font-size: 1.5rem; }
+        .form-group { text-align: right; margin-bottom: 20px; }
+        label { display: block; margin-bottom: 10px; font-weight: bold; color: #555; }
         input, select, textarea {
-          padding: 12px 15px;
-          border: 1.5px solid #eee;
-          border-radius: 12px;
-          font-family: inherit;
-          font-size: 1rem;
-          outline: none;
-          transition: all 0.3s ease;
-          background: #f9f9f9;
-        }
-
-        input:focus, select:focus, textarea:focus {
-          border-color: var(--female-pink);
-          background: #fff;
-          box-shadow: 0 0 0 4px var(--female-pink-light);
-        }
-
-        .submit-btn {
           width: 100%;
           padding: 15px;
-          background: var(--female-pink);
+          border: 1.5px solid #eee;
+          border-radius: 15px;
+          background: #f9f9f9;
+          font-size: 1rem;
+        }
+        .btn-row { display: flex; gap: 10px; margin-top: 25px; }
+        .next-btn, .submit-btn {
+          flex: 2;
+          padding: 15px;
+          background: #ff4d7d;
           color: white;
           border: none;
           border-radius: 15px;
-          font-size: 1.1rem;
           font-weight: bold;
           cursor: pointer;
-          transition: all 0.3s ease;
-          margin-top: 20px;
-          box-shadow: 0 5px 15px rgba(255, 77, 125, 0.3);
         }
-
-        .submit-btn:disabled {
-          background: #ccc;
-          box-shadow: none;
-        }
-
-        .submit-btn:active {
-          transform: scale(0.98);
-        }
-
-        textarea {
-          resize: none;
+        .back-btn {
+          flex: 1;
+          padding: 15px;
+          background: #eee;
+          color: #666;
+          border: none;
+          border-radius: 15px;
+          cursor: pointer;
         }
       `}</style>
 
-      <div className="profile-header">
-        <h2>إعداد ملفكِ الشخصي</h2>
-        <p>ساعدينا لنخصص لكِ تجربة رقة فريدة</p>
+      <div className="step-card">
+        <div className="progress-bar">
+          <div className="progress-fill" style={{ width: `${(currentStep / totalSteps) * 100}%` }}></div>
+        </div>
+
+        {currentStep === 1 && (
+          <div className="step-content">
+            <h2>أهلاً بكِ في رقة ✨</h2>
+            <div className="form-group">
+              <label>ما هو اسمكِ؟</label>
+              <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="اكتبي اسمكِ هنا" />
+            </div>
+            <div className="form-group">
+              <label>كم عمركِ؟</label>
+              <input type="number" name="age" value={formData.age} onChange={handleChange} />
+            </div>
+            <button className="next-btn" onClick={nextStep} disabled={!formData.name}>المتابعة</button>
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div className="step-content">
+            <h2>حالكِ الاجتماعي والصحي</h2>
+            <div className="form-group">
+              <label>الحالة الاجتماعية</label>
+              <select name="social_status" value={formData.social_status} onChange={handleChange}>
+                <option value="دراسة">دراسة</option>
+                <option value="مخطوبة">مخطوبة</option>
+                <option value="متزوجة">متزوجة</option>
+                <option value="مطلقة">مطلقة</option>
+                <option value="أرملة">أرملة</option>
+              </select>
+            </div>
+            <div className="form-group">
+              <label>الحالة الصحية</label>
+              <select name="health_status" value={formData.health_status} onChange={handleChange}>
+                <option value="عزباء">عزباء</option>
+                <option value="حامل">حامل</option>
+                <option value="مرضعة">مرضعة</option>
+                <option value="سن الأمل">سن الأمل</option>
+              </select>
+            </div>
+            <div className="btn-row">
+              <button className="back-btn" onClick={prevStep}>رجوع</button>
+              <button className="next-btn" onClick={nextStep}>المتابعة</button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 3 && (
+          <div className="step-content">
+            <h2>بيانات تهمنا</h2>
+            <div className="form-group">
+              <label>تاريخ آخر دورة</label>
+              <input type="date" name="last_period" value={formData.last_period} onChange={handleChange} />
+            </div>
+            <div className="form-group">
+              <label>عدد الأولاد</label>
+              <input type="number" name="children_count" value={formData.children_count} onChange={handleChange} />
+            </div>
+            <div className="btn-row">
+              <button className="back-btn" onClick={prevStep}>رجوع</button>
+              <button className="next-btn" onClick={nextStep}>المتابعة</button>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 4 && (
+          <div className="step-content">
+            <h2>رسالتكِ في الحياة</h2>
+            <div className="form-group">
+              <label>ما هي هواياتكِ؟</label>
+              <input type="text" name="hobbies" value={formData.hobbies} onChange={handleChange} placeholder="القراءة، الرياضة..." />
+            </div>
+            <div className="form-group">
+              <label>رسالتكِ بالحياة</label>
+              <textarea name="life_mission" rows="3" value={formData.life_mission} onChange={handleChange} placeholder="اكتبي طموحاتكِ..."></textarea>
+            </div>
+            <div className="btn-row">
+              <button className="back-btn" onClick={prevStep}>رجوع</button>
+              <button className="submit-btn" onClick={handleSubmit} disabled={loading}>
+                {loading ? 'جاري الحفظ...' : 'حفظ وإنهاء'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-
-      <form onSubmit={handleSubmit} className="profile-form">
-        <div className="form-group">
-          <label>الاسم</label>
-          <input type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="كيف نناديكِ؟" />
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label>العمر</label>
-            <input type="number" name="age" min="15" max="80" required value={formData.age} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label>الوزن (كجم)</label>
-            <input type="number" name="weight" value={formData.weight} onChange={handleChange} />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>الحالة الاجتماعية</label>
-          <select name="social_status" value={formData.social_status} onChange={handleChange}>
-            <option value="دراسة">دراسة</option>
-            <option value="مخطوبة">مخطوبة</option>
-            <option value="متزوجة">متزوجة</option>
-            <option value="مطلقة">مطلقة</option>
-            <option value="أرملة">أرملة</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>الحالة الصحية</label>
-          <select name="health_status" value={formData.health_status} onChange={handleChange}>
-            <option value="عزباء">عزباء</option>
-            <option value="حامل">حامل</option>
-            <option value="مرضعة">مرضعة</option>
-            <option value="سن الأمل">سن الأمل</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>المؤهل الدراسي</label>
-          <select name="education_level" value={formData.education_level} onChange={handleChange}>
-            <option value="ثانوي">ثانوي</option>
-            <option value="جامعي">جامعي</option>
-            <option value="ماجستير">ماجستير</option>
-            <option value="دكتوراه">دكتوراه</option>
-          </select>
-        </div>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label>عدد الأولاد</label>
-            <input type="number" name="children_count" min="0" max="10" value={formData.children_count} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label>تاريخ آخر دورة</label>
-            <input type="date" name="last_period" value={formData.last_period} onChange={handleChange} />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>الهوايات</label>
-          <input type="text" name="hobbies" placeholder="القراءة، الرياضة..." value={formData.hobbies} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <label>الأمراض المزمنة (إن وجدت)</label>
-          <input type="text" name="chronic_diseases" placeholder="سكري، ضغط، تكيسات..." value={formData.chronic_diseases} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <label>رسالتكِ في الحياة</label>
-          <textarea name="life_mission" rows="3" placeholder="اكتبي طموحاتكِ باختصار..." value={formData.life_mission} onChange={handleChange}></textarea>
-        </div>
-
-        <button type="submit" className="submit-btn" disabled={loading}>
-          {loading ? 'جاري الحفظ...' : 'حفظ والدخول لعالم رقة'}
-        </button>
-      </form>
     </div>
   );
 };
