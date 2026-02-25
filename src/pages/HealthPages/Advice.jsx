@@ -13,7 +13,7 @@ const AdviceChat = () => {
   const [isRecording, setIsRecording] = useState(false); [cite: 5]
   const scrollRef = useRef(null); [cite: 5]
 
-  // التمرير التلقائي لأسفل
+  // تمرير تلقائي لآخر رسالة
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -25,27 +25,28 @@ const AdviceChat = () => {
     setIsProcessing(true); [cite: 7]
     const userMsgId = Date.now(); [cite: 7]
 
-    // 1. عرض رسالة المستخدم فوراً [cite: 8]
+    // 1. عرض رسالة المستخدم فوراً
     setMessages(prev => [...prev, { id: userMsgId, text: content, sender: 'user', attachment }]); [cite: 8]
     setInput(''); [cite: 9]
 
     try {
       let finalAttachmentUrl = null;
 
-      // 2. إذا كان هناك مرفق، ارفعه أولاً وحوله لرابط URL عبر Vercel Blob [cite: 10]
-      if (attachment) {
-        const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`; [cite: 11]
+      // 2. معالجة المرفق والرفع إلى Vercel Blob
+      if (attachment) { [cite: 10]
+        const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`; [cite: 10, 11]
         const mimeType = attachment.type === 'image' ? 'image/png' : 'audio/aac'; [cite: 11]
-        // الرفع إلى https://raqqa-v6cd.vercel.app/api/upload يتم داخلياً عبر MediaService
+        
+        // استدعاء خدمة الرفع (تأكدي أن MediaService يوجه الطلب لـ /api/upload)
         finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType); [cite: 11]
       }
 
-      // 3. إعداد خيارات الاتصال بـ الذكاء الاصطناعي عبر CapacitorHttp [cite: 12]
+      // 3. الاتصال بـ الذكاء الاصطناعي عبر المحرك الأصلي CapacitorHttp
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai', [cite: 12]
         headers: { 'Content-Type': 'application/json' }, [cite: 12]
         data: {
-          prompt: `أنا أنثى مسلمة، إليكِ رسالتي: ${content}. ${finalAttachmentUrl ? `مرفق رابط الوسائط للتحليل: ${finalAttachmentUrl}` : ''}` [cite: 12, 13]
+          prompt: `أنا أنثى مسلمة، إليكِ رسالتي: ${content}. ${finalAttachmentUrl ? `مرفق رابط الوسائط: ${finalAttachmentUrl}` : ''}` [cite: 12, 13]
         }
       };
 
@@ -92,7 +93,7 @@ const AdviceChat = () => {
           <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-3 rounded-2xl ${m.sender === 'user' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
               {m.text} [cite: 27]
-              {m.attachment && <div className="mt-2 text-[10px] opacity-70 italic">(تم إرسال وسائط للمعالجة)</div>}
+              {m.attachment && <div className="mt-2 text-[10px] opacity-70 italic">(تم إرفاق وسائط سحابية)</div>} [cite: 27]
             </div>
           </div>
         ))}
@@ -100,14 +101,15 @@ const AdviceChat = () => {
       </div>
 
       <div className="p-4 border-t bg-white">
-        <div className="flex gap-4 mb-3 justify-center border-b pb-2"> [cite: 27, 28]
+        <div className="flex gap-4 mb-3 justify-center border-b pb-2"> [cite: 28]
           <button onClick={() => handleImageAction('camera')} className="text-pink-600 flex flex-col items-center">
             <Camera size={22} /> <span className="text-[10px]">كاميرا</span>
           </button>
           <button onClick={() => handleImageAction('gallery')} className="text-pink-600 flex flex-col items-center">
             <ImageIcon size={22} /> <span className="text-[10px]">معرض</span>
           </button>
-          <button onClick={toggleRecording} className={`${isRecording ? [cite_start]'text-red-500 animate-pulse' : 'text-pink-600'} flex flex-col items-center`}> [cite: 29]
+          <button onClick={toggleRecording} 
+            className={`${isRecording ? [cite_start]'text-red-500 animate-pulse' : 'text-pink-600'} flex flex-col items-center`}> [cite: 29]
             {isRecording ? <MicOff size={22} /> : <Mic size={22} />} [cite: 30]
             <span className="text-[10px]">{isRecording ? 'إيقاف' : 'تسجيل'}</span> [cite: 31]
           </button>
