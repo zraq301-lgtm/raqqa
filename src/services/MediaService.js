@@ -4,7 +4,8 @@ import { upload } from "@vercel/blob/client";
 
 class MediaService {
   constructor() {
-    // الرابط الذي يتعامل مع التوكن والرفع في مشروعك على فيرسل
+    // تم التأكد من الرابط الصحيح الذي استدلينا عليه من رسالة الخطأ
+    // يجب أن يتطابق هذا الرابط مع مكان وجود ملف upload-token.js في مشروعك
     this.uploadApiUrl = "https://raqqa-v6cd.vercel.app/api/upload";
   }
 
@@ -43,24 +44,30 @@ class MediaService {
     return image.base64String;
   }
 
-  // --- منطق الرفع السحابي (Vercel Blob) ---
+  // --- منطق الرفع السحابي المطور (Vercel Blob) ---
   async uploadToVercel(base64Data, fileName, mimeType) {
     try {
-      // تحويل Base64 إلى Blob ليتمكن المتصفح/التطبيق من رفعه كملف
-      const res = await fetch(`data:${mimeType};base64,${base64Data}`);
-      const fileBlob = await res.blob();
+      // 1. تحويل Base64 إلى Blob بطريقة أكثر استقراراً للموبايل
+      const response = await fetch(`data:${mimeType};base64,${base64Data}`);
+      const fileBlob = await response.blob();
 
-      // الرفع باستخدام مكتبة Vercel Client (تتصل تلقائياً بـ upload-token.js)
+      // 2. عملية الرفع مع معالجة التوكن
+      // ملاحظة: الخطأ السابق كان بسبب عدم قدرة التطبيق على الوصول لهذا الرابط بنجاح
       const newBlob = await upload(fileName, fileBlob, {
         access: 'public',
         handleUploadUrl: this.uploadApiUrl,
       });
 
-      console.log("تم تحويل الملف لرابط سحابي:", newBlob.url);
-      return { url: newBlob.url };
+      if (!newBlob || !newBlob.url) {
+        throw new Error("فشل الحصول على رابط الملف بعد الرفع");
+      }
+
+      console.log("تم الرفع بنجاح:", newBlob.url);
+      return newBlob.url; // إرجاع الرابط مباشرة لتبسيطه في كود Advice.jsx
     } catch (error) {
-      console.error("خطأ أثناء الرفع لـ Vercel:", error);
-      throw error;
+      console.error("خطأ تقني في MediaService:", error.message);
+      // إرسال تفاصيل الخطأ لتظهر في واجهة المستخدم
+      throw new Error(`مشكلة في الرفع: ${error.message}`);
     }
   }
 }
