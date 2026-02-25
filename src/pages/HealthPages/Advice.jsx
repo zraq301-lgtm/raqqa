@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Send, Image, Camera, Mic, MicOff, Loader2 } from 'lucide-react';
+import { Send, Image as ImageIcon, Camera, Mic, MicOff, Loader2 } from 'lucide-react';
 import { 
   fetchImage, takePhoto, requestAudioPermissions, 
   startRecording, stopRecording, uploadToVercel 
-} from '../../services/MediaService';
+} from '../../services/MediaService'; 
 
 const AdviceChat = () => {
   const [messages, setMessages] = useState([{ id: 1, text: "أهلاً بكِ، كيف أساعدكِ؟", sender: 'ai' }]);
@@ -23,27 +23,25 @@ const AdviceChat = () => {
 
     setIsProcessing(true);
     const userMsgId = Date.now();
-
-    // السطر المسبب للخطأ تم إصلاحه هنا عبر فصل الكائن الجديد في متغير مستقل
-    const newUserMessage = { 
-      id: userMsgId, 
-      text: content, 
-      sender: 'user', 
-      attachment: attachment 
-    };
-
-    setMessages(prev => [...prev, newUserMessage]);
+    
+    setMessages(prev => [...prev, { id: userMsgId, text: content, sender: 'user', attachment }]);
     setInput('');
 
     try {
       let finalAttachmentUrl = null;
 
+      // مرحلة رفع الملف
       if (attachment) {
-        const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`;
-        const mimeType = attachment.type === 'image' ? 'image/png' : 'audio/aac';
-        finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType);
+        try {
+          const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`;
+          const mimeType = attachment.type === 'image' ? 'image/png' : 'audio/aac';
+          finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType);
+        } catch (uploadErr) {
+          throw new Error(`فشل رفع الملف: ${uploadErr.message || 'مشكلة في Vercel Blob'}`);
+        }
       }
 
+      // مرحلة الاتصال بالذكاء الاصطناعي
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
@@ -53,15 +51,25 @@ const AdviceChat = () => {
       };
 
       const response = await CapacitorHttp.post(options);
-      const aiReply = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك.";
       
-      const aiMessage = { id: Date.now(), text: aiReply, sender: 'ai' };
-      setMessages(prev => [...prev, aiMessage]);
+      // التأكد من نجاح الاستجابة
+      if (response.status !== 200) {
+        throw new Error(`خطأ من الخادم (Status: ${response.status})`);
+      }
+
+      const aiReply = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك.";
+      setMessages(prev => [...prev, { id: Date.now(), text: aiReply, sender: 'ai' }]);
 
     } catch (err) {
-      console.error("خطأ الشبكة:", err);
-      const errorMessage = { id: Date.now(), text: "عذراً، حدث خطأ في الشبكة.", sender: 'ai' };
-      setMessages(prev => [...prev, errorMessage]);
+      console.error("تفاصيل الخطأ الكاملة:", err);
+      
+      // عرض رسالة الخطأ التفصيلية في الشات بدلاً من رسالة عامة
+      const detailedError = err.message || "حدث خطأ غير متوقع في الشبكة";
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: `⚠️ عذراً، حدث خطأ: ${detailedError}. تأكدي من إعدادات Vercel والاتصال بالإنترنت.`, 
+        sender: 'ai' 
+      }]);
     } finally {
       setIsProcessing(false);
     }
@@ -72,7 +80,8 @@ const AdviceChat = () => {
       const base64 = type === 'camera' ? await takePhoto() : await fetchImage();
       handleProcess("أرسلتُ صورة لكِ", { type: 'image', data: base64 });
     } catch (e) { 
-      console.error("فشل جلب الصورة");
+      console.error("فشل جلب الصورة:", e);
+      setMessages(prev => [...prev, { id: Date.now(), text: "فشل الوصول للكاميرا أو المعرض.", sender: 'ai' }]);
     }
   };
 
@@ -97,7 +106,7 @@ const AdviceChat = () => {
           <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-3 rounded-2xl ${m.sender === 'user' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
               {m.text}
-              {m.attachment && <div className="mt-2 text-[10px] opacity-70 italic">(تم إرفاق وسائط سحابية)</div>}
+              {m.attachment && <div className="mt-2 text-xs opacity-70 italic">(تم إرسال وسائط للمعالجة...)</div>}
             </div>
           </div>
         ))}
@@ -106,14 +115,13 @@ const AdviceChat = () => {
 
       <div className="p-4 border-t bg-white">
         <div className="flex gap-4 mb-3 justify-center border-b pb-2">
-          <button onClick={() => handleImageAction('camera')} className="text-pink-600 flex flex-col items-center">
+           <button onClick={() => handleImageAction('camera')} className="text-pink-600 flex flex-col items-center">
             <Camera size={22} /> <span className="text-[10px]">كاميرا</span>
           </button>
           <button onClick={() => handleImageAction('gallery')} className="text-pink-600 flex flex-col items-center">
-            <Image size={22} /> <span className="text-[10px]">معرض</span>
+            <ImageIcon size={22} /> <span className="text-[10px]">معرض</span>
           </button>
-          <button onClick={toggleRecording} 
-            className={`${isRecording ? 'text-red-500 animate-pulse' : 'text-pink-600'} flex flex-col items-center`}>
+          <button onClick={toggleRecording} className={`${isRecording ? 'text-red-500 animate-pulse' : 'text-pink-600'} flex flex-col items-center`}>
             {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
             <span className="text-[10px]">{isRecording ? 'إيقاف' : 'تسجيل'}</span>
           </button>
@@ -126,7 +134,11 @@ const AdviceChat = () => {
             placeholder="اكتبي رسالتكِ..." 
             dir="rtl" 
           />
-          <button onClick={() => handleProcess()} disabled={isProcessing} className="p-2 bg-pink-600 text-white rounded-full">
+          <button 
+            onClick={() => handleProcess()} 
+            disabled={isProcessing} 
+            className="p-2 bg-pink-600 text-white rounded-full disabled:bg-gray-400"
+          >
             {isProcessing ? <Loader2 className="animate-spin" /> : <Send />}
           </button>
         </div>
