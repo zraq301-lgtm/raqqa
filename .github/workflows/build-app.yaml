@@ -1,4 +1,4 @@
-name: Roqa Production Signed Build (APK & AAB)
+name: Roqa Production Build (Vercel-Blob Ready)
 
 on:
   push:
@@ -9,10 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: 1. جلب الكود
+      - name: 1. جلب الكود وإعداد البيئة
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - name: إعداد Java و Node
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -20,57 +20,61 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
-      - name: 3. بناء ملفات الويب
+      - name: 2. بناء ملفات الويب
         run: |
           npm install --legacy-peer-deps
-          npm run build --if-present [cite: 43]
+          npm run build --if-present
 
-      - name: 4. مزامنة Capacitor وإصلاح المانيفست
+      - name: 3. مزامنة Capacitor وحقن الصلاحيات
         run: |
-          npx cap config set webDir dist_web [cite: 44]
+          npx cap config set webDir dist_web
           npx cap add android || true
           npx cap sync android
           
+          # مسار المانيفست
           MANIFEST="android/app/src/main/AndroidManifest.xml"
-          # حقن الصلاحيات المطلوبة (كاميرا، ميكروفون، إنترنت) 
+          
+          # حقن الصلاحيات قبل وسم application
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
           
-          # تفعيل الترافيك غير المشفر للصور والصوت 
+          # السماح بالاتصال بسيرفر Vercel (Http Cleartext)
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 5. بناء APK و AAB
+      - name: 4. بناء APK و AAB (Release)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease # لبناء APK
-          ./gradlew bundleRelease   # لبناء AAB (لمتجر جوجل) [cite: 55]
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
 
-      - name: 6. التوقيع الرقمي للملفات
+      - name: 5. إنشاء التوقيع وتوقيع الملفات
         run: |
-          # إنشاء مفتاح توقيع رسمي
-          keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+          # إنشاء مفتاح توقيع جديد (Keystore)
+          keytool -genkey -v -keystore roqa_production.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 56]
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           # توقيع الـ APK
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
-            [cite_start]--ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW" [cite: 57]
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_production.jks \
+            --ks-key-alias "roqa_alias" --ks-pass pass:"roqa_pass_2026" \
+            --out Roqa-Final-Signed.apk "$APK_RAW"
 
           # توقيع الـ AAB
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
+          jarsigner -keystore roqa_production.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 7. رفع النتائج النهائية
+      - name: 6. رفع الحزمة النهائية (Signed)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Files
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
-            roqa_release.jks [cite: 58]
+            roqa_production.jks
