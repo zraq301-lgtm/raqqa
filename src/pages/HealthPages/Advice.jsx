@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-// تم تغيير التسمية لتجنب خطأ التحويل في Vite
 import { Send, Image, Camera, Mic, MicOff, Loader2 } from 'lucide-react';
 import { 
   fetchImage, takePhoto, requestAudioPermissions, 
@@ -25,21 +24,26 @@ const AdviceChat = () => {
     setIsProcessing(true);
     const userMsgId = Date.now();
 
-    // 1. عرض رسالة المستخدم فوراً [cite: 8]
-    setMessages(prev => [...prev, { id: userMsgId, text: content, sender: 'user', attachment }]);
-    setInput(''); [cite: 9]
+    // السطر المسبب للخطأ تم إصلاحه هنا عبر فصل الكائن الجديد في متغير مستقل
+    const newUserMessage = { 
+      id: userMsgId, 
+      text: content, 
+      sender: 'user', 
+      attachment: attachment 
+    };
+
+    setMessages(prev => [...prev, newUserMessage]);
+    setInput('');
 
     try {
       let finalAttachmentUrl = null;
 
-      // 2. رفع المرفق إلى Vercel Blob [cite: 10, 11]
       if (attachment) {
         const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`;
         const mimeType = attachment.type === 'image' ? 'image/png' : 'audio/aac';
         finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType);
       }
 
-      // 3. إعداد خيارات الاتصال بـ الذكاء الاصطناعي عبر CapacitorHttp [cite: 12]
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
@@ -48,39 +52,41 @@ const AdviceChat = () => {
         }
       };
 
-      const response = await CapacitorHttp.post(options); [cite: 14]
-      const aiReply = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك."; [cite: 14]
+      const response = await CapacitorHttp.post(options);
+      const aiReply = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك.";
       
-      setMessages(prev => [...prev, { id: Date.now(), text: aiReply, sender: 'ai' }]); [cite: 15]
+      const aiMessage = { id: Date.now(), text: aiReply, sender: 'ai' };
+      setMessages(prev => [...prev, aiMessage]);
 
     } catch (err) {
-      console.error("خطأ الشبكة:", err); [cite: 16]
-      setMessages(prev => [...prev, { id: Date.now(), text: "عذراً، حدث خطأ في الشبكة.", sender: 'ai' }]); [cite: 17]
+      console.error("خطأ الشبكة:", err);
+      const errorMessage = { id: Date.now(), text: "عذراً، حدث خطأ في الشبكة.", sender: 'ai' };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
-      setIsProcessing(false); [cite: 18]
+      setIsProcessing(false);
     }
   };
 
   const handleImageAction = async (type) => {
     try {
-      const base64 = type === 'camera' ? await takePhoto() : await fetchImage(); [cite: 20]
-      handleProcess("أرسلتُ صورة لكِ", { type: 'image', data: base64 }); [cite: 20]
+      const base64 = type === 'camera' ? await takePhoto() : await fetchImage();
+      handleProcess("أرسلتُ صورة لكِ", { type: 'image', data: base64 });
     } catch (e) { 
-      console.error("فشل جلب الصورة"); [cite: 21]
+      console.error("فشل جلب الصورة");
     }
   };
 
   const toggleRecording = async () => {
     if (!isRecording) {
-      const perm = await requestAudioPermissions(); [cite: 22]
-      if (perm === 'granted') { [cite: 23]
+      const perm = await requestAudioPermissions();
+      if (perm === 'granted') {
         await startRecording();
         setIsRecording(true);
       }
     } else {
-      const audio = await stopRecording(); [cite: 24]
+      const audio = await stopRecording();
       setIsRecording(false);
-      handleProcess("أرسلتُ تسجيلاً صوتياً", { type: 'audio', data: audio.value }); [cite: 25]
+      handleProcess("أرسلتُ تسجيلاً صوتياً", { type: 'audio', data: audio.value });
     }
   };
 
