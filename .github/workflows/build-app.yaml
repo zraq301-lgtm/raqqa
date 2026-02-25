@@ -1,4 +1,4 @@
-name: Roqa Final Production Build
+name: Roqa Production Build Signed (Clean Build)
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (بدون Cache لتجنب الأخطاء)
+      - name: 2. إعداد البيئة (Node 22 & Java 17)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -21,53 +21,58 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات وبناء الويب
+      - name: 3. تنظيف وتثبيت المكتبات
         run: |
+          # حذف مجلد أندرويد لضمان عدم حدوث خطأ "Platform already exists"
+          rm -rf android
           npm install --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. مزامنة Capacitor وحقن الصلاحيات
+      - name: 4. إضافة منصة أندرويد ومزامنتها
         run: |
           npx cap config set webDir dist_web
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
-          
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          # حقن صلاحيات الميكروفون والكاميرا والإنترنت
+
+      - name: 5. حقن صلاحيات المانيفست وأمن الشبكة
+        run: |
+          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
+          # إضافة الأذونات المطلوبة للـ APK
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
+          # تفعيل الاتصال بسيرفر Vercel
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 5. بناء APK و AAB
+      - name: 6. بناء ملفات APK و AAB
         run: |
           cd android && chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 6. إنشاء ملف توقيع وتوقيع التطبيق
+      - name: 7. التوقيع الرقمي (إنشاء Keystore وتوقيع الملفات)
         run: |
-          # إنشاء مفتاح توقيع JKS
+          # إنشاء مفتاح توقيع جديد
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع الـ APK
+          # توقيع وتصدير الـ APK النهائي
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
-            --ks-pass pass:"roqa_pass_2026" --out Roqa-Signed.apk "$APK_RAW"
+            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
 
-          # توقيع الـ AAB
+          # توقيع وتصدير الـ AAB النهائي
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
-          cp "$AAB_RAW" Roqa-Signed.aab
+          cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 7. رفع الملفات الموقعة
+      - name: 8. رفع الحزمة الموقعة
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Package
+          name: Roqa-Full-Package
           path: |
-            Roqa-Signed.apk
-            Roqa-Signed.aab
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
             roqa_release.jks
