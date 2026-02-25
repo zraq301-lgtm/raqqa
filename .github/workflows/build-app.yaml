@@ -1,4 +1,4 @@
-name: Roqa Production Build Fixed
+name: Roqa Production Signed Build (APK & AAB)
 
 on:
   push:
@@ -12,12 +12,11 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة
+      - name: 2. إعداد البيئة (Node 22 & Java 17)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -25,68 +24,53 @@ jobs:
       - name: 3. بناء ملفات الويب
         run: |
           npm install --legacy-peer-deps
-          npm run build --if-present
+          npm run build --if-present [cite: 43]
 
-      - name: 4. إعادة إنشاء منصة أندرويد (لضمان وجود gradlew)
+      - name: 4. مزامنة Capacitor وإصلاح المانيفست
         run: |
-          # حذف المجلد القديم لضمان بناء نظيف 100%
-          rm -rf android
-          npx cap config set webDir dist_web
-          npx cap add android
+          npx cap config set webDir dist_web [cite: 44]
+          npx cap add android || true
           npx cap sync android
-
-      - name: 5. حقن الصلاحيات وإصلاح المانيفست
-        run: |
-          # البحث الديناميكي عن المانيفست
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           
-          if [ -f "$MANIFEST" ]; then
-            echo "تم العثور على المانيفست في: $MANIFEST"
-            
-            # حقن تصاريح الميكروفون والكاميرا
-            sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
-            sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' "$MANIFEST"
-            sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' "$MANIFEST"
-            sed -i '/<application/i \    <uses-feature android:name="android.hardware.camera" android:required="false" />' "$MANIFEST"
-            
-            # تفعيل الترافيك غير المشفر للصور والصوت
-            sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
-          else
-            echo "خطأ حرج: لم يتم العثور على ملف المانيفست!"
-            exit 1
-          fi
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          # حقن الصلاحيات المطلوبة (كاميرا، ميكروفون، إنترنت) 
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
+          
+          # تفعيل الترافيك غير المشفر للصور والصوت 
+          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 6. بناء ملف الـ APK
+      - name: 5. بناء APK و AAB
         run: |
-          # الدخول لمجلد أندرويد والتأكد من صلاحيات التنفيذ
           cd android
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
-            ./gradlew assembleRelease
-          else
-            echo "خطأ: ملف gradlew غير موجود في $(pwd)"
-            ls -R
-            exit 1
-          fi
+          chmod +x gradlew
+          ./gradlew assembleRelease # لبناء APK
+          ./gradlew bundleRelease   # لبناء AAB (لمتجر جوجل) [cite: 55]
 
-      - name: 7. توقيع التطبيق
+      - name: 6. التوقيع الرقمي للملفات
         run: |
-          # إنشاء مفتاح التوقيع
-          keytool -genkey -v -keystore release.jks -alias roqa -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "roqa123456" -keypass "roqa123456" -dname "CN=Roqa"
+          # إنشاء مفتاح توقيع رسمي
+          keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 56]
           
-          # البحث عن الـ APK الناتج وتوقيعه
+          # توقيع الـ APK
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          if [ -z "$APK_RAW" ]; then
-            echo "خطأ: لم يتم العثور على ملف APK بعد البناء"
-            exit 1
-          fi
-          
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release.jks \
-            --ks-pass pass:"roqa123456" --out Roqa-Final-Signed.apk "$APK_RAW"
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
+            [cite_start]--ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW" [cite: 57]
 
-      - name: 8. رفع الملف الناتج
+          # توقيع الـ AAB
+          AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
+          cp "$AAB_RAW" Roqa-Final-Signed.aab
+
+      - name: 7. رفع النتائج النهائية
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-App
-          path: Roqa-Final-Signed.apk
+          name: Roqa-Production-Files
+          path: |
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
+            roqa_release.jks [cite: 58]
