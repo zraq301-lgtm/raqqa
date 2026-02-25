@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // استيراد الأيقونات والمحرك الأصلي للكور
 import { iconMap } from '../../constants/iconMap';
+[cite_start]// 1. تأكد من هذا الاستيراد في أعلى الملف [cite: 1, 2]
 import { CapacitorHttp } from '@capacitor/core';
 
 const MenstrualTracker = () => {
@@ -29,11 +30,12 @@ const MenstrualTracker = () => {
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
 
-  // --- جلب الإشعارات من Neon DB (CapacitorHttp.get) ---
+  // --- جلب الإشعارات (تنبيهات من رقة) ---
   const fetchNotifications = async () => {
     try {
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
+        [cite_start]// استخدام الرابط المطلوب لجلب الإشعارات [cite: 7]
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications?user_id=1',
         method: 'GET'
       };
 
@@ -50,13 +52,13 @@ const MenstrualTracker = () => {
     fetchNotifications();
   }, []);
 
-  // --- منطق المعالجة الرئيسي (حفظ في نيون عبر الرابط الجديد + تحليل ذكاء اصطناعي عبر CapacitorHttp) ---
+  // --- منطق المعالجة الرئيسي (حفظ المدخلات + تحليل ذكاء اصطناعي) ---
   const handleProcess = async (userInput = null) => {
     setLoading(true);
     const summary = JSON.stringify(data);
     
     try {
-      // 1. مرحلة الحفظ في قاعدة بيانات نيون (Neon DB) - الرابط المحدث
+      // 1. مرحلة حفظ المدخلات في الرابط: https://raqqa-hjl8.vercel.app/api/save-notifications
       const saveOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         method: 'POST',
@@ -69,9 +71,10 @@ const MenstrualTracker = () => {
         }
       };
       
+      [cite_start]// تنفيذ الحفظ عبر المحرك الأصلي [cite: 14]
       await CapacitorHttp.post(saveOptions);
 
-      // 2. مرحلة التحليل عبر API الذكاء الاصطناعي باستخدام CapacitorHttp
+      // 2. مرحلة التحليل عبر API الذكاء الاصطناعي
       const promptText = userInput 
         ? `أنا أنثى مسلمة، أحتاج استشارة طبية بناءً على هذه البيانات: ${summary}. سؤالي هو: ${userInput}`
         : `أنا أنثى مسلمة، يرجى تحليل حالتي الصحية بناءً على البيانات التالية كطبيب متخصص في الدورة والخصوبة: ${summary}`;
@@ -83,12 +86,11 @@ const MenstrualTracker = () => {
         data: { prompt: promptText }
       };
 
+      // الاتصال عبر المحرك الأصلي المدمج في الكور
       const response = await CapacitorHttp.post(aiOptions);
       
-      // النتيجة تكون في response.data مباشرة
-      const responseText = response.data.reply || 
-                           response.data.message || 
-                           "عذراً رقية، لم أتمكن من التحليل.";
+      [cite_start]// النتيجة تكون في response.data مباشرة كما هو مطلوب في منطق الاتصال [cite: 18]
+      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل.";
 
       const newMessage = { 
         id: Date.now(),
@@ -103,7 +105,7 @@ const MenstrualTracker = () => {
         setChatHistory(prev => [...prev, newMessage]);
       }
       
-      // تحديث الإشعارات لرؤية النصيحة المحفوظة
+      [cite_start]// تحديث الإشعارات لرؤية النصيحة الطبية الجديدة المحفوظة [cite: 22, 23]
       await fetchNotifications();
 
     } catch (err) {
