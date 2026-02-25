@@ -9,10 +9,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: Setup Node & Java
+      - name: 2. إعداد البيئة
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -22,51 +22,70 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install & Build Web
+      - name: 3. بناء ملفات الويب
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
 
-      - name: Capacitor Sync
+      - name: 4. إعادة إنشاء منصة أندرويد (لضمان وجود gradlew)
         run: |
+          # حذف المجلد القديم لضمان بناء نظيف 100%
+          rm -rf android
           npx cap config set webDir dist_web
-          npx cap add android || true
+          npx cap add android
           npx cap sync android
 
-      - name: Force Hardware Permissions & Fix Manifest Path
+      - name: 5. حقن الصلاحيات وإصلاح المانيفست
         run: |
-          # البحث عن ملف المانيفست للتأكد من المسار الصحيح وتجنب خطأ No such file
+          # البحث الديناميكي عن المانيفست
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           
           if [ -f "$MANIFEST" ]; then
             echo "تم العثور على المانيفست في: $MANIFEST"
             
-            # حقن تصاريح الميكروفون والكاميرا لضمان تجاوز مشكلة "يرجى منح الإذن"
+            # حقن تصاريح الميكروفون والكاميرا
             sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
             sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' "$MANIFEST"
             sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' "$MANIFEST"
             sed -i '/<application/i \    <uses-feature android:name="android.hardware.camera" android:required="false" />' "$MANIFEST"
             
-            # ضبط إعدادات أمن الشبكة وتفعيل الترافيك غير المشفر
+            # تفعيل الترافيك غير المشفر للصور والصوت
             sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
           else
-            echo "خطأ: لم يتم العثور على ملف AndroidManifest.xml. تأكد من نجاح خطوة npx cap add android"
+            echo "خطأ حرج: لم يتم العثور على ملف المانيفست!"
             exit 1
           fi
 
-      - name: Build & Sign APK
+      - name: 6. بناء ملف الـ APK
         run: |
-          cd android && chmod +x gradlew && ./gradlew assembleRelease
-          cd ..
-          # إنشاء مفتاح توقيع مؤقت
+          # الدخول لمجلد أندرويد والتأكد من صلاحيات التنفيذ
+          cd android
+          if [ -f "gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleRelease
+          else
+            echo "خطأ: ملف gradlew غير موجود في $(pwd)"
+            ls -R
+            exit 1
+          fi
+
+      - name: 7. توقيع التطبيق
+        run: |
+          # إنشاء مفتاح التوقيع
           keytool -genkey -v -keystore release.jks -alias roqa -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa123456" -keypass "roqa123456" -dname "CN=Roqa"
           
+          # البحث عن الـ APK الناتج وتوقيعه
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          if [ -z "$APK_RAW" ]; then
+            echo "خطأ: لم يتم العثور على ملف APK بعد البناء"
+            exit 1
+          fi
+          
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release.jks \
             --ks-pass pass:"roqa123456" --out Roqa-Final-Signed.apk "$APK_RAW"
 
-      - name: Upload Artifact
+      - name: 8. رفع الملف الناتج
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-App
