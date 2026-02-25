@@ -4,11 +4,11 @@ import { upload } from "@vercel/blob/client";
 
 class MediaService {
   constructor() {
-    // الرابط الذي يعالج التوكن والرفع في مشروعك
+    // الرابط الذي يتعامل مع التوكن والرفع في مشروعك على فيرسل
     this.uploadApiUrl = "https://raqqa-v6cd.vercel.app/api/upload";
   }
 
-  // --- إدارة الصلاحيات ---
+  // --- إدارة صلاحيات الميكروفون ---
   async requestAudioPermissions() {
     try {
       const status = await VoiceRecorder.requestAudioRecordingPermission();
@@ -16,7 +16,7 @@ class MediaService {
     } catch (e) { return 'denied'; }
   }
 
-  // --- إدارة الصوت ---
+  // --- تسجيل الصوت واسترجاعه كـ Base64 ---
   async startRecording() { await VoiceRecorder.startRecording(); }
 
   async stopRecording() {
@@ -24,7 +24,7 @@ class MediaService {
     return { value: result.value.recordDataBase64 };
   }
 
-  // --- إدارة الصور ---
+  // --- التقاط الصور (كاميرا / معرض) ---
   async takePhoto() {
     const image = await Camera.getPhoto({
       quality: 60,
@@ -43,23 +43,23 @@ class MediaService {
     return image.base64String;
   }
 
-  // --- منطق الرفع الاحترافي (Vercel Blob) ---
+  // --- منطق الرفع السحابي (Vercel Blob) ---
   async uploadToVercel(base64Data, fileName, mimeType) {
     try {
-      // تحويل Base64 إلى Blob حقيقي للرفع
-      const responseByte = await fetch(`data:${mimeType};base64,${base64Data}`);
-      const blobFile = await responseByte.blob();
+      // تحويل Base64 إلى Blob ليتمكن المتصفح/التطبيق من رفعه كملف
+      const res = await fetch(`data:${mimeType};base64,${base64Data}`);
+      const fileBlob = await res.blob();
 
-      // الرفع باستخدام مكتبة Vercel Blob Client
-      const newBlob = await upload(fileName, blobFile, {
+      // الرفع باستخدام مكتبة Vercel Client (تتصل تلقائياً بـ upload-token.js)
+      const newBlob = await upload(fileName, fileBlob, {
         access: 'public',
         handleUploadUrl: this.uploadApiUrl,
       });
 
-      console.log("تم الرفع بنجاح إلى الرابط:", newBlob.url);
+      console.log("تم تحويل الملف لرابط سحابي:", newBlob.url);
       return { url: newBlob.url };
     } catch (error) {
-      console.error("خطأ في رفع الوسائط:", error);
+      console.error("خطأ أثناء الرفع لـ Vercel:", error);
       throw error;
     }
   }
