@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// استيراد الأيقونات والمحرك الأصلي للكور
 import { iconMap } from '../../constants/iconMap';
-[cite_start]// 1. تأكد من هذا الاستيراد في أعلى الملف [cite: 1, 2]
+// استيراد المحرك الأصلي للكور لضمان عمل الطلبات على الجوال
 import { CapacitorHttp } from '@capacitor/core';
 
 const MenstrualTracker = () => {
@@ -30,17 +29,15 @@ const MenstrualTracker = () => {
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
 
-  // --- جلب الإشعارات (تنبيهات من رقة) ---
+  // --- جلب الإشعارات (النصائح الطبية المحفوظة) ---
   const fetchNotifications = async () => {
     try {
       const options = {
-        [cite_start]// استخدام الرابط المطلوب لجلب الإشعارات [cite: 7]
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications?user_id=1',
+        url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
         method: 'GET'
       };
-
       const response = await CapacitorHttp.get(options);
-      if (response.data && response.data.success) {
+      if (response.data.success) {
         setNotifications(response.data.notifications);
       }
     } catch (err) {
@@ -52,45 +49,41 @@ const MenstrualTracker = () => {
     fetchNotifications();
   }, []);
 
-  // --- منطق المعالجة الرئيسي (حفظ المدخلات + تحليل ذكاء اصطناعي) ---
+  // --- منطق المعالجة الرئيسي (حفظ + تحليل) ---
   const handleProcess = async (userInput = null) => {
     setLoading(true);
     const summary = JSON.stringify(data);
     
     try {
-      // 1. مرحلة حفظ المدخلات في الرابط: https://raqqa-hjl8.vercel.app/api/save-notifications
+      // 1. مرحلة الحفظ في Neon DB عبر الرابط المحدد
+      // هذا الجزء يرسل البيانات لـ save-notifications ليتم تخزينها وتوليد نصيحة من Groq
       const saveOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         data: {
           user_id: 1,
           category: 'متابعة الدورة الشهرية',
           value: summary,
-          note: 'تم التحديث من واجهة المتابعة'
+          note: 'تحديث من واجهة المتابعة الذكية'
         }
       };
-      
-      [cite_start]// تنفيذ الحفظ عبر المحرك الأصلي [cite: 14]
       await CapacitorHttp.post(saveOptions);
 
-      // 2. مرحلة التحليل عبر API الذكاء الاصطناعي
+      // 2. مرحلة التحليل المفصل عبر AI
       const promptText = userInput 
         ? `أنا أنثى مسلمة، أحتاج استشارة طبية بناءً على هذه البيانات: ${summary}. سؤالي هو: ${userInput}`
         : `أنا أنثى مسلمة، يرجى تحليل حالتي الصحية بناءً على البيانات التالية كطبيب متخصص في الدورة والخصوبة: ${summary}`;
 
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
-        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
       };
 
-      // الاتصال عبر المحرك الأصلي المدمج في الكور
       const response = await CapacitorHttp.post(aiOptions);
       
-      [cite_start]// النتيجة تكون في response.data مباشرة كما هو مطلوب في منطق الاتصال [cite: 18]
-      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل.";
+      // استخراج الرد من النتيجة (تنسيق CapacitorHttp يعيد البيانات في response.data)
+      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
 
       const newMessage = { 
         id: Date.now(),
@@ -105,11 +98,11 @@ const MenstrualTracker = () => {
         setChatHistory(prev => [...prev, newMessage]);
       }
       
-      [cite_start]// تحديث الإشعارات لرؤية النصيحة الطبية الجديدة المحفوظة [cite: 22, 23]
+      // تحديث قائمة الإشعارات لرؤية النصيحة التي تم حفظها للتو
       await fetchNotifications();
 
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
+      console.error("فشل الاتصال:", err);
       const errorMsg = { role: 'ai', content: "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت." };
       setChatHistory(prev => [...prev, errorMsg]);
     } finally {
@@ -127,6 +120,7 @@ const MenstrualTracker = () => {
     }
   };
 
+  // --- التصميم (Styles) ---
   const styles = {
     container: { background: 'linear-gradient(180deg, #FDF4F5 0%, #F8E1E7 100%)', minHeight: '100vh', padding: '20px', direction: 'rtl' },
     card: { background: '#fff', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 24px rgba(233, 30, 99, 0.08)', marginBottom: '15px' },
@@ -150,17 +144,17 @@ const MenstrualTracker = () => {
           <h2 style={{ color: '#ad1457' }}>طبيبة رقة الذكية</h2>
         </div>
         {notifications.length > 0 && (
-          <div style={{ background: '#FFF3E0', padding: '10px', borderRadius: '10px', marginBottom: '10px', fontSize: '12px', color: '#E65100' }}>
-           🔔 نصيحة طبية: {notifications[0].body}
+          <div style={{ background: '#FFF3E0', padding: '12px', borderRadius: '15px', marginBottom: '10px', fontSize: '13px', color: '#E65100', borderRight: '4px solid #FF9800' }}>
+           🔔 <strong>نصيحة طبية:</strong> {notifications[0].body}
           </div>
         )}
         <button onClick={calculateCycle} style={{ ...styles.btnPrimary, background: '#fce4ec', color: '#ad1457', marginTop: '10px' }}>توقع الدورة القادمة</button>
-        {prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold' }}>الموعد المتوقع: {prediction}</div>}
+        {prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold', color: '#E91E63' }}>الموعد المتوقع: {prediction}</div>}
       </div>
 
       {sections.map((sec) => (
         <div key={sec.id} style={styles.card}>
-          <div onClick={() => setOpenAccordion(openAccordion === sec.id ? null : sec.id)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
+          <div onClick={() => setOpenAccordion(openAccordion === sec.id ? null : sec.id)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: '600' }}>{sec.emoji} {sec.title}</span>
             <span>{openAccordion === sec.id ? '▲' : '▼'}</span>
           </div>
@@ -168,10 +162,10 @@ const MenstrualTracker = () => {
             <div style={{ padding: '15px 0 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               {sec.fields.map(field => (
                 <div key={field}>
-                  <label style={{ fontSize: '11px', color: '#888' }}>{field}</label>
+                  <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>{field}</label>
                   <input 
                     type={field.includes('تاريخ') ? 'date' : 'text'}
-                    style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #FFE1E9' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #FFE1E9', fontSize: '13px' }}
                     value={data[`${sec.title}_${field}`] || ''}
                     onChange={(e) => setData({...data, [`${sec.title}_${field}`]: e.target.value})}
                   />
@@ -182,35 +176,42 @@ const MenstrualTracker = () => {
         </div>
       ))}
 
-      <button onClick={() => { setShowChat(true); handleProcess(); }} style={styles.btnPrimary}>
+      <button 
+        onClick={() => { setShowChat(true); handleProcess(); }} 
+        style={styles.btnPrimary}
+        disabled={loading}
+      >
         {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل الحالة طبياً"}
       </button>
 
       {showChat && (
         <div style={styles.chatOverlay}>
-          <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between' }}>
-            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer' }}>✕</span>
+          <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '20px' }}>✕</span>
             <span style={{ fontWeight: 'bold' }}>طبيبة رقة المتخصصة</span>
-            <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff' }}>مسح</button>
+            <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '12px' }}>مسح</button>
           </div>
+          
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
             {chatHistory.map((msg, i) => (
               <div key={i} style={{ 
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 background: msg.role === 'user' ? '#E91E63' : '#fff',
                 color: msg.role === 'user' ? '#fff' : '#333',
-                padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '80%',
-                marginRight: msg.role === 'user' ? 'auto' : '0'
+                padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '85%',
+                marginLeft: msg.role === 'user' ? 'auto' : '0',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
               }}>
                 {msg.content}
               </div>
             ))}
-            {loading && <div style={{ textAlign: 'center', color: '#E91E63' }}>جاري التواصل مع الطبيبة...</div>}
+            {loading && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري التواصل مع الطبيبة...</div>}
           </div>
+         
           <div style={styles.chatInputArea}>
             <input 
               placeholder="اسألي طبيبة رقة عن دورتك وخصوبتك..." 
-              style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px' }}
+              style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
               onKeyDown={(e) => { 
                 if(e.key === 'Enter' && e.target.value.trim()) { 
                   handleProcess(e.target.value);
