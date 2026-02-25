@@ -10,18 +10,17 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
-    // الاتصال بقاعدة البيانات باستخدام المفتاح المعتمد في الصورة
+    // الاتصال بقاعدة البيانات باستخدام DATABASE_URL من متغيرات البيئة 
     const sql = neon(process.env.DATABASE_URL);
 
     // --- أولاً: منطق جلب البيانات (GET) ---
     if (req.method === 'GET') {
-        const { user_id } = req.query;
+        const { user_name } = req.query;
         try {
             const rows = await sql`
-                SELECT id, title, body, created_at 
-                FROM notifications 
-                WHERE user_id = ${parseInt(user_id || 1)} AND is_read = FALSE 
-                ORDER BY created_at DESC
+                SELECT * FROM notifications 
+                WHERE اسم_المستخدمة = ${user_name || 'زائرة رقة'} 
+                ORDER BY تاريخ_التحديث DESC
             `;
             return res.status(200).json({ success: true, notifications: rows });
         } catch (error) {
@@ -31,12 +30,20 @@ export default async function handler(req, res) {
 
     // --- ثانياً: منطق حفظ البيانات (POST) ---
     if (req.method === 'POST') {
-        const { user_id, category, value, note } = req.body;
+        // استخراج البيانات بناءً على هيكل الجدول الجديد
+        const { 
+            اسم_المستخدمة, العمر, الوزن_الحالي, الطول_سم, فصيلة_الدم,
+            تاريخ_آخر_حيض, مدة_الدورة_بالأيام, موعد_التبويض_المتوقع,
+            هل_يوجد_حمل, أسبوع_الحمل, موعد_الولادة_المتوقع,
+            هل_توجد_رضاعة, مدة_الرضاعة_بالشهور,
+            موعد_الطبيب_القادم, تخصص_الطبيب, الأدوية_الموصوفة, ملاحظات_صحية,
+            category, value // البيانات القادمة من الواجهة للتحليل
+        } = req.body;
 
         try {
-            let aiAdvice = `تم تسجيل ${category} بنجاح في رقة ✨`;
+            let aiAdvice = `تم تحديث بيانات ${category} بنجاح ✨`;
 
-            // جلب نصيحة من GROQ
+            // جلب نصيحة من GROQ 
             try {
                 const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                     method: 'POST',
@@ -47,8 +54,8 @@ export default async function handler(req, res) {
                     body: JSON.stringify({
                         model: "mixtral-8x7b-32768",
                         messages: [
-                            { role: "system", content: "أنتِ طبيبة رقة. قدمي نصيحة طبية قصيرة جداً ورقيقة." },
-                            { role: "user", content: `الفئة: ${category}، القيمة: ${value}` }
+                            { role: "system", content: "أنتِ طبيبة رقة. قدمي نصيحة طبية قصيرة جداً ورقيقة بناءً على بيانات المستخدمة." },
+                            { role: "user", content: `الفئة: ${category}، القيمة: ${value}، الحالة: ${ملاحظات_صحية || 'متابعة دورية'}` }
                         ]
                     })
                 });
@@ -60,23 +67,35 @@ export default async function handler(req, res) {
                 console.error("AI Error:", aiError);
             }
 
-            // الحفظ في جدول notifications
+            // الحفظ في جدول notifications بالأعمدة الجديدة
             await sql`
-                INSERT INTO notifications (user_id, title, body, created_at)
-                VALUES (${user_id || 1}, 'تنبيه من رقة ✨', ${aiAdvice}, NOW());
+                INSERT INTO notifications (
+                    اسم_المستخدمة, العمر, الوزن_الحالي, الطول_سم, فصيلة_الدم,
+                    تاريخ_آخر_حيض, مدة_الدورة_بالأيام, موعد_التبويض_المتوقع,
+                    هل_يوجد_حمل, أسبوع_الحمل, موعد_الولادة_المتوقع,
+                    هل_توجد_رضاعة, مدة_الرضاعة_بالشهور,
+                    موعد_الطبيب_القادم, تخصص_الطبيب, الأدوية_الموصوفة, ملاحظات_صحية,
+                    نص_الإشعار_الحالي, حالة_التنبيه, تاريخ_التحديث
+                )
+                VALUES (
+                    ${اسم_المستخدمة || 'زائرة رقة'}, ${العمر || null}, ${الوزن_الحالي || null}, ${الطول_سم || null}, ${فصيلة_الدم || null},
+                    ${تاريخ_آخر_حيض || null}, ${مدة_الدورة_بالأيام || 28}, ${موعد_التبويض_المتوقع || null},
+                    ${هل_يوجد_حمل || false}, ${أسبوع_الحمل || null}, ${موعد_الولادة_المتوقع || null},
+                    ${هل_توجد_رضاعة || false}, ${مدة_الرضاعة_بالشهور || null},
+                    ${موعد_الطبيب_القادم || null}, ${تخصص_الطبيب || null}, ${الأدوية_الموصوفة || null}, ${ملاحظات_صحية || null},
+                    ${aiAdvice}, 'نشط', NOW()
+                );
             `;
 
-            // المزامنة مع Pipedream
+            // المزامنة مع Pipedream 
             try {
                 await fetch('https://eoo9361730x7onl.m.pipedream.net', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        user_id: user_id,
-                        title: 'تنبيه جديد من رقة',
-                        body: aiAdvice,
+                        user_name: اسم_المستخدمة,
+                        advice: aiAdvice,
                         category: category,
-                        value: value,
                         timestamp: new Date().toISOString()
                     })
                 });
@@ -87,10 +106,10 @@ export default async function handler(req, res) {
             return res.status(200).json({ success: true, advice: aiAdvice });
 
         } catch (dbError) {
-            return res.status(500).json({ error: "فشل في تسجيل البيانات في قاعدة البيانات" });
+            console.error("Database Error:", dbError);
+            return res.status(500).json({ error: "فشل في تسجيل البيانات في الجدول الجديد" });
         }
     }
 
-    // إذا تم استخدام طريقة أخرى غير GET أو POST
     return res.status(405).json({ error: 'Method Not Allowed' });
 }
