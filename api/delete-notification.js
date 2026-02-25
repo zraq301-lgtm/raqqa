@@ -15,7 +15,7 @@ export default async function handler(req, res) {
 
     try {
         // 3. الاتصال بقاعدة بيانات Neon باستخدام الرابط الصحيح من Vercel
-        const sql = neon(process.env.POSTGRES_URL);
+        const sql = neon(process.env.DATABASE_URL);
 
         // 4. تنفيذ أمر الحذف من جدول notifications (الجدول الجديد)
         const result = await sql`DELETE FROM notifications WHERE id = ${id} RETURNING id`;
