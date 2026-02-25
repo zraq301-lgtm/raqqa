@@ -1,12 +1,12 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom'; // إضافة التوجيه هنا
+import { BrowserRouter } from 'react-router-dom';
 import AppSwitcher from './AppSwitcher'; 
 import './App.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter> {/* تغليف التطبيق بالكامل بالموجّه */}
+    <BrowserRouter>
       <AppSwitcher />
     </BrowserRouter>
   </React.StrictMode>
