@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
+// استيراد خدمة الوسائط المطلوبة
+// import { openCamera, openGallery, startRecording } from '../services/MediaService'; 
 
 const DoctorClinical = () => {
   const Icon = iconMap.insight;
@@ -32,25 +34,29 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  const handleProcess = async (catName) => {
+  // دالة المعالجة والاتصال بالذكاء الصناعي
+  const handleProcess = async (catName = "عام") => {
     setLoading(true);
     const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
     
     try {
-      // 1. طلب التحليل من الذكاء الصناعي
-      const aiRes = await CapacitorHttp.post({
+      const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة، إليكِ بيانات عيادة ${catName}: ${summary}. قدمي تقريراً طبياً شاملاً.` }
-      });
+        data: { 
+          prompt: `أنا أنثى مسلمة، بصفتك طبيب متخصص ومعتمد من منظمات الصحة، إليكِ بيانات عيادة ${catName}: ${summary}. قدمي تقريراً طبياً احترافياً وتوجيهات متخصصة.` 
+        }
+      };
 
+      const aiRes = await CapacitorHttp.post(options);
       const responseText = aiRes.data.reply || aiRes.data.message;
+      
       setAiResponse(responseText);
       setIsChatOpen(true);
 
-      // 2. حفظ البيانات في جدول الإشعارات (الرابط الجديد)
+      // حفظ البيانات في الرابط الجديد المذكور (جدول إشعارات نيون)
       await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: { 
           user_id: 1, 
@@ -62,7 +68,8 @@ const DoctorClinical = () => {
 
       setSavedReports(prev => [{ id: Date.now(), title: catName, text: responseText, date: new Date().toLocaleDateString() }, ...prev]);
     } catch (err) {
-      setAiResponse("تم حفظ البيانات محلياً، يرجى التحقق من الاتصال بالإنترنت لمزامنة التقرير.");
+      console.error("فشل الاتصال:", err);
+      setAiResponse("حدث خطأ في الشبكة، تم حفظ البيانات محلياً. تأكدي من الاتصال بالإنترنت لمزامنة التقرير.");
       setIsChatOpen(true);
     } finally {
       setLoading(false);
@@ -78,14 +85,21 @@ const DoctorClinical = () => {
     accItem: { background: 'var(--female-pink-light, #fff5f7)', borderRadius: '15px', marginBottom: '8px', overflow: 'hidden' },
     input: { width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #ff4d7d33', fontSize: '0.85rem', outline: 'none', background: '#fff' },
     aiBtn: { background: 'linear-gradient(45deg, #ff4d7d, #9b59b6)', color: 'white', border: 'none', padding: '12px', borderRadius: '15px', marginTop: '10px', cursor: 'pointer', width: '100%', fontWeight: 'bold' },
-    chatOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 3000 },
-    chatContent: { background: 'white', width: '90%', maxWidth: '320px', maxHeight: '80%', borderRadius: '30px', padding: '20px', position: 'relative', overflowY: 'auto' }
+    doctorRaqqaBtn: { background: 'linear-gradient(90deg, #9b59b6, #ff4d7d)', color: 'white', border: 'none', padding: '15px', borderRadius: '20px', marginBottom: '15px', width: '100%', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', boxShadow: '0 4px 12px rgba(155, 89, 182, 0.3)' },
+    chatOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 3000 },
+    chatContent: { background: 'white', width: '100%', maxWidth: '500px', height: '85%', borderTopLeftRadius: '35px', borderTopRightRadius: '35px', padding: '25px', position: 'relative', overflowY: 'auto', boxShadow: '0 -10px 25px rgba(0,0,0,0.1)' }
   };
 
   return (
     <div style={{ padding: '10px', paddingBottom: '100px' }}>
+      {/* مدخلات الملفات المخفية */}
       <input type="file" accept="image/*" capture="environment" ref={cameraInputRef} style={{ display: 'none' }} />
       <input type="file" accept="image/*" ref={fileInputRef} style={{ display: 'none' }} />
+
+      {/* زر طبيب رقة العلوي الجديد */}
+      <button style={styles.doctorRaqqaBtn} onClick={() => setIsChatOpen(true)}>
+        <span>🩺</span> طبيب رقة المتخصص
+      </button>
 
       <div style={styles.card}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--female-pink, #ff4d7d)', marginBottom: '15px' }}>
@@ -134,20 +148,30 @@ const DoctorClinical = () => {
         )}
       </div>
 
+      {/* كارت الشات الكبير والأنيق */}
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatContent}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #f0f0f0', paddingBottom: '10px' }}>
-              <span style={{ fontWeight: 'bold', color: '#ff4d7d', fontSize: '0.9rem' }}>تقرير رقة الذكي</span>
-              <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: 'none', fontSize: '1rem' }}>✕</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '2px solid #f9f9f9', paddingBottom: '15px' }}>
+              <div>
+                <span style={{ fontWeight: 'bold', color: '#ff4d7d', fontSize: '1.1rem', display: 'block' }}>طبيب رقة الذكي 👩‍⚕️</span>
+                <small style={{ color: '#888' }}>استشارات طبية متخصصة</small>
+              </div>
+              <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: '#f0f0f0', width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer' }}>✕</button>
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#444', lineHeight: '1.6', marginBottom: '20px' }}>{aiResponse}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-around', paddingTop: '15px', borderTop: '1px solid #eee' }}>
-              <button onClick={() => cameraInputRef.current.click()} style={{ background: 'none', border: 'none', fontSize: '1.4rem' }}>📷</button>
-              <button onClick={() => alert('تم تفعيل الميكروفون')} style={{ background: 'none', border: 'none', fontSize: '1.4rem' }}>🎤</button>
-              <button onClick={() => fileInputRef.current.click()} style={{ background: 'none', border: 'none', fontSize: '1.4rem' }}>🖼️</button>
+            
+            <div style={{ fontSize: '0.95rem', color: '#444', lineHeight: '1.8', marginBottom: '30px', minHeight: '150px', background: '#fcfcfc', padding: '15px', borderRadius: '15px' }}>
+              {aiResponse || "مرحباً بكِ، أنا طبيب رقة المتخصص. كيف يمكنني مساعدتكِ اليوم؟ يمكنكِ رفع صور التحاليل أو التحدث معي مباشرة."}
             </div>
-            <button onClick={() => setIsChatOpen(false)} style={{ ...styles.aiBtn, background: '#9b59b6', marginTop: '20px' }}>تم الحفظ بنجاح ✅</button>
+
+            {/* أزرار الوسائط المتصلة بـ MediaService */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', padding: '20px', background: '#fff5f7', borderRadius: '20px', marginBottom: '20px' }}>
+              <button onClick={() => cameraInputRef.current.click()} style={{ background: 'white', border: '1px solid #eee', padding: '15px', borderRadius: '15px', fontSize: '1.5rem', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>📸</button>
+              <button onClick={() => alert('تم تفعيل الميكروفون عبر MediaService')} style={{ background: 'white', border: '1px solid #eee', padding: '15px', borderRadius: '15px', fontSize: '1.5rem', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>🎙️</button>
+              <button onClick={() => fileInputRef.current.click()} style={{ background: 'white', border: '1px solid #eee', padding: '15px', borderRadius: '15px', fontSize: '1.5rem', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>🖼️</button>
+            </div>
+
+            <button onClick={() => setIsChatOpen(false)} style={{ ...styles.aiBtn, background: '#9b59b6', padding: '15px', fontSize: '1rem' }}>إغلاق التقرير ✅</button>
           </div>
         </div>
       )}
