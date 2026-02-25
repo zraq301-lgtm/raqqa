@@ -33,23 +33,32 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Force Hardware Permissions
+      - name: Force Hardware Permissions & Fix Manifest Path
         run: |
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          # حقن تصاريح الميكروفون والكاميرا لضمان تجاوز مشكلة "يرجى منح الإذن"
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-feature android:name="android.hardware.camera" android:required="false" />' $MANIFEST
+          # البحث عن ملف المانيفست للتأكد من المسار الصحيح وتجنب خطأ No such file
+          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           
-          # ضبط إعدادات أمن الشبكة وتفعيل الترافيك غير المشفر
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
+          if [ -f "$MANIFEST" ]; then
+            echo "تم العثور على المانيفست في: $MANIFEST"
+            
+            # حقن تصاريح الميكروفون والكاميرا لضمان تجاوز مشكلة "يرجى منح الإذن"
+            sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
+            sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' "$MANIFEST"
+            sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' "$MANIFEST"
+            sed -i '/<application/i \    <uses-feature android:name="android.hardware.camera" android:required="false" />' "$MANIFEST"
+            
+            # ضبط إعدادات أمن الشبكة وتفعيل الترافيك غير المشفر
+            sed -i 's/<application/<application android:usesCleartextTraffic="true"/' "$MANIFEST"
+          else
+            echo "خطأ: لم يتم العثور على ملف AndroidManifest.xml. تأكد من نجاح خطوة npx cap add android"
+            exit 1
+          fi
 
       - name: Build & Sign APK
         run: |
           cd android && chmod +x gradlew && ./gradlew assembleRelease
           cd ..
-          # إنشاء مفتاح توقيع مؤقت للعملية
+          # إنشاء مفتاح توقيع مؤقت
           keytool -genkey -v -keystore release.jks -alias roqa -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa123456" -keypass "roqa123456" -dname "CN=Roqa"
           
