@@ -1,10 +1,9 @@
-import { BrowserRouter as Router, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
-// إضافة استيراد CapacitorHttp للتعامل مع طلبات الشبكة عبر النظام الأصلي
 import { CapacitorHttp } from '@capacitor/core'; 
 
-// استيراد الصور من مجلد الأصول (Assets) لضمان الربط الصحيح وعدم انكسار الروابط
+// استيراد الصور من مجلد الأصول (Assets)
 import healthImg from './assets/health.jpg';
 import feelingsImg from './assets/feelings.jpg';
 import intimacyImg from './assets/intimacy.jpg';
@@ -34,9 +33,9 @@ function ScrollToTop() {
 }
 
 function App() {
-  // إدارة زر الرجوع في الأندرويد لضمان تجربة مستخدم احترافية
+  // إدارة زر الرجوع في الأندرويد
   useEffect(() => {
-    CapApp.addListener('backButton', ({ canGoBack }) => {
+     CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) { 
         CapApp.exitApp(); 
       } else { 
@@ -46,83 +45,82 @@ function App() {
   }, []);
 
   return (
-    <Router>
+    /* ملاحظة هامة: تم حذف وسوم <Router> من هنا لمنع الشاشة البيضاء */
+    <div className="app-container">
       <ScrollToTop />
-      <div className="app-container">
-        
-        {/* الترويسة العلوية (Header) - تحتوي على المكتبة وعالم رقة */}
-        <header className="top-sticky-menu">
-          <div className="top-cards-container">
-            <Link to="/videos" className="top-card">
-              <img src={videosImg} alt="المكتبة" className="custom-img-icon" />
-              <div className="card-text">
-                <span className="card-label">المكتبة</span>
-              </div>
-            </Link>
+      
+      {/* الترويسة العلوية (Header) */}
+      <header className="top-sticky-menu">
+        <div className="top-cards-container">
+          <Link to="/videos" className="top-card">
+            <img src={videosImg} alt="المكتبة" className="custom-img-icon" />
+            <div className="card-text">
+              <span className="card-label">المكتبة</span>
+            </div>
+          </Link>
 
-            <Link to="/virtual-world" className="top-card">
-              <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
-              <div className="card-text">
-                <span className="card-label">عالم رقة</span>
-              </div>
-            </Link>
-          </div>
-        </header>
-        
-        {/* منطقة عرض المحتوى الرئيسي */}
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<Navigate to="/health" />} />
-            <Route path="/health" element={<Health />} />
-            <Route path="/feelings" element={<Feelings />} />
-            <Route path="/intimacy" element={<Intimacy />} />
-            <Route path="/swing-forum" element={<Swing />} />
-            <Route path="/insight" element={<Insight />} />
-            <Route path="/videos" element={<Videos />} />
-            <Route path="/virtual-world" element={<VirtualWorld />} />
-          </Routes>
-        </main>
+          <Link to="/virtual-world" className="top-card">
+            <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
+            <div className="card-text">
+              <span className="card-label">عالم رقة</span>
+            </div>
+          </Link>
+        </div>
+      </header>
+      
+      {/* منطقة عرض المحتوى الرئيسي */}
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Navigate to="/health" />} />
+          <Route path="/health" element={<Health />} />
+          <Route path="/feelings" element={<Feelings />} />
+          <Route path="/intimacy" element={<Intimacy />} />
+          <Route path="/swing-forum" element={<Swing />} />
+          <Route path="/insight" element={<Insight />} />
+          <Route path="/videos" element={<Videos />} />
+          <Route path="/virtual-world" element={<VirtualWorld />} />
+        </Routes>
+      </main>
 
-        {/* شريط التنقل السفلي (Navigation Bar) */}
-        <nav className="bottom-sticky-menu">
-          <div className="nav-grid">
-            
-            {/* المشاعر */}
-            <Link to="/feelings" className="nav-item">
-              <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
-              <span className="nav-label">المشاعر</span>
-            </Link>
+      {/* شريط التنقل السفلي (Navigation Bar) */}
+      <nav className="bottom-sticky-menu">
+        <div className="nav-grid">
+          
+          {/* المشاعر */}
+          <Link to="/feelings" className="nav-item">
+            <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
+            <span className="nav-label">المشاعر</span>
+          </Link>
 
-            {/* الحميمية */}
-            <Link to="/intimacy" className="nav-item">
-              <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
-              <span className="nav-label">الحميمية</span>
-            </Link>
-            
-            {/* أيقونة الصحة المركزية (صحتك) */}
-            <Link to="/health" className="nav-item center-action">
-              <div className="center-circle">
-                <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
-              </div>
-              <span className="nav-label bold">صحتك</span>
-            </Link>
+          {/* الحميمية */}
+          <Link to="/intimacy" className="nav-item">
+            <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
+            <span className="nav-label">الحميمية</span>
+          </Link>
+          
+          {/* أيقونة الصحة المركزية (صحتك) */}
+          <Link to="/health" className="nav-item center-action">
+            <div className="center-circle">
+              <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
+            </div>
+            <span className="nav-label bold">صحتك</span>
+          </Link>
 
-            {/* الأرجوحة */}
-            <Link to="/swing-forum" className="nav-item">
-              <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
-              <span className="nav-label">الأرجوحة</span>
-            </Link>
+          {/* الأرجوحة */}
+          <Link to="/swing-forum" className="nav-item">
+            <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
+            <span className="nav-label">الأرجوحة</span>
+          </Link>
 
-            {/* القفقة / البصيرة */}
-            <Link to="/insight" className="nav-item">
-              <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
-              <span className="nav-label">القفقة</span>
-            </Link>
-            
-          </div>
-        </nav>
-      </div>
-    </Router>
+          {/* القفقة / البصيرة */}
+          <Link to="/insight" className="nav-item">
+            <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
+            <span className="nav-label">القفقة</span>
+          </Link>
+          
+        </div>
+      </nav>
+    </div>
   );
 }
 
