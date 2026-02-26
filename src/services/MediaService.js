@@ -4,8 +4,7 @@ import { upload } from "@vercel/blob/client";
 
 class MediaService {
   constructor() {
-    // تم التأكد من الرابط الصحيح الذي استدلينا عليه من رسالة الخطأ
-    // يجب أن يتطابق هذا الرابط مع مكان وجود ملف upload-token.js في مشروعك
+    // الرابط المباشر لملف upload.js على فيرسل
     this.uploadApiUrl = "https://raqqa-v6cd.vercel.app/api/upload";
   }
 
@@ -17,7 +16,6 @@ class MediaService {
     } catch (e) { return 'denied'; }
   }
 
-  // --- تسجيل الصوت واسترجاعه كـ Base64 ---
   async startRecording() { await VoiceRecorder.startRecording(); }
 
   async stopRecording() {
@@ -25,10 +23,10 @@ class MediaService {
     return { value: result.value.recordDataBase64 };
   }
 
-  // --- التقاط الصور (كاميرا / معرض) ---
+  // --- التقاط الصور بنسب ضغط متوازنة ---
   async takePhoto() {
     const image = await Camera.getPhoto({
-      quality: 60,
+      quality: 50, // تقليل الجودة قليلاً لسرعة الرفع على الموبايل
       resultType: CameraResultType.Base64,
       source: CameraSource.Camera
     });
@@ -37,37 +35,39 @@ class MediaService {
 
   async fetchImage() {
     const image = await Camera.getPhoto({
-      quality: 60,
+      quality: 50,
       resultType: CameraResultType.Base64,
       source: CameraSource.Photos
     });
     return image.base64String;
   }
 
-  // --- منطق الرفع السحابي المطور (Vercel Blob) ---
+  // --- منطق الرفع السحابي الاحترافي ---
   async uploadToVercel(base64Data, fileName, mimeType) {
     try {
-      // 1. تحويل Base64 إلى Blob بطريقة أكثر استقراراً للموبايل
-      const response = await fetch(`data:${mimeType};base64,${base64Data}`);
-      const fileBlob = await response.blob();
+      // تحويل Base64 إلى Blob بطريقة مستقرة
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const fileBlob = new Blob([byteArray], { type: mimeType });
 
-      // 2. عملية الرفع مع معالجة التوكن
-      // ملاحظة: الخطأ السابق كان بسبب عدم قدرة التطبيق على الوصول لهذا الرابط بنجاح
+      // عملية الرفع الفعلية مع ربطها بـ upload.js
       const newBlob = await upload(fileName, fileBlob, {
         access: 'public',
         handleUploadUrl: this.uploadApiUrl,
       });
 
       if (!newBlob || !newBlob.url) {
-        throw new Error("فشل الحصول على رابط الملف بعد الرفع");
+        throw new Error("لم يتم استلام رابط الملف من Vercel");
       }
 
-      console.log("تم الرفع بنجاح:", newBlob.url);
-      return newBlob.url; // إرجاع الرابط مباشرة لتبسيطه في كود Advice.jsx
+      return newBlob.url; // إرجاع الرابط مباشرة لتبسيط استخدامه في Advice.jsx
     } catch (error) {
-      console.error("خطأ تقني في MediaService:", error.message);
-      // إرسال تفاصيل الخطأ لتظهر في واجهة المستخدم
-      throw new Error(`مشكلة في الرفع: ${error.message}`);
+      console.error("MediaService Error:", error.message);
+      throw new Error(error.message);
     }
   }
 }
