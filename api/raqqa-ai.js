@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-    // 1. إعدادات CORS الاحترافية
+    // 1. إعدادات CORS الاحترافية لضمان عمل التطبيق
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -10,25 +10,25 @@ export default async function handler(req, res) {
 
     const { prompt } = req.body;
     
-    // سحب مفاتيح البيئة المعرفة في Vercel
+    // سحب مفاتيح البيئة من إعدادات Vercel
     const groqKey = process.env.GROQ_API_KEY; 
     const mxbKey = process.env.MXBAI_API_KEY; 
-    const geminiKey = process.env.GEMINI_API_KEY; // المفتاح الذي أضفتِه يدوياً
-    const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826"; //
+    const geminiKey = process.env.GEMINI_API_KEY; 
+    const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826"; // التأكيد على الـ ID الخاص بكِ
 
     try {
-        // 2. معالجة الروابط وتنظيف النص
+        // 2. معالجة المدخلات: استخراج الروابط وتنظيف النص
         const urlRegex = /https?:\/\/[^\s]+(?:png|jpg|jpeg|webp)/gi;
         const imageUrl = (prompt.match(urlRegex) || [])[0];
         const cleanText = prompt.replace(urlRegex, '').replace(/\(تم إرسال وسائط للمعالجة\.\.\.\)/g, '').trim();
 
-        // 3. جلب السياق من Mixedbread
+        // 3. جلب السياق من المكتبة المتخصصة (Mixedbread) باستخدام المعرف الصحيح
         let context = "";
         try {
             const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${mxbKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: cleanText || "تحليل محتوى", top_k: 2 })
+                body: JSON.stringify({ query: cleanText || "تحليل محتوى بصري", top_k: 2 })
             });
             if (mxbRes.ok) {
                 const mxbData = await mxbRes.json();
@@ -38,29 +38,28 @@ export default async function handler(req, res) {
             }
         } catch (e) { console.error("Mixedbread bypass"); }
 
-        // 4. التوجيه الذكي: الصور لـ Gemini والنصوص لـ Groq
+        // 4. التوجيه الذكي: إذا وجدت صورة نستخدم Gemini، وللنصوص نستخدم Groq
         if (imageUrl) {
-            // استخدام Gemini للتحليل البصري باستخدام المفتاح الجديد
+            // استدعاء Gemini 1.5 Flash للتحليل البصري (الأفضل والأكثر استقراراً للصور)
             const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{
                         parts: [
-                            { text: `أنتِ رقة، مساعدة خبيرة. السياق: ${context}\n\n حللي الصورة وأجيبي: ${cleanText || 'وصفي الصورة'}` },
+                            { text: `أنتِ رقة، مساعدة خبيرة ولباقة. السياق من مكتبتك: ${context}\n\n حللي الصورة وأجيبي: ${cleanText || 'وصفي الصورة بذكاء'}` },
                             { inline_data: { mime_type: "image/jpeg", data: await getBase64(imageUrl) } }
                         ]
                     }]
                 })
             });
-
             const gData = await geminiRes.json();
             if (gData.candidates && gData.candidates[0]) {
                 return res.status(200).json({ message: gData.candidates[0].content.parts[0].text });
             }
-        } 
+        }
 
-        // 5. استخدام Groq للردود النصية السريعة
+        // 5. استدعاء Groq للنصوص لضمان سرعة الرد الفائقة
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
@@ -78,15 +77,15 @@ export default async function handler(req, res) {
         if (data.choices && data.choices[0]) {
             res.status(200).json({ message: data.choices[0].message.content });
         } else {
-            res.status(200).json({ message: "أهلاً بكِ رقيقة، رقة تقوم بتحديث أنظمتها، جربي مجدداً." });
+            res.status(200).json({ message: "أهلاً بكِ رقيقة، رقة تقوم بتنشيط أنظمتها الآن، جربي مجدداً." });
         }
 
     } catch (error) {
-        res.status(200).json({ message: "رقة واجهت مشكلة في الاتصال البصري، يرجى التحقق من المفاتيح." });
+        res.status(200).json({ message: "حدث خطأ في الاتصال البصري، رقة ستحاول العودة قريباً." });
     }
 }
 
-// دالة تحويل الصورة لـ Gemini
+// دالة مساعدة لتحويل الصورة إلى Base64 لـ Gemini
 async function getBase64(url) {
     const res = await fetch(url);
     const buffer = await res.arrayBuffer();
