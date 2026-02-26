@@ -31,11 +31,12 @@ export default async function handler(req, res) {
             }
         } catch (e) { console.error("MXB Error"); }
 
-        // 2. إعداد محتوى الرسائل بشكل صارم لمتطلبات Groq
+        // 2. إعداد الطلب مع الموديل البديل الجديد
         let payload;
         if (imageUrl) {
             payload = {
-                model: "llama-3.2-11b-vision-preview",
+                // استخدام الموديل البديل الموصى به من Groq للرؤية
+                model: "llama-3.2-11b-vision-instruct", 
                 messages: [{
                     role: "user",
                     content: [
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
             };
         }
 
-        // 3. طلب الرد
+        // 3. تنفيذ الطلب
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
@@ -68,9 +69,8 @@ export default async function handler(req, res) {
         if (data.choices && data.choices[0]) {
             res.status(200).json({ message: data.choices[0].message.content });
         } else {
-            // سجل الخطأ الفعلي من Groq لمعرفة السبب (مثل رابط غير متاح للعامة)
-            console.error("Groq detailed error:", data);
-            res.status(200).json({ message: "أهلاً بكِ، واجهت رقة صعوبة تقنية في فتح الصورة، يرجى المحاولة بعد لحظات." });
+            console.error("Groq dynamic error:", data);
+            res.status(200).json({ message: "أهلاً بكِ، واجهت رقة صعوبة تقنية في تحديث الموديل، يرجى المحاولة الآن." });
         }
 
     } catch (error) {
