@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+    // إعدادات CORS لضمان الاتصال من المتصفح
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -6,53 +7,43 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { prompt } = req.body;
+    // التأكد من جلب المفتاح المضاف في Vercel
     const geminiKey = process.env.GEMINI_API_KEY; 
 
     try {
-        const urlRegex = /https?:\/\/[^\s]+(?:png|jpg|jpeg|webp)/gi;
-        const imageUrl = (prompt.match(urlRegex) || [])[0];
-        const cleanText = prompt.replace(urlRegex, '').replace(/\(تم إرسال وسائط للمعالجة\.\.\.\)/g, '').trim();
+        // تنظيف النص من أي روابط صور لضمان التركيز على المحادثة فقط
+        const cleanText = prompt.replace(/https?:\/\/[^\s]+/gi, '').trim();
 
-        let parts = [{ text: `أنتِ رقة، خبيرة ذكية. السؤال: ${cleanText || 'حللي الصورة'}` }];
-
-        if (imageUrl) {
-            const imgRes = await fetch(imageUrl);
-            const buffer = await imgRes.arrayBuffer();
-            parts.push({
-                inline_data: { mime_type: "image/jpeg", data: Buffer.from(buffer).toString('base64') }
-            });
-        }
-
-        // التعديل الحاسم: استخدام المسار الكامل للموديل (models/gemini-1.5-flash)
-        // واستخدام الإصدار المستقر v1
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`, {
+        // استخدام موديل gemini-pro (المستقر جداً للنصوص) عبر إصدار v1
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts }] })
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{ text: `أنتِ رقة، خبيرة ذكية ولباقة. أجيبي على: ${cleanText || 'مرحباً'}` }]
+                }],
+                generationConfig: {
+                    temperature: 0.7,
+                    maxOutputTokens: 800,
+                }
+            })
         });
 
         const data = await response.json();
 
-        // فحص شامل للرد
+        // فحص وجود أخطاء من جوجل وعرضها بوضوح في السجلات
         if (data.error) {
-            console.error("Gemini Final Error:", data.error.message);
-            // محاولة أخيرة بموديل Pro إذا فشل Flash
-            const retry = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${geminiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: cleanText || "مرحباً" }] }] })
-            });
-            const retryData = await retry.json();
-            return res.status(200).json({ message: retryData.candidates?.[0]?.content?.parts?.[0]?.text || "رقة تحاول جاهدة الوصول، يرجى التحقق من تفعيل الموديل في AI Studio." });
+            console.error("Gemini Text Error:", data.error.message);
+            return res.status(200).json({ message: "أهلاً بكِ رقيقة، رقة تقوم بضبط إعدادات النصوص حالياً، جربي مجدداً." });
         }
 
         if (data.candidates && data.candidates[0]) {
             res.status(200).json({ message: data.candidates[0].content.parts[0].text });
         } else {
-            res.status(200).json({ message: "أهلاً بكِ رقيقة، رقة جاهزة الآن." });
+            res.status(200).json({ message: "رقة مستعدة لسماعك، تفضلي بما لديكِ." });
         }
 
     } catch (error) {
-        res.status(200).json({ message: "عذراً، واجهت رقة مشكلة في الاتصال." });
+        res.status(200).json({ message: "حدثت سحابة عابرة في الاتصال، رقة ستعود حالاً." });
     }
 }
