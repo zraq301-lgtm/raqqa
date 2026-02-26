@@ -18,9 +18,36 @@ const LactationHub = () => {
       return JSON.parse(localStorage.getItem('lactation_history')) || [];
     } catch { return []; }
   });
-
+  
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  // --- دالة معالجة الوسائط المضافة ---
+  const handleMediaAction = async (type) => {
+    try {
+        // ملاحظة: دوال takePhoto و fetchImage و uploadToVercel يجب أن تكون معرفة في مشروعك
+        setLoading(true);
+        const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
+        if (!base64Data) { setLoading(false); return; }
+
+        const timestamp = Date.now();
+        const fileName = `img_${timestamp}.png`;
+        const mimeType = 'image/png';
+
+        const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
+        console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
+        
+        // إرسال الرابط للذكاء الاصطناعي للتحليل
+        await handleSaveAndAnalyze(finalAttachmentUrl);
+        return finalAttachmentUrl;
+
+    } catch (error) {
+        console.error("فشل في معالجة أو رفع الصورة:", error);
+        alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة.");
+    } finally {
+        setLoading(false);
+    }
+  };
 
   const sections = [
     { title: "الرضاعة الطبيعية", emoji: "🤱", fields: ["الوقت", "الجهة", "المدة", "راحة الأم", "معدل الرضاعة", "تاريخ اليوم", "بداية الرضعة", "نهاية الرضعة", "ملاحظات", "مستوى الشبع"] },
@@ -32,27 +59,28 @@ const LactationHub = () => {
     { title: "الحالة النفسية", emoji: "🫂", fields: ["دعم الزوج", "ساعات الراحة", "القلق", "الاكتئاب", "التواصل", "الخروج للمشي", "هوايات", "الاسترخاء", "ملاحظات", "درجة الرضا"] }
   ];
 
-  const handleSaveAndAnalyze = async () => {
+  const handleSaveAndAnalyze = async (imageUrl = null) => {
     setLoading(true);
     setShowChat(true);
-    setAiResponse("جاري تحليل بياناتك بعناية من قبل طبيبة رقة المختصة...");
+    setAiResponse("جاري تحليل بياناتك الصحية والرياضية بعناية...");
 
     try {
-      // 1. الحفظ في نيون (Notifications)
+      // 1. الحفظ في نيون (الرابط الجديد)
       await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          category: 'تحليل شامل (حمل وولادة ورضاعة)',
-          value: 'بيانات جديدة',
+          category: 'تحليل الرشاقة والتغذية الرياضية',
+          value: 'بيانات صحية جديدة',
           user_id: 1,
-          note: JSON.stringify(data)
+          note: JSON.stringify({ ...data, attachment: imageUrl })
         }
       });
 
-      // 2. تحليل AI رقة
-      const promptText = `أنا طبيبة نساء وتوليد مختصة. إليكِ بيانات مريضتي: ${JSON.stringify(data)}. 
-      قومي بتحليل الحالة طبياً ونفسياً بشكل موسع، وقدمي نصائح للأم وللجنين/الرضيع بأسلوب رقيق ودافيء كما اعتدنا منكِ.`;
+      // 2. تحليل AI رقة (بتخصص الرشاقة والتغذية)
+      const promptText = `أنتِ طبيبة مختصة في الرشاقة والتخسيس والتغذية العلاجية والرياضية. 
+      بناءً على هذه البيانات: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة: ${imageUrl}` : ''}.
+      قدمي تحليلاً دقيقاً يتضمن نصائح غذائية رياضية لتحسين القوام والوزن بأسلوب رقيق ودافيء.`;
 
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -82,7 +110,6 @@ const LactationHub = () => {
     localStorage.setItem('lactation_history', JSON.stringify(filtered));
   };
 
-  // --- عناصر الواجهة الفرعية ---
   const renderInput = (f) => (
     <div key={f} style={{ marginBottom: '10px' }}>
       <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label>
@@ -101,25 +128,23 @@ const LactationHub = () => {
 
   return (
     <div style={styles.mainContainer}>
-      {/* الرأس */}
+      {/* الرأس المحدث مع زر الشات */}
       <div style={styles.header}>
         <div style={styles.statsRow}>
+          <button onClick={() => setShowChat(true)} style={{...styles.circle, border:'none', cursor:'pointer', background:'#fff', color:'#739673'}}>💬</button>
           <div style={styles.circle}>28</div>
-          <div style={{...styles.circle, background: '#4e6d4e'}}>20</div>
           <div style={styles.circle}><Icon size={18} /></div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <h2 style={styles.title}>سجل الإرضاع الذكي</h2>
-          <div style={styles.subtitle}>Maternity & Health AI Tracker</div>
+          <h2 style={styles.title}>سجل الرشاقة الذكي</h2>
+          <div style={styles.subtitle}>Fitness & Nutrition AI</div>
         </div>
       </div>
 
-      {/* شريط التقدم */}
       <div style={styles.progressContainer}>
         <div style={styles.progressBar}><div style={styles.progressFill}></div></div>
       </div>
 
-      {/* الأقسام */}
       <div style={styles.sectionsList}>
         {sections.map((sec, i) => (
           <div key={i} style={{...styles.sectionCard, background: openIdx === i ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)'}}>
@@ -134,53 +159,55 @@ const LactationHub = () => {
         ))}
       </div>
 
-      {/* التحكم والذكاء الاصطناعي */}
       <div style={styles.footerControls}>
-        <button onClick={handleSaveAndAnalyze} style={styles.analyzeBtn}>
-          {loading ? 'جاري التحليل...' : 'طبيبة رقة: تحليل البيانات'}
+        <button onClick={() => handleSaveAndAnalyze()} style={styles.analyzeBtn}>
+          {loading ? 'جاري التحليل...' : 'تحليل الرشاقة والتغذية'}
         </button>
 
         <div style={styles.actionButtons}>
-          <button onClick={() => fileInputRef.current.click()} style={styles.roundBtn}>📄</button>
-          <button onClick={() => cameraInputRef.current.click()} style={styles.roundBtn}>📷</button>
+          <button onClick={() => handleMediaAction('gallery')} style={styles.roundBtn}>📄</button>
+          <button onClick={() => handleMediaAction('camera')} style={styles.roundBtn}>📷</button>
           <button style={styles.roundBtn}>🎤</button>
-          <input type="file" ref={fileInputRef} hidden accept="image/*,application/pdf" />
-          <input type="file" ref={cameraInputRef} hidden accept="image/*" capture="environment" />
         </div>
 
-        {/* السجل التاريخي */}
         <div style={styles.historyBox}>
           <h4 style={{ margin: '0 0 10px 0', fontSize: '0.9rem' }}>استشاراتك السابقة</h4>
           {history.map(item => (
             <div key={item.id} style={styles.historyItem}>
               <small style={{ opacity: 0.6 }}>{item.date}</small>
               <div style={{ fontSize: '0.8rem', marginTop: '4px' }}>{item.text.substring(0, 60)}...</div>
-              <button onClick={() => deleteResponse(item.id)} style={styles.delBtn}>🗑️</button>
+              <div style={{display:'flex', gap:'5px', marginTop:'5px'}}>
+                <button onClick={() => deleteResponse(item.id)} style={styles.smallActionBtn}>🗑️</button>
+                <button onClick={() => {setAiResponse(item.text); setShowChat(true);}} style={styles.smallActionBtn}>👁️</button>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* شاشة الشات المنسدلة (Overlay) */}
       {showChat && (
         <div style={styles.overlay}>
           <div style={styles.chatSheet}>
             <div style={styles.chatHeader}>
-              <span style={{ fontWeight: '800' }}>👨‍⚕️ تقرير الطبيبة الذكية</span>
+              <span style={{ fontWeight: '800' }}>🥗 استشارية الرشاقة والرياضة</span>
               <button onClick={() => setShowChat(false)} style={styles.closeBtn}>✕</button>
             </div>
             <div style={styles.chatBody}>
               {loading ? (
                 <div style={{ textAlign: 'center', marginTop: '40px' }}>
                   <div style={styles.loader}></div>
-                  <p>أقوم بمراجعة بياناتك بدقة...</p>
+                  <p>جاري فحص بياناتك الغذائية والرياضية...</p>
                 </div>
               ) : (
-                <div style={{ whiteSpace: 'pre-line' }}>{aiResponse}</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{aiResponse || "أهلاً بكِ رفيقتي، كيف يمكنني مساعدتك في رحلة رشاقتك اليوم؟"}</div>
               )}
             </div>
             <div style={styles.chatFooter}>
-              <button onClick={() => setShowChat(false)} style={styles.doneBtn}>فهمت، شكراً لكِ</button>
+              <div style={{display:'flex', gap:'10px', justifyContent:'center', marginBottom:'10px'}}>
+                 <button onClick={() => handleMediaAction('camera')} style={{...styles.doneBtn, background:'#f0f0f0', color:'#333', padding:'8px 20px'}}>📸 تصوير</button>
+                 <button onClick={() => handleMediaAction('gallery')} style={{...styles.doneBtn, background:'#f0f0f0', color:'#333', padding:'8px 20px'}}>📁 رفع صورة</button>
+              </div>
+              <button onClick={() => setShowChat(false)} style={styles.doneBtn}>شكراً لكِ</button>
             </div>
           </div>
         </div>
@@ -189,7 +216,6 @@ const LactationHub = () => {
   );
 };
 
-// --- الأنماط لضمان عدم ظهور شاشة بيضاء ---
 const styles = {
   mainContainer: {
     background: 'linear-gradient(160deg, #96b896 0%, #739673 100%)',
@@ -215,16 +241,16 @@ const styles = {
   analyzeBtn: { width: '100%', padding: '14px', borderRadius: '20px', border: 'none', background: '#fff', color: '#739673', fontWeight: 'bold', cursor: 'pointer', marginBottom: '15px' },
   actionButtons: { display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '20px' },
   roundBtn: { width: '50px', height: '50px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', fontSize: '1.3rem', cursor: 'pointer' },
-  historyBox: { maxHeight: '120px', overflowY: 'auto', textAlign: 'right', padding: '10px' },
+  historyBox: { maxHeight: '150px', overflowY: 'auto', textAlign: 'right', padding: '10px' },
   historyItem: { background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '15px', marginBottom: '8px', position: 'relative' },
-  delBtn: { position: 'absolute', left: '10px', top: '10px', background: 'none', border: 'none', color: '#ff8a80', cursor: 'pointer' },
+  smallActionBtn: { background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'flex-end', zIndex: 100 },
-  chatSheet: { background: '#fff', width: '100%', height: '75%', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', color: '#333', display: 'flex', flexDirection: 'column' },
+  chatSheet: { background: '#fff', width: '100%', height: '85%', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', color: '#333', display: 'flex', flexDirection: 'column' },
   chatHeader: { padding: '20px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', color: '#739673' },
   closeBtn: { background: 'none', border: 'none', fontSize: '1.2rem', color: '#999', cursor: 'pointer' },
   chatBody: { flex: 1, padding: '20px', overflowY: 'auto', fontSize: '0.9rem', lineHeight: '1.6', textAlign: 'right' },
   chatFooter: { padding: '15px', borderTop: '1px solid #eee', textAlign: 'center' },
-  doneBtn: { background: '#739673', color: '#fff', border: 'none', padding: '10px 40px', borderRadius: '20px', fontWeight: 'bold' },
+  doneBtn: { background: '#739673', color: '#fff', border: 'none', padding: '10px 40px', borderRadius: '20px', fontWeight: 'bold', cursor:'pointer' },
   loader: { border: '4px solid #f3f3f3', borderTop: '4px solid #739673', borderRadius: '50%', width: '30px', height: '30px', animation: 'spin 1s linear infinite', margin: '0 auto 10px' }
 };
 
