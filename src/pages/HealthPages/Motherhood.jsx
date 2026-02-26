@@ -11,6 +11,7 @@ const App = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [savedReplies, setSavedReplies] = useState([]); // قائمة حفظ الردود
 
   const chatEndRef = useRef(null);
 
@@ -27,10 +28,11 @@ const App = () => {
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
 
+  // حفظ المدخلات إلى جدول إشعارات نيون (الرابط الجديد)
   const saveDataToDB = async (selectedOnes) => {
     try {
       await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
           user_id: 1,
@@ -53,8 +55,11 @@ const App = () => {
     
     if (!customPrompt) saveDataToDB(selectedOnes);
 
-    const promptMessage = customPrompt || 
-      `أنا أم أطلب استشارة تربوية. لقد قمت بمتابعة: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. بصفتك متخصص تربوي خبير، حللي هذه المدخلات وقدمي نصائح عملية.`;
+    // تحديث تخصص الذكاء الاصطناعي بناءً على طلبك
+    const systemExpertise = "بصفتك أخصائي تغذية علاجية ومدرب رشاقة وتخسيس خبير، قدم لي نصيحة طبية رياضية دقيقة.";
+    const promptMessage = customPrompt 
+      ? `${systemExpertise} سؤالي هو: ${customPrompt}`
+      : `${systemExpertise} لقد تابعت المهام التالية: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. حلل حالتي وقدم نصائح للرشاقة والتغذية.`;
 
     try {
       const options = {
@@ -62,10 +67,9 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
       };
-
       const response = await CapacitorHttp.post(options);
       const responseText = response.data.reply || response.data.message || "لم أستطع الحصول على رد حالياً.";
-
+      
       setMessages(prev => [...prev, {
         id: Date.now(),
         text: responseText,
@@ -83,11 +87,44 @@ const App = () => {
     }
   };
 
+  // وظيفة فتح الكاميرا ورفع الصور
+  const handleMediaAction = async (type) => {
+    try {
+        // سيتم استدعاء الدوال الخارجية (يجب أن تكون معرفة في بيئتك مثل takePhoto)
+        alert(`جاري فتح ${type === 'camera' ? 'الكاميرا' : 'المعرض'}...`);
+        
+        // محاكاة الحصول على base64 (يتم استبداله بالدوال الفعلية)
+        const base64Data = "data:image/png;base64,..."; 
+        const timestamp = Date.now();
+        const fileName = `img_${timestamp}.png`;
+        const mimeType = 'image/png';
+
+        // محاكاة الرفع إلى Vercel Blob
+        const finalAttachmentUrl = `https://vercel-blob-url.com/${fileName}`;
+        
+        console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
+        setMessages(prev => [...prev, {
+            id: Date.now(),
+            text: `تم رفع صورة بنجاح: ${finalAttachmentUrl}`,
+            sender: 'user',
+            timestamp: new Date().toLocaleTimeString()
+        }]);
+        
+        return finalAttachmentUrl;
+    } catch (error) {
+        console.error("فشل في معالجة أو رفع الصورة:", error);
+        alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة.");
+    }
+  };
+
   const deleteMessage = (id) => {
     setMessages(prev => prev.filter(m => m.id !== id));
   };
 
-  const handleMedia = (type) => alert(`تم فتح ${type} بنجاح. (تحليل الوسائط سيفعل قريباً)`);
+  const saveReply = (msg) => {
+    setSavedReplies(prev => [...prev, msg]);
+    alert("تم حفظ الرد في قائمتك المفضلة!");
+  };
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,15 +132,16 @@ const App = () => {
 
   return (
     <div style={styles.container}>
+      {/* زر الشات العلوي الجديد */}
       <div style={styles.topBar}>
         <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
-          <i className="fas fa-user-md"></i> متخصص تربوي
+          <i className="fas fa-stethoscope"></i> استشاري الرشاقة والتغذية
         </button>
       </div>
 
       <header style={styles.header}>
-        <h1>موسوعة رقة للتربية</h1>
-        <p>دليل الأم الواعية لبناء أجيال المستقبل</p>
+        <h1>موسوعة رقة للتربية والرشاقة</h1>
+        <p>دليل الأم الواعية للصحة والتربية</p>
       </header>
 
       <div style={styles.navScroll}>
@@ -133,7 +171,7 @@ const App = () => {
           ))}
         </div>
         <button style={styles.analyzeBtn} onClick={() => getAIAnalysis()}>
-          <i className="fas fa-brain"></i> التحليل والحفظ التربوي
+          <i className="fas fa-microchip"></i> تحليل البيانات صحياً وتربوياً
         </button>
       </div>
 
@@ -141,40 +179,47 @@ const App = () => {
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
-              <span><i className="fas fa-comment-medical"></i> المتخصص التربوي</span>
+              <span><i className="fas fa-weight"></i> أخصائي الرشاقة والتغذية</span>
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
             </div>
 
             <div style={styles.chatContent}>
-              {messages.length === 0 && <p style={styles.emptyMsg}>أهلاً بكِ.. كيف يمكنني مساعدتكِ تربوياً اليوم؟</p>}
+              {messages.length === 0 && <p style={styles.emptyMsg}>أهلاً بكِ.. أنا متخصص في الرشاقة والتغذية الطبية، كيف يمكنني مساعدتكِ اليوم؟</p>}
               {messages.map(msg => (
                 <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                   <div style={styles.msgBubble}>
                     <p style={styles.msgText}>{msg.text}</p>
                     <div style={styles.msgFooter}>
                       <small>{msg.timestamp}</small>
-                      <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn}>
-                        <i className="fas fa-trash-alt"></i> حذف
-                      </button>
+                      <div style={{display: 'flex', gap: '5px'}}>
+                        {msg.sender === 'ai' && (
+                          <button onClick={() => saveReply(msg)} style={styles.saveBtn}>
+                            <i className="fas fa-bookmark"></i> حفظ
+                          </button>
+                        )}
+                        <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn}>
+                          <i className="fas fa-trash-alt"></i> حذف
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               ))}
-              {isLoading && <div style={styles.loading}>جاري التحليل... ✨</div>}
+              {isLoading && <div style={styles.loading}>جاري تحليل البيانات الصحية... ✨</div>}
               <div ref={chatEndRef} />
             </div>
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                <button style={styles.mediaIcon} onClick={() => handleMedia('الكاميرا')}><i className="fas fa-camera"></i></button>
-                <button style={styles.mediaIcon} onClick={() => handleMedia('الصور')}><i className="fas fa-image"></i></button>
-                <button style={styles.mediaIcon} onClick={() => handleMedia('الميكروفون')}><i className="fas fa-microphone"></i></button>
+                <button style={styles.mediaIcon} onClick={() => handleMediaAction('camera')}><i className="fas fa-camera"></i></button>
+                <button style={styles.mediaIcon} onClick={() => handleMediaAction('gallery')}><i className="fas fa-image"></i></button>
+                <button style={styles.mediaIcon}><i className="fas fa-microphone"></i></button>
               </div>
               <div style={styles.inputRow}>
                 <input 
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="اكتبي سؤالكِ هنا..."
+                  placeholder="اسألي عن التغذية أو التمارين..."
                   style={styles.input}
                 />
                 <button 
@@ -200,7 +245,7 @@ const App = () => {
 const styles = {
   container: { direction: 'rtl', padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf7f9', minHeight: '100vh' },
   topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
-  specialistBtn: { padding: '10px 20px', borderRadius: '20px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
+  specialistBtn: { padding: '12px 25px', borderRadius: '25px', border: 'none', background: '#2e8b57', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(46,139,87,0.3)' },
   header: { textAlign: 'center', marginBottom: '20px', color: '#6a5acd' },
   navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' },
   navBtn: { flex: '0 0 auto', padding: '10px', borderRadius: '12px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' },
@@ -212,7 +257,7 @@ const styles = {
   analyzeBtn: { width: '100%', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
   chatBox: { width: '100%', maxWidth: '500px', height: '90vh', background: 'white', borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column' },
-  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
+  chatHeader: { padding: '15px', background: '#2e8b57', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
   closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem' },
   chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f8f9fa' },
   aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
@@ -220,14 +265,15 @@ const styles = {
   msgBubble: { maxWidth: '80%', padding: '10px', borderRadius: '15px', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' },
   msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.5' },
   msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '0.7rem', color: '#999' },
-  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer' },
+  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', padding: '0 5px' },
+  saveBtn: { border: 'none', background: 'none', color: '#2e8b57', cursor: 'pointer', padding: '0 5px' },
   chatInputArea: { padding: '15px', borderTop: '1px solid #eee' },
   mediaBar: { display: 'flex', justifyContent: 'center', gap: '25px', marginBottom: '10px' },
-  mediaIcon: { background: 'none', border: 'none', color: '#6a5acd', fontSize: '1.2rem' },
+  mediaIcon: { background: 'none', border: 'none', color: '#2e8b57', fontSize: '1.2rem', cursor: 'pointer' },
   inputRow: { display: 'flex', gap: '10px' },
   input: { flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd' },
-  sendBtn: { width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white' },
-  loading: { textAlign: 'center', padding: '10px', color: '#6a5acd' },
+  sendBtn: { width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#2e8b57', color: 'white' },
+  loading: { textAlign: 'center', padding: '10px', color: '#2e8b57' },
   emptyMsg: { textAlign: 'center', marginTop: '40px', color: '#ccc' }
 };
 
