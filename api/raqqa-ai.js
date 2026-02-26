@@ -17,7 +17,7 @@ export default async function handler(req, res) {
         const imageUrl = (prompt.match(urlRegex) || [])[0];
         const cleanText = prompt.replace(urlRegex, '').replace(/\(تم إرسال وسائط للمعالجة\.\.\.\)/g, '').trim();
 
-        // 1. جلب السياق من التخصص
+        // 1. جلب التخصص من Mixedbread
         let context = "";
         try {
             const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
@@ -29,18 +29,17 @@ export default async function handler(req, res) {
                 const mxbData = await mxbRes.json();
                 if (mxbData?.hits) context = mxbData.hits.map(h => h.content).join("\n\n");
             }
-        } catch (e) { console.error("MXB Error"); }
+        } catch (e) { console.error("MXB Error Ignored"); }
 
-        // 2. إعداد الطلب مع الموديل البديل الجديد
+        // 2. تحديد الموديل (استخدام النسخة 90b الأكثر استقراراً للرؤية)
         let payload;
         if (imageUrl) {
             payload = {
-                // استخدام الموديل البديل الموصى به من Groq للرؤية
-                model: "llama-3.2-11b-vision-instruct", 
+                model: "llama-3.2-90b-vision-preview", // الموديل البديل المستقر حالياً في Groq
                 messages: [{
                     role: "user",
                     content: [
-                        { type: "text", text: `أنتِ 'رقة'... السياق: ${context}\n\n حللي الصورة بلباقة وأجيبي: ${cleanText || 'وصفي محتوى الصورة'}` },
+                        { type: "text", text: `أنتِ 'رقة'... السياق: ${context}\n\n حللي الصورة وأجيبي: ${cleanText || 'وصفي الصورة'}` },
                         { type: "image_url", image_url: { url: imageUrl } }
                     ]
                 }],
@@ -48,12 +47,11 @@ export default async function handler(req, res) {
             };
         } else {
             payload = {
-                model: "llama-3.3-70b-versatile",
+                model: "llama-3.3-70b-versatile", // الموديل النصي السريع جداً
                 messages: [
                     { role: "system", content: `أنتِ 'رقة'... السياق: ${context}` },
                     { role: "user", content: cleanText }
-                ],
-                temperature: 0.6
+                ]
             };
         }
 
@@ -69,11 +67,12 @@ export default async function handler(req, res) {
         if (data.choices && data.choices[0]) {
             res.status(200).json({ message: data.choices[0].message.content });
         } else {
-            console.error("Groq dynamic error:", data);
-            res.status(200).json({ message: "أهلاً بكِ، واجهت رقة صعوبة تقنية في تحديث الموديل، يرجى المحاولة الآن." });
+            // سجل الخطأ الجديد إذا حدث
+            console.error("Final Groq Error Log:", data);
+            res.status(200).json({ message: "أهلاً بكِ، واجهت رقة تحديثاً في أنظمة الصور، جربي إرسال النص فقط أو المحاولة لاحقاً." });
         }
 
     } catch (error) {
-        res.status(500).json({ message: "حدث خطأ في النظام الداخلي." });
+        res.status(500).json({ message: "Internal Server Error" });
     }
 }
