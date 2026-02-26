@@ -1,53 +1,87 @@
 export default async function handler(req, res) {
+    // 1. إعدادات CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
     if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
     const { prompt } = req.body;
-    // التقاط رابط الصورة من Vercel Blob
-    const urlRegex = /https?:\/\/[^\s]+(?:png|jpg|jpeg|webp)/gi;
-    const imageUrl = (prompt.match(urlRegex) || [])[0];
-    const cleanText = prompt.replace(urlRegex, '').trim();
-
-    const apiKey = process.env.GROQ_API_KEY; //
-    const mxbKey = process.env.MXBAI_API_KEY; //
+    
+    // سحب مفاتيح البيئة من إعدادات Vercel الخاصة بك
+    const groqKey = process.env.GROQ_API_KEY; 
+    const mxbKey = process.env.MXBAI_API_KEY; 
     const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826"; //
 
     try {
-        // 1. جلب التخصص من Mixedbread
+        // 2. معالجة الروابط والنصوص
+        const urlRegex = /https?:\/\/[^\s]+(?:png|jpg|jpeg|webp)/gi;
+        const imageUrl = (prompt.match(urlRegex) || [])[0];
+        const cleanText = prompt.replace(urlRegex, '').replace(/\(تم إرسال وسائط للمعالجة\.\.\.\)/g, '').trim();
+
+        // 3. جلب السياق من Mixedbread (تم تصحيح الخطأ الذي يسبب 500)
         let context = "";
-        const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${mxbKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: cleanText || "تحليل صورة", top_k: 2 })
-        });
-        const mxbData = await mxbRes.json();
-        if (mxbData.hits) context = mxbData.hits.map(h => h.content).join("\n\n");
+        try {
+            const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${mxbKey}`, 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ query: cleanText || "تحليل", top_k: 2 })
+            });
 
-        // 2. إعداد محتوى الرسالة لـ Groq (نص + صورة إن وجدت)
+            if (mxbRes.ok) {
+                const mxbData = await mxbRes.json(); //
+                if (mxbData && mxbData.hits) {
+                    context = mxbData.hits.map(h => h.content).join("\n\n");
+                }
+            }
+        } catch (e) { 
+            console.error("Mixedbread Error Ignored"); 
+        }
+
+        // 4. إعداد محتوى الرسالة لـ Groq Vision
         const messageContent = [];
-        if (cleanText) messageContent.push({ type: "text", text: `أنتِ 'رقة'... السياق المتخصص: ${context}\n\nالسؤال: ${cleanText}` });
-        if (imageUrl) messageContent.push({ type: "image_url", image_url: { url: imageUrl } });
+        messageContent.push({ 
+            type: "text", 
+            text: `أنتِ 'رقة'... السياق المتخصص: ${context}\n\nالسؤال: ${cleanText || 'ألقي نظرة على هذه الصورة.'}` 
+        });
 
-        // 3. الطلب الموحد والسريع من Groq Vision
-        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        if (imageUrl) {
+            messageContent.push({ 
+                type: "image_url", 
+                image_url: { url: imageUrl } 
+            });
+        }
+
+        // 5. طلب الرد من Groq (الموديل السريع)
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+            headers: { 
+                'Authorization': `Bearer ${groqKey}`, 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({
                 model: imageUrl ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile",
                 messages: [{ role: "user", content: messageContent }],
-                temperature: 0.5
+                temperature: 0.6
             })
         });
 
-        const data = await response.json();
+        const data = await groqRes.json();
         
+        // 6. الرد النهائي المتوافق مع التطبيق
         if (data.choices && data.choices[0]) {
             res.status(200).json({ message: data.choices[0].message.content });
         } else {
-            res.status(200).json({ message: "أهلاً بكِ، واجهت رقة صعوبة في قراءة الصورة، هل يمكنكِ إعادة إرسالها؟" });
+            res.status(200).json({ message: "أهلاً بكِ، واجهت رقة عطلاً بسيطاً، جربي مرة أخرى." });
         }
+
     } catch (error) {
-        res.status(500).json({ message: "حدث خطأ في الاتصال، حاولي مرة أخرى." });
+        console.error("Critical Error:", error);
+        res.status(500).json({ message: "حدث خطأ داخلي في السيرفر، يرجى مراجعة Logs." });
     }
 }
