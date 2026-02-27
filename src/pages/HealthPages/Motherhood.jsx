@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-// استخدام مسار الميديا كما هو محدد بالضبط
-import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService'; 
+// تم تصحيح المسار للوصول من src/pages/HealthPages إلى src/services
+import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService'; 
 
-const App = () => {
+const Motherhood = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [checkedItems, setCheckedItems] = useState({});
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [savedReplies, setSavedReplies] = useState([]);
+  const [savedReplies, setSavedReplies] = useState([]); 
 
   const chatEndRef = useRef(null);
 
@@ -36,10 +36,10 @@ const App = () => {
           user_id: 1,
           category: lists[selectedIdx].title,
           value: selectedOnes[0] || "نشاط تربوي",
-          note: `تم تحليل بيانات قسم ${lists[selectedIdx].title}`
+          note: `تحليل قسم ${lists[selectedIdx].title}`
         }
       });
-    } catch (e) { console.error("DB Save Error:", e); }
+    } catch (e) { console.error("Database Save Error:", e); }
   };
 
   const getAIAnalysis = async (customPrompt = null) => {
@@ -50,11 +50,10 @@ const App = () => {
     
     if (!customPrompt) saveDataToDB(selectedOnes);
 
-    // توجيه الذكاء الاصطناعي كمتخصص أطفال واستشاري تربوي
-    const systemRole = "أنت استشاري تربوي متخصص في علم نفس الطفل وسلوكياته. رد على المدخلات كطبيب تربوي يوجه الأم نحو الصواب باستخدام أفضل الممارسات التربوية.";
+    const systemExpertise = "أنت طبيب استشاري تربوي متخصص في علم نفس الأطفال. ردك يجب أن يكون مهنياً، توعوياً، ويستند إلى أفضل الممارسات التربوية الحديثة لتوجيه الأم نحو الصواب.";
     const promptMessage = customPrompt 
-      ? `${systemRole} الاستشارة هي: ${customPrompt}`
-      : `${systemRole} الأم قامت بالمهام التالية: (${selectedOnes.join(" - ")}) في مجال ${currentList.title}. حلل هذا التطور تربوياً وقدم نصيحة للاستمرار.`;
+      ? `${systemExpertise} سؤال الأم: ${customPrompt}`
+      : `${systemExpertise} الأم أنجزت مع طفلها: (${selectedOnes.join(", ")}) في مجال ${currentList.title}. قدم تحليلاً طبياً تربوياً.`;
 
     try {
       const response = await CapacitorHttp.post({
@@ -62,27 +61,27 @@ const App = () => {
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
       });
-      const responseText = response.data.reply || response.data.message || "عذراً، المستشار غير متاح حالياً.";
+      const responseText = response.data.reply || response.data.message || "عذراً، المستشار مشغول حالياً.";
       setMessages(prev => [...prev, { id: Date.now(), text: responseText, sender: 'ai', timestamp: new Date().toLocaleTimeString() }]);
     } catch (err) {
-      setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالمستشار التربوي.", sender: 'ai' }]);
+      setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالذكاء الاصطناعي.", sender: 'ai' }]);
     } finally { setIsLoading(false); }
   };
 
   const handleMediaAction = async (type) => {
     try {
       let base64;
-      if (type === 'camera') { base64 = await takePhoto(); }
+      if (type === 'camera') { base64 = await takePhoto(); } 
       else { base64 = await fetchImage(); }
 
       if (base64) {
         setIsLoading(true);
-        const fileName = `motherhood_${Date.now()}.png`;
+        const fileName = `child_care_${Date.now()}.png`;
         const imageUrl = await uploadToVercel(base64, fileName, 'image/png');
         
         setMessages(prev => [...prev, {
           id: Date.now(),
-          text: `تم رفع صورة للمستشار: ${imageUrl}`,
+          text: `تم رفع صورة استشارية: ${imageUrl}`,
           sender: 'user',
           timestamp: new Date().toLocaleTimeString(),
           isImage: true,
@@ -99,7 +98,7 @@ const App = () => {
   const deleteMessage = (id) => setMessages(prev => prev.filter(m => m.id !== id));
   const saveReply = (msg) => {
     setSavedReplies(prev => [...prev, msg]);
-    alert("تم حفظ النصيحة في قائمة الردود!");
+    alert("تمت إضافة الرد إلى قائمة الحفظ بنجاح!");
   };
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -108,13 +107,13 @@ const App = () => {
     <div style={styles.container}>
       <div style={styles.topBar}>
         <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
-          <i className="fas fa-stethoscope"></i> استشاري التربية والطفل
+          <i className="fas fa-user-md"></i> استشاري الأطفال والتربية
         </button>
       </div>
 
       <header style={styles.header}>
-        <h1>رقة للأمومة</h1>
-        <p>استشارات تربوية ذكية لبناء جيل مبدع</p>
+        <h1>أكاديمية رقة للأمومة</h1>
+        <p>بناء شخصية الطفل بمعايير علمية</p>
       </header>
 
       <div style={styles.navScroll}>
@@ -137,7 +136,7 @@ const App = () => {
           ))}
         </div>
         <button style={styles.analyzeBtn} onClick={() => getAIAnalysis()}>
-          <i className="fas fa-magic"></i> تحليل الإنجاز تربوياً
+          <i className="fas fa-brain"></i> الحصول على تحليل تربوي
         </button>
       </div>
 
@@ -145,12 +144,12 @@ const App = () => {
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
-              <span>المستشار التربوي الذكي</span>
+              <span><i className="fas fa-stethoscope"></i> العيادة التربوية الذكية</span>
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
             </div>
 
             <div style={styles.chatContent}>
-              {messages.length === 0 && <p style={styles.emptyMsg}>أهلاً بكِ.. أنا هنا لمساعدتكِ في كل ما يخص تربية طفلكِ وتطوره.</p>}
+              {messages.length === 0 && <p style={styles.emptyMsg}>مرحباً بكِ في العيادة التربوية. أنا هنا لمساعدتكِ في توجيه طفلكِ نحو الأفضل.</p>}
               {messages.map(msg => (
                 <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                   <div style={styles.msgBubble}>
@@ -159,22 +158,22 @@ const App = () => {
                       <small>{msg.timestamp}</small>
                       <div style={{display: 'flex', gap: '8px'}}>
                         {msg.sender === 'ai' && (
-                          <button onClick={() => saveReply(msg)} style={styles.saveBtn} title="حفظ"><i className="fas fa-bookmark"></i></button>
+                          <button onClick={() => saveReply(msg)} style={styles.saveBtn} title="حفظ في القائمة"><i className="fas fa-bookmark"></i></button>
                         )}
-                        <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn} title="حذف"><i className="fas fa-trash"></i></button>
+                        <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn} title="حذف الرد"><i className="fas fa-trash"></i></button>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
-              {isLoading && <div style={styles.loading}>جاري مراجعة المراجع التربوية... 📝</div>}
+              {isLoading && <div style={styles.loading}>جاري مراجعة المنهجيات العلمية... ⏳</div>}
               <div ref={chatEndRef} />
             </div>
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                <button style={styles.mediaIcon} onClick={() => handleMediaAction('camera')} title="فتح الكاميرا"><i className="fas fa-camera"></i></button>
-                <button style={styles.mediaIcon} onClick={() => handleMediaAction('gallery')} title="رفع صورة"><i className="fas fa-image"></i></button>
+                <button style={styles.mediaIcon} onClick={() => handleMediaAction('camera')}><i className="fas fa-camera"></i></button>
+                <button style={styles.mediaIcon} onClick={() => handleMediaAction('gallery')}><i className="fas fa-image"></i></button>
               </div>
               <div style={styles.inputRow}>
                 <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتبي استشارتك هنا..." style={styles.input} />
@@ -191,38 +190,38 @@ const App = () => {
 };
 
 const styles = {
-  container: { direction: 'rtl', padding: '15px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fef9fb', minHeight: '100vh' },
+  container: { direction: 'rtl', padding: '15px', backgroundColor: '#fdf7f9', minHeight: '100vh', fontFamily: 'sans-serif' },
   topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
-  specialistBtn: { padding: '12px 20px', borderRadius: '25px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold' },
+  specialistBtn: { padding: '10px 20px', borderRadius: '20px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
   header: { textAlign: 'center', marginBottom: '20px', color: '#6a5acd' },
   navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' },
-  navBtn: { flex: '0 0 auto', padding: '10px', borderRadius: '15px', border: '1px solid #ddd', background: 'white', minWidth: '85px', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  navBtn: { flex: '0 0 auto', padding: '12px', borderRadius: '15px', border: '1px solid #ddd', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '85px' },
   activeNav: { background: '#ff85a2', color: 'white', borderColor: '#ff85a2' },
-  card: { background: 'white', padding: '20px', borderRadius: '25px', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' },
+  card: { background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
   grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' },
-  itemRow: { padding: '8px', display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid #f9f9f9' },
+  itemRow: { display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', borderBottom: '1px solid #f9f9f9', fontSize: '0.9rem' },
   done: { textDecoration: 'line-through', color: '#ccc' },
-  analyzeBtn: { width: '100%', padding: '15px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold' },
-  chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
+  analyzeBtn: { width: '100%', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold' },
+  chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
   chatBox: { width: '100%', maxWidth: '500px', height: '90vh', background: 'white', borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column' },
   chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
   closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem' },
   chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f8f9fa' },
   aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
   userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' },
-  msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-  msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.6' },
-  msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', paddingTop: '5px', borderTop: '1px solid #eee' },
+  msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
+  msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.5' },
+  msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '5px' },
   delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer' },
   saveBtn: { border: 'none', background: 'none', color: '#6a5acd', cursor: 'pointer' },
-  chatInputArea: { padding: '15px', background: 'white', borderTop: '1px solid #eee' },
+  chatInputArea: { padding: '15px', borderTop: '1px solid #eee' },
   mediaBar: { display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '10px' },
   mediaIcon: { background: '#f0f0f0', border: 'none', color: '#6a5acd', width: '40px', height: '40px', borderRadius: '50%', fontSize: '1.1rem' },
   inputRow: { display: 'flex', gap: '10px' },
-  input: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd' },
+  input: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' },
   sendBtn: { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white' },
-  loading: { textAlign: 'center', padding: '10px', color: '#6a5acd' },
-  emptyMsg: { textAlign: 'center', marginTop: '50px', color: '#999' }
+  loading: { textAlign: 'center', color: '#6a5acd', padding: '10px' },
+  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' }
 };
 
-export default App;
+export default Motherhood;
