@@ -10,6 +10,7 @@ const MenstrualTracker = () => {
     const saved = localStorage.getItem('menstrual_data');
     return saved ? JSON.parse(saved) : {};
   });
+
   const [openAccordion, setOpenAccordion] = useState(null);
   const [prediction, setPrediction] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +53,7 @@ const MenstrualTracker = () => {
    */
   const handleMediaAction = async (type) => {
     try {
-        // يتم استدعاء takePhoto أو fetchImage حسب المصدر
+        // افترضنا وجود دوال takePhoto و fetchImage و uploadToVercel معرفة خارجياً أو مستوردة
         const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
         if (!base64Data) return;
 
@@ -62,48 +63,52 @@ const MenstrualTracker = () => {
 
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
         console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
-        
-        // إرسال الرابط للذكاء الاصطناعي
-        handleProcess(`لقد رفعت صورة طبية/رياضية للمراجعة: ${finalAttachmentUrl}`);
-        return finalAttachmentUrl;
 
+        // إرسال الرابط للذكاء الاصطناعي
+        handleProcess(`لقد رفعت صورة طبية للمراجعة: ${finalAttachmentUrl}`);
+        return finalAttachmentUrl;
     } catch (error) {
         console.error("فشل في معالجة أو رفع الصورة:", error);
         alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة.");
     }
   };
 
-  // --- منطق المعالجة الرئيسي (حفظ في نيون + تحليل الرشاقة) ---
+  // --- منطق المعالجة الرئيسي (حفظ في نيون + تحليل الدورة الشهرية) ---
   const handleProcess = async (userInput = null) => {
     setLoading(true);
     const summary = JSON.stringify(data);
     
     try {
-      // 1. مرحلة الحفظ في Neon DB (الرابط الجديد المطلوب)
+      // 1. مرحلة الحفظ في Neon DB
       const saveOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
           user_id: 1,
-          category: 'متابعة الرشاقة والتغذية',
+          category: 'متابعة الدورة الشهرية والخصوبة',
           value: summary,
           note: userInput || 'تحديث من واجهة المتابعة الذكية'
         }
       };
       await CapacitorHttp.post(saveOptions);
 
-      // 2. مرحلة التحليل عبر AI بتخصص الرشاقة والتخسيس
-      const promptText = `أنت طبيب متخصص في مجال الرشاقة والتخسيس والتغذية الرياضية. 
+      // 2. مرحلة التحليل عبر AI بتخصص الدورة الشهرية (تعديل الـ Prompt بناءً على طلبك)
+      const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة. 
       حلل حالتي بناءً على هذه البيانات: ${summary}. 
-      ${userInput ? `سؤالي هو: ${userInput}` : "قدم لي نصيحة غذائية ورياضية شاملة."}`;
+      علماً أن معرف المستخدم (ID) هو 1.
+      المطلوب منك:
+      1. توقع موعد الدورة الشهرية القادمة بدقة بناءً على تاريخ البدء ومدة الدورة في البيانات.
+      2. تحديد أيام التبويض (نافذة الخصوبة) المتوقعة.
+      3. تقديم نصائح طبية بناءً على العمر، الوزن، والأعراض المسجلة (مثل التشنجات أو الحالة المزاجية).
+      ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي الصحية الحالية وموعد الخصوبة."}`;
 
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
       };
+
       const response = await CapacitorHttp.post(aiOptions);
-      
       const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
 
       const newMessage = { 
@@ -111,7 +116,7 @@ const MenstrualTracker = () => {
         role: 'ai', 
         content: responseText, 
         time: new Date().toLocaleTimeString('ar-EG'),
-        isSaved: true // علامة للحفظ في القائمة
+        isSaved: true 
       };
 
       if (userInput) {
@@ -156,9 +161,10 @@ const MenstrualTracker = () => {
 
   const sections = [
     { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
-    { id: 2, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
-    { id: 3, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
-    { id: 4, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
+    { id: 2, title: "البيانات الحيوية", emoji: "⚖️", fields: ["العمر", "الوزن"] },
+    { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
+    { id: 4, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
+    { id: 5, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
   ];
 
   return (
@@ -205,14 +211,14 @@ const MenstrualTracker = () => {
       ))}
 
       <button onClick={() => { setShowChat(true); handleProcess(); }} style={styles.btnPrimary} disabled={loading}>
-        {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل الرشاقة والتغذية"}
+        {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل الدورة والخصوبة"}
       </button>
 
       {showChat && (
         <div style={styles.chatOverlay}>
           <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '20px' }}>✕</span>
-            <span style={{ fontWeight: 'bold' }}>استشارية الرشاقة والتغذية</span>
+            <span style={{ fontWeight: 'bold' }}>استشارية صحة المرأة</span>
             <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '12px' }}>مسح</button>
           </div>
           
@@ -235,14 +241,14 @@ const MenstrualTracker = () => {
                 )}
               </div>
             ))}
-            {loading && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري تحليل رشاقتك...</div>}
+            {loading && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري تحليل بياناتك الطبية...</div>}
           </div>
          
           <div style={styles.chatInputArea}>
             <button onClick={() => handleMediaAction('camera')} style={styles.iconBtn}>📷</button>
             <button onClick={() => handleMediaAction('gallery')} style={styles.iconBtn}>🖼️</button>
             <input 
-              placeholder="اسألي عن التخسيس والتغذية..." 
+              placeholder="اسألي عن الدورة الشهرية والخصوبة..." 
               style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
               onKeyDown={(e) => { 
                 if(e.key === 'Enter' && e.target.value.trim()) { 
