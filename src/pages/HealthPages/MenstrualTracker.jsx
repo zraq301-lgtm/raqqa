@@ -1,35 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-[cite_start]// 1. استيراد الدوال من مسار الميديا المذكور [cite: 3]
-import { takePhoto, uploadToVercel } from '../../services/MediaService'; 
+// 1. استيراد الدوال من مسار الميديا المذكور 
+import { takePhoto, uploadToVercel } from '../../services/MediaService';
 
 const MenstrualTracker = () => {
-  [cite_start]const HealthIcon = iconMap.health; [cite: 2]
+  const HealthIcon = iconMap.health;
 
   // --- حالات البيانات ---
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('menstrual_data');
-    [cite_start]return saved ? JSON.parse(saved) : {}; [cite: 3]
+    return saved ? JSON.parse(saved) : {};
   });
 
-  [cite_start]const [openAccordion, setOpenAccordion] = useState(null); [cite: 4]
-  [cite_start]const [prediction, setPrediction] = useState(''); [cite: 4]
-  [cite_start]const [loading, setLoading] = useState(false); [cite: 4]
-  const [isProcessing, setIsProcessing] = useState(false); 
-  [cite_start]const [showChat, setShowChat] = useState(false); [cite: 4]
-  [cite_start]const [notifications, setNotifications] = useState([]); [cite: 5]
+  const [openAccordion, setOpenAccordion] = useState(null);
+  const [prediction, setPrediction] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // حالة التحميل الخاصة بالميديا 
+  const [showChat, setShowChat] = useState(false);
+  const [notifications, setNotifications] = useState([]);
   
   const [chatHistory, setChatHistory] = useState(() => {
     const savedChat = localStorage.getItem('chat_history');
-    [cite_start]return savedChat ? JSON.parse(savedChat) : []; [cite: 5]
+    return savedChat ? JSON.parse(savedChat) : [];
   });
 
   // مزامنة التخزين المحلي 
   useEffect(() => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
-  [cite_start]}, [data, chatHistory]); [cite: 6]
+  }, [data, chatHistory]);
 
   // --- جلب الإشعارات ---
   const fetchNotifications = async () => {
@@ -38,48 +38,51 @@ const MenstrualTracker = () => {
         url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
         method: 'GET'
       };
-      [cite_start]const response = await CapacitorHttp.get(options); [cite: 7, 8]
+      const response = await CapacitorHttp.get(options);
       if (response.data.success) {
-        [cite_start]setNotifications(response.data.notifications); [cite: 8]
+        setNotifications(response.data.notifications);
       }
     } catch (err) {
-      [cite_start]console.error("فشل جلب الإشعارات:", err); [cite: 9]
+      console.error("فشل جلب الإشعارات:", err);
     }
   };
 
   useEffect(() => {
     fetchNotifications();
-  [cite_start]}, []); [cite: 10]
+  }, []);
 
-  // دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة
+  /**
+   * دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة (التحديث الاحترافي)
+   */
   const handleCameraAndUpload = async () => {
     try {
-      // المرحلة الأولى: فتح الكاميرا والتقاط الصورة
-      [cite_start]const base64Data = await takePhoto(); [cite: 12]
+      // المرحلة الأولى: فتح الكاميرا والتقاط الصورة بنظام أندرويد [cite: 23, 24]
+      const base64Data = await takePhoto(); 
       
       if (!base64Data) return;
 
-      setIsProcessing(true); 
+      setIsProcessing(true); // تفعيل حالة التحميل 
       const userMsgId = Date.now();
 
-      // إضافة رسالة مؤقتة للمستخدم في الواجهة
-      setChatHistory(prev => [...prev, { 
+      // إضافة رسالة مؤقتة للمستخدم في الواجهة [cite: 8, 9]
+      const tempUserMsg = { 
         id: userMsgId, 
-        role: 'user', 
+        role: 'user',
         content: "جاري رفع الصورة المعالجة...", 
-        attachment: { type: 'image', data: base64Data } 
-      }]);
+        attachment: { type: 'image', data: base64Data },
+        time: new Date().toLocaleTimeString('ar-EG')
+      };
+      setChatHistory(prev => [...prev, tempUserMsg]);
 
-      // المرحلة الثانية: إعداد بيانات الملف للرفع
-      [cite_start]const fileName = `img_${userMsgId}.png`; [cite: 12]
-      [cite_start]const mimeType = 'image/png'; [cite: 12]
+      // المرحلة الثانية: إعداد بيانات الملف للرفع [cite: 11, 12]
+      const fileName = `img_${userMsgId}.png`;
+      const mimeType = 'image/png';
 
-      // المرحلة الثالثة: الرفع الفعلي إلى Vercel Blob عبر مسار الميديا
-      [cite_start]const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType); [cite: 13]
+      // المرحلة الثالثة: الرفع الفعلي إلى Vercel Blob عبر مسار الميديا [cite: 3, 12]
+      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
 
-      // المرحلة الرابعة: إرسال الرابط الناتج إلى API الذكاء الاصطناعي
-      // تم تصحيح الكلمات المفتاحية هنا لمنع خطأ البناء
-      const options = {
+      // المرحلة الرابعة: إرسال الرابط الناتج إلى API الذكاء الاصطناعي 
+      const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: {
@@ -87,37 +90,39 @@ const MenstrualTracker = () => {
         }
       };
 
-      [cite_start]const response = await CapacitorHttp.post(options); [cite: 16]
+      const response = await CapacitorHttp.post(aiOptions); [cite: 16]
       
       if (response.status === 200) {
-        const aiReply = response.data.reply || response.data.message || [cite_start]"تم استلام الصورة ومعالجتها."; [cite: 25]
-        const newMessage = { 
+        const aiReply = response.data.reply || response.data.message || "تم استلام الصورة ومعالجتها."; [cite: 17]
+        const aiMsg = { 
           id: Date.now(), 
           role: 'ai', 
           content: aiReply, 
           time: new Date().toLocaleTimeString('ar-EG'),
           isSaved: true 
         };
-        [cite_start]setChatHistory(prev => [...prev, newMessage]); [cite: 28]
+        setChatHistory(prev => [...prev, aiMsg]); [cite: 18]
       }
 
     } catch (error) {
-      [cite_start]console.error("خطأ في الكاميرا أو الرفع:", error); [cite: 30]
+      // معالجة الأخطاء وعرضها للمستخدم [cite: 19, 21]
+      console.error("خطأ في الكاميرا أو الرفع:", error);
       const errorMsg = { 
         id: Date.now(), 
         role: 'ai', 
-        content: `⚠️ فشل: ${error.message || "تأكدي من صلاحيات الكاميرا والإنترنت"}` 
+        content: `⚠️ فشل: ${error.message || "تأكدي من صلاحيات الكاميرا والإنترنت"}`,
+        time: new Date().toLocaleTimeString('ar-EG')
       };
-      [cite_start]setChatHistory(prev => [...prev, errorMsg]); [cite: 31]
+      setChatHistory(prev => [...prev, errorMsg]); [cite: 21]
     } finally {
-      setIsProcessing(false); 
+      setIsProcessing(false); [cite: 22]
     }
   };
 
-  // --- منطق المعالجة الرئيسي ---
+  // --- منطق المعالجة الرئيسي (حفظ في نيون + تحليل الدورة الشهرية) ---
   const handleProcess = async (userInput = null) => {
-    [cite_start]setLoading(true); [cite: 17]
-    [cite_start]const summary = JSON.stringify(data); [cite: 18]
+    setLoading(true);
+    const summary = JSON.stringify(data);
     
     try {
       const saveOptions = {
@@ -130,12 +135,16 @@ const MenstrualTracker = () => {
           note: userInput || 'تحديث من واجهة المتابعة الذكية'
         }
       };
-      [cite_start]await CapacitorHttp.post(saveOptions); [cite: 20]
+      await CapacitorHttp.post(saveOptions);
 
       const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
       حلل حالتي بناءً على هذه البيانات: ${summary}. 
-      [cite_start]المطلوب منك: توقع موعد الدورة الشهرية القادمة، تحديد أيام التبويض، وتقديم نصائح طبية. [cite: 21, 22]
-      ${userInput ? [cite_start]`سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي الصحية."}`; [cite: 23]
+      علماً أن معرف المستخدم (ID) هو 1.
+      المطلوب منك:
+      1. توقع موعد الدورة الشهرية القادمة بدقة.
+      2. تحديد أيام التبويض المتوقعة.
+      3. تقديم نصائح طبية بناءً على الأعراض المسجلة.
+      ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي."}`;
 
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -143,7 +152,7 @@ const MenstrualTracker = () => {
         data: { prompt: promptText }
       };
 
-      [cite_start]const response = await CapacitorHttp.post(aiOptions); [cite: 25]
+      const response = await CapacitorHttp.post(aiOptions);
       const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
       
       const newMessage = { 
@@ -155,34 +164,35 @@ const MenstrualTracker = () => {
       };
 
       if (userInput) {
-        [cite_start]setChatHistory(prev => [...prev, { role: 'user', content: userInput }, newMessage]); [cite: 27]
+        setChatHistory(prev => [...prev, { role: 'user', content: userInput, time: new Date().toLocaleTimeString('ar-EG') }, newMessage]);
       } else {
-        [cite_start]setChatHistory(prev => [...prev, newMessage]); [cite: 28]
+        setChatHistory(prev => [...prev, newMessage]);
       }
       
-      [cite_start]await fetchNotifications(); [cite: 29]
+      await fetchNotifications();
     } catch (err) {
-      [cite_start]console.error("فشل الاتصال:", err); [cite: 30]
-      [cite_start]setChatHistory(prev => [...prev, { role: 'ai', content: "حدث خطأ في الشبكة." }]); [cite: 31]
+      console.error("فشل الاتصال:", err);
+      setChatHistory(prev => [...prev, { role: 'ai', content: "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت." }]);
     } finally {
-      [cite_start]setLoading(false); [cite: 32]
+      setLoading(false);
     }
   };
 
   const calculateCycle = () => {
-    [cite_start]const startDate = data['سجل التواريخ_تاريخ البدء']; [cite: 33]
-    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || [cite_start]28; [cite: 34]
+    const startDate = data['سجل التواريخ_تاريخ البدء'];
+    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || 28;
     if (startDate) {
       const nextDate = new Date(startDate);
-      [cite_start]nextDate.setDate(nextDate.getDate() + duration); [cite: 35]
-      [cite_start]setPrediction(nextDate.toLocaleDateString('ar-EG')); [cite: 35]
+      nextDate.setDate(nextDate.getDate() + duration);
+      setPrediction(nextDate.toLocaleDateString('ar-EG'));
     }
   };
 
   const deleteResponse = (id) => {
-    [cite_start]setChatHistory(prev => prev.filter(msg => msg.id !== id)); [cite: 35]
+    setChatHistory(prev => prev.filter(msg => msg.id !== id));
   };
 
+  // --- التنسيقات ---
   const styles = {
     container: { background: 'linear-gradient(180deg, #FDF4F5 0%, #F8E1E7 100%)', minHeight: '100vh', padding: '20px', direction: 'rtl' },
     card: { background: '#fff', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 24px rgba(233, 30, 99, 0.08)', marginBottom: '15px' },
@@ -190,8 +200,8 @@ const MenstrualTracker = () => {
     chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 1000, display: 'flex', flexDirection: 'column' },
     chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid #eee' },
     headerChatBtn: { background: '#FFF', border: '1px solid #E91E63', color: '#E91E63', padding: '8px 15px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' },
-    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }
-  [cite_start]}; [cite: 36, 37]
+    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer', transition: '0.3s' }
+  };
 
   const sections = [
     { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
@@ -199,13 +209,14 @@ const MenstrualTracker = () => {
     { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
     { id: 4, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
     { id: 5, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
-  [cite_start]]; [cite: 38]
+  ];
 
   return (
     <div style={styles.container}>
+      {/* الهيدر والكارت الرئيسي */}
       <div style={styles.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <button onClick={() => setShowChat(true)} style={styles.headerChatBtn}>💬 فتح الشات</button>
+          <button onClick={() => setShowChat(true)} style={styles.headerChatBtn}>💬 فتح الاستشارة</button>
           <div style={{ textAlign: 'right' }}>
             <HealthIcon size={30} color="#E91E63" />
             <h3 style={{ color: '#ad1457', margin: 0 }}>طبيبة رقة الذكية</h3>
@@ -220,6 +231,7 @@ const MenstrualTracker = () => {
         {prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold', color: '#E91E63' }}>الموعد المتوقع: {prediction}</div>}
       </div>
 
+      {/* الأقسام القابلة للطي */}
       {sections.map((sec) => (
         <div key={sec.id} style={styles.card}>
           <div onClick={() => setOpenAccordion(openAccordion === sec.id ? null : sec.id)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -248,6 +260,7 @@ const MenstrualTracker = () => {
         {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل الدورة والخصوبة"}
       </button>
 
+      {/* شاشة الشات */}
       {showChat && (
         <div style={styles.chatOverlay}>
           <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -266,6 +279,9 @@ const MenstrualTracker = () => {
                 marginLeft: msg.role === 'user' ? 'auto' : '0',
                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)', position: 'relative'
               }}>
+                {msg.attachment && msg.attachment.type === 'image' && (
+                  <img src={`data:image/png;base64,${msg.attachment.data}`} alt="تحميل" style={{ width: '100%', borderRadius: '10px', marginBottom: '8px' }} />
+                )}
                 {msg.content}
                 {msg.role === 'ai' && (
                   <div style={{ marginTop: '5px', borderTop: '1px solid #eee', paddingTop: '5px', textAlign: 'left' }}>
@@ -275,15 +291,25 @@ const MenstrualTracker = () => {
                 )}
               </div>
             ))}
-            {(loading || isProcessing) && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري التحليل...</div>}
+            {(loading || isProcessing) && (
+              <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px', margin: '10px' }}>
+                {isProcessing ? "جاري معالجة ورفع الصورة..." : "جاري تحليل بياناتك الطبية..."}
+              </div>
+            )}
           </div>
          
           <div style={styles.chatInputArea}>
-            <button onClick={handleCameraAndUpload} style={styles.iconBtn}>📷</button>
-            <button onClick={() => handleCameraAndUpload()} style={styles.iconBtn}>🖼️</button>
+            <button 
+              onClick={handleCameraAndUpload} 
+              style={styles.iconBtn}
+              disabled={isProcessing}
+            >
+              📷
+            </button>
             <input 
               placeholder="اسألي عن الدورة الشهرية والخصوبة..." 
               style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
+              disabled={loading || isProcessing}
               onKeyDown={(e) => { 
                 if(e.key === 'Enter' && e.target.value.trim()) { 
                   handleProcess(e.target.value);
