@@ -1,46 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-[cite_start]// استيراد الدوال من مسار الميديا المذكور [cite: 3]
+// 1. استيراد الدوال من مسار الميديا المذكور 
 import { takePhoto, uploadToVercel } from '../../services/MediaService';
 
 const MenstrualTracker = () => {
   const HealthIcon = iconMap.health;
 
-  [cite_start]// --- حالات البيانات --- [cite: 3]
+  // --- حالات البيانات ---
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('menstrual_data');
     return saved ? JSON.parse(saved) : {};
   });
 
-  const [openAccordion, setOpenAccordion] = useState(null); [cite_start]// [cite: 4]
-  const [prediction, setPrediction] = useState(''); [cite_start]// [cite: 4]
-  const [loading, setLoading] = useState(false); [cite_start]// [cite: 4]
-  const [isProcessing, setIsProcessing] = useState(false); [cite_start]// حالة التحميل للصور [cite: 7]
-  const [showChat, setShowChat] = useState(false); [cite_start]// [cite: 4]
-  const [notifications, setNotifications] = useState([]); [cite_start]// [cite: 5]
+  const [openAccordion, setOpenAccordion] = useState(null);
+  const [prediction, setPrediction] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false); // حالة التحميل لرفع الصور [cite: 7]
   
   const [chatHistory, setChatHistory] = useState(() => {
     const savedChat = localStorage.getItem('chat_history');
     return savedChat ? JSON.parse(savedChat) : [];
-  }); [cite_start]// [cite: 5]
+  });
 
-  [cite_start]// مزامنة التخزين المحلي [cite: 6]
+  // مزامنة التخزين المحلي 
   useEffect(() => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
 
-  [cite_start]// --- جلب الإشعارات --- [cite: 7]
+  // --- جلب الإشعارات ---
   const fetchNotifications = async () => {
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
         method: 'GET'
       };
-      const response = await CapacitorHttp.get(options); [cite_start]// [cite: 8]
-      if (response.data && response.data.success) {
-        setNotifications(response.data.notifications); [cite_start]// [cite: 8]
+      const response = await CapacitorHttp.get(options);
+      if (response.data.success) {
+        setNotifications(response.data.notifications);
       }
     } catch (err) {
       console.error("فشل جلب الإشعارات:", err);
@@ -49,71 +49,73 @@ const MenstrualTracker = () => {
 
   useEffect(() => {
     fetchNotifications();
-  }, []); [cite_start]// [cite: 10]
+  }, []);
 
-  /**
-   * [cite_start]دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة [cite: 11]
-   */
+  // دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة [cite: 23, 24]
   const handleCameraAndUpload = async () => {
     try {
-      [cite_start]// المرحلة الأولى: فتح الكاميرا والتقاط الصورة [cite: 23, 24]
+      // المرحلة الأولى: فتح الكاميرا والتقاط الصورة بنظام أندرويد [cite: 23, 24]
       const base64Data = await takePhoto(); 
+      
       if (!base64Data) return;
 
-      setIsProcessing(true); [cite_start]// تفعيل حالة التحميل [cite: 7]
-      const userMsgId = Date.now(); [cite_start]// [cite: 8]
+      setIsProcessing(true); // تفعيل حالة التحميل [cite: 7]
+      const userMsgId = Date.now(); [cite: 8]
 
-      [cite_start]// إضافة رسالة مؤقتة للمستخدم في الواجهة [cite: 9]
+      // إضافة رسالة مؤقتة للمستخدم في الواجهة 
       setChatHistory(prev => [...prev, { 
         id: userMsgId, 
         role: 'user',
-        content: "جاري رفع الصورة المعالجة...",
-        attachment: { type: 'image', data: base64Data }
+        content: "جاري رفع الصورة المعالجة...", 
+        attachment: { type: 'image', data: base64Data } 
       }]);
 
-      [cite_start]// المرحلة الثانية والثالثة: الرفع الفعلي إلى Vercel [cite: 11, 12]
-      const fileName = `img_${userMsgId}.png`; [cite_start]// [cite: 12]
-      const mimeType = 'image/png'; [cite_start]// [cite: 12]
-      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType); [cite_start]// [cite: 12]
+      // المرحلة الثانية: إعداد بيانات الملف للرفع [cite: 11, 12]
+      const fileName = `img_${userMsgId}.png`; [cite: 12]
+      const mimeType = 'image/png'; [cite: 12]
 
-      [cite_start]// المرحلة الرابعة: إرسال الرابط الناتج إلى API الذكاء الاصطناعي [cite: 14, 15]
-      const aiOptions = {
-        [cite_start]url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai', // [cite: 14]
-        [cite_start]headers: { 'Content-Type': 'application/json' }, // [cite: 14]
+      // المرحلة الثالثة: الرفع الفعلي إلى Vercel Blob عبر مسار الميديا [cite: 3, 12]
+      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType); [cite: 12]
+
+      // المرحلة الرابعة: إرسال الرابط الناتج إلى API الذكاء الاصطناعي [cite: 14, 15]
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai', [cite: 14]
+        headers: { 'Content-Type': 'application/json' }, [cite: 14]
         data: {
-          [cite_start]prompt: `أنا أنثى مسلمة، مرفق رابط الصورة للمراجعة الطبية: ${finalAttachmentUrl}` // [cite: 14, 15]
+          prompt: `أنا أنثى مسلمة، مرفق رابط الصورة الطبية للمراجعة: ${finalAttachmentUrl}` [cite: 14, 15]
         }
       };
 
-      const response = await CapacitorHttp.post(aiOptions); [cite_start]// [cite: 16]
+      const response = await CapacitorHttp.post(options); [cite: 16]
+      
       if (response.status === 200) {
-        const aiReply = response.data.reply || "تم استلام الصورة ومعالجتها بنجاح."; [cite_start]// [cite: 17]
+        const aiReply = response.data.reply || response.data.message || "تم استلام الصورة ومعالجتها."; [cite: 17]
         setChatHistory(prev => [...prev, { 
-          id: Date.now(), 
-          role: 'ai', 
-          content: aiReply,
-          time: new Date().toLocaleTimeString('ar-EG')
-        }]); [cite_start]// [cite: 18]
+            id: Date.now(), 
+            role: 'ai', 
+            content: aiReply,
+            time: new Date().toLocaleTimeString('ar-EG') 
+        }]); [cite: 18]
       }
+
     } catch (error) {
-      console.error("خطأ في الكاميرا أو الرفع:", error); [cite_start]// [cite: 19]
+      console.error("خطأ في الكاميرا أو الرفع:", error);
       setChatHistory(prev => [...prev, { 
         id: Date.now(), 
-        role: 'ai', 
-        content: `⚠️ فشل: ${error.message || "تأكدي من صلاحيات الكاميرا والإنترنت"}` 
-      }]); [cite_start]// [cite: 21]
+        role: 'ai',
+        content: `⚠️ فشل: ${error.message || "تأكدي من صلاحيات الكاميرا والإنترنت"}`
+      }]); [cite: 21]
     } finally {
-      setIsProcessing(false); [cite_start]// [cite: 22]
+      setIsProcessing(false); [cite: 22]
     }
   };
 
-  [cite_start]// --- حفظ البيانات والتحليل الذكي --- [cite: 17]
+  // --- منطق المعالجة الرئيسي ---
   const handleProcess = async (userInput = null) => {
-    setLoading(true); [cite_start]// [cite: 17]
-    const summary = JSON.stringify(data); [cite_start]// [cite: 18]
+    setLoading(true);
+    const summary = JSON.stringify(data);
     
     try {
-      [cite_start]// 1. مرحلة الحفظ في Neon DB [cite: 18]
       const saveOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -121,22 +123,28 @@ const MenstrualTracker = () => {
           user_id: 1,
           category: 'متابعة الدورة الشهرية والخصوبة',
           value: summary,
-          note: userInput || [cite_start]'تحديث من واجهة المتابعة الذكية' // [cite: 19]
+          note: userInput || 'تحديث من واجهة المتابعة الذكية'
         }
       };
-      await CapacitorHttp.post(saveOptions); [cite_start]// [cite: 20]
+      await CapacitorHttp.post(saveOptions);
 
-      [cite_start]// 2. مرحلة التحليل عبر AI [cite: 20]
-      const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة. حلل حالتي بناءً على هذه البيانات: ${summary}. المطلوب منك: توقع موعد الدورة، أيام التبويض، ونصائح طبية بناءً على الأعراض. ${userInput ? `سؤالي الإضافي: ${userInput}` : ""}`; [cite_start]// [cite: 20, 21, 23]
+      const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
+      حلل حالتي بناءً على هذه البيانات: ${summary}. 
+      علماً أن معرف المستخدم (ID) هو 1.
+      المطلوب منك:
+      1. توقع موعد الدورة الشهرية القادمة بدقة.
+      2. تحديد أيام التبويض (نافذة الخصوبة).
+      3. تقديم نصائح طبية بناءً على العمر والوزن والأعراض.
+      ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي الصحية."}`;
 
       const aiOptions = {
-        [cite_start]url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai', // [cite: 24]
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
       };
 
-      const response = await CapacitorHttp.post(aiOptions); [cite_start]// [cite: 25]
-      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً."; [cite_start]// [cite: 25]
+      const response = await CapacitorHttp.post(aiOptions);
+      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
       
       const newMessage = { 
         id: Date.now(),
@@ -144,35 +152,36 @@ const MenstrualTracker = () => {
         content: responseText, 
         time: new Date().toLocaleTimeString('ar-EG'),
         isSaved: true 
-      }; [cite_start]// [cite: 26]
+      };
 
       if (userInput) {
-        setChatHistory(prev => [...prev, { role: 'user', content: userInput }, newMessage]); [cite_start]// [cite: 27]
+        setChatHistory(prev => [...prev, { role: 'user', content: userInput }, newMessage]);
       } else {
-        setChatHistory(prev => [...prev, newMessage]); [cite_start]// [cite: 28]
+        setChatHistory(prev => [...prev, newMessage]);
       }
       
-      await fetchNotifications(); [cite_start]// [cite: 29]
+      await fetchNotifications();
     } catch (err) {
-      console.error("فشل الاتصال:", err); [cite_start]// [cite: 30]
-      setChatHistory(prev => [...prev, { role: 'ai', content: "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت." }]); [cite_start]// [cite: 31]
+      console.error("فشل الاتصال:", err);
+      const errorMsg = { role: 'ai', content: "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت." };
+      setChatHistory(prev => [...prev, errorMsg]);
     } finally {
-      setLoading(false); [cite_start]// [cite: 32]
+      setLoading(false);
     }
   };
 
   const calculateCycle = () => {
-    const startDate = data['سجل التواريخ_تاريخ البدء']; [cite_start]// [cite: 33]
-    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || 28; [cite_start]// [cite: 34]
+    const startDate = data['سجل التواريخ_تاريخ البدء'];
+    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || 28;
     if (startDate) {
       const nextDate = new Date(startDate);
-      nextDate.setDate(nextDate.getDate() + duration); [cite_start]// [cite: 35]
-      setPrediction(nextDate.toLocaleDateString('ar-EG')); [cite_start]// [cite: 35]
+      nextDate.setDate(nextDate.getDate() + duration);
+      setPrediction(nextDate.toLocaleDateString('ar-EG'));
     }
   };
 
   const deleteResponse = (id) => {
-    setChatHistory(prev => prev.filter(msg => msg.id !== id)); [cite_start]// [cite: 35]
+    setChatHistory(prev => prev.filter(msg => msg.id !== id));
   };
 
   const styles = {
@@ -183,7 +192,7 @@ const MenstrualTracker = () => {
     chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid #eee' },
     headerChatBtn: { background: '#FFF', border: '1px solid #E91E63', color: '#E91E63', padding: '8px 15px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' },
     iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }
-  }; [cite_start]// [cite: 36, 37]
+  };
 
   const sections = [
     { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
@@ -191,7 +200,7 @@ const MenstrualTracker = () => {
     { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
     { id: 4, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
     { id: 5, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
-  ]; [cite_start]// [cite: 38]
+  ];
 
   return (
     <div style={styles.container}>
@@ -259,6 +268,9 @@ const MenstrualTracker = () => {
                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)', position: 'relative'
               }}>
                 {msg.content}
+                {msg.attachment && msg.attachment.type === 'image' && (
+                  <img src={`data:image/png;base64,${msg.attachment.data}`} alt="رفع" style={{ width: '100%', borderRadius: '10px', marginTop: '10px' }} />
+                )}
                 {msg.role === 'ai' && (
                   <div style={{ marginTop: '5px', borderTop: '1px solid #eee', paddingTop: '5px', textAlign: 'left' }}>
                     <button onClick={() => deleteResponse(msg.id)} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#888' }}>🗑️ حذف</button>
@@ -267,13 +279,13 @@ const MenstrualTracker = () => {
                 )}
               </div>
             ))}
-            {(loading || isProcessing) && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري التحليل...</div>}
+            {(loading || isProcessing) && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري تحليل بياناتك الطبية...</div>}
           </div>
          
           <div style={styles.chatInputArea}>
-            {/* تم ربط الأزرار بالدالة المطلوبة */}
-            <button onClick={handleCameraAndUpload} style={styles.iconBtn}>📷</button>
-            <button onClick={handleCameraAndUpload} style={styles.iconBtn}>🖼️</button>
+            {/* تم تحديث الأزرار لاستدعاء الدالة الجديدة */}
+            <button onClick={handleCameraAndUpload} style={styles.iconBtn} disabled={isProcessing}>📷</button>
+            <button onClick={handleCameraAndUpload} style={styles.iconBtn} disabled={isProcessing}>🖼️</button>
             <input 
               placeholder="اسألي عن الدورة الشهرية والخصوبة..." 
               style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
