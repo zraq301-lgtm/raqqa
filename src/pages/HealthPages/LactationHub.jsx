@@ -18,14 +18,12 @@ const LactationHub = () => {
       return JSON.parse(localStorage.getItem('lactation_history')) || [];
     } catch { return []; }
   });
-  
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
   // --- دالة معالجة الوسائط المضافة ---
   const handleMediaAction = async (type) => {
     try {
-        // ملاحظة: دوال takePhoto و fetchImage و uploadToVercel يجب أن تكون معرفة في مشروعك
         setLoading(true);
         const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
         if (!base64Data) { setLoading(false); return; }
@@ -33,14 +31,11 @@ const LactationHub = () => {
         const timestamp = Date.now();
         const fileName = `img_${timestamp}.png`;
         const mimeType = 'image/png';
-
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
         console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
-        
         // إرسال الرابط للذكاء الاصطناعي للتحليل
         await handleSaveAndAnalyze(finalAttachmentUrl);
         return finalAttachmentUrl;
-
     } catch (error) {
         console.error("فشل في معالجة أو رفع الصورة:", error);
         alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة.");
@@ -62,25 +57,24 @@ const LactationHub = () => {
   const handleSaveAndAnalyze = async (imageUrl = null) => {
     setLoading(true);
     setShowChat(true);
-    setAiResponse("جاري تحليل بياناتك الصحية والرياضية بعناية...");
-
+    setAiResponse("جاري تحليل بيانات الرضاعة وصحة طفلكِ بعناية...");
     try {
-      // 1. الحفظ في نيون (الرابط الجديد)
+      // 1. الحفظ في نيون
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          category: 'تحليل الرشاقة والتغذية الرياضية',
-          value: 'بيانات صحية جديدة',
+          category: 'تحليل الرضاعة وصحة الأم والطفل',
+          value: 'بيانات رضاعة جديدة',
           user_id: 1,
           note: JSON.stringify({ ...data, attachment: imageUrl })
         }
       });
 
-      // 2. تحليل AI رقة (بتخصص الرشاقة والتغذية)
-      const promptText = `أنتِ طبيبة مختصة في الرشاقة والتخسيس والتغذية العلاجية والرياضية. 
-      بناءً على هذه البيانات: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة: ${imageUrl}` : ''}.
-      قدمي تحليلاً دقيقاً يتضمن نصائح غذائية رياضية لتحسين القوام والوزن بأسلوب رقيق ودافيء.`;
+      // 2. تحليل AI رقة (بتخصص الرضاعة والطفولة)
+      const promptText = `أنتِ طبيبة استشارية مختصة في الرضاعة الطبيعية، طب الأطفال، وصحة الأم المرضعة.
+بناءً على هذه البيانات المدخلة: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة: ${imageUrl}` : ''}.
+قدمي تحليلاً طبياً دقيقاً يتضمن نصائح لدعم الرضاعة الطبيعية، التعامل مع مشاكل الثدي، صحة الرضيع، ونظام الأم الغذائي بأسلوب رقيق، دافئ، وداعم للأم.`;
 
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -128,7 +122,6 @@ const LactationHub = () => {
 
   return (
     <div style={styles.mainContainer}>
-      {/* الرأس المحدث مع زر الشات */}
       <div style={styles.header}>
         <div style={styles.statsRow}>
           <button onClick={() => setShowChat(true)} style={{...styles.circle, border:'none', cursor:'pointer', background:'#fff', color:'#739673'}}>💬</button>
@@ -136,8 +129,8 @@ const LactationHub = () => {
           <div style={styles.circle}><Icon size={18} /></div>
         </div>
         <div style={{ textAlign: 'center' }}>
-          <h2 style={styles.title}>سجل الرشاقة الذكي</h2>
-          <div style={styles.subtitle}>Fitness & Nutrition AI</div>
+          <h2 style={styles.title}>سجل الرضاعة الذكي</h2>
+          <div style={styles.subtitle}>Lactation & Baby Care AI</div>
         </div>
       </div>
 
@@ -161,7 +154,7 @@ const LactationHub = () => {
 
       <div style={styles.footerControls}>
         <button onClick={() => handleSaveAndAnalyze()} style={styles.analyzeBtn}>
-          {loading ? 'جاري التحليل...' : 'تحليل الرشاقة والتغذية'}
+          {loading ? 'جاري التحليل...' : 'تحليل الرضاعة والصحة'}
         </button>
 
         <div style={styles.actionButtons}>
@@ -189,17 +182,17 @@ const LactationHub = () => {
         <div style={styles.overlay}>
           <div style={styles.chatSheet}>
             <div style={styles.chatHeader}>
-              <span style={{ fontWeight: '800' }}>🥗 استشارية الرشاقة والرياضة</span>
+              <span style={{ fontWeight: '800' }}>🤱 استشارية الرضاعة والطفولة</span>
               <button onClick={() => setShowChat(false)} style={styles.closeBtn}>✕</button>
             </div>
             <div style={styles.chatBody}>
               {loading ? (
                 <div style={{ textAlign: 'center', marginTop: '40px' }}>
                   <div style={styles.loader}></div>
-                  <p>جاري فحص بياناتك الغذائية والرياضية...</p>
+                  <p>جاري فحص بيانات الرضاعة وصحة طفلكِ...</p>
                 </div>
               ) : (
-                <div style={{ whiteSpace: 'pre-line' }}>{aiResponse || "أهلاً بكِ رفيقتي، كيف يمكنني مساعدتك في رحلة رشاقتك اليوم؟"}</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{aiResponse || "أهلاً بكِ يا رفيقتي الأم، كيف حالكِ وحال طفلكِ اليوم؟ أنا هنا لدعمكِ في رحلة الرضاعة."}</div>
               )}
             </div>
             <div style={styles.chatFooter}>
