@@ -6,16 +6,18 @@ import {
   Sparkles, X, Bookmark, Stethoscope, Plus, Bell, Clock, Image as ImageIcon
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
+[cite_start]// 1. استيراد الدوال من مسار الميديا المذكور [cite: 3]
+import { takePhoto, uploadToVercel } from '../../services/MediaService';
 
 const PregnancyApp = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [showChat, setShowChat] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); [cite_start]// حالة التحميل للوسائط [cite: 7]
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('preg_ai_v3')) || []);
   const [pregnancyWeek, setPregnancyWeek] = useState(12);
   const [reminders, setReminders] = useState(JSON.parse(localStorage.getItem('reminders')) || []);
-  
-  // المداخلات كاملة (10 حقول لكل قسم)
+
   const categories = [
     { id: 'fetal', title: 'نمو الجنين', icon: <Activity />, fields: ['حركة الجنين', 'نبض القلب', 'الوزن التقديري', 'وضعية الجنين', 'السائل الأمينوسي', 'طول الفخذ', 'محيط الرأس', 'محيط البطن', 'التنفس الجنيني', 'حالة المشيمة'] },
     { id: 'mother', title: 'صحة الأم', icon: <Stethoscope />, fields: ['ضغط الدم', 'مستوى السكر', 'الوزن الحالي', 'الأعراض الشائعة', 'الحالة النفسية', 'درجة الحرارة', 'مستوى التورم', 'جودة النوم', 'النشاط البدني', 'معدل شرب الماء'] },
@@ -35,33 +37,53 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // --- دوال الوسائط المضافة ---
-  const handleMediaAction = async (type) => {
+  [cite_start]// --- دالة الكاميرا والرفع المدمجة --- [cite: 23, 24]
+  const handleCameraAndUpload = async () => {
     try {
-        // محاكاة جلب البيانات (يجب استبدال takePhoto و fetchImage بدوال الكاميرا الفعلية لديك)
-        alert(`جاري فتح ${type === 'camera' ? 'الكاميرا' : 'المعرض'}...`);
-        const base64Data = "data:image/png;base64,..."; // مثال
+      const base64Data = await takePhoto(); 
+      if (!base64Data) return;
 
-        if (!base64Data) return;
+      setIsProcessing(true); [cite_start]// [cite: 7]
+      const userMsgId = Date.now(); [cite_start]// [cite: 8]
 
-        const timestamp = Date.now();
-        const fileName = `img_${timestamp}.png`;
-        const mimeType = 'image/png';
+      [cite_start]// إضافة رسالة مؤقتة للمستخدم [cite: 9]
+      const tempMsg = { 
+        id: userMsgId, 
+        query: "صورة مرفوعة", 
+        reply: "جاري رفع الصورة وتحليلها طبياً...", 
+        time: new Date().toLocaleTimeString('ar-SA') 
+      };
+      setChatHistory(prev => [tempMsg, ...prev]);
+      setShowChat(true);
 
-        // الرفع إلى Vercel Blob (دالة افتراضية تبعا لطلبك)
-        // const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
-        const finalAttachmentUrl = "https://vercel-blob-url.com/sample.png"; 
+      const fileName = `img_${userMsgId}.png`; [cite_start]// [cite: 12]
+      const mimeType = 'image/png'; [cite_start]// [cite: 12]
 
-        console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
-        return finalAttachmentUrl;
+      [cite_start]// الرفع إلى Vercel [cite: 12]
+      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType); 
 
+      [cite_start]// إرسال الرابط للذكاء الاصطناعي [cite: 14, 15]
+      const response = await CapacitorHttp.post({
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          prompt: `أنا طبيب نساء وتوليد خبير. كأنثى مسلمة، مرفق رابط الصورة للتحليل الطبي: ${finalAttachmentUrl}. قدم نصيحة طبية دقيقة بخصوص الحمل.` 
+        }
+      });
+
+      if (response.status === 200) {
+        const aiReply = response.data.reply || "تم استلام الصورة ومعالجتها طبياً."; [cite_start]// [cite: 17]
+        const finalMsg = { id: Date.now(), query: "تحليل صورة", reply: aiReply, time: new Date().toLocaleTimeString('ar-SA') };
+        setChatHistory(prev => [finalMsg, ...prev.filter(m => m.id !== userMsgId)]);
+      }
     } catch (error) {
-        console.error("فشل في معالجة أو رفع الصورة:", error);
-        alert("حدث خطأ أثناء الوصول للوسائط.");
+      console.error("خطأ في الكاميرا أو الرفع:", error);
+      alert("حدث خطأ أثناء الوصول للكاميرا.");
+    } finally {
+      setIsProcessing(false); [cite_start]// [cite: 22]
     }
   };
 
-  // وظائف الاتصال والتحليل (تم تحديث الرابط لـ رقة HJL8)
   const saveToNeon = async (catTitle, aiReply) => {
     try {
       await CapacitorHttp.post({
@@ -85,7 +107,8 @@ const PregnancyApp = () => {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { 
-          prompt: `أنتِ طبيبة خبيرة في الرشاقة، التخسيس، التغذية العلاجية، والرياضة للحوامل. حللي هذه البيانات لـ (${category.title}): ${dataString}. قدمي نصائح تركز على الوزن المثالي، النشاط البدني المناسب، والنظام الغذائي الصحي بأسلوب رقيق ومطمئن.` 
+          // تحديث الهوية لتكون طبيب نساء وتوليد
+          prompt: `أنتِ طبيب نساء وتوليد خبير متخصص في متابعة الحمل من البداية وحتى الولادة. حللي هذه البيانات لـ (${category.title}): ${dataString}. قدمي نصائح طبية دقيقة، تعليمات للمتابعة، وتوجيهات صحية بأسلوب مطمئن ومهني.` 
         }
       });
       const reply = response.data.reply || response.data.message;
@@ -123,7 +146,7 @@ const PregnancyApp = () => {
       <header className="header">
         <button className="ai-btn" onClick={() => setShowChat(true)}>
           <div style={{display:'flex', alignItems:'center', gap: '5px'}}>
-            <MessageSquare size={18}/> <span>طبيبة رقة <br/> AI</span>
+            <MessageSquare size={18}/> <span>طبيب النساء <br/> AI</span>
           </div>
         </button>
         <div className="title-group">
@@ -142,7 +165,7 @@ const PregnancyApp = () => {
           <span className="week-label">الأسبوع</span>
           <input type="range" min="1" max="42" value={pregnancyWeek} onChange={(e)=>setPregnancyWeek(e.target.value)} style={{width:'100%', accentColor:'#7C3AED'}} />
         </div>
-        <div className="feature-card" onClick={() => alert('سيتم تذكيرك بموعد الفحص القادم')}>
+        <div className="feature-card">
           <div style={{color:'#7C3AED', marginBottom:'5px'}}><Clock size={24} style={{margin:'0 auto'}}/></div>
           <span className="week-label">الموعد القادم</span>
           <div style={{fontSize:'12px', fontWeight:'bold', marginTop:'5px'}}>22 فبراير</div>
@@ -167,7 +190,7 @@ const PregnancyApp = () => {
                       <input key={idx} className="custom-input" placeholder={field} value={inputs[cat.id][idx]} onChange={(e) => handleUpdateInput(cat.id, idx, e.target.value)} />
                     ))}
                     <button className="analyze-full-btn" onClick={() => runAiAnalysis(index)}>
-                      <Sparkles size={16} style={{display:'inline', marginLeft:'5px'}}/> {loading ? 'جاري التحليل...' : 'تحليل الرشاقة وحفظ'}
+                      <Sparkles size={16} style={{display:'inline', marginLeft:'5px'}}/> {loading ? 'جاري التحليل...' : 'تحليل الطبيب وحفظ'}
                     </button>
                   </div>
                 </motion.div>
@@ -177,21 +200,20 @@ const PregnancyApp = () => {
         ))}
       </div>
 
-      {/* شاشة الشات المحدثة */}
       <AnimatePresence>
         {showChat && (
           <motion.div className="chat-overlay" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}>
             <div className="chat-header">
               <button onClick={() => setShowChat(false)} style={{background:'none', border:'none', color:'white'}}><ChevronRight size={28}/></button>
               <div style={{textAlign:'center'}}>
-                <div style={{fontWeight:'bold'}}>طبيبة رقة: رشاقة وتغذية</div>
-                <div style={{fontSize:'10px', opacity:0.8}}>تخصص تغذية، رياضة، ورشاقة الحمل</div>
+                <div style={{fontWeight:'bold'}}>طبيب النساء: متابعة ذكية</div>
+                <div style={{fontSize:'10px', opacity:0.8}}>خبير في صحة الأم والجنين والولادة</div>
               </div>
-              <button onClick={() => { if(confirm('حذف كل الردود؟')) setChatHistory([]); }} style={{background:'rgba(0,0,0,0.1)', border:'none', color:'white', padding:'8px', borderRadius:'10px'}}><Trash2 size={20}/></button>
+              <button onClick={() => { if(window.confirm('حذف كل الردود؟')) setChatHistory([]); }} style={{background:'rgba(0,0,0,0.1)', border:'none', color:'white', padding:'8px', borderRadius:'10px'}}><Trash2 size={20}/></button>
             </div>
 
             <div className="chat-body">
-              {loading && <div style={{textAlign:'center', padding:'20px', color:'#7C3AED', fontWeight:'bold'}}>انتظري، طبيبة التغذية تراجع بياناتك...</div>}
+              {(loading || isProcessing) && <div style={{textAlign:'center', padding:'20px', color:'#7C3AED', fontWeight:'bold'}}>انتظري، الطبيب يراجع بياناتك...</div>}
               {chatHistory.map(msg => (
                 <div key={msg.id} className="msg-card">
                   <div style={{fontSize:'10px', color:'#7C3AED', fontWeight:'bold', marginBottom:'5px'}}>تحليل: {msg.query}</div>
@@ -208,9 +230,9 @@ const PregnancyApp = () => {
             </div>
 
             <div style={{padding:'20px', borderTop:'1px solid #F1F5F9', display:'flex', gap:'10px'}}>
-              <button className="ai-btn" style={{padding:'10px'}} onClick={()=>handleMediaAction('camera')}><Camera size={20}/></button>
-              <button className="ai-btn" style={{padding:'10px'}} onClick={()=>handleMediaAction('gallery')}><ImageIcon size={20}/></button>
-              <div style={{flex:1, background:'#F8FAFC', borderRadius:'15px', display:'flex', alignItems:'center', fontSize:'11px', color:'#94A3B8', border:'1px solid #E2E8F0', padding:'0 15px'}}>اسألي عن التغذية أو الرياضة...</div>
+              <button className="ai-btn" style={{padding:'10px'}} onClick={handleCameraAndUpload}><Camera size={20}/></button>
+              <button className="ai-btn" style={{padding:'10px'}} onClick={handleCameraAndUpload}><ImageIcon size={20}/></button>
+              <div style={{flex:1, background:'#F8FAFC', borderRadius:'15px', display:'flex', alignItems:'center', fontSize:'11px', color:'#94A3B8', border:'1px solid #E2E8F0', padding:'0 15px'}}>اسألي طبيب النساء عن أي شيء...</div>
               <button className="ai-btn" style={{padding:'10px'}}><Send size={20}/></button>
             </div>
           </motion.div>
