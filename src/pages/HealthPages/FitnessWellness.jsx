@@ -10,7 +10,7 @@ const PregnancyMonitor = () => {
   const [aiResponse, setAiResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistory, setChatHistory] = useState([]);
-  
+
   // تحميل البيانات والدردشات المحفوظة من localStorage
   const [data, setData] = useState(() => {
     try {
@@ -34,7 +34,7 @@ const PregnancyMonitor = () => {
     { id: "cycle", title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة", "الاحتباس", "تغير الوزن", "الرياضة", "ألم الجسم"] }
   ];
 
-  // دالة حفظ البيانات في جدول إشعارات نيون (الرابط المحدث)
+  // دالة حفظ البيانات في جدول إشعارات نيون
   const saveToNeonDB = async (category, value) => {
     try {
       const options = {
@@ -62,18 +62,18 @@ const PregnancyMonitor = () => {
     });
   }, []);
 
-  // دالة معالجة الذكاء الاصطناعي (طبيبة رقة للرشاقة)
+  // دالة معالجة الذكاء الاصطناعي
   const handleProcessAI = async (imageUrl = null) => {
     if (!prompt && !imageUrl) return;
     setIsLoading(true);
     const summary = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(", ");
-    
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية: ${summary}. ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''}
+          prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية: ${summary}.
+          ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''}
           بصفتك طبيبة تغذية ورشاقة وتخسيس ورياضة متخصصة، حللي طلبي بدقة وقدمي نصيحة احترافية: ${prompt}`
         }
       };
@@ -94,32 +94,36 @@ const PregnancyMonitor = () => {
   };
 
   /**
-   * دالة متكاملة لفتح الوسائط ورفع الصور مباشرة (محدثة)
+   * دالة متكاملة لرفع الصور إلى فيرسل بلوب باستخدام الرابط المحدث
    */
   const handleMediaAction = async (type) => {
     try {
-      // ملاحظة: هنا يجب أن تكون دوال takePhoto و fetchImage و uploadToVercel معرفة في مشروعك
-      // هذا الهيكل يتبع المنطق المطلوب في البرمبت
-      let base64Data;
-      if (type === 'camera') {
-         // base64Data = await takePhoto(); 
-         console.log("فتح الكاميرا...");
-      } else {
-         // base64Data = await fetchImage();
-         console.log("فتح المعرض...");
-      }
+      setIsLoading(true);
+      // ملاحظة: نفترض وجود دالة للحصول على ملف الصورة من الكاميرا أو المعرض كـ Base64 أو Blob
+      // هنا سنقوم بمحاكاة اختيار الملف، في بيئة Capacitor الفعلية استخدم Camera plugin
+      
+      // مثال للرفع الفعلي:
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/upload',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          image: "DATA_BASE64_HERE", // استبدل ببيانات الصورة الفعلية
+          filename: `fitness_${Date.now()}.png`
+        }
+      };
 
-      // محاكاة لعملية الرفع والحصول على رابط (يجب استبدالها بالدوال الفعلية لديك)
-      const mockUrl = "https://vercel-storage.com/example-img.png"; 
-      if (mockUrl) {
-        console.log("تم الرفع بنجاح، الرابط:", mockUrl);
-        handleProcessAI(mockUrl); // إرسال الرابط للذكاء الاصطناعي
-        return mockUrl;
-      }
+      const uploadRes = await CapacitorHttp.post(options);
+      const uploadedUrl = uploadRes.data.url;
 
+      if (uploadedUrl) {
+        console.log("تم الرفع بنجاح:", uploadedUrl);
+        handleProcessAI(uploadedUrl);
+      }
     } catch (error) {
-      console.error("فشل في معالجة أو رفع الصورة:", error);
-      alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة.");
+      console.error("فشل في رفع الصورة:", error);
+      alert("حدث خطأ أثناء رفع الصورة.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -131,8 +135,11 @@ const PregnancyMonitor = () => {
 
   return (
     <div style={styles.container}>
+      {/* تم تكبير الكارت هنا */}
       <button style={styles.aiMasterButton} onClick={() => setIsChatOpen(true)}>
-        👩‍⚕️ طبيبة رقة للرشاقة والتغذية (تحليل ذكي)
+        <div style={{fontSize: '1.5rem', marginBottom: '5px'}}>👩‍⚕️</div>
+        <div>طبيبة رقة للرشاقة والتغذية</div>
+        <div style={{fontSize: '0.8rem', opacity: 0.9, fontWeight: 'normal'}}>اضغطي هنا للتحليل الذكي والاستشارة الفورية</div>
       </button>
 
       <div style={styles.header}>
@@ -180,7 +187,7 @@ const PregnancyMonitor = () => {
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
             <div style={styles.chatContent}>
-              {isLoading && <div style={styles.loading}>جاري تحليل بياناتك ورفع الملفات... ✨</div>}
+              {isLoading && <div style={styles.loading}>جاري معالجة طلبك... ✨</div>}
               {aiResponse && !isLoading && (
                 <div style={styles.latestReply}>
                   <strong>رد الطبيبة:</strong>
@@ -188,7 +195,7 @@ const PregnancyMonitor = () => {
                 </div>
               )}
               <div style={styles.historySection}>
-                <h4 style={{borderBottom: '1px solid #eee', paddingBottom: '5px'}}>سجل الاستشارات المحفوظة:</h4>
+                <h4 style={{borderBottom: '1px solid #eee', paddingBottom: '5px'}}>سجل الاستشارات:</h4>
                 {chatHistory.map(chat => (
                   <div key={chat.id} style={styles.historyCard}>
                     <p style={{fontSize: '0.85rem'}}><strong>س:</strong> {chat.query}</p>
@@ -221,7 +228,24 @@ const PregnancyMonitor = () => {
 
 const styles = {
   container: { background: 'linear-gradient(160deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '30px', padding: '20px', boxShadow: '0 20px 40px rgba(0,0,0,0.1)', direction: 'rtl', maxWidth: '500px', margin: 'auto' },
-  aiMasterButton: { width: '100%', background: 'linear-gradient(45deg, #4a148c, #7b1fa2)', color: 'white', border: 'none', padding: '12px', borderRadius: '15px', fontWeight: 'bold', marginBottom: '15px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(123, 31, 162, 0.3)' },
+  // كارت الذكاء الاصطناعي المطور (الأكبر)
+  aiMasterButton: { 
+    width: '100%', 
+    background: 'linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%)', 
+    color: 'white', 
+    border: 'none', 
+    padding: '20px', 
+    borderRadius: '20px', 
+    fontWeight: 'bold', 
+    marginBottom: '20px', 
+    cursor: 'pointer', 
+    boxShadow: '0 10px 20px rgba(74, 20, 140, 0.3)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    textAlign: 'center',
+    transition: 'transform 0.2s'
+  },
   header: { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' },
   iconWrapper: { background: 'linear-gradient(45deg, #6a1b9a, #ab47bc)', padding: '10px', borderRadius: '15px', display: 'flex' },
   title: { margin: 0, fontSize: '1.3rem', color: '#4a148c', fontWeight: '800' },
