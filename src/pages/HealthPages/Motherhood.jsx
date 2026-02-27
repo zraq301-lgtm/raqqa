@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-[cite_start]// تم تصحيح المسار للوصول من src/pages/HealthPages إلى src/services [cite: 2]
+// تم تصحيح المسار للوصول من src/pages/HealthPages إلى src/services [cite: 2]
 import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
 const Motherhood = () => {
@@ -11,7 +11,7 @@ const Motherhood = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
   const [savedReplies, setSavedReplies] = useState([]); 
-  const [showSavedList, setShowSavedList] = useState(false); // حالة لإظهار القائمة المحفوظة
+  const [showSavedList, setShowSavedList] = useState(false);
 
   const chatEndRef = useRef(null);
 
@@ -103,9 +103,7 @@ const Motherhood = () => {
     }
   };
 
-  const removeSavedReply = (id) => {
-    setSavedReplies(prev => prev.filter(r => r.id !== id));
-  };
+  const removeSavedReply = (id) => setSavedReplies(prev => prev.filter(r => r.id !== id));
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -150,13 +148,10 @@ const Motherhood = () => {
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-                <i className="fas fa-stethoscope"></i>
-                <span>العيادة التربوية الذكية</span>
-              </div>
-              <div style={{display: 'flex', gap: '15px'}}>
-                <button onClick={() => setShowSavedList(!showSavedList)} style={styles.iconBtn} title="الردود المحفوظة">
-                  <i className={`fas ${showSavedList ? 'fa-comment-dots' : 'fa-bookmark'}`}></i>
+              <span><i className="fas fa-stethoscope"></i> العيادة التربوية</span>
+              <div style={{display:'flex', gap:'15px', alignItems:'center'}}>
+                <button onClick={() => setShowSavedList(!showSavedList)} style={{background:'none', border:'none', color:'white', cursor:'pointer'}}>
+                  <i className="fas fa-bookmark"></i>
                 </button>
                 <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
               </div>
@@ -164,37 +159,33 @@ const Motherhood = () => {
 
             <div style={styles.chatContent}>
               {showSavedList ? (
-                <div style={styles.savedListArea}>
-                  <h3 style={styles.savedTitle}>الردود المحفوظة 📌</h3>
-                  {savedReplies.length === 0 ? <p style={styles.emptyMsg}>لا توجد ردود محفوظة حالياً.</p> : 
-                    savedReplies.map(msg => (
-                      <div key={msg.id} style={styles.savedItem}>
-                        <p style={styles.msgText}>{msg.text}</p>
-                        <button onClick={() => removeSavedReply(msg.id)} style={styles.delBtn}><i className="fas fa-trash-can"></i> حذف من الحفظ</button>
-                      </div>
-                    ))
-                  }
+                <div>
+                  <h4 style={{textAlign:'center', color:'#6a5acd'}}>الردود المحفوظة 📌</h4>
+                  {savedReplies.map(r => (
+                    <div key={r.id} style={{...styles.msgBubble, marginBottom:'10px', width:'100%'}}>
+                      <p style={styles.msgText}>{r.text}</p>
+                      <button onClick={() => removeSavedReply(r.id)} style={styles.delBtn}>حذف من الحفظ</button>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <>
-                  {messages.length === 0 && <p style={styles.emptyMsg}>مرحباً بكِ في العيادة التربوية. أنا هنا لمساعدتكِ في توجيه طفلكِ نحو الأفضل.</p>}
+                  {messages.length === 0 && <p style={styles.emptyMsg}>مرحباً بكِ في العيادة التربوية.</p>}
                   {messages.map(msg => (
                     <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                       <div style={styles.msgBubble}>
-                        {msg.isImage ? <img src={msg.url} alt="Uploaded" style={{maxWidth: '100%', borderRadius: '10px'}} /> : <p style={styles.msgText}>{msg.text}</p>}
+                        {msg.isImage ? <img src={msg.url} alt="pic" style={{maxWidth:'100%', borderRadius:'10px'}} /> : <p style={styles.msgText}>{msg.text}</p>}
                         <div style={styles.msgFooter}>
                           <small>{msg.timestamp}</small>
-                          <div style={{display: 'flex', gap: '8px'}}>
-                            {msg.sender === 'ai' && (
-                              <button onClick={() => saveReply(msg)} style={styles.saveBtn} title="حفظ"><i className="fas fa-bookmark"></i></button>
-                            )}
-                            <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn} title="حذف الرد"><i className="fas fa-trash"></i></button>
+                          <div style={{display:'flex', gap:'8px'}}>
+                            {msg.sender === 'ai' && <button onClick={() => saveReply(msg)} style={styles.saveBtn}><i className="fas fa-bookmark"></i></button>}
+                            <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn}><i className="fas fa-trash"></i></button>
                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
-                  {isLoading && <div style={styles.loading}>جاري مراجعة المنهجيات العلمية... ⏳</div>}
+                  {isLoading && <div style={styles.loading}>جاري التحليل... ⏳</div>}
                   <div ref={chatEndRef} />
                 </>
               )}
@@ -202,20 +193,14 @@ const Motherhood = () => {
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                <button style={styles.mediaIconBtn} onClick={() => handleMediaAction('camera')}>
-                    <i className="fas fa-camera"></i>
-                    <span>الكاميرا</span>
-                </button>
-                <button style={styles.mediaIconBtn} onClick={() => handleMediaAction('gallery')}>
-                    <i className="fas fa-image"></i>
-                    <span>المعرض</span>
-                </button>
+                <button style={styles.mediaBtnCol} onClick={() => handleMediaAction('camera')}><i className="fas fa-camera"></i><span>كاميرا</span></button>
+                <button style={styles.mediaBtnCol} onClick={() => handleMediaAction('gallery')}><i className="fas fa-image"></i><span>صور</span></button>
               </div>
               <div style={styles.inputRow}>
-                <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتبي استشارتك هنا..." style={styles.input} />
-                <button onClick={() => { if(inputText.trim()) { setMessages(prev => [...prev, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]); getAIAnalysis(inputText); setInputText(""); } }} style={styles.sendBtn}>
+                <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتبي استشارتك..." style={styles.input} />
+                <button onClick={() => { if(inputText.trim()){ setMessages(prev => [...prev, {id:Date.now(), text:inputText, sender:'user', timestamp:new Date().toLocaleTimeString()}]); getAIAnalysis(inputText); setInputText(""); } }} style={styles.sendBtn}>
                   <i className="fas fa-paper-plane"></i>
-                  <span style={{fontSize: '0.7rem', display: 'block'}}>إرسال</span>
+                  <small style={{display:'block', fontSize:'0.6rem'}}>إرسال</small>
                 </button>
               </div>
             </div>
@@ -229,7 +214,7 @@ const Motherhood = () => {
 const styles = {
   container: { direction: 'rtl', padding: '15px', backgroundColor: '#fdf7f9', minHeight: '100vh', fontFamily: 'sans-serif' },
   topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
-  specialistBtn: { padding: '10px 20px', borderRadius: '20px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
+  specialistBtn: { padding: '10px 20px', borderRadius: '20px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold' },
   header: { textAlign: 'center', marginBottom: '20px', color: '#6a5acd' },
   navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' },
   navBtn: { flex: '0 0 auto', padding: '12px', borderRadius: '15px', border: '1px solid #ddd', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '85px' },
@@ -241,28 +226,24 @@ const styles = {
   analyzeBtn: { width: '100%', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold' },
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
   chatBox: { width: '100%', maxWidth: '500px', height: '90vh', background: 'white', borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column' },
-  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '25px 25px 0 0' },
-  iconBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.2rem', cursor: 'pointer' },
-  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer' },
+  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
+  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem' },
   chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f8f9fa' },
   aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
   userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' },
   msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
   msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.5' },
   msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '5px' },
-  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' },
+  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer' },
   saveBtn: { border: 'none', background: 'none', color: '#6a5acd', cursor: 'pointer' },
   chatInputArea: { padding: '15px', borderTop: '1px solid #eee' },
-  mediaBar: { display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '10px' },
-  mediaIconBtn: { display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', color: '#6a5acd', cursor: 'pointer', gap: '4px', fontSize: '0.8rem' },
+  mediaBar: { display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '10px' },
+  mediaBtnCol: { display:'flex', flexDirection:'column', alignItems:'center', background:'none', border:'none', color:'#6a5acd', fontSize:'0.8rem', gap:'3px' },
   inputRow: { display: 'flex', gap: '10px' },
   input: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' },
-  sendBtn: { width: '55px', height: '55px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
+  sendBtn: { width: '50px', height: '50px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white' },
   loading: { textAlign: 'center', color: '#6a5acd', padding: '10px' },
-  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' },
-  savedListArea: { padding: '10px' },
-  savedTitle: { color: '#6a5acd', borderBottom: '2px solid #6a5acd', paddingBottom: '10px', marginBottom: '15px' },
-  savedItem: { background: 'white', padding: '15px', borderRadius: '15px', marginBottom: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }
+  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' }
 };
 
 export default Motherhood;
