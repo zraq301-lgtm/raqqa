@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Send, Image as ImageIcon, Camera, Loader2, Save, Trash2, Stethoscope, Bookmark } from 'lucide-react';
-[cite_start]// استيراد الخدمات من المسار المحدد [cite: 2]
+// استيراد الخدمات من المسار المحدد [cite: 2, 59]
 import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
 const App = () => {
-  [cite_start]// حالات الحالة (States) [cite: 3, 4, 5]
+  // حالات الحالة (States) [cite: 3, 4, 5, 60, 61]
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [checkedItems, setCheckedItems] = useState({});
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([{ id: 1, text: "أهلاً بكِ، كيف أساعدكِ؟", sender: 'ai' }]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
   const [savedReplies, setSavedReplies] = useState([]); 
@@ -30,7 +30,7 @@ const App = () => {
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
 
-  [cite_start]// دالة حفظ البيانات في قاعدة البيانات [cite: 10, 11]
+  // دالة حفظ البيانات [cite: 10, 11]
   const saveDataToDB = async (selectedOnes) => {
     try {
       await CapacitorHttp.post({
@@ -49,129 +49,123 @@ const App = () => {
   };
 
   /**
-   * [cite_start]دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة (من الكود الثاني) [cite: 63-71]
+   * دالة مدمجة لفتح الكاميرا ورفع الصورة [cite: 13, 14, 15, 68]
    */
   const handleCameraAndUpload = async (type = 'camera') => {
     try {
-      [cite_start]// جلب الصورة بناءً على النوع [cite: 79, 80]
-      const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
-      if (!base64Data) return;
+      const base64Data = type === 'camera' ? await takePhoto() : await fetchImage(); [cite: 13, 80]
+      if (!base64Data) return; [cite: 14]
 
-      setIsProcessing(true);
-      setIsChatOpen(true);
+      setIsProcessing(true); [cite: 14, 64]
+      setIsChatOpen(true); [cite: 23]
       const userMsgId = Date.now();
 
-      [cite_start]// إضافة رسالة المستخدم فوراً [cite: 65]
       setMessages(prev => [...prev, { 
         id: userMsgId, 
         text: type === 'camera' ? "أرسلتُ صورة من الكاميرا" : "أرسلتُ صورة من المعرض", 
         sender: 'user', 
         attachment: { type: 'image', data: base64Data },
         timestamp: new Date().toLocaleTimeString()
-      }]);
+      }]); [cite: 14, 65]
 
-      [cite_start]// مرحلة الرفع إلى Vercel [cite: 67, 68]
-      const fileName = `img_${userMsgId}.png`;
-      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
+      const fileName = `img_${userMsgId}.png`; [cite: 15, 68]
+      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png'); [cite: 15, 68]
 
-      [cite_start]// الاتصال بالذكاء الاصطناعي [cite: 70, 71]
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: {
           prompt: `أنا أنثى مسلمة، مرفق رابط الصورة: ${finalAttachmentUrl}`
         }
-      };
+      }; [cite: 16, 70, 71]
 
-      [cite_start]const response = await CapacitorHttp.post(options); [cite: 17, 72]
+      const response = await CapacitorHttp.post(options); [cite: 17, 72]
       
       if (response.status === 200) {
-        const aiReply = response.data.reply || response.data.message || [cite_start]"تم معالجة الصورة بنجاح."; [cite: 18, 73]
+        const aiReply = response.data.reply || response.data.message || "تم معالجة الصورة بنجاح."; [cite: 18, 73]
         setMessages(prev => [...prev, { 
           id: Date.now(), 
           text: aiReply, 
           sender: 'ai', 
           timestamp: new Date().toLocaleTimeString() 
-        }]);
+        }]); [cite: 18, 74]
       }
     } catch (error) {
-      [cite_start]console.error("خطأ في المعالجة:", error); [cite: 75]
+      console.error("خطأ في المعالجة:", error);
       setMessages(prev => [...prev, { 
         id: Date.now(), 
         text: `⚠️ فشل: ${error.message || "تأكدي من الاتصال بالإنترنت"}`, 
         sender: 'ai',
         timestamp: new Date().toLocaleTimeString()
-      }]);
+      }]); [cite: 20, 77]
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); [cite: 21, 78]
     }
   };
 
-  [cite_start]// دالة الحصول على تحليل الذكاء الاصطناعي للنصوص [cite: 22-27]
+  // دالة الحصول على تحليل الذكاء الاصطناعي [cite: 22, 23, 24, 25, 26, 27]
   const getAIAnalysis = async (customPrompt = null) => {
-    setIsLoading(true);
-    setIsChatOpen(true);
+    setIsLoading(true); [cite: 22]
+    setIsChatOpen(true); [cite: 23]
 
     const currentList = lists[selectedIdx];
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
     
-    if (!customPrompt) saveDataToDB(selectedOnes);
+    if (!customPrompt) saveDataToDB(selectedOnes); [cite: 23]
 
-    const systemRole = "أنت الآن استشاري طب أطفال خبير وموجه تربوي. استخدم معرفتك الطبية من مكتبات طب الأطفال ومجموعات الأطباء المتخصصة لتقديم ردود دقيقة وموثوقة للأمهات.";
+    const systemRole = "أنت الآن استشاري طب أطفال خبير وموجه تربوي. استخدم معرفتك الطبية من مكتبات طب الأطفال ومجموعات الأطباء المتخصصة لتقديم ردود دقيقة وموثوقة للأمهات."; [cite: 24]
     const promptMessage = customPrompt 
-      ? `${systemRole} \n السؤال: ${customPrompt}`
-      : `${systemRole} \n لقد قامت الأم بإنجاز المهام التالية: (${selectedOnes.join(" - ")}) في مجال ${currentList.title}. قدم لها تحليلاً طبياً وتربوياً لهذه الإنجازات.`;
+      ? `${systemRole} \n السؤال: ${customPrompt}` [cite: 26]
+      : `${systemRole} \n لقد قامت الأم بإنجاز المهام التالية: (${selectedOnes.join(" - ")}) في مجال ${currentList.title}. قدم لها تحليلاً طبياً وتربوياً لهذه الإنجازات.`; [cite: 26, 27]
 
     try {
       const { data } = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
-      });
-      const responseText = data.reply || data.message || "عذراً، لم أستطع تحليل البيانات حالياً.";
+      }); [cite: 27]
+      const responseText = data.reply || data.message || "عذراً، لم أستطع تحليل البيانات حالياً."; [cite: 28]
       setMessages(prev => [...prev, {
         id: Date.now(),
         text: responseText,
         sender: 'ai',
         timestamp: new Date().toLocaleTimeString()
-      }]);
+      }]); [cite: 29]
     } catch (err) {
-      setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالاستشاري.", sender: 'ai' }]);
+      setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالاستشاري.", sender: 'ai' }]); [cite: 30]
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); [cite: 31]
     }
   };
 
   const saveReply = (text) => {
     if (!savedReplies.includes(text)) {
-      setSavedReplies([...savedReplies, text]);
-      [cite_start]alert("تم حفظ الرد في المفضلة"); [cite: 33]
+      setSavedReplies([...savedReplies, text]); [cite: 32]
+      alert("تم حفظ الرد في المفضلة"); [cite: 33]
     }
   };
 
   const deleteSavedReply = (index) => {
-    setSavedReplies(savedReplies.filter((_, i) => i !== index));
+    setSavedReplies(savedReplies.filter((_, i) => i !== index)); [cite: 34]
   };
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); [cite: 34, 62]
   }, [messages]);
 
   return (
     <div style={styles.container}>
-      {/* البار العلوي */}
       <div style={styles.topBar}>
         <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
-          <i className="fas fa-user-md"></i> استشاري أطفال متخصص
+          <i className="fas fa-user-md"></i> استشاري أطفال متخصص [cite: 35]
         </button>
       </div>
 
       <header style={styles.header}>
         <h1>موسوعة رقة للتربية</h1>
-        <p>دليلك الصحي والتربيوي المتكامل</p>
+        <p>دليلك الصحي والتربيوي المتكامل</p> [cite: 35]
       </header>
 
-      [cite_start]{/* التنقل بين الأقسام [cite: 36] */}
       <div style={styles.navScroll}>
         {lists.map((list, i) => (
           <button 
@@ -181,12 +175,11 @@ const App = () => {
             <i className={`fas ${list.icon}`}></i>
             <span>{list.title}</span>
           </button>
-        ))}
+        ))} [cite: 36, 37]
       </div>
 
-      [cite_start]{/* قائمة المهام [cite: 37, 38] */}
       <div style={styles.card}>
-        <h2 style={styles.cardTitle}>{lists[selectedIdx].title}</h2>
+        <h2 style={styles.cardTitle}>{lists[selectedIdx].title}</h2> [cite: 37]
         <div style={styles.grid}>
           {lists[selectedIdx].items.map((item, i) => (
             <label key={i} style={styles.itemRow}>
@@ -197,14 +190,13 @@ const App = () => {
               />
               <span style={checkedItems[`${selectedIdx}-${item}`] ? styles.done : {}}>{item}</span>
             </label>
-          ))}
+          ))} [cite: 38, 39]
         </div>
         <button style={styles.analyzeBtn} onClick={() => getAIAnalysis()}>
-          <Stethoscope size={18} style={{marginLeft: '8px'}} /> استشارة الذكاء الاصطناعي الطبي
+          <Stethoscope size={18} style={{marginLeft: '8px'}} /> استشارة الذكاء الاصطناعي الطبي [cite: 39]
         </button>
       </div>
 
-      [cite_start]{/* الردود المحفوظة [cite: 40] */}
       {savedReplies.length > 0 && (
         <div style={styles.savedSection}>
           <h3><Bookmark size={18} /> الردود المحفوظة</h3>
@@ -217,14 +209,13 @@ const App = () => {
             </div>
           ))}
         </div>
-      )}
+      )} [cite: 40, 41]
 
-      [cite_start]{/* نافذة المحادثة [cite: 41, 42] */}
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
-              <span>استشاري الأطفال والتربية</span>
+              <span>استشاري الأطفال والتربية</span> [cite: 42]
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
             </div>
             
@@ -232,8 +223,8 @@ const App = () => {
               {messages.map(msg => (
                 <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                   <div style={styles.msgBubble}>
-                    <p style={styles.msgText}>{msg.text}</p>
-                    {msg.attachment && <div style={{fontSize: '10px', opacity: 0.7, fontStyle: 'italic'}}>(تم إرفاق وسائط)</div>}
+                    <p style={styles.msgText}>{msg.text}</p> [cite: 43]
+                    {msg.attachment && <div style={{fontSize: '10px', opacity: 0.7, fontStyle: 'italic'}}>(تم إرسال وسائط للمعالجة...)</div>} [cite: 88]
                     <div style={styles.msgFooter}>
                       <small style={styles.msgTime}>{msg.timestamp}</small>
                       {msg.sender === 'ai' && (
@@ -241,7 +232,7 @@ const App = () => {
                           <Save size={14} />
                         </button>
                       )}
-                    </div>
+                    </div> [cite: 43, 44]
                   </div>
                 </div>
               ))}
@@ -249,19 +240,18 @@ const App = () => {
                 <div style={styles.loading}>
                   <Loader2 className="animate-spin" size={16} /> جاري معالجة طلبك طبياً...
                 </div>
-              )}
+              )} [cite: 46]
               <div ref={chatEndRef} />
             </div>
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                [cite_start]{/* دمج أزرار الميديا من الكود الثاني [cite: 89] */}
                 <button onClick={() => handleCameraAndUpload('camera')} style={styles.mediaIcon}>
                   <Camera size={18} /> <span>كاميرا</span>
                 </button>
                 <button onClick={() => handleCameraAndUpload('gallery')} style={styles.mediaIcon}>
                   <ImageIcon size={18} /> <span>معرض</span>
-                </button>
+                </button> [cite: 47, 88, 89]
               </div>
               <div style={styles.inputRow}>
                 <input 
@@ -275,8 +265,8 @@ const App = () => {
                   style={styles.sendBtn}
                   disabled={isLoading || isProcessing}
                 >
-                  {isLoading ? <Loader2 className="animate-spin" /> : <Send size={18} />}
-                </button>
+                  {isLoading || isProcessing ? <Loader2 className="animate-spin" /> : <Send size={18} />}
+                </button> [cite: 49, 50, 94]
               </div>
             </div>
           </div>
@@ -286,7 +276,7 @@ const App = () => {
   );
 };
 
-[cite_start]// التنسيقات (Styles) [cite: 51-55]
+// التنسيقات (Styles) [cite: 51, 52, 53, 54, 55]
 const styles = {
   container: { direction: 'rtl', padding: '15px', backgroundColor: '#fdf7f9', minHeight: '100vh', fontFamily: 'sans-serif' },
   topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
@@ -324,4 +314,4 @@ const styles = {
   deleteBtn: { background: 'none', border: 'none', color: '#ff4d4d' }
 };
 
-export default App;
+export default App; [cite: 56, 95]
