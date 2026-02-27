@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-// 1. استيراد الدوال من مسار الميديا
+// 1. استيراد الدوال من مسار الميديا المذكور
 import { takePhoto, uploadToVercel } from '../../services/MediaService';
 
 const MenstrualTracker = () => {
@@ -18,7 +18,6 @@ const MenstrualTracker = () => {
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [isProcessing, setIsProcessing] = useState(false);
   
   const [chatHistory, setChatHistory] = useState(() => {
     const savedChat = localStorage.getItem('chat_history');
@@ -39,7 +38,7 @@ const MenstrualTracker = () => {
         method: 'GET'
       };
       const response = await CapacitorHttp.get(options);
-      if (response.data && response.data.success) {
+      if (response.data.success) {
         setNotifications(response.data.notifications);
       }
     } catch (err) {
@@ -51,61 +50,73 @@ const MenstrualTracker = () => {
     fetchNotifications();
   }, []);
 
-  // دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة (تم تصحيح الصياغة هنا)
+  /**
+   * الدالة المحدثة لالتقاط الصورة ورفعها ومعالجتها عبر AI
+   */
   const handleCameraAndUpload = async () => {
     try {
+      // المرحلة الأولى: التقاط الصورة (Base64)
       const base64Data = await takePhoto(); 
+      
       if (!base64Data) return;
 
-      setIsProcessing(true);
+      setLoading(true); // تفعيل حالة التحميل (باستخدام loading الموجودة أصلاً)
       const userMsgId = Date.now();
 
-      // إضافة رسالة للمستخدم تحتوي على الصورة
+      // إضافة رسالة للمستخدم تحتوي على الصورة محلياً في سجل الشات
       setChatHistory(prev => [...prev, { 
         id: userMsgId, 
-        role: 'user',
-        content: "جاري رفع الصورة المعالجة...",
-        attachment: { type: 'image', data: base64Data }
+        role: 'user', 
+        content: "جاري رفع الصورة المعالجة...", 
+        attachment: base64Data // حفظ الداتا للعرض المحلي إذا لزم الأمر
       }]);
 
+      // المرحلة الثانية: إعداد بيانات الملف
       const fileName = `img_${userMsgId}.png`;
       const mimeType = 'image/png';
 
+      // المرحلة الثالثة: الرفع إلى Vercel Blob
       const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
 
-      const aiOptions = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          prompt: `أنا أنثى مسلمة، مرفق رابط الصورة الطبية للمراجعة: ${finalAttachmentUrl}`
-        }
-      };
+      // المرحلة الرابعة: إرسال الرابط إلى API الذكاء الاصطناعي
+      const response = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({
+          prompt: `أنا أنثى مسلمة، مرفق رابط الصورة الطبية للمراجعة: ${finalAttachmentUrl}. حلليها بناءً على تخصصك في صحة المرأة.`
+        })
+      });
 
-      const response = await CapacitorHttp.post(aiOptions);
-      
-      if (response.status === 200) {
-        const aiReply = response.data.reply || response.data.message || "تم استلام الصورة ومعالجتها.";
-        setChatHistory(prev => [...prev, { 
-            id: Date.now(), 
-            role: 'ai', 
-            content: aiReply,
-            time: new Date().toLocaleTimeString('ar-EG') 
-        }]);
+      if (!response.ok) {
+        throw new Error(`خطأ في الخادم: ${response.status}`);
       }
 
-    } catch (error) {
-      console.error("خطأ في الكاميرا أو الرفع:", error);
+      const resData = await response.json();
+      
+      // المرحلة الخامسة: عرض رد الذكاء الاصطناعي
+      const aiReply = resData.reply || "تم استلام الصورة ومعالجتها بنجاح.";
       setChatHistory(prev => [...prev, { 
         id: Date.now(), 
-        role: 'ai',
-        content: `⚠️ فشل: ${error.message || "تأكدي من صلاحيات الكاميرا والإنترنت"}`
+        role: 'ai', 
+        content: aiReply,
+        time: new Date().toLocaleTimeString('ar-EG')
+      }]);
+
+    } catch (error) {
+      console.error("خطأ أثناء المعالجة:", error);
+      setChatHistory(prev => [...prev, { 
+        id: Date.now(), 
+        role: 'ai', 
+        content: `⚠️ عذراً، حدث خطأ: ${error.message || "تأكدي من الاتصال بالإنترنت"}` 
       }]);
     } finally {
-      setIsProcessing(false);
+      setLoading(false); // إيقاف حالة التحميل
     }
   };
 
-  // --- منطق المعالجة الرئيسي ---
+  // --- منطق المعالجة الرئيسي للنصوص ---
   const handleProcess = async (userInput = null) => {
     setLoading(true);
     const summary = JSON.stringify(data);
@@ -125,7 +136,8 @@ const MenstrualTracker = () => {
 
       const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
       حلل حالتي بناءً على هذه البيانات: ${summary}. 
-      المطلوب منك توقع موعد الدورة والتبويض وتقديم نصائح طبية.
+      علماً أن معرف المستخدم (ID) هو 1.
+      المطلوب منك: توقع موعد الدورة، تحديد أيام التبويض، وتقديم نصائح طبية.
       ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً."}`;
 
       const aiOptions = {
@@ -135,13 +147,14 @@ const MenstrualTracker = () => {
       };
 
       const response = await CapacitorHttp.post(aiOptions);
-      const responseText = response.data.reply || response.data.message || "عذراً، لم أتمكن من التحليل حالياً.";
+      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
       
       const newMessage = { 
         id: Date.now(),
         role: 'ai', 
         content: responseText, 
-        time: new Date().toLocaleTimeString('ar-EG')
+        time: new Date().toLocaleTimeString('ar-EG'),
+        isSaved: true 
       };
 
       if (userInput) {
@@ -257,22 +270,21 @@ const MenstrualTracker = () => {
                 boxShadow: '0 2px 5px rgba(0,0,0,0.05)', position: 'relative'
               }}>
                 {msg.content}
-                {msg.attachment && msg.attachment.type === 'image' && (
-                  <img src={`data:image/png;base64,${msg.attachment.data}`} alt="رفع" style={{ width: '100%', borderRadius: '10px', marginTop: '10px' }} />
-                )}
                 {msg.role === 'ai' && (
                   <div style={{ marginTop: '5px', borderTop: '1px solid #eee', paddingTop: '5px', textAlign: 'left' }}>
                     <button onClick={() => deleteResponse(msg.id)} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#888' }}>🗑️ حذف</button>
+                    <button style={{ background: 'none', border: 'none', fontSize: '10px', color: '#E91E63', marginLeft: '10px' }}>⭐ حفظ الرد</button>
                   </div>
                 )}
               </div>
             ))}
-            {(loading || isProcessing) && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري التحليل...</div>}
+            {loading && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري تحليل بياناتك الطبية...</div>}
           </div>
          
           <div style={styles.chatInputArea}>
-            <button onClick={handleCameraAndUpload} style={styles.iconBtn} disabled={isProcessing}>📷</button>
-            <button onClick={handleCameraAndUpload} style={styles.iconBtn} disabled={isProcessing}>🖼️</button>
+            {/* تم ربط الأزرار بالدالة الجديدة handleCameraAndUpload */}
+            <button onClick={handleCameraAndUpload} style={styles.iconBtn}>📷</button>
+            <button onClick={handleCameraAndUpload} style={styles.iconBtn}>🖼️</button>
             <input 
               placeholder="اسألي عن الدورة الشهرية والخصوبة..." 
               style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
