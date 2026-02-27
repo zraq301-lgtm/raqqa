@@ -33,7 +33,6 @@ const LactationHub = () => {
         const mimeType = 'image/png';
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
         console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
-        // إرسال الرابط للذكاء الاصطناعي للتحليل
         await handleSaveAndAnalyze(finalAttachmentUrl);
         return finalAttachmentUrl;
     } catch (error) {
@@ -57,24 +56,24 @@ const LactationHub = () => {
   const handleSaveAndAnalyze = async (imageUrl = null) => {
     setLoading(true);
     setShowChat(true);
-    setAiResponse("جاري تحليل بيانات الرضاعة وصحة طفلكِ بعناية...");
+    // تحديث نص التحميل ليكون متعلقاً بالرضاعة
+    setAiResponse("جاري تحليل بيانات الرضاعة وصحة طفلكِ بعناية..."); [cite: 15]
     try {
-      // 1. الحفظ في نيون
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          category: 'تحليل الرضاعة وصحة الأم والطفل',
-          value: 'بيانات رضاعة جديدة',
+          category: 'تحليل الرضاعة وصحة الأم والطفل', [cite: 16]
+          value: 'بيانات صحية جديدة (رضاعة)',
           user_id: 1,
           note: JSON.stringify({ ...data, attachment: imageUrl })
         }
       });
 
-      // 2. تحليل AI رقة (بتخصص الرضاعة والطفولة)
-      const promptText = `أنتِ طبيبة استشارية مختصة في الرضاعة الطبيعية، طب الأطفال، وصحة الأم المرضعة.
-بناءً على هذه البيانات المدخلة: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة: ${imageUrl}` : ''}.
-قدمي تحليلاً طبياً دقيقاً يتضمن نصائح لدعم الرضاعة الطبيعية، التعامل مع مشاكل الثدي، صحة الرضيع، ونظام الأم الغذائي بأسلوب رقيق، دافئ، وداعم للأم.`;
+      // تعديل البرومبت ليكون تخصص طبي في الرضاعة والطفولة [cite: 18, 20]
+      const promptText = `أنتِ طبيبة استشارية متخصصة في الرضاعة الطبيعية، طب الأطفال، وصحة الأم المرضعة. 
+بناءً على هذه البيانات: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة: ${imageUrl}` : ''}.
+قدمي تحليلاً طبياً دقيقاً يتضمن نصائح لدعم الرضاعة الطبيعية، التعامل مع مشاكل الثدي، مراقبة نمو الطفل، وتغذية الأم المرضعة بأسلوب رقيق ودافئ وداعم للأم.`;
 
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -85,7 +84,6 @@ const LactationHub = () => {
       const result = response.data.reply || response.data.message || "حدث خطأ في استلام الرد.";
       setAiResponse(result);
 
-      // 3. تحديث السجل
       const newEntry = { id: Date.now(), text: result, date: new Date().toLocaleString() };
       const updatedHistory = [newEntry, ...history];
       setHistory(updatedHistory);
@@ -129,6 +127,7 @@ const LactationHub = () => {
           <div style={styles.circle}><Icon size={18} /></div>
         </div>
         <div style={{ textAlign: 'center' }}>
+          {/* تحديث العناوين في الواجهة [cite: 30] */}
           <h2 style={styles.title}>سجل الرضاعة الذكي</h2>
           <div style={styles.subtitle}>Lactation & Baby Care AI</div>
         </div>
@@ -154,7 +153,7 @@ const LactationHub = () => {
 
       <div style={styles.footerControls}>
         <button onClick={() => handleSaveAndAnalyze()} style={styles.analyzeBtn}>
-          {loading ? 'جاري التحليل...' : 'تحليل الرضاعة والصحة'}
+          {loading ? 'جاري التحليل...' : 'تحليل بيانات الرضاعة والصحة'}
         </button>
 
         <div style={styles.actionButtons}>
@@ -182,6 +181,7 @@ const LactationHub = () => {
         <div style={styles.overlay}>
           <div style={styles.chatSheet}>
             <div style={styles.chatHeader}>
+              {/* تحديث تخصص الاستشارية في الشات [cite: 39] */}
               <span style={{ fontWeight: '800' }}>🤱 استشارية الرضاعة والطفولة</span>
               <button onClick={() => setShowChat(false)} style={styles.closeBtn}>✕</button>
             </div>
@@ -192,7 +192,7 @@ const LactationHub = () => {
                   <p>جاري فحص بيانات الرضاعة وصحة طفلكِ...</p>
                 </div>
               ) : (
-                <div style={{ whiteSpace: 'pre-line' }}>{aiResponse || "أهلاً بكِ يا رفيقتي الأم، كيف حالكِ وحال طفلكِ اليوم؟ أنا هنا لدعمكِ في رحلة الرضاعة."}</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{aiResponse || "أهلاً بكِ يا رفيقتي الأم، كيف حالك وحال طفلكِ اليوم؟ أنا هنا لدعمكِ في كل ما يخص الرضاعة وصحة طفلك."}</div>
               )}
             </div>
             <div style={styles.chatFooter}>
