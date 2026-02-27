@@ -1,304 +1,284 @@
-import React, { useState, useEffect } from 'react';
-import { iconMap } from '../../constants/iconMap';
+import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-[cite_start]// 1. استيراد الدوال من مسار الميديا المذكور [cite: 3]
-import { takePhoto, uploadToVercel } from '../../services/MediaService';
+import { Send, Image as ImageIcon, Camera, Loader2, Save, Trash2, Stethoscope, Bookmark } from 'lucide-react';
+[cite_start]// استيراد الخدمات من المسار المحدد [cite: 2]
+import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
-const MenstrualTracker = () => {
-  const HealthIcon = iconMap.health;
-
-  // --- حالات البيانات ---
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('menstrual_data');
-    return saved ? JSON.parse(saved) : {};
-  });
-
-  const [openAccordion, setOpenAccordion] = useState(null);
-  const [prediction, setPrediction] = useState('');
-  const [loading, setLoading] = useState(false);
+const App = () => {
+  [cite_start]// حالات الحالة (States) [cite: 3, 4, 5]
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [checkedItems, setCheckedItems] = useState({});
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const [savedReplies, setSavedReplies] = useState([]); 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [notifications, setNotifications] = useState([]);
   
-  const [chatHistory, setChatHistory] = useState(() => {
-    const savedChat = localStorage.getItem('chat_history');
-    return savedChat ? JSON.parse(savedChat) : [];
-  });
+  const chatEndRef = useRef(null);
 
-  // مزامنة التخزين المحلي 
-  useEffect(() => {
-    localStorage.setItem('menstrual_data', JSON.stringify(data));
-    localStorage.setItem('chat_history', JSON.stringify(chatHistory));
-  }, [data, chatHistory]);
+  const lists = [
+    { title: "تعديل السلوك", icon: "fa-child", items: ["التعزيز الإيجابي", "تجاهل السلوكيات المزعجة", "العواقب المنطقية", "وضع حدود واضحة", "لوحة النجوم والمكافآت", "النمذجة والقدوة", "قضاء وقت خاص", "الاستماع الفعال", "بدائل كلمة لا", "توفير بيئة آمنة"] },
+    { title: "غرس القناعات", icon: "fa-heart", items: ["قيمة الصدق", "الإيمان بالقدرات", "احترام الاختلاف", "العمل الجماعي", "قيمة الامتنان", "المثابرة", "حب التعلم", "المسؤولية البيئية", "الأمانة", "الرحمة بالضعفاء"] },
+    { title: "الذكاء العاطفي", icon: "fa-brain", items: ["تسمية المشاعر", "مهارة التعاطف", "تنفس الهدوء", "الاعتراف بالمشاعر", "حل النزاعات سلمياً", "بناء الثقة بالنفس", "التعامل مع الخوف", "فهم لغة الجسد", "تحمل الإحباط", "تنمية التفاؤل"] },
+    { title: "تطوير المعرفة", icon: "fa-book-open", items: ["القراءة اليومية", "ألعاب الألغاز", "تجارب علمية منزلية", "تعلم لغة ثانية", "الرحلات التعليمية", "الحساب الذهني", "النقاشات المفتوحة", "الثقافات العالمية", "تكنولوجيا هادفة", "تشجيع الهوايات"] },
+    { title: "الصحة والنشاط", icon: "fa-apple-whole", items: ["نظام غذائي متوازن", "ساعات نوم كافية", "شرب الماء", "ممارسة الرياضة", "النظافة الشخصية", "الفحوصات الدورية", "تقليل السكريات", "وقت في الطبيعة", "المهارات الحركية", "سلامة الجسد"] },
+    { title: "مهارات اجتماعية", icon: "fa-users", items: ["إلقاء التحية", "مشاركة الألعاب", "آداب المائدة", "تكوين صداقات", "الاعتذار الصادق", "الاستماع للغير", "طلب الإذن", "التعاون المنزلي", "مهارات القيادة", "التعبير عن الرأي"] },
+    { title: "الاستقلال", icon: "fa-star", items: ["ارتداء الملابس", "ترتيب السرير", "تحضير وجبة", "اتخاذ قرارات", "إدارة المصروف", "الالتزام بالجدول", "حل المشكلات", "عناية بالنباتات", "تحمل النتيجة", "إسعافات أولية"] },
+    { title: "رعاية الأم", icon: "fa-spa", items: ["تخصيص وقت للراحة", "ممارسة هواية", "طلب المساعدة", "التواصل مع أمهات", "تخطي شعور الذنب", "نوم كافٍ", "قراءة تربوية", "التأمل واليوجا", "تحديد الأولويات", "الاحتفال بالإنجاز"] },
+    { title: "الأمان والحماية", icon: "fa-shield-halved", items: ["لمسات الأمان", "حفظ أرقام الطوارئ", "سلامة المنزل", "الأمان الرقمي", "التصرف عند الضياع", "قواعد مع الغرباء", "قواعد المرور", "التواصل المفتوح", "معرفة العنوان", "مواجهة التنمر"] },
+    { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
+  ];
 
-  // --- جلب الإشعارات ---
-  const fetchNotifications = async () => {
+  [cite_start]// دالة حفظ البيانات في قاعدة البيانات [cite: 10, 11]
+  const saveDataToDB = async (selectedOnes) => {
     try {
-      const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
-        method: 'GET'
-      };
-      const response = await CapacitorHttp.get(options);
-      if (response.data.success) {
-        setNotifications(response.data.notifications);
-      }
-    } catch (err) {
-      console.error("فشل جلب الإشعارات:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  /**
-   * [cite_start]دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة [cite: 23, 24]
-   */
-  const handleCameraAndUpload = async () => {
-    try {
-      [cite_start]// المرحلة الأولى: فتح الكاميرا والتقاط الصورة [cite: 23, 24]
-      const base64Data = await takePhoto(); 
-      
-      if (!base64Data) return;
-
-      setIsProcessing(true); [cite_start]// تفعيل حالة التحميل [cite: 7]
-      [cite_start]const userMsgId = Date.now(); [cite: 8]
-
-      [cite_start]// إضافة رسالة مؤقتة للمستخدم في الواجهة [cite: 9]
-      const tempUserMsg = { 
-        id: userMsgId, 
-        role: 'user',
-        content: "جاري رفع الصورة المعالجة...", 
-        attachment: { type: 'image', data: base64Data },
-        time: new Date().toLocaleTimeString('ar-EG')
-      };
-      setChatHistory(prev => [...prev, tempUserMsg]);
-
-      [cite_start]// المرحلة الثانية: إعداد بيانات الملف للرفع [cite: 11, 12]
-      [cite_start]const fileName = `img_${userMsgId}.png`; [cite: 12]
-      [cite_start]const mimeType = 'image/png'; [cite: 12]
-
-      [cite_start]// المرحلة الثالثة: الرفع الفعلي إلى Vercel Blob [cite: 3, 12]
-      [cite_start]const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType); [cite: 12]
-
-      [cite_start]// المرحلة الرابعة: إرسال الرابط الناتج إلى API الذكاء الاصطناعي [cite: 14, 15]
-      const aiOptions = {
-        [cite_start]url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai', [cite: 14]
-        [cite_start]headers: { 'Content-Type': 'application/json' }, [cite: 14]
-        data: {
-          [cite_start]prompt: `أنا أنثى مسلمة، مرفق رابط الصورة: ${finalAttachmentUrl}` [cite: 14, 15]
-        }
-      };
-
-      [cite_start]const response = await CapacitorHttp.post(aiOptions); [cite: 16]
-      
-      if (response.status === 200) {
-        const aiReply = response.data.reply || response.data.message || [cite_start]"تم استلام الصورة ومعالجتها."; [cite: 17]
-        const aiMsg = { 
-          id: Date.now(), 
-          role: 'ai', 
-          content: aiReply, 
-          time: new Date().toLocaleTimeString('ar-EG') 
-        };
-        [cite_start]setChatHistory(prev => [...prev, aiMsg]); [cite: 18]
-      }
-
-    } catch (error) {
-      [cite_start]// معالجة الأخطاء وعرضها للمستخدم [cite: 19, 21]
-      console.error("خطأ في الكاميرا أو الرفع:", error);
-      const errorMsg = { 
-        id: Date.now(), 
-        role: 'ai', 
-        content: `⚠️ فشل: ${error.message || "تأكدي من صلاحيات الكاميرا والإنترنت"}`
-      };
-      [cite_start]setChatHistory(prev => [...prev, errorMsg]); [cite: 21]
-    } finally {
-      [cite_start]setIsProcessing(false); [cite: 22]
-    }
-  };
-
-  // --- منطق المعالجة الرئيسي ---
-  const handleProcess = async (userInput = null) => {
-    setLoading(true);
-    const summary = JSON.stringify(data);
-    
-    try {
-      const saveOptions = {
+      await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
           user_id: 1,
-          category: 'متابعة الدورة الشهرية والخصوبة',
-          value: summary,
-          note: userInput || 'تحديث من واجهة المتابعة الذكية'
+          category: lists[selectedIdx].title,
+          value: selectedOnes[0] || "إنجاز جديد",
+          note: `تحليل قسم ${lists[selectedIdx].title}`
         }
-      };
-      await CapacitorHttp.post(saveOptions);
+      });
+    } catch (e) {
+      console.error("خطأ في حفظ البيانات:", e);
+    }
+  };
 
-      const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
-      حلل حالتي بناءً على هذه البيانات: ${summary}. 
-      علماً أن معرف المستخدم (ID) هو 1.
-      المطلوب منك:
-      1. توقع موعد الدورة الشهرية القادمة بدقة.
-      2. تحديد أيام التبويض المتوقعة.
-      3. تقديم نصائح طبية بناءً على الأعراض المسجلة.
-      ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي."}`;
+  /**
+   * [cite_start]دالة مدمجة لفتح الكاميرا ورفع الصورة مباشرة (من الكود الثاني) [cite: 63-71]
+   */
+  const handleCameraAndUpload = async (type = 'camera') => {
+    try {
+      [cite_start]// جلب الصورة بناءً على النوع [cite: 79, 80]
+      const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
+      if (!base64Data) return;
 
-      const aiOptions = {
+      setIsProcessing(true);
+      setIsChatOpen(true);
+      const userMsgId = Date.now();
+
+      [cite_start]// إضافة رسالة المستخدم فوراً [cite: 65]
+      setMessages(prev => [...prev, { 
+        id: userMsgId, 
+        text: type === 'camera' ? "أرسلتُ صورة من الكاميرا" : "أرسلتُ صورة من المعرض", 
+        sender: 'user', 
+        attachment: { type: 'image', data: base64Data },
+        timestamp: new Date().toLocaleTimeString()
+      }]);
+
+      [cite_start]// مرحلة الرفع إلى Vercel [cite: 67, 68]
+      const fileName = `img_${userMsgId}.png`;
+      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
+
+      [cite_start]// الاتصال بالذكاء الاصطناعي [cite: 70, 71]
+      const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: promptText }
+        data: {
+          prompt: `أنا أنثى مسلمة، مرفق رابط الصورة: ${finalAttachmentUrl}`
+        }
       };
 
-      const response = await CapacitorHttp.post(aiOptions);
-      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
+      [cite_start]const response = await CapacitorHttp.post(options); [cite: 17, 72]
       
-      const newMessage = { 
-        id: Date.now(),
-        role: 'ai', 
-        content: responseText, 
-        time: new Date().toLocaleTimeString('ar-EG'),
-        isSaved: true 
-      };
-
-      if (userInput) {
-        setChatHistory(prev => [...prev, { role: 'user', content: userInput }, newMessage]);
-      } else {
-        setChatHistory(prev => [...prev, newMessage]);
+      if (response.status === 200) {
+        const aiReply = response.data.reply || response.data.message || [cite_start]"تم معالجة الصورة بنجاح."; [cite: 18, 73]
+        setMessages(prev => [...prev, { 
+          id: Date.now(), 
+          text: aiReply, 
+          sender: 'ai', 
+          timestamp: new Date().toLocaleTimeString() 
+        }]);
       }
-      
-      await fetchNotifications();
-    } catch (err) {
-      console.error("فشل الاتصال:", err);
-      setChatHistory(prev => [...prev, { role: 'ai', content: "حدث خطأ في الشبكة." }]);
+    } catch (error) {
+      [cite_start]console.error("خطأ في المعالجة:", error); [cite: 75]
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: `⚠️ فشل: ${error.message || "تأكدي من الاتصال بالإنترنت"}`, 
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString()
+      }]);
     } finally {
-      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
-  const calculateCycle = () => {
-    const startDate = data['سجل التواريخ_تاريخ البدء'];
-    const duration = parseInt(data['سجل التواريخ_مدة الدورة']) || 28;
-    if (startDate) {
-      const nextDate = new Date(startDate);
-      nextDate.setDate(nextDate.getDate() + duration);
-      setPrediction(nextDate.toLocaleDateString('ar-EG'));
+  [cite_start]// دالة الحصول على تحليل الذكاء الاصطناعي للنصوص [cite: 22-27]
+  const getAIAnalysis = async (customPrompt = null) => {
+    setIsLoading(true);
+    setIsChatOpen(true);
+
+    const currentList = lists[selectedIdx];
+    const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
+    
+    if (!customPrompt) saveDataToDB(selectedOnes);
+
+    const systemRole = "أنت الآن استشاري طب أطفال خبير وموجه تربوي. استخدم معرفتك الطبية من مكتبات طب الأطفال ومجموعات الأطباء المتخصصة لتقديم ردود دقيقة وموثوقة للأمهات.";
+    const promptMessage = customPrompt 
+      ? `${systemRole} \n السؤال: ${customPrompt}`
+      : `${systemRole} \n لقد قامت الأم بإنجاز المهام التالية: (${selectedOnes.join(" - ")}) في مجال ${currentList.title}. قدم لها تحليلاً طبياً وتربوياً لهذه الإنجازات.`;
+
+    try {
+      const { data } = await CapacitorHttp.post({
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: promptMessage }
+      });
+      const responseText = data.reply || data.message || "عذراً، لم أستطع تحليل البيانات حالياً.";
+      setMessages(prev => [...prev, {
+        id: Date.now(),
+        text: responseText,
+        sender: 'ai',
+        timestamp: new Date().toLocaleTimeString()
+      }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالاستشاري.", sender: 'ai' }]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const deleteResponse = (id) => {
-    setChatHistory(prev => prev.filter(msg => msg.id !== id));
+  const saveReply = (text) => {
+    if (!savedReplies.includes(text)) {
+      setSavedReplies([...savedReplies, text]);
+      [cite_start]alert("تم حفظ الرد في المفضلة"); [cite: 33]
+    }
   };
 
-  const styles = {
-    container: { background: 'linear-gradient(180deg, #FDF4F5 0%, #F8E1E7 100%)', minHeight: '100vh', padding: '20px', direction: 'rtl' },
-    card: { background: '#fff', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 24px rgba(233, 30, 99, 0.08)', marginBottom: '15px' },
-    btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' },
-    chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 1000, display: 'flex', flexDirection: 'column' },
-    chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid #eee' },
-    headerChatBtn: { background: '#FFF', border: '1px solid #E91E63', color: '#E91E63', padding: '8px 15px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' },
-    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }
+  const deleteSavedReply = (index) => {
+    setSavedReplies(savedReplies.filter((_, i) => i !== index));
   };
 
-  const sections = [
-    { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة"] },
-    { id: 2, title: "البيانات الحيوية", emoji: "⚖️", fields: ["العمر", "الوزن"] },
-    { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع", "ألم ظهر"] },
-    { id: 4, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء", "بكاء"] },
-    { id: 5, title: "ملاحظات إضافية", emoji: "📝", fields: ["كمية التدفق", "أدوية", "فيتامينات"] }
-  ];
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <button onClick={() => setShowChat(true)} style={styles.headerChatBtn}>💬 فتح الشات</button>
-          <div style={{ textAlign: 'right' }}>
-            <HealthIcon size={30} color="#E91E63" />
-            <h3 style={{ color: '#ad1457', margin: 0 }}>طبيبة رقة الذكية</h3>
-          </div>
-        </div>
-        {notifications.length > 0 && (
-          <div style={{ background: '#FFF3E0', padding: '12px', borderRadius: '15px', marginBottom: '10px', fontSize: '13px', color: '#E65100', borderRight: '4px solid #FF9800' }}>
-           🔔 <strong>نصيحة طبية:</strong> {notifications[0].body}
-          </div>
-        )}
-        <button onClick={calculateCycle} style={{ ...styles.btnPrimary, background: '#fce4ec', color: '#ad1457' }}>توقع الدورة القادمة</button>
-        {prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold', color: '#E91E63' }}>الموعد المتوقع: {prediction}</div>}
+      {/* البار العلوي */}
+      <div style={styles.topBar}>
+        <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
+          <i className="fas fa-user-md"></i> استشاري أطفال متخصص
+        </button>
       </div>
 
-      {sections.map((sec) => (
-        <div key={sec.id} style={styles.card}>
-          <div onClick={() => setOpenAccordion(openAccordion === sec.id ? null : sec.id)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: '600' }}>{sec.emoji} {sec.title}</span>
-            <span>{openAccordion === sec.id ? '▲' : '▼'}</span>
-          </div>
-          {openAccordion === sec.id && (
-            <div style={{ padding: '15px 0 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {sec.fields.map(field => (
-                <div key={field}>
-                  <label style={{ fontSize: '11px', color: '#888', display: 'block', marginBottom: '4px' }}>{field}</label>
-                  <input 
-                    type={field.includes('تاريخ') ? 'date' : 'text'}
-                    style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #FFE1E9', fontSize: '13px' }}
-                    value={data[`${sec.title}_${field}`] || ''}
-                    onChange={(e) => setData({...data, [`${sec.title}_${field}`]: e.target.value})}
-                  />
+      <header style={styles.header}>
+        <h1>موسوعة رقة للتربية</h1>
+        <p>دليلك الصحي والتربيوي المتكامل</p>
+      </header>
+
+      [cite_start]{/* التنقل بين الأقسام [cite: 36] */}
+      <div style={styles.navScroll}>
+        {lists.map((list, i) => (
+          <button 
+            key={i} 
+            style={{...styles.navBtn, ...(selectedIdx === i ? styles.activeNav : {})}}
+            onClick={() => setSelectedIdx(i)}>
+            <i className={`fas ${list.icon}`}></i>
+            <span>{list.title}</span>
+          </button>
+        ))}
+      </div>
+
+      [cite_start]{/* قائمة المهام [cite: 37, 38] */}
+      <div style={styles.card}>
+        <h2 style={styles.cardTitle}>{lists[selectedIdx].title}</h2>
+        <div style={styles.grid}>
+          {lists[selectedIdx].items.map((item, i) => (
+            <label key={i} style={styles.itemRow}>
+              <input 
+                type="checkbox" 
+                checked={!!checkedItems[`${selectedIdx}-${item}`]}
+                onChange={() => setCheckedItems({...checkedItems, [`${selectedIdx}-${item}`]: !checkedItems[`${selectedIdx}-${item}`]})}
+              />
+              <span style={checkedItems[`${selectedIdx}-${item}`] ? styles.done : {}}>{item}</span>
+            </label>
+          ))}
+        </div>
+        <button style={styles.analyzeBtn} onClick={() => getAIAnalysis()}>
+          <Stethoscope size={18} style={{marginLeft: '8px'}} /> استشارة الذكاء الاصطناعي الطبي
+        </button>
+      </div>
+
+      [cite_start]{/* الردود المحفوظة [cite: 40] */}
+      {savedReplies.length > 0 && (
+        <div style={styles.savedSection}>
+          <h3><Bookmark size={18} /> الردود المحفوظة</h3>
+          {savedReplies.map((reply, index) => (
+            <div key={index} style={styles.savedItem}>
+              <p>{reply.substring(0, 50)}...</p>
+              <button onClick={() => deleteSavedReply(index)} style={styles.deleteBtn}>
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      [cite_start]{/* نافذة المحادثة [cite: 41, 42] */}
+      {isChatOpen && (
+        <div style={styles.chatOverlay}>
+          <div style={styles.chatBox}>
+            <div style={styles.chatHeader}>
+              <span>استشاري الأطفال والتربية</span>
+              <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
+            </div>
+            
+            <div style={styles.chatContent}>
+              {messages.map(msg => (
+                <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
+                  <div style={styles.msgBubble}>
+                    <p style={styles.msgText}>{msg.text}</p>
+                    {msg.attachment && <div style={{fontSize: '10px', opacity: 0.7, fontStyle: 'italic'}}>(تم إرفاق وسائط)</div>}
+                    <div style={styles.msgFooter}>
+                      <small style={styles.msgTime}>{msg.timestamp}</small>
+                      {msg.sender === 'ai' && (
+                        <button onClick={() => saveReply(msg.text)} style={styles.saveIconBtn}>
+                          <Save size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
+              {(isLoading || isProcessing) && (
+                <div style={styles.loading}>
+                  <Loader2 className="animate-spin" size={16} /> جاري معالجة طلبك طبياً...
+                </div>
+              )}
+              <div ref={chatEndRef} />
             </div>
-          )}
-        </div>
-      ))}
 
-      <button onClick={() => { setShowChat(true); handleProcess(); }} style={styles.btnPrimary} disabled={loading}>
-        {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل الدورة والخصوبة"}
-      </button>
-
-      {showChat && (
-        <div style={styles.chatOverlay}>
-          <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '20px' }}>✕</span>
-            <span style={{ fontWeight: 'bold' }}>استشارية صحة المرأة</span>
-            <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '12px' }}>مسح</button>
-          </div>
-          
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
-            {chatHistory.map((msg, i) => (
-              <div key={i} style={{ 
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                background: msg.role === 'user' ? '#E91E63' : '#fff',
-                color: msg.role === 'user' ? '#fff' : '#333',
-                padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '85%',
-                marginLeft: msg.role === 'user' ? 'auto' : '0',
-                boxShadow: '0 2px 5px rgba(0,0,0,0.05)', position: 'relative'
-              }}>
-                {msg.attachment && msg.attachment.type === 'image' && (
-                  <img src={`data:image/png;base64,${msg.attachment.data}`} alt="تحميل" style={{ width: '100%', borderRadius: '10px', marginBottom: '8px' }} />
-                )}
-                {msg.content}
-                {msg.role === 'ai' && (
-                  <div style={{ marginTop: '5px', borderTop: '1px solid #eee', paddingTop: '5px', textAlign: 'left' }}>
-                    <button onClick={() => deleteResponse(msg.id)} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#888' }}>🗑️ حذف</button>
-                  </div>
-                )}
+            <div style={styles.chatInputArea}>
+              <div style={styles.mediaBar}>
+                [cite_start]{/* دمج أزرار الميديا من الكود الثاني [cite: 89] */}
+                <button onClick={() => handleCameraAndUpload('camera')} style={styles.mediaIcon}>
+                  <Camera size={18} /> <span>كاميرا</span>
+                </button>
+                <button onClick={() => handleCameraAndUpload('gallery')} style={styles.mediaIcon}>
+                  <ImageIcon size={18} /> <span>معرض</span>
+                </button>
               </div>
-            ))}
-            {(loading || isProcessing) && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري المعالجة...</div>}
-          </div>
-         
-          <div style={styles.chatInputArea}>
-            <button onClick={handleCameraAndUpload} style={styles.iconBtn} disabled={isProcessing}>📷</button>
-            <input 
-              placeholder="اسألي عن الدورة..." 
-              style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
-              onKeyDown={(e) => { 
-                if(e.key === 'Enter' && e.target.value.trim()) { 
-                  handleProcess(e.target.value);
-                  e.target.value = '';
-                } 
-              }}
-            />
+              <div style={styles.inputRow}>
+                <input 
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="اسألي الاستشاري هنا..."
+                  style={styles.input}
+                />
+                <button 
+                  onClick={() => { if(inputText.trim()){ getAIAnalysis(inputText); setInputText(""); } }} 
+                  style={styles.sendBtn}
+                  disabled={isLoading || isProcessing}
+                >
+                  {isLoading ? <Loader2 className="animate-spin" /> : <Send size={18} />}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -306,4 +286,42 @@ const MenstrualTracker = () => {
   );
 };
 
-export default MenstrualTracker;
+[cite_start]// التنسيقات (Styles) [cite: 51-55]
+const styles = {
+  container: { direction: 'rtl', padding: '15px', backgroundColor: '#fdf7f9', minHeight: '100vh', fontFamily: 'sans-serif' },
+  topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
+  specialistBtn: { padding: '10px 20px', borderRadius: '20px', border: 'none', background: '#2e8b57', color: 'white', fontWeight: 'bold' },
+  header: { textAlign: 'center', color: '#6a5acd', marginBottom: '20px' },
+  navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' },
+  navBtn: { flex: '0 0 auto', padding: '10px', borderRadius: '12px', border: '1px solid #ddd', background: 'white', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' },
+  activeNav: { background: '#ff85a2', color: 'white' },
+  card: { background: 'white', padding: '20px', borderRadius: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' },
+  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+  itemRow: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' },
+  done: { textDecoration: 'line-through', color: '#ccc' },
+  analyzeBtn: { width: '100%', marginTop: '20px', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  chatOverlay: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'flex-end' },
+  chatBox: { width: '100%', height: '85vh', background: 'white', borderRadius: '20px 20px 0 0', display: 'flex', flexDirection: 'column' },
+  chatHeader: { padding: '15px', background: '#2e8b57', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '24px' },
+  chatContent: { flex: 1, overflowY: 'auto', padding: '15px' },
+  aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
+  userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' },
+  msgBubble: { maxWidth: '80%', padding: '12px', borderRadius: '15px', background: '#f0f0f0' },
+  msgFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '5px' },
+  saveIconBtn: { background: 'none', border: 'none', color: '#2e8b57', cursor: 'pointer' },
+  msgText: { margin: 0, fontSize: '14px', lineHeight: '1.5' },
+  msgTime: { fontSize: '10px', color: '#999' },
+  chatInputArea: { padding: '15px', borderTop: '1px solid #eee', background: '#fff' },
+  mediaBar: { display: 'flex', gap: '15px', marginBottom: '10px', justifyContent: 'center' },
+  mediaIcon: { background: '#f8f9fa', padding: '8px 15px', borderRadius: '12px', border: '1px solid #eee', color: '#2e8b57', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' },
+  inputRow: { display: 'flex', gap: '10px' },
+  input: { flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' },
+  sendBtn: { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#2e8b57', color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  loading: { textAlign: 'center', fontSize: '12px', color: '#2e8b57', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' },
+  savedSection: { marginTop: '20px', padding: '15px', background: '#fff', borderRadius: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' },
+  savedItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' },
+  deleteBtn: { background: 'none', border: 'none', color: '#ff4d4d' }
+};
+
+export default App;
