@@ -12,7 +12,7 @@ const DoctorClinical = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedReports, setSavedReports] = useState(() => JSON.parse(localStorage.getItem('saved_reports')) || []);
-  const [chatInput, setChatInput] = useState(''); // حالة لإدخال المستخدم في الشات
+  const [chatInput, setChatInput] = useState('');
   
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -35,9 +35,6 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  /**
-   * دالة متكاملة لفتح الوسائط ورفع الصور مباشرة
-   */
   const handleMediaAction = async (type) => {
     try {
         setLoading(true);
@@ -51,7 +48,6 @@ const DoctorClinical = () => {
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
         console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
         
-        // إرسال الرابط للذكاء الاصطناعي للتحليل
         handleProcess("تحليل صورة مرفقة", finalAttachmentUrl);
         return finalAttachmentUrl;
     } catch (error) {
@@ -71,7 +67,16 @@ const DoctorClinical = () => {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { 
-          prompt: `أنا أنثى مسلمة، بصفتك طبيب متخصص ومعتمد من منظمات الصحة، إليكِ المعلومات: ${content === "تحليل صورة مرفقة" ? "صورة تحليل طبي برابط: " + attachmentUrl : "بيانات عيادة " + content + ": " + summary}. قدمي تقريراً طبياً احترافياً.` 
+          prompt: `أنتِ الآن تمثلين منصة استشارية تضم نخبة من الأطباء المتخصصين المعتمدين. 
+          المريضة أنثى مسلمة، المطلوب منكِ تقديم رد كاستشاري خبير في قسم (${content}). 
+          ${content === "تحليل صورة مرفقة" ? 
+          "المعطيات: صورة تحليل طبي مرفقة للتحليل الفني الطبي: " + attachmentUrl : 
+          "المعطيات: بيانات العيادة المسجلة هي: " + summary + ". بالإضافة إلى استفسار المستخدم: " + content}.
+          
+          الرد يجب أن يكون:
+          1. بلهجة طبية احترافية مطمئنة.
+          2. مقسم إلى (التقييم الحالي، التوصيات الطبية، نصيحة وقائية).
+          3. بناءً على أحدث البروتوكولات الطبية المتبعة عالمياً.` 
         }
       };
 
@@ -128,6 +133,7 @@ const DoctorClinical = () => {
               <span>{cat.icon} {cat.name}</span>
               <span>{openIdx === i ? '−' : '+'}</span>
             </div>
+ 
             {openIdx === i && (
               <div style={{ padding: '0 15px 15px 15px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -148,16 +154,14 @@ const DoctorClinical = () => {
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatContent}>
-            {/* رأس الشات */}
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
               <span style={{ fontWeight: 'bold', color: '#ff4d7d' }}>طبيب رقة الذكي 👩‍⚕️</span>
               <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: 'none', fontSize: '1.2rem' }}>✕</button>
             </div>
             
-            {/* منطقة عرض الردود والأرشيف داخل الشات */}
             <div style={{ flex: 1, overflowY: 'auto', marginBottom: '15px', padding: '10px' }}>
               <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '15px', marginBottom: '20px', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                {aiResponse || "مرحباً بكِ، كيف يمكنني مساعدتكِ اليوم؟"}
+                {aiResponse || "مرحباً بكِ، أنا استشاري رقة الطبي. كيف يمكنني مساعدتكِ اليوم؟"}
               </div>
 
               {savedReports.length > 0 && (
@@ -173,7 +177,6 @@ const DoctorClinical = () => {
               )}
             </div>
 
-            {/* أزرار الوسائط وشريط التحدث */}
             <div style={{ borderTop: '1px solid #eee', paddingTop: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '15px' }}>
                 <button onClick={() => handleMediaAction('camera')} style={{ background: 'none', border: 'none', fontSize: '1.5rem' }}>📸</button>
