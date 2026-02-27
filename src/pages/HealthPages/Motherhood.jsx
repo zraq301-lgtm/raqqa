@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+// تأكدي من استيراد الدوال من المسار الصحيح كما طلبتِ
+import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService'; 
+
 // ملاحظة: تأكدي من إضافة رابط FontAwesome في index.html للأيقونات
 // <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-// استيراد الخدمة من المسار المطلوب
-import { takePhoto, pickImage } from '../../services/MediaService';
 
 const App = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -13,7 +13,7 @@ const App = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [savedReplies, setSavedReplies] = useState([]);
+  const [savedReplies, setSavedReplies] = useState([]); 
 
   const chatEndRef = useRef(null);
 
@@ -54,14 +54,14 @@ const App = () => {
     const currentList = lists[selectedIdx];
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
     
-    if (!customPrompt) {
-      await saveDataToDB(selectedOnes);
-    }
+    if (!customPrompt) saveDataToDB(selectedOnes);
 
-    const systemExpertise = "بصفتك أخصائي تغذية علاجية ومدرب رشاقة وتخسيس خبير، قدم لي نصيحة طبية رياضية دقيقة.";
+    // تحديث التخصص ليكون استشاري تربوي للأطفال 
+    const systemExpertise = "بصفتك استشاري تربوي خبير متخصص في علم نفس الطفل، استخدم المراجع الطبية والتربوية الرصينة لتوجيه الأم وتقديم حلول عملية لتعديل السلوك وتنمية مهارات الطفل.";
+    
     const promptMessage = customPrompt 
-      ? `${systemExpertise} سؤالي هو: ${customPrompt}`
-      : `${systemExpertise} لقد تابعت المهام التالية: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. حلل حالتي وقدم نصائح للرشاقة والتغذية.`;
+      ? `${systemExpertise} سؤالي التربوي هو: ${customPrompt}`
+      : `${systemExpertise} لقد أنجز طفلي المهام التالية: (${selectedOnes.join(" - ")}) في قسم ${currentList.title}. حلل هذا التقدم وقدم نصائح تربوية لتعزيز نموه.`;
 
     try {
       const options = {
@@ -71,6 +71,7 @@ const App = () => {
       };
       const response = await CapacitorHttp.post(options);
       const responseText = response.data.reply || response.data.message || "لم أستطع الحصول على رد حالياً.";
+      
       setMessages(prev => [...prev, {
         id: Date.now(),
         text: responseText,
@@ -88,26 +89,34 @@ const App = () => {
     }
   };
 
+  // وظيفة فتح الكاميرا أو المعرض الفعلية باستخدام MediaService 
   const handleMediaAction = async (type) => {
     try {
-      let imageUrl = "";
-      if (type === 'camera') {
-        imageUrl = await takePhoto();
-      } else {
-        imageUrl = await pickImage();
-      }
+        setIsLoading(true);
+        let base64Data;
+        if (type === 'camera') {
+            base64Data = await takePhoto();
+        } else {
+            base64Data = await fetchImage();
+        }
 
-      if (imageUrl) {
+        const fileName = `edu_img_${Date.now()}.png`;
+        const imageUrl = await uploadToVercel(base64Data, fileName, 'image/png');
+
         setMessages(prev => [...prev, {
-          id: Date.now(),
-          text: `تم رفع صورة المرفق بنجاح`,
-          image: imageUrl,
-          sender: 'user',
-          timestamp: new Date().toLocaleTimeString()
+            id: Date.now(),
+            text: `تم رفع صورة للمعاينة التربوية: ${imageUrl}`,
+            sender: 'user',
+            timestamp: new Date().toLocaleTimeString()
         }]);
-      }
+        
+        // إرسال الرابط للذكاء الاصطناعي لتحليله
+        getAIAnalysis(`لقد أرفقت صورة (رابط: ${imageUrl})، أرجو تحليلها تربوياً.`);
+        
     } catch (error) {
-      console.error("Media Error:", error);
+        alert("فشل في معالجة الصورة: " + error.message);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -116,8 +125,10 @@ const App = () => {
   };
 
   const saveReply = (msg) => {
-    setSavedReplies(prev => [...prev, msg]);
-    alert("تم حفظ الرد في قائمتك المفضلة!");
+    if (!savedReplies.find(r => r.id === msg.id)) {
+        setSavedReplies(prev => [...prev, msg]);
+        alert("تم حفظ الرد في المفضلة!");
+    }
   };
 
   useEffect(() => {
@@ -128,13 +139,13 @@ const App = () => {
     <div style={styles.container}>
       <div style={styles.topBar}>
         <button style={styles.specialistBtn} onClick={() => setIsChatOpen(true)}>
-          <i className="fas fa-stethoscope"></i> استشاري الرشاقة والتغذية
+          <i className="fas fa-user-graduate"></i> استشاري التربية والطفل
         </button>
       </div>
 
       <header style={styles.header}>
-        <h1>موسوعة رقة للتربية والرشاقة</h1>
-        <p>دليل الأم الواعية للصحة والتربية</p>
+        <h1>موسوعة رقة للتربية</h1>
+        <p>دليل الأم الواعية لبناء جيل مبدع</p>
       </header>
 
       <div style={styles.navScroll}>
@@ -164,7 +175,7 @@ const App = () => {
           ))}
         </div>
         <button style={styles.analyzeBtn} onClick={() => getAIAnalysis()}>
-          <i className="fas fa-microchip"></i> تحليل البيانات صحياً وتربوياً
+          <i className="fas fa-magic"></i> استشارة تربوية فورية
         </button>
       </div>
 
@@ -172,36 +183,42 @@ const App = () => {
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
-              <span><i className="fas fa-weight"></i> أخصائي الرشاقة والتغذية</span>
+              <span><i className="fas fa-comments"></i> استشاري رقة التربوي</span>
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
             </div>
 
             <div style={styles.chatContent}>
-              {messages.length === 0 && <p style={styles.emptyMsg}>أهلاً بكِ.. أنا متخصص في الرشاقة والتغذية الطبية، كيف يمكنني مساعدتكِ اليوم؟</p>}
+              {messages.length === 0 && <p style={styles.emptyMsg}>أهلاً بكِ.. أنا مستشاركِ التربوي، كيف أساعدكِ في توجيه طفلكِ اليوم؟</p>}
               {messages.map(msg => (
                 <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                   <div style={styles.msgBubble}>
-                    {msg.image && <img src={msg.image} alt="upload" style={{width: '100%', borderRadius: '10px', marginBottom: '5px'}} />}
                     <p style={styles.msgText}>{msg.text}</p>
                     <div style={styles.msgFooter}>
                       <small>{msg.timestamp}</small>
                       <div style={{display: 'flex', gap: '5px'}}>
                         {msg.sender === 'ai' && (
-                          <button onClick={() => saveReply(msg)} style={styles.saveBtn}>
-                            <i className="fas fa-bookmark"></i> حفظ
+                          <button onClick={() => saveReply(msg)} style={styles.saveBtn} title="حفظ">
+                            <i className="fas fa-bookmark"></i>
                           </button>
                         )}
-                        <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn}>
-                          <i className="fas fa-trash-alt"></i> حذف
+                        <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn} title="حذف">
+                          <i className="fas fa-trash-alt"></i>
                         </button>
                       </div>
                     </div>
                   </div>
                 </div>
               ))}
-              {isLoading && <div style={styles.loading}>جاري تحليل البيانات الصحية... ✨</div>}
+              {isLoading && <div style={styles.loading}>جاري مراجعة المراجع التربوية... ✨</div>}
               <div ref={chatEndRef} />
             </div>
+
+            {/* قائمة الردود المحفوظة المصغرة */}
+            {savedReplies.length > 0 && (
+                <div style={styles.savedSection}>
+                    <small>الردود المحفوظة ({savedReplies.length})</small>
+                </div>
+            )}
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
@@ -213,14 +230,14 @@ const App = () => {
                 <input 
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="اسألي عن التغذية أو التمارين..."
+                  placeholder="اسألي عن سلوك طفلك..."
                   style={styles.input}
                 />
                 <button 
                   onClick={() => { 
                     if(inputText.trim()) { 
                       setMessages(prev => [...prev, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]);
-                      getAIAnalysis(inputText);
+                      getAIAnalysis(inputText); 
                       setInputText(""); 
                     } 
                   }}
@@ -239,7 +256,7 @@ const App = () => {
 const styles = {
   container: { direction: 'rtl', padding: '20px', fontFamily: 'Arial, sans-serif', backgroundColor: '#fdf7f9', minHeight: '100vh' },
   topBar: { display: 'flex', justifyContent: 'center', marginBottom: '15px' },
-  specialistBtn: { padding: '12px 25px', borderRadius: '25px', border: 'none', background: '#2e8b57', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(46,139,87,0.3)' },
+  specialistBtn: { padding: '12px 25px', borderRadius: '25px', border: 'none', background: '#6a5acd', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(106,90,205,0.3)' },
   header: { textAlign: 'center', marginBottom: '20px', color: '#6a5acd' },
   navScroll: { display: 'flex', overflowX: 'auto', gap: '10px', paddingBottom: '10px' },
   navBtn: { flex: '0 0 auto', padding: '10px', borderRadius: '12px', border: '1px solid #ddd', background: 'white', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: '80px' },
@@ -251,7 +268,7 @@ const styles = {
   analyzeBtn: { width: '100%', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
   chatBox: { width: '100%', maxWidth: '500px', height: '90vh', background: 'white', borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column' },
-  chatHeader: { padding: '15px', background: '#2e8b57', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
+  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
   closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem' },
   chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f8f9fa' },
   aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
@@ -260,15 +277,16 @@ const styles = {
   msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.5' },
   msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '0.7rem', color: '#999' },
   delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', padding: '0 5px' },
-  saveBtn: { border: 'none', background: 'none', color: '#2e8b57', cursor: 'pointer', padding: '0 5px' },
+  saveBtn: { border: 'none', background: 'none', color: '#6a5acd', cursor: 'pointer', padding: '0 5px' },
   chatInputArea: { padding: '15px', borderTop: '1px solid #eee' },
   mediaBar: { display: 'flex', justifyContent: 'center', gap: '25px', marginBottom: '10px' },
-  mediaIcon: { background: 'none', border: 'none', color: '#2e8b57', fontSize: '1.2rem', cursor: 'pointer' },
+  mediaIcon: { background: 'none', border: 'none', color: '#6a5acd', fontSize: '1.2rem', cursor: 'pointer' },
   inputRow: { display: 'flex', gap: '10px' },
   input: { flex: 1, padding: '10px', borderRadius: '20px', border: '1px solid #ddd' },
-  sendBtn: { width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#2e8b57', color: 'white' },
-  loading: { textAlign: 'center', padding: '10px', color: '#2e8b57' },
-  emptyMsg: { textAlign: 'center', marginTop: '40px', color: '#ccc' }
+  sendBtn: { width: '40px', height: '40px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white' },
+  loading: { textAlign: 'center', padding: '10px', color: '#6a5acd' },
+  emptyMsg: { textAlign: 'center', marginTop: '40px', color: '#ccc' },
+  savedSection: { padding: '5px 15px', background: '#f0f0f0', borderTop: '1px solid #ddd', textAlign: 'center' }
 };
 
 export default App;
