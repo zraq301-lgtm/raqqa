@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-// تم تصحيح المسار للوصول من src/pages/HealthPages إلى src/services
-import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService'; 
+[cite_start]// تم تصحيح المسار للوصول من src/pages/HealthPages إلى src/services [cite: 2]
+import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
 const Motherhood = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -11,6 +11,7 @@ const Motherhood = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
   const [savedReplies, setSavedReplies] = useState([]); 
+  const [showSavedList, setShowSavedList] = useState(false); // حالة لإظهار القائمة المحفوظة
 
   const chatEndRef = useRef(null);
 
@@ -49,7 +50,6 @@ const Motherhood = () => {
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
     
     if (!customPrompt) saveDataToDB(selectedOnes);
-
     const systemExpertise = "أنت طبيب استشاري تربوي متخصص في علم نفس الأطفال. ردك يجب أن يكون مهنياً، توعوياً، ويستند إلى أفضل الممارسات التربوية الحديثة لتوجيه الأم نحو الصواب.";
     const promptMessage = customPrompt 
       ? `${systemExpertise} سؤال الأم: ${customPrompt}`
@@ -78,7 +78,6 @@ const Motherhood = () => {
         setIsLoading(true);
         const fileName = `child_care_${Date.now()}.png`;
         const imageUrl = await uploadToVercel(base64, fileName, 'image/png');
-        
         setMessages(prev => [...prev, {
           id: Date.now(),
           text: `تم رفع صورة استشارية: ${imageUrl}`,
@@ -96,9 +95,16 @@ const Motherhood = () => {
   };
 
   const deleteMessage = (id) => setMessages(prev => prev.filter(m => m.id !== id));
+  
   const saveReply = (msg) => {
-    setSavedReplies(prev => [...prev, msg]);
-    alert("تمت إضافة الرد إلى قائمة الحفظ بنجاح!");
+    if (!savedReplies.find(r => r.id === msg.id)) {
+      setSavedReplies(prev => [...prev, msg]);
+      alert("تمت إضافة الرد إلى قائمة الحفظ بنجاح!");
+    }
+  };
+
+  const removeSavedReply = (id) => {
+    setSavedReplies(prev => prev.filter(r => r.id !== id));
   };
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -144,41 +150,72 @@ const Motherhood = () => {
         <div style={styles.chatOverlay}>
           <div style={styles.chatBox}>
             <div style={styles.chatHeader}>
-              <span><i className="fas fa-stethoscope"></i> العيادة التربوية الذكية</span>
-              <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
+              <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+                <i className="fas fa-stethoscope"></i>
+                <span>العيادة التربوية الذكية</span>
+              </div>
+              <div style={{display: 'flex', gap: '15px'}}>
+                <button onClick={() => setShowSavedList(!showSavedList)} style={styles.iconBtn} title="الردود المحفوظة">
+                  <i className={`fas ${showSavedList ? 'fa-comment-dots' : 'fa-bookmark'}`}></i>
+                </button>
+                <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>&times;</button>
+              </div>
             </div>
 
             <div style={styles.chatContent}>
-              {messages.length === 0 && <p style={styles.emptyMsg}>مرحباً بكِ في العيادة التربوية. أنا هنا لمساعدتكِ في توجيه طفلكِ نحو الأفضل.</p>}
-              {messages.map(msg => (
-                <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
-                  <div style={styles.msgBubble}>
-                    {msg.isImage ? <img src={msg.url} alt="Uploaded" style={{maxWidth: '100%', borderRadius: '10px'}} /> : <p style={styles.msgText}>{msg.text}</p>}
-                    <div style={styles.msgFooter}>
-                      <small>{msg.timestamp}</small>
-                      <div style={{display: 'flex', gap: '8px'}}>
-                        {msg.sender === 'ai' && (
-                          <button onClick={() => saveReply(msg)} style={styles.saveBtn} title="حفظ في القائمة"><i className="fas fa-bookmark"></i></button>
-                        )}
-                        <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn} title="حذف الرد"><i className="fas fa-trash"></i></button>
+              {showSavedList ? (
+                <div style={styles.savedListArea}>
+                  <h3 style={styles.savedTitle}>الردود المحفوظة 📌</h3>
+                  {savedReplies.length === 0 ? <p style={styles.emptyMsg}>لا توجد ردود محفوظة حالياً.</p> : 
+                    savedReplies.map(msg => (
+                      <div key={msg.id} style={styles.savedItem}>
+                        <p style={styles.msgText}>{msg.text}</p>
+                        <button onClick={() => removeSavedReply(msg.id)} style={styles.delBtn}><i className="fas fa-trash-can"></i> حذف من الحفظ</button>
+                      </div>
+                    ))
+                  }
+                </div>
+              ) : (
+                <>
+                  {messages.length === 0 && <p style={styles.emptyMsg}>مرحباً بكِ في العيادة التربوية. أنا هنا لمساعدتكِ في توجيه طفلكِ نحو الأفضل.</p>}
+                  {messages.map(msg => (
+                    <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
+                      <div style={styles.msgBubble}>
+                        {msg.isImage ? <img src={msg.url} alt="Uploaded" style={{maxWidth: '100%', borderRadius: '10px'}} /> : <p style={styles.msgText}>{msg.text}</p>}
+                        <div style={styles.msgFooter}>
+                          <small>{msg.timestamp}</small>
+                          <div style={{display: 'flex', gap: '8px'}}>
+                            {msg.sender === 'ai' && (
+                              <button onClick={() => saveReply(msg)} style={styles.saveBtn} title="حفظ"><i className="fas fa-bookmark"></i></button>
+                            )}
+                            <button onClick={() => deleteMessage(msg.id)} style={styles.delBtn} title="حذف الرد"><i className="fas fa-trash"></i></button>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-              {isLoading && <div style={styles.loading}>جاري مراجعة المنهجيات العلمية... ⏳</div>}
-              <div ref={chatEndRef} />
+                  ))}
+                  {isLoading && <div style={styles.loading}>جاري مراجعة المنهجيات العلمية... ⏳</div>}
+                  <div ref={chatEndRef} />
+                </>
+              )}
             </div>
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                <button style={styles.mediaIcon} onClick={() => handleMediaAction('camera')}><i className="fas fa-camera"></i></button>
-                <button style={styles.mediaIcon} onClick={() => handleMediaAction('gallery')}><i className="fas fa-image"></i></button>
+                <button style={styles.mediaIconBtn} onClick={() => handleMediaAction('camera')}>
+                    <i className="fas fa-camera"></i>
+                    <span>الكاميرا</span>
+                </button>
+                <button style={styles.mediaIconBtn} onClick={() => handleMediaAction('gallery')}>
+                    <i className="fas fa-image"></i>
+                    <span>المعرض</span>
+                </button>
               </div>
               <div style={styles.inputRow}>
                 <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتبي استشارتك هنا..." style={styles.input} />
                 <button onClick={() => { if(inputText.trim()) { setMessages(prev => [...prev, {id: Date.now(), text: inputText, sender:'user', timestamp: new Date().toLocaleTimeString()}]); getAIAnalysis(inputText); setInputText(""); } }} style={styles.sendBtn}>
                   <i className="fas fa-paper-plane"></i>
+                  <span style={{fontSize: '0.7rem', display: 'block'}}>إرسال</span>
                 </button>
               </div>
             </div>
@@ -204,24 +241,28 @@ const styles = {
   analyzeBtn: { width: '100%', padding: '12px', borderRadius: '25px', border: 'none', background: '#ff85a2', color: 'white', fontWeight: 'bold' },
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
   chatBox: { width: '100%', maxWidth: '500px', height: '90vh', background: 'white', borderRadius: '25px 25px 0 0', display: 'flex', flexDirection: 'column' },
-  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', borderRadius: '25px 25px 0 0' },
-  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.5rem' },
+  chatHeader: { padding: '15px', background: '#6a5acd', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderRadius: '25px 25px 0 0' },
+  iconBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.2rem', cursor: 'pointer' },
+  closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '1.8rem', cursor: 'pointer' },
   chatContent: { flex: 1, overflowY: 'auto', padding: '15px', background: '#f8f9fa' },
   aiMsgRow: { display: 'flex', justifyContent: 'flex-start', marginBottom: '10px' },
   userMsgRow: { display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' },
   msgBubble: { maxWidth: '85%', padding: '12px', borderRadius: '15px', background: 'white', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' },
   msgText: { margin: 0, fontSize: '0.9rem', lineHeight: '1.5' },
   msgFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '8px', borderTop: '1px solid #eee', paddingTop: '5px' },
-  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer' },
+  delBtn: { border: 'none', background: 'none', color: '#ff4d4d', cursor: 'pointer', fontSize: '0.8rem' },
   saveBtn: { border: 'none', background: 'none', color: '#6a5acd', cursor: 'pointer' },
   chatInputArea: { padding: '15px', borderTop: '1px solid #eee' },
-  mediaBar: { display: 'flex', justifyContent: 'center', gap: '30px', marginBottom: '10px' },
-  mediaIcon: { background: '#f0f0f0', border: 'none', color: '#6a5acd', width: '40px', height: '40px', borderRadius: '50%', fontSize: '1.1rem' },
+  mediaBar: { display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '10px' },
+  mediaIconBtn: { display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'none', border: 'none', color: '#6a5acd', cursor: 'pointer', gap: '4px', fontSize: '0.8rem' },
   inputRow: { display: 'flex', gap: '10px' },
   input: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' },
-  sendBtn: { width: '45px', height: '45px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white' },
+  sendBtn: { width: '55px', height: '55px', borderRadius: '50%', border: 'none', background: '#6a5acd', color: 'white', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' },
   loading: { textAlign: 'center', color: '#6a5acd', padding: '10px' },
-  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' }
+  emptyMsg: { textAlign: 'center', color: '#999', marginTop: '50px' },
+  savedListArea: { padding: '10px' },
+  savedTitle: { color: '#6a5acd', borderBottom: '2px solid #6a5acd', paddingBottom: '10px', marginBottom: '15px' },
+  savedItem: { background: 'white', padding: '15px', borderRadius: '15px', marginBottom: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }
 };
 
 export default Motherhood;
