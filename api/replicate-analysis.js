@@ -1,12 +1,10 @@
 import Replicate from "replicate";
 
-// استخدام المفتاح الظاهر في الصورة المرفقة
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN, 
 });
 
 export default async function handler(req, res) {
-  // التأكد من أن نوع الطلب POST
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -16,48 +14,55 @@ export default async function handler(req, res) {
   try {
     let output;
 
-    // حالة 1: طلب رسم صورة (إذا احتوى النص على كلمة رسم أو صورة ولم يرفق المستخدم صورة)
-    if (!imageUrl && (prompt.includes("ارسم") || prompt.includes("صورة"))) {
+    // تحسين المنطق: التحقق من وجود كلمات دالة على الرسم بشكل أقوى
+    const isDrawRequest = prompt.includes("ارسم") || 
+                         prompt.includes("صورة") || 
+                         prompt.includes("توليد") || 
+                         prompt.includes("draw");
+
+    // حالة 1: الرسم (يتم تفعيلها إذا طلب المستخدم رسم ولم يرفق صورة)
+    if (!imageUrl && isDrawRequest) {
+      // تنظيف النص من كلمة "ارسم" لإرسال الوصف النقي للنموذج
+      const cleanPrompt = prompt.replace(/ارسم|صورة|توليد/g, "").trim();
+
       output = await replicate.run(
         "black-forest-labs/flux-schnell", 
         {
           input: {
-            prompt: prompt,
+            // نرسل الوصف بالإنجليزية لضمان أفضل جودة إذا أمكن، أو نرسله كما هو
+            prompt: cleanPrompt || prompt, 
             aspect_ratio: "1:1",
             output_format: "webp",
-            output_quality: 80
+            output_quality: 90
           },
         }
       );
-      // إرجاع رابط الصورة المولدة
+
+      // التأكد من إرجاع رابط الصورة في حقل منفصل ليفهمه كود Advice.jsx
       return res.status(200).json({ 
-        reply: "تم توليد الصورة بناءً على طلبكِ:", 
-        imageUrl: output[0] 
+        reply: "تفضلي، لقد قمت برسم الصورة لكِ:", 
+        imageUrl: output[0] // هذا هو الرابط الذي سيعرض الصورة
       });
     }
 
-    // حالة 2: تحليل صورة موجودة (باستخدام نموذج LLaVA)
+    // حالة 2: تحليل صورة (إذا أرسل المستخدم صورة فعلياً)
     if (imageUrl) {
       output = await replicate.run(
         "yorickvp/llava-13b:b5fce518b306f4d0e7462e25913cfc5e2978c1d773f61b7dc6609da305915494",
         {
           input: {
             image: imageUrl,
-            prompt: `بصفتكِ خبيرة، حللي هذه الصورة وأجيبي على هذا الطلب: ${prompt}`,
+            prompt: `بصفتكِ خبيرة، حللي هذه الصورة: ${prompt}`,
           },
         }
       );
-      // إرجاع النص المحلل من الصورة
       return res.status(200).json({ reply: output.join("") });
     }
 
-    // حالة 3: نص عادي لا يتضمن رسم ولا تحليل صورة
-    return res.status(400).json({ error: "يرجى إرسال صورة للتحليل أو طلب رسم صورة واضحة." });
+    return res.status(400).json({ error: "لم أستطع تحديد ما إذا كنتِ تريدين الرسم أو التحليل." });
 
   } catch (error) {
-    console.error("Replicate Error Detail:", error);
-    return res.status(500).json({ 
-      error: "حدث خطأ أثناء الاتصال بـ Replicate. تأكدي من صلاحية التوكن وقدرة الحساب على الوصول للنماذج." 
-    });
+    console.error("Replicate Error:", error);
+    return res.status(500).json({ error: "فشل في معالجة الطلب عبر Replicate" });
   }
 }
