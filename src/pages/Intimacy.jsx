@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Heart, MessageCircle, Camera, Mic, Trash2, Save, 
   Send, Star, ShieldCheck, Flame, 
-  Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip
+  Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip, Image as ImageIcon
 } from 'lucide-react';
-// 1. استيراد المحرك الأصلي في أعلى الملف
+// 1. استيراد المحرك الأصلي والميديا
 import { CapacitorHttp } from '@capacitor/core';
+import { takePhoto, fetchImage, uploadToVercel } from './services/MediaService';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -14,6 +15,9 @@ const MarriageApp = () => {
   const [messages, setMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [savedResponses, setSavedResponses] = useState([]); // قائمة الحفظ
+  const [attachedImage, setAttachedImage] = useState(null); // الصورة المرفقة
+  
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -23,6 +27,12 @@ const MarriageApp = () => {
   useEffect(() => {
     if (showChat) scrollToBottom();
   }, [messages, loading, showChat]);
+
+  // تحميل الردود المحفوظة من التخزين المحلي عند البدء
+  useEffect(() => {
+    const saved = localStorage.getItem('raqqa_saved_responses');
+    if (saved) setSavedResponses(JSON.parse(saved));
+  }, []);
 
   const categories = [
     { id: "bonding", title: "الود والاتصال العاطفي", icon: <Heart size={24} />, items: ["لغة الحوار 🗣️", "تبادل النظرات 👀", "كلمات التقدير 💌", "الهدايا 🎁", "الدعم 🤝", "الضحك 😂", "وقت خاص ☕", "اللمس 🤚", "الأمان 🛡️", "التسامح 🏳️"] },
@@ -37,36 +47,47 @@ const MarriageApp = () => {
     { id: "spiritual", title: "الاطمئنان الروحي", icon: <Moon size={24} />, items: ["دعاء 🤲", "غسل 🚿", "شكر 🛐", "نية 💎"] }
   ];
 
-  // دالة المعالجة الموحدة باستخدام CapacitorHttp
-  const handleProcess = async (userInputs, pageTitle) => {
-    // تجميع البيانات إلى نص مفهوم
+  // دالة التعامل مع الصور
+  const handleImagePick = async (type) => {
+    try {
+      const base64 = type === 'camera' ? await takePhoto() : await fetchImage();
+      if (base64) {
+        setLoading(true);
+        const fileName = `upload_${Date.now()}.jpg`;
+        const imageUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
+        setAttachedImage(imageUrl);
+        setLoading(false);
+      }
+    } catch (err) {
+      console.error("خطأ في رفع الصورة:", err);
+      setLoading(false);
+    }
+  };
+
+  const handleProcess = async (userInputs, pageTitle, imageUrl = null) => {
     const summary = Object.entries(userInputs)
       .filter(([key, value]) => value && value.length > 0)
       .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(" - ") : value}`)
       .join(", ");
 
     try {
-      // إعداد خيارات الطلب للذكاء الاصطناعي
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `أنا أنثى مسلمة، في قسم ${pageTitle}، تفاصيلي هي: (${summary}). ردي عليّ بأسلوب رقة الدافئ.`
+          prompt: `أنا أنثى مسلمة، في قسم ${pageTitle}، تفاصيلي هي: (${summary}). ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''} ردي عليّ بأسلوب رقة الدافئ.`
         }
       };
 
-      // الاتصال عبر المحرك الأصلي (تجاوز CORS)
       const aiResponse = await CapacitorHttp.post(aiOptions);
-      
-      // النتيجة تكون في response.data مباشرة
       const responseText = aiResponse.data.reply || aiResponse.data.message || "شكراً لمشاركتكِ يا رفيقتي.";
 
-      // حفظ البيانات في نيون بشكل متوازي
+      // حفظ البيانات في نيون
       await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/save-health',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          user_id: 1, // المعرف الافتراضي
+          user_id: 1,
           category: pageTitle,
           value: "تحليل قسم",
           note: summary
@@ -74,42 +95,50 @@ const MarriageApp = () => {
       });
 
       return responseText;
-
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
       return "حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي.";
     }
+  };
+
+  const saveToLocal = (msg) => {
+    const updated = [...savedResponses, { id: Date.now(), text: msg }];
+    setSavedResponses(updated);
+    localStorage.setItem('raqqa_saved_responses', JSON.stringify(updated));
+  };
+
+  const deleteSaved = (id) => {
+    const updated = savedResponses.filter(r => r.id !== id);
+    setSavedResponses(updated);
+    localStorage.setItem('raqqa_saved_responses', JSON.stringify(updated));
+  };
+
+  const handleManualChat = async (text) => {
+    if (!text.trim() && !attachedImage) return;
+    
+    const currentImg = attachedImage;
+    setMessages(prev => [...prev, { role: 'user', text: text, image: currentImg }]);
+    setLoading(true);
+    setUserInput("");
+    setAttachedImage(null);
+
+    const result = await handleProcess({ "سؤال": text }, "دردشة عامة", currentImg);
+    setMessages(prev => [...prev, { role: 'ai', text: result }]);
+    setLoading(false);
   };
 
   const handleAnalysis = async (cat) => {
     const selected = selectedItems[cat.id] || [];
     if (selected.length === 0) return;
-
     setShowChat(true);
     setLoading(true);
-    
-    // تشغيل عملية المعالجة
     const result = await handleProcess({ [cat.title]: selected }, cat.title);
-    
     setMessages(prev => [
       ...prev, 
       { role: 'user', text: `تحليل قائمة: ${cat.title}` },
       { role: 'ai', text: result }
     ]);
-    
     setLoading(false);
     setActiveList(null);
-  };
-
-  const handleManualChat = async (text) => {
-    if (!text.trim()) return;
-    setMessages(prev => [...prev, { role: 'user', text: text }]);
-    setLoading(true);
-    setUserInput("");
-    
-    const result = await handleProcess({ "سؤال": text }, "دردشة عامة");
-    setMessages(prev => [...prev, { role: 'ai', text: result }]);
-    setLoading(false);
   };
 
   return (
@@ -117,6 +146,21 @@ const MarriageApp = () => {
       <header style={{ background: '#800020', color: '#d4af37', padding: '15px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 500 }}>
         <h1 style={{ margin: 0, fontSize: '1.2rem' }}>مستشارة رقة للسعادة الزوجية</h1>
       </header>
+
+      {/* عرض الردود المحفوظة */}
+      {savedResponses.length > 0 && (
+        <div style={{ padding: '15px', background: '#fdf2f2' }}>
+          <h3 style={{ fontSize: '0.9rem', color: '#800020' }}>🌸 مفضلتكِ:</h3>
+          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+            {savedResponses.map(res => (
+              <div key={res.id} style={{ minWidth: '200px', background: '#fff', padding: '10px', borderRadius: '10px', fontSize: '0.8rem', position: 'relative', border: '1px solid #eee' }}>
+                <Trash2 size={14} onClick={() => deleteSaved(res.id)} style={{ position: 'absolute', top: 5, left: 5, color: '#ff4d4d' }} />
+                <p style={{ margin: 0, paddingLeft: '15px' }}>{res.text.substring(0, 50)}...</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <button onClick={() => setShowChat(true)} style={{ position: 'fixed', bottom: '25px', left: '25px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '60px', height: '60px', zIndex: 100, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
         <Sparkles color="#800020" size={30} />
@@ -164,17 +208,36 @@ const MarriageApp = () => {
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#fff9f9' }}>
             {messages.map((m, i) => (
-              <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#800020' : '#fff', color: m.role === 'user' ? '#fff' : '#333', padding: '12px 18px', borderRadius: '20px', marginBottom: '15px', maxWidth: '85%', marginLeft: m.role === 'user' ? 'auto' : '0', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', border: m.role === 'ai' ? '1px solid #f0e0e0' : 'none' }}>
+              <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#800020' : '#fff', color: m.role === 'user' ? '#fff' : '#333', padding: '12px 18px', borderRadius: '20px', marginBottom: '15px', maxWidth: '85%', marginLeft: m.role === 'user' ? 'auto' : '0', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', border: m.role === 'ai' ? '1px solid #f0e0e0' : 'none', position: 'relative' }}>
+                {m.image && <img src={m.image} alt="upload" style={{ width: '100%', borderRadius: '10px', marginBottom: '10px' }} />}
                 {m.text}
+                {m.role === 'ai' && (
+                  <Save size={16} onClick={() => saveToLocal(m.text)} style={{ display: 'block', marginTop: '8px', cursor: 'pointer', color: '#d4af37' }} />
+                )}
               </div>
             ))}
             {loading && <div style={{ color: '#800020', fontSize: '0.8rem', textAlign: 'center' }}>رقة تراجع مكتبتها... 🖋️</div>}
             <div ref={messagesEndRef} />
           </div>
 
-          <div style={{ padding: '10px 15px 30px', background: '#fff', display: 'flex', gap: '12px', borderTop: '1px solid #eee' }}>
-            <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, padding: '14px 20px', borderRadius: '30px', border: '1px solid #ddd', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && handleManualChat(userInput)} />
-            <button onClick={() => handleManualChat(userInput)} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Send size={22} color="#800020" /></button>
+          {/* شريط الإدخال المطور مع رفع الصور */}
+          <div style={{ padding: '10px 15px 30px', background: '#fff', borderTop: '1px solid #eee' }}>
+            {attachedImage && (
+               <div style={{ position: 'relative', display: 'inline-block', marginBottom: '10px' }}>
+                 <img src={attachedImage} style={{ width: '50px', height: '50px', borderRadius: '8px' }} alt="attached" />
+                 <X size={14} onClick={() => setAttachedImage(null)} style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%' }} />
+               </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '5px' }}>
+                <Camera size={24} color="#800020" onClick={() => handleImagePick('camera')} style={{ cursor: 'pointer' }} />
+                <ImageIcon size={24} color="#800020" onClick={() => handleImagePick('gallery')} style={{ cursor: 'pointer' }} />
+              </div>
+              <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك أو برمبت خاص..." style={{ flex: 1, padding: '12px 15px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && handleManualChat(userInput)} />
+              <button onClick={() => handleManualChat(userInput)} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Send size={20} color="#800020" />
+              </button>
+            </div>
           </div>
         </div>
       )}
