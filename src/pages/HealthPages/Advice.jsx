@@ -4,7 +4,7 @@ import { Send, Image as ImageIcon, Camera, Mic, MicOff, Loader2 } from 'lucide-r
 import { 
   fetchImage, takePhoto, requestAudioPermissions, 
   startRecording, stopRecording, uploadToVercel 
-} from '../../services/MediaService'; 
+} from '../../services/MediaService';
 
 const AdviceChat = () => {
   const [messages, setMessages] = useState([{ id: 1, text: "أهلاً بكِ، كيف أساعدكِ؟", sender: 'ai' }]);
@@ -23,17 +23,16 @@ const AdviceChat = () => {
 
     setIsProcessing(true);
     const userMsgId = Date.now();
-    
     setMessages(prev => [...prev, { id: userMsgId, text: content, sender: 'user', attachment }]);
     setInput('');
 
     try {
       let finalAttachmentUrl = null;
-
       // مرحلة رفع الملف
       if (attachment) {
         try {
-          const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`;
+          const fileName = attachment.type === 'image' ?
+            `img_${userMsgId}.png` : `audio_${userMsgId}.aac`;
           const mimeType = attachment.type === 'image' ? 'image/png' : 'audio/aac';
           finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType);
         } catch (uploadErr) {
@@ -43,13 +42,14 @@ const AdviceChat = () => {
 
       // مرحلة الاتصال بالذكاء الاصطناعي
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        url: 'https://raqqa-v6cd.vercel.app/api/replicate-analysis',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `أنا أنثى مسلمة، إليكِ رسالتي: ${content}. ${finalAttachmentUrl ? `مرفق رابط الوسائط: ${finalAttachmentUrl}` : ''}`
+          prompt: `أنا أنثى مسلمة، إليكِ رسالتي: ${content}.
+          ${finalAttachmentUrl ? `مرفق رابط الوسائط: ${finalAttachmentUrl}` : ''}`
         }
       };
-
+      
       const response = await CapacitorHttp.post(options);
       
       // التأكد من نجاح الاستجابة
@@ -62,7 +62,6 @@ const AdviceChat = () => {
 
     } catch (err) {
       console.error("تفاصيل الخطأ الكاملة:", err);
-      
       // عرض رسالة الخطأ التفصيلية في الشات بدلاً من رسالة عامة
       const detailedError = err.message || "حدث خطأ غير متوقع في الشبكة";
       setMessages(prev => [...prev, { 
@@ -77,7 +76,8 @@ const AdviceChat = () => {
 
   const handleImageAction = async (type) => {
     try {
-      const base64 = type === 'camera' ? await takePhoto() : await fetchImage();
+      const base64 = type === 'camera' ?
+        await takePhoto() : await fetchImage();
       handleProcess("أرسلتُ صورة لكِ", { type: 'image', data: base64 });
     } catch (e) { 
       console.error("فشل جلب الصورة:", e);
