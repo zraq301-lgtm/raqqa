@@ -18,84 +18,84 @@ const AdviceChat = () => {
   }, [messages]);
 
   const handleProcess = async (textOverride = null, attachment = null) => {
-    const content = textOverride || input;
+    const content = textOverride || input; [cite: 7, 8]
     if (!content.trim() && !attachment) return;
 
     setIsProcessing(true);
     const userMsgId = Date.now();
-    setMessages(prev => [...prev, { id: userMsgId, text: content, sender: 'user', attachment }]);
+    setMessages(prev => [...prev, { id: userMsgId, text: content, sender: 'user', attachment }]); [cite: 9]
     setInput('');
 
     try {
       let finalAttachmentUrl = null;
-      // مرحلة رفع الملف
       if (attachment) {
         try {
-          const fileName = attachment.type === 'image' ?
-            `img_${userMsgId}.png` : `audio_${userMsgId}.aac`;
+          const fileName = attachment.type === 'image' ? `img_${userMsgId}.png` : `audio_${userMsgId}.aac`; [cite: 12]
           const mimeType = attachment.type === 'image' ? 'image/png' : 'audio/aac';
-          finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType);
+          finalAttachmentUrl = await uploadToVercel(attachment.data, fileName, mimeType); [cite: 12]
         } catch (uploadErr) {
-          throw new Error(`فشل رفع الملف: ${uploadErr.message || 'مشكلة في Vercel Blob'}`);
+          throw new Error(`فشل رفع الملف: ${uploadErr.message}`); [cite: 13]
         }
       }
 
-      // مرحلة الاتصال بالذكاء الاصطناعي
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/replicate-analysis',
+        url: 'https://raqqa-v6cd.vercel.app/api/replicate-analysis', // الرابط الجديد
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `أنا أنثى مسلمة، إليكِ رسالتي: ${content}.
-          ${finalAttachmentUrl ? `مرفق رابط الوسائط: ${finalAttachmentUrl}` : ''}`
+          prompt: content,
+          imageUrl: finalAttachmentUrl 
         }
       };
       
-      const response = await CapacitorHttp.post(options);
+      const response = await CapacitorHttp.post(options); [cite: 16]
       
-      // التأكد من نجاح الاستجابة
       if (response.status !== 200) {
-        throw new Error(`خطأ من الخادم (Status: ${response.status})`);
+        throw new Error(`خطأ من الخادم (Status: ${response.status})`); [cite: 16]
       }
 
-      const aiReply = response.data.reply || response.data.message || "عذراً، لم أستطع فهم ذلك.";
-      setMessages(prev => [...prev, { id: Date.now(), text: aiReply, sender: 'ai' }]);
+      // استخراج الرد النصي ورابط الصورة (إن وجد) من الاستجابة المحدثة
+      const aiReply = response.data.reply || "تمت المعالجة بنجاح.";
+      const generatedImg = response.data.imageUrl; // الرابط القادم من نموذج الرسم
 
-    } catch (err) {
-      console.error("تفاصيل الخطأ الكاملة:", err);
-      // عرض رسالة الخطأ التفصيلية في الشات بدلاً من رسالة عامة
-      const detailedError = err.message || "حدث خطأ غير متوقع في الشبكة";
       setMessages(prev => [...prev, { 
         id: Date.now(), 
-        text: `⚠️ عذراً، حدث خطأ: ${detailedError}. تأكدي من إعدادات Vercel والاتصال بالإنترنت.`, 
-        sender: 'ai' 
+        text: aiReply, 
+        sender: 'ai',
+        generatedImg: generatedImg // إضافة رابط الصورة المولدة للرسالة
       }]);
+
+    } catch (err) {
+      console.error("تفاصيل الخطأ:", err); [cite: 19]
+      setMessages(prev => [...prev, { 
+        id: Date.now(), 
+        text: `⚠️ عذراً: ${err.message || "حدث خطأ في الاتصال"}.`, 
+        sender: 'ai' 
+      }]); [cite: 21]
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); [cite: 22]
     }
   };
 
   const handleImageAction = async (type) => {
     try {
-      const base64 = type === 'camera' ?
-        await takePhoto() : await fetchImage();
-      handleProcess("أرسلتُ صورة لكِ", { type: 'image', data: base64 });
+      const base64 = type === 'camera' ? await takePhoto() : await fetchImage(); [cite: 23, 24]
+      handleProcess("أرسلتُ صورة للتحليل", { type: 'image', data: base64 }); [cite: 24]
     } catch (e) { 
-      console.error("فشل جلب الصورة:", e);
-      setMessages(prev => [...prev, { id: Date.now(), text: "فشل الوصول للكاميرا أو المعرض.", sender: 'ai' }]);
+      setMessages(prev => [...prev, { id: Date.now(), text: "فشل الوصول للوسائط.", sender: 'ai' }]); [cite: 26]
     }
   };
 
   const toggleRecording = async () => {
     if (!isRecording) {
-      const perm = await requestAudioPermissions();
+      const perm = await requestAudioPermissions(); [cite: 27]
       if (perm === 'granted') {
-        await startRecording();
+        await startRecording(); [cite: 28]
         setIsRecording(true);
       }
     } else {
-      const audio = await stopRecording();
+      const audio = await stopRecording(); [cite: 29]
       setIsRecording(false);
-      handleProcess("أرسلتُ تسجيلاً صوتياً", { type: 'audio', data: audio.value });
+      handleProcess("أرسلتُ تسجيلاً صوتياً", { type: 'audio', data: audio.value }); [cite: 30]
     }
   };
 
@@ -106,7 +106,15 @@ const AdviceChat = () => {
           <div key={m.id} className={`flex ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] p-3 rounded-2xl ${m.sender === 'user' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-800'}`}>
               {m.text}
-              {m.attachment && <div className="mt-2 text-xs opacity-70 italic">(تم إرسال وسائط للمعالجة...)</div>}
+              
+              {/* عرض الصورة إذا كانت مولدة من الذكاء الاصطناعي */}
+              {m.generatedImg && (
+                <div className="mt-3">
+                  <img src={m.generatedImg} alt="Generated" className="rounded-lg w-full h-auto shadow-sm" />
+                </div>
+              )}
+
+              {m.attachment && <div className="mt-2 text-xs opacity-70 italic">(تم إرسال وسائط للمعالجة...)</div>} [cite: 32]
             </div>
           </div>
         ))}
@@ -116,14 +124,14 @@ const AdviceChat = () => {
       <div className="p-4 border-t bg-white">
         <div className="flex gap-4 mb-3 justify-center border-b pb-2">
            <button onClick={() => handleImageAction('camera')} className="text-pink-600 flex flex-col items-center">
-            <Camera size={22} /> <span className="text-[10px]">كاميرا</span>
+            <Camera size={22} /> <span className="text-[10px]">كاميرا</span> [cite: 33]
           </button>
           <button onClick={() => handleImageAction('gallery')} className="text-pink-600 flex flex-col items-center">
             <ImageIcon size={22} /> <span className="text-[10px]">معرض</span>
           </button>
           <button onClick={toggleRecording} className={`${isRecording ? 'text-red-500 animate-pulse' : 'text-pink-600'} flex flex-col items-center`}>
-            {isRecording ? <MicOff size={22} /> : <Mic size={22} />}
-            <span className="text-[10px]">{isRecording ? 'إيقاف' : 'تسجيل'}</span>
+            {isRecording ? <MicOff size={22} /> : <Mic size={22} />} [cite: 35]
+            <span className="text-[10px]">{isRecording ? 'إيقاف' : 'تسجيل'}</span> [cite: 36]
           </button>
         </div>
         <div className="flex gap-2">
@@ -131,7 +139,7 @@ const AdviceChat = () => {
             value={input} 
             onChange={e => setInput(e.target.value)} 
             className="flex-1 border rounded-full px-4 py-2 text-right" 
-            placeholder="اكتبي رسالتكِ..." 
+            placeholder="اكتبي رسالتكِ أو اطلبي رسماً..." 
             dir="rtl" 
           />
           <button 
@@ -139,7 +147,7 @@ const AdviceChat = () => {
             disabled={isProcessing} 
             className="p-2 bg-pink-600 text-white rounded-full disabled:bg-gray-400"
           >
-            {isProcessing ? <Loader2 className="animate-spin" /> : <Send />}
+            {isProcessing ? <Loader2 className="animate-spin" /> : <Send />} [cite: 38]
           </button>
         </div>
       </div>
