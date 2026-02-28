@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-// استيراد خدمات الميديا من المسار المحدد
-import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService';
+// تصحيح المسار للوصول إلى المجلد الصحيح
+import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
 const MenstrualTracker = () => {
   const HealthIcon = iconMap.health;
@@ -51,13 +51,12 @@ const MenstrualTracker = () => {
   }, []);
 
   /**
-   * دالة متكاملة لفتح الوسائط ورفع الصور مباشرة للعمل داخل APK
+   * دالة متكاملة لفتح الوسائط ورفع الصور مباشرة
    */
   const handleMediaAction = async (type) => {
     try {
         setLoading(true);
         const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
-        
         if (!base64Data) {
             setLoading(false);
             return;
@@ -67,21 +66,21 @@ const MenstrualTracker = () => {
         const fileName = `img_${timestamp}.png`;
         const mimeType = 'image/png';
 
-        // الرفع إلى الرابط: https://raqqa-v6cd.vercel.app/api/upload عبر الميديا سيرفس
+        // استخدام المسار المطلوب للرفع
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
-        
-        // إرسال الرابط للذكاء الاصطناعي لتحليله
-        await handleProcess(`لقد رفعت صورة طبية للمراجعة: ${finalAttachmentUrl}`);
-        
+        console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
+
+        // إرسال الرابط للذكاء الاصطناعي
+        handleProcess(`لقد رفعت صورة طبية للمراجعة: ${finalAttachmentUrl}`);
     } catch (error) {
         console.error("فشل في معالجة أو رفع الصورة:", error);
-        alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة. تأكدي من منح الصلاحيات.");
+        alert("حدث خطأ أثناء الوصول للكاميرا أو رفع الصورة.");
     } finally {
         setLoading(false);
     }
   };
 
-  // --- منطق المعالجة الرئيسي (حفظ في نيون + تحليل AI) ---
+  // --- منطق المعالجة الرئيسي ---
   const handleProcess = async (userInput = null) => {
     setLoading(true);
     const summary = JSON.stringify(data);
@@ -100,15 +99,15 @@ const MenstrualTracker = () => {
       };
       await CapacitorHttp.post(saveOptions);
 
-      // 2. إعداد البرومبت الطبي للذكاء الاصطناعي
+      // 2. مرحلة التحليل عبر AI
       const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
       حلل حالتي بناءً على هذه البيانات: ${summary}. 
       علماً أن معرف المستخدم (ID) هو 1.
       المطلوب منك:
       1. توقع موعد الدورة الشهرية القادمة بدقة.
-      2. تحديد أيام التبويض (نافذة الخصوبة).
-      3. تقديم نصائح طبية بناءً على الأعراض المسجلة.
-      ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي الصحية الحالية وموعد الخصوبة."}`;
+      2. تحديد أيام التبويض المتوقعة.
+      3. تقديم نصائح طبية بناءً على الأعراض.
+      ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي الصحية."}`;
 
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -118,7 +117,7 @@ const MenstrualTracker = () => {
 
       const response = await CapacitorHttp.post(aiOptions);
       const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
-
+      
       const newMessage = { 
         id: Date.now(),
         role: 'ai', 
@@ -164,7 +163,7 @@ const MenstrualTracker = () => {
     chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 1000, display: 'flex', flexDirection: 'column' },
     chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid #eee' },
     headerChatBtn: { background: '#FFF', border: '1px solid #E91E63', color: '#E91E63', padding: '8px 15px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' },
-    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px' }
+    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', cursor: 'pointer' }
   };
 
   const sections = [
@@ -177,7 +176,6 @@ const MenstrualTracker = () => {
 
   return (
     <div style={styles.container}>
-      {/* الهيدر والكارت الرئيسي */}
       <div style={styles.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <button onClick={() => setShowChat(true)} style={styles.headerChatBtn}>💬 فتح الشات</button>
@@ -197,7 +195,6 @@ const MenstrualTracker = () => {
         {prediction && <div style={{ textAlign: 'center', marginTop: '10px', fontWeight: 'bold', color: '#E91E63' }}>الموعد المتوقع: {prediction}</div>}
       </div>
 
-      {/* أقسام البيانات */}
       {sections.map((sec) => (
         <div key={sec.id} style={styles.card}>
           <div onClick={() => setOpenAccordion(openAccordion === sec.id ? null : sec.id)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -226,18 +223,17 @@ const MenstrualTracker = () => {
         {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل الدورة والخصوبة"}
       </button>
 
-      {/* واجهة الشات (الذكاء الاصطناعي) */}
       {showChat && (
         <div style={styles.chatOverlay}>
           <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '20px' }}>✕</span>
             <span style={{ fontWeight: 'bold' }}>استشارية صحة المرأة</span>
-            <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '12px' }}>مسح الكل</button>
+            <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '12px' }}>مسح</button>
           </div>
           
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
             {chatHistory.map((msg, i) => (
-              <div key={i} style={{ 
+              <div key={msg.id || i} style={{ 
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 background: msg.role === 'user' ? '#E91E63' : '#fff',
                 color: msg.role === 'user' ? '#fff' : '#333',
@@ -247,20 +243,19 @@ const MenstrualTracker = () => {
               }}>
                 {msg.content}
                 {msg.role === 'ai' && (
-                  <div style={{ marginTop: '5px', borderTop: '1px solid #eee', paddingTop: '5px', textAlign: 'left', display: 'flex', gap: '10px' }}>
-                    <button onClick={() => deleteResponse(msg.id)} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#888', cursor: 'pointer' }}>🗑️ حذف</button>
-                    <button style={{ background: 'none', border: 'none', fontSize: '10px', color: '#E91E63', cursor: 'pointer' }}>⭐ حفظ</button>
+                  <div style={{ marginTop: '5px', borderTop: '1px solid #eee', paddingTop: '5px', textAlign: 'left' }}>
+                    <button onClick={() => deleteResponse(msg.id)} style={{ background: 'none', border: 'none', fontSize: '10px', color: '#888' }}>🗑️ حذف</button>
+                    <button style={{ background: 'none', border: 'none', fontSize: '10px', color: '#E91E63', marginLeft: '10px' }}>⭐ حفظ الرد</button>
                   </div>
                 )}
               </div>
             ))}
-            {loading && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري المعالجة...</div>}
+            {loading && <div style={{ textAlign: 'center', color: '#E91E63', fontSize: '12px' }}>جاري تحليل بياناتك الطبية...</div>}
           </div>
          
-          {/* شريط كتابة البرومبت وتفعيل الميديا */}
           <div style={styles.chatInputArea}>
-            <button onClick={() => handleMediaAction('camera')} style={styles.iconBtn} title="التقاط صورة">📷</button>
-            <button onClick={() => handleMediaAction('gallery')} style={styles.iconBtn} title="إرفاق صورة">🖼️</button>
+            <button onClick={() => handleMediaAction('camera')} style={styles.iconBtn}>📷</button>
+            <button onClick={() => handleMediaAction('gallery')} style={styles.iconBtn}>🖼️</button>
             <input 
               placeholder="اسألي عن الدورة الشهرية والخصوبة..." 
               style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
