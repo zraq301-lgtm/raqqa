@@ -5,17 +5,19 @@ import {
   Clock, Brain, Flower2, Coins, Hourglass, 
   Camera, Mic, Image, Trash2, X, MapPin, Smile, Send, Stethoscope
 } from 'lucide-react';
-// استيراد CapacitorHttp للاتصال المتوافق مع الهواتف
 import { CapacitorHttp } from '@capacitor/core';
+// استيراد خدمات الميديا من المسار المحدد
+import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
   const [inputs, setInputs] = useState({});
   const [aiResponse, setAiResponse] = useState("");
   const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState([]); // سجل الردود
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState("");
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
 
   const categories = [
     { id: 1, title: "المشاعر الإيمانية", icon: <Sparkles />, items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "حلاوة الإيمان 🍯", "الرضا بالقضاء ✅", "حسن الظن بالله 🌈"] },
@@ -30,7 +32,27 @@ const RaqqaFeelingsApp = () => {
     { id: 10, title: "الإنجاز والعمل", icon: <Clock />, items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
   ];
 
-  // دالة المعالجة الرئيسية باستخدام CapacitorHttp
+  // دالة التعامل مع الكاميرا ورفع الصورة
+  const handleImageAction = async (type) => {
+    try {
+      setLoading(true);
+      let base64;
+      if (type === 'camera') base64 = await takePhoto();
+      else base64 = await fetchImage();
+
+      if (base64) {
+        const fileName = `raqqa_${Date.now()}.jpg`;
+        const url = await uploadToVercel(base64, fileName, 'image/jpeg');
+        setUploadedImageUrl(url);
+        alert("تم رفع الصورة بنجاح، يمكنك الآن سؤال الذكاء الاصطناعي عنها ✨");
+      }
+    } catch (err) {
+      alert("فشل في معالجة الصورة: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleProcess = async (customPrompt = null) => {
     setLoading(true);
     setShowChat(true);
@@ -40,16 +62,21 @@ const RaqqaFeelingsApp = () => {
       .map(([k, v]) => `${k}: ${v}`)
       .join(", ");
 
-    // البرومبت المتخصص في طب المشاعر والعمق النفسي
-    const systemPrompt = customPrompt || `أنا أنثى مسلمة، أشعر في قسم ${activeTab?.title || "العام"} بالآتي: (${summary}). 
-    حللي مشاعري بأسلوب يجمع بين "طب المشاعر" والعمق النفسي التحليلي. 
-    قدمي نصائح عملية (Somatic tracking) وتوجيهات لترميم الذات، مع ذكر آية أو حديث يربط الجانب النفسي بالإيماني.`;
+    // دمج رابط الصورة في البرومبت إذا وجد
+    let finalPrompt = customPrompt || 
+      `أنا أنثى مسلمة، أشعر في قسم ${activeTab?.title || "العام"} بالآتي: (${summary}).
+      حللي مشاعري بأسلوب يجمع بين "طب المشاعر" والعمق النفسي التحليلي.
+      قدمي نصائح عملية (Somatic tracking) وتوجيهات لترميم الذات، مع ذكر آية أو حديث يربط الجانب النفسي بالإيماني.`;
+
+    if (uploadedImageUrl) {
+      finalPrompt += ` \n (مرفق صورة لتحليلها: ${uploadedImageUrl})`;
+    }
 
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: systemPrompt }
+        data: { prompt: finalPrompt }
       };
 
       const response = await CapacitorHttp.post(options);
@@ -57,6 +84,7 @@ const RaqqaFeelingsApp = () => {
       
       setAiResponse(responseText);
       setHistory(prev => [responseText, ...prev]);
+      setUploadedImageUrl(null); // تصغير الصورة بعد الاستخدام
     } catch (err) {
       console.error("فشل الاتصال:", err);
       setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي 🌸");
@@ -65,7 +93,12 @@ const RaqqaFeelingsApp = () => {
     }
   };
 
-  // وظائف أزرار الشات الإضافية
+  const deleteHistoryItem = (index) => {
+    const newHistory = [...history];
+    newHistory.splice(index, 1);
+    setHistory(newHistory);
+  };
+
   const handleFeatureNotImplemented = (feature) => {
     alert(`خاصية ${feature} ستكون متاحة قريباً في التحديث القادم بإذن الله ✨`);
   };
@@ -76,7 +109,6 @@ const RaqqaFeelingsApp = () => {
         <h1 style={styles.title}>رقة ✨</h1>
         <p style={styles.subtitle}>محلل مشاعر المرأة المسلمة الشامل</p>
         
-        {/* زر التحدث مع طبيب المشاعر الجديد */}
         <button 
           style={styles.doctorBtn} 
           onClick={() => { setShowChat(true); setAiResponse("أهلاً بكِ في عيادة رقة النفسية.. كيف تشعرين اليوم؟"); }}
@@ -147,20 +179,19 @@ const RaqqaFeelingsApp = () => {
                 <>
                   <div style={styles.responseBox}>
                     <p style={{whiteSpace: 'pre-wrap'}}>{aiResponse}</p>
+                    {uploadedImageUrl && <p style={{fontSize: '0.7rem', color: '#f06292'}}>تم إرفاق صورة 🖼️</p>}
                   </div>
                   
-                  {history.length > 1 && (
+                  {history.length > 0 && (
                     <div style={styles.historySection}>
-                      <h4 style={styles.historyTitle}>سجل الاستشفاء السابق:</h4>
-                      {history.slice(1).map((h, i) => (
+                      <h4 style={styles.historyTitle}>سجل الاستشفاء والردود:</h4>
+                      {history.map((h, i) => (
                         <div key={i} style={styles.historyItem}>
-                          <div style={{flex: 1}}>{h.substring(0, 70)}...</div>
-                          <Trash2 size={16} style={{color: '#ff8aae', cursor: 'pointer', marginRight: '10px'}} 
-                            onClick={() => {
-                              const newHistory = [...history];
-                              newHistory.splice(i+1, 1);
-                              setHistory(newHistory);
-                            }} 
+                          <div style={{flex: 1}}>{h.substring(0, 90)}...</div>
+                          <Trash2 
+                            size={18} 
+                            style={{color: '#ff8aae', cursor: 'pointer', marginRight: '10px'}} 
+                            onClick={() => deleteHistoryItem(i)} 
                           />
                         </div>
                       ))}
@@ -188,9 +219,9 @@ const RaqqaFeelingsApp = () => {
               </div>
               
               <div style={styles.chatToolbar}>
-                <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("الكاميرا")} title="كاميرا"><Camera size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => handleImageAction('camera')} title="كاميرا"><Camera size={22}/></button>
                 <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("التسجيل الصوتي")} title="تسجيل صوتي"><Mic size={22}/></button>
-                <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("إرفاق صور")} title="إرفاق صورة"><Image size={22}/></button>
+                <button style={styles.toolBtnChat} onClick={() => handleImageAction('gallery')} title="إرفاق صورة"><Image size={22}/></button>
                 <button style={styles.toolBtnChat} onClick={() => {setHistory([]); setAiResponse("تم مسح السجل بنجاح.");}} title="مسح السجل"><Trash2 size={22}/></button>
               </div>
             </div>
