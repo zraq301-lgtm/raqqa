@@ -11,6 +11,15 @@ export default async function handler(req, res) {
     const mxbKey = process.env.MXBAI_API_KEY;
     const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826";
 
+    // التحقق مما إذا كان المدخل يحتوي على رابط صورة أو فيديو
+    const mediaRegex = /\.(jpg|jpeg|png|webp|gif|mp4|mov)|https?:\/\/\S+(?:bit\.ly|t\.ly|drive\.google|dropbox)/i;
+    
+    if (mediaRegex.test(prompt)) {
+        return res.status(200).json({ 
+            message: "قريباً النموذج المرئي، جاري التحديث للصور والفيديوهات." 
+        });
+    }
+
     try {
         // 1. البحث أولاً في مكتبة Mixedbread المتخصصة
         let libraryContext = "";
@@ -28,7 +37,7 @@ export default async function handler(req, res) {
             });
 
             if (mxbRes.ok) {
-                const mxbData = await mxbRes.ok ? await mxbRes.json() : null;
+                const mxbData = await mxbRes.json();
                 // تجميع النصوص المسترجعة من المكتبة
                 libraryContext = mxbData?.hits?.map(h => h.content).join("\n\n") || "";
             }
@@ -37,7 +46,6 @@ export default async function handler(req, res) {
         }
 
         // 2. توجيه الطلب إلى Groq مع سياق المكتبة إن وجد
-        // إذا لم تكن هناك معلومات في المكتبة، سيعتمد Groq على ذكائه العام
         const systemPrompt = libraryContext 
             ? `أنتِ رقة، مساعدة خبيرة. استخدمي المعلومات التالية من المكتبة للرد بدقة: ${libraryContext}`
             : "أنتِ رقة، ذكاء اصطناعي لبق وذكي. أجيبي على الأسئلة بوضوح.";
@@ -49,7 +57,7 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile", // موديل قوي جداً وسريع
+                model: "llama-3.3-70b-versatile", 
                 messages: [
                     { role: "system", content: systemPrompt },
                     { role: "user", content: prompt }
