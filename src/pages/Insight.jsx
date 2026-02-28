@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-// استيراد المحرك الأصلي لضمان عمل الاتصال
 import { CapacitorHttp } from '@capacitor/core';
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
@@ -10,6 +9,9 @@ import {
   Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus
 } from 'lucide-react';
 
+// استيراد خدمات الميديا
+import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService';
+
 const RaqqaApp = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [inputs, setInputs] = useState({});
@@ -19,11 +21,9 @@ const RaqqaApp = () => {
   const [savedReplies, setSavedReplies] = useState([]);
   const [showSavedList, setShowSavedList] = useState(false);
   const [showChat, setShowChat] = useState(false);
-  const [showAnalysisModal, setShowAnalysisModal] = useState(false); // شاشة التحليل الجديدة
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-
-  const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
+  const [customPrompt, setCustomPrompt] = useState(""); // شريط البرومبت الإضافي
 
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
@@ -31,7 +31,8 @@ const RaqqaApp = () => {
       {n: "طهارة الثوب", i: <Shield size={14}/>}, {n: "طيب الرائحة", i: <Zap size={14}/>}, {n: "أحكام المسح", i: <Minus size={14}/>}
     ]},
     { id: 2, title: "فقه الصلاة", icon: <Heart />, items: [
-      {n: "أوقات الصلاة", i: <Clock size={14}/>}, {n: "السنن الرواتب", i: <Star size={14}/>}, {n: "سجدة الشكر", i: <Heart size={14}/>}, 
+      {n: "أوقات الصلاة", i: <Clock size={14}/>}, {n: "السنن الرواتب", i: <Star size={14}/>}, 
+      {n: "سجدة الشكر", i: <Heart size={14}/>}, 
       {n: "لباس الصلاة", i: <Shield size={14}/>}, {n: "صلاة الوتر", i: <Moon size={14}/>}
     ]},
     { id: 3, title: "فقه الصيام", icon: <Moon />, items: [
@@ -90,8 +91,10 @@ const RaqqaApp = () => {
 
   const handleProcess = async (directMsg = null) => {
     setLoading(true);
+    // دمج البرومبت المخصص إذا وجد
+    const contextText = customPrompt ? `[سياق إضافي: ${customPrompt}] ` : "";
     const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم بحمد الله' : 'لم يتم'}`).join(", ");
-    const promptText = directMsg || `أنا أنثى مسلمة، إليكِ تقريري في ${activeCategory?.title}: (${summary}). حللي نمو روحي بأسلوب ديني ونفسي دافئ دون فتاوى.`;
+    const promptText = directMsg || `${contextText}أنا أنثى مسلمة، إليكِ تقريري في ${activeCategory?.title}: (${summary}). حللي نمو روحي بأسلوب ديني ونفسي دافئ دون فتاوى.`;
 
     try {
       const options = {
@@ -99,23 +102,48 @@ const RaqqaApp = () => {
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
       };
-
       const response = await CapacitorHttp.post(options);
       const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
       
       setAiResponse(responseText);
       setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
-      
-      // إذا كان النداء من تحليل البيانات، نفتح شاشة التحليل
-      if (!directMsg) {
-          setShowAnalysisModal(true);
-      }
+      if (!directMsg) setShowAnalysisModal(true);
     } catch (err) {
-      console.error("فشل الاتصال الأصلي:", err);
+      console.error("فشل الاتصال:", err);
       setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت 🌸");
     } finally {
       setLoading(false);
     }
+  };
+
+  // معالجة رفع الصور
+  const handleMediaUpload = async (type) => {
+    try {
+      setLoading(true);
+      let base64;
+      if (type === 'camera') base64 = await takePhoto();
+      else base64 = await fetchImage();
+
+      if (base64) {
+        const fileName = `raqqa_${Date.now()}.jpg`;
+        const fileUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
+        
+        // إرسال الرابط للذكاء الاصطناعي
+        const msg = `لقد أرسلت صورة لكِ للمساعدة في التحليل: ${fileUrl}`;
+        setHistory(prev => [{ role: 'user', text: "تم رفع صورة 📸" }, ...prev]);
+        handleProcess(msg);
+      }
+    } catch (err) {
+      alert("فشل رفع الصورة: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteSaved = (index) => {
+    const newList = [...savedReplies];
+    newList.splice(index, 1);
+    setSavedReplies(newList);
   };
 
   return (
@@ -159,6 +187,17 @@ const RaqqaApp = () => {
               <h2 style={styles.cardTitle}>{activeCategory.title}</h2>
               <X style={{cursor: 'pointer'}} onClick={() => setActiveCategory(null)} />
             </div>
+            
+            {/* شريط البرومبت الإضافي */}
+            <div style={{marginTop: '10px'}}>
+              <input 
+                style={styles.promptInput} 
+                placeholder="أضيفي ملاحظة خاصة للذكاء الاصطناعي (اختياري)..."
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+              />
+            </div>
+
             <div style={styles.inputsList}>
               {activeCategory.items.map((item, idx) => (
                 <div key={idx} style={styles.inputStrip}>
@@ -186,7 +225,6 @@ const RaqqaApp = () => {
         </>
       )}
 
-      {/* شاشة تحليل البيانات (بنفس شكل الدردشة) */}
       {showAnalysisModal && (
         <div style={styles.chatModal}>
           <div style={styles.chatContent}>
@@ -208,7 +246,6 @@ const RaqqaApp = () => {
         </div>
       )}
 
-      {/* شاشة الدردشة الأصلية */}
       {showChat && (
         <div style={styles.chatModal}>
           <div style={styles.chatContent}>
@@ -223,8 +260,13 @@ const RaqqaApp = () => {
             {showSavedList ? (
               <div style={styles.savedArea}>
                 <h4 style={{textAlign:'center', color:'#f06292'}}>المحفوظات 🌸</h4>
-                {savedReplies.map((r, i) => <div key={i} style={styles.savedItem}>{r}</div>)}
-                <button onClick={() => setShowSavedList(false)} style={styles.backBtn}>العودة</button>
+                {savedReplies.map((r, i) => (
+                  <div key={i} style={styles.savedItem}>
+                    <p>{r}</p>
+                    <Trash2 size={14} onClick={() => deleteSaved(i)} style={{color: 'red', cursor: 'pointer', marginTop: '5px'}} />
+                  </div>
+                ))}
+                <button onClick={() => setShowSavedList(false)} style={styles.backBtn}>العودة للدردشة</button>
               </div>
             ) : (
               <div style={styles.chatHistory}>
@@ -234,21 +276,20 @@ const RaqqaApp = () => {
                     {msg.role === 'ai' && <Bookmark size={14} onClick={() => setSavedReplies([...savedReplies, msg.text])} style={styles.saveIcon} />}
                   </div>
                 ))}
+                {loading && <p style={{textAlign:'center', fontSize: '0.8rem'}}>جاري معالجة طلبك...</p>}
               </div>
             )}
             <div style={styles.chatFooter}>
               <div style={styles.mediaRow}>
-                <button style={styles.iconBtn} onClick={() => cameraInputRef.current.click()}><Camera size={20}/></button>
-                <button style={styles.iconBtn} onClick={() => alert("الميكروفون مفعل")}><Mic size={20}/></button>
-                <button style={styles.iconBtn} onClick={() => fileInputRef.current.click()}><Image size={20}/></button>
+                <button style={styles.iconBtn} onClick={() => handleMediaUpload('camera')}><Camera size={20}/></button>
+                <button style={styles.iconBtn} onClick={() => alert("الميكروفون قيد التطوير")}><Mic size={20}/></button>
+                <button style={styles.iconBtn} onClick={() => handleMediaUpload('gallery')}><Image size={20}/></button>
               </div>
               <div style={styles.inputRow}>
                 <input style={styles.chatInput} placeholder="اسألي رقة..." value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} />
                 <button style={styles.sendBtn} onClick={() => { if(!chatMessage) return; setHistory([{role:'user', text:chatMessage}, ...history]); handleProcess(chatMessage); setChatMessage(""); }}>إرسال</button>
               </div>
             </div>
-            <input type="file" ref={cameraInputRef} capture="environment" style={{display:'none'}} />
-            <input type="file" ref={fileInputRef} style={{display:'none'}} />
           </div>
         </div>
       )}
@@ -273,6 +314,7 @@ const styles = {
   activeCard: { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '550px', maxHeight: '85vh', background: 'white', borderRadius: '25px', padding: '25px', zIndex: 11, overflowY: 'auto' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '15px' },
   cardTitle: { color: '#f06292', margin: 0, fontSize: '1.2rem' },
+  promptInput: { width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #fce4ec', background: '#fff9fb', fontSize: '0.85rem' },
   inputsList: { display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' },
   inputStrip: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 15px', background: '#fff5f8', borderRadius: '15px', border: '1px solid #fce4ec' },
   stripLabelRow: { display: 'flex', alignItems: 'center', gap: '10px' },
@@ -295,7 +337,7 @@ const styles = {
   sendBtn: { background: '#f06292', color: 'white', border: 'none', padding: '0 15px', borderRadius: '20px', cursor: 'pointer' },
   iconBtn: { border: 'none', background: '#f8f9fa', color: '#f06292', padding: '8px', borderRadius: '50%', cursor: 'pointer' },
   savedArea: { flex: 1, padding: '15px', overflowY: 'auto' },
-  savedItem: { background: '#fdf2f8', padding: '10px', borderRadius: '10px', marginBottom: '8px', fontSize: '0.85rem' },
+  savedItem: { background: '#fdf2f8', padding: '10px', borderRadius: '10px', marginBottom: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   backBtn: { width: '100%', padding: '10px', background: '#f06292', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }
 };
 
