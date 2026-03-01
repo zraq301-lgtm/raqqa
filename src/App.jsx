@@ -2,7 +2,7 @@ import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core'; 
-// إضافة مكتبة OneSignal
+// استيراد مكتبة OneSignal
 import OneSignal from 'react-onesignal';
 
 // استيراد الصور من مجلد الأصول (Assets)
@@ -35,18 +35,17 @@ function ScrollToTop() {
 }
 
 function App() {
-  // تهيئة OneSignal وإدارة زر الرجوع
+  // إدارة زر الرجوع في الأندرويد وتهيئة OneSignal
   useEffect(() => {
-    // كود تهيئة OneSignal (تأكد من وضع الـ App ID الخاص بك هنا)
+    // تهيئة OneSignal بالمعرف الخاص بك
     OneSignal.init({
-      appId: "ضع_هنا_الـ_APP_ID_الخاص_بك", 
+      appId: "726fe629-0b1e-4294-9a4b-39cf50212b42",
       allowLocalhostAsSecureOrigin: true,
       notifyButton: {
-        enable: true, // لإظهار جرس الاشتراك تلقائياً
+        enable: true,
       },
     });
 
-    // إدارة زر الرجوع في الأندرويد
     const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) { 
         CapApp.exitApp(); 
@@ -61,6 +60,7 @@ function App() {
   }, []);
 
   return (
+    /* ملاحظة هامة: تم حذف وسوم <Router> من هنا لمنع الشاشة البيضاء */
     <div className="app-container">
       <ScrollToTop />
       
