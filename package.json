@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-onesignal": "^5.0.5",
+    "react-onesignal": "^4.7.3",
     "replicate": "^0.30.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
