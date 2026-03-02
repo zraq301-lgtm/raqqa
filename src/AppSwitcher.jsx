@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
-// تأكد من أن هذه الأسطر ليست تعليقات
-import OneSignal from 'react-onesignal'; 
 
 function AppSwitcher() {
   // التحقق من حالة التسجيل
@@ -10,25 +8,33 @@ function AppSwitcher() {
     return localStorage.getItem('isProfileComplete') === 'true';
   });
 
-  // دالة تهيئة OneSignal وطلب تصريح الإشعارات
-  const initOneSignalNotifications = async () => {
-    try {
-      await OneSignal.init({
-        appId: "726fe629-0b1e-4294-9a4b-39cf50212b42",
-        allowLocalhostAsSecureOrigin: true,
+  // دالة تهيئة OneSignal وطلب الإذن (Native)
+  const initNotifications = () => {
+    // التحقق من وجود إضافة OneSignal في نافذة المتصفح/التطبيق
+    const OneSignal = window.OneSignal;
+
+    if (OneSignal) {
+      // إعداد معرف التطبيق
+      OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
+
+      // طلب الإذن الصريح الذي يظهر نافذة النظام (Native Popup)
+      OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
+        console.log("User responded to notifications:", accepted);
       });
-      
-      // طلب الإذن الذي سيظهر النافذة للمستخدم
-      await OneSignal.Notifications.requestPermission();
-      console.log("OneSignal Initialized and Permission Requested");
-    } catch (error) {
-      console.error("OneSignal Error:", error);
+
+      console.log("OneSignal Native Initialized successfully");
+    } else {
+      console.warn("OneSignal Native Plugin not found yet...");
     }
   };
 
   useEffect(() => {
-    // استدعاء تهيئة الإشعارات فور فتح التطبيق
-    initOneSignalNotifications();
+    // انتظر حتى يتم تحميل إضافات Capacitor/Cordova بالكامل
+    const onDeviceReady = () => {
+      initNotifications();
+    };
+
+    document.addEventListener("deviceready", onDeviceReady, false);
 
     // إدارة زر الرجوع
     const setupBackButton = async () => {
@@ -45,6 +51,11 @@ function AppSwitcher() {
     };
 
     setupBackButton();
+
+    // تنظيف المستمع عند مسح المكون
+    return () => {
+      document.removeEventListener("deviceready", onDeviceReady);
+    };
   }, []);
 
   const handleComplete = () => {
