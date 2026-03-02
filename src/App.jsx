@@ -37,14 +37,25 @@ function ScrollToTop() {
 function App() {
   // إدارة زر الرجوع في الأندرويد وتهيئة OneSignal
   useEffect(() => {
-    // تهيئة OneSignal بالمعرف الخاص بك
-    OneSignal.init({
-      appId: "726fe629-0b1e-4294-9a4b-39cf50212b42",
-      allowLocalhostAsSecureOrigin: true,
-      notifyButton: {
-        enable: true,
-      },
-    });
+    // كود تهيئة OneSignal المحدث لضمان طلب الإذن [تعديلات الـ main]
+    const initNotifications = async () => {
+      try {
+        await OneSignal.init({
+          appId: "726fe629-0b1e-4294-9a4b-39cf50212b42",
+          allowLocalhostAsSecureOrigin: true,
+          notifyButton: {
+            enable: true, // الجرس الصغير للتأكد من العمل
+          },
+        });
+        
+        // طلب الإذن فوراً لضمان ظهور الرسالة للمستخدم
+        await OneSignal.Notifications.requestPermission();
+      } catch (e) {
+        console.error("OneSignal Init Error:", e);
+      }
+    };
+
+    initNotifications();
 
     const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) { 
@@ -60,7 +71,6 @@ function App() {
   }, []);
 
   return (
-    /* ملاحظة هامة: تم حذف وسوم <Router> من هنا لمنع الشاشة البيضاء */
     <div className="app-container">
       <ScrollToTop />
       
