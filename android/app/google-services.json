@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "462197381760",
+    "project_id": "raqqa-a5bf7",
+    "storage_bucket": "raqqa-a5bf7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:462197381760:android:b5692ef027b6946aaa6465",
+        "android_client_info": {
+          "package_name": "com.roqa.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "462197381760-3gjcra1b12jaqpt084t9h9b6pmeen7np.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBPkf34pHWmgmlPD7pkwmRWHq7Hb_Gzlbo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "462197381760-3gjcra1b12jaqpt084t9h9b6pmeen7np.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
