@@ -1,66 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
-// تأكد من استيراد OneSignal و Capacitor هنا
-// import OneSignal from 'onesignal-node'; 
+// ملاحظة: تأكد من استيراد OneSignal و Capacitor في مشروعك
+// import OneSignal from 'react-onesignal';
 // import { App as CapApp } from '@capacitor/app';
 
- function AppSwitcher() {
-  // التحقق من الحالة فوراً عند التشغيل [cite: 2]
+function AppSwitcher() {
+  // التحقق من الحالة فوراً عند التشغيل
   const [isRegistered, setIsRegistered] = useState(() => {
-    return localStorage.getItem('isProfileComplete') === 'true'; [cite: 2]
+    return localStorage.getItem('isProfileComplete') === 'true';
   });
 
   // دالة تهيئة OneSignal وطلب تصريح الإشعارات
   const initOneSignalNotifications = async () => {
     try {
       await OneSignal.init({
-        appId: "726fe629-0b1e-4294-9a4b-39cf50212b42", // المعرف الخاص بك 
-        allowLocalhostAsSecureOrigin: true, // للسماح بالتجربة المحلية 
+        appId: "726fe629-0b1e-4294-9a4b-39cf50212b42",
+        allowLocalhostAsSecureOrigin: true,
       });
       
-      // طلب تصريح الإشعارات من المستخدم فوراً
       await OneSignal.Notifications.requestPermission();
-      
-      console.log("OneSignal Initialized and Permission Requested");
+      console.log("OneSignal Initialized");
     } catch (error) {
       console.error("OneSignal Error:", error);
     }
   };
 
   useEffect(() => {
-    // استدعاء دالة الإشعارات التي كتبناها أعلاه
-    const setup = async () => {
-       await initOneSignalNotifications();
-    };
-    
-    setup();
+    // استدعاء تهيئة الإشعارات
+    initOneSignalNotifications();
 
-    // كود إدارة زر الرجوع الأصلي
-    const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
-      if (!canGoBack) { 
-        CapApp.exitApp(); 
-      } else { 
-        window.history.back(); 
+    // إدارة زر الرجوع لمنع خروج التطبيق المفاجئ
+    const setupBackButton = async () => {
+      if (window.Capacitor) {
+        const { App: CapApp } = await import('@capacitor/app');
+        CapApp.addListener('backButton', ({ canGoBack }) => {
+          if (!canGoBack) {
+            CapApp.exitApp();
+          } else {
+            window.history.back();
+          }
+        });
       }
-    });
-
-    return () => {
-      backButtonListener.remove();
     };
+
+    setupBackButton();
   }, []);
 
- const handleComplete = () => {
-    localStorage.setItem('isProfileComplete', 'true'); [cite: 3]
-    setIsRegistered(true); [cite: 3]
- // هذا التغيير سيجعل التطبيق يعرض <App /> فوراً
+const handleComplete = () => {
+    localStorage.setItem('isProfileComplete', 'true');
+    setIsRegistered(true);
+// هذا التغيير سيجعل التطبيق يعرض <App /> فوراً
   };
 
   return (
     <div className="app-container">
-       {isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />} [cite: 4]
+      {isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />}
     </div>
   );
- }
+}
 
 export default AppSwitcher;
