@@ -21,24 +21,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تنظيف وتثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
-          rm -rf node_modules
           npm install --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. دمج ملف google-services.json
-        run: |
-          mkdir -p android/app
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
-
-      - name: 5. إضافة منصة أندرويد ومزامنتها
+      - name: 4. إضافة منصة أندرويد ومزامنتها
         run: |
           npx cap config set webDir dist_web
-          # التأكد من إزالة أي بقايا للمنصة قبل إضافتها لتجنب التوقف
-          npx cap add android || echo "Android platform already exists, skipping add..."
+          npx cap add android
           npx cap sync android
+
+      - name: 5. دمج ملف google-services.json (بعد إنشاء المجلد)
+        run: |
+          # نضع الملف الآن بعد أن تأكدنا أن مجلد android/app قد تم إنشاؤه بواسطة Capacitor
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
       - name: 6. حقن صلاحيات المانيفست وأمن الشبكة
         run: |
@@ -51,11 +49,12 @@ jobs:
 
       - name: 7. بناء ملفات APK و AAB
         run: |
-          cd android && chmod +x gradlew
+          cd android
+          chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 8. التوقيع الرقمي (إنشاء Keystore وتوقيع الملفات)
+      - name: 8. التوقيع الرقمي وإنتاج الحزمة النهائية
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -69,7 +68,7 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع الحزمة الموقعة
+      - name: 9. رفع الملفات (APK, AAB, Keystore)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Full-Package
