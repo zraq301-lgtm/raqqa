@@ -9,8 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-onesignal": "latest",
-    "onesignal-cordova-plugin": "^5.2.6",
+    "onesignal-capacitor": "latest",
     "replicate": "^0.30.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
