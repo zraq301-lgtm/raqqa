@@ -24,19 +24,20 @@ jobs:
       - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
+          rm -rf node_modules
           npm install --legacy-peer-deps
           npm run build --if-present
 
       - name: 4. دمج ملف google-services.json
         run: |
-          # إنشاء مجلد أندرويد يدوياً قبل الإضافة لوضع الملف بداخله
           mkdir -p android/app
-          echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
 
       - name: 5. إضافة منصة أندرويد ومزامنتها
         run: |
           npx cap config set webDir dist_web
-          npx cap add android
+          # التأكد من إزالة أي بقايا للمنصة قبل إضافتها لتجنب التوقف
+          npx cap add android || echo "Android platform already exists, skipping add..."
           npx cap sync android
 
       - name: 6. حقن صلاحيات المانيفست وأمن الشبكة
