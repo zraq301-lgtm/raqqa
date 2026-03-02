@@ -33,39 +33,26 @@ function ScrollToTop() {
 }
 
 function App() {
-  // إدارة زر الرجوع في الأندرويد وتهيئة OneSignal
+  // إدارة زر الرجوع في الأندرويد
   useEffect(() => {
-    // تعديل تهيئة OneSignal لتناسب مكتبة الموبايل (Native)
-    const initNotifications = () => {
-      const OneSignal = window.OneSignal;
-      if (OneSignal) {
-        try {
-          OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
-          
-          // طلب الإذن فوراً لضمان ظهور الرسالة للمستخدم (Native Prompt)
-          OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
-            console.log("User responded to notifications:", accepted);
-          });
-        } catch (e) {
-          console.error("OneSignal Native Init Error:", e);
+    // تم نقل تهيئة الإشعارات إلى AppSwitcher لضمان استقرار التطبيق
+    
+    const setupBackButton = async () => {
+      const backButtonListener = await CapApp.addListener('backButton', ({ canGoBack }) => {
+        if (!canGoBack) { 
+          CapApp.exitApp(); 
+        } else { 
+          window.history.back(); 
         }
-      }
+      });
+
+      return backButtonListener;
     };
 
-    // التأكد من أن الجهاز جاهز قبل التشغيل
-    document.addEventListener("deviceready", initNotifications, false);
-
-    const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
-      if (!canGoBack) { 
-        CapApp.exitApp(); 
-      } else { 
-        window.history.back(); 
-      }
-    });
+    const listener = setupBackButton();
 
     return () => {
-      backButtonListener.remove();
-      document.removeEventListener("deviceready", initNotifications);
+      listener.then(l => l.remove());
     };
   }, []);
 
