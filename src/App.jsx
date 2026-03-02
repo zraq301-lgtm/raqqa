@@ -2,8 +2,6 @@ import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core'; 
-// استيراد مكتبة OneSignal
-import OneSignal from 'react-onesignal';
 
 // استيراد الصور من مجلد الأصول (Assets)
 import healthImg from './assets/health.jpg';
@@ -37,25 +35,25 @@ function ScrollToTop() {
 function App() {
   // إدارة زر الرجوع في الأندرويد وتهيئة OneSignal
   useEffect(() => {
-    // كود تهيئة OneSignal المحدث لضمان طلب الإذن [تعديلات الـ main]
-    const initNotifications = async () => {
-      try {
-        await OneSignal.init({
-          appId: "726fe629-0b1e-4294-9a4b-39cf50212b42",
-          allowLocalhostAsSecureOrigin: true,
-          notifyButton: {
-            enable: true, // الجرس الصغير للتأكد من العمل
-          },
-        });
-        
-        // طلب الإذن فوراً لضمان ظهور الرسالة للمستخدم
-        await OneSignal.Notifications.requestPermission();
-      } catch (e) {
-        console.error("OneSignal Init Error:", e);
+    // تعديل تهيئة OneSignal لتناسب مكتبة الموبايل (Native)
+    const initNotifications = () => {
+      const OneSignal = window.OneSignal;
+      if (OneSignal) {
+        try {
+          OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
+          
+          // طلب الإذن فوراً لضمان ظهور الرسالة للمستخدم (Native Prompt)
+          OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
+            console.log("User responded to notifications:", accepted);
+          });
+        } catch (e) {
+          console.error("OneSignal Native Init Error:", e);
+        }
       }
     };
 
-    initNotifications();
+    // التأكد من أن الجهاز جاهز قبل التشغيل
+    document.addEventListener("deviceready", initNotifications, false);
 
     const backButtonListener = CapApp.addListener('backButton', ({ canGoBack }) => {
       if (!canGoBack) { 
@@ -67,6 +65,7 @@ function App() {
 
     return () => {
       backButtonListener.remove();
+      document.removeEventListener("deviceready", initNotifications);
     };
   }, []);
 
