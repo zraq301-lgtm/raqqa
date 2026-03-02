@@ -23,9 +23,9 @@ jobs:
 
       - name: 3. تنظيف وتثبيت المكتبات
         run: |
-          [cite_start]rm -rf android [cite: 3]
-          [cite_start]npm install --legacy-peer-deps [cite: 3]
-          [cite_start]npm run build --if-present [cite: 3]
+          rm -rf android [cite: 3]
+          npm install --legacy-peer-deps [cite: 3]
+          npm run build --if-present [cite: 3]
 
       - name: 4. دمج ملف google-services.json
         run: |
@@ -35,30 +35,30 @@ jobs:
 
       - name: 5. إضافة منصة أندرويد ومزامنتها
         run: |
-          [cite_start]npx cap config set webDir dist_web [cite: 4]
-          [cite_start]npx cap add android [cite: 4]
-          [cite_start]npx cap sync android [cite: 4]
+          npx cap config set webDir dist_web [cite: 4]
+          npx cap add android [cite: 4]
+          npx cap sync android [cite: 4]
 
       - name: 6. حقن صلاحيات المانيفست وأمن الشبكة
         run: |
-          [cite_start]MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1) [cite: 5]
-          [cite_start]sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST [cite: 5]
-          [cite_start]sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST [cite: 5]
-          [cite_start]sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST [cite: 5]
-          [cite_start]sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST [cite: 6]
-          [cite_start]sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST [cite: 6]
+          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1) [cite: 5]
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST [cite: 5]
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST [cite: 5]
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST [cite: 5]
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST [cite: 6]
+          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST [cite: 6]
 
       - name: 7. بناء ملفات APK و AAB
         run: |
-          [cite_start]cd android && chmod +x gradlew [cite: 7]
-          [cite_start]./gradlew assembleRelease [cite: 7]
-          [cite_start]./gradlew bundleRelease [cite: 7]
+          cd android && chmod +x gradlew [cite: 7]
+          ./gradlew assembleRelease [cite: 7]
+          ./gradlew bundleRelease [cite: 7]
 
       - name: 8. التوقيع الرقمي (إنشاء Keystore وتوقيع الملفات)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
-            [cite_start]-dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 8]
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG" [cite: 8]
           
           [cite_start]APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1) [cite: 9]
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
@@ -73,6 +73,6 @@ jobs:
         with:
           [cite_start]name: Roqa-Full-Package [cite: 10]
           path: |
-            [cite_start]Roqa-Final-Signed.apk [cite: 11]
-            [cite_start]Roqa-Final-Signed.aab [cite: 11]
-            [cite_start]roqa_release.jks [cite: 11]
+            Roqa-Final-Signed.apk [cite: 11]
+            Roqa-Final-Signed.aab [cite: 11]
+            roqa_release.jks [cite: 11]
