@@ -1,36 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
+// استيراد مكتبة Firebase الرسمية لـ Capacitor
+import { PushNotifications } from '@capacitor/push-notifications';
 
 function AppSwitcher() {
   const [isRegistered, setIsRegistered] = useState(() => {
     try {
       return localStorage.getItem('isProfileComplete') === 'true';
     } catch (e) {
-      return false; // ضمان عدم توقف التطبيق إذا فشل الوصول لـ localStorage
+      return false;
     }
   });
 
   useEffect(() => {
-    // تعريف الدالة بالداخل لضمان الوصول إليها
-    const initNotifications = () => {
+    // دالة تهيئة Firebase وطلب الإذن
+    const setupFirebasePush = async () => {
       try {
-        const OneSignal = window.OneSignal;
-        if (OneSignal && typeof OneSignal.setAppId === 'function') {
-          OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
-          OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
-            console.log("Notification Permission:", accepted);
-          });
+        // 1. التحقق من صلاحيات الإشعارات الحالية
+        let permStatus = await PushNotifications.checkPermissions();
+
+        // 2. إذا لم يتم السؤال من قبل، نطلب الإذن الآن
+        if (permStatus.receive === 'prompt') {
+          permStatus = await PushNotifications.requestPermissions();
         }
+
+        // 3. إذا وافق المستخدم، نقوم بتسجيل الجهاز في Firebase
+        if (permStatus.receive === 'granted') {
+          await PushNotifications.register();
+        }
+
+        // 4. الحصول على الـ Token (ستحتاجه لربط Make.com لاحقاً)
+        await PushNotifications.addListener('registration', (token) => {
+          console.log('Firebase Token:', token.value);
+          // يمكنك إرسال التوكن لسيرفرك أو حفظه هنا
+        });
+
+        // 5. معالجة الخطأ في حال فشل التسجيل
+        await PushNotifications.addListener('registrationError', (error) => {
+          console.error('Firebase Registration Error:', error);
+        });
+
       } catch (err) {
-        console.error("OneSignal Error:", err);
+        console.error("Firebase Setup Error:", err);
       }
     };
 
-    // إضافة المستمع
-    document.addEventListener("deviceready", initNotifications, false);
+    // تشغيل الإعداد فوراً
+    setupFirebasePush();
 
-    // إدارة زر الرجوع - معالجة الـ Promise لضمان عدم تعليق الشاشة
+    // إدارة زر الرجوع
     const setupBackButton = async () => {
       if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
@@ -49,10 +68,6 @@ function AppSwitcher() {
     };
 
     setupBackButton();
-
-    return () => {
-      document.removeEventListener("deviceready", initNotifications);
-    };
   }, []);
 
   const handleComplete = () => {
@@ -60,7 +75,6 @@ function AppSwitcher() {
     setIsRegistered(true);
   };
 
-  // إضافة تغليف بسيط (Container) لضمان وجود DOM جاهز للرندرة
   return (
     <div className="switcher-wrapper" style={{ minHeight: '100vh' }}>
       {isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />}
