@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات وبناء الويب
+      - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
           npm install --legacy-peer-deps
@@ -33,10 +33,13 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 5. دمج ملف google-services.json (بعد إنشاء المجلد)
+      - name: 5. دمج ملف google-services.json باحترافية
+        shell: bash
         run: |
-          # نضع الملف الآن بعد أن تأكدنا أن مجلد android/app قد تم إنشاؤه بواسطة Capacitor
-          echo "${{ secrets.GOOGLE_SERVICES_JSON }}" > android/app/google-services.json
+          # استخدام cat لضمان عدم ضياع أي أحرف من الـ JSON
+          cat <<EOF > android/app/google-services.json
+          ${{ secrets.GOOGLE_SERVICES_JSON }}
+          EOF
 
       - name: 6. حقن صلاحيات المانيفست وأمن الشبكة
         run: |
