@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
-// ملاحظة: تأكد من استيراد OneSignal و Capacitor في مشروعك
-// import OneSignal from 'react-onesignal';
-// import { App as CapApp } from '@capacitor/app';
+// تأكد من أن هذه الأسطر ليست تعليقات
+import OneSignal from 'react-onesignal'; 
 
 function AppSwitcher() {
-  // التحقق من الحالة فوراً عند التشغيل
+  // التحقق من حالة التسجيل
   const [isRegistered, setIsRegistered] = useState(() => {
     return localStorage.getItem('isProfileComplete') === 'true';
   });
@@ -19,18 +18,19 @@ function AppSwitcher() {
         allowLocalhostAsSecureOrigin: true,
       });
       
+      // طلب الإذن الذي سيظهر النافذة للمستخدم
       await OneSignal.Notifications.requestPermission();
-      console.log("OneSignal Initialized");
+      console.log("OneSignal Initialized and Permission Requested");
     } catch (error) {
       console.error("OneSignal Error:", error);
     }
   };
 
   useEffect(() => {
-    // استدعاء تهيئة الإشعارات
+    // استدعاء تهيئة الإشعارات فور فتح التطبيق
     initOneSignalNotifications();
 
-    // إدارة زر الرجوع لمنع خروج التطبيق المفاجئ
+    // إدارة زر الرجوع
     const setupBackButton = async () => {
       if (window.Capacitor) {
         const { App: CapApp } = await import('@capacitor/app');
@@ -47,10 +47,9 @@ function AppSwitcher() {
     setupBackButton();
   }, []);
 
-const handleComplete = () => {
+  const handleComplete = () => {
     localStorage.setItem('isProfileComplete', 'true');
     setIsRegistered(true);
-// هذا التغيير سيجعل التطبيق يعرض <App /> فوراً
   };
 
   return (
