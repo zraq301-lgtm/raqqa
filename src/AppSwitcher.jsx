@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
-// استيراد دالات Firebase Web SDK الجديدة
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
@@ -15,9 +14,18 @@ const firebaseConfig = {
   appId: "1:162488255991:web:74fe1680fc6cb5bbc61af2"
 };
 
-// تهيئة Firebase والـ Messaging
+// تهيئة Firebase مع فحص الدعم لتجنب تعليق المتصفحات القديمة
 const firebaseApp = initializeApp(firebaseConfig);
-const messaging = getMessaging(firebaseApp);
+let messaging = null;
+
+try {
+  // لا يتم تفعيل Messaging إلا إذا كان المتصفح يدعم الـ Service Worker
+  if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+    messaging = getMessaging(firebaseApp);
+  }
+} catch (e) {
+  console.error("Firebase Messaging non-compatible browser:", e);
+}
 
 function AppSwitcher() {
   const [isRegistered, setIsRegistered] = useState(() => {
@@ -29,25 +37,31 @@ function AppSwitcher() {
   });
 
   useEffect(() => {
-    // 2. دالة طلب الإذن وجلب التوكن وإرساله لـ Neon/Make
     const setupWebPush = async () => {
+      // التأكد من وجود دعم للإشعارات في المتصفح قبل البدء
+      if (!("Notification" in window) || !messaging) {
+        console.warn("هذا المتصفح لا يدعم إشعارات الويب.");
+        return;
+      }
+
       try {
-        // طلب إذن المتصفح للإشعارات
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
-          // جلب التوكن الحقيقي باستخدام مفتاح VAPID الخاص بك
+          // جلب التوكن باستخدام مفتاح VAPID الخاص بك
           const currentToken = await getToken(messaging, { 
             vapidKey: "USA0sr7ibILdXx1IdNyUIZGNAZxosK9trp5z96f45Nk" 
+          }).catch(err => {
+            console.error("فشل في استخراج التوكن (VAPID Error):", err);
+            return null;
           });
 
           if (currentToken) {
-            console.log('Firebase Web Token:', currentToken);
+            console.log('FCM Token Ready:', currentToken);
             
-            // --- إرسال التوكن للباك إند (Vercel/Neon) لإنهاء مشكلة الـ NULL ---
+            // محاولة تحديث التوكن في الباك إند
             try {
-              // استبدل الرابط أدناه برابط الـ API الفعلي الخاص بك على Vercel
-              await fetch('/api/update-fcm-token', { 
+              const response = await fetch('/api/update-fcm-token', { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -55,26 +69,27 @@ function AppSwitcher() {
                   fcmToken: currentToken
                 }),
               });
-              console.log('Token updated in Neon successfully');
+
+              if (!response.ok) throw new Error("Server response not OK");
+              console.log('تم تحديث التوكن في قاعدة البيانات بنجاح');
             } catch (fetchError) {
-              console.error("Error sending token to Backend:", fetchError);
+              console.error("فشل إرسال التوكن للباك إند:", fetchError);
             }
           }
         }
       } catch (err) {
-        console.error("Web Push Setup Error:", err);
+        console.error("خطأ عام في إعدادات الإشعارات:", err);
       }
     };
 
     setupWebPush();
 
-    // الاستماع للإشعارات في حال كان التطبيق مفتوحاً
-    onMessage(messaging, (payload) => {
-      console.log('Message received in foreground: ', payload);
-      // يمكنك هنا إظهار تنبيه داخلي أو تحديث واجهة المستخدم
-    });
+    if (messaging) {
+      onMessage(messaging, (payload) => {
+        console.log('إشعار جديد في الواجهة:', payload);
+      });
+    }
 
-    // إدارة زر الرجوع (فقط إذا كان التطبيق يعمل كـ Capacitor Native)
     const setupBackButton = async () => {
       if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
