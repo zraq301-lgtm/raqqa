@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
-// استيراد مكتبة Firebase الرسمية لـ Capacitor
-import { PushNotifications } from '@capacitor/push-notifications';
+// استيراد دالات Firebase Web SDK الجديدة
+import { initializeApp } from "firebase/app";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
+
+// 1. إعدادات Firebase الخاصة بمشروعك
+const firebaseConfig = {
+  apiKey: "AIzaSyCT2wRZgzPv1Xg3M41ZhN7-_RGze_HrZkk",
+  authDomain: "raqqa-43dc8.firebaseapp.com",
+  projectId: "raqqa-43dc8",
+  storageBucket: "raqqa-43dc8.firebasestorage.app",
+  messagingSenderId: "162488255991",
+  appId: "1:162488255991:web:74fe1680fc6cb5bbc61af2"
+};
+
+// تهيئة Firebase والـ Messaging
+const firebaseApp = initializeApp(firebaseConfig);
+const messaging = getMessaging(firebaseApp);
 
 function AppSwitcher() {
   const [isRegistered, setIsRegistered] = useState(() => {
@@ -14,63 +29,57 @@ function AppSwitcher() {
   });
 
   useEffect(() => {
-    // دالة تهيئة Firebase وطلب الإذن وإرسال التوكن لـ Neon
-    const setupFirebasePush = async () => {
+    // 2. دالة طلب الإذن وجلب التوكن وإرساله لـ Neon/Make
+    const setupWebPush = async () => {
       try {
-        // 1. التحقق من صلاحيات الإشعارات الحالية
-        let permStatus = await PushNotifications.checkPermissions();
+        // طلب إذن المتصفح للإشعارات
+        const permission = await Notification.requestPermission();
+        
+        if (permission === 'granted') {
+          // جلب التوكن الحقيقي باستخدام مفتاح VAPID الخاص بك
+          const currentToken = await getToken(messaging, { 
+            vapidKey: "USA0sr7ibILdXx1IdNyUIZGNAZxosK9trp5z96f45Nk" 
+          });
 
-        // 2. إذا لم يتم السؤال من قبل، نطلب الإذن الآن
-        if (permStatus.receive === 'prompt') {
-          permStatus = await PushNotifications.requestPermissions();
-        }
-
-        // 3. إذا وافق المستخدم، نقوم بتسجيل الجهاز في Firebase
-        if (permStatus.receive === 'granted') {
-          await PushNotifications.register();
-        }
-
-        // 4. الحصول على الـ Token وإرساله للباك إند (لتحديث نيون)
-        await PushNotifications.addListener('registration', async (token) => {
-          console.log('Firebase Token:', token.value);
-          
-          // --- الجزء المضاف لربط نيون ---
-          try {
-            // استبدل الرابط أدناه برابط الـ API الفعلي الخاص بك
-            await fetch('https://your-api.com/update-fcm-token', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId: localStorage.getItem('userId'), // تأكد من تخزين معرف المستخدم عند التسجيل
-                fcmToken: token.value
-              }),
-            });
-            console.log('Token updated in Neon successfully');
-          } catch (fetchError) {
-            console.error("Error sending token to Backend:", fetchError);
+          if (currentToken) {
+            console.log('Firebase Web Token:', currentToken);
+            
+            // --- إرسال التوكن للباك إند (Vercel/Neon) لإنهاء مشكلة الـ NULL ---
+            try {
+              // استبدل الرابط أدناه برابط الـ API الفعلي الخاص بك على Vercel
+              await fetch('/api/update-fcm-token', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: localStorage.getItem('userId'),
+                  fcmToken: currentToken
+                }),
+              });
+              console.log('Token updated in Neon successfully');
+            } catch (fetchError) {
+              console.error("Error sending token to Backend:", fetchError);
+            }
           }
-          // ----------------------------
-        });
-
-        // 5. معالجة الخطأ في حال فشل التسجيل
-        await PushNotifications.addListener('registrationError', (error) => {
-          console.error('Firebase Registration Error:', error);
-        });
-
+        }
       } catch (err) {
-        console.error("Firebase Setup Error:", err);
+        console.error("Web Push Setup Error:", err);
       }
     };
 
-    // تشغيل الإعداد فوراً
-    setupFirebasePush();
+    setupWebPush();
 
-    // إدارة زر الرجوع
+    // الاستماع للإشعارات في حال كان التطبيق مفتوحاً
+    onMessage(messaging, (payload) => {
+      console.log('Message received in foreground: ', payload);
+      // يمكنك هنا إظهار تنبيه داخلي أو تحديث واجهة المستخدم
+    });
+
+    // إدارة زر الرجوع (فقط إذا كان التطبيق يعمل كـ Capacitor Native)
     const setupBackButton = async () => {
       if (window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
           const { App: CapApp } = await import('@capacitor/app');
-          await CapApp.addListener('backButton', ({ canGoBack }) => {
+          CapApp.addListener('backButton', ({ canGoBack }) => {
             if (!canGoBack) {
               CapApp.exitApp();
             } else {
