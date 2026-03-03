@@ -69,15 +69,23 @@ jobs:
           }
           EOF
 
-      - name: 6. حقن صلاحيات المانيفست وأمن الشبكة
+      - name: 6. حقن صلاحيات المانيفست وتصحيح اسم الحزمة برمجياً
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
+          APP_BUILD_GRADLE="android/app/build.gradle"
+          
+          # حل مشكلة No matching client found عبر توحيد اسم الحزمة
+          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
+          sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
+          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
+
           # إضافة تصريحات الوصول اللازمة للإشعارات والإنترنت
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
+          
           # تفعيل المرور الصريح للبيانات لتجنب مشاكل التحميل
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
