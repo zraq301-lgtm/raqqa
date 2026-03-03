@@ -1,5 +1,5 @@
 {
-  "appId": "com.roqa.app",
+  "appId": "com.raqqa.app",
   "appName": "Roqa",
   "webDir": "dist_web",
   "bundledWebRuntime": false,
@@ -16,8 +16,8 @@
     "CapacitorHttp": {
       "enabled": true
     },
-    "OneSignal": {
-      "appId": "726fe629-0b1e-4294-9a4b-39cf50212b42"
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }
