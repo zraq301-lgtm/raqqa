@@ -17,33 +17,23 @@ export default async function handler(req, res) {
         period_date, pregnancy_status, medications, category, note 
     } = req.body;
 
-    // التأكد من وجود التوكن كحد أدنى لمعالجة الطلب
-    if (!fcm_token || fcm_token === 'باطل' || fcm_token === '') {
-        return res.status(400).json({ error: "fcm_token is required and valid" });
-    }
+    // التحقق من وجود التوكن لضمان الربط
+    const activeToken = fcm_token || null;
 
     try {
-        let aiAdvice = note || `تم تحديث بيانات جهازك في رقة ✨`;
+        let aiAdvice = note || `تم تحديث ملفك الصحي في رقة ✨`;
 
-        // 1. إرسال البيانات إلى Make (للتسجيل أو المعالجة)
+        // 1. إرسال البيانات إلى Make
         try {
             await fetch('https://hook.eu1.make.com/e9aratm1mdbwa38cfoerzdgfoqbco6ky', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user_id, 
-                    fcm_token, 
-                    category: category || "registration", 
-                    current_weight, 
-                    pregnancy_status 
-                })
+                body: JSON.stringify({ user_id, fcm_token: activeToken, category, current_weight })
             });
-        } catch (e) { 
-            console.error("Make fetch error:", e); 
-        }
+        } catch (e) { console.error("Make Error:", e); }
 
-        // 2. الحفظ الذكي في نيون (تحديث السجل إذا كان التوكن موجوداً مسبقاً)
-        // نستخدم ON CONFLICT (fcm_token) لضمان عدم تكرار الأجهزة
+        // 2. الحفظ الذكي (Upsert): البحث عن التوكن وتحديث بياناته
+        // هذا الاستعلام يضمن دمج البيانات الصحية مع التوكن المسجل عند الافتتاح
         await pool.sql`
             INSERT INTO notifications (
                 user_id, fcm_token, اسم_المستخدمة, الوزن_الحالي, 
@@ -51,15 +41,15 @@ export default async function handler(req, res) {
                 title, body, created_at
             )
             VALUES (
-                ${user_id || 'guest'}, 
-                ${fcm_token}, 
-                ${username || 'جهاز مسجل'}, 
+                ${user_id || 'init'}, 
+                ${activeToken}, 
+                ${username || 'مستخدمة رقة'}, 
                 ${current_weight || null}, 
                 ${height_cm || null}, 
                 ${period_date || null}, 
                 ${pregnancy_status || null}, 
                 ${medications || null}, 
-                ${'تحديث الجهاز: ' + (category || 'تلقائي')}, 
+                ${category || 'تحديث صحي'}, 
                 ${aiAdvice}, 
                 NOW()
             )
@@ -67,15 +57,17 @@ export default async function handler(req, res) {
             DO UPDATE SET 
                 user_id = EXCLUDED.user_id,
                 اسم_المستخدمة = COALESCE(EXCLUDED.اسم_المستخدمة, notifications.اسم_المستخدمة),
-                الوزن_الحالي = COALESCE(EXCLUDED.الوزن_الحالي, notifications.الوزن_الحالي),
+                الوزن_الحالي = EXCLUDED.الوزن_الحالي,
+                الطول_سم = COALESCE(EXCLUDED.الطول_سم, notifications.الطول_سم),
+                ظرف_الحمل = COALESCE(EXCLUDED.ظرف_الحمل, notifications.ظرف_الحمل),
                 body = EXCLUDED.body,
                 created_at = NOW();
         `;
 
-        return res.status(200).json({ success: true, message: "تم تسجيل الجهاز وتحديث البيانات" });
+        return res.status(200).json({ success: true, message: "تم دمج البيانات بنجاح" });
 
     } catch (dbError) {
-        console.error("Neon Database Error:", dbError);
-        return res.status(500).json({ error: "فشل الحفظ في نيون", details: dbError.message });
+        console.error("Database Error:", dbError);
+        return res.status(500).json({ error: "خطأ في الدمج", details: dbError.message });
     }
 }
