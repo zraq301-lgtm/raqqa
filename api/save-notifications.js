@@ -23,9 +23,9 @@ export default async function handler(req, res) {
     try {
         let aiAdvice = note || `تم تحديث ملفك الصحي في رقة ✨`;
 
-        // 1. إرسال البيانات إلى Activepieces (تم تحديث الرابط هنا فقط)
+        // 1. إرسال البيانات إلى Activepieces (تم تحديث الرابط بالمعرف الخاص بك)
         try {
-            await fetch('https://cloud.activepieces.com/api/v1/webhooks/YOUR_WEBHOOK_ID_HERE', {
+            await fetch('https://cloud.activepieces.com/api/v1/webhooks/KSKHEwK0emBlJgywCk6sD', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id, fcm_token: activeToken, category, current_weight })
