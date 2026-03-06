@@ -1,5 +1,6 @@
 import { createPool } from '@vercel/postgres';
 
+// الربط مع قاعدة بيانات نيون باستخدام DATABASE_URL الموضح في صورتك
 const pool = createPool({
   connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL
 });
@@ -17,22 +18,29 @@ export default async function handler(req, res) {
         period_date, pregnancy_status, medications, category, note 
     } = req.body;
 
-    // التحقق من وجود التوكن لضمان الربط
+    // التأكد من وجود التوكن لضمان الربط في قاعدة البيانات
     const activeToken = fcm_token || null;
 
     try {
         let aiAdvice = note || `تم تحديث ملفك الصحي في رقة ✨`;
 
-        // 1. إرسال البيانات إلى Activepieces (تم تحديث الرابط بالمعرف الخاص بك)
+        // 1. إرسال البيانات إلى رابط Make الجديد (بدلاً من Activepieces)
         try {
-            await fetch('https://cloud.activepieces.com/api/v1/webhooks/KSKHEwK0emBlJgywCk6sD', {
+            await fetch('https://hook.eu1.make.com/e9aratm1mdbwa38cfoerzdgfoqbco6ky', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id, fcm_token: activeToken, category, current_weight })
+                body: JSON.stringify({ 
+                    user_id, 
+                    fcm_token: activeToken, 
+                    username,
+                    category, 
+                    current_weight,
+                    note: aiAdvice 
+                })
             });
-        } catch (e) { console.error("Activepieces Error:", e); }
+        } catch (e) { console.error("Make Platform Error:", e); }
 
-        // 2. الحفظ الذكي (Upsert): البحث عن التوكن وتحديث بياناته
+        // 2. الحفظ في نيون (Neon DB): تحديث البيانات بناءً على fcm_token
         await pool.sql`
             INSERT INTO notifications (
                 user_id, fcm_token, اسم_المستخدمة, الوزن_الحالي, 
@@ -63,10 +71,10 @@ export default async function handler(req, res) {
                 created_at = NOW();
         `;
 
-        return res.status(200).json({ success: true, message: "تم دمج البيانات بنجاح" });
+        return res.status(200).json({ success: true, message: "تم إرسال البيانات لـ Make والحفظ في نيون بنجاح" });
 
     } catch (dbError) {
         console.error("Database Error:", dbError);
-        return res.status(500).json({ error: "خطأ في الدمج", details: dbError.message });
+        return res.status(500).json({ error: "خطأ في الاتصال بقاعدة البيانات", details: dbError.message });
     }
 }
