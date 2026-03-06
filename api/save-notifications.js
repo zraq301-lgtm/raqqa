@@ -1,6 +1,6 @@
 import { createPool } from '@vercel/postgres';
 
-// الربط مع قاعدة بيانات نيون باستخدام DATABASE_URL الموضح في صورتك
+// الربط مع قاعدة بيانات نيون باستخدام DATABASE_URL
 const pool = createPool({
   connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL
 });
@@ -18,19 +18,20 @@ export default async function handler(req, res) {
         period_date, pregnancy_status, medications, category, note 
     } = req.body;
 
-    // التأكد من وجود التوكن لضمان الربط في قاعدة البيانات
+    // المفتاح الأساسي للربط هو user_id لضمان التعرف على الجهاز في OneSignal و Neon
     const activeToken = fcm_token || null;
+    const activeUserId = user_id || 'init_user';
 
     try {
         let aiAdvice = note || `تم تحديث ملفك الصحي في رقة ✨`;
 
-        // 1. إرسال البيانات إلى رابط Make الجديد (بدلاً من Activepieces)
+        // 1. إرسال البيانات إلى Make
         try {
             await fetch('https://hook.eu1.make.com/e9aratm1mdbwa38cfoerzdgfoqbco6ky', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    user_id, 
+                    user_id: activeUserId, 
                     fcm_token: activeToken, 
                     username,
                     category, 
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
             });
         } catch (e) { console.error("Make Platform Error:", e); }
 
-        // 2. الحفظ في نيون (Neon DB): تحديث البيانات بناءً على fcm_token
+        // 2. الحفظ في نيون (Neon DB) - التحديث بناءً على user_id لضمان استمرارية السجل
         await pool.sql`
             INSERT INTO notifications (
                 user_id, fcm_token, اسم_المستخدمة, الوزن_الحالي, 
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
                 title, body, created_at
             )
             VALUES (
-                ${user_id || 'init'}, 
+                ${activeUserId}, 
                 ${activeToken}, 
                 ${username || 'مستخدمة رقة'}, 
                 ${current_weight || null}, 
@@ -60,21 +61,19 @@ export default async function handler(req, res) {
                 ${aiAdvice}, 
                 NOW()
             )
-            ON CONFLICT (fcm_token) 
+            ON CONFLICT (user_id) 
             DO UPDATE SET 
-                user_id = EXCLUDED.user_id,
+                fcm_token = EXCLUDED.fcm_token,
                 اسم_المستخدمة = COALESCE(EXCLUDED.اسم_المستخدمة, notifications.اسم_المستخدمة),
                 الوزن_الحالي = EXCLUDED.الوزن_الحالي,
-                الطول_سم = COALESCE(EXCLUDED.الطول_سم, notifications.الطول_سم),
-                ظرف_الحمل = COALESCE(EXCLUDED.ظرف_الحمل, notifications.ظرف_الحمل),
                 body = EXCLUDED.body,
                 created_at = NOW();
         `;
 
-        return res.status(200).json({ success: true, message: "تم إرسال البيانات لـ Make والحفظ في نيون بنجاح" });
+        return res.status(200).json({ success: true, message: "تم الربط والحفظ بنجاح" });
 
     } catch (dbError) {
         console.error("Database Error:", dbError);
-        return res.status(500).json({ error: "خطأ في الاتصال بقاعدة البيانات", details: dbError.message });
+        return res.status(500).json({ error: "خطأ في قاعدة البيانات", details: dbError.message });
     }
 }
