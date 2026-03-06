@@ -29,16 +29,16 @@ const Main = () => {
         try {
           const OneSignal = (await import('onesignal-cordova-plugin')).default;
           
-          // 1. تفعيل سجلات الأخطاء للمشاهدة في Logcat (كما طلبت)
+          // 1. تفعيل سجلات الأخطاء للمشاهدة في Logcat
           OneSignal.setLogLevel(6, 0); 
           
-          // 2. ضبط المعرف الصحيح للمشروع الجديد
+          // 2. ضبط المعرف الصحيح للمشروع
           OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
           
           // 3. تهيئة المحرك
           OneSignal.initWithContext(window);
 
-          // 4. ضمان تفعيل الإشعارات فوراً (التحديث المطلوب)
+          // 4. ضمان تفعيل الإشعارات فوراً
           OneSignal.disablePush(false); 
 
           // 5. إدارة هوية المستخدم
@@ -46,7 +46,7 @@ const Main = () => {
           localStorage.setItem('user_id', userId);
           OneSignal.setExternalUserId(userId);
 
-          // 6. طلب إذن الإشعارات من المستخدم
+          // 6. طلب إذن الإشعارات
           OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
             console.log("OneSignal Permission: " + accepted);
           });
@@ -75,27 +75,32 @@ const Main = () => {
 
       setupPush();
 
-      // مستمع تسجيل التوكن وإرساله لقاعدة البيانات عبر الـ API
+      // مستمع تسجيل التوكن وإرساله لرابط الـ API الجديد
       PushNotifications.addListener('registration', async (token) => {
+        console.log("FCM Token Generated:", token.value);
         localStorage.setItem('fcm_token', token.value);
+        
         try {
-          await CapacitorHttp.post({
-            url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+          // *** تم تحديث الرابط هنا ليتناسب مع الواجهة الجديدة ***
+          const response = await CapacitorHttp.post({
+            url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
             headers: { 'Content-Type': 'application/json' },
             data: {
               fcm_token: token.value,
               user_id: localStorage.getItem('user_id'),
               username: localStorage.getItem('username') || 'مستخدمة رقة',
               category: 'تسجيل جهاز',
-              note: 'تم الربط بنجاح مع OneSignal المحدث'
+              note: 'تم التحديث للواجهة v6cd بنجاح'
             }
           });
+          console.log("API Response:", response);
         } catch (err) { 
-          console.error("API Error:", err); 
+          console.error("API Error (Check Vercel Logs):", err); 
         }
       });
 
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        // تنبيه داخلي عند استلام إشعار والتطبيق مفتوح
         alert(`${notification.title}\n${notification.body}`);
       });
     }
