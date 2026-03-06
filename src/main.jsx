@@ -7,6 +7,9 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
+/**
+ * إعدادات Firebase
+ */
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
   authDomain: "raqqa-43dc8.firebaseapp.com",
@@ -26,35 +29,53 @@ const Main = () => {
         try {
           const OneSignal = (await import('onesignal-cordova-plugin')).default;
           
-          // استخدام المعرف الجديد الخاص بك هنا
+          // 1. تفعيل سجلات الأخطاء للمشاهدة في Logcat (كما طلبت)
+          OneSignal.setLogLevel(6, 0); 
+          
+          // 2. ضبط المعرف الصحيح للمشروع الجديد
           OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
           
+          // 3. تهيئة المحرك
           OneSignal.initWithContext(window);
 
+          // 4. ضمان تفعيل الإشعارات فوراً (التحديث المطلوب)
+          OneSignal.disablePush(false); 
+
+          // 5. إدارة هوية المستخدم
           const userId = localStorage.getItem('user_id') || 'raqqa_' + Math.floor(Math.random() * 10000);
           localStorage.setItem('user_id', userId);
           OneSignal.setExternalUserId(userId);
 
-          // إظهار طلب الإذن للمستخدم
+          // 6. طلب إذن الإشعارات من المستخدم
           OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
-            console.log("OneSignal Permission Status: " + accepted);
+            console.log("OneSignal Permission: " + accepted);
           });
 
-        } catch (e) { console.error("OneSignal Error:", e); }
+        } catch (e) { 
+          console.error("OneSignal Error:", e); 
+        }
       };
       
       setupOneSignal();
 
+      // إعداد قناة Firebase التقليدية
       const setupPush = async () => {
         try {
           let permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive === 'prompt') permStatus = await PushNotifications.requestPermissions();
-          if (permStatus.receive === 'granted') await PushNotifications.register();
-        } catch (error) { console.error("Push Error: ", error); }
+          if (permStatus.receive === 'prompt') {
+            permStatus = await PushNotifications.requestPermissions();
+          }
+          if (permStatus.receive === 'granted') {
+            await PushNotifications.register();
+          }
+        } catch (error) { 
+          console.error("Push Error: ", error); 
+        }
       };
 
       setupPush();
 
+      // مستمع تسجيل التوكن وإرساله لقاعدة البيانات عبر الـ API
       PushNotifications.addListener('registration', async (token) => {
         localStorage.setItem('fcm_token', token.value);
         try {
@@ -66,10 +87,16 @@ const Main = () => {
               user_id: localStorage.getItem('user_id'),
               username: localStorage.getItem('username') || 'مستخدمة رقة',
               category: 'تسجيل جهاز',
-              note: 'تم الربط بنجاح مع OneSignal الجديد'
+              note: 'تم الربط بنجاح مع OneSignal المحدث'
             }
           });
-        } catch (err) { console.error("API Error:", err); }
+        } catch (err) { 
+          console.error("API Error:", err); 
+        }
+      });
+
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        alert(`${notification.title}\n${notification.body}`);
       });
     }
   }, []);
