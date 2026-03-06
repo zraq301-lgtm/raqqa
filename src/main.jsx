@@ -25,12 +25,21 @@ const Main = () => {
       const setupOneSignal = async () => {
         try {
           const OneSignal = (await import('onesignal-cordova-plugin')).default;
-          OneSignal.setAppId("cd7a8168-5e86-4fa8-a32d-58791213b25a");
+          
+          // استخدام المعرف الجديد الخاص بك هنا
+          OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
+          
           OneSignal.initWithContext(window);
 
           const userId = localStorage.getItem('user_id') || 'raqqa_' + Math.floor(Math.random() * 10000);
           localStorage.setItem('user_id', userId);
           OneSignal.setExternalUserId(userId);
+
+          // إظهار طلب الإذن للمستخدم
+          OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
+            console.log("OneSignal Permission Status: " + accepted);
+          });
+
         } catch (e) { console.error("OneSignal Error:", e); }
       };
       
@@ -57,7 +66,7 @@ const Main = () => {
               user_id: localStorage.getItem('user_id'),
               username: localStorage.getItem('username') || 'مستخدمة رقة',
               category: 'تسجيل جهاز',
-              note: 'تم الربط بنجاح'
+              note: 'تم الربط بنجاح مع OneSignal الجديد'
             }
           });
         } catch (err) { console.error("API Error:", err); }
