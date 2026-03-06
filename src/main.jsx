@@ -8,7 +8,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
 /**
- * إعدادات Firebase - محرك استقبال البيانات
+ * إعدادات Firebase
  */
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
@@ -19,36 +19,46 @@ const firebaseConfig = {
   appId: "1:162488255991:android:73d6299f11a1b7aec61af2"
 };
 
-// تهيئة Firebase لضمان عدم حدوث تصادم
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const Main = () => {
   useEffect(() => {
-    // تشغيل المحرك فقط إذا كنا على منصة حقيقية (Android/iOS)
     if (Capacitor.isNativePlatform()) {
       
-      // إعداد OneSignal بطريقة ديناميكية لمنع الشاشة البيضاء
       const setupOneSignal = async () => {
         try {
-          // استدعاء المكتبة برمجياً فقط في بيئة الهاتف
+          // استدعاء المكتبة
           const OneSignal = (await import('onesignal-cordova-plugin')).default;
           
+          // إعدادات لوحة تحكم OneSignal
           OneSignal.setAppId("cd7a8168-5e86-4fa8-a32d-58791213b25a");
 
+          // خطوة هامة لربط الواجهة بالمحرك
+          OneSignal.initWithContext(window);
+
+          // طلب الإذن وإظهار الرسالة للمستخدم
           OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
-            console.log("OneSignal status: " + accepted);
+            console.log("OneSignal Permission Status: " + accepted);
           });
 
-          const userId = localStorage.getItem('user_id') || 'guest_user';
+          // تعيين معرف المستخدم الخارجي لسهولة التتبع
+          const userId = localStorage.getItem('user_id') || 'raqqa_user_' + Math.floor(Math.random() * 1000);
           OneSignal.setExternalUserId(userId);
+
+          // مستمع لإشعارات OneSignal
+          OneSignal.setNotificationWillShowInForegroundHandler((event) => {
+            let notification = event.getNotification();
+            event.complete(notification);
+          });
+
         } catch (e) {
-          console.error("OneSignal Error:", e);
+          console.error("OneSignal Setup Error:", e);
         }
       };
       
       setupOneSignal();
 
-      // إعداد Capacitor Push Notifications (للحصول على التوكن وإرساله لنيون)
+      // إعداد Capacitor Push Notifications التقليدي (للفايربيس)
       const setupPush = async () => {
         try {
           await PushNotifications.createChannel({
@@ -74,11 +84,9 @@ const Main = () => {
 
       setupPush();
 
-      // المستمع (Listener) لإرسال التوكن لـ Vercel/Neon
+      // إرسال التوكن لسيرفر Vercel الخاص بك
       PushNotifications.addListener('registration', async (token) => {
-        console.log('Token registered:', token.value);
         localStorage.setItem('fcm_token', token.value);
-        
         try {
           await CapacitorHttp.post({
             url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
@@ -88,15 +96,14 @@ const Main = () => {
               user_id: localStorage.getItem('user_id') || 'new_device_init',
               username: localStorage.getItem('username') || 'مستخدمة رقة',
               category: 'تسجيل تلقائي للجهاز',
-              note: 'تم ربط المحرك بنجاح'
+              note: 'تم الربط مع OneSignal و Firebase بنجاح'
             }
           });
         } catch (err) {
-          console.error("فشل إرسال التوكن للسيرفر:", err);
+          console.error("فشل إرسال التوكن:", err);
         }
       });
 
-      // التعامل مع الإشعارات أثناء فتح التطبيق
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
         alert(`${notification.title}\n${notification.body}`);
       });
