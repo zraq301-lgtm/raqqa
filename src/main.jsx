@@ -1,79 +1,78 @@
-import { createPool } from '@vercel/postgres';
+import React, { useEffect } from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import AppSwitcher from './AppSwitcher'; 
+import './App.css';
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
-// الربط مع قاعدة بيانات نيون باستخدام DATABASE_URL
-const pool = createPool({
-  connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL
-});
+const firebaseConfig = {
+  apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
+  authDomain: "raqqa-43dc8.firebaseapp.com",
+  projectId: "raqqa-43dc8",
+  storageBucket: "raqqa-43dc8.firebasestorage.app",
+  messagingSenderId: "162488255991",
+  appId: "1:162488255991:android:73d6299f11a1b7aec61af2"
+};
 
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
-    
-    const { 
-        user_id, fcm_token, username, current_weight, height_cm, 
-        period_date, pregnancy_status, medications, category, note 
-    } = req.body;
-
-    // المفتاح الأساسي للربط هو user_id لضمان التعرف على الجهاز في OneSignal و Neon
-    const activeToken = fcm_token || null;
-    const activeUserId = user_id || 'init_user';
-
-    try {
-        let aiAdvice = note || `تم تحديث ملفك الصحي في رقة ✨`;
-
-        // 1. إرسال البيانات إلى Make
+const Main = () => {
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      
+      const setupOneSignal = async () => {
         try {
-            await fetch('https://hook.eu1.make.com/e9aratm1mdbwa38cfoerzdgfoqbco6ky', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    user_id: activeUserId, 
-                    fcm_token: activeToken, 
-                    username,
-                    category, 
-                    current_weight,
-                    note: aiAdvice 
-                })
-            });
-        } catch (e) { console.error("Make Platform Error:", e); }
+          const OneSignal = (await import('onesignal-cordova-plugin')).default;
+          OneSignal.setAppId("cd7a8168-5e86-4fa8-a32d-58791213b25a");
+          OneSignal.initWithContext(window);
 
-        // 2. الحفظ في نيون (Neon DB) - التحديث بناءً على user_id لضمان استمرارية السجل
-        await pool.sql`
-            INSERT INTO notifications (
-                user_id, fcm_token, اسم_المستخدمة, الوزن_الحالي, 
-                الطول_سم, تاريخ_آخر_حيض, ظرف_الحمل, الأدوية_الموصوفة, 
-                title, body, created_at
-            )
-            VALUES (
-                ${activeUserId}, 
-                ${activeToken}, 
-                ${username || 'مستخدمة رقة'}, 
-                ${current_weight || null}, 
-                ${height_cm || null}, 
-                ${period_date || null}, 
-                ${pregnancy_status || null}, 
-                ${medications || null}, 
-                ${category || 'تحديث صحي'}, 
-                ${aiAdvice}, 
-                NOW()
-            )
-            ON CONFLICT (user_id) 
-            DO UPDATE SET 
-                fcm_token = EXCLUDED.fcm_token,
-                اسم_المستخدمة = COALESCE(EXCLUDED.اسم_المستخدمة, notifications.اسم_المستخدمة),
-                الوزن_الحالي = EXCLUDED.الوزن_الحالي,
-                body = EXCLUDED.body,
-                created_at = NOW();
-        `;
+          const userId = localStorage.getItem('user_id') || 'raqqa_' + Math.floor(Math.random() * 10000);
+          localStorage.setItem('user_id', userId);
+          OneSignal.setExternalUserId(userId);
+        } catch (e) { console.error("OneSignal Error:", e); }
+      };
+      
+      setupOneSignal();
 
-        return res.status(200).json({ success: true, message: "تم الربط والحفظ بنجاح" });
+      const setupPush = async () => {
+        try {
+          let permStatus = await PushNotifications.checkPermissions();
+          if (permStatus.receive === 'prompt') permStatus = await PushNotifications.requestPermissions();
+          if (permStatus.receive === 'granted') await PushNotifications.register();
+        } catch (error) { console.error("Push Error: ", error); }
+      };
 
-    } catch (dbError) {
-        console.error("Database Error:", dbError);
-        return res.status(500).json({ error: "خطأ في قاعدة البيانات", details: dbError.message });
+      setupPush();
+
+      PushNotifications.addListener('registration', async (token) => {
+        localStorage.setItem('fcm_token', token.value);
+        try {
+          await CapacitorHttp.post({
+            url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+            headers: { 'Content-Type': 'application/json' },
+            data: {
+              fcm_token: token.value,
+              user_id: localStorage.getItem('user_id'),
+              username: localStorage.getItem('username') || 'مستخدمة رقة',
+              category: 'تسجيل جهاز',
+              note: 'تم الربط بنجاح'
+            }
+          });
+        } catch (err) { console.error("API Error:", err); }
+      });
     }
+  }, []);
+
+  return (
+    <BrowserRouter>
+      <AppSwitcher />
+    </BrowserRouter>
+  );
+};
+
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(<Main />);
 }
