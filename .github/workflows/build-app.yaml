@@ -1,4 +1,4 @@
-name: Roqa Production Build Signed (Clean Build)
+name: Roqa Production Build Signed (Clean Build with OneSignal)
 
 on:
   push:
@@ -21,10 +21,12 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تنظيف وتثبيت المكتبات (إضافة OneSignal)
         run: |
           rm -rf android
           npm install --legacy-peer-deps
+          # التأكد من وجود مكتبات OneSignal و Push Notifications
+          npm install onesignal-cordova-plugin @capacitor/push-notifications --save
           npm run build --if-present
 
       - name: 4. إضافة منصة أندرويد ومزامنتها
@@ -36,7 +38,6 @@ jobs:
       - name: 5. دمج ملف google-services.json بالتفصيل
         shell: bash
         run: |
-          # حقن بيانات جوجل مباشرة لضمان التعرف على مشروع Firebase
           cat <<EOF > android/app/google-services.json
           {
             "project_info": {
@@ -69,34 +70,34 @@ jobs:
           }
           EOF
 
-      - name: 6. حقن صلاحيات المانيفست وتصحيح اسم الحزمة برمجياً
+      - name: 6. تهيئة OneSignal داخل ملفات الأندرويد (الخطوة المفقودة)
         run: |
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
+          # إضافة مستودع OneSignal ومكتباته لملف build.gradle
+          sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           
-          # حل مشكلة No matching client found عبر توحيد اسم الحزمة
+          # تصحيح اسم الحزمة كما في الكود السابق
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
 
-          # إضافة تصريحات الوصول اللازمة للإشعارات والإنترنت
+      - name: 7. حقن صلاحيات المانيفست
+        run: |
+          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
+          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
+          
+          # إضافة صلاحية الإشعارات لنظام أندرويد 13 فما فوق
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
-          
-          # تفعيل المرور الصريح للبيانات لتجنب مشاكل التحميل
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 7. بناء ملفات APK و AAB
+      - name: 8. بناء ملفات APK و AAB
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 8. التوقيع الرقمي وإنتاج الحزمة النهائية
+      - name: 9. التوقيع الرقمي وإنتاج الحزمة النهائية
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -110,7 +111,7 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات (APK, AAB, Keystore)
+      - name: 10. رفع الملفات النهائية
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Full-Package
