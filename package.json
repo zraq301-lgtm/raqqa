@@ -39,5 +39,10 @@
     "tailwindcss": "^3.4.1",
     "vite": "^5.0.0",
     "terser": "^5.27.0"
+  },
+  "overrides": {
+    "capacitor-voice-recorder": {
+      "@capacitor/core": "$@capacitor/core"
+    }
   }
 }
