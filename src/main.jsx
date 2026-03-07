@@ -19,89 +19,77 @@ const firebaseConfig = {
   appId: "1:162488255991:android:73d6299f11a1b7aec61af2"
 };
 
+// تهيئة Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const Main = () => {
   useEffect(() => {
+    // العمل فقط إذا كان التطبيق يعمل كـ Native (أندرويد/iOS)
     if (Capacitor.isNativePlatform()) {
       
-      const setupOneSignal = async () => {
-        try {
-          const OneSignal = (await import('onesignal-cordova-plugin')).default;
-          
-          // 1. تفعيل سجلات الأخطاء للمشاهدة في Logcat
-          OneSignal.setLogLevel(6, 0); 
-          
-          // 2. ضبط المعرف الصحيح للمشروع
-          OneSignal.setAppId("726fe629-0b1e-4294-9a4b-39cf50212b42");
-          
-          // 3. تهيئة المحرك
-          OneSignal.initWithContext(window);
-
-          // 4. ضمان تفعيل الإشعارات فوراً
-          OneSignal.disablePush(false); 
-
-          // 5. إدارة هوية المستخدم
-          const userId = localStorage.getItem('user_id') || 'raqqa_' + Math.floor(Math.random() * 10000);
-          localStorage.setItem('user_id', userId);
-          OneSignal.setExternalUserId(userId);
-
-          // 6. طلب إذن الإشعارات
-          OneSignal.promptForPushNotificationsWithUserResponse((accepted) => {
-            console.log("OneSignal Permission: " + accepted);
-          });
-
-        } catch (e) { 
-          console.error("OneSignal Error:", e); 
-        }
-      };
-      
-      setupOneSignal();
-
-      // إعداد قناة Firebase التقليدية
       const setupPush = async () => {
         try {
+          // 1. التحقق من صلاحيات الإشعارات
           let permStatus = await PushNotifications.checkPermissions();
+          
           if (permStatus.receive === 'prompt') {
             permStatus = await PushNotifications.requestPermissions();
           }
+
           if (permStatus.receive === 'granted') {
+            // 2. تسجيل الجهاز للحصول على التوكن
             await PushNotifications.register();
+          } else {
+            console.error("لم يتم منح صلاحية الإشعارات");
           }
         } catch (error) { 
-          console.error("Push Error: ", error); 
+          console.error("خطأ في تهيئة الإشعارات: ", error); 
         }
       };
 
+      // تنفيذ عملية التهيئة
       setupPush();
 
-      // مستمع تسجيل التوكن وإرساله لرابط الـ API الجديد
+      // 3. مستمع تسجيل التوكن (Registration)
       PushNotifications.addListener('registration', async (token) => {
-        console.log("FCM Token Generated:", token.value);
-        localStorage.setItem('fcm_token', token.value);
+        const fcmToken = token.value;
+        console.log("تم توليد توكن FCM بنجاح:", fcmToken);
+        
+        // حفظ التوكن محلياً لاستخدامه في أي صفحة أخرى (مثل صفحة الوزن والطول)
+        localStorage.setItem('fcm_token', fcmToken);
+
+        // إنشاء user_id إذا لم يكن موجوداً
+        if (!localStorage.getItem('user_id')) {
+            localStorage.setItem('user_id', 'user_' + Math.floor(Math.random() * 1000000));
+        }
         
         try {
-          // *** تم تحديث الرابط هنا ليتناسب مع الواجهة الجديدة ***
+          // إرسال التوكن مباشرة للـ API لضمان ربطه بالمستخدم فوراً
           const response = await CapacitorHttp.post({
             url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
             headers: { 'Content-Type': 'application/json' },
             data: {
-              fcm_token: token.value,
+              fcm_token: fcmToken,
               user_id: localStorage.getItem('user_id'),
-              username: localStorage.getItem('username') || 'مستخدمة رقة',
-              category: 'تسجيل جهاز',
-              note: 'تم التحديث للواجهة v6cd بنجاح'
+              username: localStorage.getItem('username') || 'مستخدمة جديدة',
+              category: 'تسجيل جهاز أول مرة',
+              note: 'تم حفظ التوكن محلياً وإرساله للسيرفر'
             }
           });
-          console.log("API Response:", response);
+          console.log("تم ربط الجهاز بالسيرفر:", response.data);
         } catch (err) { 
-          console.error("API Error (Check Vercel Logs):", err); 
+          console.error("فشل إرسال التوكن للسيرفر:", err); 
         }
       });
 
+      // 4. مستمع الخطأ في التسجيل
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error("خطأ في تسجيل التوكن: ", error.error);
+      });
+
+      // 5. التعامل مع الإشعار عند وصوله والتطبيق مفتوح
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        // تنبيه داخلي عند استلام إشعار والتطبيق مفتوح
-        alert(`${notification.title}\n${notification.body}`);
+        alert(`إشعار جديد: ${notification.title}\n${notification.body}`);
       });
     }
   }, []);
