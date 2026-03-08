@@ -5,7 +5,7 @@ const pool = createPool({
 });
 
 export default async function handler(req, res) {
-    // إعدادات CORS
+    // 1. إعدادات CORS للسماح بالطلبات الخارجية
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -20,12 +20,12 @@ export default async function handler(req, res) {
 
     const activeUserId = user_id || 'init_user';
     const aiAdvice = note || `تم تحديث ملفك الصحي في رقة ✨`;
-    // تنظيف التوكن والتأكد من وجوده
+    
+    // تنظيف التوكن المبدئي
     let finalToken = fcm_token && fcm_token.trim() !== "" ? fcm_token : null;
 
     try {
-        // 1. تحديث أو إدخال البيانات في Neon واستعادة التوكن الصحيح فوراً
-        // استخدمنا RETURNING fcm_token لضمان أننا نملك القيمة الحقيقية المخزنة
+        // 2. تحديث Neon واستعادة التوكن (المخزن أو الجديد)
         const dbResult = await pool.query(`
             INSERT INTO notifications (
                 user_id, fcm_token, username, "الوزن_الحالي", "الطول_سم", 
@@ -51,19 +51,24 @@ export default async function handler(req, res) {
             period_date || null, pregnancy_status || null, medications || null
         ]);
 
-        // تحديث قيمة finalToken بما هو موجود فعلياً في قاعدة البيانات
         finalToken = dbResult.rows[0].fcm_token;
 
         let makeSent = false;
+        let makeResponseData = "No attempt";
 
-        // 2. الإرسال إلى الـ Webhook الخاص بـ Make (فقط إذا توفر التوكن)
-        if (finalToken && finalToken !== "") {
+        // 3. الإرسال إلى الـ Webhook (Make.com) مع تعقب الاستجابة
+        if (finalToken) {
+            console.log(`[Raqqa Log] Sending to Webhook. Token found: ${finalToken.substring(0, 10)}...`);
+            
             try {
                 const makeResponse = await fetch('https://hook.eu1.make.com/e9aratm1mdbwa38cfoerzdgfoqbco6ky', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify({ 
-                        fcm_token: finalToken, // سيصل الآن كـ fcm_token ملون في Make
+                        fcm_token: finalToken,
                         title: category || "تحديث صحي", 
                         message: aiAdvice,             
                         username: username || "مستخدمة رقة",
@@ -75,29 +80,34 @@ export default async function handler(req, res) {
                         medications: medications
                     })
                 });
-                
+
+                makeResponseData = await makeResponse.text();
+                console.log(`[Raqqa Log] Make.com Response: ${makeResponse.status} - ${makeResponseData}`);
+
                 if (makeResponse.ok) {
                     makeSent = true;
                 }
             } catch (fetchError) {
-                console.error("Make Webhook Error:", fetchError.message);
-                // لا نريد تعطيل الاستجابة إذا فشل الويب هوك فقط
+                console.error("[Raqqa Log] Webhook Fetch Failed:", fetchError.message);
+                makeResponseData = fetchError.message;
             }
+        } else {
+            console.log("[Raqqa Log] Skipping Webhook: No Token found in DB or Request.");
         }
 
-        // 3. الرد النهائي للعميل
+        // 4. الرد النهائي
         return res.status(200).json({ 
             success: true, 
             db_saved: true,
             make_sent: makeSent,
-            user: activeUserId,
-            token_status: finalToken ? "Sent" : "Missing"
+            make_response: makeResponseData,
+            token_status: finalToken ? "Processed" : "Missing"
         });
 
     } catch (error) {
-        console.error("Critical Error:", error.message);
+        console.error("[Raqqa Log] Main Error:", error.message);
         return res.status(500).json({ 
-            error: "حدث خطأ داخلي", 
+            error: "حدث خطأ داخلي في الخادم", 
             details: error.message 
         });
     }
