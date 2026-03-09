@@ -50,9 +50,6 @@ const MenstrualTracker = () => {
     fetchNotifications();
   }, []);
 
-  /**
-   * دالة متكاملة لفتح الوسائط ورفع الصور مباشرة
-   */
   const handleMediaAction = async (type) => {
     try {
         setLoading(true);
@@ -66,11 +63,7 @@ const MenstrualTracker = () => {
         const fileName = `img_${timestamp}.png`;
         const mimeType = 'image/png';
 
-        // استخدام المسار المطلوب للرفع
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
-        console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
-
-        // إرسال الرابط للذكاء الاصطناعي
         handleProcess(`لقد رفعت صورة طبية للمراجعة: ${finalAttachmentUrl}`);
     } catch (error) {
         console.error("فشل في معالجة أو رفع الصورة:", error);
@@ -80,33 +73,19 @@ const MenstrualTracker = () => {
     }
   };
 
-  // --- منطق المعالجة الرئيسي ---
+  // --- منطق المعالجة الرئيسي المطور ---
   const handleProcess = async (userInput = null) => {
     setLoading(true);
     const summary = JSON.stringify(data);
     
     try {
-      // 1. مرحلة الحفظ في Neon DB
-      const saveOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          user_id: 1,
-          category: 'متابعة الدورة الشهرية والخصوبة',
-          value: summary,
-          note: userInput || 'تحديث من واجهة المتابعة الذكية'
-        }
-      };
-      await CapacitorHttp.post(saveOptions);
-
-      // 2. مرحلة التحليل عبر AI
+      // 1. مرحلة التحليل عبر AI أولاً لاستخدام النتيجة في الإشعار
       const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
       حلل حالتي بناءً على هذه البيانات: ${summary}. 
       علماً أن معرف المستخدم (ID) هو 1.
       المطلوب منك:
       1. توقع موعد الدورة الشهرية القادمة بدقة.
-      2. تحديد أيام التبويض المتوقعة.
-      3. تقديم نصائح طبية بناءً على الأعراض.
+      2. تقديم نصيحة طبية مختصرة جداً (سطر واحد) لتظهر في الإشعار.
       ${userInput ? `سؤالي الإضافي هو: ${userInput}` : "قدم لي تحليلاً شاملاً لحالتي الصحية."}`;
 
       const aiOptions = {
@@ -115,9 +94,31 @@ const MenstrualTracker = () => {
         data: { prompt: promptText }
       };
 
-      const response = await CapacitorHttp.post(aiOptions);
-      const responseText = response.data.reply || response.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
+      const aiResponse = await CapacitorHttp.post(aiOptions);
+      const responseText = aiResponse.data.reply || aiResponse.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
+
+      // 2. مرحلة الحفظ في السيرفر وإرسال الإشعار التنبيهي
+      const savedToken = localStorage.getItem('fcm_token'); // جلب التوكن من الذاكرة
       
+      const saveOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined, // إرسال التوكن إذا وجد
+          user_id: 1,
+          username: localStorage.getItem('username') || 'رقية',
+          category: 'متابعة الدورة الشهرية والخصوبة',
+          title: 'تحليل طبي جديد 🩺',
+          body: responseText.substring(0, 100) + "...", // إرسال جزء من تحليل الذكاء الاصطناعي في الإشعار
+          note: userInput || 'تحديث من واجهة المتابعة الذكية'
+        }
+      };
+      
+      // لا يتم الإرسال إلا إذا كان هناك توكن لتجنب خطأ fcmToken مفقود
+      if (savedToken) {
+        await CapacitorHttp.post(saveOptions);
+      }
+
       const newMessage = { 
         id: Date.now(),
         role: 'ai', 
@@ -187,7 +188,7 @@ const MenstrualTracker = () => {
         
         {notifications.length > 0 && (
           <div style={{ background: '#FFF3E0', padding: '12px', borderRadius: '15px', marginBottom: '10px', fontSize: '13px', color: '#E65100', borderRight: '4px solid #FF9800' }}>
-           🔔 <strong>نصيحة طبية:</strong> {notifications[0].body}
+            🔔 <strong>نصيحة طبية:</strong> {notifications[0].body}
           </div>
         )}
 
