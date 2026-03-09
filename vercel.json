@@ -4,7 +4,7 @@
   "framework": "vite",
   "crons": [
     {
-      "path": "/api/cron-scheduler",
+      "path": "/api/tick",
       "schedule": "*/10 * * * *" 
     }
   ],
