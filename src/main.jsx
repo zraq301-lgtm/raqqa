@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import AppSwitcher from './AppSwitcher'; 
 import './App.css';
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 
@@ -24,24 +24,28 @@ if (!getApps().length) {
 
 const Main = () => {
   
-  // وظيفة الحفظ في نيون وإرسال ويب هوك لـ ميك (تعريفها خارج useEffect لمنع أخطاء الترتيب)
+  // وظيفة الحفظ وإرسال التوكن للباك اند (Vercel)
   const saveTokenToServer = async (tokenValue) => {
     try {
+      // حفظ التوكن في الذاكرة المحلية فوراً لاستخدامه لاحقاً في أي عملية إرسال
+      localStorage.setItem('fcm_token', tokenValue);
+      
       const uId = localStorage.getItem('user_id') || 'user_' + Math.floor(Math.random() * 1000000);
       if (!localStorage.getItem('user_id')) localStorage.setItem('user_id', uId);
 
+      // إرسال البيانات إلى Vercel API الجديد
       const response = await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications', // الرابط الجديد الذي زودتني به
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications', 
         headers: { 'Content-Type': 'application/json' },
         data: {
-          fcm_token: tokenValue,
+          fcmToken: tokenValue, // تغيير الاسم ليتوافق مع متغير الباك اند الجديد
           user_id: uId,
           username: localStorage.getItem('username') || 'مستخدمة رقة',
           category: 'تسجيل تلقائي',
-          note: 'تم استلام التوكن فور منح الصلاحية أو الدخول'
+          note: 'تم حفظ التوكن محلياً وإرساله للباك اند بنجاح'
         }
       });
-      console.log("تم الحفظ في نيون و ميك بنجاح:", response.data);
+      console.log("تم تحديث البيانات في السيرفر:", response.data);
     } catch (err) {
       console.error("فشل إرسال البيانات للباك اند:", err);
     }
@@ -60,7 +64,6 @@ const Main = () => {
           }
 
           if (permStatus.receive === 'granted') {
-            // التسجيل لجلب التوكن من فيربيس
             await PushNotifications.register();
           }
         } catch (error) {
@@ -68,27 +71,21 @@ const Main = () => {
         }
       };
 
-      // 1. بدء عملية جلب الصلاحيات والتسجيل
       initPush();
 
-      // 2. مستمع استلام التوكن (بمجرد أن يوافق المستخدم أو يسجل الدخول)
+      // مستمع استلام التوكن
       PushNotifications.addListener('registration', (token) => {
         const fcmToken = token.value;
         console.log("FCM Token Generated:", fcmToken);
         
-        // حفظ في الذاكرة المحلية فوراً
-        localStorage.setItem('fcm_token', fcmToken);
-        
-        // تنفيذ الحفظ التلقائي في الباك اند و ميك و نيون
+        // تنفيذ دالة الحفظ التلقائي
         saveTokenToServer(fcmToken);
       });
 
-      // 3. معالجة أخطاء التسجيل
       PushNotifications.addListener('registrationError', (error) => {
         console.error("Error on registration: ", error.error);
       });
 
-      // 4. استلام الإشعارات والتطبيق مفتوح
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
         alert(`${notification.title}\n${notification.body}`);
       });
