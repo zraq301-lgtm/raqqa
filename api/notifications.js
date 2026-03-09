@@ -3,7 +3,7 @@ import { createPool } from '@vercel/postgres';
 export default async function handler(req, res) {
     // إعدادات CORS للسماح للواجهة بقراءة البيانات
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    resناالىControl-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
