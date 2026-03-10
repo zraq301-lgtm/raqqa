@@ -2,13 +2,11 @@ import admin from 'firebase-admin';
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال مع تعديل الـ SSL لإزالة التحذير
+// إعداد الاتصال بقاعدة البيانات
 const pool = new Pool({
-  // إضافة البرامتر sslmode=verify-full في نهاية الرابط يحل التحذير أمنياً
   connectionString: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full',
   ssl: { 
     rejectUnauthorized: false,
-    // هذا السطر يخبر المكتبة بتجاوز فحص الهوية المتكرر الذي يسبب التحذير
     checkServerIdentity: () => undefined 
   }
 });
@@ -29,15 +27,40 @@ if (!admin.apps.length) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // استخراج البيانات مع الحفاظ على أسماء المفاتيح الأصلية
   const { 
-    fcmToken, user_id = 1, category = 'general', data_content = {}, 
-    ai_analysis = null, title = "رقة", body = "تنبيه جديد", scheduled_for = null 
+    fcmToken, 
+    user_id = 1, 
+    category = 'general', 
+    data_content = {}, 
+    ai_analysis = null, 
+    title = "رقة", 
+    body = "تنبيه جديد", 
+    scheduled_for = null,
+    isFromMake = false // مفتاح جديد للتمييز بين ميك والتطبيق
   } = req.body;
 
   try {
+    // --- الحالة الأولى: إذا كان الطلب قادم من Make ---
+    if (isFromMake === true) {
+      if (!fcmToken) throw new Error("Missing fcmToken from Make");
+
+      await admin.messaging().send({
+        notification: { title, body },
+        token: fcmToken
+      });
+
+      // نرسل رد بالنجاح وننهي الدالة هنا (بدون لمس نيون)
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Sent via Make to Firebase only',
+        source: 'Make' 
+      });
+    }
+
+    // --- الحالة الثانية: الطلب الطبيعي من التطبيق (الحفظ في نيون) ---
     const isScheduled = !!scheduled_for;
 
-    // 1. الحفظ في نيون (Neon DB)
     const query = `
       INSERT INTO notifications (
         user_id, fcm_token, category, data_content, 
@@ -54,7 +77,6 @@ export default async function handler(req, res) {
     const result = await pool.query(query, values);
     const dbId = result.rows[0].id;
 
-    // 2. الإرسال لـ Firebase إذا كان فورياً
     if (!isScheduled && fcmToken) {
       await admin.messaging().send({
         notification: { title, body },
