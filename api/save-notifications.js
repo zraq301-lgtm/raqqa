@@ -21,7 +21,7 @@ if (!admin.apps.length) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { 
+  let { 
     fcmToken, 
     user_id, 
     category, 
@@ -37,31 +37,53 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Empty notification ignored." });
     }
 
-    // الإعدادات المشتركة للإرسال لضمان الظهور في أندرويد
+    // --- 🧠 مترجم الذكاء (منطق القوالب الشيك) ---
+    const templates = {
+      'period': {
+        t: "رقة: تذكير رقيق 🌸",
+        b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية. صحتكِ أولاً، كوني مستعدة."
+      },
+      'pregnancy': {
+        t: "مبارك لكِ يا جميلة 👶",
+        b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء لسلامة حملكِ."
+      },
+      'lactation': {
+        t: "فترة الرضاعة 🤍",
+        b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً. لا تنسي تناول وجبتكِ الصحية."
+      },
+      'beauty': {
+        t: "وقت التدليل ✨",
+        b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم. أنتِ تستحقين الأفضل."
+      }
+    };
+
+    // إذا كانت الفئة موجودة في القوالب، نقوم باستبدال النص التقني بنص القالب
+    if (templates[category]) {
+      title = templates[category].t;
+      body = templates[category].b;
+    }
+
+    // إعداد الرسالة النهائية
     const messagePayload = {
       notification: { title, body },
       token: fcmToken,
       android: {
         priority: "high",
         notification: {
-          channelId: "default", // تأكد أن هذا المعرف مطابق لما في كود Capacitor
+          channelId: "default",
           sound: "default",
           priority: "max",
           visibility: "public"
         }
       },
-      apns: {
-        payload: {
-          aps: { sound: "default" }
-        }
-      }
+      apns: { payload: { aps: { sound: "default" } } }
     };
 
     // --- مسار ميك (Make): إرسال فقط لفايربيس ---
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       await admin.messaging().send(messagePayload);
-      console.log('✅ Sent via Make to:', fcmToken);
-      return res.status(200).json({ success: true, mode: 'Make_Only' });
+      console.log(`✅ Sent Smart Notification (${category}) via Make`);
+      return res.status(200).json({ success: true, mode: 'Make_Smart_Only' });
     }
 
     // --- مسار الواجهة: بدون فئة محددة نرسل فقط ---
@@ -82,7 +104,6 @@ export default async function handler(req, res) {
     const values = [numericUserId, fcmToken, category, title, body, finalDate, true];
     const result = await pool.query(query, values);
     
-    // إرسال الإشعار بعد الحفظ في قاعدة البيانات
     await admin.messaging().send(messagePayload);
 
     return res.status(200).json({ success: true, db_id: result.rows[0].id });
