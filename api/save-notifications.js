@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     category, 
     title, 
     body, 
-    scheduled_for,
+    scheduled_for, // التاريخ القادم من الواجهة (مثل تاريخ البدء في صورتك)
     isFromMake = false 
   } = req.body;
 
@@ -79,27 +79,29 @@ export default async function handler(req, res) {
       apns: { payload: { aps: { sound: "default" } } }
     };
 
-    // --- 1. مسار ميك (Make): إرسال فوري وتحديث الحالة لتمت بنجاح ---
+    // --- 1. مسار ميك (Make): إرسال فوري وتحديث الحالة بنجاح ---
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       await admin.messaging().send(messagePayload);
-      
-      // تحديث الحالة في قاعدة البيانات لتصبح "تم الإرسال" حتى لا يكررها ميك
       if (req.body.db_id) {
          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [req.body.db_id]);
       }
-      
       return res.status(200).json({ success: true, mode: 'Make_Success' });
     }
 
-    // --- 2. مسار الواجهة (التسجيل المستقبلي) ---
+    // --- 2. مسار الواجهة (المعالجة الذكية للتواريخ) ---
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     
-    // تصحيح التاريخ: نستخدم التاريخ القادم من الواجهة، وإذا لم يوجد نستخدم الآن
+    // الحل الجذري: نستخدم scheduled_for كما هو إذا أرسلته الواجهة
+    // وإذا لم ترسل الواجهة تاريخاً، نستخدم الآن.
     const finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
 
-    // تحديد هل يرسل الآن أم ينتظر ميك؟
-    // إذا كان التاريخ مستقبلي (أكبر من الآن بـ دقيقة)، نجعله false لينتظر ميك
+    // فحص التاريخ: هل هو في المستقبل؟
+    // التاريخ يعتبر مستقبلياً فقط إذا كان أكبر من "الآن" بأكثر من دقيقة
     const isFuture = scheduled_for && new Date(scheduled_for) > new Date(Date.now() + 60000);
+
+    // إذا كان التاريخ "قديماً" (زي ما ظهر في صورتك فبراير 2026):
+    // 1. سيتم تخزينه بتاريخه القديم في نيون.
+    // 2. سيتم جعل is_sent = true فوراً لأنه تاريخ فات، فلا يحتاج سحب من ميك.
     const isSentStatus = isFuture ? false : true;
 
     const query = `
@@ -110,7 +112,7 @@ export default async function handler(req, res) {
     const values = [numericUserId, fcmToken, category, title, body, finalDate, isSentStatus];
     const result = await pool.query(query, values);
     
-    // لا نرسل الإشعار فوراً إلا إذا كان الموعد هو "الآن"
+    // نرسل الإشعار فوراً فقط إذا كان الموعد هو "الآن" أو تاريخ "فات" (تأكيد الحفظ)
     if (!isFuture) {
         await admin.messaging().send(messagePayload);
     }
@@ -118,7 +120,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
         success: true, 
         db_id: result.rows[0].id, 
-        scheduled: isFuture ? 'Waiting for Make' : 'Sent Now' 
+        stored_date: finalDate, // لمراجعة التاريخ الذي تم حفظه فعلياً
+        scheduled: isFuture ? 'Waiting for Make' : 'Handled Immediately' 
     });
 
   } catch (error) {
