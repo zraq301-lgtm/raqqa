@@ -1,68 +1,128 @@
-import { createPool } from '@vercel/postgres';
+import admin from 'firebase-admin';
+import pkg from 'pg';
+const { Pool } = pkg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full',
+  ssl: { rejectUnauthorized: false, checkServerIdentity: () => undefined }
+});
+
+const serviceAccount = {
+  "type": "service_account",
+  "project_id": "raqqa-43dc8",
+  "client_email": "firebase-adminsdk-fbsvc@raqqa-43dc8.iam.gserviceaccount.com",
+  "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+};
+
+if (!admin.apps.length) {
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+}
 
 export default async function handler(req, res) {
-    // إعدادات CORS للسماح للواجهة بقراءة البيانات
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
+  let { 
+    fcmToken, 
+    user_id, 
+    category, 
+    title, 
+    body, 
+    scheduled_for,
+    startDate, // تاريخ بداية الدورة
+    endDate,   // تاريخ نهاية الدورة
+    date,
+    isFromMake = false 
+  } = req.body;
 
-    if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+  try {
+    if ((!title || title.trim() === "") && (!body || body.trim() === "")) {
+      return res.status(400).json({ error: "Empty notification ignored." });
+    }
 
-    const { user_id } = req.query;
+    // --- 🧠 مترجم الذكاء (قوالب رقة) ---
+    const templates = {
+      'period': { t: "رقة: تذكير رقيق 🌸", b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية. صحتكِ أولاً، كوني مستعدة." },
+      'pregnancy': { t: "مبارك لكِ يا جميلة 👶", b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء لسلامة حملكِ." },
+      'lactation': { t: "فترة الرضاعة 🤍", b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً. لا تنسي تناول وجبتكِ الصحية." },
+      'beauty': { t: "وقت التدليل ✨", b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم. أنتِ تستحقين الأفضل." }
+    };
 
-    // الاتصال باستخدام POSTGRES_URL الخاص بـ Vercel/Neon
-    const pool = createPool({
-        connectionString: process.env.POSTGRES_URL 
+    if (templates[category]) {
+      title = templates[category].t;
+      body = templates[category].b;
+    }
+
+    const messagePayload = {
+      notification: { title: title || "تنبيه من رقة", body: body || "لديكِ تحديث جديد" },
+      token: fcmToken,
+      android: { priority: "high", notification: { channelId: "default", sound: "default", priority: "max", visibility: "public" } },
+      apns: { payload: { aps: { sound: "default" } } }
+    };
+
+    // --- 1. مسار ميك (Make) ---
+    if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
+      await admin.messaging().send(messagePayload);
+      if (req.body.db_id) {
+         await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [req.body.db_id]);
+      }
+      return res.status(200).json({ success: true, mode: 'Make_Success' });
+    }
+
+    // --- 2. مسار الواجهة (المعالجة الذكية للتواريخ) ---
+    const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
+    
+    // محاولة التقاط التاريخ المجدول (الإشعار)
+    const rawScheduledDate = scheduled_for || startDate || date;
+    const finalScheduledDate = rawScheduledDate ? new Date(rawScheduledDate) : new Date();
+
+    // فحص هل التاريخ في المستقبل (للإشعارات)
+    const isFuture = rawScheduledDate && new Date(rawScheduledDate) > new Date(Date.now() + 60000);
+    const isSentStatus = isFuture ? false : true;
+
+    // --- التعديل الجوهري: استخدام الأسماء العربية للأعمدة لإنهاء مشكلة "باطل" ---
+    const query = `
+      INSERT INTO notifications (
+        user_id, 
+        fcm_token, 
+        category, 
+        title, 
+        body, 
+        scheduled_for, 
+        is_sent,
+        "تاريخ_بداية_الفترة", 
+        "تاريخ_نهاية_الفترة"
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
+    `;
+
+    const values = [
+      numericUserId, 
+      fcmToken, 
+      category, 
+      title, 
+      body, 
+      finalScheduledDate, 
+      isSentStatus,
+      startDate ? new Date(startDate) : null, // القيمة لعمود تاريخ_بداية_الفترة
+      endDate ? new Date(endDate) : null     // القيمة لعمود تاريخ_نهاية_الفترة
+    ];
+
+    const result = await pool.query(query, values);
+    
+    if (!isFuture) {
+        await admin.messaging().send(messagePayload);
+    }
+
+    return res.status(200).json({ 
+        success: true, 
+        db_id: result.rows[0].id, 
+        stored_start_date: startDate,
+        stored_end_date: endDate,
+        scheduled: isFuture ? 'Waiting for Make' : 'Handled Immediately' 
     });
 
-    try {
-        // التعديل الجوهري: استخدام أسماء الأعمدة العربية كما تظهر في قاعدة البيانات (صورة 181757)
-        // يجب وضع الأسماء العربية بين علامتي اقتباس مزدوجة " " داخل الاستعلام
-        const { rows } = await pool.query(
-            `SELECT 
-                id, 
-                title, 
-                body, 
-                category,
-                "تاريخ_بداية_الفترة", 
-                "تاريخ_نهاية_الفترة", 
-                is_sent,
-                created_at 
-             FROM notifications 
-             WHERE user_id = $1 
-             ORDER BY "تاريخ_بداية_الفترة" DESC`, 
-            [parseInt(user_id || 1)]
-        );
-
-        // تنظيف البيانات وتغيير المفاتيح لتكون سهلة الاستخدام في الواجهة (بدلاً من باطل)
-        const formattedNotifications = rows.map(row => ({
-            id: row.id,
-            title: row.title,
-            body: row.body,
-            category: row.category,
-            is_sent: row.is_sent,
-            created_at: row.created_at,
-            // معالجة الأعمدة العربية وتحويلها لتنسيق تاريخ بسيط
-            period_start_date: row.تاريخ_بداية_الفترة ? new Date(row.تاريخ_بداية_الفترة).toISOString().split('T')[0] : null,
-            period_end_date: row.تاريخ_نهاية_الفترة ? new Date(row.تاريخ_نهاية_الفترة).toISOString().split('T')[0] : null
-        }));
-
-        return res.status(200).json({ 
-            success: true, 
-            count: rows.length,
-            notifications: formattedNotifications 
-        });
-    } catch (error) {
-        console.error("Database Error:", error.message);
-        return res.status(500).json({ 
-            success: false, 
-            error: "خطأ في جلب بيانات السجل", 
-            details: error.message 
-        });
-    } finally {
-        // إغلاق الاتصال لتحسين الأداء في Vercel
-        await pool.end();
-    }
+  } catch (error) {
+    console.error('❌ FCM/DB Error:', error.message);
+    return res.status(500).json({ error: error.message });
+  }
 }
