@@ -30,11 +30,11 @@ const MenstrualTracker = () => {
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
 
-  // --- جلب الإشعارات ---
+  // --- جلب الإشعارات (من السيرفر الحالي) ---
   const fetchNotifications = async () => {
     try {
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/notifications?user_id=1',
+        url: 'https://raqqa-hjl8.vercel.app/api/notifications?user_id=1', // تم تحديث الرابط ليتوافق مع النطاق الجديد
         method: 'GET'
       };
       const response = await CapacitorHttp.get(options);
@@ -79,7 +79,7 @@ const MenstrualTracker = () => {
     const summary = JSON.stringify(data);
     
     try {
-      // 1. مرحلة التحليل عبر AI أولاً لاستخدام النتيجة في الإشعار
+      // 1. مرحلة التحليل عبر AI (الرابط الخارجي كما هو)
       const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة.
       حلل حالتي بناءً على هذه البيانات: ${summary}. 
       علماً أن معرف المستخدم (ID) هو 1.
@@ -97,26 +97,43 @@ const MenstrualTracker = () => {
       const aiResponse = await CapacitorHttp.post(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "عذراً رقية، لم أتمكن من التحليل حالياً.";
 
-      // 2. مرحلة الحفظ في السيرفر وإرسال الإشعار التنبيهي
-      const savedToken = localStorage.getItem('fcm_token'); // جلب التوكن من الذاكرة
+      // 2. مرحلة الحفظ في نيون وإرسال الإشعار عبر الروابط المحددة
+      const savedToken = localStorage.getItem('fcm_token');
       
-      const saveOptions = {
+      // أ- الحفظ في نيون (منطق الحفظ كما هو بالواجهة)
+      const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          fcmToken: savedToken || undefined, // إرسال التوكن إذا وجد
+          fcmToken: savedToken || undefined,
           user_id: 1,
-          username: localStorage.getItem('username') || 'رقية',
           category: 'متابعة الدورة الشهرية والخصوبة',
           title: 'تحليل طبي جديد 🩺',
-          body: responseText.substring(0, 100) + "...", // إرسال جزء من تحليل الذكاء الاصطناعي في الإشعار
+          body: responseText.substring(0, 100) + "...",
+          startDate: data['سجل التواريخ_تاريخ البدء'], // حفظ التواريخ من الواجهة
+          endDate: data['سجل التواريخ_تاريخ الانتهاء'],
           note: userInput || 'تحديث من واجهة المتابعة الذكية'
         }
       };
+
+      // ب- إرسال الإشعار عبر رابط فيربيس الجديد
+      const sendFcmOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken,
+          title: 'تحليل رقة الذكي ✨',
+          body: responseText.substring(0, 100) + "...",
+          category: 'period'
+        }
+      };
       
-      // لا يتم الإرسال إلا إذا كان هناك توكن لتجنب خطأ fcmToken مفقود
+      // تنفيذ الحفظ
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      // تنفيذ الإرسال فقط إذا وجد التوكن
       if (savedToken) {
-        await CapacitorHttp.post(saveOptions);
+        await CapacitorHttp.post(sendFcmOptions);
       }
 
       const newMessage = { 
@@ -188,7 +205,7 @@ const MenstrualTracker = () => {
         
         {notifications.length > 0 && (
           <div style={{ background: '#FFF3E0', padding: '12px', borderRadius: '15px', marginBottom: '10px', fontSize: '13px', color: '#E65100', borderRight: '4px solid #FF9800' }}>
-            🔔 <strong>نصيحة طبية:</strong> {notifications[0].body}
+            🔔 <strong>تذكير طبي:</strong> {notifications[0].body}
           </div>
         )}
 
