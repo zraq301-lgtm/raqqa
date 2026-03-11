@@ -21,13 +21,16 @@ if (!admin.apps.length) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // أضفنا startDate و date كإجراء احتياطي في حال كانت الواجهة ترسل التاريخ بمسمى مختلف
   let { 
     fcmToken, 
     user_id, 
     category, 
     title, 
     body, 
-    scheduled_for, // التاريخ القادم من الواجهة (مثل تاريخ البدء في صورتك)
+    scheduled_for,
+    startDate,
+    date,
     isFromMake = false 
   } = req.body;
 
@@ -36,24 +39,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Empty notification ignored." });
     }
 
-    // --- 🧠 مترجم الذكاء (قوالب الشياكة) ---
+    // --- 🧠 مترجم الذكاء (قوالب رقة) ---
     const templates = {
-      'period': {
-        t: "رقة: تذكير رقيق 🌸",
-        b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية. صحتكِ أولاً، كوني مستعدة."
-      },
-      'pregnancy': {
-        t: "مبارك لكِ يا جميلة 👶",
-        b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء لسلامة حملكِ."
-      },
-      'lactation': {
-        t: "فترة الرضاعة 🤍",
-        b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً. لا تنسي تناول وجبتكِ الصحية."
-      },
-      'beauty': {
-        t: "وقت التدليل ✨",
-        b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم. أنتِ تستحقين الأفضل."
-      }
+      'period': { t: "رقة: تذكير رقيق 🌸", b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية. صحتكِ أولاً، كوني مستعدة." },
+      'pregnancy': { t: "مبارك لكِ يا جميلة 👶", b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء لسلامة حملكِ." },
+      'lactation': { t: "فترة الرضاعة 🤍", b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً. لا تنسي تناول وجبتكِ الصحية." },
+      'beauty': { t: "وقت التدليل ✨", b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم. أنتِ تستحقين الأفضل." }
     };
 
     if (templates[category]) {
@@ -62,24 +53,13 @@ export default async function handler(req, res) {
     }
 
     const messagePayload = {
-      notification: { 
-        title: title || "تنبيه من رقة", 
-        body: body || "لديكِ تحديث جديد" 
-      },
+      notification: { title: title || "تنبيه من رقة", body: body || "لديكِ تحديث جديد" },
       token: fcmToken,
-      android: {
-        priority: "high",
-        notification: {
-          channelId: "default",
-          sound: "default",
-          priority: "max",
-          visibility: "public"
-        }
-      },
+      android: { priority: "high", notification: { channelId: "default", sound: "default", priority: "max", visibility: "public" } },
       apns: { payload: { aps: { sound: "default" } } }
     };
 
-    // --- 1. مسار ميك (Make): إرسال فوري وتحديث الحالة بنجاح ---
+    // --- 1. مسار ميك (Make): إرسال فوري ---
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       await admin.messaging().send(messagePayload);
       if (req.body.db_id) {
@@ -91,17 +71,14 @@ export default async function handler(req, res) {
     // --- 2. مسار الواجهة (المعالجة الذكية للتواريخ) ---
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     
-    // الحل الجذري: نستخدم scheduled_for كما هو إذا أرسلته الواجهة
-    // وإذا لم ترسل الواجهة تاريخاً، نستخدم الآن.
-    const finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
+    // محاولة التقاط التاريخ من أي حقل مرسل
+    const rawDate = scheduled_for || startDate || date;
+    
+    // تحويل التاريخ لكائن Date صريح؛ إذا لم يوجد أي تاريخ مرسل نستخدم "الآن"
+    const finalDate = rawDate ? new Date(rawDate) : new Date();
 
     // فحص التاريخ: هل هو في المستقبل؟
-    // التاريخ يعتبر مستقبلياً فقط إذا كان أكبر من "الآن" بأكثر من دقيقة
-    const isFuture = scheduled_for && new Date(scheduled_for) > new Date(Date.now() + 60000);
-
-    // إذا كان التاريخ "قديماً" (زي ما ظهر في صورتك فبراير 2026):
-    // 1. سيتم تخزينه بتاريخه القديم في نيون.
-    // 2. سيتم جعل is_sent = true فوراً لأنه تاريخ فات، فلا يحتاج سحب من ميك.
+    const isFuture = rawDate && new Date(rawDate) > new Date(Date.now() + 60000);
     const isSentStatus = isFuture ? false : true;
 
     const query = `
@@ -112,7 +89,7 @@ export default async function handler(req, res) {
     const values = [numericUserId, fcmToken, category, title, body, finalDate, isSentStatus];
     const result = await pool.query(query, values);
     
-    // نرسل الإشعار فوراً فقط إذا كان الموعد هو "الآن" أو تاريخ "فات" (تأكيد الحفظ)
+    // إرسال الإشعار فوراً إذا كان التاريخ حالياً أو قديماً (سجل)
     if (!isFuture) {
         await admin.messaging().send(messagePayload);
     }
@@ -120,7 +97,8 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
         success: true, 
         db_id: result.rows[0].id, 
-        stored_date: finalDate, // لمراجعة التاريخ الذي تم حفظه فعلياً
+        received_from_app: rawDate || "Nothing received", // للتأكد من وصول التاريخ في الـ Response
+        stored_date: finalDate.toISOString(), 
         scheduled: isFuture ? 'Waiting for Make' : 'Handled Immediately' 
     });
 
