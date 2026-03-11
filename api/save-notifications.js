@@ -39,20 +39,26 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    if (isFromMake === true) {
+    // --- المسار الأول: الطلب قادم من Make (إرسال فقط) ---
+    // نستخدم فحصاً مرناً للقيمة سواء كانت Boolean أو نصاً مكتوباً
+    if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       if (!fcmToken) throw new Error("Missing fcmToken from Make");
+
       await admin.messaging().send({
         notification: { title, body },
         token: fcmToken
       });
-      return res.status(200).json({ success: true, message: 'Sent via Make', source: 'Make' });
+
+      // إرجاع رد فوري والتوقف هنا تماماً لمنع الحفظ في نيون
+      return res.status(200).json({ 
+        success: true, 
+        mode: 'Forward_To_Firebase_Only',
+        message: 'Notification sent successfully without saving to Neon' 
+      });
     }
 
-    // --- تعديل ذكي لملء عمود التاريخ (الحل المطلوب) ---
-    // إذا أرسلت الواجهة تاريخاً (مثل تاريخ الدورة) نستخدمه، وإلا نستخدم تاريخ اللحظة الحالية فوراً
+    // --- المسار الثاني: الطلب قادم من واجهة التطبيق (حفظ + إرسال) ---
     const finalDate = scheduled_for || new Date().toISOString();
-    
-    // نعتبره "مجدول" فقط إذا كان التاريخ في المستقبل، وإلا نعتبره تاريخاً تم تخزينه الآن
     const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
 
     const query = `
@@ -67,13 +73,14 @@ export default async function handler(req, res) {
       user_id, fcmToken, category, 
       typeof data_content === 'object' ? JSON.stringify(data_content) : data_content,
       ai_analysis, title, body, 
-      finalDate, // هنا العمود لن يكون NULL أبداً
-      !isScheduled // إذا كان التاريخ قديماً أو حالياً، نعتبره مرسلاً (TRUE)
+      finalDate, 
+      !isScheduled 
     ];
 
     const result = await pool.query(query, values);
     const dbId = result.rows[0].id;
 
+    // إرسال لـ Firebase فوراً إذا لم يكن موعداً مستقبلياً
     if (!isScheduled && fcmToken) {
       await admin.messaging().send({
         notification: { title, body },
@@ -81,7 +88,12 @@ export default async function handler(req, res) {
       });
     }
 
-    return res.status(200).json({ success: true, db_id: dbId, stored_date: finalDate });
+    return res.status(200).json({ 
+      success: true, 
+      mode: 'App_Save_And_Send', 
+      db_id: dbId, 
+      stored_date: finalDate 
+    });
 
   } catch (error) {
     console.error('❌ Error:', error.message);
