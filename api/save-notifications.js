@@ -32,28 +32,45 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // 🛡️ حاجز حماية: إذا كان العنوان أو النص فارغاً، نرفض الطلب فوراً
+    // 🛡️ حاجز حماية: منع الإشعارات الفارغة
     if (!title || title.trim() === "" || !body || body.trim() === "") {
       return res.status(400).json({ error: "Empty notification ignored." });
     }
 
+    // الإعدادات المشتركة للإرسال لضمان الظهور في أندرويد
+    const messagePayload = {
+      notification: { title, body },
+      token: fcmToken,
+      android: {
+        priority: "high",
+        notification: {
+          channelId: "default", // تأكد أن هذا المعرف مطابق لما في كود Capacitor
+          sound: "default",
+          priority: "max",
+          visibility: "public"
+        }
+      },
+      apns: {
+        payload: {
+          aps: { sound: "default" }
+        }
+      }
+    };
+
     // --- مسار ميك (Make): إرسال فقط لفايربيس ---
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
-      await admin.messaging().send({
-        notification: { title, body },
-        token: fcmToken
-      });
+      await admin.messaging().send(messagePayload);
+      console.log('✅ Sent via Make to:', fcmToken);
       return res.status(200).json({ success: true, mode: 'Make_Only' });
     }
 
-    // --- مسار الواجهة: حفظ في نيون + إرسال ---
-    // نتحقق من وجود "الفئة" لضمان أنه طلب حفظ حقيقي وليس مجرد فتح للتطبيق
+    // --- مسار الواجهة: بدون فئة محددة نرسل فقط ---
     if (!category || category === 'general') {
-        // إذا كان مجرد فتح للتطبيق بدون فئة محددة، نرسل الإشعار فقط ولا نحفظ في نيون
-        await admin.messaging().send({ notification: { title, body }, token: fcmToken });
+        await admin.messaging().send(messagePayload);
         return res.status(200).json({ success: true, mode: 'Instant_Notification_Only' });
     }
 
+    // --- مسار الحفظ في نيون ثم الإرسال ---
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     const finalDate = scheduled_for || new Date().toISOString();
 
@@ -63,15 +80,15 @@ export default async function handler(req, res) {
     `;
 
     const values = [numericUserId, fcmToken, category, title, body, finalDate, true];
-
     const result = await pool.query(query, values);
     
-    await admin.messaging().send({ notification: { title, body }, token: fcmToken });
+    // إرسال الإشعار بعد الحفظ في قاعدة البيانات
+    await admin.messaging().send(messagePayload);
 
     return res.status(200).json({ success: true, db_id: result.rows[0].id });
 
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ FCM/DB Error:', error.message);
     return res.status(500).json({ error: error.message });
   }
 }
