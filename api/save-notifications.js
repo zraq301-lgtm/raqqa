@@ -2,22 +2,16 @@ import admin from 'firebase-admin';
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة البيانات
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full',
-  ssl: { 
-    rejectUnauthorized: false,
-    checkServerIdentity: () => undefined 
-  }
+  ssl: { rejectUnauthorized: false, checkServerIdentity: () => undefined }
 });
 
 const serviceAccount = {
   "type": "service_account",
   "project_id": "raqqa-43dc8",
   "client_email": "firebase-adminsdk-fbsvc@raqqa-43dc8.iam.gserviceaccount.com",
-  "private_key": process.env.FIREBASE_PRIVATE_KEY 
-    ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') 
-    : undefined,
+  "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
 };
 
 if (!admin.apps.length) {
@@ -29,76 +23,52 @@ export default async function handler(req, res) {
 
   const { 
     fcmToken, 
-    user_id = 1, 
-    category = 'general', 
-    data_content = {}, 
-    ai_analysis = null, 
-    title = "رقة", 
-    body = "تنبيه جديد", 
-    scheduled_for = null,
+    user_id, 
+    category, 
+    title, 
+    body, 
+    scheduled_for,
     isFromMake = false 
   } = req.body;
 
   try {
-    // --- المسار الأول والأولوية القصوى: إذا كان الطلب من Make ---
-    // هنا نقوم بالإرسال لفايربيس فوراً وننهي الاتصال تماماً (بدون لمس نيون)
-    if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
-      if (!fcmToken) throw new Error("Missing fcmToken from Make");
+    // 🛡️ حاجز حماية: إذا كان العنوان أو النص فارغاً، نرفض الطلب فوراً
+    if (!title || title.trim() === "" || !body || body.trim() === "") {
+      return res.status(400).json({ error: "Empty notification ignored." });
+    }
 
+    // --- مسار ميك (Make): إرسال فقط لفايربيس ---
+    if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       await admin.messaging().send({
         notification: { title, body },
         token: fcmToken
       });
-
-      // الرد بالنجاح والخروج الفوري من الدالة
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Notification sent via Firebase successfully (Make Path)', 
-        source: 'Make' 
-      });
+      return res.status(200).json({ success: true, mode: 'Make_Only' });
     }
 
-    // --- المسار الثاني: واجهة التطبيق (هذا الجزء لن يراه ميك أبداً) ---
-    // هنا فقط يبدأ الكود في التعامل مع أرقام المستخدم وقاعدة البيانات
+    // --- مسار الواجهة: حفظ في نيون + إرسال ---
+    // نتحقق من وجود "الفئة" لضمان أنه طلب حفظ حقيقي وليس مجرد فتح للتطبيق
+    if (!category || category === 'general') {
+        // إذا كان مجرد فتح للتطبيق بدون فئة محددة، نرسل الإشعار فقط ولا نحفظ في نيون
+        await admin.messaging().send({ notification: { title, body }, token: fcmToken });
+        return res.status(200).json({ success: true, mode: 'Instant_Notification_Only' });
+    }
+
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     const finalDate = scheduled_for || new Date().toISOString();
-    const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
 
     const query = `
-      INSERT INTO notifications (
-        user_id, fcm_token, category, data_content, 
-        ai_analysis, title, body, scheduled_for, is_sent
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id
+      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, is_sent)
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
     `;
 
-    const values = [
-      numericUserId, 
-      fcmToken, 
-      category, 
-      typeof data_content === 'object' ? JSON.stringify(data_content) : data_content,
-      ai_analysis, 
-      title, 
-      body, 
-      finalDate, 
-      !isScheduled 
-    ];
+    const values = [numericUserId, fcmToken, category, title, body, finalDate, true];
 
     const result = await pool.query(query, values);
-    const dbId = result.rows[0].id;
+    
+    await admin.messaging().send({ notification: { title, body }, token: fcmToken });
 
-    if (!isScheduled && fcmToken) {
-      await admin.messaging().send({
-        notification: { title, body },
-        token: fcmToken
-      });
-    }
-
-    return res.status(200).json({ 
-      success: true, 
-      db_id: dbId, 
-      mode: 'App_Save_And_Send' 
-    });
+    return res.status(200).json({ success: true, db_id: result.rows[0].id });
 
   } catch (error) {
     console.error('❌ Error:', error.message);
