@@ -28,23 +28,18 @@ export default async function handler(req, res) {
     title, 
     body, 
     scheduled_for,
-    startDate, // تاريخ بداية الدورة
-    endDate,   // تاريخ نهاية الدورة
-    date,
+    startDate, // القادم من التطبيق كتاريخ بداية
+    endDate,   // القادم من التطبيق كتاريخ نهاية
     isFromMake = false 
   } = req.body;
 
   try {
-    if ((!title || title.trim() === "") && (!body || body.trim() === "")) {
-      return res.status(400).json({ error: "Empty notification ignored." });
-    }
-
-    // --- 🧠 مترجم الذكاء (قوالب رقة) ---
+    // 🧠 قوالب إشعارات رقة
     const templates = {
-      'period': { t: "رقة: تذكير رقيق 🌸", b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية. صحتكِ أولاً، كوني مستعدة." },
-      'pregnancy': { t: "مبارك لكِ يا جميلة 👶", b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء لسلامة حملكِ." },
-      'lactation': { t: "فترة الرضاعة 🤍", b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً. لا تنسي تناول وجبتكِ الصحية." },
-      'beauty': { t: "وقت التدليل ✨", b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم. أنتِ تستحقين الأفضل." }
+      'period': { t: "رقة: تذكير رقيق 🌸", b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية." },
+      'pregnancy': { t: "مبارك لكِ يا جميلة 👶", b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء." },
+      'lactation': { t: "فترة الرضاعة 🤍", b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً." },
+      'beauty': { t: "وقت التدليل ✨", b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم." }
     };
 
     if (templates[category]) {
@@ -53,14 +48,13 @@ export default async function handler(req, res) {
     }
 
     const messagePayload = {
-      notification: { title: title || "تنبيه من رقة", body: body || "لديكِ تحديث جديد" },
+      notification: { title: title || "تنبيه من رقة", body: body || "تحديث جديد" },
       token: fcmToken,
-      android: { priority: "high", notification: { channelId: "default", sound: "default", priority: "max", visibility: "public" } },
-      apns: { payload: { aps: { sound: "default" } } }
+      android: { priority: "high", notification: { channelId: "default", sound: "default" } }
     };
 
-    // --- 1. مسار ميك (Make) ---
-    if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
+    // 1. مسار ميك (Make.com)
+    if (String(isFromMake) === "true") {
       await admin.messaging().send(messagePayload);
       if (req.body.db_id) {
          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [req.body.db_id]);
@@ -68,29 +62,21 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, mode: 'Make_Success' });
     }
 
-    // --- 2. مسار الواجهة (المعالجة الذكية للتواريخ) ---
+    // 2. معالجة البيانات للحفظ في Neon (الأسماء الإنجليزية الظاهرة في صورتك)
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     
-    // محاولة التقاط التاريخ المجدول (الإشعار)
-    const rawScheduledDate = scheduled_for || startDate || date;
-    const finalScheduledDate = rawScheduledDate ? new Date(rawScheduledDate) : new Date();
-
-    // فحص هل التاريخ في المستقبل (للإشعارات)
-    const isFuture = rawScheduledDate && new Date(rawScheduledDate) > new Date(Date.now() + 60000);
+    // تحديد تاريخ الجدولة: نستخدم startDate إذا لم يتوفر scheduled_for
+    const finalScheduledDate = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : new Date());
+    
+    // فحص هل التاريخ في المستقبل؟ (إذا كان قديم، نعتبره "سجل" وأُرسل بالفعل)
+    const isFuture = finalScheduledDate > new Date(Date.now() + 60000);
     const isSentStatus = isFuture ? false : true;
 
-    // --- التعديل الجوهري: استخدام الأسماء العربية للأعمدة لإنهاء مشكلة "باطل" ---
+    // استعلام الحفظ باستخدام الأسماء الإنجليزية الصحيحة (period_start_date, period_end_date)
     const query = `
       INSERT INTO notifications (
-        user_id, 
-        fcm_token, 
-        category, 
-        title, 
-        body, 
-        scheduled_for, 
-        is_sent,
-        "تاريخ_بداية_الفترة", 
-        "تاريخ_نهاية_الفترة"
+        user_id, fcm_token, category, title, body, scheduled_for, is_sent, 
+        period_start_date, period_end_date
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
     `;
@@ -103,12 +89,13 @@ export default async function handler(req, res) {
       body, 
       finalScheduledDate, 
       isSentStatus,
-      startDate ? new Date(startDate) : null, // القيمة لعمود تاريخ_بداية_الفترة
-      endDate ? new Date(endDate) : null     // القيمة لعمود تاريخ_نهاية_الفترة
+      startDate ? new Date(startDate) : null,
+      endDate ? new Date(endDate) : null
     ];
 
     const result = await pool.query(query, values);
     
+    // 3. الإرسال إلى Firebase فوراً إذا كان التاريخ حالياً أو قديماً
     if (!isFuture) {
         await admin.messaging().send(messagePayload);
     }
@@ -116,13 +103,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
         success: true, 
         db_id: result.rows[0].id, 
-        stored_start_date: startDate,
-        stored_end_date: endDate,
-        scheduled: isFuture ? 'Waiting for Make' : 'Handled Immediately' 
+        status: isFuture ? 'Scheduled for future' : 'Saved and Sent' 
     });
 
   } catch (error) {
-    console.error('❌ FCM/DB Error:', error.message);
+    console.error('❌ Error details:', error.message);
     return res.status(500).json({ error: error.message });
   }
 }
