@@ -21,24 +21,23 @@ if (!admin.apps.length) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // التقاط البيانات بناءً على صورة الواجهة (سجل التواريخ)
   let { 
     fcmToken, 
     user_id, 
     category, 
     title, 
     body, 
-    scheduled_for,
-    startDate, // القادم من التطبيق كتاريخ بداية
-    endDate,   // القادم من التطبيق كتاريخ نهاية
+    scheduled_for, // تاريخ الإشعار المجدول
+    startDate,     // تاريخ البدء من الواجهة
+    endDate,       // تاريخ الانتهاء من الواجهة
     isFromMake = false 
   } = req.body;
 
   try {
-    // 🧠 قوالب إشعارات رقة
+    // 🧠 منطق القوالب
     const templates = {
       'period': { t: "رقة: تذكير رقيق 🌸", b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية." },
-      'pregnancy': { t: "مبارك لكِ يا جميلة 👶", b: "سيدتي، حان وقت الاهتمام بغذائكِ وشرب الماء." },
-      'lactation': { t: "فترة الرضاعة 🤍", b: "سيدتي، غذاؤكِ المتوازن يعني طفلاً قوياً." },
       'beauty': { t: "وقت التدليل ✨", b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم." }
     };
 
@@ -47,32 +46,10 @@ export default async function handler(req, res) {
       body = templates[category].b;
     }
 
-    const messagePayload = {
-      notification: { title: title || "تنبيه من رقة", body: body || "تحديث جديد" },
-      token: fcmToken,
-      android: { priority: "high", notification: { channelId: "default", sound: "default" } }
-    };
+    // تجهيز تاريخ الحفظ (نستخدم تاريخ البدء إذا لم يوجد تاريخ جدولة صريح)
+    const saveDate = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : new Date());
+    const isFuture = saveDate > new Date(Date.now() + 60000);
 
-    // 1. مسار ميك (Make.com)
-    if (String(isFromMake) === "true") {
-      await admin.messaging().send(messagePayload);
-      if (req.body.db_id) {
-         await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [req.body.db_id]);
-      }
-      return res.status(200).json({ success: true, mode: 'Make_Success' });
-    }
-
-    // 2. معالجة البيانات للحفظ في Neon (الأسماء الإنجليزية الظاهرة في صورتك)
-    const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
-    
-    // تحديد تاريخ الجدولة: نستخدم startDate إذا لم يتوفر scheduled_for
-    const finalScheduledDate = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : new Date());
-    
-    // فحص هل التاريخ في المستقبل؟ (إذا كان قديم، نعتبره "سجل" وأُرسل بالفعل)
-    const isFuture = finalScheduledDate > new Date(Date.now() + 60000);
-    const isSentStatus = isFuture ? false : true;
-
-    // استعلام الحفظ باستخدام الأسماء الإنجليزية الصحيحة (period_start_date, period_end_date)
     const query = `
       INSERT INTO notifications (
         user_id, fcm_token, category, title, body, scheduled_for, is_sent, 
@@ -82,32 +59,38 @@ export default async function handler(req, res) {
     `;
 
     const values = [
-      numericUserId, 
-      fcmToken, 
-      category, 
-      title, 
-      body, 
-      finalScheduledDate, 
-      isSentStatus,
+      isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
+      fcmToken,
+      category,
+      title,
+      body,
+      saveDate,
+      isFuture ? false : true,
       startDate ? new Date(startDate) : null,
       endDate ? new Date(endDate) : null
     ];
 
     const result = await pool.query(query, values);
-    
-    // 3. الإرسال إلى Firebase فوراً إذا كان التاريخ حالياً أو قديماً
-    if (!isFuture) {
-        await admin.messaging().send(messagePayload);
+
+    // إرسال الإشعار فوراً إذا كان التاريخ حالياً أو قديماً
+    if (!isFuture && fcmToken) {
+      const messagePayload = {
+        notification: { title: title || "رقة", body: body || "تحديث جديد" },
+        token: fcmToken
+      };
+      await admin.messaging().send(messagePayload);
     }
 
     return res.status(200).json({ 
         success: true, 
-        db_id: result.rows[0].id, 
-        status: isFuture ? 'Scheduled for future' : 'Saved and Sent' 
+        db_id: result.rows[0].id,
+        received_dates: { start: startDate, end: endDate } // للتأكد في سجلات فيرسل
     });
 
   } catch (error) {
-    console.error('❌ Error details:', error.message);
+    console.error('❌ Error:', error.message);
     return res.status(500).json({ error: error.message });
+  } finally {
+    await pool.end();
   }
 }
