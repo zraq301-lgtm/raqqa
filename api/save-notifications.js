@@ -32,7 +32,6 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // 🛡️ حاجز حماية: منع الإشعارات الفارغة تماماً
     if ((!title || title.trim() === "") && (!body || body.trim() === "")) {
       return res.status(400).json({ error: "Empty notification ignored." });
     }
@@ -57,13 +56,11 @@ export default async function handler(req, res) {
       }
     };
 
-    // التعديل الأخير: إذا وجدنا قالب نستخدمه، وإذا لم نجد نستخدم النص القادم من ميك كما هو
     if (templates[category]) {
       title = templates[category].t;
       body = templates[category].b;
     }
 
-    // إعداد الرسالة النهائية لفايربيس
     const messagePayload = {
       notification: { 
         title: title || "تنبيه من رقة", 
@@ -82,33 +79,47 @@ export default async function handler(req, res) {
       apns: { payload: { aps: { sound: "default" } } }
     };
 
-    // --- مسار ميك (Make): إرسال فوري ومباشر ---
+    // --- 1. مسار ميك (Make): إرسال فوري وتحديث الحالة لتمت بنجاح ---
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       await admin.messaging().send(messagePayload);
-      console.log(`✅ Sent Notification via Make. Category: ${category}`);
+      
+      // تحديث الحالة في قاعدة البيانات لتصبح "تم الإرسال" حتى لا يكررها ميك
+      if (req.body.db_id) {
+         await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [req.body.db_id]);
+      }
+      
       return res.status(200).json({ success: true, mode: 'Make_Success' });
     }
 
-    // --- مسار الواجهة أو الحفظ في نيون ---
-    if (!category || category === 'general') {
-        await admin.messaging().send(messagePayload);
-        return res.status(200).json({ success: true, mode: 'Instant_Only' });
-    }
-
+    // --- 2. مسار الواجهة (التسجيل المستقبلي) ---
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
-    const finalDate = scheduled_for || new Date().toISOString();
+    
+    // تصحيح التاريخ: نستخدم التاريخ القادم من الواجهة، وإذا لم يوجد نستخدم الآن
+    const finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
+
+    // تحديد هل يرسل الآن أم ينتظر ميك؟
+    // إذا كان التاريخ مستقبلي (أكبر من الآن بـ دقيقة)، نجعله false لينتظر ميك
+    const isFuture = scheduled_for && new Date(scheduled_for) > new Date(Date.now() + 60000);
+    const isSentStatus = isFuture ? false : true;
 
     const query = `
       INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, is_sent)
       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id
     `;
 
-    const values = [numericUserId, fcmToken, category, title, body, finalDate, true];
+    const values = [numericUserId, fcmToken, category, title, body, finalDate, isSentStatus];
     const result = await pool.query(query, values);
     
-    await admin.messaging().send(messagePayload);
+    // لا نرسل الإشعار فوراً إلا إذا كان الموعد هو "الآن"
+    if (!isFuture) {
+        await admin.messaging().send(messagePayload);
+    }
 
-    return res.status(200).json({ success: true, db_id: result.rows[0].id });
+    return res.status(200).json({ 
+        success: true, 
+        db_id: result.rows[0].id, 
+        scheduled: isFuture ? 'Waiting for Make' : 'Sent Now' 
+    });
 
   } catch (error) {
     console.error('❌ FCM/DB Error:', error.message);
