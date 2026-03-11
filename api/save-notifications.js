@@ -2,7 +2,6 @@ import admin from 'firebase-admin';
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة البيانات
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full',
   ssl: { 
@@ -27,7 +26,6 @@ if (!admin.apps.length) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج البيانات مع الحفاظ على أسماء المفاتيح الأصلية
   const { 
     fcmToken, 
     user_id = 1, 
@@ -37,29 +35,25 @@ export default async function handler(req, res) {
     title = "رقة", 
     body = "تنبيه جديد", 
     scheduled_for = null,
-    isFromMake = false // مفتاح جديد للتمييز بين ميك والتطبيق
+    isFromMake = false 
   } = req.body;
 
   try {
-    // --- الحالة الأولى: إذا كان الطلب قادم من Make ---
     if (isFromMake === true) {
       if (!fcmToken) throw new Error("Missing fcmToken from Make");
-
       await admin.messaging().send({
         notification: { title, body },
         token: fcmToken
       });
-
-      // نرسل رد بالنجاح وننهي الدالة هنا (بدون لمس نيون)
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Sent via Make to Firebase only',
-        source: 'Make' 
-      });
+      return res.status(200).json({ success: true, message: 'Sent via Make', source: 'Make' });
     }
 
-    // --- الحالة الثانية: الطلب الطبيعي من التطبيق (الحفظ في نيون) ---
-    const isScheduled = !!scheduled_for;
+    // --- تعديل ذكي لملء عمود التاريخ (الحل المطلوب) ---
+    // إذا أرسلت الواجهة تاريخاً (مثل تاريخ الدورة) نستخدمه، وإلا نستخدم تاريخ اللحظة الحالية فوراً
+    const finalDate = scheduled_for || new Date().toISOString();
+    
+    // نعتبره "مجدول" فقط إذا كان التاريخ في المستقبل، وإلا نعتبره تاريخاً تم تخزينه الآن
+    const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
 
     const query = `
       INSERT INTO notifications (
@@ -70,8 +64,11 @@ export default async function handler(req, res) {
     `;
 
     const values = [
-      user_id, fcmToken, category, JSON.stringify(data_content),
-      ai_analysis, title, body, scheduled_for, !isScheduled
+      user_id, fcmToken, category, 
+      typeof data_content === 'object' ? JSON.stringify(data_content) : data_content,
+      ai_analysis, title, body, 
+      finalDate, // هنا العمود لن يكون NULL أبداً
+      !isScheduled // إذا كان التاريخ قديماً أو حالياً، نعتبره مرسلاً (TRUE)
     ];
 
     const result = await pool.query(query, values);
@@ -82,10 +79,9 @@ export default async function handler(req, res) {
         notification: { title, body },
         token: fcmToken
       });
-      return res.status(200).json({ success: true, mode: 'Instant', db_id: dbId });
     }
 
-    return res.status(200).json({ success: true, mode: 'Scheduled', db_id: dbId });
+    return res.status(200).json({ success: true, db_id: dbId, stored_date: finalDate });
 
   } catch (error) {
     console.error('❌ Error:', error.message);
