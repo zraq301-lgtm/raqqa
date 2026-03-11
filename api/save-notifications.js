@@ -21,21 +21,21 @@ if (!admin.apps.length) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // التقاط البيانات بناءً على صورة الواجهة (سجل التواريخ)
+  // استلام البيانات من الواجهة (تأكد أن التطبيق يرسلstartDate و endDate)
   let { 
     fcmToken, 
     user_id, 
     category, 
     title, 
     body, 
-    scheduled_for, // تاريخ الإشعار المجدول
-    startDate,     // تاريخ البدء من الواجهة
-    endDate,       // تاريخ الانتهاء من الواجهة
+    scheduled_for,
+    startDate, // التاريخ الذي اخترته في "تاريخ البدء"
+    endDate,   // التاريخ الذي اخترته في "تاريخ الانتهاء"
     isFromMake = false 
   } = req.body;
 
   try {
-    // 🧠 منطق القوالب
+    // 1. تحديد القوالب التلقائية
     const templates = {
       'period': { t: "رقة: تذكير رقيق 🌸", b: "سيدتي، أذكركِ باقتراب موعد دورتكِ الشهرية." },
       'beauty': { t: "وقت التدليل ✨", b: "سيدتي، لا تنسي روتين العناية بجمالكِ اليوم." }
@@ -46,14 +46,23 @@ export default async function handler(req, res) {
       body = templates[category].b;
     }
 
-    // تجهيز تاريخ الحفظ (نستخدم تاريخ البدء إذا لم يوجد تاريخ جدولة صريح)
-    const saveDate = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : new Date());
-    const isFuture = saveDate > new Date(Date.now() + 60000);
+    // 2. الحل الجذري لمشكلة التاريخ:
+    // نتحقق أولاً: هل أرسلت الواجهة startDate؟ إذا نعم نستخدمه، وإلا نستخدم تاريخ الإدخال الحالي.
+    const finalStartDate = startDate ? new Date(startDate) : new Date();
+    const finalEndDate = endDate ? new Date(endDate) : null;
+    
+    // تاريخ الجدولة للإشعار (يتبع تاريخ البدء المختار)
+    const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
 
+    // فحص هل التاريخ المختار "مستقبلي" أم "قديم/حالي"
+    const isFuture = finalScheduledFor > new Date(Date.now() + 60000);
+    const isSentStatus = isFuture ? false : true;
+
+    // 3. الحفظ في قاعدة البيانات (الأعمدة الإنجليزية كما في صورتك الأخيرة)
     const query = `
       INSERT INTO notifications (
-        user_id, fcm_token, category, title, body, scheduled_for, is_sent, 
-        period_start_date, period_end_date
+        user_id, fcm_token, category, title, body, is_sent, 
+        scheduled_for, period_start_date, period_end_date
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id
     `;
@@ -64,33 +73,34 @@ export default async function handler(req, res) {
       category,
       title,
       body,
-      saveDate,
-      isFuture ? false : true,
-      startDate ? new Date(startDate) : null,
-      endDate ? new Date(endDate) : null
+      isSentStatus,
+      finalScheduledFor, // تاريخ الجدولة
+      finalStartDate,    // تاريخ البدء المختار (بدلاً من تاريخ اللحظة)
+      finalEndDate       // تاريخ الانتهاء المختار
     ];
 
     const result = await pool.query(query, values);
 
-    // إرسال الإشعار فوراً إذا كان التاريخ حالياً أو قديماً
+    // 4. إرسال إشعار فوري فقط إذا كان التاريخ "الآن" أو "ماضي"
     if (!isFuture && fcmToken) {
-      const messagePayload = {
+      await admin.messaging().send({
         notification: { title: title || "رقة", body: body || "تحديث جديد" },
         token: fcmToken
-      };
-      await admin.messaging().send(messagePayload);
+      });
     }
 
     return res.status(200).json({ 
         success: true, 
         db_id: result.rows[0].id,
-        received_dates: { start: startDate, end: endDate } // للتأكد في سجلات فيرسل
+        saved_data: {
+            start: finalStartDate.toISOString(),
+            end: finalEndDate ? finalEndDate.toISOString() : null,
+            mode: isFuture ? "Scheduled" : "Recorded in History"
+        }
     });
 
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Database/FCM Error:', error.message);
     return res.status(500).json({ error: error.message });
-  } finally {
-    await pool.end();
   }
 }
