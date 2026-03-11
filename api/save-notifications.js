@@ -2,6 +2,7 @@ import admin from 'firebase-admin';
 import pkg from 'pg';
 const { Pool } = pkg;
 
+// إعداد الاتصال بقاعدة البيانات
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full',
   ssl: { 
@@ -39,8 +40,8 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // --- المسار الأول: الطلب قادم من Make (إرسال فقط) ---
-    // نستخدم فحصاً مرناً للقيمة سواء كانت Boolean أو نصاً مكتوباً
+    // --- المسار الأول والأولوية القصوى: إذا كان الطلب من Make ---
+    // هنا نقوم بالإرسال لفايربيس فوراً وننهي الاتصال تماماً (بدون لمس نيون)
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       if (!fcmToken) throw new Error("Missing fcmToken from Make");
 
@@ -49,15 +50,17 @@ export default async function handler(req, res) {
         token: fcmToken
       });
 
-      // إرجاع رد فوري والتوقف هنا تماماً لمنع الحفظ في نيون
+      // الرد بالنجاح والخروج الفوري من الدالة
       return res.status(200).json({ 
         success: true, 
-        mode: 'Forward_To_Firebase_Only',
-        message: 'Notification sent successfully without saving to Neon' 
+        message: 'Notification sent via Firebase successfully (Make Path)', 
+        source: 'Make' 
       });
     }
 
-    // --- المسار الثاني: الطلب قادم من واجهة التطبيق (حفظ + إرسال) ---
+    // --- المسار الثاني: واجهة التطبيق (هذا الجزء لن يراه ميك أبداً) ---
+    // هنا فقط يبدأ الكود في التعامل مع أرقام المستخدم وقاعدة البيانات
+    const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     const finalDate = scheduled_for || new Date().toISOString();
     const isScheduled = scheduled_for && new Date(scheduled_for) > new Date();
 
@@ -70,9 +73,13 @@ export default async function handler(req, res) {
     `;
 
     const values = [
-      user_id, fcmToken, category, 
+      numericUserId, 
+      fcmToken, 
+      category, 
       typeof data_content === 'object' ? JSON.stringify(data_content) : data_content,
-      ai_analysis, title, body, 
+      ai_analysis, 
+      title, 
+      body, 
       finalDate, 
       !isScheduled 
     ];
@@ -80,7 +87,6 @@ export default async function handler(req, res) {
     const result = await pool.query(query, values);
     const dbId = result.rows[0].id;
 
-    // إرسال لـ Firebase فوراً إذا لم يكن موعداً مستقبلياً
     if (!isScheduled && fcmToken) {
       await admin.messaging().send({
         notification: { title, body },
@@ -90,9 +96,8 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ 
       success: true, 
-      mode: 'App_Save_And_Send', 
       db_id: dbId, 
-      stored_date: finalDate 
+      mode: 'App_Save_And_Send' 
     });
 
   } catch (error) {
