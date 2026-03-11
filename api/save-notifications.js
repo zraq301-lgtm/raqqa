@@ -32,12 +32,12 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // 🛡️ حاجز حماية: منع الإشعارات الفارغة
-    if (!title || title.trim() === "" || !body || body.trim() === "") {
+    // 🛡️ حاجز حماية: منع الإشعارات الفارغة تماماً
+    if ((!title || title.trim() === "") && (!body || body.trim() === "")) {
       return res.status(400).json({ error: "Empty notification ignored." });
     }
 
-    // --- 🧠 مترجم الذكاء (منطق القوالب الشيك) ---
+    // --- 🧠 مترجم الذكاء (قوالب الشياكة) ---
     const templates = {
       'period': {
         t: "رقة: تذكير رقيق 🌸",
@@ -57,15 +57,18 @@ export default async function handler(req, res) {
       }
     };
 
-    // إذا كانت الفئة موجودة في القوالب، نقوم باستبدال النص التقني بنص القالب
+    // التعديل الأخير: إذا وجدنا قالب نستخدمه، وإذا لم نجد نستخدم النص القادم من ميك كما هو
     if (templates[category]) {
       title = templates[category].t;
       body = templates[category].b;
     }
 
-    // إعداد الرسالة النهائية
+    // إعداد الرسالة النهائية لفايربيس
     const messagePayload = {
-      notification: { title, body },
+      notification: { 
+        title: title || "تنبيه من رقة", 
+        body: body || "لديكِ تحديث جديد" 
+      },
       token: fcmToken,
       android: {
         priority: "high",
@@ -79,20 +82,19 @@ export default async function handler(req, res) {
       apns: { payload: { aps: { sound: "default" } } }
     };
 
-    // --- مسار ميك (Make): إرسال فقط لفايربيس ---
+    // --- مسار ميك (Make): إرسال فوري ومباشر ---
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       await admin.messaging().send(messagePayload);
-      console.log(`✅ Sent Smart Notification (${category}) via Make`);
-      return res.status(200).json({ success: true, mode: 'Make_Smart_Only' });
+      console.log(`✅ Sent Notification via Make. Category: ${category}`);
+      return res.status(200).json({ success: true, mode: 'Make_Success' });
     }
 
-    // --- مسار الواجهة: بدون فئة محددة نرسل فقط ---
+    // --- مسار الواجهة أو الحفظ في نيون ---
     if (!category || category === 'general') {
         await admin.messaging().send(messagePayload);
-        return res.status(200).json({ success: true, mode: 'Instant_Notification_Only' });
+        return res.status(200).json({ success: true, mode: 'Instant_Only' });
     }
 
-    // --- مسار الحفظ في نيون ثم الإرسال ---
     const numericUserId = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
     const finalDate = scheduled_for || new Date().toISOString();
 
