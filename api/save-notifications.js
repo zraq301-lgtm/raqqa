@@ -19,8 +19,9 @@ export default async function handler(req, res) {
     const finalEndDate = endDate ? new Date(endDate) : null;
     const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
 
-    const isFuture = finalScheduledFor > new Date(Date.now() + 60000);
-    const isSentStatus = isFuture ? false : true;
+    // --- التعديل الجوهري هنا ---
+    // جعل الحالة دائماً false لكي تلتقطها منصة Make
+    const isSentStatus = false; 
 
     const query = `
       INSERT INTO notifications (
@@ -32,11 +33,11 @@ export default async function handler(req, res) {
 
     const values = [
       isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
-      fcmToken,
-      category,
-      title,
-      body,
-      isSentStatus,
+      fcmToken || null,
+      category || 'عام',
+      title || 'تنبيه من رقة',
+      body || '',
+      isSentStatus, // ستدخل دائماً FALSE الآن
       finalScheduledFor,
       finalStartDate,
       finalEndDate
@@ -47,8 +48,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       db_id: result.rows[0].id,
-      message: "تم الحفظ في قاعدة بيانات نيون بنجاح"
+      message: "تم الحفظ بنجاح والحالة FALSE لانتظار منصة Make"
     });
+
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
