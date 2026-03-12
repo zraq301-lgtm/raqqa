@@ -1,10 +1,24 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة بيانات نيون
+// --- الإصلاح: استخدام WHATWG URL API لتجنب تحذير [DEP0169] ---
+const dbUrl = new URL(process.env.DATABASE_URL);
+
+// إعداد الاتصال بقاعدة بيانات نيون بطريقة مجزأة وأكثر أماناً
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL + (process.env.DATABASE_URL.includes('?') ? '&' : '?') + 'sslmode=verify-full',
-  ssl: { rejectUnauthorized: false, checkServerIdentity: () => undefined }
+  host: dbUrl.hostname,
+  port: dbUrl.port,
+  user: dbUrl.username,
+  password: dbUrl.password,
+  database: dbUrl.pathname.split('/')[1],
+  // إضافة معايير SSL المطلوبة لنيون
+  ssl: { 
+    rejectUnauthorized: false 
+  },
+  // إعدادات إضافية للأداء في بيئة Serverless
+  max: 1, 
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 30000
 });
 
 export default async function handler(req, res) {
@@ -24,16 +38,15 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // 1. معالجة التواريخ: تحويل النصوص القادمة من الواجهة إلى صيغة تاريخ صالحة لقاعدة البيانات
+    // 1. معالجة التواريخ
     const finalStartDate = startDate ? new Date(startDate) : new Date();
     const finalEndDate = endDate ? new Date(endDate) : null;
     const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
 
-    // 2. التعديل المطلوب لخدمة منصة Make:
-    // جعل الحالة دائماً false لكي يظهر السجل كـ "جديد" أو "غير معالج" في ميك
+    // 2. الحالة دائماً false لخدمة منصة Make
     const isSentStatus = false; 
 
-    // 3. استعلام الإدخال في جدول الإشعارات
+    // 3. استعلام الإدخال
     const query = `
       INSERT INTO notifications (
         user_id, 
@@ -50,14 +63,14 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // 4. ترتيب القيم مع ضمان وجود قيم افتراضية لمنع الأخطاء
+    // 4. ترتيب القيم
     const values = [
       isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
       fcmToken || null,
-      category || 'general', // هنا سترسل الواجهة 'pregnancy' للحوامل
+      category || 'general',
       title || 'تحديث من رقة',
       body || '',
-      isSentStatus, // القيمة المستهدفة FALSE
+      isSentStatus,
       finalScheduledFor,
       finalStartDate,
       finalEndDate
@@ -65,7 +78,7 @@ export default async function handler(req, res) {
 
     const result = await pool.query(query, values);
 
-    // الرد النهائي بنجاح العملية
+    // الرد بنجاح
     return res.status(200).json({ 
       success: true, 
       db_id: result.rows[0].id,
