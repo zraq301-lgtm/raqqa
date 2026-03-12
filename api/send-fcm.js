@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     title, 
     body, 
     category,
-    token // احتمالية إرسال التوكن باسم token من الواجهة
+    token 
   } = req.body;
 
   const targetToken = fcmToken || token;
@@ -33,14 +33,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing Device Token (fcmToken)" });
     }
 
-    // 2. معالجة النصوص لضمان عدم حدوث خطأ 400 (سواء من ميك أو الواجهة)
-    // إذا كانت الواجهة ترسل نصوصاً فارغة، نضع نصوصاً افتراضية
+    // 2. معالجة النصوص لضمان عدم حدوث خطأ 400
     const finalTitle = title && title.trim() !== "" ? title : "تنبيه من رقة 🌸";
     const finalBody = body && body.trim() !== "" ? body : "لديكِ تحديث جديد في التطبيق.";
     const finalCategory = category || 'general';
 
-    // 3. تركيب رابط الصورة تلقائياً بناءً على القسم
-    const imageUrl = `https://raqqa-app.vercel.app/assets/notifications/${finalCategory}.png`;
+    // 3. تحديث الرابط الجديد للموقع ومسار الصور
+    // ملاحظة: لا نضع كلمة public في الرابط لأن فيرسيل يعتبر محتواها هو الجذر
+    const imageUrl = `https://raqqa-hjl8.vercel.app/assets/notifications/${finalCategory}.png`;
 
     // 4. بناء كائن الإشعار لضمان الظهور على جميع المنصات
     const messagePayload = {
