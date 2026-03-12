@@ -16,24 +16,25 @@ export default async function handler(req, res) {
   // استقبال طلبات POST من ميك أو من الواجهة
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استلام البيانات (دعم أسماء الحقول المختلفة من الواجهة وميك)
+  // استلام البيانات
   let { 
     fcmToken, 
     title, 
     body, 
     category,
-    token 
+    token,
+    isFromMake // متغير نستخدمه للتأكد إذا كان الطلب من ميك
   } = req.body;
 
   const targetToken = fcmToken || token;
 
   try {
-    // 1. التحقق من وجود توكن الجهاز (إجباري)
+    // 1. التحقق من وجود توكن الجهاز
     if (!targetToken) {
       return res.status(400).json({ error: "Missing Device Token (fcmToken)" });
     }
 
-    // --- إضافة قوالب النصوص الذكية لجميع الأقسام ---
+    // --- قوالب النصوص الذكية ---
     const templates = {
       'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
       'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
@@ -46,17 +47,25 @@ export default async function handler(req, res) {
       'intimacy': { t: "لحظات الود ❤️", b: "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب." }
     };
 
-    // 2. معالجة النصوص (استخدام القالب إذا لم يتم إرسال نص مخصص)
-    const selected = templates[category] || { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق." };
-    
-    const finalTitle = title && title.trim() !== "" ? title : selected.t;
-    const finalBody = body && body.trim() !== "" ? body : selected.b;
     const finalCategory = category || 'general';
+    const selected = templates[finalCategory] || { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق." };
 
-    // 3. تحديث الرابط الجديد للموقع ومسار الصور
+    // ⚡ التعديل الجوهري: إذا كان الطلب من ميك، نستخدم القالب إجبارياً ونتجاهل النصوص المرسلة
+    let finalTitle, finalBody;
+    
+    if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
+      finalTitle = selected.t;
+      finalBody = selected.b;
+    } else {
+      // إذا كان من الواجهة، نستخدم النص المرسل أو القالب كاحتياط
+      finalTitle = title && title.trim() !== "" ? title : selected.t;
+      finalBody = body && body.trim() !== "" ? body : selected.b;
+    }
+
+    // 3. تحديث رابط الصورة
     const imageUrl = `https://raqqa-hjl8.vercel.app/assets/notifications/${finalCategory}.png`;
 
-    // 4. بناء كائن الإشعار لضمان الظهور على جميع المنصات
+    // 4. بناء كائن الإشعار
     const messagePayload = {
       notification: { 
         title: finalTitle, 
@@ -89,14 +98,13 @@ export default async function handler(req, res) {
     // 5. الإرسال الفوري لـ Firebase
     const messageId = await admin.messaging().send(messagePayload);
 
-    // 6. رد النجاح للواجهة أو لميك
     return res.status(200).json({ 
       success: true, 
       message_id: messageId,
       details: {
         sent_to: targetToken,
         category: finalCategory,
-        image: imageUrl
+        using_template: true
       }
     });
 
