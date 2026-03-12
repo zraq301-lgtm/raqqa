@@ -16,6 +16,7 @@ const MenstrualTracker = () => {
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [chatInput, setChatInput] = useState(''); // حالة جديدة للتحكم في نص الإدخال
   
   const [chatHistory, setChatHistory] = useState(() => {
     const savedChat = localStorage.getItem('chat_history');
@@ -48,7 +49,6 @@ const MenstrualTracker = () => {
     fetchNotifications();
   }, []);
 
-  // --- تفعيل الكاميرا والمعرض داخل الشات ---
   const handleMediaAction = async (type) => {
     try {
         setLoading(true);
@@ -61,7 +61,6 @@ const MenstrualTracker = () => {
         const fileName = `medical_img_${timestamp}.png`;
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
         
-        // إرسال الصورة للذكاء الاصطناعي لتحليلها كجزء من الاستشارة
         handleProcess(`لقد رفعت صورة طبية للمراجعة: ${finalAttachmentUrl}`);
     } catch (error) {
         console.error("فشل في معالجة الوسائط:", error);
@@ -71,6 +70,9 @@ const MenstrualTracker = () => {
   };
 
   const handleProcess = async (userInput = null) => {
+    const query = userInput || chatInput;
+    if (!query && !userInput) return;
+
     setLoading(true);
     const summary = JSON.stringify(data);
     
@@ -84,7 +86,7 @@ const MenstrualTracker = () => {
       3. تقديم نصائح طبية وقائية وعلاجية في نطاق الدورة والخصوبة.
       4. توقع الدورة القادمة بناءً على متوسط ثابت قدره ${FIXED_AVERAGE_CYCLE} يوماً.
       
-      السؤال الحالي: ${userInput || "أرجو تقديم تقرير طبي شامل بناءً على بياناتي الحالية."}`;
+      السؤال الحالي: ${query || "أرجو تقديم تقرير طبي شامل بناءً على بياناتي الحالية."}`;
 
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -105,6 +107,7 @@ const MenstrualTracker = () => {
 
       const savedToken = localStorage.getItem('fcm_token');
       
+      // 1. حفظ الإشعار في قاعدة بيانات نيون
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -117,11 +120,26 @@ const MenstrualTracker = () => {
           startDate: startDateInput, 
           endDate: data['سجل التواريخ_تاريخ الانتهاء'],
           scheduled_for: scheduledDate.toISOString(),
-          note: userInput || 'تقرير تلقائي'
+          note: query || 'تقرير تلقائي'
         }
       };
 
       await CapacitorHttp.post(saveToNeonOptions);
+
+      // 2. إرسال الإشعار فوراً عبر Firebase API الخاص بك
+      if (savedToken) {
+        const sendFcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تقرير طبي جديد 🩺',
+            body: 'طبيبة رقة انتهت من تحليل بياناتك، اضغطي لعرض التقرير.',
+            imageUrl: 'https://raqqa-app.vercel.app/notification-icon.png' // يمكنك تغيير الرابط لصورة من Vercel Blob
+          }
+        };
+        await CapacitorHttp.post(sendFcmOptions);
+      }
 
       const newMessage = { 
         id: Date.now(),
@@ -130,7 +148,8 @@ const MenstrualTracker = () => {
         time: new Date().toLocaleTimeString('ar-EG'),
       };
 
-      setChatHistory(prev => userInput ? [...prev, { role: 'user', content: userInput, id: Date.now()+1 }, newMessage] : [...prev, newMessage]);
+      setChatHistory(prev => query ? [...prev, { role: 'user', content: query, id: Date.now()+1 }, newMessage] : [...prev, newMessage]);
+      setChatInput(''); // مسح الحقل بعد الإرسال
       await fetchNotifications();
 
     } catch (err) {
@@ -155,7 +174,8 @@ const MenstrualTracker = () => {
     btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' },
     chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 1000, display: 'flex', flexDirection: 'column' },
     chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid #eee' },
-    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', fontSize: '20px', cursor: 'pointer' }
+    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', fontSize: '20px', cursor: 'pointer' },
+    sendBtn: { background: '#E91E63', color: 'white', border: 'none', padding: '10px 15px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
   };
 
   const sections = [
@@ -237,7 +257,7 @@ const MenstrualTracker = () => {
             ))}
             {loading && (
               <div style={{ textAlign: 'center', color: '#E91E63', margin: '15px 0' }}>
-                 🩺 جاري فحص بياناتك وإصدار تقرير طبي...
+                  🩺 جاري فحص بياناتك وإصدار تقرير طبي...
               </div>
             )}
           </div>
@@ -246,15 +266,23 @@ const MenstrualTracker = () => {
             <button onClick={() => handleMediaAction('camera')} style={styles.iconBtn}>📷</button>
             <button onClick={() => handleMediaAction('gallery')} style={styles.iconBtn}>🖼️</button>
             <input 
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
               placeholder="اسألي طبيبة رقة عن الخصوبة والدورة..." 
               style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
               onKeyDown={(e) => { 
-                if(e.key === 'Enter' && e.target.value.trim()) { 
-                  handleProcess(e.target.value);
-                  e.target.value = '';
+                if(e.key === 'Enter' && chatInput.trim()) { 
+                  handleProcess();
                 } 
               }}
             />
+            {/* إضافة زر السهم بجانب الإدخال */}
+            <button 
+              onClick={() => chatInput.trim() && handleProcess()} 
+              style={styles.sendBtn}
+            >
+              ➔
+            </button>
           </div>
         </div>
       )}
