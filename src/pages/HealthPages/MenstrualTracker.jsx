@@ -16,7 +16,7 @@ const MenstrualTracker = () => {
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  const [chatInput, setChatInput] = useState(''); // حالة جديدة للنص المدخل
+  const [chatInput, setChatInput] = useState(''); 
   
   const [chatHistory, setChatHistory] = useState(() => {
     const savedChat = localStorage.getItem('chat_history');
@@ -49,7 +49,6 @@ const MenstrualTracker = () => {
     fetchNotifications();
   }, []);
 
-  // --- وظيفة دفع الإشعار إلى Firebase ---
   const sendPushNotification = async (title, body) => {
     const savedToken = localStorage.getItem('fcm_token');
     if (!savedToken) return;
@@ -125,7 +124,6 @@ const MenstrualTracker = () => {
 
       const savedToken = localStorage.getItem('fcm_token');
       
-      // 1. حفظ في قاعدة البيانات (Neon)
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +141,6 @@ const MenstrualTracker = () => {
       };
       await CapacitorHttp.post(saveToNeonOptions);
 
-      // 2. إرسال الإشعار الفوري (FCM)
       await sendPushNotification('تقرير طبي جديد 🩺', 'طبيبة رقة قامت بتحليل بياناتك، اضغطي للعرض.');
 
       const newMessage = { 
@@ -154,7 +151,7 @@ const MenstrualTracker = () => {
       };
 
       setChatHistory(prev => userInput ? [...prev, { role: 'user', content: userInput, id: Date.now()+1 }, newMessage] : [...prev, newMessage]);
-      setChatInput(''); // مسح الحقل بعد الإرسال
+      setChatInput(''); 
       await fetchNotifications();
 
     } catch (err) {
@@ -178,9 +175,10 @@ const MenstrualTracker = () => {
     card: { background: '#fff', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 24px rgba(233, 30, 99, 0.08)', marginBottom: '15px' },
     btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '18px', fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px' },
     chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: '#fff', zIndex: 1000, display: 'flex', flexDirection: 'column' },
-    chatInputArea: { padding: '15px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '8px', borderTop: '1px solid #eee' },
-    iconBtn: { background: '#fce4ec', border: 'none', padding: '10px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-    sendBtn: { background: '#E91E63', color: 'white', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    chatInputArea: { padding: '10px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '5px', borderTop: '1px solid #eee' },
+    iconBtn: { background: '#fce4ec', border: 'none', padding: '8px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', flexShrink: 0 },
+    inputField: { flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none', minWidth: '0' },
+    sendBtn: { background: '#E91E63', color: 'white', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }
   };
 
   const sections = [
@@ -271,8 +269,8 @@ const MenstrualTracker = () => {
             <button onClick={() => handleMediaAction('camera')} style={styles.iconBtn}>📷</button>
             <button onClick={() => handleMediaAction('gallery')} style={styles.iconBtn}>🖼️</button>
             <input 
-              placeholder="اسألي طبيبة رقة عن الخصوبة والدورة..." 
-              style={{ flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none' }}
+              placeholder="اسألي طبيبة رقة..." 
+              style={styles.inputField}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyDown={(e) => { 
@@ -281,7 +279,6 @@ const MenstrualTracker = () => {
                 } 
               }}
             />
-            {/* زر السهم لإرسال السؤال كما في الصورة */}
             <button 
               onClick={() => chatInput.trim() && handleProcess(chatInput)} 
               style={styles.sendBtn}
