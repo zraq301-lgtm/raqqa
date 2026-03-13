@@ -21,7 +21,7 @@ export default async function handler(req, res) {
   let { 
     fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
-    milk_amount, baby_status, latitude, longitude // بيانات جديدة للموقع والرضاعة
+    milk_amount, baby_status, latitude, longitude 
   } = req.body;
 
   try {
@@ -29,7 +29,6 @@ export default async function handler(req, res) {
     const finalEndDate = endDate ? new Date(endDate) : null;
     const isSentStatus = false; 
 
-    // استعلام الإدخال الموحد (أضفنا الموقع والبيانات الإضافية)
     const query = `
       INSERT INTO notifications (
         user_id, fcm_token, category, title, body, is_sent, 
@@ -48,21 +47,18 @@ export default async function handler(req, res) {
       extra: JSON.stringify({ milk_amount, baby_status })
     };
 
-    // --- 1. حالة متابعة الحمل (9 أشهر - منطق الحساب العكسي الذكي) ---
+    // --- 1. حالة متابعة الحمل (حساب عكسي من تاريخ الولادة) ---
     if (category === 'pregnancy_followup') {
       let insertedIds = [];
       const today = new Date();
       const dueDate = finalEndDate ? new Date(finalEndDate) : new Date(today.getTime() + 280 * 24 * 60 * 60 * 1000);
 
-      // حساب الشهور المتبقية للوصول لتاريخ الولادة
       const monthsRemaining = (dueDate.getFullYear() - today.getFullYear()) * 12 + (dueDate.getMonth() - today.getMonth());
-      
-      // تحديد الشهر الحالي (9 - الشهور المتبقية) لضمان عدم تجاوز الشهر التاسع
       const currentStartMonth = Math.max(1, 9 - monthsRemaining);
 
       for (let i = 0; i <= monthsRemaining; i++) {
         const displayMonth = currentStartMonth + i;
-        if (displayMonth > 9) break; // توقف عند الشهر التاسع
+        if (displayMonth > 9) break;
 
         const monthlySchedule = new Date(today);
         monthlySchedule.setMonth(today.getMonth() + i);
@@ -78,16 +74,12 @@ export default async function handler(req, res) {
         const resDb = await pool.query(query, values);
         insertedIds.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ 
-        success: true, 
-        db_ids: insertedIds, 
-        message: `تمت جدولة الحمل بنجاح من الشهر ${currentStartMonth} حتى التاسع` 
-      });
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الحمل" });
 
     // --- 2. حالة الرضاعة (تكرار يومي ذكي) ---
     } else if (category === 'breastfeeding') {
       let insertedIds = [];
-      const intervals = [3, 7, 11, 15, 19]; // توزيع 5 رضعات على ساعات اليوم
+      const intervals = [3, 7, 11, 15, 19]; 
       
       for (let hour of intervals) {
         const dailySchedule = new Date();
@@ -99,7 +91,27 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تم تثبيت جدول الرضاعة اليومي" });
 
-    // --- 3. الإجراء الطبيعي للفئات الأخرى ---
+    // --- 3. النشاطات الأسبوعية المستمرة (الصفحات الخدمية الجديدة) ---
+    } else if (category === 'weekly_lifestyle' || category === 'wellness_tracking') {
+      let insertedIds = [];
+      for (let i = 1; i <= 8; i++) { // جدولة لـ 8 أسابيع
+        const weeklySchedule = new Date(finalStartDate);
+        weeklySchedule.setDate(weeklySchedule.getDate() + (i * 7));
+
+        const values = [
+          commonData.user, fcmToken, category, 
+          `${title} - مراجعة أسبوعية`, 
+          `حان وقت تحديث بيانات ${title} للحفاظ على تقدمك ✨`, 
+          isSentStatus, weeklySchedule, 
+          finalStartDate, null, 
+          commonData.loc_lng, commonData.loc_lat, commonData.extra
+        ];
+        const resDb = await pool.query(query, values);
+        insertedIds.push(resDb.rows[0].id);
+      }
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة التذكيرات الأسبوعية" });
+
+    // --- 4. الإجراء الطبيعي للفئات الأخرى ---
     } else {
       const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
       const values = [commonData.user, fcmToken, category || 'general', title, body, isSentStatus, finalScheduledFor, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
