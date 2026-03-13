@@ -21,11 +21,64 @@ const LactationHub = () => {
     } catch { return []; }
   });
 
+  // --- 1. دالة حفظ التوكن والمواعيد والبيانات كاملة إلى Neon/Firebase ---
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    // جلب التوكن من التخزين المحلي
+    const savedToken = localStorage.getItem('fcm_token');
+    
+    // إعداد تاريخ الجدولة
+    const scheduledDate = new Date();
+    scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
+
+    try {
+      // إعداد بيانات الحفظ لتشمل المواعيد والرضعات والتحليل
+      const saveToNeonOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'medical_report',
+          title: `تقرير جديد: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...", 
+          scheduled_for: scheduledDate.toISOString(),
+          // حفظ توقيت الرضاعة واليوم وعدد الرضعات كمتوسط داخل ملاحظات JSON
+          note: JSON.stringify({
+            analysis_summary: `تحليل آلي لـ ${categoryTitle}`,
+            feeding_time: data["الوقت"] || "غير محدد",
+            feeding_day: data["تاريخ اليوم"] || "غير محدد",
+            avg_feedings: data["معدل الرضاعة"] || "غير محدد",
+            full_data: data
+          })
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      // إرسال إشعار دفع فوري عبر FCM
+      if (savedToken) {
+        const fcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه طبي جديد 🔔',
+            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`,
+            data: { type: 'medical_report' }
+          }
+        };
+        await CapacitorHttp.post(fcmOptions);
+      }
+      
+      console.log("تم الحفظ والمزامنة بنجاح ✅");
+    } catch (err) {
+      console.error("خطأ في عملية المزامنة:", err);
+    }
+  };
+
   // --- دالة معالجة الوسائط (الكاميرا ورفع الصور) ---
   const handleMediaAction = async (type) => {
     try {
         setLoading(true);
-        // 1. تفعيل الكاميرا أو المعرض وجلب البيانات بصيغة Base64
         const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
 
         if (!base64Data) {
@@ -33,19 +86,14 @@ const LactationHub = () => {
             return;
         }
 
-        // 2. إعداد بيانات الرفع
         const timestamp = Date.now();
         const fileName = `lactation_img_${timestamp}.png`;
         const mimeType = 'image/png';
 
-        // 3. رفع الصورة مباشرة إلى Vercel Blob
         const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, mimeType);
-        
         console.log("تم الرفع بنجاح، الرابط:", finalAttachmentUrl);
         
-        // 4. إرسال الرابط للذكاء الاصطناعي للتحليل الفوري
         await handleSaveAndAnalyze(finalAttachmentUrl);
-        
         return finalAttachmentUrl;
 
     } catch (error) {
@@ -71,22 +119,10 @@ const LactationHub = () => {
     setShowChat(true);
     setAiResponse("جاري تحليل بيانات الأم والرضيع من قبل مستشارينا...");
     try {
-      // 1. الحفظ في قاعدة البيانات
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          category: 'تحليل الرضاعة وصحة الرضيع',
-          value: 'بيانات رضاعة جديدة',
-          user_id: 1,
-          note: JSON.stringify({ ...data, attachment: imageUrl })
-        }
-      });
-
-      // 2. تحليل الذكاء الاصطناعي بشخصية متخصصة
+      // 1. تحليل الذكاء الاصطناعي
       const promptText = `أنتِ مستشارة دولية معتمدة في الرضاعة الطبيعية (IBCLC) وطبيبة أطفال متخصصة. 
-بناءً على هذه البيانات الصحية: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة (مثلاً لصورة الحفاض أو الثدي): ${imageUrl}` : ''}.
-قدمي تحليلاً طبياً دقيقاً، مع نصائح عملية للأم المرضعة لزيادة إدرار الحليب، وكيفية التعامل مع حالة الرضيع، بأسلوب داعم، رقيق، ومهني للغاية مستمد من أحدث بروتوكولات العناية بالأم والطفل.`;
+بناءً على هذه البيانات الصحية: ${JSON.stringify(data)} ${imageUrl ? `وهذه الصورة المرفقة: ${imageUrl}` : ''}.
+قدمي تحليلاً طبياً دقيقاً، مع نصائح عملية للأم المرضعة لزيادة إدرار الحليب، وكيفية التعامل مع حالة الرضيع.`;
 
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -97,7 +133,10 @@ const LactationHub = () => {
       const result = response.data.reply || response.data.message || "حدث خطأ في استلام الرد.";
       setAiResponse(result);
 
-      // 3. تحديث السجل
+      // 2. تفعيل دالة الحفظ المتقدمة (التي تشمل التوكن وNeon وFirebase والمواعيد)
+      await saveAndNotify("تحليل الرضاعة وصحة الرضيع", result);
+
+      // 3. تحديث السجل المحلي
       const newEntry = { id: Date.now(), text: result, date: new Date().toLocaleString() };
       const updatedHistory = [newEntry, ...history];
       setHistory(updatedHistory);
@@ -221,7 +260,6 @@ const LactationHub = () => {
   );
 };
 
-// تم الإبقاء على الـ styles كما هي في الكود الأصلي
 const styles = {
   mainContainer: {
     background: 'linear-gradient(160deg, #96b896 0%, #739673 100%)',
