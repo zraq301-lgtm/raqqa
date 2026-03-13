@@ -32,28 +32,73 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  // دالة التعامل مع الوسائط ورفعها لـ Vercel
+  // --- الدالة المعدلة لإرسال التاريخ المدخل يدوياً ---
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    const savedToken = localStorage.getItem('fcm_token');
+    
+    // جلب التاريخ المكتوب في حقل "الموعد القادم" الخاص بهذا القسم
+    const userScheduledDate = data[`${categoryTitle}_الموعد القادم`];
+    
+    // تحويل التاريخ المدخل لصيغة ISO إذا وجد، وإلا سيستخدم تاريخ اليوم كاحتياط
+    let finalDate;
+    if (userScheduledDate) {
+        const parsedDate = new Date(userScheduledDate);
+        finalDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+    } else {
+        finalDate = new Date().toISOString();
+    }
+
+    try {
+      const saveToNeonOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'medical_report',
+          title: `موعد متابعة: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...",
+          scheduled_for: finalDate, // هنا يتم إجبار الـ API على حفظ التاريخ المرسل من الواجهة
+          note: `تحليل آلي لـ ${categoryTitle}`
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      if (savedToken) {
+        const fcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه طبي جديد 🔔',
+            body: `تم حفظ تقرير ${categoryTitle} وجدولة موعد المتابعة بتاريخ ${userScheduledDate || 'اليوم'}.`,
+            data: { type: 'medical_report' }
+          }
+        };
+        await CapacitorHttp.post(fcmOptions);
+      }
+      
+      console.log("تم الحفظ بالتاريخ المدخل بنجاح ✅");
+    } catch (err) {
+      console.error("خطأ في المزامنة:", err);
+    }
+  };
+
   const handleMediaAction = async (type) => {
     try {
       setLoading(true);
       let base64Image;
-      
       if (type === 'camera') {
         base64Image = await takePhoto();
       } else {
         base64Image = await fetchImage();
       }
-
       if (base64Image) {
-        // الرفع لـ Vercel Blob عبر الرابط الذي حددتيه
         const imageUrl = await uploadToVercel(base64Image, `report_${Date.now()}.jpg`, 'image/jpeg');
-        
-        // إرسال الرابط للذكاء الاصطناعي لتحليله
         await handleProcess("تحليل صورة", imageUrl);
       }
     } catch (error) {
       console.error("فشل في معالجة الوسائط:", error);
-      alert("حدث خطأ أثناء معالجة الصورة أو رفعها.");
     } finally {
       setLoading(false);
     }
@@ -63,7 +108,6 @@ const DoctorClinical = () => {
     setLoading(true);
     const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
     
-    // بناء البرومبت سواء كان من الحقول أو من المدخل النصي
     const finalPrompt = userPrompt 
       ? `سؤال المستخدم: ${userPrompt}. سياق البيانات: ${summary}`
       : `بيانات عيادة ${catName}: ${summary}. ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''}`;
@@ -82,16 +126,11 @@ const DoctorClinical = () => {
       
       setAiResponse(responseText);
       setIsChatOpen(true);
-      setUserPrompt(''); // تصفير الحقل بعد الإرسال
+      setUserPrompt('');
 
-      // حفظ في الإشعارات
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: { user_id: 1, category: catName, value: summary, note: responseText }
-      });
+      // استدعاء دالة الحفظ والإشعار (الآن ترسل التاريخ المكتوب في الواجهة)
+      await saveAndNotify(catName, responseText);
 
-      // إضافة للأرشيف
       setSavedReports(prev => [{ 
         id: Date.now(), 
         title: catName, 
@@ -101,7 +140,7 @@ const DoctorClinical = () => {
 
     } catch (err) {
       console.error("فشل الاتصال:", err);
-      setAiResponse("حدث خطأ في الشبكة. تم حفظ بياناتك محلياً.");
+      setAiResponse("حدث خطأ في الشبكة.");
       setIsChatOpen(true);
     } finally {
       setLoading(false);
@@ -109,7 +148,7 @@ const DoctorClinical = () => {
   };
 
   const deleteReport = (id) => {
-    if(window.confirm("هل تريد حذف هذا التقرير من الأرشيف؟")) {
+    if(window.confirm("هل تريد حذف هذا التقرير؟")) {
       setSavedReports(prev => prev.filter(r => r.id !== id));
     }
   };
@@ -122,13 +161,11 @@ const DoctorClinical = () => {
     doctorRaqqaBtn: { background: 'linear-gradient(90deg, #9b59b6, #ff4d7d)', color: 'white', border: 'none', padding: '15px', borderRadius: '20px', marginBottom: '15px', width: '100%', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
     chatOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 3000 },
     chatContent: { background: 'white', width: '100%', maxWidth: '500px', height: '90%', borderTopLeftRadius: '35px', borderTopRightRadius: '35px', padding: '20px', overflowY: 'auto' },
-    chatInputContainer: { display: 'flex', gap: '10px', padding: '10px', borderTop: '1px solid #eee', background: '#fff' },
     chatInput: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' }
   };
 
   return (
     <div style={{ padding: '10px', paddingBottom: '100px' }}>
-      
       <button style={styles.doctorRaqqaBtn} onClick={() => setIsChatOpen(true)}>
         <span>👩‍⚕️</span> استشاري رقة الطبي
       </button>
@@ -153,6 +190,7 @@ const DoctorClinical = () => {
                       <label style={{ fontSize: '0.65rem', color: '#777' }}>{f}</label>
                       <input 
                         style={styles.input} 
+                        placeholder={f === "الموعد القادم" ? "2026-03-20" : ""}
                         value={data[`${cat.name}_${f}`] || ''} 
                         onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})}
                       />
@@ -168,7 +206,6 @@ const DoctorClinical = () => {
         ))}
       </div>
 
-      {/* نافذة شات استشاري رقة */}
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatContent}>
@@ -177,12 +214,10 @@ const DoctorClinical = () => {
               <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: '#eee', borderRadius: '50%', width: '30px', height: '30px' }}>✕</button>
             </div>
             
-            {/* عرض الرد الأخير */}
             <div style={{ fontSize: '0.9rem', background: '#f9f9f9', padding: '15px', borderRadius: '15px', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>
-              {aiResponse || "مرحباً بكِ! يمكنكِ سؤالي عن أي شيء أو رفع صور التحاليل."}
+              {aiResponse || "مرحباً بكِ!"}
             </div>
 
-            {/* شريط كتابة البرومبت */}
             <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
               <input 
                 style={styles.chatInput} 
@@ -190,35 +225,23 @@ const DoctorClinical = () => {
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
               />
-              <button 
-                onClick={() => handleProcess("سؤال مباشر")}
-                style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px' }}
-              >
-                ✈️
-              </button>
+              <button onClick={() => handleProcess("سؤال مباشر")} style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px' }}>✈️</button>
             </div>
 
-            {/* أزرار الوسائط */}
             <div style={{ display: 'flex', justifyContent: 'space-around', padding: '15px', background: '#fff5f7', borderRadius: '20px', marginBottom: '20px' }}>
               <button onClick={() => handleMediaAction('camera')} style={{ background: 'white', border: '1px solid #eee', padding: '10px', borderRadius: '12px' }}>📸 كاميرا</button>
               <button onClick={() => handleMediaAction('gallery')} style={{ background: 'white', border: '1px solid #eee', padding: '10px', borderRadius: '12px' }}>🖼️ استوديو</button>
             </div>
 
-            {/* أرشيف الردود داخل الشات */}
-            {savedReports.length > 0 && (
-              <div style={{ marginTop: '20px' }}>
-                <h3 style={{ fontSize: '0.85rem', color: '#9b59b6', marginBottom: '10px' }}>📂 أرشيف تقاريرك</h3>
-                {savedReports.map(r => (
-                  <div key={r.id} style={{ display: 'flex', flexDirection: 'column', background: '#fff', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #ff4d7d1a' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <strong style={{fontSize: '0.8rem'}}>{r.title} - {r.date}</strong>
-                      <button onClick={() => deleteReport(r.id)} style={{ border: 'none', background: 'none', color: '#ff4d7d', cursor: 'pointer' }}>🗑️</button>
-                    </div>
-                    <p style={{ fontSize: '0.75rem', color: '#555', marginTop: '5px', maxHeight: '60px', overflow: 'hidden' }}>{r.text.substring(0, 100)}...</p>
-                  </div>
-                ))}
+            {savedReports.map(r => (
+              <div key={r.id} style={{ background: '#fff', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #ff4d7d1a' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <strong style={{fontSize: '0.8rem'}}>{r.title}</strong>
+                  <button onClick={() => deleteReport(r.id)} style={{ border: 'none', background: 'none', color: '#ff4d7d' }}>🗑️</button>
+                </div>
+                <p style={{ fontSize: '0.75rem' }}>{r.text.substring(0, 80)}...</p>
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}
