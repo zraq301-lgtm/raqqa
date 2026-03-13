@@ -22,6 +22,9 @@
     },
     "OneSignal": {
       "appId": "726fe629-0b1e-4294-9a4b-39cf50212b42"
+    },
+    "Geolocation": {
+      "enabled": true
     }
   }
 }
