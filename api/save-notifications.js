@@ -48,31 +48,35 @@ export default async function handler(req, res) {
       extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date })
     };
 
-    // --- 1. حالة متابعة الطبيب (الاستشارة القادمة والكشف الحالي) ---
+    // --- 1. حالة متابعة الطبيب (إجبار التسجيل بتاريخ الاستشارة القادمة) ---
     if (category === 'doctor_visit') {
       const visitDate = current_visit_date ? new Date(current_visit_date) : new Date();
+      // التأكد من تحويل تاريخ الموعد القادم القادم من الواجهة إلى صيغة Date
       const nextDate = next_appointment ? new Date(next_appointment) : null;
 
       const values = [
-        commonData.user, fcmToken, category, 
+        commonData.user, 
+        fcmToken, 
+        category, 
         "موعد الاستشارة الطبية 🩺", 
         `تم تسجيل الكشف بتاريخ ${visitDate.toLocaleDateString()}. الموعد القادم: ${nextDate ? nextDate.toLocaleDateString() : 'لم يحدد'}`, 
         isSentStatus, 
-        nextDate || visitDate, 
+        nextDate, // هنا تم إجبار الخانة (scheduled_for) لتأخذ تاريخ الموعد القادم
         visitDate, 
         nextDate, 
-        commonData.loc_lng, commonData.loc_lat, commonData.extra
+        commonData.loc_lng, 
+        commonData.loc_lat, 
+        commonData.extra
       ];
 
       const resDb = await pool.query(query, values);
       return res.status(200).json({ success: true, db_id: resDb.rows[0].id, message: "تم حفظ موعد الطبيب بنجاح" });
 
-    // --- 2. حالة الرضاعة (3 صفوف بمواعيد مختلفة) ---
+    // --- 2. حالة الرضاعة ---
     } else if (category === 'breastfeeding') {
       let insertedIds = [];
       const baseTime = scheduled_for ? new Date(scheduled_for) : new Date();
 
-      // جدولة 3 رضعات فقط لتذكير الأم بالمعدل الطبيعي
       for (let i = 0; i < 3; i++) {
         const breastfeedingTime = new Date(baseTime);
         breastfeedingTime.setHours(baseTime.getHours() + (i * 4)); 
