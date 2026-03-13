@@ -27,11 +27,10 @@ const LactationHub = () => {
     const baseTime = data["الوقت"] || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     const today = data["تاريخ اليوم"] || new Date().toISOString().split('T')[0];
 
-    // إنشاء 5 مواعيد رضاعة مقترحة بناءً على أول موعد مدخل
     const scheduledFeedings = Array.from({ length: 5 }).map((_, i) => {
       const [hours, minutes] = baseTime.split(':').map(Number);
       const newDate = new Date(today);
-      newDate.setHours(hours + (i * 3), minutes); // توزيع كل 3 ساعات
+      newDate.setHours(hours + (i * 3), minutes); 
       return newDate.toISOString();
     });
 
@@ -45,11 +44,11 @@ const LactationHub = () => {
           category: 'lactation_report',
           title: `تقرير مستشارة الرضاعة: ${categoryTitle}`,
           body: analysisResult.substring(0, 150) + "...", 
-          scheduled_for: new Date().toISOString(), // تاريخ التسجيل الفعلي الآن
+          scheduled_for: new Date().toISOString(), 
           note: JSON.stringify({
             analysis: analysisResult,
             actual_data: data,
-            daily_schedule: scheduledFeedings, // إرسال الـ 5 مواعيد للـ API
+            daily_schedule: scheduledFeedings,
             status: "Specialist Analysis"
           })
         }
@@ -107,8 +106,6 @@ const LactationHub = () => {
 
       const result = response.data.reply || response.data.message || "عذراً، تعذر التحليل.";
       setAiResponse(result);
-
-      // الرفع إلى نيون وفيربيس مع البيانات والمواعيد
       await saveToNeonAndNotify("تحليل شامل للمدخلات", result);
 
       const newEntry = { id: Date.now(), text: result, date: new Date().toLocaleString() };
@@ -132,7 +129,14 @@ const LactationHub = () => {
 
   const renderInput = (f) => (
     <div key={f} style={{ marginBottom: '10px' }}>
-      <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label>
+        {f === "معدل الرضاعة" && (
+          <span style={{ fontSize: '0.65rem', color: '#fff', background: 'rgba(0,0,0,0.2)', padding: '1px 5px', borderRadius: '5px' }}>
+            المعدل: 8-12
+          </span>
+        )}
+      </div>
       <input 
         type={f.includes("تاريخ") ? "date" : f.includes("الوقت") || f.includes("ساعة") ? "time" : "text"}
         style={styles.input} 
@@ -148,7 +152,6 @@ const LactationHub = () => {
 
   return (
     <div style={styles.mainContainer}>
-      {/* Header */}
       <div style={styles.header}>
         <div style={styles.statsRow}>
           <button onClick={() => setShowChat(true)} style={{...styles.circle, border:'none', background:'#fff', color:'#739673'}}>💬</button>
@@ -165,7 +168,6 @@ const LactationHub = () => {
         <div style={styles.progressBar}><div style={styles.progressFill}></div></div>
       </div>
 
-      {/* Sections */}
       <div style={styles.sectionsList}>
         {sections.map((sec, i) => (
           <div key={i} style={{...styles.sectionCard, background: openIdx === i ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.1)'}}>
@@ -180,7 +182,6 @@ const LactationHub = () => {
         ))}
       </div>
 
-      {/* Controls */}
       <div style={styles.footerControls}>
         <button onClick={() => handleSaveAndAnalyze()} style={styles.analyzeBtn}>
           {loading ? 'جاري التحليل والمزامنة...' : 'تحليل وحفظ المواعيد الآن'}
@@ -191,7 +192,6 @@ const LactationHub = () => {
         </div>
       </div>
 
-      {/* Chat Overlay */}
       {showChat && (
         <div style={styles.overlay}>
           <div style={styles.chatSheet}>
