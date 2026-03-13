@@ -1,9 +1,13 @@
-name: Roqa Production Build Signed (Clean Build with OneSignal Fix)
+name: Roqa Production Build Signed (Clean Build with Node 24 Support)
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+
+# إضافة المتغير لتعطيل تحذير Node 20 وتفعيل Node 24 في الـ Actions
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
@@ -17,16 +21,17 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - uses: actions/setup-node@v4
+      
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات (إضافة OneSignal مع حل التعارض)
+      - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
-          # استخدام --legacy-peer-deps بشكل صريح لحل مشكلة تعارض capacitor-voice-recorder
+          # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          # تثبيت OneSignal مع تجاهل تعارض الإصدارات لضمان تسجيل الجهاز
           npm install onesignal-cordova-plugin @capacitor/push-notifications --save --legacy-peer-deps
           npm run build --if-present
 
@@ -36,7 +41,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 5. دمج ملف google-services.json بالتفصيل
+      - name: 5. حقن ملف google-services.json
         shell: bash
         run: |
           cat <<EOF > android/app/google-services.json
@@ -70,30 +75,27 @@ jobs:
           }
           EOF
 
-      - name: 6. تهيئة OneSignal داخل ملفات الأندرويد وحقن الصلاحيات
+      - name: 6. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
-          # إضافة مكتبة OneSignal برمجياً لملف Gradle
+          
+          # إضافة مكتبة OneSignal
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
-          # حل مشكلة No matching client found عبر توحيد اسم الحزمة
+          
+          # توحيد اسم الحزمة ليتوافق مع Firebase (raqqa بدلاً من roqa)
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           
-          # إضافة تصريحات الوصول اللازمة (القديمة + الموقع الجغرافي الجديد)
+          # إضافة صلاحيات الإشعارات والموقع
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' $MANIFEST
-          
-          # حقن صلاحيات الموقع الجغرافي والخرائط
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' $MANIFEST
-          sed -i '/<application/i \    <uses-feature android:name="android.hardware.location" android:required="true" />' $MANIFEST
           
-          # تفعيل المرور الصريح للبيانات
+          # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
       - name: 7. بناء ملفات APK و AAB
@@ -103,22 +105,24 @@ jobs:
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 8. التوقيع الرقمي وإنتاج الحزمة النهائية
+      - name: 8. التوقيع الرقمي (Keystore)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
+          
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات (APK, AAB, Keystore)
+      - name: 9. رفع الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Full-Package
+          name: Roqa-Production-Package
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
