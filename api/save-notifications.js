@@ -21,7 +21,8 @@ export default async function handler(req, res) {
   let { 
     fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
-    milk_amount, baby_status, latitude, longitude 
+    milk_amount, baby_status, latitude, longitude,
+    next_appointment, current_visit_date // مدخلات الطبيب الجديدة
   } = req.body;
 
   try {
@@ -44,11 +45,60 @@ export default async function handler(req, res) {
       user: isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
       loc_lng: longitude || 0,
       loc_lat: latitude || 0,
-      extra: JSON.stringify({ milk_amount, baby_status })
+      extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date })
     };
 
-    // --- 1. حالة متابعة الحمل (حساب عكسي من تاريخ الولادة) ---
-    if (category === 'pregnancy_followup') {
+    // --- 1. حالة متابعة الطبيب (الاستشارة القادمة والكشف الحالي) ---
+    if (category === 'doctor_visit') {
+      const visitDate = current_visit_date ? new Date(current_visit_date) : new Date();
+      const nextDate = next_appointment ? new Date(next_appointment) : null;
+
+      const values = [
+        commonData.user, fcmToken, category, 
+        "موعد الاستشارة الطبية 🩺", 
+        `تم تسجيل الكشف بتاريخ ${visitDate.toLocaleDateString()}. الموعد القادم: ${nextDate ? nextDate.toLocaleDateString() : 'لم يحدد'}`, 
+        isSentStatus, 
+        nextDate || visitDate, 
+        visitDate, 
+        nextDate, 
+        commonData.loc_lng, commonData.loc_lat, commonData.extra
+      ];
+
+      const resDb = await pool.query(query, values);
+      return res.status(200).json({ success: true, db_id: resDb.rows[0].id, message: "تم حفظ موعد الطبيب بنجاح" });
+
+    // --- 2. حالة الرضاعة (3 صفوف بمواعيد مختلفة) ---
+    } else if (category === 'breastfeeding') {
+      let insertedIds = [];
+      const baseTime = scheduled_for ? new Date(scheduled_for) : new Date();
+
+      // جدولة 3 رضعات فقط لتذكير الأم بالمعدل الطبيعي
+      for (let i = 0; i < 3; i++) {
+        const breastfeedingTime = new Date(baseTime);
+        breastfeedingTime.setHours(baseTime.getHours() + (i * 4)); 
+        
+        const values = [
+          commonData.user, 
+          fcmToken, 
+          category, 
+          "تذكير بمعدل الرضاعة الطبيعي 🍼", 
+          `موعد الرضعة المقترح رقم ${i+1}. حافظي على معدل 8-12 رضعة يومياً.`, 
+          isSentStatus, 
+          breastfeedingTime, 
+          finalStartDate, 
+          finalEndDate, 
+          commonData.loc_lng, 
+          commonData.loc_lat, 
+          commonData.extra
+        ];
+        
+        const resDb = await pool.query(query, values);
+        insertedIds.push(resDb.rows[0].id);
+      }
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تم تسجيل 3 مواعيد رضاعة" });
+
+    // --- 3. حالة متابعة الحمل ---
+    } else if (category === 'pregnancy_followup') {
       let insertedIds = [];
       const today = new Date();
       const dueDate = finalEndDate ? new Date(finalEndDate) : new Date(today.getTime() + 280 * 24 * 60 * 60 * 1000);
@@ -76,40 +126,7 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الحمل" });
 
-    // --- 2. حالة الرضاعة (تعتمد على وقت الواجهة الفعلي) ---
-    } else if (category === 'breastfeeding') {
-      let insertedIds = [];
-      
-      // هنا نجبر الكود على أخذ الوقت والتاريخ من الواجهة
-      // إذا أرسلت الواجهة "scheduled_for" بها الوقت (مثلاً 08:30)، سنعتمدها
-      const baseTime = scheduled_for ? new Date(scheduled_for) : new Date();
-
-      // سنقوم بجدولة 5 رضعات تبدأ من الوقت الذي حددته الأم، بفاصل 4 ساعات بين كل رضعة
-      for (let i = 0; i < 5; i++) {
-        const breastfeedingTime = new Date(baseTime);
-        breastfeedingTime.setHours(baseTime.getHours() + (i * 4)); 
-        
-        const values = [
-          commonData.user, 
-          fcmToken, 
-          category, 
-          "تذكير الرضاعة 🍼", 
-          `حان موعد الرضعة رقم ${i+1}. (كمية الحليب المسجلة: ${milk_amount} مل)`, 
-          isSentStatus, 
-          breastfeedingTime, // الوقت الدقيق المسحوب من الواجهة + الحسبة
-          finalStartDate, 
-          finalEndDate, 
-          commonData.loc_lng, 
-          commonData.loc_lat, 
-          commonData.extra
-        ];
-        
-        const resDb = await pool.query(query, values);
-        insertedIds.push(resDb.rows[0].id);
-      }
-      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الرضاعة بناءً على توقيتك المفضل" });
-
-    // --- 3. النشاطات الأسبوعية المستمرة ---
+    // --- 4. النشاطات الأسبوعية ---
     } else if (category === 'weekly_lifestyle' || category === 'wellness_tracking') {
       let insertedIds = [];
       for (let i = 1; i <= 8; i++) {
@@ -129,7 +146,6 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة التذكيرات الأسبوعية" });
 
-    // --- 4. الإجراء الطبيعي للفئات الأخرى ---
     } else {
       const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
       const values = [commonData.user, fcmToken, category || 'general', title, body, isSentStatus, finalScheduledFor, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
