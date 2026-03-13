@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-// تم تصحيح المسار للوصول من src/pages/HealthPages إلى src/services [cite: 2]
 import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
 const Motherhood = () => {
@@ -27,6 +26,52 @@ const Motherhood = () => {
     { title: "الأمان والحماية", icon: "fa-shield-halved", items: ["لمسات الأمان", "حفظ أرقام الطوارئ", "سلامة المنزل", "الأمان الرقمي", "التصرف عند الضياع", "قواعد مع الغرباء", "قواعد المرور", "التواصل المفتوح", "معرفة العنوان", "مواجهة التنمر"] },
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
+
+  // الدالة المطلوبة لحفظ البيانات في نيون وإرسال إشعار FCM
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    const savedToken = localStorage.getItem('fcm_token');
+    
+    // إعداد تاريخ الجدولة ليكون بعد 7 أيام بالضبط
+    const scheduledDate = new Date();
+    scheduledDate.setDate(scheduledDate.getDate() + 7); 
+
+    try {
+      // أولاً: حفظ البيانات في نيون مع تاريخ التذكير (بعد أسبوع)
+      const saveToNeonOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'medical_report',
+          title: `تذكير أسبوعي: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...",
+          scheduled_for: scheduledDate.toISOString(),
+          note: `تحليل آلي لـ ${categoryTitle}`
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      // ثانياً: إرسال إشعار دفع فوري للهاتف عبر FCM
+      if (savedToken) {
+        const fcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه تربوي جديد 🔔',
+            body: `تم تحديث تحليلك بخصوص ${categoryTitle}.`,
+            data: { type: 'medical_report' }
+          }
+        };
+        await CapacitorHttp.post(fcmOptions);
+      }
+      
+      console.log("تم الحفظ في نيون وإرسال الإشعار بنجاح ✅");
+    } catch (err) {
+      console.error("خطأ في عملية المزامنة:", err);
+    }
+  };
 
   const saveDataToDB = async (selectedOnes) => {
     try {
@@ -62,7 +107,12 @@ const Motherhood = () => {
         data: { prompt: promptMessage }
       });
       const responseText = response.data.reply || response.data.message || "عذراً، المستشار مشغول حالياً.";
+      
       setMessages(prev => [...prev, { id: Date.now(), text: responseText, sender: 'ai', timestamp: new Date().toLocaleTimeString() }]);
+
+      // استدعاء دالة الحفظ والإشعار فور استلام رد الذكاء الاصطناعي
+      await saveAndNotify(currentList.title, responseText);
+
     } catch (err) {
       setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالذكاء الاصطناعي.", sender: 'ai' }]);
     } finally { setIsLoading(false); }
