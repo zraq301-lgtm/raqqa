@@ -38,11 +38,9 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // الدالة المعدلة لضمان إرسال التوكن لنيون
+  // --- دالة حفظ التوكن والمزامنة المعدلة بناءً على منطق الكود الناجح ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    // جلب التوكن الحالي من التخزين
-    const currentToken = localStorage.getItem('fcm_token');
-    
+    const savedToken = localStorage.getItem('fcm_token');
     const currentMonthNum = parseInt(pregnancyMonth) || 1;
     
     // حساب موعد الولادة المتوقع
@@ -51,40 +49,40 @@ const PregnancyApp = () => {
     deliveryDate.setMonth(deliveryDate.getMonth() + monthsRemaining);
     deliveryDate.setDate(deliveryDate.getDate() + 7);
 
-    // تجهيز البيانات للإرسال لنيون
-    const payload = {
-      fcm_token: currentToken, // التأكيد على إرسال القيمة الموجودة في التخزين
-      category: "pregnancy_followup",
-      title: `تحديث: ${categoryTitle}`,
-      body: currentAnalysis,
-      scheduled_for: deliveryDate.toISOString(),
-      all_data: JSON.stringify(inputs),
-      is_sent: false
-    };
-
     try {
-      // إرسال لـ Neon للحفظ
-      await CapacitorHttp.post({
+      // 1. المزامنة مع نيون - استخدمنا fcmToken (بدون underscore) كما في الكود الناجح
+      const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: payload
-      });
+        data: {
+          fcmToken: savedToken || undefined, // الاسم البرمجي الصحيح للحفظ
+          user_id: 1, // تثبيت المعرف كما في الكود المرفق
+          category: 'pregnancy_followup',
+          title: `تحديث طبي: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...",
+          scheduled_for: deliveryDate.toISOString(),
+          all_data: JSON.stringify(inputs), // حفظ المدخلات
+          note: `تحليل آلي لـ ${categoryTitle}`
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
 
-      // إرسال الإشعار الفوري (FCM)
-      if (currentToken) {
-        await CapacitorHttp.post({
+      // 2. إرسال إشعار FCM الفوري
+      if (savedToken) {
+        const fcmOptions = {
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
           headers: { 'Content-Type': 'application/json' },
           data: {
-            token: currentToken,
-            title: "تحليل طبي جديد",
-            body: `نتائج تحليل ${categoryTitle} جاهزة الآن.`,
-            report: currentAnalysis
+            token: savedToken,
+            title: 'تقرير حمل جديد 🤰',
+            body: `طبيب راقي قام بتحليل ${categoryTitle}، اضغطي للعرض.`,
+            data: { type: 'medical_report' }
           }
-        });
+        };
+        await CapacitorHttp.post(fcmOptions);
       }
     } catch (err) {
-      console.error("Sync Error:", err);
+      console.error("خطأ في مزامنة البيانات والتوكن:", err);
     }
   };
 
@@ -98,20 +96,20 @@ const PregnancyApp = () => {
       const tempMsg = { id: userMsgId, query: "تحليل وسائط", reply: "جاري المعالجة...", time: new Date().toLocaleTimeString('ar-SA') };
       setChatHistory(prev => [tempMsg, ...prev]);
 
-      const fileName = `img_${userMsgId}.png`;
+      const fileName = `preg_img_${userMsgId}.png`;
       const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
 
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `بصفتك خبير، حلل الصورة: ${finalAttachmentUrl}` }
+        data: { prompt: `بصفتك خبير، حلل هذه الصورة الطبية المتعلقة بالحمل: ${finalAttachmentUrl}` }
       });
 
       if (response.status === 200) {
-        const aiReply = response.data.reply || "تم التحليل.";
+        const aiReply = response.data.reply || "تم التحليل بنجاح.";
         const finalMsg = { id: Date.now(), query: "تحليل صورة", reply: aiReply, time: new Date().toLocaleTimeString('ar-SA') };
         setChatHistory(prev => [finalMsg, ...prev.filter(m => m.id !== userMsgId)]);
-        await saveAndNotify("تحليل صورة", aiReply);
+        await saveAndNotify("تحليل وسائط", aiReply);
       }
     } catch (error) { console.error(error); } finally { setIsProcessing(false); }
   };
@@ -131,7 +129,7 @@ const PregnancyApp = () => {
       const reply = response.data.reply || response.data.message;
       const newMsg = { id: Date.now(), query: userQuery, reply, time: new Date().toLocaleTimeString('ar-SA') };
       setChatHistory(prev => [newMsg, ...prev]);
-      await saveAndNotify("استشارة", reply);
+      await saveAndNotify("استشارة خاصة", reply);
     } catch (err) { console.error(err); }
     setLoading(false);
   };
@@ -146,7 +144,7 @@ const PregnancyApp = () => {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `حللي بيانات ${category.title}: ${dataString}` }
+        data: { prompt: `حللي بيانات ${category.title} للحامل: ${dataString}` }
       });
       const reply = response.data.reply || response.data.message;
       const newMsg = { id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') };
