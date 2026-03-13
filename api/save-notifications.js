@@ -76,25 +76,43 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الحمل" });
 
-    // --- 2. حالة الرضاعة (تكرار يومي ذكي) ---
+    // --- 2. حالة الرضاعة (تعتمد على وقت الواجهة الفعلي) ---
     } else if (category === 'breastfeeding') {
       let insertedIds = [];
-      const intervals = [3, 7, 11, 15, 19]; 
       
-      for (let hour of intervals) {
-        const dailySchedule = new Date();
-        dailySchedule.setHours(hour, 0, 0, 0); 
+      // هنا نجبر الكود على أخذ الوقت والتاريخ من الواجهة
+      // إذا أرسلت الواجهة "scheduled_for" بها الوقت (مثلاً 08:30)، سنعتمدها
+      const baseTime = scheduled_for ? new Date(scheduled_for) : new Date();
+
+      // سنقوم بجدولة 5 رضعات تبدأ من الوقت الذي حددته الأم، بفاصل 4 ساعات بين كل رضعة
+      for (let i = 0; i < 5; i++) {
+        const breastfeedingTime = new Date(baseTime);
+        breastfeedingTime.setHours(baseTime.getHours() + (i * 4)); 
         
-        const values = [commonData.user, fcmToken, category, "حان وقت الرضاعة 🍼", `بناءً على كمية حليب ${milk_amount} مل، طفلك يحتاج رضعة الآن`, isSentStatus, dailySchedule, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+        const values = [
+          commonData.user, 
+          fcmToken, 
+          category, 
+          "تذكير الرضاعة 🍼", 
+          `حان موعد الرضعة رقم ${i+1}. (كمية الحليب المسجلة: ${milk_amount} مل)`, 
+          isSentStatus, 
+          breastfeedingTime, // الوقت الدقيق المسحوب من الواجهة + الحسبة
+          finalStartDate, 
+          finalEndDate, 
+          commonData.loc_lng, 
+          commonData.loc_lat, 
+          commonData.extra
+        ];
+        
         const resDb = await pool.query(query, values);
         insertedIds.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تم تثبيت جدول الرضاعة اليومي" });
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الرضاعة بناءً على توقيتك المفضل" });
 
-    // --- 3. النشاطات الأسبوعية المستمرة (الصفحات الخدمية الجديدة) ---
+    // --- 3. النشاطات الأسبوعية المستمرة ---
     } else if (category === 'weekly_lifestyle' || category === 'wellness_tracking') {
       let insertedIds = [];
-      for (let i = 1; i <= 8; i++) { // جدولة لـ 8 أسابيع
+      for (let i = 1; i <= 8; i++) {
         const weeklySchedule = new Date(finalStartDate);
         weeklySchedule.setDate(weeklySchedule.getDate() + (i * 7));
 
