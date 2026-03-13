@@ -48,26 +48,50 @@ export default async function handler(req, res) {
       extra: JSON.stringify({ milk_amount, baby_status })
     };
 
-    // --- 1. حالة متابعة الحمل (9 أشهر) ---
+    // --- 1. حالة متابعة الحمل (9 أشهر - منطق الحساب العكسي الذكي) ---
     if (category === 'pregnancy_followup') {
       let insertedIds = [];
-      for (let i = 0; i < 9; i++) {
-        const monthlySchedule = new Date(finalStartDate);
-        monthlySchedule.setMonth(monthlySchedule.getMonth() + i);
-        const values = [commonData.user, fcmToken, category, `${title} - الشهر ${i + 1}`, body, isSentStatus, monthlySchedule, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+      const today = new Date();
+      const dueDate = finalEndDate ? new Date(finalEndDate) : new Date(today.getTime() + 280 * 24 * 60 * 60 * 1000);
+
+      // حساب الشهور المتبقية للوصول لتاريخ الولادة
+      const monthsRemaining = (dueDate.getFullYear() - today.getFullYear()) * 12 + (dueDate.getMonth() - today.getMonth());
+      
+      // تحديد الشهر الحالي (9 - الشهور المتبقية) لضمان عدم تجاوز الشهر التاسع
+      const currentStartMonth = Math.max(1, 9 - monthsRemaining);
+
+      for (let i = 0; i <= monthsRemaining; i++) {
+        const displayMonth = currentStartMonth + i;
+        if (displayMonth > 9) break; // توقف عند الشهر التاسع
+
+        const monthlySchedule = new Date(today);
+        monthlySchedule.setMonth(today.getMonth() + i);
+
+        const values = [
+          commonData.user, fcmToken, category, 
+          `${title} - الشهر ${displayMonth}`, 
+          body, isSentStatus, monthlySchedule, 
+          finalStartDate, finalEndDate, 
+          commonData.loc_lng, commonData.loc_lat, commonData.extra
+        ];
+
         const resDb = await pool.query(query, values);
         insertedIds.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة 9 أشهر حمل" });
+      return res.status(200).json({ 
+        success: true, 
+        db_ids: insertedIds, 
+        message: `تمت جدولة الحمل بنجاح من الشهر ${currentStartMonth} حتى التاسع` 
+      });
 
     // --- 2. حالة الرضاعة (تكرار يومي ذكي) ---
     } else if (category === 'breastfeeding') {
       let insertedIds = [];
-      const intervals = [3, 7, 11, 15, 19]; // توزيع 5 رضعات على ساعات اليوم (كل 4 ساعات تقريباً)
+      const intervals = [3, 7, 11, 15, 19]; // توزيع 5 رضعات على ساعات اليوم
       
       for (let hour of intervals) {
         const dailySchedule = new Date();
-        dailySchedule.setHours(hour, 0, 0, 0); // ضبط الساعات المحددة لكل يوم
+        dailySchedule.setHours(hour, 0, 0, 0); 
         
         const values = [commonData.user, fcmToken, category, "حان وقت الرضاعة 🍼", `بناءً على كمية حليب ${milk_amount} مل، طفلك يحتاج رضعة الآن`, isSentStatus, dailySchedule, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
         const resDb = await pool.query(query, values);
