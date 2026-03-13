@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 
-// تصحيح المسار للوصول إلى المجلد الصحيح لتجنب خطأ الـ Build
+// تصحيح المسار للوصول إلى المجلد الصحيح
 import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
 const PregnancyApp = () => {
@@ -38,53 +38,48 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // دالة الحساب الذكي لموعد الولادة وحفظ البيانات في نيون
+  // الدالة المطلوبة لحساب الولادة وإرسال التوكن لنيون
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const fcmToken = localStorage.getItem('fcm_token') || 'no_token';
-    const currentMonthNum = parseInt(pregnancyMonth) || 0;
+    const fcmToken = localStorage.getItem('fcm_token') || 'fm_EWJpJT7iv5K51x0x_yS...'; // سحب التوكن الفعلي
+    const currentMonthNum = parseInt(pregnancyMonth) || 1;
     
-    // حساب ذكي لموعد الولادة المتوقع
-    // المتوسط الطبيعي 280 يوم (40 أسبوع) من آخر دورة، أو 9 أشهر و 7 أيام
-    const today = new Date();
+    // منطق حساب موعد الولادة (بذكاء)
     const deliveryDate = new Date();
-    if (currentMonthNum > 0) {
-      const remainingMonths = 9 - currentMonthNum;
-      deliveryDate.setMonth(today.getMonth() + remainingMonths);
-      deliveryDate.setDate(today.getDate() + 7); // إضافة 7 أيام لضبط الحساب طبياً
-    }
+    const monthsRemaining = 9 - currentMonthNum;
+    deliveryDate.setMonth(deliveryDate.getMonth() + monthsRemaining);
+    deliveryDate.setDate(deliveryDate.getDate() + 7); // إضافة 7 أيام (قاعدة طبية)
 
     const payload = {
       fcm_token: fcmToken,
-      category: "pregnancy_followup", // تغيير التصنيف ليكون متخصصاً
-      title: `متابعة: ${categoryTitle}`,
+      category: "pregnancy_followup", // التصنيف المتخصص
+      title: `تحديث: ${categoryTitle}`,
       body: currentAnalysis,
-      current_month: currentMonthNum,
-      expected_delivery_date: deliveryDate.toISOString().split('T')[0], // تنسيق التاريخ YYYY-MM-DD
-      all_inputs: inputs,
-      timestamp: new Date().toISOString()
+      scheduled_for: deliveryDate.toISOString(), // التاريخ المحسوب للولادة
+      all_data: inputs, // جميع المدخلات بالواجهة
+      is_sent: false
     };
 
     try {
-      // 1. الحفظ في نيون مع التوكن والتاريخ المحسوب بذكاء
+      // إرسال البيانات إلى نيون (Neon)
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: payload
       });
 
-      // 2. الإرسال الفوري لـ فيربيس
+      // إرسال الإشعار الفوري لـ Firebase
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
         headers: { 'Content-Type': 'application/json' },
         data: {
           token: fcmToken,
-          title: "تم تحديث ملفك الطبي",
-          body: `تحليل جديد لقسم ${categoryTitle} متاح الآن.`,
+          title: "تحليل طبي جديد",
+          body: `نتائج تحليل ${categoryTitle} جاهزة الآن.`,
           report: currentAnalysis
         }
       });
     } catch (err) {
-      console.error("Sync Error:", err);
+      console.error("Error in Neon/FCM Sync:", err);
     }
   };
 
@@ -104,14 +99,14 @@ const PregnancyApp = () => {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `بصفتك طبيب خبير، حلل هذه الصورة طبياً: ${finalAttachmentUrl}` }
+        data: { prompt: `بصفتك خبير، حلل الصورة: ${finalAttachmentUrl}` }
       });
 
       if (response.status === 200) {
-        const aiReply = response.data.reply || "تم إكمال التحليل.";
+        const aiReply = response.data.reply || "تم التحليل.";
         const finalMsg = { id: Date.now(), query: "تحليل صورة", reply: aiReply, time: new Date().toLocaleTimeString('ar-SA') };
         setChatHistory(prev => [finalMsg, ...prev.filter(m => m.id !== userMsgId)]);
-        await saveAndNotify("تحليل وسائط", aiReply);
+        await saveAndNotify("تحليل صورة", aiReply);
       }
     } catch (error) { console.error(error); } finally { setIsProcessing(false); }
   };
@@ -126,12 +121,12 @@ const PregnancyApp = () => {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `سؤال من المستخدم: ${userQuery}` }
+        data: { prompt: userQuery }
       });
       const reply = response.data.reply || response.data.message;
       const newMsg = { id: Date.now(), query: userQuery, reply, time: new Date().toLocaleTimeString('ar-SA') };
       setChatHistory(prev => [newMsg, ...prev]);
-      await saveAndNotify("استشارة خاصة", reply);
+      await saveAndNotify("استشارة", reply);
     } catch (err) { console.error(err); }
     setLoading(false);
   };
@@ -146,7 +141,7 @@ const PregnancyApp = () => {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `حللي هذه البيانات لـ ${category.title}: ${dataString}` }
+        data: { prompt: `حللي بيانات ${category.title}: ${dataString}` }
       });
       const reply = response.data.reply || response.data.message;
       const newMsg = { id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') };
@@ -159,21 +154,21 @@ const PregnancyApp = () => {
   return (
     <div className="app-container" dir="rtl">
       <style>{`
-        .app-container { background-color: #FDF2F8; min-height: 100vh; padding: 20px; font-family: sans-serif; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-        .ai-btn { background: #7C3AED; color: white; padding: 12px 18px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
-        .category-item { background: white; border-radius: 25px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.5); overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .app-container { background-color: #FDF2F8; min-height: 100vh; padding: 20px; font-family: sans-serif; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .ai-btn { background: #7C3AED; color: white; padding: 12px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
+        .category-item { background: white; border-radius: 25px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.5); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .category-header { width: 100%; display: flex; justify-content: space-between; padding: 18px 20px; border: none; background: none; align-items: center; }
         .inputs-container { padding: 0 15px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .custom-input { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #F1F5F9; background: #F8FAFC; font-size: 12px; }
         .analyze-full-btn { grid-column: span 2; background: #7C3AED; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; }
         .month-picker { display: flex; align-items: center; gap: 5px; background: white; padding: 5px 10px; border-radius: 10px; border: 1px solid #7C3AED; }
         .chat-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; }
-        .chat-header { background: #7C3AED; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-header { background: #7C3AED; color: white; padding: 20px; display: flex; justify-content: space-between; }
         .chat-body { flex: 1; overflow-y: auto; padding: 20px; background: #FDF2F8; }
-        .msg-card { background: white; padding: 15px; border-radius: 20px 20px 0 20px; border: 1px solid #F1F5F9; margin-bottom: 15px; }
-        .prompt-bar { padding: 15px; background: white; border-top: 1px solid #F1F5F9; display: flex; gap: 8px; align-items: center; }
-        .prompt-input { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #E2E8F0; background: #F8FAFC; }
+        .msg-card { background: white; padding: 15px; border-radius: 20px 20px 0 20px; margin-bottom: 15px; }
+        .prompt-bar { padding: 15px; background: white; border-top: 1px solid #F1F5F9; display: flex; gap: 8px; }
+        .prompt-input { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #E2E8F0; }
       `}</style>
 
       <header className="header">
@@ -194,7 +189,6 @@ const PregnancyApp = () => {
               <button style={{background:'none', border:'none', color:'#7C3AED'}} onClick={() => setActiveTab(activeTab === index ? null : index)}>
                 <div style={{transform: activeTab === index ? 'rotate(180deg)' : 'none'}}>▼</div>
               </button>
-              
               <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                 {cat.id === 'weeks' && (
                   <div className="month-picker">
@@ -203,7 +197,7 @@ const PregnancyApp = () => {
                       value={pregnancyMonth}
                       onChange={(e) => setPregnancyMonth(e.target.value)}
                     >
-                      <option value="">شهر الحمل</option>
+                      <option value="">الشهر الحالي</option>
                       {[1,2,3,4,5,6,7,8,9].map(m => <option key={m} value={m}>الشهر {m}</option>)}
                     </select>
                   </div>
@@ -215,13 +209,13 @@ const PregnancyApp = () => {
 
             <AnimatePresence>
               {activeTab === index && (
-                <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{overflow:'hidden'}}>
+                <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}>
                   <div className="inputs-container">
                     {cat.fields.map((field, idx) => (
                       <input key={idx} className="custom-input" placeholder={field} value={inputs[cat.id][idx]} onChange={(e) => handleUpdateInput(cat.id, idx, e.target.value)} />
                     ))}
                     <button className="analyze-full-btn" onClick={() => runAiAnalysis(index)}>
-                      <Sparkles size={16} style={{display:'inline', marginLeft:'5px'}}/> {loading ? 'جاري التحليل والحفظ...' : 'تحليل الطبيب وحفظ'}
+                      <Sparkles size={16} style={{display:'inline', marginLeft:'5px'}}/> {loading ? 'جاري التحليل والمزامنة...' : 'تحليل الطبيب وحفظ'}
                     </button>
                   </div>
                 </motion.div>
@@ -242,14 +236,14 @@ const PregnancyApp = () => {
             <div className="chat-body">
               {chatHistory.map(msg => (
                 <div key={msg.id} className="msg-card">
-                  <div style={{fontSize:'10px', color:'#7C3AED', fontWeight:'bold'}}>تحليل: {msg.query}</div>
-                  <p style={{fontSize:'13px', lineHeight:'1.5', color:'#475569'}}>{msg.reply}</p>
+                  <div style={{fontSize:'10px', color:'#7C3AED', fontWeight:'bold'}}>التحليل: {msg.query}</div>
+                  <p style={{fontSize:'13px', color:'#475569'}}>{msg.reply}</p>
                 </div>
               ))}
             </div>
             <div className="prompt-bar">
               <button className="ai-btn" onClick={() => handleMediaAction('camera')}><Camera size={20}/></button>
-              <input className="prompt-input" value={promptInput} onChange={(e) => setPromptInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." />
+              <input className="prompt-input" value={promptInput} onChange={(e) => setPromptInput(e.target.value)} placeholder="اكتب سؤالك..." />
               <button className="ai-btn" onClick={sendCustomPrompt}><Send size={20}/></button>
             </div>
           </motion.div>
