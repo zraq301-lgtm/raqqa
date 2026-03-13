@@ -1,31 +1,25 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// --- الإصلاح: استخدام WHATWG URL API لتجنب تحذير [DEP0169] ---
 const dbUrl = new URL(process.env.DATABASE_URL);
 
-// إعداد الاتصال بقاعدة بيانات نيون بطريقة مجزأة وأكثر أماناً
 const pool = new Pool({
   host: dbUrl.hostname,
   port: dbUrl.port,
   user: dbUrl.username,
   password: dbUrl.password,
   database: dbUrl.pathname.split('/')[1],
-  // إضافة معايير SSL المطلوبة لنيون
   ssl: { 
     rejectUnauthorized: false 
   },
-  // إعدادات إضافية للأداء في بيئة Serverless
   max: 1, 
   connectionTimeoutMillis: 5000,
   idleTimeoutMillis: 30000
 });
 
 export default async function handler(req, res) {
-  // السماح بطلبات POST فقط
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استلام البيانات من الواجهة
   let { 
     fcmToken, 
     user_id, 
@@ -38,15 +32,10 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    // 1. معالجة التواريخ
     const finalStartDate = startDate ? new Date(startDate) : new Date();
     const finalEndDate = endDate ? new Date(endDate) : null;
-    const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
-
-    // 2. الحالة دائماً false لخدمة منصة Make
     const isSentStatus = false; 
 
-    // 3. استعلام الإدخال
     const query = `
       INSERT INTO notifications (
         user_id, 
@@ -63,31 +52,58 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // 4. ترتيب القيم
-    const values = [
-      isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
-      fcmToken || null,
-      category || 'general',
-      title || 'تحديث من رقة',
-      body || '',
-      isSentStatus,
-      finalScheduledFor,
-      finalStartDate,
-      finalEndDate
-    ];
+    // --- ميزة جدولة الحمل (جديد) ---
+    if (category === 'pregnancy_followup') {
+      let insertedIds = [];
+      // جدولة 9 إشعارات، واحد لكل شهر
+      for (let i = 0; i < 9; i++) {
+        const monthlySchedule = new Date(finalStartDate);
+        monthlySchedule.setMonth(monthlySchedule.getMonth() + i);
 
-    const result = await pool.query(query, values);
-
-    // الرد بنجاح
-    return res.status(200).json({ 
-      success: true, 
-      db_id: result.rows[0].id,
-      message: "تم الحفظ بنجاح والحالة FALSE لانتظار معالجة منصة Make",
-      tracking_info: {
-        category: category,
-        start_date: finalStartDate.toISOString()
+        const values = [
+          isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
+          fcmToken || null,
+          category,
+          `${title} - الشهر ${i + 1}`, // إضافة رقم الشهر للعنوان
+          body || '',
+          isSentStatus,
+          monthlySchedule, // تاريخ الشهر القادم
+          finalStartDate,
+          finalEndDate
+        ];
+        const resDb = await pool.query(query, values);
+        insertedIds.push(resDb.rows[0].id);
       }
-    });
+
+      return res.status(200).json({ 
+        success: true, 
+        db_ids: insertedIds,
+        message: "تم جدولة 9 أشهر من متابعة الحمل بنجاح"
+      });
+
+    } else {
+      // --- الإجراء الطبيعي للفئات الأخرى (مثل الدورة أو العام) ---
+      const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
+      const values = [
+        isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
+        fcmToken || null,
+        category || 'general',
+        title || 'تحديث من رقة',
+        body || '',
+        isSentStatus,
+        finalScheduledFor,
+        finalStartDate,
+        finalEndDate
+      ];
+
+      const result = await pool.query(query, values);
+
+      return res.status(200).json({ 
+        success: true, 
+        db_id: result.rows[0].id,
+        message: "تم الحفظ بنجاح والحالة FALSE لانتظار معالجة منصة Make"
+      });
+    }
 
   } catch (error) {
     console.error('❌ Neon Insertion Error:', error.message);
