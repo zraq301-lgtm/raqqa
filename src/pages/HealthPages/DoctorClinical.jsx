@@ -32,19 +32,20 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  // --- الدالة المعدلة لإرسال التاريخ المدخل يدوياً ---
+  // --- الدالة المعدلة لإرسال التاريخ المدخل يدوياً من حقل "الموعد القادم" ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    // جلب التاريخ المكتوب في حقل "الموعد القادم" الخاص بهذا القسم
+    // جلب القيمة من حقل "الموعد القادم" الخاص بالقسم المفتوح حالياً
     const userScheduledDate = data[`${categoryTitle}_الموعد القادم`];
     
-    // تحويل التاريخ المدخل لصيغة ISO إذا وجد، وإلا سيستخدم تاريخ اليوم كاحتياط
     let finalDate;
     if (userScheduledDate) {
         const parsedDate = new Date(userScheduledDate);
+        // التحقق من صحة التاريخ المحول، إذا كان غير صالح نستخدم التاريخ الحالي كحماية
         finalDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
     } else {
+        // إذا كان الحقل فارغاً، يتم الحفظ بتاريخ اللحظة الحالية
         finalDate = new Date().toISOString();
     }
 
@@ -58,7 +59,7 @@ const DoctorClinical = () => {
           category: 'medical_report',
           title: `موعد متابعة: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: finalDate, // هنا يتم إجبار الـ API على حفظ التاريخ المرسل من الواجهة
+          scheduled_for: finalDate, // هنا يتم إجبار الحفظ في الخانة المطلوبة (scheduled_for)
           note: `تحليل آلي لـ ${categoryTitle}`
         }
       };
@@ -78,7 +79,7 @@ const DoctorClinical = () => {
         await CapacitorHttp.post(fcmOptions);
       }
       
-      console.log("تم الحفظ بالتاريخ المدخل بنجاح ✅");
+      console.log("تم الحفظ في قاعدة البيانات بالتاريخ المجدول بنجاح ✅");
     } catch (err) {
       console.error("خطأ في المزامنة:", err);
     }
@@ -128,7 +129,7 @@ const DoctorClinical = () => {
       setIsChatOpen(true);
       setUserPrompt('');
 
-      // استدعاء دالة الحفظ والإشعار (الآن ترسل التاريخ المكتوب في الواجهة)
+      // استدعاء دالة الحفظ مع تمرير اسم القسم لضمان سحب "الموعد القادم" الصحيح
       await saveAndNotify(catName, responseText);
 
       setSavedReports(prev => [{ 
