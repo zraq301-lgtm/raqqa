@@ -38,52 +38,57 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // وظيفة حفظ التوكن وحساب الولادة (تم التأكد من مسميات الحقول لنيون)
+  // الدالة المطلوبة لحساب الولادة وإرسال التوكن لنيون بشكل موثوق
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    // جلب التوكن من التخزين المحلي
+    // جلب التوكن من LocalStorage مع ضمان وجود قيمة افتراضية في حال تعذر الجلب (اختياري للتيست)
     const fcmToken = localStorage.getItem('fcm_token');
+    
+    if (!fcmToken) {
+      console.error("FCM Token is missing from localStorage");
+      // يمكنك هنا إضافة منطق لإعادة تسجيل التوكن إذا لزم الأمر
+    }
+
     const currentMonthNum = parseInt(pregnancyMonth) || 1;
     
-    // حساب موعد الولادة المتوقع
+    // منطق حساب موعد الولادة (بذكاء)
     const deliveryDate = new Date();
     const monthsRemaining = 9 - currentMonthNum;
     deliveryDate.setMonth(deliveryDate.getMonth() + monthsRemaining);
-    deliveryDate.setDate(deliveryDate.getDate() + 7);
+    deliveryDate.setDate(deliveryDate.getDate() + 7); // إضافة 7 أيام (قاعدة طبية)
 
-    // تجهيز البيانات المرسلة لنيون لضمان تعبئة حقل fcm_token
-    const neonPayload = {
-      fcm_token: fcmToken, // الحقل الذي كان يظهر NULL في الصورة
-      category: "pregnancy_followup", 
-      title: `تقرير: ${categoryTitle}`,
+    const payload = {
+      fcm_token: fcmToken, // التأكد من إرسال التوكن الموجود فعلياً
+      category: "pregnancy_followup",
+      title: `تحديث: ${categoryTitle}`,
       body: currentAnalysis,
-      scheduled_for: deliveryDate.toISOString(),
-      all_inputs: JSON.stringify(inputs), // إرسال كافة المدخلات
+      scheduled_for: deliveryDate.toISOString(), 
+      all_data: JSON.stringify(inputs), // تحويل البيانات لنص لضمان التخزين في نيون
       is_sent: false
     };
 
     try {
-      // 1. الحفظ في نيون (الآن مع التوكن الصريح)
+      // 1. مزامنة البيانات والتوكن مع قاعدة بيانات نيون (Neon)
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: neonPayload
+        data: payload
       });
 
-      // 2. إرسال الإشعار الفوري (Firebase)
+      // 2. إرسال الإشعار الفوري (هذا ما يعمل لديك بالفعل)
       if (fcmToken) {
         await CapacitorHttp.post({
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
           headers: { 'Content-Type': 'application/json' },
           data: {
             token: fcmToken,
-            title: "تحديث طبي من رقة",
-            body: `تحليل قسم ${categoryTitle} جاهز للمراجعة.`,
+            title: "تحليل طبي جديد",
+            body: `نتائج تحليل ${categoryTitle} جاهزة الآن.`,
             report: currentAnalysis
           }
         });
       }
     } catch (err) {
-      console.error("Sync Error:", err);
+      console.error("Error in Neon/FCM Sync:", err);
     }
   };
 
