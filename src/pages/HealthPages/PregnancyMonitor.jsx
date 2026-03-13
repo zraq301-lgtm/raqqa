@@ -38,48 +38,52 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // الدالة المطلوبة لحساب الولادة وإرسال التوكن لنيون
+  // وظيفة حفظ التوكن وحساب الولادة (تم التأكد من مسميات الحقول لنيون)
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const fcmToken = localStorage.getItem('fcm_token') || 'fm_EWJpJT7iv5K51x0x_yS...'; // سحب التوكن الفعلي
+    // جلب التوكن من التخزين المحلي
+    const fcmToken = localStorage.getItem('fcm_token');
     const currentMonthNum = parseInt(pregnancyMonth) || 1;
     
-    // منطق حساب موعد الولادة (بذكاء)
+    // حساب موعد الولادة المتوقع
     const deliveryDate = new Date();
     const monthsRemaining = 9 - currentMonthNum;
     deliveryDate.setMonth(deliveryDate.getMonth() + monthsRemaining);
-    deliveryDate.setDate(deliveryDate.getDate() + 7); // إضافة 7 أيام (قاعدة طبية)
+    deliveryDate.setDate(deliveryDate.getDate() + 7);
 
-    const payload = {
-      fcm_token: fcmToken,
-      category: "pregnancy_followup", // التصنيف المتخصص
-      title: `تحديث: ${categoryTitle}`,
+    // تجهيز البيانات المرسلة لنيون لضمان تعبئة حقل fcm_token
+    const neonPayload = {
+      fcm_token: fcmToken, // الحقل الذي كان يظهر NULL في الصورة
+      category: "pregnancy_followup", 
+      title: `تقرير: ${categoryTitle}`,
       body: currentAnalysis,
-      scheduled_for: deliveryDate.toISOString(), // التاريخ المحسوب للولادة
-      all_data: inputs, // جميع المدخلات بالواجهة
+      scheduled_for: deliveryDate.toISOString(),
+      all_inputs: JSON.stringify(inputs), // إرسال كافة المدخلات
       is_sent: false
     };
 
     try {
-      // إرسال البيانات إلى نيون (Neon)
+      // 1. الحفظ في نيون (الآن مع التوكن الصريح)
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: payload
+        data: neonPayload
       });
 
-      // إرسال الإشعار الفوري لـ Firebase
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          token: fcmToken,
-          title: "تحليل طبي جديد",
-          body: `نتائج تحليل ${categoryTitle} جاهزة الآن.`,
-          report: currentAnalysis
-        }
-      });
+      // 2. إرسال الإشعار الفوري (Firebase)
+      if (fcmToken) {
+        await CapacitorHttp.post({
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: fcmToken,
+            title: "تحديث طبي من رقة",
+            body: `تحليل قسم ${categoryTitle} جاهز للمراجعة.`,
+            report: currentAnalysis
+          }
+        });
+      }
     } catch (err) {
-      console.error("Error in Neon/FCM Sync:", err);
+      console.error("Sync Error:", err);
     }
   };
 
