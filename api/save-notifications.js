@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   let { 
-    fcmToken, user_id, category, 
+    fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
     milk_amount, baby_status, latitude, longitude,
     next_appointment, current_visit_date 
@@ -30,25 +30,12 @@ export default async function handler(req, res) {
     const finalEndDate = endDate ? new Date(endDate) : null;
     const isSentStatus = false; 
 
-    // --- قاموس النصوص الجديد (Content Dictionary) ---
-    const contentMap = {
-      'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
-      'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
-      'nursing': { t: "لحظات الارتباط 🤱", b: "وقت الرضاعة هو وقت الحب؛ تأكدي من شرب المياه والحصول على قسط من الراحة." },
-      'motherhood': { t: "أنتِ أم رائعة 💖", b: "تذكير بمهمة طفلكِ القادمة.. اهتمامكِ يصنع مستقبله، ورقة تهتم بكِ." },
-      'medical': { t: "موعدكِ الطبي 🩺", b: "حفاظاً على صحتكِ، نذكركِ بموعد الاستشارة الطبية اليوم. دمتِ بخير." },
-      'mood': { t: "رقة تهتم بقلبكِ ✨", b: "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير." },
-      'fiqh': { t: "رفيقتكِ الفقهية 📖", b: "تذكير بالأحكام الخاصة بدورتكِ الحالية؛ لتمارسي عباداتكِ بطمأنينة ويقين." },
-      'fitness': { t: "وقت النشاط 🏃‍♀️", b: "حركتكِ اليوم هي استثمار في صحتكِ.. تمرين بسيط سيجعلكِ تشعرين بالانتعاش." },
-      'intimacy': { t: "لحظات الود ❤️", b: "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب." }
-    };
-
-    // --- خريطة التحويل من مسميات الواجهة إلى المسميات المرتبطة ---
+    // --- تحديث مسميات التصنيفات (Category Mapping) مع تغيير التمريض للرضاعة ---
     const categoryMapping = {
       'marriage_consultancy': 'intimacy',
       'menstrual_cycle': 'period',
       'pregnancy_tracking': 'pregnancy',
-      'breastfeeding_tracking': 'nursing',
+      'breastfeeding_tracking': 'breastfeeding', // تم التعديل هنا
       'child_care': 'motherhood',
       'medical_followup': 'medical',
       'mental_health': 'mood',
@@ -57,7 +44,6 @@ export default async function handler(req, res) {
     };
 
     const finalCategory = categoryMapping[category] || category || 'general';
-    const content = contentMap[finalCategory] || { t: "تنبيه من رقة", b: "لديكِ إشعار جديد يهمكِ." };
 
     const query = `
       INSERT INTO notifications (
@@ -77,43 +63,109 @@ export default async function handler(req, res) {
       extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date })
     };
 
-    // --- 1. حالة الطبيب (Medical) ---
-    if (finalCategory === 'medical') {
-      const nextDate = next_appointment ? new Date(next_appointment) : (scheduled_for ? new Date(scheduled_for) : new Date());
-      const values = [commonData.user, fcmToken, finalCategory, content.t, content.b, isSentStatus, nextDate, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
-      const resDb = await pool.query(query, values);
-      return res.status(200).json({ success: true, db_id: resDb.rows[0].id });
+    // --- 1. حالة متابعة الطبيب ---
+    if (finalCategory === 'doctor_visit' || finalCategory === 'medical') {
+      const visitDate = current_visit_date ? new Date(current_visit_date) : new Date();
+      const nextDate = next_appointment ? new Date(next_appointment) : null;
 
-    // --- 2. حالة الرضاعة (Nursing) ---
-    } else if (finalCategory === 'nursing') {
+      const values = [
+        commonData.user, fcmToken, finalCategory, 
+        "موعد الاستشارة الطبي 🩺", 
+        "حفاظاً على صحتكِ، نذكركِ بموعد الاستشارة الطبية اليوم. دمتِ بخير.", 
+        isSentStatus, nextDate, visitDate, nextDate, 
+        commonData.loc_lng, commonData.loc_lat, commonData.extra
+      ];
+
+      const resDb = await pool.query(query, values);
+      return res.status(200).json({ success: true, db_id: resDb.rows[0].id, message: "تمت جدولة موعد الطبيب بنجاح" });
+
+    // --- 2. حالة الرضاعة (Updated Message & Category) ---
+    } else if (finalCategory === 'breastfeeding') {
       let insertedIds = [];
       const baseTime = scheduled_for ? new Date(scheduled_for) : new Date();
+
       for (let i = 0; i < 3; i++) {
         const breastfeedingTime = new Date(baseTime);
         breastfeedingTime.setHours(baseTime.getHours() + (i * 4)); 
-        const values = [commonData.user, fcmToken, finalCategory, content.t, `${content.b} (موعد رقم ${i+1})`, isSentStatus, breastfeedingTime, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+        
+        const values = [
+          commonData.user, fcmToken, finalCategory, 
+          "لحظات الارتباط 🤱", 
+          `وقت الرضاعة هو وقت الحب؛ تذكير برضعة طفلكِ رقم ${i+1}. رقة تهتم بكِ وبطفلكِ.`, 
+          isSentStatus, breastfeedingTime, finalStartDate, finalEndDate, 
+          commonData.loc_lng, commonData.loc_lat, commonData.extra
+        ];
+        
         const resDb = await pool.query(query, values);
         insertedIds.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, db_ids: insertedIds });
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تم تسجيل مواعيد الرضاعة" });
 
-    // --- 3. حالة الحمل (Pregnancy) ---
-    } else if (finalCategory === 'pregnancy') {
+    // --- 3. حالة متابعة الحمل ---
+    } else if (finalCategory === 'pregnancy_followup' || finalCategory === 'pregnancy') {
       let insertedIds = [];
       const today = new Date();
-      for (let i = 0; i < 3; i++) { // جدولة لـ 3 أشهر القادمة كمثال
+      const dueDate = finalEndDate ? new Date(finalEndDate) : new Date(today.getTime() + 280 * 24 * 60 * 60 * 1000);
+
+      const monthsRemaining = (dueDate.getFullYear() - today.getFullYear()) * 12 + (dueDate.getMonth() - today.getMonth());
+      const currentStartMonth = Math.max(1, 9 - monthsRemaining);
+
+      for (let i = 0; i <= monthsRemaining; i++) {
+        const displayMonth = currentStartMonth + i;
+        if (displayMonth > 9) break;
+
         const monthlySchedule = new Date(today);
         monthlySchedule.setMonth(today.getMonth() + i);
-        const values = [commonData.user, fcmToken, finalCategory, `${content.t} - متابعة`, content.b, isSentStatus, monthlySchedule, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+
+        const values = [
+          commonData.user, fcmToken, finalCategory, 
+          "رحلة الأمومة ✨", 
+          `تذكير رقيق لمتابعة نمو جنينكِ في الشهر ${displayMonth}.. رقة معكِ في كل خطوة.`, 
+          isSentStatus, monthlySchedule, 
+          finalStartDate, finalEndDate, 
+          commonData.loc_lng, commonData.loc_lat, commonData.extra
+        ];
+
         const resDb = await pool.query(query, values);
         insertedIds.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, db_ids: insertedIds });
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الحمل" });
 
-    // --- 4. الحالات العامة (Mood, Fiqh, Fitness, Intimacy, Period, Motherhood) ---
+    // --- 4. النشاطات الأسبوعية ---
+    } else if (finalCategory === 'weekly_lifestyle' || finalCategory === 'wellness_tracking' || finalCategory === 'fitness') {
+      let insertedIds = [];
+      for (let i = 1; i <= 8; i++) {
+        const weeklySchedule = new Date(finalStartDate);
+        weeklySchedule.setDate(weeklySchedule.getDate() + (i * 7));
+
+        const values = [
+          commonData.user, fcmToken, finalCategory, 
+          "وقت النشاط 🏃‍♀️", 
+          "حركتكِ اليوم هي استثمار في صحتكِ.. تمرين بسيط سيجعلكِ تشعرين بالانتعاش.", 
+          isSentStatus, weeklySchedule, 
+          finalStartDate, null, 
+          commonData.loc_lng, commonData.loc_lat, commonData.extra
+        ];
+        const resDb = await pool.query(query, values);
+        insertedIds.push(resDb.rows[0].id);
+      }
+      return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة التذكيرات الأسبوعية" });
+
     } else {
+      // الحالات الأخرى (mood, fiqh, intimacy, period, motherhood)
       const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
-      const values = [commonData.user, fcmToken, finalCategory, content.t, content.b, isSentStatus, finalScheduledFor, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+      
+      // هنا نقوم بضبط العنوان والنص بناءً على التصنيف المتبقي
+      let finalTitle = title;
+      let finalBody = body;
+
+      if (finalCategory === 'period') { finalTitle = "رقة تذكركِ 🌸"; finalBody = "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة."; }
+      if (finalCategory === 'mood') { finalTitle = "رقة تهتم بقلبكِ ✨"; finalBody = "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير."; }
+      if (finalCategory === 'fiqh') { finalTitle = "رفيقتكِ الفقهية 📖"; finalBody = "تذكير بالأحكام الخاصة بدورتكِ الحالية؛ لتمارسي عباداتكِ بطمأنينة ويقين."; }
+      if (finalCategory === 'intimacy') { finalTitle = "لحظات الود ❤️"; finalBody = "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب."; }
+      if (finalCategory === 'motherhood') { finalTitle = "أنتِ أم رائعة 💖"; finalBody = "تذكير بمهمة طفلكِ القادمة.. اهتمامكِ يصنع مستقبله، ورقة تهتم بكِ."; }
+
+      const values = [commonData.user, fcmToken, finalCategory, finalTitle, finalBody, isSentStatus, finalScheduledFor, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
       const result = await pool.query(query, values);
       return res.status(200).json({ success: true, db_id: result.rows[0].id });
     }
