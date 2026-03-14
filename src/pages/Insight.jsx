@@ -23,7 +23,7 @@ const RaqqaApp = () => {
   const [showChat, setShowChat] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-  const [customPrompt, setCustomPrompt] = useState(""); // شريط البرومبت الإضافي
+  const [customPrompt, setCustomPrompt] = useState(""); 
 
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
@@ -89,9 +89,53 @@ const RaqqaApp = () => {
     ]},
   ];
 
+  // --- دالة حفظ التوكن والبيانات المحدثة ---
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    const savedToken = localStorage.getItem('fcm_token');
+    
+    // إعداد تاريخ مستقبلي بـ 72 ساعة
+    const scheduledDate = new Date();
+    scheduledDate.setHours(scheduledDate.getHours() + 72); 
+
+    try {
+      // 1. حفظ البيانات في نيون
+      const saveToNeonOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'spiritual_report',
+          title: `تحليل جديد: ${categoryTitle} ✨`,
+          body: currentAnalysis.substring(0, 100) + "...",
+          scheduled_for: scheduledDate.toISOString(), // التاريخ المستقبلي المطلوب
+          note: `تحليل رقة لـ ${categoryTitle}`
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      // 2. إرسال إشعار FCM
+      if (savedToken) {
+        const fcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'رسالة من رقة 🔔',
+            body: `رفيقتي، تم إعداد تحليلك الروحاني بخصوص ${categoryTitle}.`,
+            data: { type: 'spiritual_report' }
+          }
+        };
+        await CapacitorHttp.post(fcmOptions);
+      }
+      console.log("تم الحفظ والإرسال بنجاح ✅");
+    } catch (err) {
+      console.error("خطأ في عملية المزامنة:", err);
+    }
+  };
+
   const handleProcess = async (directMsg = null) => {
     setLoading(true);
-    // دمج البرومبت المخصص إذا وجد
     const contextText = customPrompt ? `[سياق إضافي: ${customPrompt}] ` : "";
     const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم بحمد الله' : 'لم يتم'}`).join(", ");
     const promptText = directMsg || `${contextText}أنا أنثى مسلمة، إليكِ تقريري في ${activeCategory?.title}: (${summary}). حللي نمو روحي بأسلوب ديني ونفسي دافئ دون فتاوى.`;
@@ -107,6 +151,12 @@ const RaqqaApp = () => {
       
       setAiResponse(responseText);
       setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
+      
+      // استدعاء دالة الحفظ والإشعار بعد استلام رد الذكاء الاصطناعي
+      if (activeCategory) {
+        await saveAndNotify(activeCategory.title, responseText);
+      }
+
       if (!directMsg) setShowAnalysisModal(true);
     } catch (err) {
       console.error("فشل الاتصال:", err);
@@ -116,7 +166,6 @@ const RaqqaApp = () => {
     }
   };
 
-  // معالجة رفع الصور
   const handleMediaUpload = async (type) => {
     try {
       setLoading(true);
@@ -127,8 +176,6 @@ const RaqqaApp = () => {
       if (base64) {
         const fileName = `raqqa_${Date.now()}.jpg`;
         const fileUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
-        
-        // إرسال الرابط للذكاء الاصطناعي
         const msg = `لقد أرسلت صورة لكِ للمساعدة في التحليل: ${fileUrl}`;
         setHistory(prev => [{ role: 'user', text: "تم رفع صورة 📸" }, ...prev]);
         handleProcess(msg);
@@ -151,7 +198,6 @@ const RaqqaApp = () => {
       <header style={styles.header}>
         <h1 style={styles.title}>رقة ✨</h1>
         <p style={styles.subtitle}>فقه المرأة الوعي والجمال</p>
-        
         <div style={styles.headerActions}>
           <button style={styles.chatHeaderBtn} onClick={() => setShowChat(true)}>
             <MessageCircle size={18} />
@@ -187,8 +233,6 @@ const RaqqaApp = () => {
               <h2 style={styles.cardTitle}>{activeCategory.title}</h2>
               <X style={{cursor: 'pointer'}} onClick={() => setActiveCategory(null)} />
             </div>
-            
-            {/* شريط البرومبت الإضافي */}
             <div style={{marginTop: '10px'}}>
               <input 
                 style={styles.promptInput} 
@@ -197,7 +241,6 @@ const RaqqaApp = () => {
                 onChange={(e) => setCustomPrompt(e.target.value)}
               />
             </div>
-
             <div style={styles.inputsList}>
               {activeCategory.items.map((item, idx) => (
                 <div key={idx} style={styles.inputStrip}>
