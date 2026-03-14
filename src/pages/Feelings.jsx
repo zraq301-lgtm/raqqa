@@ -19,6 +19,53 @@ const RaqqaFeelingsApp = () => {
   const [chatInput, setChatInput] = useState("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
 
+  // --- دالة حفظ البيانات والتوكن في نيون وإرسال إشعار FCM ---
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    // 1. جلب التوكن من التخزين المحلي
+    const savedToken = localStorage.getItem('fcm_token');
+    
+    // 2. إعداد تاريخ الجدولة (72 ساعة من الآن)
+    const scheduledDate = new Date();
+    scheduledDate.setHours(scheduledDate.getHours() + 72); 
+
+    try {
+      // --- أولاً: حفظ البيانات والتوكن في قاعدة بيانات نيون ---
+      const saveToNeonOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined, // المفتاح الصحيح للحفظ هو fcmToken
+          user_id: 1,                        // معرف المستخدم الثابت
+          category: 'medical_report',        // التصنيف
+          title: `تقرير جديد: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...", // ملخص النص
+          scheduled_for: scheduledDate.toISOString(),
+          note: `تحليل آلي لـ ${categoryTitle}`
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      // --- ثانياً: إرسال إشعار دفع فوري للهاتف عبر FCM ---
+      if (savedToken) {
+        const fcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه طبي جديد 🔔',
+            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`,
+            data: { type: 'medical_report' }
+          }
+        };
+        await CapacitorHttp.post(fcmOptions);
+      }
+      
+      console.log("تم الحفظ والإرسال بنجاح ✅");
+    } catch (err) {
+      console.error("خطأ في عملية المزامنة:", err);
+    }
+  };
+
   const categories = [
     { id: 1, title: "المشاعر الإيمانية", icon: <Sparkles />, items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "حلاوة الإيمان 🍯", "الرضا بالقضاء ✅", "حسن الظن بالله 🌈"] },
     { id: 2, title: "المشاعر الهرمونية", icon: <Activity />, items: ["تقلبات المزاج 🎢", "وهن جسدي 💤", "حساسية مفرطة 🌸", "طاقة الصيام 🌙", "نشاط الفجر ☀️"] },
@@ -32,7 +79,6 @@ const RaqqaFeelingsApp = () => {
     { id: 10, title: "الإنجاز والعمل", icon: <Clock />, items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
   ];
 
-  // دالة التعامل مع الكاميرا ورفع الصورة
   const handleImageAction = async (type) => {
     try {
       setLoading(true);
@@ -62,9 +108,9 @@ const RaqqaFeelingsApp = () => {
       .map(([k, v]) => `${k}: ${v}`)
       .join(", ");
 
-    // دمج رابط الصورة في البرومبت إذا وجد
+    const currentCategory = activeTab?.title || "العام";
     let finalPrompt = customPrompt || 
-      `أنا أنثى مسلمة، أشعر في قسم ${activeTab?.title || "العام"} بالآتي: (${summary}).
+      `أنا أنثى مسلمة، أشعر في قسم ${currentCategory} بالآتي: (${summary}).
       حللي مشاعري بأسلوب يجمع بين "طب المشاعر" والعمق النفسي التحليلي.
       قدمي نصائح عملية (Somatic tracking) وتوجيهات لترميم الذات، مع ذكر آية أو حديث يربط الجانب النفسي بالإيماني.`;
 
@@ -84,7 +130,11 @@ const RaqqaFeelingsApp = () => {
       
       setAiResponse(responseText);
       setHistory(prev => [responseText, ...prev]);
-      setUploadedImageUrl(null); // تصغير الصورة بعد الاستخدام
+      setUploadedImageUrl(null);
+
+      // --- استدعاء دالة الحفظ والإشعار بعد استلام الرد ---
+      await saveAndNotify(currentCategory, responseText);
+
     } catch (err) {
       console.error("فشل الاتصال:", err);
       setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي 🌸");
