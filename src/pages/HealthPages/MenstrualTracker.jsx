@@ -139,6 +139,7 @@ const MenstrualTracker = () => {
           note: userInput || 'تقرير تلقائي'
         }
       };
+      // الحفظ في Neon مفعل الآن
       await CapacitorHttp.post(saveToNeonOptions);
 
       await sendPushNotification('تقرير طبي جديد 🩺', 'طبيبة رقة قامت بتحليل بياناتك، اضغطي للعرض.');
@@ -152,7 +153,8 @@ const MenstrualTracker = () => {
 
       setChatHistory(prev => userInput ? [...prev, { role: 'user', content: userInput, id: Date.now()+1 }, newMessage] : [...prev, newMessage]);
       setChatInput(''); 
-      await fetchNotifications();
+      
+      // تم حذف fetchNotifications() من هنا لمنع عودة البيانات للواجهة
 
     } catch (err) {
       console.error("خطأ في الاتصال:", err);
@@ -260,7 +262,7 @@ const MenstrualTracker = () => {
             ))}
             {loading && (
               <div style={{ textAlign: 'center', color: '#E91E63', margin: '15px 0' }}>
-                   ️ جاري فحص بياناتك وإصدار تقرير طبي...
+                     ️ جاري فحص بياناتك وإصدار تقرير طبي...
               </div>
             )}
           </div>
