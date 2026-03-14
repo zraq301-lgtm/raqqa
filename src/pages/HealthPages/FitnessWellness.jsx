@@ -28,14 +28,14 @@ const PregnancyMonitor = () => {
     }
   });
 
-  // --- دالة الحفظ والإشعار (تستدعى فقط عند تحديث البيانات اليدوية) ---
+  // --- دالة الحفظ والإشعار ---
   const saveAndNotify = async (categoryTitle, value) => {
     const savedToken = localStorage.getItem('fcm_token');
     const scheduledDate = new Date();
     scheduledDate.setMonth(scheduledDate.getMonth() + 9);
 
     try {
-      // 1. حفظ البيانات في نيون (كإشعار مجدول أو سجل)
+      // 1. حفظ البيانات في نيون
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -82,7 +82,6 @@ const PregnancyMonitor = () => {
     { id: "cycle", title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة", "الاحتباس", "تغير الوزن", "الرياضة", "ألم الجسم"] }
   ];
 
-  // دالة الحفظ في قاعدة البيانات السحابية (تستخدم فقط للمدخلات)
   const saveToNeonDB = async (category, value) => {
     try {
       const options = {
@@ -101,19 +100,49 @@ const PregnancyMonitor = () => {
     }
   };
 
-  // تحديث البيانات وحفظها (هنا يتم إرسال الإشعار)
   const updateData = useCallback((field, value) => {
     setData(prev => {
       const newData = { ...prev, [field]: value };
       localStorage.setItem('lady_fitness', JSON.stringify(newData));
-      
-      // حفظ في Neon وإرسال إشعار للمدخلات اليدوية فقط
-      saveToNeonDB(field, value);
-      saveAndNotify(field, value);
-      
       return newData;
     });
   }, []);
+
+  // دالة مخصصة للزر الجديد (تحليل وحفظ وإشعار)
+  const handleSectionAction = async (section) => {
+    setIsLoading(true);
+    const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'غير مدخل'}`).join(", ");
+    
+    // 1. الحفظ والإشعار (لأول حقل في القسم كمثال للنشاط)
+    await saveAndNotify(section.title, "تم تحديث القسم بالكامل");
+    await saveToNeonDB(section.id, sectionData);
+
+    // 2. التحليل بالذكاء الاصطناعي
+    try {
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          prompt: `أنا طبيبة رقة للرشاقة والتخسيس. حللي هذه البيانات الخاصة بقسم (${section.title}) وقدمي نصيحة طبية سريعة: ${sectionData}`
+        }
+      };
+      const response = await CapacitorHttp.post(options);
+      const reply = response.data.reply || response.data.message;
+      
+      setAiResponse(reply);
+      setIsChatOpen(true); // فتح نافذة الدردشة لعرض الرد
+      
+      const newChat = { id: Date.now(), query: `تحليل قسم ${section.title}`, reply: reply };
+      const updatedHistory = [newChat, ...chatHistory];
+      setChatHistory(updatedHistory);
+      localStorage.setItem('raqqa_ai_chats', JSON.stringify(updatedHistory));
+      
+    } catch (err) {
+      console.error("AI Analysis Error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleProcessAI = async (imageUrl = null) => {
     if (!prompt && !imageUrl) return;
@@ -124,8 +153,8 @@ const PregnancyMonitor = () => {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية: ${summary}. 
-          ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''} 
+          prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية: ${summary}. 
+          ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''} 
           بصفتك طبيبة تغذية ورشاقة وتخسيس ورياضة متخصصة، حللي طلبي بدقة وقدمي نصيحة احترافية: ${prompt}`
         }
       };
@@ -135,15 +164,10 @@ const PregnancyMonitor = () => {
       const newChat = { id: Date.now(), query: prompt || "تحليل صورة", reply: responseText, attachment: imageUrl };
       const updatedHistory = [newChat, ...chatHistory];
       
-      // حفظ الدردشة محلياً فقط
       setChatHistory(updatedHistory);
       localStorage.setItem('raqqa_ai_chats', JSON.stringify(updatedHistory));
-      
       setAiResponse(responseText);
       setPrompt("");
-
-      // ملاحظة: لا يوجد استدعاء لـ saveAndNotify هنا لمنع الإشعارات المزعجة عند كل سؤال
-
     } catch (err) {
       setAiResponse("عذراً رفيقتي، حدث خطأ في الاتصال.");
     } finally {
@@ -155,31 +179,20 @@ const PregnancyMonitor = () => {
     try {
       setIsLoading(true);
       let base64Data;
-      if (type === 'camera') {
-         base64Data = await takePhoto(); 
-      } else {
-         base64Data = await fetchImage();
-      }
+      if (type === 'camera') { base64Data = await takePhoto(); } 
+      else { base64Data = await fetchImage(); }
 
       if (base64Data) {
         const uploadOptions = {
           url: 'https://raqqa-v6cd.vercel.app/api/upload',
           headers: { 'Content-Type': 'application/json' },
-          data: {
-            image: base64Data,
-            filename: `lady_fit_${Date.now()}.png`
-          }
+          data: { image: base64Data, filename: `lady_fit_${Date.now()}.png` }
         };
-
         const uploadResponse = await CapacitorHttp.post(uploadOptions);
-        const imageUrl = uploadResponse.data.url;
-
-        if (imageUrl) {
-          handleProcessAI(imageUrl);
-        }
+        if (uploadResponse.data.url) handleProcessAI(uploadResponse.data.url);
       }
     } catch (error) {
-      console.error("فشل في معالجة أو رفع الصورة:", error);
+      console.error("Media error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +206,6 @@ const PregnancyMonitor = () => {
 
   return (
     <div style={styles.container}>
-      {/* كارت الذكاء الاصطناعي */}
       <button style={styles.aiMasterButton} onClick={() => setIsChatOpen(true)}>
         <div style={{fontSize: '2rem', marginBottom: '10px'}}>👩‍⚕️</div>
         <div style={{fontSize: '1.3rem', fontWeight: 'bold'}}>طبيبة رقة للرشاقة والتغذية</div>
@@ -221,7 +233,7 @@ const PregnancyMonitor = () => {
             
             <div style={{
               ...styles.gridContainer, 
-              maxHeight: openIdx === i ? '1000px' : '0',
+              maxHeight: openIdx === i ? '1200px' : '0',
               padding: openIdx === i ? '15px' : '0 15px',
               opacity: openIdx === i ? 1 : 0,
               overflow: 'hidden',
@@ -238,6 +250,14 @@ const PregnancyMonitor = () => {
                   />
                 </div>
               ))}
+              {/* الزر المضاف أسفل كل قائمة */}
+              <button 
+                style={styles.saveSectionBtn} 
+                onClick={() => handleSectionAction(sec)}
+                disabled={isLoading}
+              >
+                {isLoading ? "جاري المعالجة..." : `حفظ وتحليل ${sec.title} 🩺`}
+              </button>
             </div>
           </div>
         ))}
@@ -294,17 +314,7 @@ const PregnancyMonitor = () => {
 };
 
 const styles = {
-  container: { 
-    background: 'linear-gradient(160deg, #fdfbfb 0%, #ebedee 100%)', 
-    borderRadius: '30px', 
-    padding: '20px', 
-    direction: 'rtl', 
-    maxWidth: '500px', 
-    margin: 'auto',
-    maxHeight: '100vh',
-    overflowY: 'auto',
-    scrollbarWidth: 'none'
-  },
+  container: { background: 'linear-gradient(160deg, #fdfbfb 0%, #ebedee 100%)', borderRadius: '30px', padding: '20px', direction: 'rtl', maxWidth: '500px', margin: 'auto', maxHeight: '100vh', overflowY: 'auto', scrollbarWidth: 'none' },
   aiMasterButton: { width: '100%', background: 'linear-gradient(45deg, #4a148c, #7b1fa2)', color: 'white', border: 'none', padding: '25px', borderRadius: '25px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' },
   header: { display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' },
   iconWrapper: { background: 'linear-gradient(45deg, #6a1b9a, #ab47bc)', padding: '10px', borderRadius: '15px', display: 'flex' },
@@ -314,15 +324,11 @@ const styles = {
   sectionTitleGroup: { display: 'flex', alignItems: 'center', gap: '10px' },
   sectionTitleText: { fontSize: '0.95rem', fontWeight: '600' },
   arrow: { transition: 'transform 0.3s ease' },
-  gridContainer: { 
-    display: 'grid', 
-    gridTemplateColumns: '1fr', 
-    gap: '12px', 
-    background: '#fafafa' 
-  },
+  gridContainer: { display: 'grid', gridTemplateColumns: '1fr', gap: '12px', background: '#fafafa' },
   inputGroup: { display: 'flex', flexDirection: 'column', gap: '4px' },
   label: { fontSize: '0.8rem', color: '#7b1fa2', fontWeight: 'bold' },
   input: { padding: '12px', borderRadius: '12px', border: '1px solid #eee', fontSize: '0.9rem', outline: 'none', background: '#fff' },
+  saveSectionBtn: { marginTop: '10px', padding: '12px', borderRadius: '12px', border: 'none', background: 'linear-gradient(45deg, #7b1fa2, #4a148c)', color: 'white', fontWeight: 'bold', cursor: 'pointer' },
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
   chatbox: { background: 'white', width: '90%', maxWidth: '450px', borderRadius: '25px', height: '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
   chatHeader: { background: '#4a148c', color: 'white', padding: '15px', display: 'flex', justifyContent: 'space-between' },
