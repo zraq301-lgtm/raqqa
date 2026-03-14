@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // إعدادات CORS للسماح بالاتصال من تطبيقك
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -11,45 +10,70 @@ export default async function handler(req, res) {
     const mxbKey = process.env.MXBAI_API_KEY;
     const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826";
 
-    // التحقق مما إذا كان المدخل يحتوي على رابط صورة أو فيديو
-    const mediaRegex = /\.(jpg|jpeg|png|webp|gif|mp4|mov)|https?:\/\/\S+(?:bit\.ly|t\.ly|drive\.google|dropbox)/i;
-    
-    if (mediaRegex.test(prompt)) {
+    // 1. منطق توليد (رسم) الصور - إذا بدأ المستخدم بكلمة "ارسم" أو "تخيل"
+    const imageKeywords = ["ارسم", "تخيل", "صورة لـ", "صورة ل"];
+    if (imageKeywords.some(keyword => prompt.startsWith(keyword))) {
+        const imageDescription = prompt.replace(/ارسم|تخيل|صورة لـ|صورة ل/g, "").trim();
+        // استخدام Pollinations.ai المجاني تماماً
+        const generatedImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imageDescription)}?width=1024&height=1024&nologo=true&seed=${Date.now()}`;
+        
         return res.status(200).json({ 
-            message: "قريباً النموذج المرئي، جاري التحديث للصور والفيديوهات." 
+            message: `تفضلي، لقد رسمتُ لكِ ما طلبتِ: \n\n ![Image](${generatedImageUrl})` 
         });
     }
 
     try {
-        // 1. البحث أولاً في مكتبة Mixedbread المتخصصة
-        let libraryContext = "";
-        try {
-            const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
-                method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${mxbKey}`,
-                    'Content-Type': 'application/json' 
-                },
-                body: JSON.stringify({ 
-                    query: prompt,
-                    top_k: 3 // جلب أفضل 3 نتائج متعلقة
-                })
-            });
+        // 2. منطق تحليل الصور (Vision) - إذا احتوى النص على رابط صورة
+        const imageRegex = /https?:\/\/\S+\.(jpg|jpeg|png|webp|gif)/i;
+        const foundImageUrl = prompt.match(imageRegex);
 
-            if (mxbRes.ok) {
-                const mxbData = await mxbRes.json();
-                // تجميع النصوص المسترجعة من المكتبة
-                libraryContext = mxbData?.hits?.map(h => h.content).join("\n\n") || "";
+        let groqModel = "llama-3.3-70b-versatile"; // النموذج الافتراضي للنصوص
+        let messages = [];
+
+        if (foundImageUrl) {
+            // استخدام نموذج الرؤية من Groq (مجاني)
+            groqModel = "llama-3.2-11b-vision-preview";
+            messages = [
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: prompt },
+                        { type: "image_url", image_url: { url: foundImageUrl[0] } }
+                    ]
+                }
+            ];
+        } else {
+            // 3. البحث في مكتبة Mixedbread (RAG) في حالة النصوص فقط
+            let libraryContext = "";
+            try {
+                const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
+                    method: 'POST',
+                    headers: { 
+                        'Authorization': `Bearer ${mxbKey}`,
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ query: prompt, top_k: 3 })
+                });
+
+                if (mxbRes.ok) {
+                    const mxbData = await mxbRes.json();
+                    libraryContext = mxbData?.hits?.map(h => h.content).join("\n\n") || "";
+                }
+            } catch (err) {
+                console.error("Mixedbread Error: ", err.message);
             }
-        } catch (err) {
-            console.error("Mixedbread Error: ", err.message);
+
+            const systemPrompt = libraryContext 
+                ? `أنتِ رقة، مساعدة خبيرة. استخدمي المعلومات التالية للرد بدقة: ${libraryContext}`
+                : "أنتِ رقة، ذكاء اصطناعي لبق وذكي. أجيبي على الأسئلة بوضوح.";
+
+            messages = [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: prompt }
+            ];
         }
 
-        // 2. توجيه الطلب إلى Groq مع سياق المكتبة إن وجد
-        const systemPrompt = libraryContext 
-            ? `أنتِ رقة، مساعدة خبيرة. استخدمي المعلومات التالية من المكتبة للرد بدقة: ${libraryContext}`
-            : "أنتِ رقة، ذكاء اصطناعي لبق وذكي. أجيبي على الأسئلة بوضوح.";
-
+        // إرسال الطلب لـ Groq (سواء كان تحليل صورة أو نص)
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -57,11 +81,8 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                model: "llama-3.3-70b-versatile", 
-                messages: [
-                    { role: "system", content: systemPrompt },
-                    { role: "user", content: prompt }
-                ],
+                model: groqModel,
+                messages: messages,
                 temperature: 0.6
             })
         });
