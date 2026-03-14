@@ -27,16 +27,13 @@ const Motherhood = () => {
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
 
-  // الدالة المطلوبة لحفظ البيانات في نيون وإرسال إشعار FCM
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    // إعداد تاريخ الجدولة ليكون بعد 7 أيام بالضبط
     const scheduledDate = new Date();
     scheduledDate.setDate(scheduledDate.getDate() + 7); 
 
     try {
-      // أولاً: حفظ البيانات في نيون مع تاريخ التذكير (بعد أسبوع)
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +49,6 @@ const Motherhood = () => {
       };
       await CapacitorHttp.post(saveToNeonOptions);
 
-      // ثانياً: إرسال إشعار دفع فوري للهاتف عبر FCM
       if (savedToken) {
         const fcmOptions = {
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -110,8 +106,10 @@ const Motherhood = () => {
       
       setMessages(prev => [...prev, { id: Date.now(), text: responseText, sender: 'ai', timestamp: new Date().toLocaleTimeString() }]);
 
-      // استدعاء دالة الحفظ والإشعار فور استلام رد الذكاء الاصطناعي
-      await saveAndNotify(currentList.title, responseText);
+      // التعديل هنا: يتم الحفظ والإشعار فقط إذا لم يكن هناك سؤال يدوي (أي ناتج عن ضغط زر التحليل للأقسام)
+      if (!customPrompt) {
+        await saveAndNotify(currentList.title, responseText);
+      }
 
     } catch (err) {
       setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالذكاء الاصطناعي.", sender: 'ai' }]);
