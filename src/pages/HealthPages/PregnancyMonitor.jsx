@@ -38,36 +38,33 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // --- دالة حفظ التوكن والمزامنة المعدلة بناءً على منطق الكود الناجح ---
+  // --- دالة حفظ التوكن والمزامنة المعدلة ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     const currentMonthNum = parseInt(pregnancyMonth) || 1;
     
-    // حساب موعد الولادة المتوقع
     const deliveryDate = new Date();
     const monthsRemaining = 9 - currentMonthNum;
     deliveryDate.setMonth(deliveryDate.getMonth() + monthsRemaining);
     deliveryDate.setDate(deliveryDate.getDate() + 7);
 
     try {
-      // 1. المزامنة مع نيون - استخدمنا fcmToken (بدون underscore) كما في الكود الناجح
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          fcmToken: savedToken || undefined, // الاسم البرمجي الصحيح للحفظ
-          user_id: 1, // تثبيت المعرف كما في الكود المرفق
+          fcmToken: savedToken || undefined,
+          user_id: 1,
           category: 'pregnancy_followup',
           title: `تحديث طبي: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
           scheduled_for: deliveryDate.toISOString(),
-          all_data: JSON.stringify(inputs), // حفظ المدخلات
+          all_data: JSON.stringify(inputs),
           note: `تحليل آلي لـ ${categoryTitle}`
         }
       };
       await CapacitorHttp.post(saveToNeonOptions);
 
-      // 2. إرسال إشعار FCM الفوري
       if (savedToken) {
         const fcmOptions = {
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -109,6 +106,7 @@ const PregnancyApp = () => {
         const aiReply = response.data.reply || "تم التحليل بنجاح.";
         const finalMsg = { id: Date.now(), query: "تحليل صورة", reply: aiReply, time: new Date().toLocaleTimeString('ar-SA') };
         setChatHistory(prev => [finalMsg, ...prev.filter(m => m.id !== userMsgId)]);
+        // الحفظ والإشعار مفعل هنا لأنه تحليل لبيانات (صورة)
         await saveAndNotify("تحليل وسائط", aiReply);
       }
     } catch (error) { console.error(error); } finally { setIsProcessing(false); }
@@ -129,7 +127,8 @@ const PregnancyApp = () => {
       const reply = response.data.reply || response.data.message;
       const newMsg = { id: Date.now(), query: userQuery, reply, time: new Date().toLocaleTimeString('ar-SA') };
       setChatHistory(prev => [newMsg, ...prev]);
-      await saveAndNotify("استشارة خاصة", reply);
+      
+      // تم حذف دالة saveAndNotify من هنا (منع الحفظ والإشعار للأسئلة الحرة)
     } catch (err) { console.error(err); }
     setLoading(false);
   };
@@ -149,6 +148,7 @@ const PregnancyApp = () => {
       const reply = response.data.reply || response.data.message;
       const newMsg = { id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') };
       setChatHistory(prev => [newMsg, ...prev]);
+      // تفعيل الحفظ والإشعار لمدخلات البيانات
       await saveAndNotify(category.title, reply);
     } catch (err) { console.error(err); }
     setLoading(false);
@@ -158,8 +158,10 @@ const PregnancyApp = () => {
     <div className="app-container" dir="rtl">
       <style>{`
         .app-container { background-color: #FDF2F8; min-height: 100vh; padding: 20px; font-family: sans-serif; }
-        .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
         .ai-btn { background: #7C3AED; color: white; padding: 12px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
+        .quick-chat-bar { background: white; padding: 10px; border-radius: 15px; display: flex; gap: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); align-items: center; border: 1px solid #FBCFE8; }
+        .quick-input { flex: 1; border: none; outline: none; font-size: 14px; background: transparent; }
         .category-item { background: white; border-radius: 25px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.5); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .category-header { width: 100%; display: flex; justify-content: space-between; padding: 18px 20px; border: none; background: none; align-items: center; }
         .inputs-container { padding: 0 15px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -184,6 +186,21 @@ const PregnancyApp = () => {
           <h1 style={{fontSize:'22px', margin:0}}>متابعة الحمل <Plus size={24} style={{display:'inline', color:'#7C3AED'}}/></h1>
         </div>
       </header>
+
+      {/* شريط التحدث السريع المضاف */}
+      <div className="quick-chat-bar">
+        <Sparkles size={20} color="#7C3AED" />
+        <input 
+          className="quick-input" 
+          placeholder="اسألي طبيب راقي عن أي شيء..." 
+          value={promptInput}
+          onChange={(e) => setPromptInput(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && sendCustomPrompt()}
+        />
+        <button onClick={sendCustomPrompt} style={{background:'none', border:'none', color:'#7C3AED'}}>
+          <Send size={20} />
+        </button>
+      </div>
 
       <div className="category-list">
         {categories.map((cat, index) => (
