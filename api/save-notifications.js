@@ -22,13 +22,29 @@ export default async function handler(req, res) {
     fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
     milk_amount, baby_status, latitude, longitude,
-    next_appointment, current_visit_date // مدخلات الطبيب القادمة من الواجهة
+    next_appointment, current_visit_date 
   } = req.body;
 
   try {
     const finalStartDate = startDate ? new Date(startDate) : new Date();
     const finalEndDate = endDate ? new Date(endDate) : null;
     const isSentStatus = false; 
+
+    // --- هندلة مسميات التصنيفات (Category Mapping) طبقا للجدول الموحد ---
+    const categoryMapping = {
+      'marriage_consultancy': 'intimacy',
+      'menstrual_cycle': 'period',
+      'pregnancy_tracking': 'pregnancy',
+      'breastfeeding_tracking': 'nursing',
+      'child_care': 'motherhood',
+      'medical_followup': 'medical',
+      'mental_health': 'mood',
+      'religious_guidance': 'fiqh',
+      'physical_fitness': 'fitness'
+    };
+
+    // تحديث التصنيف إذا كان موجوداً في الخريطة، وإلا الإبقاء على القادم كما هو
+    const finalCategory = categoryMapping[category] || category || 'general';
 
     const query = `
       INSERT INTO notifications (
@@ -48,32 +64,24 @@ export default async function handler(req, res) {
       extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date })
     };
 
-    // --- 1. حالة متابعة الطبيب (إجبار التسجيل بتاريخ الموعد القادم في خانة scheduled_for) ---
-    if (category === 'doctor_visit') {
+    // --- 1. حالة متابعة الطبيب ---
+    if (finalCategory === 'doctor_visit' || finalCategory === 'medical') {
       const visitDate = current_visit_date ? new Date(current_visit_date) : new Date();
-      // تحويل الموعد القادم القادم من الواجهة إلى Date Object
       const nextDate = next_appointment ? new Date(next_appointment) : null;
 
       const values = [
-        commonData.user, 
-        fcmToken, 
-        category, 
+        commonData.user, fcmToken, finalCategory, 
         "موعد الاستشارة القادم 🩺", 
         `تذكير: لديكِ موعد طبي محدد بناءً على زيارتك السابقة بتاريخ ${visitDate.toLocaleDateString()}.`, 
-        isSentStatus, 
-        nextDate, // تم الربط هنا: عمود (scheduled_for) يأخذ قيمة (next_appointment)
-        visitDate, 
-        nextDate, 
-        commonData.loc_lng, 
-        commonData.loc_lat, 
-        commonData.extra
+        isSentStatus, nextDate, visitDate, nextDate, 
+        commonData.loc_lng, commonData.loc_lat, commonData.extra
       ];
 
       const resDb = await pool.query(query, values);
       return res.status(200).json({ success: true, db_id: resDb.rows[0].id, message: "تمت جدولة موعد الطبيب بنجاح" });
 
-    // --- 2. حالة الرضاعة ---
-    } else if (category === 'breastfeeding') {
+    // --- 2. حالة الرضاعة (Mapping: nursing) ---
+    } else if (finalCategory === 'breastfeeding' || finalCategory === 'nursing') {
       let insertedIds = [];
       const baseTime = scheduled_for ? new Date(scheduled_for) : new Date();
 
@@ -82,18 +90,11 @@ export default async function handler(req, res) {
         breastfeedingTime.setHours(baseTime.getHours() + (i * 4)); 
         
         const values = [
-          commonData.user, 
-          fcmToken, 
-          category, 
+          commonData.user, fcmToken, finalCategory, 
           "تذكير بمعدل الرضاعة الطبيعي 🍼", 
           `موعد الرضعة المقترح رقم ${i+1}. حافظي على معدل 8-12 رضعة يومياً.`, 
-          isSentStatus, 
-          breastfeedingTime, 
-          finalStartDate, 
-          finalEndDate, 
-          commonData.loc_lng, 
-          commonData.loc_lat, 
-          commonData.extra
+          isSentStatus, breastfeedingTime, finalStartDate, finalEndDate, 
+          commonData.loc_lng, commonData.loc_lat, commonData.extra
         ];
         
         const resDb = await pool.query(query, values);
@@ -101,8 +102,8 @@ export default async function handler(req, res) {
       }
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تم تسجيل 3 مواعيد رضاعة" });
 
-    // --- 3. حالة متابعة الحمل ---
-    } else if (category === 'pregnancy_followup') {
+    // --- 3. حالة متابعة الحمل (Mapping: pregnancy) ---
+    } else if (finalCategory === 'pregnancy_followup' || finalCategory === 'pregnancy') {
       let insertedIds = [];
       const today = new Date();
       const dueDate = finalEndDate ? new Date(finalEndDate) : new Date(today.getTime() + 280 * 24 * 60 * 60 * 1000);
@@ -118,7 +119,7 @@ export default async function handler(req, res) {
         monthlySchedule.setMonth(today.getMonth() + i);
 
         const values = [
-          commonData.user, fcmToken, category, 
+          commonData.user, fcmToken, finalCategory, 
           `${title} - الشهر ${displayMonth}`, 
           body, isSentStatus, monthlySchedule, 
           finalStartDate, finalEndDate, 
@@ -131,14 +132,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة الحمل" });
 
     // --- 4. النشاطات الأسبوعية ---
-    } else if (category === 'weekly_lifestyle' || category === 'wellness_tracking') {
+    } else if (finalCategory === 'weekly_lifestyle' || finalCategory === 'wellness_tracking' || finalCategory === 'fitness') {
       let insertedIds = [];
       for (let i = 1; i <= 8; i++) {
         const weeklySchedule = new Date(finalStartDate);
         weeklySchedule.setDate(weeklySchedule.getDate() + (i * 7));
 
         const values = [
-          commonData.user, fcmToken, category, 
+          commonData.user, fcmToken, finalCategory, 
           `${title} - مراجعة أسبوعية`, 
           `حان وقت تحديث بيانات ${title} للحفاظ على تقدمك ✨`, 
           isSentStatus, weeklySchedule, 
@@ -151,8 +152,9 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, db_ids: insertedIds, message: "تمت جدولة التذكيرات الأسبوعية" });
 
     } else {
+      // الحالة العامة (تشمل الـ Mapping الجديد مثل intimacy, mood, fiqh)
       const finalScheduledFor = scheduled_for ? new Date(scheduled_for) : finalStartDate;
-      const values = [commonData.user, fcmToken, category || 'general', title, body, isSentStatus, finalScheduledFor, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+      const values = [commonData.user, fcmToken, finalCategory, title, body, isSentStatus, finalScheduledFor, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
       const result = await pool.query(query, values);
       return res.status(200).json({ success: true, db_id: result.rows[0].id });
     }
