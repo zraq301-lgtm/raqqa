@@ -22,7 +22,7 @@ export default async function handler(req, res) {
     fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
     milk_amount, baby_status, latitude, longitude,
-    next_appointment, current_visit_date // مدخلات الطبيب الجديدة
+    next_appointment, current_visit_date // مدخلات الطبيب القادمة من الواجهة
   } = req.body;
 
   try {
@@ -48,20 +48,20 @@ export default async function handler(req, res) {
       extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date })
     };
 
-    // --- 1. حالة متابعة الطبيب (إجبار التسجيل بتاريخ الاستشارة القادمة) ---
+    // --- 1. حالة متابعة الطبيب (إجبار التسجيل بتاريخ الموعد القادم في خانة scheduled_for) ---
     if (category === 'doctor_visit') {
       const visitDate = current_visit_date ? new Date(current_visit_date) : new Date();
-      // التأكد من تحويل تاريخ الموعد القادم القادم من الواجهة إلى صيغة Date
+      // تحويل الموعد القادم القادم من الواجهة إلى Date Object
       const nextDate = next_appointment ? new Date(next_appointment) : null;
 
       const values = [
         commonData.user, 
         fcmToken, 
         category, 
-        "موعد الاستشارة الطبية 🩺", 
-        `تم تسجيل الكشف بتاريخ ${visitDate.toLocaleDateString()}. الموعد القادم: ${nextDate ? nextDate.toLocaleDateString() : 'لم يحدد'}`, 
+        "موعد الاستشارة القادم 🩺", 
+        `تذكير: لديكِ موعد طبي محدد بناءً على زيارتك السابقة بتاريخ ${visitDate.toLocaleDateString()}.`, 
         isSentStatus, 
-        nextDate, // هنا تم إجبار الخانة (scheduled_for) لتأخذ تاريخ الموعد القادم
+        nextDate, // تم الربط هنا: عمود (scheduled_for) يأخذ قيمة (next_appointment)
         visitDate, 
         nextDate, 
         commonData.loc_lng, 
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       ];
 
       const resDb = await pool.query(query, values);
-      return res.status(200).json({ success: true, db_id: resDb.rows[0].id, message: "تم حفظ موعد الطبيب بنجاح" });
+      return res.status(200).json({ success: true, db_id: resDb.rows[0].id, message: "تمت جدولة موعد الطبيب بنجاح" });
 
     // --- 2. حالة الرضاعة ---
     } else if (category === 'breastfeeding') {
