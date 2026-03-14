@@ -28,14 +28,14 @@ const PregnancyMonitor = () => {
     }
   });
 
-  // --- دالة الحفظ والإشعار ---
+  // --- دالة الحفظ والإشعار (تستدعى فقط عند تحديث البيانات اليدوية) ---
   const saveAndNotify = async (categoryTitle, value) => {
     const savedToken = localStorage.getItem('fcm_token');
     const scheduledDate = new Date();
     scheduledDate.setMonth(scheduledDate.getMonth() + 9);
 
     try {
-      // 1. حفظ البيانات في نيون
+      // 1. حفظ البيانات في نيون (كإشعار مجدول أو سجل)
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -51,7 +51,7 @@ const PregnancyMonitor = () => {
       };
       await CapacitorHttp.post(saveToNeonOptions);
 
-      // 2. إرسال إشعار FCM
+      // 2. إرسال إشعار FCM فوري
       if (savedToken) {
         const fcmOptions = {
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -82,6 +82,7 @@ const PregnancyMonitor = () => {
     { id: "cycle", title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة", "الاحتباس", "تغير الوزن", "الرياضة", "ألم الجسم"] }
   ];
 
+  // دالة الحفظ في قاعدة البيانات السحابية (تستخدم فقط للمدخلات)
   const saveToNeonDB = async (category, value) => {
     try {
       const options = {
@@ -100,13 +101,16 @@ const PregnancyMonitor = () => {
     }
   };
 
+  // تحديث البيانات وحفظها (هنا يتم إرسال الإشعار)
   const updateData = useCallback((field, value) => {
     setData(prev => {
       const newData = { ...prev, [field]: value };
       localStorage.setItem('lady_fitness', JSON.stringify(newData));
+      
+      // حفظ في Neon وإرسال إشعار للمدخلات اليدوية فقط
       saveToNeonDB(field, value);
-      // استدعاء الإشعار عند إدخال البيانات فقط
       saveAndNotify(field, value);
+      
       return newData;
     });
   }, []);
@@ -130,12 +134,15 @@ const PregnancyMonitor = () => {
       
       const newChat = { id: Date.now(), query: prompt || "تحليل صورة", reply: responseText, attachment: imageUrl };
       const updatedHistory = [newChat, ...chatHistory];
+      
+      // حفظ الدردشة محلياً فقط
       setChatHistory(updatedHistory);
       localStorage.setItem('raqqa_ai_chats', JSON.stringify(updatedHistory));
+      
       setAiResponse(responseText);
       setPrompt("");
 
-      // ملاحظة: تم حذف استدعاء saveAndNotify من هنا لمنع الإزعاج
+      // ملاحظة: لا يوجد استدعاء لـ saveAndNotify هنا لمنع الإشعارات المزعجة عند كل سؤال
 
     } catch (err) {
       setAiResponse("عذراً رفيقتي، حدث خطأ في الاتصال.");
@@ -186,7 +193,7 @@ const PregnancyMonitor = () => {
 
   return (
     <div style={styles.container}>
-      {/* كارت الذكاء الاصطناعي المكبر */}
+      {/* كارت الذكاء الاصطناعي */}
       <button style={styles.aiMasterButton} onClick={() => setIsChatOpen(true)}>
         <div style={{fontSize: '2rem', marginBottom: '10px'}}>👩‍⚕️</div>
         <div style={{fontSize: '1.3rem', fontWeight: 'bold'}}>طبيبة رقة للرشاقة والتغذية</div>
