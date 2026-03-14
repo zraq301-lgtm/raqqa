@@ -129,15 +129,18 @@ const DoctorClinical = () => {
       setIsChatOpen(true);
       setUserPrompt('');
 
-      // استدعاء دالة الحفظ مع تمرير اسم القسم لضمان سحب "الموعد القادم" الصحيح
-      await saveAndNotify(catName, responseText);
+      // التعديل المطلوب: لا يتم الحفظ أو إرسال إشعار إذا كان الطلب "سؤال مباشر" (من الشات)
+      if (catName !== "سؤال مباشر") {
+          // استدعاء دالة الحفظ مع تمرير اسم القسم لضمان سحب "الموعد القادم" الصحيح
+          await saveAndNotify(catName, responseText);
 
-      setSavedReports(prev => [{ 
-        id: Date.now(), 
-        title: catName, 
-        text: responseText, 
-        date: new Date().toLocaleDateString() 
-      }, ...prev]);
+          setSavedReports(prev => [{ 
+            id: Date.now(), 
+            title: catName, 
+            text: responseText, 
+            date: new Date().toLocaleDateString() 
+          }, ...prev]);
+      }
 
     } catch (err) {
       console.error("فشل الاتصال:", err);
