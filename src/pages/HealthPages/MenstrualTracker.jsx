@@ -114,35 +114,38 @@ const MenstrualTracker = () => {
       const aiResponse = await CapacitorHttp.post(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "عذراً، لم أتمكن من إتمام التحليل الطبي حالياً.";
 
-      const startDateInput = data['سجل التواريخ_تاريخ البدء'];
-      let scheduledDate = new Date();
-      if (startDateInput) {
-        const nextExpected = new Date(startDateInput);
-        nextExpected.setDate(nextExpected.getDate() + FIXED_AVERAGE_CYCLE);
-        scheduledDate = nextExpected;
-      }
-
-      const savedToken = localStorage.getItem('fcm_token');
-      
-      const saveToNeonOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'medical_report',
-          title: 'تقرير طبي جديد 🩺',
-          body: responseText.substring(0, 100) + "...",
-          startDate: startDateInput, 
-          endDate: data['سجل التواريخ_تاريخ الانتهاء'],
-          scheduled_for: scheduledDate.toISOString(),
-          note: userInput || 'تقرير تلقائي'
+      // منطق "العبقرية": الحفظ والإشعار يتم فقط عند ضغط زر "تحليل الذكاء الاصطناعي" (التقرير الشامل)
+      // ولا يتم عند إرسال سؤال يدوي في الشات لمنع الإزعاج وامتلاء قاعدة البيانات
+      if (!userInput) {
+        const startDateInput = data['سجل التواريخ_تاريخ البدء'];
+        let scheduledDate = new Date();
+        if (startDateInput) {
+          const nextExpected = new Date(startDateInput);
+          nextExpected.setDate(nextExpected.getDate() + FIXED_AVERAGE_CYCLE);
+          scheduledDate = nextExpected;
         }
-      };
-      // الحفظ في Neon مفعل الآن
-      await CapacitorHttp.post(saveToNeonOptions);
 
-      await sendPushNotification('تقرير طبي جديد 🩺', 'طبيبة رقة قامت بتحليل بياناتك، اضغطي للعرض.');
+        const savedToken = localStorage.getItem('fcm_token');
+        
+        const saveToNeonOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            fcmToken: savedToken || undefined,
+            user_id: 1,
+            category: 'medical_report',
+            title: 'تقرير طبي جديد 🩺',
+            body: responseText.substring(0, 100) + "...",
+            startDate: startDateInput, 
+            endDate: data['سجل التواريخ_تاريخ الانتهاء'],
+            scheduled_for: scheduledDate.toISOString(),
+            note: 'تقرير تلقائي شامل'
+          }
+        };
+        
+        await CapacitorHttp.post(saveToNeonOptions);
+        await sendPushNotification('تقرير طبي جديد 🩺', 'طبيبة رقة قامت بتحليل بياناتك، اضغطي للعرض.');
+      }
 
       const newMessage = { 
         id: Date.now(),
@@ -153,8 +156,6 @@ const MenstrualTracker = () => {
 
       setChatHistory(prev => userInput ? [...prev, { role: 'user', content: userInput, id: Date.now()+1 }, newMessage] : [...prev, newMessage]);
       setChatInput(''); 
-      
-      // تم حذف fetchNotifications() من هنا لمنع عودة البيانات للواجهة
 
     } catch (err) {
       console.error("خطأ في الاتصال:", err);
