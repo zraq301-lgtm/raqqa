@@ -114,8 +114,7 @@ const MenstrualTracker = () => {
       const aiResponse = await CapacitorHttp.post(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "عذراً، لم أتمكن من إتمام التحليل الطبي حالياً.";
 
-      // منطق "العبقرية": الحفظ والإشعار يتم فقط عند ضغط زر "تحليل الذكاء الاصطناعي" (التقرير الشامل)
-      // ولا يتم عند إرسال سؤال يدوي في الشات لمنع الإزعاج وامتلاء قاعدة البيانات
+      // تعديل "العبقرية": الحفظ في نيون وإرسال الإشعار يحدث فقط إذا كان userInput فارغاً (أي ضغط زر التقرير الشامل)
       if (!userInput) {
         const startDateInput = data['سجل التواريخ_تاريخ البدء'];
         let scheduledDate = new Date();
@@ -263,7 +262,7 @@ const MenstrualTracker = () => {
             ))}
             {loading && (
               <div style={{ textAlign: 'center', color: '#E91E63', margin: '15px 0' }}>
-                     ️ جاري فحص بياناتك وإصدار تقرير طبي...
+                      ️ جاري فحص بياناتك وإصدار تقرير طبي...
               </div>
             )}
           </div>
