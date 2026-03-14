@@ -69,7 +69,7 @@ const RaqqaFeelingsApp = () => {
   const categories = [
     { id: 1, title: "المشاعر الإيمانية", icon: <Sparkles />, items: ["لذة المناجاة 🤲", "خشوع الصلاة ✨", "طمأنينة الذكر 📿", "حلاوة الإيمان 🍯", "الرضا بالقضاء ✅", "حسن الظن بالله 🌈"] },
     { id: 2, title: "المشاعر الهرمونية", icon: <Activity />, items: ["تقلبات المزاج 🎢", "وهن جسدي 💤", "حساسية مفرطة 🌸", "طاقة الصيام 🌙", "نشاط الفجر ☀️"] },
-    { id: 3, title: "العلاقات والود", icon: <Heart />, items: ["بر الوالدين 🌳", "مودة الزوج ❤️", "رحمة الأبناء 🐣", "صلة الرحم 🔗", "الحب في الله 🫂"] },
+    { id: 3, title: "العلاقات والود", icon: <Heart />, items: ["بر الوالدين 🌳", "موعة الزوج ❤️", "رحمة الأبناء 🐣", "صلة الرحم 🔗", "الحب في الله 🫂"] },
     { id: 4, title: "الذات والنمو", icon: <Brain />, items: ["فخر بالحجاب 🧕", "استحقاق الذات 👑", "جهاد النفس ⚔️", "رغبة في الأثر 🍃", "توبة نصوح ✨"] },
     { id: 5, title: "الضغوط والابتلاءات", icon: <ShieldAlert />, items: ["صبر جميل 💎", "اختناق التوقعات 🌪️", "ضغط مجتمعي 👁️", "ثقل الأمانة 🎒"] },
     { id: 6, title: "النضج والوقار", icon: <Hourglass />, items: ["قبول الشيب 🕰️", "وقار الحكمة 💎", "زهد في الدنيا 🍃", "طمأنينة الختام 🌅"] },
@@ -103,6 +103,8 @@ const RaqqaFeelingsApp = () => {
     setLoading(true);
     setShowChat(true);
 
+    const isFromInputs = !customPrompt; // إذا لم يكن هناك customPrompt فهذا يعني أنه جاء من تحليل المدخلات
+
     const summary = Object.entries(inputs)
       .filter(([k, v]) => v)
       .map(([k, v]) => `${k}: ${v}`)
@@ -132,8 +134,10 @@ const RaqqaFeelingsApp = () => {
       setHistory(prev => [responseText, ...prev]);
       setUploadedImageUrl(null);
 
-      // --- استدعاء دالة الحفظ والإشعار بعد استلام الرد ---
-      await saveAndNotify(currentCategory, responseText);
+      // --- استدعاء دالة الحفظ والإشعار فقط إذا كان المصدر هو مدخلات البيانات ---
+      if (isFromInputs) {
+        await saveAndNotify(currentCategory, responseText);
+      }
 
     } catch (err) {
       console.error("فشل الاتصال:", err);
