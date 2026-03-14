@@ -87,13 +87,12 @@ const MarriageApp = () => {
     { id: "spiritual", title: "الاطمئنان الروحي", icon: <Moon size={24} />, items: ["دعاء 🤲", "غسل 🚿", "شكر 🛐", "نية 💎"] }
   ];
 
-  const handleProcess = async (userInputs, pageTitle, imageUrl = null) => {
+  const handleProcess = async (userInputs, pageTitle, imageUrl = null, shouldSave = false) => {
     const summary = Object.entries(userInputs)
       .filter(([key, value]) => value && value.length > 0)
       .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(" - ") : value}`)
       .join(", ");
 
-    // تعريف الشخصية: استشاري علاقات زوجية متخصص وصريح
     const MARRIAGE_EXPERT_PROMPT = `
       أنتِ "رقة"، مستشارة علاقات زوجية خبيرة ومتخصصة جداً. 
       مهمتكِ: تقديم نصائح دقيقة، علمية، وصريحة حول العلاقات الحميمة والأوضاع الجنسية لتعزيز السعادة الزوجية.
@@ -113,8 +112,10 @@ const MarriageApp = () => {
       const aiResponse = await CapacitorHttp.post(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "أنا هنا معكِ يا رفيقتي، اسألي ما تشائين في خصوصيتنا.";
 
-      // استدعاء دالة الحفظ والاشعار بعد استلام رد الذكاء الاصطناعي
-      await saveAndNotify(pageTitle, responseText);
+      // الحفظ والإشعار يتم فقط إذا كان الطلب من القوائم (المدخلات)
+      if (shouldSave) {
+        await saveAndNotify(pageTitle, responseText);
+      }
 
       return responseText;
     } catch (err) {
@@ -128,7 +129,8 @@ const MarriageApp = () => {
     if (selected.length === 0) return;
     setShowChat(true);
     setLoading(true);
-    const result = await handleProcess({ [cat.title]: selected }, cat.title);
+    // نرسل true هنا لأنها مدخلات بيانات
+    const result = await handleProcess({ [cat.title]: selected }, cat.title, null, true);
     setMessages(prev => [
       ...prev, 
       { role: 'user', text: `تحليل قائمة: ${cat.title}` },
@@ -143,7 +145,8 @@ const MarriageApp = () => {
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setLoading(true);
     setUserInput("");
-    const result = await handleProcess({ "سؤال": text }, "دردشة خاصة");
+    // نترك shouldSave كـ false تلقائياً للدردشة اليدوية
+    const result = await handleProcess({ "سؤال": text }, "دردشة خاصة", null, false);
     setMessages(prev => [...prev, { role: 'ai', text: result }]);
     setLoading(false);
   };
@@ -156,7 +159,8 @@ const MarriageApp = () => {
       const uploadedUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
       
       setMessages(prev => [...prev, { role: 'user', text: "📸 تم إرسال صورة للتحليل..." }]);
-      const result = await handleProcess({ "مرفق": "صورة" }, "تحليل بصري", uploadedUrl);
+      // نترك shouldSave كـ false تلقائياً للصور
+      const result = await handleProcess({ "مرفق": "صورة" }, "تحليل بصري", uploadedUrl, false);
       setMessages(prev => [...prev, { role: 'ai', text: result }]);
     } catch (error) {
       alert("تعذر رفع الصورة: " + error.message);
