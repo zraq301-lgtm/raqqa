@@ -28,8 +28,8 @@ const PregnancyMonitor = () => {
     }
   });
 
-  // --- دالة الحفظ والإشعار المطلوبة ---
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+  // --- دالة الحفظ والإشعار ---
+  const saveAndNotify = async (categoryTitle, value) => {
     const savedToken = localStorage.getItem('fcm_token');
     const scheduledDate = new Date();
     scheduledDate.setMonth(scheduledDate.getMonth() + 9);
@@ -43,10 +43,10 @@ const PregnancyMonitor = () => {
           fcmToken: savedToken || undefined,
           user_id: 1,
           category: 'medical_report',
-          title: `تقرير جديد: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
+          title: `تحديث بيانات: ${categoryTitle} 🩺`,
+          body: `تم تسجيل قيمة جديدة لـ ${categoryTitle}: ${value}`,
           scheduled_for: scheduledDate.toISOString(),
-          note: `تحليل آلي لـ ${categoryTitle}`
+          note: `تحديث يدوي لـ ${categoryTitle}`
         }
       };
       await CapacitorHttp.post(saveToNeonOptions);
@@ -58,8 +58,8 @@ const PregnancyMonitor = () => {
           headers: { 'Content-Type': 'application/json' },
           data: {
             token: savedToken,
-            title: 'تنبيه طبي جديد 🔔',
-            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`,
+            title: 'تحديث في ملفك 🔔',
+            body: `تم حفظ بيانات جديدة لـ ${categoryTitle}.`,
             data: { type: 'medical_report' }
           }
         };
@@ -105,6 +105,8 @@ const PregnancyMonitor = () => {
       const newData = { ...prev, [field]: value };
       localStorage.setItem('lady_fitness', JSON.stringify(newData));
       saveToNeonDB(field, value);
+      // استدعاء الإشعار عند إدخال البيانات فقط
+      saveAndNotify(field, value);
       return newData;
     });
   }, []);
@@ -133,8 +135,7 @@ const PregnancyMonitor = () => {
       setAiResponse(responseText);
       setPrompt("");
 
-      // استدعاء دالة الحفظ والإشعار بعد استلام الرد من الذكاء الاصطناعي
-      await saveAndNotify("الاستشارة الصحية", responseText);
+      // ملاحظة: تم حذف استدعاء saveAndNotify من هنا لمنع الإزعاج
 
     } catch (err) {
       setAiResponse("عذراً رفيقتي، حدث خطأ في الاتصال.");
@@ -294,7 +295,7 @@ const styles = {
     maxWidth: '500px', 
     margin: 'auto',
     maxHeight: '100vh',
-    overflowY: 'auto', // للسماح بالتمرير عند كثرة البيانات
+    overflowY: 'auto',
     scrollbarWidth: 'none'
   },
   aiMasterButton: { width: '100%', background: 'linear-gradient(45deg, #4a148c, #7b1fa2)', color: 'white', border: 'none', padding: '25px', borderRadius: '25px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px' },
@@ -308,7 +309,7 @@ const styles = {
   arrow: { transition: 'transform 0.3s ease' },
   gridContainer: { 
     display: 'grid', 
-    gridTemplateColumns: '1fr', // جعل المدخلات تحت بعضها لسلاسة العرض
+    gridTemplateColumns: '1fr', 
     gap: '12px', 
     background: '#fafafa' 
   },
