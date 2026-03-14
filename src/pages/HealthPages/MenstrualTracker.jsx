@@ -12,7 +12,7 @@ const MenstrualTracker = () => {
   });
 
   const [openAccordion, setOpenAccordion] = useState(null);
-  const [prediction, setPrediction] = useState('');
+  const [prediction, setPrediction] = useState(null); // تم تعديله ليكون كائن يحتوي على تفاصيل
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -29,6 +29,35 @@ const MenstrualTracker = () => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
+
+  // --- دالة الحساب العبقرية (الذكاء البرمجي) ---
+  const getAdvancedCalculations = (startDate) => {
+    if (!startDate) return null;
+    const start = new Date(startDate);
+    
+    // 1. توقع الدورة القادمة
+    const nextDate = new Date(start);
+    nextDate.setDate(start.getDate() + FIXED_AVERAGE_CYCLE);
+
+    // 2. حساب يوم التبويض (غالباً قبل الدورة القادمة بـ 14 يوم)
+    const ovulationDay = new Date(nextDate);
+    ovulationDay.setDate(nextDate.getDate() - 14);
+
+    // 3. نافذة الخصوبة (5 أيام قبل التبويض + يوم التبويض)
+    const fertilityStart = new Date(ovulationDay);
+    fertilityStart.setDate(ovulationDay.getDate() - 5);
+
+    // 4. التحويل للتقويم القمري (الهجري) باستخدام Intl
+    const lunarFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {day:'numeric', month:'long', year:'numeric'});
+    const lunarDate = lunarFormatter.format(nextDate);
+
+    return {
+      nextDate: nextDate.toLocaleDateString('ar-EG'),
+      lunarDate: lunarDate,
+      ovulation: ovulationDay.toLocaleDateString('ar-EG'),
+      fertilityWindow: `${fertilityStart.toLocaleDateString('ar-EG')} إلى ${ovulationDay.toLocaleDateString('ar-EG')}`
+    };
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -91,19 +120,20 @@ const MenstrualTracker = () => {
 
   const handleProcess = async (userInput = null) => {
     setLoading(true);
+    // جلب الحسابات الدقيقة أولاً لإدراجها في التقرير
+    const calc = getAdvancedCalculations(data['سجل التواريخ_تاريخ البدء']);
     const summary = JSON.stringify(data);
     
     try {
-      const promptText = `أنت طبيب متخصص خبير في طب النساء والتوليد وصحة المرأة فقط.
-      القاعدة الصارمة: لا تجب على أي سؤال خارج تخصص الدورة الشهرية، الخصوبة، والحيض.
+      // البرومبت الآن يركز على "التحليل الطبي" فقط لأن التواريخ محسوبة برمجياً
+      const promptText = `أنت طبيبة "رقة" الخبيرة في طب النساء.
+      بناءً على البيانات: ${summary}
+      والنتائج الحسابية التالية: (الدورة القادمة: ${calc?.nextDate}, نافذة الخصوبة: ${calc?.fertilityWindow}).
       
-      المهمة المطلوبة منك:
-      1. تحليل دقيق لهذه البيانات: ${summary}.
-      2. كتابة تقرير طبي مفصل للمستخدمة يشرح حالتها الصحية بناءً على الأعراض والمزاج.
-      3. تقديم نصائح طبية وقائية وعلاجية في نطاق الدورة والخصوبة.
-      4. توقع الدورة القادمة بناءً على متوسط ثابت قدره ${FIXED_AVERAGE_CYCLE} يوماً.
-      
-      السؤال الحالي: ${userInput || "أرجو تقديم تقرير طبي شامل بناءً على بياناتي الحالية."}`;
+      المهمة:
+      1. حللي الأعراض والمزاج (مثل ${data['الأعراض الجسدية_تشنجات']}) وقدمي نصائح طبية لتخفيفها.
+      2. إذا كان هناك سؤال مستخدم: ${userInput || "أريد تحليلاً طبياً لحالتي الحالية"}.
+      3. اجعلي الأسلوب ودوداً ومهنياً جداً. لا تكرري الحسابات الرياضية بل حللي الحالة الصحية الناتجة عنها.`;
 
       const aiOptions = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
@@ -112,20 +142,10 @@ const MenstrualTracker = () => {
       };
 
       const aiResponse = await CapacitorHttp.post(aiOptions);
-      const responseText = aiResponse.data.reply || aiResponse.data.message || "عذراً، لم أتمكن من إتمام التحليل الطبي حالياً.";
+      const responseText = aiResponse.data.reply || aiResponse.data.message || "عذراً، لم أتمكن من التحليل حالياً.";
 
-      // تعديل "العبقرية": الحفظ في نيون وإرسال الإشعار يحدث فقط إذا كان userInput فارغاً (أي ضغط زر التقرير الشامل)
       if (!userInput) {
-        const startDateInput = data['سجل التواريخ_تاريخ البدء'];
-        let scheduledDate = new Date();
-        if (startDateInput) {
-          const nextExpected = new Date(startDateInput);
-          nextExpected.setDate(nextExpected.getDate() + FIXED_AVERAGE_CYCLE);
-          scheduledDate = nextExpected;
-        }
-
         const savedToken = localStorage.getItem('fcm_token');
-        
         const saveToNeonOptions = {
           url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
           headers: { 'Content-Type': 'application/json' },
@@ -133,17 +153,15 @@ const MenstrualTracker = () => {
             fcmToken: savedToken || undefined,
             user_id: 1,
             category: 'medical_report',
-            title: 'تقرير طبي جديد 🩺',
+            title: 'تحليل طبي جديد 🩺',
             body: responseText.substring(0, 100) + "...",
-            startDate: startDateInput, 
-            endDate: data['سجل التواريخ_تاريخ الانتهاء'],
-            scheduled_for: scheduledDate.toISOString(),
-            note: 'تقرير تلقائي شامل'
+            startDate: data['سجل التواريخ_تاريخ البدء'], 
+            scheduled_for: calc?.nextDate,
+            note: 'تحليل أعراض ذكي'
           }
         };
-        
         await CapacitorHttp.post(saveToNeonOptions);
-        await sendPushNotification('تقرير طبي جديد 🩺', 'طبيبة رقة قامت بتحليل بياناتك، اضغطي للعرض.');
+        await sendPushNotification('طبيبة رقة 🩺', 'تقريرك الطبي جاهز بناءً على أعراضك الأخيرة.');
       }
 
       const newMessage = { 
@@ -164,12 +182,8 @@ const MenstrualTracker = () => {
   };
 
   const calculateCycle = () => {
-    const startDate = data['سجل التواريخ_تاريخ البدء'];
-    if (startDate) {
-      const nextDate = new Date(startDate);
-      nextDate.setDate(nextDate.getDate() + FIXED_AVERAGE_CYCLE);
-      setPrediction(nextDate.toLocaleDateString('ar-EG'));
-    }
+    const result = getAdvancedCalculations(data['سجل التواريخ_تاريخ البدء']);
+    setPrediction(result);
   };
 
   const styles = {
@@ -180,7 +194,8 @@ const MenstrualTracker = () => {
     chatInputArea: { padding: '10px', background: '#F9F9F9', display: 'flex', alignItems: 'center', gap: '5px', borderTop: '1px solid #eee' },
     iconBtn: { background: '#fce4ec', border: 'none', padding: '8px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', flexShrink: 0 },
     inputField: { flex: 1, border: 'none', padding: '12px', borderRadius: '20px', outline: 'none', minWidth: '0' },
-    sendBtn: { background: '#E91E63', color: 'white', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }
+    sendBtn: { background: '#E91E63', color: 'white', border: 'none', width: '40px', height: '40px', borderRadius: '50%', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+    badge: { background: '#FFF0F3', color: '#E91E63', padding: '5px 10px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold', display: 'inline-block', marginTop: '5px' }
   };
 
   const sections = [
@@ -194,21 +209,22 @@ const MenstrualTracker = () => {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-          <button onClick={() => setShowChat(true)} style={{ background: '#FFF', border: '1px solid #E91E63', color: '#E91E63', padding: '8px 15px', borderRadius: '12px', fontWeight: 'bold' }}>💬 فتح الشات</button>
+          <button onClick={() => setShowChat(true)} style={{ background: '#FFF', border: '1px solid #E91E63', color: '#E91E63', padding: '8px 15px', borderRadius: '12px', fontWeight: 'bold' }}>💬 استشارة فورية</button>
           <div style={{ textAlign: 'right' }}>
             <HealthIcon size={30} color="#E91E63" />
             <h3 style={{ color: '#ad1457', margin: 0 }}>طبيبة رقة الذكية</h3>
           </div>
         </div>
+
+        <button onClick={calculateCycle} style={{ ...styles.btnPrimary, background: '#fce4ec', color: '#ad1457' }}>توقع التقويم (شمسي/قمري)</button>
         
-        {notifications.length > 0 && (
-          <div style={{ background: '#FFF3E0', padding: '12px', borderRadius: '15px', marginBottom: '10px', fontSize: '12px', color: '#E65100' }}>
-            🔔 <strong>تذكير طبي:</strong> {notifications[0].body}
+        {prediction && (
+          <div style={{ marginTop: '10px', padding: '10px', borderTop: '1px dashed #FFC1D6' }}>
+            <div style={{ color: '#E91E63', fontSize: '14px' }}>📅 القادمة: <strong>{prediction.nextDate}</strong></div>
+            <div style={{ color: '#888', fontSize: '12px' }}>🌙 قمري: {prediction.lunarDate}</div>
+            <div style={styles.badge}>✨ نافذة الخصوبة: {prediction.fertilityWindow}</div>
           </div>
         )}
-
-        <button onClick={calculateCycle} style={{ ...styles.btnPrimary, background: '#fce4ec', color: '#ad1457' }}>توقع الدورة (على أساس 29 يوم)</button>
-        {prediction && <div style={{ textAlign: 'center', color: '#E91E63', fontWeight: 'bold' }}>الموعد القادم: {prediction}</div>}
       </div>
 
       {sections.map((sec) => (
@@ -237,14 +253,14 @@ const MenstrualTracker = () => {
       ))}
 
       <button onClick={() => { setShowChat(true); handleProcess(); }} style={styles.btnPrimary} disabled={loading}>
-        {loading ? "جاري إنشاء تقرير طبي..." : "تحليل الذكاء الاصطناعي وإصدار تقرير"}
+        {loading ? "جاري تحليل الأعراض..." : "تحليل الطبيبة للأعراض والنصائح"}
       </button>
 
       {showChat && (
         <div style={styles.chatOverlay}>
           <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '20px' }}>✕</span>
-            <span style={{ fontWeight: 'bold' }}>الاستشارة الطبية التخصصية</span>
+            <span style={{ fontWeight: 'bold' }}>طبيبة رقة: تحليل الأعراض</span>
             <button onClick={() => setChatHistory([])} style={{ background: 'none', border: 'none', color: '#fff' }}>مسح</button>
           </div>
           
@@ -255,38 +271,25 @@ const MenstrualTracker = () => {
                 background: msg.role === 'user' ? '#E91E63' : '#fff',
                 color: msg.role === 'user' ? '#fff' : '#333',
                 padding: '12px', borderRadius: '15px', marginBottom: '10px', maxWidth: '85%',
-                marginLeft: msg.role === 'user' ? 'auto' : '0'
+                marginLeft: msg.role === 'user' ? 'auto' : '0',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
               }}>
                 {msg.content}
               </div>
             ))}
-            {loading && (
-              <div style={{ textAlign: 'center', color: '#E91E63', margin: '15px 0' }}>
-                      ️ جاري فحص بياناتك وإصدار تقرير طبي...
-              </div>
-            )}
+            {loading && <div style={{ textAlign: 'center', color: '#E91E63' }}>جاري تحليل البيانات طبياً...</div>}
           </div>
          
           <div style={styles.chatInputArea}>
             <button onClick={() => handleMediaAction('camera')} style={styles.iconBtn}>📷</button>
-            <button onClick={() => handleMediaAction('gallery')} style={styles.iconBtn}>🖼️</button>
             <input 
-              placeholder="اسألي طبيبة رقة..." 
+              placeholder="اسألي عن أعراضك..." 
               style={styles.inputField}
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              onKeyDown={(e) => { 
-                if(e.key === 'Enter' && chatInput.trim()) { 
-                  handleProcess(chatInput);
-                } 
-              }}
+              onKeyDown={(e) => { if(e.key === 'Enter' && chatInput.trim()) handleProcess(chatInput); }}
             />
-            <button 
-              onClick={() => chatInput.trim() && handleProcess(chatInput)} 
-              style={styles.sendBtn}
-            >
-              ➤
-            </button>
+            <button onClick={() => chatInput.trim() && handleProcess(chatInput)} style={styles.sendBtn}>➤</button>
           </div>
         </div>
       )}
