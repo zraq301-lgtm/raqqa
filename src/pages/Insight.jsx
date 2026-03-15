@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { MotionCapabilities } from '@capacitor/motion'; // استيراد للمستشعرات
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
   ShieldCheck, Users, ShieldAlert, Wind, Gift, 
@@ -28,7 +29,8 @@ const RaqqaApp = () => {
   // --- حالات ركن العبادة المحدثة ---
   const [isAzanEnabled, setIsAzanEnabled] = useState(true);
   const [prayerTimes, setPrayerTimes] = useState(null);
-  const [qiblaDirection, setQiblaDirection] = useState(0);
+  const [qiblaDirection, setQiblaDirection] = useState(0); // اتجاه القبلة ثابت من الـ API
+  const [phoneHeading, setPhoneHeading] = useState(0); // اتجاه الهاتف الفعلي
   const [nextPrayer, setNextPrayer] = useState({ name: "جاري التحميل", time: "--:--" });
 
   // مرجع لملف الأذان (المسار في مجلد public/assets/)
@@ -41,6 +43,7 @@ const RaqqaApp = () => {
         navigator.geolocation.getCurrentPosition(async (position) => {
           const { latitude, longitude } = position.coords;
           try {
+            // جلب المواقيت
             const pRes = await fetch(`https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}&method=5`);
             const pData = await pRes.json();
             const timings = pData.data.timings;
@@ -58,6 +61,45 @@ const RaqqaApp = () => {
     };
     fetchReligiousData();
   }, []);
+
+  // تفعيل مستشعر الاتجاه (البوصلة) لحركة الكعبة
+  useEffect(() => {
+    let watchId = null;
+
+    const startWatchingOrientation = async () => {
+      try {
+        // التحقق من توفر المستشعرات (Capacitor Motion)
+        const cap = await MotionCapabilities.getCapabilities();
+        if (cap.orientation) {
+          watchId = await MotionCapabilities.watchOrientation((data) => {
+            // data.alpha هو الاتجاه بالنسبة للشمال المغناطيسي (0-360)
+            if (data.alpha !== null) {
+              setPhoneHeading(data.alpha);
+            }
+          });
+        }
+      } catch (error) {
+        console.error("خطأ في تفعيل مستشعر الاتجاه:", error);
+      }
+    };
+
+    startWatchingOrientation();
+
+    // تنظيف المستشعر عند إغلاق المكون
+    return () => {
+      if (watchId) {
+        MotionCapabilities.clearWatch({ id: watchId });
+      }
+    };
+  }, []);
+
+  // حساب زاوية دوران مؤشر الكعبة
+  // الزاوية = (اتجاه القبلة بالنسبة للشمال) - (اتجاه الهاتف بالنسبة للشمال)
+  const calculateQiblaRotation = () => {
+    // نستخدم qiblaDirection كمقدار ثابت لزاوية الكعبة داخل الإطار الدائري
+    // ونستخدم phoneHeading لتدوير الإطار الدائري بالكامل مع حركة الهاتف
+    return qiblaDirection;
+  };
 
   // منطق فحص وقت الأذان وتحديد الصلاة القادمة
   useEffect(() => {
@@ -257,38 +299,67 @@ const RaqqaApp = () => {
 
   return (
     <div style={styles.appContainer}>
-      {/* ركن العبادة والقبلة في الأعلى مباشرة */}
-      <div style={styles.topReligiousBar}>
-          <div style={styles.topBarSection}>
-             <div style={{...styles.compassIconWrap, transform: `rotate(${qiblaDirection}deg)`}}>
-                <Compass size={24} color="#7e57c2" />
-             </div>
-             <div style={styles.topBarInfo}>
-                <span style={styles.topBarLabel}>اتجاه القبلة</span>
-                <span style={styles.topBarValue}>{Math.round(qiblaDirection)}°</span>
-             </div>
-          </div>
-
-          <div style={styles.topBarSection}>
-             <Clock size={24} color="#f06292" />
-             <div style={styles.topBarInfo}>
-                <span style={styles.topBarLabel}>الأذان ({nextPrayer.name})</span>
-                <span style={styles.topBarValue}>{nextPrayer.time}</span>
-             </div>
-             <button 
-                style={{...styles.azanToggleSmall, color: isAzanEnabled ? '#f06292' : '#bbb'}} 
-                onClick={() => {
-                  setIsAzanEnabled(!isAzanEnabled);
-                  if (isAzanEnabled) audioRef.current.pause();
-                }}
-             >
-                {isAzanEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-             </button>
-          </div>
-      </div>
-
+      
       <header style={styles.header}>
         <h1 style={styles.title}>رقة ✨</h1>
+
+        {/* --- ركن العبادة والقبلة الجديد (موقعه أسفل كلمة رقة) --- */}
+        <div style={styles.religiousInfoBar}>
+          
+          {/* تصميم الأذان المتقدم */}
+          <div style={styles.advancedAzanClock}>
+            <div style={styles.azanMainTime}>
+              <Clock size={16} color="#f06292" style={{marginLeft: '4px'}} />
+              <span style={styles.azanNextLabel}>الصلاة القادمة:</span>
+              <span style={styles.azanNextName}>{nextPrayer.name}</span>
+            </div>
+            <div style={styles.azanTimeDigital}>{nextPrayer.time}</div>
+            <button 
+              style={{...styles.azanToggleBtn, color: isAzanEnabled ? '#f06292' : '#bbb'}} 
+              onClick={() => {
+                setIsAzanEnabled(!isAzanEnabled);
+                if (isAzanEnabled) audioRef.current.pause();
+              }}
+              title={isAzanEnabled ? "تعطيل الأذان" : "تفعيل الأذان"}
+            >
+              {isAzanEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            </button>
+          </div>
+
+          {/* تصميم القبلة نظام ساعة مع تدوير الكعبة بناء على حركة الهاتف */}
+          <div style={styles.qiblaClockContainer}>
+            <div style={styles.qiblaClockFace}>
+              {/* تدوير الإطار الدائري بالكامل بناءً على اتجاه الهاتف */}
+              <div style={{...styles.qiblaClockFrame, transform: `rotate(${-phoneHeading}deg)`}}>
+                {/* علامات اتجاهية صغيرة على الإطار */}
+                <div style={{...styles.directionMark, top: '2px', left: '50%', transform: 'translateX(-50%)'}}>N</div>
+                <div style={{...styles.directionMark, bottom: '2px', left: '50%', transform: 'translateX(-50%)'}}>S</div>
+                <div style={{...styles.directionMark, right: '2px', top: '50%', transform: 'translateY(-50%)'}}>E</div>
+                <div style={{...styles.directionMark, left: '2px', top: '50%', transform: 'translateY(-50%)'}}>W</div>
+                
+                {/* يد الساعة التي تشير للكعبة، تدور برمجياً بناءً على اتجاه القبلة الفعلي */}
+                <div style={{...styles.qiblaHand, transform: `rotate(${calculateQiblaRotation()}deg)`}}>
+                  <img 
+                    src="/assets/Kaaba.png" // جلب صورة الكعبة من نفس المسار
+                    alt="Kaaba" 
+                    style={styles.kaabaImage}
+                    onError={(e) => {
+                      e.target.style.display = 'none'; // إخفاء الصورة في حال فشل التحميل
+                      e.target.nextSibling.style.display = 'block'; // إظهار النص البديل
+                    }}
+                  />
+                  <span style={{...styles.kaabaTextFallback, display: 'none'}}>K</span> {/* نص بديل */}
+                </div>
+              </div>
+            </div>
+            <div style={styles.topBarInfo}>
+              <span style={styles.topBarLabel}>اتجاه القبلة</span>
+              <span style={styles.topBarValue}>{Math.round(qiblaDirection)}°</span>
+            </div>
+          </div>
+        </div>
+        {/* --- نهاية ركن العبادة الجديد --- */}
+
         <p style={styles.subtitle}>فقه المرأة الوعي والجمال</p>
         <div style={styles.headerActions}>
           <button style={styles.chatHeaderBtn} onClick={() => setShowChat(true)}>
@@ -433,23 +504,93 @@ const RaqqaApp = () => {
 };
 
 const styles = {
-  appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', pt: '100px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
-  topReligiousBar: { 
-    position: 'fixed', top: 0, left: 0, right: 0, height: '70px', 
-    background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', 
-    display: 'flex', justifyContent: 'space-around', alignItems: 'center', 
-    zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderBottom: '1px solid #fce4ec' 
+  appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', pt: '10px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
+  
+  // ستايلات ركن العبادة الجديد المدمج في الهيدر
+  religiousInfoBar: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '20px',
+    margin: '15px auto',
+    padding: '10px',
+    maxWidth: '500px',
+    background: '#fff9fb',
+    borderRadius: '15px',
+    border: '1px solid #fce4ec'
   },
-  topBarSection: { display: 'flex', alignItems: 'center', gap: '8px' },
-  topBarInfo: { display: 'flex', flexDirection: 'column' },
+  advancedAzanClock: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: '5px 10px',
+    background: 'white',
+    borderRadius: '10px',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    border: '1px solid #eee'
+  },
+  azanMainTime: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', color: '#666' },
+  azanNextLabel: { marginLeft: '3px' },
+  azanNextName: { fontWeight: 'bold', color: '#f06292' },
+  azanTimeDigital: { fontSize: '1.4rem', fontWeight: 'bold', color: '#444', margin: '2px 0' },
+  azanToggleBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' },
+
+  qiblaClockContainer: { display: 'flex', alignItems: 'center', gap: '8px' },
+  qiblaClockFace: { 
+    width: '50px', 
+    height: '50px', 
+    background: 'white', 
+    borderRadius: '50%', 
+    border: '2px solid #ddd', 
+    position: 'relative',
+    overflow: 'hidden',
+    boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+  },
+  qiblaClockFrame: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    transition: 'transform 0.2s ease-out' // حركة سلسة عند دوران الهاتف
+  },
+  directionMark: {
+    position: 'absolute',
+    fontSize: '0.5rem',
+    color: '#bbb',
+    fontWeight: 'bold'
+  },
+  qiblaHand: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    // نقطة الارتكاز في المركز الدقيق للدائرة
+    transformOrigin: '50% 50%', 
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  kaabaImage: {
+    width: '18px',
+    height: '18px',
+    // إزاحة خفيفة للأعلى لتكون على محيط الدائرة بدلاً من مركزها، لتبدو كإصبع بوصلة
+    marginTop: '-25px' 
+  },
+  kaabaTextFallback: {
+    fontSize: '0.8rem',
+    fontWeight: 'bold',
+    color: '#f06292',
+    marginTop: '-25px'
+  },
+  topBarInfo: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' },
   topBarLabel: { fontSize: '0.65rem', color: '#999' },
   topBarValue: { fontSize: '0.85rem', fontWeight: 'bold', color: '#444' },
-  compassIconWrap: { transition: 'transform 0.5s ease-out' },
-  azanToggleSmall: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '5px' },
 
-  header: { textAlign: 'center', marginBottom: '30px', marginTop: '60px' },
+  header: { textAlign: 'center', marginBottom: '30px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
-  subtitle: { color: '#888', fontStyle: 'italic' },
+  subtitle: { color: '#888', fontStyle: 'italic', marginTop: '10px' },
   headerActions: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', flexWrap: 'wrap' },
   chatHeaderBtn: { background: '#f06292', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' },
   azharHeaderBtn: { background: '#00897b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' },
