@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
@@ -25,9 +25,80 @@ const RaqqaApp = () => {
   const [chatMessage, setChatMessage] = useState("");
   const [customPrompt, setCustomPrompt] = useState(""); 
 
-  // حالات جديدة لركن العبادة
-  const [showPrayerModal, setShowPrayerModal] = useState(false);
+  // --- حالات ركن العبادة المحدثة ---
   const [isAzanEnabled, setIsAzanEnabled] = useState(true);
+  const [prayerTimes, setPrayerTimes] = useState(null);
+  const [qiblaDirection, setQiblaDirection] = useState(0);
+  const [nextPrayer, setNextPrayer] = useState({ name: "جاري التحميل", time: "--:--" });
+
+  // مرجع لملف الأذان (المسار في مجلد public/assets/)
+  const audioRef = useRef(new Audio("/assets/azan.mp3"));
+
+  // دالة جلب البيانات الجغرافية والدينية
+  useEffect(() => {
+    const fetchReligiousData = () => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const { latitude, longitude } = position.coords;
+          try {
+            const pRes = await fetch(`https://api.aladhan.com/v1/timings?latitude=${latitude}&longitude=${longitude}&method=5`);
+            const pData = await pRes.json();
+            const timings = pData.data.timings;
+            setPrayerTimes(timings);
+            
+            // جلب القبلة
+            const qRes = await fetch(`https://api.aladhan.com/v1/qibla/${latitude}/${longitude}`);
+            const qData = await qRes.json();
+            setQiblaDirection(qData.data.direction);
+          } catch (err) {
+            console.error("Error fetching religious data", err);
+          }
+        });
+      }
+    };
+    fetchReligiousData();
+  }, []);
+
+  // منطق فحص وقت الأذان وتحديد الصلاة القادمة
+  useEffect(() => {
+    const checkAzanAndNextPrayer = () => {
+      if (!prayerTimes) return;
+
+      const now = new Date();
+      const currentTime = now.getHours().toString().padStart(2, '0') + ":" + 
+                          now.getMinutes().toString().padStart(2, '0');
+
+      const prayers = [
+        { name: "الفجر", time: prayerTimes.Fajr },
+        { name: "الظهر", time: prayerTimes.Dhuhr },
+        { name: "العصر", time: prayerTimes.Asr },
+        { name: "المغرب", time: prayerTimes.Maghrib },
+        { name: "العشاء", time: prayerTimes.Isha }
+      ];
+
+      // 1. تشغيل الأذان إذا حان الوقت
+      if (isAzanEnabled) {
+        const currentPrayerMatch = prayers.find(p => p.time === currentTime);
+        if (currentPrayerMatch && audioRef.current.paused) {
+          audioRef.current.play().catch(e => console.log("تفاعل المستخدم مطلوب لتشغيل الصوت"));
+        }
+      }
+
+      // 2. تحديد الصلاة القادمة
+      const upcoming = prayers.find(p => {
+        const [h, m] = p.time.split(':');
+        const pDate = new Date();
+        pDate.setHours(parseInt(h), parseInt(m), 0);
+        return pDate > now;
+      }) || prayers[0]; // إذا انتهت صلوات اليوم نعرض الفجر
+
+      setNextPrayer(upcoming);
+    };
+
+    const interval = setInterval(checkAzanAndNextPrayer, 30000); // فحص كل 30 ثانية
+    checkAzanAndNextPrayer(); // فحص فوري عند التحميل
+    return () => clearInterval(interval);
+  }, [prayerTimes, isAzanEnabled]);
 
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
@@ -93,16 +164,12 @@ const RaqqaApp = () => {
     ]},
   ];
 
-  // --- دالة حفظ التوكن والبيانات المحدثة ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
-    
-    // إعداد تاريخ مستقبلي بـ 72 ساعة
     const scheduledDate = new Date();
     scheduledDate.setHours(scheduledDate.getHours() + 72); 
 
     try {
-      // 1. حفظ البيانات في نيون
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -112,13 +179,12 @@ const RaqqaApp = () => {
           category: 'spiritual_report',
           title: `تحليل جديد: ${categoryTitle} ✨`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: scheduledDate.toISOString(), // التاريخ المستقبلي المطلوب
+          scheduled_for: scheduledDate.toISOString(),
           note: `تحليل رقة لـ ${categoryTitle}`
         }
       };
       await CapacitorHttp.post(saveToNeonOptions);
 
-      // 2. إرسال إشعار FCM
       if (savedToken) {
         const fcmOptions = {
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -132,7 +198,6 @@ const RaqqaApp = () => {
         };
         await CapacitorHttp.post(fcmOptions);
       }
-      console.log("تم الحفظ والإرسال بنجاح ✅");
     } catch (err) {
       console.error("خطأ في عملية المزامنة:", err);
     }
@@ -156,7 +221,6 @@ const RaqqaApp = () => {
       setAiResponse(responseText);
       setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
       
-      // استدعاء دالة الحفظ والإشعار بعد استلام رد الذكاء الاصطناعي
       if (activeCategory) {
         await saveAndNotify(activeCategory.title, responseText);
       }
@@ -191,22 +255,42 @@ const RaqqaApp = () => {
     }
   };
 
-  const deleteSaved = (index) => {
-    const newList = [...savedReplies];
-    newList.splice(index, 1);
-    setSavedReplies(newList);
-  };
-
   return (
     <div style={styles.appContainer}>
+      {/* ركن العبادة والقبلة في الأعلى مباشرة */}
+      <div style={styles.topReligiousBar}>
+          <div style={styles.topBarSection}>
+             <div style={{...styles.compassIconWrap, transform: `rotate(${qiblaDirection}deg)`}}>
+                <Compass size={24} color="#7e57c2" />
+             </div>
+             <div style={styles.topBarInfo}>
+                <span style={styles.topBarLabel}>اتجاه القبلة</span>
+                <span style={styles.topBarValue}>{Math.round(qiblaDirection)}°</span>
+             </div>
+          </div>
+
+          <div style={styles.topBarSection}>
+             <Clock size={24} color="#f06292" />
+             <div style={styles.topBarInfo}>
+                <span style={styles.topBarLabel}>الأذان ({nextPrayer.name})</span>
+                <span style={styles.topBarValue}>{nextPrayer.time}</span>
+             </div>
+             <button 
+                style={{...styles.azanToggleSmall, color: isAzanEnabled ? '#f06292' : '#bbb'}} 
+                onClick={() => {
+                  setIsAzanEnabled(!isAzanEnabled);
+                  if (isAzanEnabled) audioRef.current.pause();
+                }}
+             >
+                {isAzanEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+             </button>
+          </div>
+      </div>
+
       <header style={styles.header}>
         <h1 style={styles.title}>رقة ✨</h1>
         <p style={styles.subtitle}>فقه المرأة الوعي والجمال</p>
         <div style={styles.headerActions}>
-          <button style={styles.prayerBtn} onClick={() => setShowPrayerModal(true)}>
-             <Compass size={18} />
-             <span>ركن العبادة</span>
-          </button>
           <button style={styles.chatHeaderBtn} onClick={() => setShowChat(true)}>
             <MessageCircle size={18} />
             <span>دردشة فقه رقة</span>
@@ -217,44 +301,6 @@ const RaqqaApp = () => {
           </a>
         </div>
       </header>
-
-      {/* مودال ركن العبادة */}
-      {showPrayerModal && (
-        <div style={styles.chatModal}>
-            <div style={{...styles.chatContent, height: 'auto', padding: '20px'}}>
-                <div style={styles.cardHeader}>
-                    <h2 style={styles.cardTitle}>ركن العبادة والقبلة</h2>
-                    <X style={{cursor: 'pointer', color: '#f06292'}} onClick={() => setShowPrayerModal(false)} />
-                </div>
-                
-                <div style={styles.prayerCardBody}>
-                    <div style={styles.compassSection}>
-                        <Compass size={80} style={styles.compassIcon} />
-                        <p style={{color: '#888', fontSize: '0.9rem'}}>اتجاه القبلة</p>
-                    </div>
-
-                    <div style={styles.azanSection}>
-                        <div style={styles.azanTimeBox}>
-                            <Clock size={24} color="#f06292" />
-                            <div>
-                                <h3 style={{margin: 0, color: '#444'}}>الأذان القادم: العصر</h3>
-                                <p style={{margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#f06292'}}>03:45 PM</p>
-                            </div>
-                        </div>
-                        <p style={styles.muezzinName}>المؤذن: الشيخ محمد رفعت</p>
-                    </div>
-
-                    <button 
-                        style={{...styles.submitBtn, background: isAzanEnabled ? '#f06292' : '#999', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}} 
-                        onClick={() => setIsAzanEnabled(!isAzanEnabled)}
-                    >
-                        {isAzanEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                        {isAzanEnabled ? "الأذان مفعل" : "الأذان متوقف"}
-                    </button>
-                </div>
-            </div>
-        </div>
-      )}
 
       {!activeCategory && (
         <div style={styles.grid}>
@@ -352,7 +398,7 @@ const RaqqaApp = () => {
                 {savedReplies.map((r, i) => (
                   <div key={i} style={styles.savedItem}>
                     <p>{r}</p>
-                    <Trash2 size={14} onClick={() => deleteSaved(i)} style={{color: 'red', cursor: 'pointer', marginTop: '5px'}} />
+                    <Trash2 size={14} onClick={() => {const newList = [...savedReplies]; newList.splice(i, 1); setSavedReplies(newList);}} style={{color: 'red', cursor: 'pointer', marginTop: '5px'}} />
                   </div>
                 ))}
                 <button onClick={() => setShowSavedList(false)} style={styles.backBtn}>العودة للدردشة</button>
@@ -387,12 +433,24 @@ const RaqqaApp = () => {
 };
 
 const styles = {
-  appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
-  header: { textAlign: 'center', marginBottom: '30px' },
+  appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', pt: '100px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
+  topReligiousBar: { 
+    position: 'fixed', top: 0, left: 0, right: 0, height: '70px', 
+    background: 'rgba(255, 255, 255, 0.9)', backdropFilter: 'blur(10px)', 
+    display: 'flex', justifyContent: 'space-around', alignItems: 'center', 
+    zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)', borderBottom: '1px solid #fce4ec' 
+  },
+  topBarSection: { display: 'flex', alignItems: 'center', gap: '8px' },
+  topBarInfo: { display: 'flex', flexDirection: 'column' },
+  topBarLabel: { fontSize: '0.65rem', color: '#999' },
+  topBarValue: { fontSize: '0.85rem', fontWeight: 'bold', color: '#444' },
+  compassIconWrap: { transition: 'transform 0.5s ease-out' },
+  azanToggleSmall: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '5px' },
+
+  header: { textAlign: 'center', marginBottom: '30px', marginTop: '60px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
   subtitle: { color: '#888', fontStyle: 'italic' },
   headerActions: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', flexWrap: 'wrap' },
-  prayerBtn: { background: '#7e57c2', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' },
   chatHeaderBtn: { background: '#f06292', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' },
   azharHeaderBtn: { background: '#00897b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px', maxWidth: '1200px', margin: '0 auto' },
@@ -429,13 +487,6 @@ const styles = {
   savedArea: { flex: 1, padding: '15px', overflowY: 'auto' },
   savedItem: { background: '#fdf2f8', padding: '10px', borderRadius: '10px', marginBottom: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
   backBtn: { width: '100%', padding: '10px', background: '#f06292', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' },
-  // ستايلات ركن العبادة الجديدة
-  prayerCardBody: { textAlign: 'center', padding: '10px 0' },
-  compassSection: { margin: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' },
-  compassIcon: { color: '#7e57c2', animation: 'spin 10s linear infinite' },
-  azanSection: { background: '#f3f0ff', padding: '15px', borderRadius: '15px', margin: '15px 0' },
-  azanTimeBox: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '10px' },
-  muezzinName: { color: '#666', fontSize: '0.85rem', margin: 0, fontStyle: 'italic' }
 };
 
 export default RaqqaApp;
