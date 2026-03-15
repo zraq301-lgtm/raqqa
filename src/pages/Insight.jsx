@@ -6,7 +6,7 @@ import {
   Clock, Brain, Flower2, Coins, Hourglass, 
   Camera, Mic, Image, Trash2, X, MapPin, MessageCircle, Bookmark, List,
   CheckCircle2, CircleOff, Star, Droplets, Bath, Smile, Sun, Utensils, 
-  Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus
+  Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus, Compass, Volume2, VolumeX
 } from 'lucide-react';
 
 // استيراد خدمات الميديا
@@ -24,6 +24,10 @@ const RaqqaApp = () => {
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [customPrompt, setCustomPrompt] = useState(""); 
+
+  // حالات جديدة لركن العبادة
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
+  const [isAzanEnabled, setIsAzanEnabled] = useState(true);
 
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
@@ -199,6 +203,10 @@ const RaqqaApp = () => {
         <h1 style={styles.title}>رقة ✨</h1>
         <p style={styles.subtitle}>فقه المرأة الوعي والجمال</p>
         <div style={styles.headerActions}>
+          <button style={styles.prayerBtn} onClick={() => setShowPrayerModal(true)}>
+             <Compass size={18} />
+             <span>ركن العبادة</span>
+          </button>
           <button style={styles.chatHeaderBtn} onClick={() => setShowChat(true)}>
             <MessageCircle size={18} />
             <span>دردشة فقه رقة</span>
@@ -209,6 +217,44 @@ const RaqqaApp = () => {
           </a>
         </div>
       </header>
+
+      {/* مودال ركن العبادة */}
+      {showPrayerModal && (
+        <div style={styles.chatModal}>
+            <div style={{...styles.chatContent, height: 'auto', padding: '20px'}}>
+                <div style={styles.cardHeader}>
+                    <h2 style={styles.cardTitle}>ركن العبادة والقبلة</h2>
+                    <X style={{cursor: 'pointer', color: '#f06292'}} onClick={() => setShowPrayerModal(false)} />
+                </div>
+                
+                <div style={styles.prayerCardBody}>
+                    <div style={styles.compassSection}>
+                        <Compass size={80} style={styles.compassIcon} />
+                        <p style={{color: '#888', fontSize: '0.9rem'}}>اتجاه القبلة</p>
+                    </div>
+
+                    <div style={styles.azanSection}>
+                        <div style={styles.azanTimeBox}>
+                            <Clock size={24} color="#f06292" />
+                            <div>
+                                <h3 style={{margin: 0, color: '#444'}}>الأذان القادم: العصر</h3>
+                                <p style={{margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#f06292'}}>03:45 PM</p>
+                            </div>
+                        </div>
+                        <p style={styles.muezzinName}>المؤذن: الشيخ محمد رفعت</p>
+                    </div>
+
+                    <button 
+                        style={{...styles.submitBtn, background: isAzanEnabled ? '#f06292' : '#999', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}} 
+                        onClick={() => setIsAzanEnabled(!isAzanEnabled)}
+                    >
+                        {isAzanEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+                        {isAzanEnabled ? "الأذان مفعل" : "الأذان متوقف"}
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
 
       {!activeCategory && (
         <div style={styles.grid}>
@@ -345,7 +391,8 @@ const styles = {
   header: { textAlign: 'center', marginBottom: '30px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
   subtitle: { color: '#888', fontStyle: 'italic' },
-  headerActions: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px' },
+  headerActions: { display: 'flex', justifyContent: 'center', gap: '10px', marginTop: '15px', flexWrap: 'wrap' },
+  prayerBtn: { background: '#7e57c2', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' },
   chatHeaderBtn: { background: '#f06292', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' },
   azharHeaderBtn: { background: '#00897b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '25px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', textDecoration: 'none', fontWeight: 'bold' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px', maxWidth: '1200px', margin: '0 auto' },
@@ -355,7 +402,7 @@ const styles = {
   menuText: { fontWeight: 'bold', color: '#444' },
   overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 10, backdropFilter: 'blur(4px)' },
   activeCard: { position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '90%', maxWidth: '550px', maxHeight: '85vh', background: 'white', borderRadius: '25px', padding: '25px', zIndex: 11, overflowY: 'auto' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '15px' },
+  cardHeader: { display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #eee', paddingBottom: '15px', alignItems: 'center' },
   cardTitle: { color: '#f06292', margin: 0, fontSize: '1.2rem' },
   promptInput: { width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #fce4ec', background: '#fff9fb', fontSize: '0.85rem' },
   inputsList: { display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' },
@@ -381,7 +428,14 @@ const styles = {
   iconBtn: { border: 'none', background: '#f8f9fa', color: '#f06292', padding: '8px', borderRadius: '50%', cursor: 'pointer' },
   savedArea: { flex: 1, padding: '15px', overflowY: 'auto' },
   savedItem: { background: '#fdf2f8', padding: '10px', borderRadius: '10px', marginBottom: '8px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' },
-  backBtn: { width: '100%', padding: '10px', background: '#f06292', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }
+  backBtn: { width: '100%', padding: '10px', background: '#f06292', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' },
+  // ستايلات ركن العبادة الجديدة
+  prayerCardBody: { textAlign: 'center', padding: '10px 0' },
+  compassSection: { margin: '20px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  compassIcon: { color: '#7e57c2', animation: 'spin 10s linear infinite' },
+  azanSection: { background: '#f3f0ff', padding: '15px', borderRadius: '15px', margin: '15px 0' },
+  azanTimeBox: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px', marginBottom: '10px' },
+  muezzinName: { color: '#666', fontSize: '0.85rem', margin: 0, fontStyle: 'italic' }
 };
 
 export default RaqqaApp;
