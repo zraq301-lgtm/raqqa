@@ -18,6 +18,7 @@ const PregnancyApp = () => {
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('preg_ai_v3')) || []);
   const [promptInput, setPromptInput] = useState('');
   const [pregnancyMonth, setPregnancyMonth] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(''); // حالة لتاريخ الولادة المتوقع
 
   const categories = [
     { id: 'weeks', title: 'تطور الأسابيع', icon: <Calendar />, fields: ['الأسبوع الحالي', 'أعراض الأسبوع', 'ملاحظات الطبيب', 'المراجعة القادمة', 'تاريخ الولادة', 'تغيرات الوزن', 'حجم الجنين', 'نصيحة الأسبوع', 'تطور الأعضاء', 'مهام الأسبوع'] },
@@ -34,6 +35,26 @@ const PregnancyApp = () => {
     return state;
   });
 
+  // تأثير لحساب تاريخ الولادة المتوقع عند تغيير شهر الحمل
+  useEffect(() => {
+    if (pregnancyMonth) {
+      const currentMonthNum = parseInt(pregnancyMonth);
+      if (currentMonthNum >= 1 && currentMonthNum <= 9) {
+        const monthsRemaining = 9 - currentMonthNum;
+        const projectedDeliveryDate = new Date();
+        projectedDeliveryDate.setMonth(projectedDeliveryDate.getMonth() + monthsRemaining);
+        // إضافة أسبوع لتقريب الموعد (طريقة نيجلي)
+        projectedDeliveryDate.setDate(projectedDeliveryDate.getDate() + 7);
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        setDeliveryDate(projectedDeliveryDate.toLocaleDateString('ar-SA', options));
+      } else {
+        setDeliveryDate('');
+      }
+    } else {
+      setDeliveryDate('');
+    }
+  }, [pregnancyMonth]);
+
   const handleUpdateInput = (catId, idx, val) => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
@@ -41,12 +62,12 @@ const PregnancyApp = () => {
   // دالة حفظ التوكن والمزامنة - تُستدعى فقط للبيانات والصور
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
-    const currentMonthNum = parseInt(pregnancyMonth) || 1;
     
-    const deliveryDate = new Date();
-    const monthsRemaining = 9 - currentMonthNum;
-    deliveryDate.setMonth(deliveryDate.getMonth() + monthsRemaining);
-    deliveryDate.setDate(deliveryDate.getDate() + 7);
+    // استخدام تاريخ الولادة المتوقع المحسوب بالفعل
+    if (!deliveryDate) return; 
+
+    // تحويل تاريخ الولادة المتوقع من النص إلى كائن تاريخ للمزامنة
+    const deliveryDateObj = new Date(deliveryDate.replace('،', '')); // إزالة الفاصلة المحتملة
 
     try {
       const saveToNeonOptions = {
@@ -58,7 +79,7 @@ const PregnancyApp = () => {
           category: 'pregnancy_followup',
           title: `تحديث طبي: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: deliveryDate.toISOString(),
+          scheduled_for: deliveryDateObj.toISOString(),
           all_data: JSON.stringify(inputs),
           note: `تحليل آلي لـ ${categoryTitle}`
         }
@@ -165,23 +186,93 @@ const PregnancyApp = () => {
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
         }
-        .header { display: flex; justify-content: space-between; margin-bottom: 10px; }
-        .ai-btn { background: #7C3AED; color: white; padding: 12px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
+        .header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+        .ai-btn { background: #E9D5FF; color: #7C3AED; padding: 12px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; }
         .quick-chat-bar { background: white; padding: 10px; border-radius: 15px; display: flex; gap: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); align-items: center; border: 1px solid #FBCFE8; }
         .quick-input { flex: 1; border: none; outline: none; font-size: 14px; background: transparent; }
         .category-item { background: white; border-radius: 25px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.5); overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .category-header { width: 100%; display: flex; justify-content: space-between; padding: 18px 20px; border: none; background: none; align-items: center; }
         .inputs-container { padding: 0 15px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .custom-input { width: 100%; padding: 10px; border-radius: 12px; border: 1px solid #F1F5F9; background: #F8FAFC; font-size: 12px; }
-        .analyze-full-btn { grid-column: span 2; background: #7C3AED; color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; margin-top: 5px; cursor: pointer; }
-        .month-picker { display: flex; align-items: center; gap: 5px; background: white; padding: 5px 10px; border-radius: 10px; border: 1px solid #7C3AED; }
+        .analyze-full-btn { grid-column: span 2; background: #E9D5FF; color: #7C3AED; border: none; padding: 12px; border-radius: 12px; font-weight: bold; margin-top: 5px; cursor: pointer; }
+        .month-picker { display: flex; align-items: center; gap: 5px; background: white; padding: 5px 10px; border-radius: 10px; border: 1px solid #E9D5FF; }
         .chat-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; }
-        .chat-header { background: #7C3AED; color: white; padding: 20px; display: flex; justify-content: space-between; }
+        .chat-header { background: #E9D5FF; color: #7C3AED; padding: 20px; display: flex; justify-content: space-between; }
         .chat-body { flex: 1; overflow-y: auto; padding: 20px; background: #FDF2F8; }
         .msg-card { background: white; padding: 15px; border-radius: 20px 20px 0 20px; margin-bottom: 15px; }
         .prompt-bar { padding: 15px; background: white; border-top: 1px solid #F1F5F9; display: flex; gap: 8px; }
         .prompt-input { flex: 1; padding: 12px; border-radius: 15px; border: 1px solid #E2E8F0; }
         .category-list { padding-bottom: 30px; }
+        
+        /* تنسيقات الساعة الوردية والأنيقة */
+        .pregnancy-clock-container {
+          position: relative;
+          width: 250px;
+          height: 250px;
+          border-radius: 50%;
+          border: 10px solid #FBCFE8; /* وردي فاتح */
+          box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+          margin: 0 auto 30px;
+          background: #FFF5F7; /* وردي فاتح جداً */
+          overflow: hidden;
+        }
+        .clock-center {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 20px;
+          height: 20px;
+          background: #7C3AED; /* بنفسجي زاهي */
+          border-radius: 50%;
+          z-index: 10;
+        }
+        .clock-hand {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform-origin: bottom center;
+          border-radius: 5px;
+          z-index: 5;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .baby-pointer {
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 3px solid #7C3AED;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .hand-stick {
+          width: 4px;
+          height: 80px;
+          background: #7C3AED;
+        }
+        .month-labels-container {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .month-label {
+          position: absolute;
+          font-weight: bold;
+          font-size: 16px;
+          color: #5B21B6; /* بنفسجي غامق */
+        }
+        .delivery-date-info {
+          text-align: center;
+          color: #7C3AED;
+          margin-top: -10px;
+          margin-bottom: 20px;
+          font-size: 14px;
+          font-weight: bold;
+        }
       `}</style>
 
       <header className="header">
@@ -194,6 +285,48 @@ const PregnancyApp = () => {
           <h1 style={{fontSize:'22px', margin:0}}>متابعة الحمل <Plus size={24} style={{display:'inline', color:'#7C3AED'}}/></h1>
         </div>
       </header>
+
+      {/* ساعة متابعة الحمل الأنيقة مع التقويم الشهري بالحواف */}
+      <div className="pregnancy-clock-container">
+        <div className="clock-center"></div>
+        
+        {/* مؤشر صورة الطفل */}
+        <motion.div 
+          className="clock-hand" 
+          animate={{ 
+            rotate: pregnancyMonth ? (parseInt(pregnancyMonth) - 1) * 36 : 0 // دوران يعتمد على شهر الحمل (1-9 أشهر، كل شهر 36 درجة)
+          }} 
+          transition={{ type: 'spring', stiffness: 50 }}
+          style={{ x: '-50%', y: '-100%' }} // لضمان دوران المؤشر من مركز الساعة
+        >
+          {/* صورة الطفل المحببة */}
+          <img src="src/assets/baby" alt="مؤشر الطفل" className="baby-pointer" />
+          <div className="hand-stick"></div>
+        </motion.div>
+
+        {/* تسميات الأشهر بالحواف (تقويم شهري) */}
+        <div className="month-labels-container">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(m => (
+            <div 
+              key={m} 
+              className="month-label"
+              style={{
+                top: `${50 - 40 * Math.cos(((m-1) * 36 - 90) * Math.PI / 180)}%`, // حساب موضع الشهر على الدائرة
+                left: `${50 + 40 * Math.sin(((m-1) * 36 - 90) * Math.PI / 180)}%`, // حساب موضع الشهر على الدائرة
+              }}
+            >
+              {m}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* عرض تاريخ الولادة المتوقع */}
+      {deliveryDate && (
+        <div className="delivery-date-info">
+          تاريخ الولادة المتوقع: {deliveryDate}
+        </div>
+      )}
 
       <div className="quick-chat-bar">
         <Sparkles size={20} color="#7C3AED" />
@@ -261,9 +394,9 @@ const PregnancyApp = () => {
         {showChat && (
           <motion.div className="chat-overlay" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}>
             <div className="chat-header">
-              <button onClick={() => setShowChat(false)} style={{background:'none', border:'none', color:'white'}}><ChevronRight size={28}/></button>
+              <button onClick={() => setShowChat(false)} style={{background:'none', border:'none', color:'#7C3AED'}}><ChevronRight size={28}/></button>
               <div style={{fontWeight:'bold'}}>طبيب راقي الذكي</div>
-              <button onClick={() => setChatHistory([])} style={{background:'none', border:'none', color:'white'}}><Trash2 size={20}/></button>
+              <button onClick={() => setChatHistory([])} style={{background:'none', border:'none', color:'#7C3AED'}}><Trash2 size={20}/></button>
             </div>
             <div className="chat-body">
               {chatHistory.map(msg => (
