@@ -1,7 +1,8 @@
 import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react'; // أضفنا useCallback
 import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core'; 
+import { LocalNotifications } from '@capacitor/local-notifications'; // استيراد مكتبة الإشعارات
 
 // استيراد الصور من مجلد الأصول (Assets)
 import healthImg from './assets/health.jpg';
@@ -73,16 +74,11 @@ function TipOverlay() {
 
   if (!isVisible || !tip) return null;
 
-  // دالة لتحديد نوع المحتوى ورسمه
   const renderContent = () => {
     const content = tip.trim();
-    
-    // 1. تحقق من روابط الصور
     if (content.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
       return <img src={content} alt="رقة نصيحة" className="tip-media-content" />;
     }
-    
-    // 2. تحقق من روابط اليوتيوب (فيديو قصير)
     if (content.includes('youtube.com') || content.includes('youtu.be')) {
       let videoId = content.split('v=')[1] || content.split('/').pop();
       if (videoId.includes('&')) videoId = videoId.split('&')[0];
@@ -98,8 +94,6 @@ function TipOverlay() {
         </div>
       );
     }
-
-    // 3. الافتراضي هو "نص"
     return <p className="tip-text-content">{tip}</p>;
   };
 
@@ -108,7 +102,6 @@ function TipOverlay() {
       className="tip-card-overlay" 
       onClick={() => setIsVisible(false)}
       onPointerMove={(e) => {
-        // إذا سحب المستخدم إصبعه لمسافة جانبية يختفي الكارت
         if (Math.abs(e.movementX) > 10) setIsVisible(false);
       }}
     >
@@ -117,11 +110,9 @@ function TipOverlay() {
           <span className="tip-icon">💡 إشراقة رقة</span>
           <button className="tip-close-btn">×</button>
         </div>
-        
         <div className="tip-body">
           {renderContent()}
         </div>
-
         <div className="tip-timer-bar"></div>
       </div>
     </div>
@@ -129,7 +120,54 @@ function TipOverlay() {
 }
 
 function App() {
+  // --- [جديد] منطق جلب وجدولة الإشعارات من نيون ---
+  const syncNotifications = useCallback(async () => {
+    try {
+      const response = await CapacitorHttp.get({
+        url: 'https://raqqa-hjl8.vercel.app/api/get-notifications',
+        params: { user_id: "1" }
+      });
+
+      if (response.data && response.data.rows) {
+        const reminders = response.data.rows;
+        
+        // طلب إذن الإشعارات
+        const perms = await LocalNotifications.checkPermissions();
+        if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
+
+        // مسح المجدول سابقاً لتحديثه
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.length > 0) {
+          await LocalNotifications.cancel({ notifications: pending.notifications });
+        }
+
+        // جدولة الإشعارات القادمة فقط بالصور من الـ API
+        const notificationsToSchedule = reminders
+          .filter(rem => new Date(rem.scheduled_for) > new Date())
+          .map(rem => ({
+            id: parseInt(rem.id),
+            title: rem.title,
+            body: rem.body,
+            schedule: { at: new Date(rem.scheduled_for) },
+            largeIcon: rem.image_url, // الرابط القادم من الـ API
+            smallIcon: 'ic_stat_name',
+            sound: 'default'
+          }));
+
+        if (notificationsToSchedule.length > 0) {
+          await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+          console.log(`✅ تمت جدولة ${notificationsToSchedule.length} إشعار بنجاح`);
+        }
+      }
+    } catch (err) {
+      console.error("Notification Sync Error:", err);
+    }
+  }, []);
+
   useEffect(() => {
+    // تشغيل نظام الإشعارات
+    syncNotifications();
+
     const setupBackButton = async () => {
       const backButtonListener = await CapApp.addListener('backButton', ({ canGoBack }) => {
         if (!canGoBack) { 
@@ -144,7 +182,7 @@ function App() {
     return () => {
       listener.then(l => l.remove());
     };
-  }, []);
+  }, [syncNotifications]); // إضافة syncNotifications للاعتمادية
 
   return (
     <div className="app-container">
