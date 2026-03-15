@@ -32,7 +32,8 @@ jobs:
           rm -rf android
           # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          npm install onesignal-cordova-plugin @capacitor/push-notifications --save --legacy-peer-deps
+          # إضافة مكتبة الإشعارات المحلية لضمان عمل النظام الجديد
+          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm run build --if-present
 
       - name: 4. إضافة منصة أندرويد ومزامنتها
