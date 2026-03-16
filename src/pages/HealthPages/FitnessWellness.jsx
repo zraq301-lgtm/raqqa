@@ -25,10 +25,9 @@ const PregnancyMonitor = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showClockSettings, setShowClockSettings] = useState(false);
 
-  // تحديث مسار الصور بناءً على طلبك
-  const assetPath = "https://raqqa-v6cd.vercel.app/health/public/assets";
+  // تم تصحيح الرابط هنا بحذف كلمة public ليعمل بشكل صحيح على Vercel
+  const assetPath = "https://raqqa-v6cd.vercel.app/assets";
 
-  // --- إدارة البيانات والمنبهات (LocalStorage) ---
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('lady_fitness');
     return saved ? JSON.parse(saved) : {};
@@ -39,13 +38,11 @@ const PregnancyMonitor = () => {
     return savedAlarms ? JSON.parse(savedAlarms) : {};
   });
 
-  // تحديث الساعة كل ثانية
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // --- إضافة مراقب المنبهات وتشغيل الصوت ---
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
@@ -60,30 +57,26 @@ const PregnancyMonitor = () => {
 
     const playAlarmSound = () => {
       const audio = new Audio(`${assetPath}/fine-alarm.mp3`);
-      audio.play().catch(e => console.log("تفاعل المستخدم مطلوب لتشغيل الصوت"));
+      audio.play().catch(e => console.log("تفاعل المستخدم مطلوب"));
     };
 
     const alarmInterval = setInterval(checkAlarms, 1000);
     return () => clearInterval(alarmInterval);
   }, [alarms]);
 
-  // حفظ المنبهات عند تغييرها
   useEffect(() => {
     localStorage.setItem('roqa_alarms', JSON.stringify(alarms));
   }, [alarms]);
 
-  // استرجاع سجل الدردشة
   useEffect(() => {
     const savedChats = localStorage.getItem('raqqa_ai_chats');
     if (savedChats) setChatHistory(JSON.parse(savedChats));
   }, []);
 
-  // --- حسابات زوايا الساعة ---
   const secondsDeg = (currentTime.getSeconds() / 60) * 360;
   const minutesDeg = ((currentTime.getMinutes() + currentTime.getSeconds() / 60) / 60) * 360;
   const hoursDeg = ((currentTime.getHours() % 12 + currentTime.getMinutes() / 60) / 12) * 360;
 
-  // --- دالات الأكشن والحفظ ---
   const saveAndNotify = async (categoryTitle, value) => {
     const savedToken = localStorage.getItem('fcm_token');
     const scheduledDate = new Date();
@@ -95,13 +88,6 @@ const PregnancyMonitor = () => {
         data: { fcmToken: savedToken || undefined, user_id: 1, category: 'medical_report', title: `تحديث بيانات: ${categoryTitle} 🩺`, body: `تم تسجيل قيمة جديدة لـ ${categoryTitle}: ${value}`, scheduled_for: scheduledDate.toISOString(), note: `تحديث يدوي لـ ${categoryTitle}` }
       };
       await CapacitorHttp.post(saveToNeonOptions);
-      if (savedToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: { token: savedToken, title: 'تحديث في ملفك 🔔', body: `تم حفظ بيانات جديدة لـ ${categoryTitle}.`, data: { type: 'medical_report' } }
-        });
-      }
     } catch (err) { console.error("Sync Error:", err); }
   };
 
@@ -121,16 +107,14 @@ const PregnancyMonitor = () => {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا طبيبة رقة للرشاقة والتخسيس. حللي هذه البيانات الخاصة بقسم (${section.title}) وقدمي نصيحة طبية سريعة: ${sectionData}` }
+        data: { prompt: `أنا طبيبة رقة للرشاقة والتخسيس. حللي هذه البيانات: ${sectionData}` }
       };
       const response = await CapacitorHttp.post(options);
       const reply = response.data.reply || response.data.message;
       setAiResponse(reply);
       setIsChatOpen(true);
       const newChat = { id: Date.now(), query: `تحليل قسم ${section.title}`, reply: reply };
-      const updatedHistory = [newChat, ...chatHistory];
-      setChatHistory(updatedHistory);
-      localStorage.setItem('raqqa_ai_chats', JSON.stringify(updatedHistory));
+      setChatHistory(prev => [newChat, ...prev]);
     } catch (err) { console.error("AI Error:", err); } finally { setIsLoading(false); }
   };
 
@@ -152,31 +136,22 @@ const PregnancyMonitor = () => {
   const handleProcessAI = async (imageUrl = null) => {
     if (!prompt && !imageUrl) return;
     setIsLoading(true);
-    const summary = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(", ");
     try {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة، وهذه بياناتي الصحية: ${summary}. ${imageUrl ? `الصورة: ${imageUrl}` : ''} بصفتك طبيبة متخصصة، حللي: ${prompt}` }
+        data: { prompt: `بصفتك طبيبة متخصصة، حللي: ${prompt}` }
       });
       const reply = response.data.reply || response.data.message;
       const newChat = { id: Date.now(), query: prompt || "تحليل صورة", reply: reply, attachment: imageUrl };
-      setChatHistory([newChat, ...chatHistory]);
-      localStorage.setItem('raqqa_ai_chats', JSON.stringify([newChat, ...chatHistory]));
+      setChatHistory(prev => [newChat, ...prev]);
       setAiResponse(reply);
       setPrompt("");
     } catch (err) { setAiResponse("عذراً رفيقتي، حدث خطأ."); } finally { setIsLoading(false); }
   };
 
-  const deleteChat = (id) => {
-    const filtered = chatHistory.filter(c => c.id !== id);
-    setChatHistory(filtered);
-    localStorage.setItem('raqqa_ai_chats', JSON.stringify(filtered));
-  };
-
   return (
     <div style={mergedStyles.container}>
-      {/* --- قسم الساعة التناظرية --- */}
       <div style={mergedStyles.clockSection}>
         <div style={mergedStyles.clockFace}>
           <div style={mergedStyles.hand(hoursDeg, 8, 50, 3)}>
@@ -199,12 +174,7 @@ const PregnancyMonitor = () => {
             {sections.map(s => (
               <div key={s.id} style={mergedStyles.alarmItem}>
                 <span>{s.emoji} {s.title}</span>
-                <input 
-                  type="time" 
-                  value={alarms[s.id] || ''} 
-                  onChange={(e) => setAlarms({...alarms, [s.id]: e.target.value})}
-                  style={mergedStyles.timeInput}
-                />
+                <input type="time" value={alarms[s.id] || ''} onChange={(e) => setAlarms({...alarms, [s.id]: e.target.value})} style={mergedStyles.timeInput} />
               </div>
             ))}
           </div>
@@ -235,9 +205,8 @@ const PregnancyMonitor = () => {
               {sec.fields.map((f) => (
                 <div key={`${sec.id}-${f}`} style={mergedStyles.inputGroup}>
                   <label style={mergedStyles.label}>{f}</label>
-                  {/* تم التعديل هنا لضمان قبول النص والأرقام ومنع الحذف التلقائي */}
                   <input 
-                    type="text"
+                    type="text" 
                     style={mergedStyles.input} 
                     value={data[`${sec.id}-${f}`] || ''} 
                     onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} 
@@ -266,7 +235,6 @@ const PregnancyMonitor = () => {
                 <div key={chat.id} style={mergedStyles.historyCard}>
                    <div style={mergedStyles.historyHeader}>
                      <span><strong>س:</strong> {chat.query}</span>
-                     <button style={{color: 'red', border: 'none', background: 'none'}} onClick={() => deleteChat(chat.id)}>حذف 🗑️</button>
                    </div>
                    <div style={{fontSize: '0.8rem', marginTop: '5px'}}><strong>ج:</strong> {chat.reply}</div>
                 </div>
