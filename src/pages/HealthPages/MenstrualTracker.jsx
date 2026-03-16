@@ -38,7 +38,6 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', padding: '20px', background: 'rgba(255,255,255,0.7)', borderRadius: '35px', backdropFilter: 'blur(10px)' }}>
       
-      {/* عرض التوقعات في الأعلى بوضوح */}
       {prediction && (
         <div style={{ width: '100%', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ background: '#FFF0F3', padding: '10px', borderRadius: '15px', border: '1px solid #FFD1DF', textAlign: 'center' }}>
@@ -106,39 +105,51 @@ const MenstrualTracker = () => {
     };
     setPrediction(calc);
 
-    // 2. الحفظ في نيون عبر الرابط الأول
+    // 2. دالة المزامنة والحفظ في نيون (بناءً على طلبك)
+    const savedToken = localStorage.getItem('fcm_token');
+    const scheduledDate = new Date();
+    scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
+
     try {
+      // حفظ في نيون تحت مسمى period وبناء الداتا المطلوب
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: { payload: { ...data, ...calc } }
-      });
-    } catch (e) { console.error("Neon Save Error", e); }
-
-    // 3. إرسال الإشعار عبر الرابط الثاني
-    try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-        headers: { 'Content-Type': 'application/json' },
-        data: { 
-          title: "تحديث رقة 🌸", 
-          body: `الموعد القادم: ${calc.nextDate}`,
-          data: { ...data, ...calc } 
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'period', // تم التغيير إلى period بناءً على طلبك
+          title: `تحديث رقة: الدورة القادمة 🌸`,
+          body: `الموعد المتوقع: ${calc.nextDate}. نتمنى لكِ دوام الصحة.`,
+          scheduled_for: scheduledDate.toISOString(),
+          note: `تحليل الدورة الشهرية وحفظ البيانات`,
+          payload: { ...data, ...calc } // حفظ كل المدخلات
         }
       });
-    } catch (e) { console.error("FCM Error", e); }
 
-    // 4. تحليل الذكاء الاصطناعي
+      // إرسال إشعار فوري من فيربيس
+      if (savedToken) {
+        await CapacitorHttp.post({
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه رقة الذكي 🔔',
+            body: `تم تحديث توقعات دورتك القادمة: ${calc.nextDate}`,
+            data: { type: 'period_update' }
+          }
+        });
+      }
+    } catch (e) { console.error("Sync/FCM Error", e); }
+
+    // 3. تحليل الذكاء الاصطناعي
     try {
       const summary = JSON.stringify(data);
-      const options = {
+      const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          prompt: `أنا أنثى مسلمة، حللي بياناتي بدقة وقدمي تقرير طبي متخصص وطويل جداً: ${summary}`
-        }
-      };
-      const response = await CapacitorHttp.post(options);
+        data: { prompt: `أنا أنثى مسلمة، حللي بياناتي بدقة وقدمي تقرير طبي متخصص وطويل جداً: ${summary}` }
+      });
       const responseText = response.data.reply || response.data.content || response.data.message;
       
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
