@@ -37,10 +37,26 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', padding: '20px', background: 'rgba(255,255,255,0.7)', borderRadius: '35px', backdropFilter: 'blur(10px)' }}>
+      
+      {/* عرض التوقعات في الأعلى بوضوح */}
+      {prediction && (
+        <div style={{ width: '100%', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div style={{ background: '#FFF0F3', padding: '10px', borderRadius: '15px', border: '1px solid #FFD1DF', textAlign: 'center' }}>
+            <span style={{ fontSize: '12px', color: '#E91E63', fontWeight: 'bold' }}>موعد الدورة القادمة: </span>
+            <span style={{ fontSize: '14px', color: '#880E4F', fontWeight: '900' }}>{prediction.nextDate}</span>
+          </div>
+          <div style={{ background: '#F0FFF4', padding: '10px', borderRadius: '15px', border: '1px solid #C6F6D5', textAlign: 'center' }}>
+            <span style={{ fontSize: '12px', color: '#38A169', fontWeight: 'bold' }}>فترة الخصوبة: </span>
+            <span style={{ fontSize: '13px', color: '#22543D', fontWeight: '900' }}>{prediction.fertility}</span>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', fontSize: '11px', fontWeight: 'bold' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '10px', height: '10px', background: '#ff4d4d', borderRadius: '2px' }}></div> أيام الحيض</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '10px', height: '10px', background: '#4CAF50', borderRadius: '2px' }}></div> أيام الخصوبة</div>
       </div>
+
       <div style={{ width: '220px', height: '220px', borderRadius: '50%', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center', boxShadow: '0 15px 35px rgba(233, 30, 99, 0.15)', background: '#fff' }}>
         <div style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', background: `conic-gradient(#ff4d4d 0deg ${clockLayout.periodEnd}deg, #f0f0f0 ${clockLayout.periodEnd}deg ${clockLayout.fertilityStart}deg, #4CAF50 ${clockLayout.fertilityStart}deg ${clockLayout.fertilityEnd}deg, #f0f0f0 ${clockLayout.fertilityEnd}deg 360deg)`, opacity: 0.25, clipPath: 'circle(50% at 50% 50%)' }}></div>
         {dayNumbers.map((d) => (
@@ -48,7 +64,7 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
         ))}
         <div style={{ position: 'absolute', width: '100%', height: '100%', transform: `rotate(${rotation}deg)`, transition: 'transform 1.5s' }}><span style={{ position: 'absolute', top: '-10px', left: 'calc(50% - 12px)', fontSize: '24px' }}>💖</span></div>
         <div style={{ textAlign: 'center', zIndex: 2 }}>
-          <div style={{ fontSize: '18px', fontWeight: '900', color: '#E91E63' }}>{prediction ? 'توقع رقة' : 'أهلاً بكِ'}</div>
+          <div style={{ fontSize: '18px', fontWeight: '900', color: '#E91E63' }}>{prediction ? 'توقعات رقة' : 'أهلاً بكِ'}</div>
         </div>
       </div>
     </div>
@@ -69,7 +85,6 @@ const MenstrualTracker = () => {
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
   }, [data, chatHistory]);
 
-  // دالة موحدة للحفظ والتحليل
   const handleSaveAndAnalyze = async () => {
     const startStr = data['سجل التواريخ_تاريخ البدء'];
     if (!startStr) return;
@@ -91,7 +106,16 @@ const MenstrualTracker = () => {
     };
     setPrediction(calc);
 
-    // 2. إرسال إلى نيون وفيربيس
+    // 2. الحفظ في نيون عبر الرابط الأول
+    try {
+      await CapacitorHttp.post({
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: { payload: { ...data, ...calc } }
+      });
+    } catch (e) { console.error("Neon Save Error", e); }
+
+    // 3. إرسال الإشعار عبر الرابط الثاني
     try {
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -104,7 +128,7 @@ const MenstrualTracker = () => {
       });
     } catch (e) { console.error("FCM Error", e); }
 
-    // 3. تحليل الذكاء الاصطناعي
+    // 4. تحليل الذكاء الاصطناعي
     try {
       const summary = JSON.stringify(data);
       const options = {
@@ -138,13 +162,7 @@ const MenstrualTracker = () => {
   };
 
   const styles = {
-    container: { 
-      background: 'linear-gradient(180deg, #FFF5F7 0%, #FCE4EC 100%)', 
-      minHeight: '100vh', 
-      padding: '20px', 
-      direction: 'rtl',
-      overflowY: 'auto' // يسمح بالتمرير
-    },
+    container: { background: 'linear-gradient(180deg, #FFF5F7 0%, #FCE4EC 100%)', minHeight: '100vh', padding: '20px', direction: 'rtl', overflowY: 'auto' },
     card: { background: 'rgba(255,255,255,0.9)', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 30px rgba(233, 30, 99, 0.05)', marginBottom: '15px' },
     input: { width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #FFD1DF', outline: 'none', marginTop: '5px' },
     btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }
@@ -159,15 +177,18 @@ const MenstrualTracker = () => {
 
   return (
     <div style={styles.container}>
-      <PeriodClock startDate={data['سجل التواريخ_تاريخ البدء']} cycleDuration={data['سجل التواريخ_مدة الدورة']} periodDays={data['سجل التواريخ_مدة الحيض']} prediction={prediction} />
+      <PeriodClock 
+        startDate={data['سجل التواريخ_تاريخ البدء']} 
+        cycleDuration={data['سجل التواريخ_مدة الدورة']} 
+        periodDays={data['سجل التواريخ_مدة الحيض']} 
+        prediction={prediction} 
+      />
 
       <div style={styles.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
           <button onClick={() => setShowChat(true)} style={{ background: '#FFF', border: '1.5px solid #E91E63', color: '#E91E63', padding: '8px 20px', borderRadius: '15px', fontWeight: 'bold' }}>💬 استشارة رقة</button>
           <h3 style={{ color: '#ad1457', margin: 0 }}>رقة الذكية</h3>
         </div>
-        
-        {/* زر موحد للحفظ والتحليل */}
         <button onClick={handleSaveAndAnalyze} style={styles.btnPrimary} disabled={loading}>
           {loading ? "جاري الحفظ والتحليل..." : "حفظ في نيون وتحليل طبي شامل ✨"}
         </button>
