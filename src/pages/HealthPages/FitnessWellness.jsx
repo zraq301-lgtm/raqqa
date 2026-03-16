@@ -25,6 +25,9 @@ const PregnancyMonitor = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showClockSettings, setShowClockSettings] = useState(false);
 
+  // تحديث مسار الصور بناءً على طلبك
+  const assetPath = "https://raqqa-v6cd.vercel.app/health/public/assets";
+
   // --- إدارة البيانات والمنبهات (LocalStorage) ---
   const [data, setData] = useState(() => {
     const saved = localStorage.getItem('lady_fitness');
@@ -46,10 +49,8 @@ const PregnancyMonitor = () => {
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
-      // تنسيق الوقت الحالي ليطابق تنسيق input time (HH:mm)
       const currentStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
-      // التحقق مما إذا كان الوقت الحالي يطابق أي منبه
       Object.values(alarms).forEach(alarmTime => {
         if (alarmTime === currentStr && now.getSeconds() === 0) {
           playAlarmSound();
@@ -58,7 +59,7 @@ const PregnancyMonitor = () => {
     };
 
     const playAlarmSound = () => {
-      const audio = new Audio('/assets/fine-alarm.mp3');
+      const audio = new Audio(`${assetPath}/fine-alarm.mp3`);
       audio.play().catch(e => console.log("تفاعل المستخدم مطلوب لتشغيل الصوت"));
     };
 
@@ -175,17 +176,17 @@ const PregnancyMonitor = () => {
 
   return (
     <div style={mergedStyles.container}>
-      {/* --- قسم الساعة التناظرية (في الأعلى) --- */}
+      {/* --- قسم الساعة التناظرية --- */}
       <div style={mergedStyles.clockSection}>
         <div style={mergedStyles.clockFace}>
           <div style={mergedStyles.hand(hoursDeg, 8, 50, 3)}>
-            <img src="/assets/fine-hour.png" alt="hour" style={{ width: '100%' }} />
+            <img src={`${assetPath}/fine-hour.png`} alt="hour" style={{ width: '100%' }} />
           </div>
           <div style={mergedStyles.hand(minutesDeg, 6, 70, 2)}>
-            <img src="/assets/fine-minute.png" alt="minute" style={{ width: '100%' }} />
+            <img src={`${assetPath}/fine-minute.png`} alt="minute" style={{ width: '100%' }} />
           </div>
           <div style={mergedStyles.hand(secondsDeg, 2, 80, 1)}>
-            <img src="/assets/fine-second.png" alt="second" style={{ width: '100%' }} />
+            <img src={`${assetPath}/fine-second.png`} alt="second" style={{ width: '100%' }} />
           </div>
           <div style={mergedStyles.centerDot}></div>
         </div>
@@ -234,7 +235,7 @@ const PregnancyMonitor = () => {
               {sec.fields.map((f) => (
                 <div key={`${sec.id}-${f}`} style={mergedStyles.inputGroup}>
                   <label style={mergedStyles.label}>{f}</label>
-                  {/* تغيير النوع إلى text ليقبل النص والأرقام معاً */}
+                  {/* تم التعديل هنا لضمان قبول النص والأرقام ومنع الحذف التلقائي */}
                   <input 
                     type="text"
                     style={mergedStyles.input} 
