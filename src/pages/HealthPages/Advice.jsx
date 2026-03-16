@@ -1,111 +1,81 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Lightbulb, X } from 'lucide-react';
-// 1. استيراد CapacitorHttp للاتصال الأصلي (Native)
-import { CapacitorHttp } from '@capacitor/core';
+import React, { useState, useEffect } from 'react';
+import './DailyTimer.css';
 
-const MedicalTipCard = () => {
-  const [tip, setTip] = useState(null);
-  const [isVisible, setIsVisible] = useState(false);
+const sections = [
+  { id: 1, name: 'القياسات الحيوية', icon: '📏' },
+  { id: 2, name: 'النشاط البدني', icon: '🏃‍♀️' },
+  { id: 3, name: 'التغذية الصحية', icon: '🥗' },
+  { id: 4, name: 'الهيدرات والماء', icon: '💧' },
+  { id: 5, name: 'جودة النوم', icon: '😴' },
+  { id: 6, name: 'الصحة النفسية', icon: '🧠' },
+  { id: 7, name: 'المكملات والجمال', icon: '✨' },
+  { id: 8, name: 'الهرمونات والدورة', icon: '🩸' },
+];
 
-  // 2. وظيفة جلب البيانات من Neon باستخدام محرك Capacitor
-  const fetchTip = useCallback(async () => {
-    try {
-      const options = {
-        url: 'https://raqqa-ruddy.vercel.app/api/get-tip',
-        // بما أن الـ API هو GET، نستخدم الترويسات العادية
-        headers: { 'Content-Type': 'application/json' }
-      };
+const DailyTimer = () => {
+  const [time, setTime] = useState(new Date());
+  const [showSettings, setShowSettings] = useState(false);
+  const [alarms, setAlarms] = useState({});
 
-      // الاتصال عبر المحرك الأصلي المدمج (Native HTTP)
-      const response = await CapacitorHttp.get(options);
-      
-      // في CapacitorHttp، النتيجة تكون في response.data مباشرة
-      if (response.data && response.data.content) {
-        setTip(response.data);
-        setIsVisible(true);
-
-        // إخفاء تلقائي بعد 10 ثوانٍ
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 10000);
-      }
-    } catch (error) {
-      console.error("فشل جلب النصيحة عبر CapacitorHttp:", error);
-    }
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
-  // 3. المحرك التلقائي (Timer)
-  useEffect(() => {
-    // إظهار نصيحة أولى بعد 5 ثوانٍ من دخول التطبيق
-    const initialDelay = setTimeout(fetchTip, 5000);
+  const handleAlarmChange = (sectionName, value) => {
+    setAlarms({ ...alarms, [sectionName]: value });
+  };
 
-    // تكرار العملية كل ساعة (3600000 ms)
-    const interval = setInterval(fetchTip, 3600000);
-
-    return () => {
-      clearTimeout(initialDelay);
-      clearInterval(interval);
-    };
-  }, [fetchTip]);
+  // حساب زوايا العقارب
+  const secondsDeg = (time.getSeconds() / 60) * 360;
+  const minutesDeg = ((time.getMinutes() + time.getSeconds() / 60) / 60) * 360;
+  const hoursDeg = ((time.getHours() % 12 + time.getMinutes() / 60) / 12) * 360;
 
   return (
-    <AnimatePresence>
-      {isVisible && tip && (
-        <motion.div
-          // حركات الظهور والاختفاء
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 200, transition: { duration: 0.2 } }}
-          
-          // خاصية السحب للإغلاق (Drag to dismiss)
-          drag="x"
-          dragConstraints={{ left: 0, right: 300 }}
-          onDragEnd={(e, info) => {
-            // الإخفاء عند السحب لمسافة كافية جهة اليمين
-            if (info.offset.x > 100) setIsVisible(false);
-          }}
-          
-          // تنسيقات Tailwind CSS - تم استخدام z-[9999] لضمان الظهور فوق كل شيء
-          className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 bg-white border-r-4 border-emerald-500 shadow-2xl rounded-2xl p-5 z-[9999] cursor-grab active:cursor-grabbing touch-none select-none"
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2 text-emerald-600 font-bold">
-              <Lightbulb size={20} />
-              <span className="text-sm uppercase tracking-wider">نصيحة طبية سريعة</span>
+    <div className="timer-page">
+      <div className="glass-card">
+        <h2 className="title">توقيت الأنشطة اليومي</h2>
+        
+        {/* الساعة التناظرية */}
+        <div className="clock-container">
+          <div className="clock-face">
+            <div className="hand hour" style={{ transform: `rotate(${hoursDeg}deg)` }}>
+              <img src="/assets/fine-hour.png" alt="fine" />
             </div>
-            <button 
-              onClick={() => setIsVisible(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={20} />
-            </button>
+            <div className="hand minute" style={{ transform: `rotate(${minutesDeg}deg)` }}>
+              <img src="/assets/fine-minute.png" alt="fine" />
+            </div>
+            <div className="hand second" style={{ transform: `rotate(${secondsDeg}deg)` }}>
+              <img src="/assets/fine-second.png" alt="fine" />
+            </div>
+            <div className="center-pin"></div>
           </div>
+        </div>
 
-          <div className="text-right">
-            <p className="text-gray-800 text-lg leading-relaxed font-medium">
-              {tip.content}
-            </p>
-          </div>
+        <button className="settings-btn" onClick={() => setShowSettings(!showSettings)}>
+          {showSettings ? 'إغلاق الإعدادات' : 'ضبط منبهات الأنشطة'}
+        </button>
 
-          <div className="mt-4 flex justify-between items-center">
-             <span className="text-[10px] text-gray-400 font-light italic">
-               اسحب الكارت لليمين للإخفاء
-             </span>
-             {/* شريط التقدم الزمني للإخفاء التلقائي */}
-             <div className="h-1 w-12 bg-gray-100 rounded-full overflow-hidden">
-                <motion.div 
-                  initial={{ width: "100%" }}
-                  animate={{ width: "0%" }}
-                  transition={{ duration: 10, ease: "linear" }}
-                  className="h-full bg-emerald-400"
+        {/* قائمة ضبط المنبهات */}
+        {showSettings && (
+          <div className="alarms-list">
+            {sections.map((section) => (
+              <div key={section.id} className="alarm-item">
+                <span>{section.icon} {section.name}</span>
+                <input 
+                  type="time" 
+                  onChange={(e) => handleAlarmChange(section.name, e.target.value)}
+                  value={alarms[section.name] || ''}
                 />
-             </div>
+              </div>
+            ))}
           </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        )}
+        
+        <button className="back-btn" onClick={() => window.history.back()}>عودة</button>
+      </div>
+    </div>
   );
 };
 
-export default MedicalTipCard;
+export default DailyTimer;
