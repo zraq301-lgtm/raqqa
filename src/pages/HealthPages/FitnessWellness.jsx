@@ -234,8 +234,14 @@ const PregnancyMonitor = () => {
               {sec.fields.map((f) => (
                 <div key={`${sec.id}-${f}`} style={mergedStyles.inputGroup}>
                   <label style={mergedStyles.label}>{f}</label>
-                  {/* تم تعديل الحقل ليكون type="text" ليقبل نصوص وأرقام */}
-                  <input type="text" style={mergedStyles.input} value={data[`${sec.id}-${f}`] || ''} onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} placeholder="..." />
+                  {/* تغيير النوع إلى text ليقبل النص والأرقام معاً */}
+                  <input 
+                    type="text"
+                    style={mergedStyles.input} 
+                    value={data[`${sec.id}-${f}`] || ''} 
+                    onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} 
+                    placeholder="..." 
+                  />
                 </div>
               ))}
               <button style={mergedStyles.saveSectionBtn} onClick={() => handleSectionAction(sec)} disabled={isLoading}>
