@@ -42,6 +42,30 @@ const PregnancyMonitor = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // --- إضافة مراقب المنبهات وتشغيل الصوت ---
+  useEffect(() => {
+    const checkAlarms = () => {
+      const now = new Date();
+      // تنسيق الوقت الحالي ليطابق تنسيق input time (HH:mm)
+      const currentStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      
+      // التحقق مما إذا كان الوقت الحالي يطابق أي منبه
+      Object.values(alarms).forEach(alarmTime => {
+        if (alarmTime === currentStr && now.getSeconds() === 0) {
+          playAlarmSound();
+        }
+      });
+    };
+
+    const playAlarmSound = () => {
+      const audio = new Audio('/assets/fine-alarm.mp3');
+      audio.play().catch(e => console.log("تفاعل المستخدم مطلوب لتشغيل الصوت"));
+    };
+
+    const alarmInterval = setInterval(checkAlarms, 1000);
+    return () => clearInterval(alarmInterval);
+  }, [alarms]);
+
   // حفظ المنبهات عند تغييرها
   useEffect(() => {
     localStorage.setItem('roqa_alarms', JSON.stringify(alarms));
