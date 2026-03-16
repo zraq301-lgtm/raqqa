@@ -16,6 +16,7 @@
     "@capacitor/core": "6.2.1",
     "@capacitor/android": "6.2.1",
     "@capacitor/app": "6.0.3",
+    "@capacitor/motion": "^6.0.1",
     "@capacitor/push-notifications": "^6.0.2",
     "@capacitor/local-notifications": "^6.1.1",
     "@capacitor/share": "6.0.2",
