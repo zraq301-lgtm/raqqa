@@ -73,8 +73,9 @@ export default async function handler(req, res) {
         title: customTitle,
         body: customBody,
         scheduled_for: row.scheduled_for,
-        category: row.category,
-        image_url: `${BASE_URL}/icons/${iconName}` // رابط الصورة المباشر من موقعك
+        category: row.category, // جلب اسم الفئة
+        // تعديل المسار ليشمل assets/icons كما في مجلد public لديك
+        image_url: `${BASE_URL}/assets/icons/${iconName}` 
       };
     });
 
