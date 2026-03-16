@@ -234,7 +234,8 @@ const PregnancyMonitor = () => {
               {sec.fields.map((f) => (
                 <div key={`${sec.id}-${f}`} style={mergedStyles.inputGroup}>
                   <label style={mergedStyles.label}>{f}</label>
-                  <input style={mergedStyles.input} value={data[`${sec.id}-${f}`] || ''} onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} placeholder="..." />
+                  {/* تم تعديل الحقل ليكون type="text" ليقبل نصوص وأرقام */}
+                  <input type="text" style={mergedStyles.input} value={data[`${sec.id}-${f}`] || ''} onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} placeholder="..." />
                 </div>
               ))}
               <button style={mergedStyles.saveSectionBtn} onClick={() => handleSectionAction(sec)} disabled={isLoading}>
@@ -257,8 +258,8 @@ const PregnancyMonitor = () => {
               {chatHistory.map(chat => (
                 <div key={chat.id} style={mergedStyles.historyCard}>
                    <div style={mergedStyles.historyHeader}>
-                      <span><strong>س:</strong> {chat.query}</span>
-                      <button style={{color: 'red', border: 'none', background: 'none'}} onClick={() => deleteChat(chat.id)}>حذف 🗑️</button>
+                     <span><strong>س:</strong> {chat.query}</span>
+                     <button style={{color: 'red', border: 'none', background: 'none'}} onClick={() => deleteChat(chat.id)}>حذف 🗑️</button>
                    </div>
                    <div style={{fontSize: '0.8rem', marginTop: '5px'}}><strong>ج:</strong> {chat.reply}</div>
                 </div>
