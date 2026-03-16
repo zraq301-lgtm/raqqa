@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Motion } from '@capacitor/motion'; // التحديث هنا: استخدام Motion بدلاً من MotionCapabilities
+import { Motion } from '@capacitor/motion';
 import { 
   Sparkles, Heart, Moon, BookOpen, Activity, 
   ShieldCheck, Users, ShieldAlert, Wind, Gift, 
@@ -58,13 +58,10 @@ const RaqqaApp = () => {
     fetchReligiousData();
   }, []);
 
-  // تفعيل مستشعر الاتجاه مع التحديث الجديد
   useEffect(() => {
     let handler = null;
-
     const startWatchingOrientation = async () => {
       try {
-        // استخدام Motion.addListener بدلاً من watchOrientation
         handler = await Motion.addListener('orientation', (data) => {
           if (data.alpha !== null) {
             setPhoneHeading(data.alpha);
@@ -74,12 +71,10 @@ const RaqqaApp = () => {
         console.error("خطأ في تفعيل مستشعر الاتجاه:", error);
       }
     };
-
     startWatchingOrientation();
-
     return () => {
       if (handler) {
-        handler.remove(); // الطريقة الصحيحة لإيقاف الاستماع في Capacitor 6
+        handler.remove();
       }
     };
   }, []);
@@ -287,11 +282,14 @@ const RaqqaApp = () => {
       <header style={styles.header}>
         <h1 style={styles.title}>رقة ✨</h1>
 
+        {/* الكارت المطور لركن العبادة */}
         <div style={styles.religiousInfoBar}>
+          
+          {/* قسم الصلاة القادمة */}
           <div style={styles.advancedAzanClock}>
             <div style={styles.azanMainTime}>
               <Clock size={16} color="#f06292" style={{marginLeft: '4px'}} />
-              <span style={styles.azanNextLabel}>الصلاة القادمة:</span>
+              <span style={styles.azanNextLabel}>القادمة:</span>
               <span style={styles.azanNextName}>{nextPrayer.name}</span>
             </div>
             <div style={styles.azanTimeDigital}>{nextPrayer.time}</div>
@@ -302,35 +300,36 @@ const RaqqaApp = () => {
                 if (isAzanEnabled) audioRef.current.pause();
               }}
             >
-              {isAzanEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              {isAzanEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
             </button>
           </div>
 
-          <div style={styles.qiblaClockContainer}>
-            <div style={styles.qiblaClockFace}>
+          {/* قسم القبلة الكبير والمطور */}
+          <div style={styles.qiblaContainerLarge}>
+            <div style={styles.qiblaClockFaceLarge}>
               <div style={{...styles.qiblaClockFrame, transform: `rotate(${-phoneHeading}deg)`}}>
-                <div style={{...styles.directionMark, top: '2px', left: '50%', transform: 'translateX(-50%)'}}>N</div>
-                <div style={{...styles.directionMark, bottom: '2px', left: '50%', transform: 'translateX(-50%)'}}>S</div>
-                <div style={{...styles.directionMark, right: '2px', top: '50%', transform: 'translateY(-50%)'}}>E</div>
-                <div style={{...styles.directionMark, left: '2px', top: '50%', transform: 'translateY(-50%)'}}>W</div>
+                <div style={{...styles.directionMark, top: '5px', left: '50%', transform: 'translateX(-50%)'}}>N</div>
+                <div style={{...styles.directionMark, bottom: '5px', left: '50%', transform: 'translateX(-50%)'}}>S</div>
+                <div style={{...styles.directionMark, right: '5px', top: '50%', transform: 'translateY(-50%)'}}>E</div>
+                <div style={{...styles.directionMark, left: '5px', top: '50%', transform: 'translateY(-50%)'}}>W</div>
                 
                 <div style={{...styles.qiblaHand, transform: `rotate(${calculateQiblaRotation()}deg)`}}>
                   <img 
                     src="/assets/Kaaba.png" 
                     alt="Kaaba" 
-                    style={styles.kaabaImage}
+                    style={styles.kaabaImageLarge}
                     onError={(e) => {
                       e.target.style.display = 'none'; 
                       e.target.nextSibling.style.display = 'block';
                     }}
                   />
-                  <span style={{...styles.kaabaTextFallback, display: 'none'}}>K</span>
+                  <span style={{...styles.kaabaTextFallbackLarge, display: 'none'}}>🕋</span>
                 </div>
               </div>
             </div>
-            <div style={styles.topBarInfo}>
-              <span style={styles.topBarLabel}>اتجاه القبلة</span>
-              <span style={styles.topBarValue}>{Math.round(qiblaDirection)}°</span>
+            <div style={styles.qiblaDataOverlay}>
+               <span style={styles.topBarLabel}>درجة القبلة</span>
+               <span style={styles.topBarValueLarge}>{Math.round(qiblaDirection)}°</span>
             </div>
           </div>
         </div>
@@ -478,26 +477,70 @@ const RaqqaApp = () => {
   );
 };
 
-// الستايلات لم تتغير لضمان تطابق التصميم
+// الستايلات المحدثة لتعطي شكل الكارت العصري والبوصلة الكبيرة
 const styles = {
   appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', pt: '10px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
-  religiousInfoBar: { display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', margin: '15px auto', padding: '10px', maxWidth: '500px', background: '#fff9fb', borderRadius: '15px', border: '1px solid #fce4ec' },
-  advancedAzanClock: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '5px 10px', background: 'white', borderRadius: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', border: '1px solid #eee' },
-  azanMainTime: { display: 'flex', alignItems: 'center', fontSize: '0.75rem', color: '#666' },
+  
+  // الكارت العصري الجديد (Glassmorphism effect)
+  religiousInfoBar: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    gap: '15px', 
+    margin: '20px auto', 
+    padding: '20px', 
+    maxWidth: '550px', 
+    background: 'rgba(255, 255, 255, 0.7)', 
+    backdropFilter: 'blur(10px)',
+    borderRadius: '24px', 
+    border: '1px solid rgba(240, 98, 146, 0.2)',
+    boxShadow: '0 8px 32px rgba(240, 98, 146, 0.1)'
+  },
+
+  advancedAzanClock: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center', 
+    padding: '12px', 
+    background: '#fff', 
+    borderRadius: '18px', 
+    border: '1px solid #fce4ec',
+    flex: 1
+  },
+  azanMainTime: { display: 'flex', alignItems: 'center', fontSize: '0.8rem', color: '#666', marginBottom: '4px' },
   azanNextLabel: { marginLeft: '3px' },
   azanNextName: { fontWeight: 'bold', color: '#f06292' },
-  azanTimeDigital: { fontSize: '1.4rem', fontWeight: 'bold', color: '#444', margin: '2px 0' },
-  azanToggleBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '2px' },
-  qiblaClockContainer: { display: 'flex', alignItems: 'center', gap: '8px' },
-  qiblaClockFace: { width: '50px', height: '50px', background: 'white', borderRadius: '50%', border: '2px solid #ddd', position: 'relative', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' },
-  qiblaClockFrame: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, transition: 'transform 0.2s ease-out' },
-  directionMark: { position: 'absolute', fontSize: '0.5rem', color: '#bbb', fontWeight: 'bold' },
+  azanTimeDigital: { fontSize: '1.6rem', fontWeight: 'bold', color: '#444', margin: '4px 0' },
+  azanToggleBtn: { background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '5px' },
+
+  // البوصلة الكبيرة (أكبر 3 مرات)
+  qiblaContainerLarge: { 
+    display: 'flex', 
+    flexDirection: 'column',
+    alignItems: 'center', 
+    gap: '10px',
+    flex: 1.5
+  },
+  qiblaClockFaceLarge: { 
+    width: '140px', 
+    height: '140px', 
+    background: '#fff', 
+    borderRadius: '50%', 
+    border: '4px solid #fce4ec', 
+    position: 'relative', 
+    overflow: 'hidden', 
+    boxShadow: '0 4px 15px rgba(0,0,0,0.05), inset 0 2px 10px rgba(0,0,0,0.05)' 
+  },
+  qiblaClockFrame: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, transition: 'transform 0.3s ease-out' },
+  directionMark: { position: 'absolute', fontSize: '0.7rem', color: '#f06292', fontWeight: 'bold', opacity: 0.6 },
   qiblaHand: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, transformOrigin: '50% 50%', display: 'flex', justifyContent: 'center', alignItems: 'center' },
-  kaabaImage: { width: '18px', height: '18px', marginTop: '-25px' },
-  kaabaTextFallback: { fontSize: '0.8rem', fontWeight: 'bold', color: '#f06292', marginTop: '-25px' },
-  topBarInfo: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start' },
-  topBarLabel: { fontSize: '0.65rem', color: '#999' },
-  topBarValue: { fontSize: '0.85rem', fontWeight: 'bold', color: '#444' },
+  kaabaImageLarge: { width: '45px', height: '45px', marginTop: '-85px', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' },
+  kaabaTextFallbackLarge: { fontSize: '2.5rem', marginTop: '-85px' },
+  
+  qiblaDataOverlay: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
+  topBarLabel: { fontSize: '0.75rem', color: '#999', fontWeight: '500' },
+  topBarValueLarge: { fontSize: '1.2rem', fontWeight: 'bold', color: '#f06292' },
+
   header: { textAlign: 'center', marginBottom: '30px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
   subtitle: { color: '#888', fontStyle: 'italic', marginTop: '10px' },
