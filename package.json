@@ -34,7 +34,7 @@
     "sweetalert2": "^11.10.5",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.1",
-    "adadhan": "^4.1.4",
+    "adhan": "^4.1.4",
     "luxon": "^3.4.4"
   },
   "devDependencies": {
