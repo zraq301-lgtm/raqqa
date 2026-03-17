@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Camera, Direction } from '@capacitor/camera';
-import alarmSound from '../../assets/fine-alarm.mp3';
+import { Camera } from '@capacitor/camera';
+// تحديث مسار التنبيه كما طلبت
+import alarmSound from '../../assets/fine-alarm.mp3'; 
 
 // --- مكون الساعة المطور (طراز Fitness Watch) ---
 const AnalogClock = memo(() => {
@@ -19,11 +20,9 @@ const AnalogClock = memo(() => {
   return (
     <div style={clockStyles.outerRing}>
       <div style={clockStyles.clockFace}>
-        {/* خطوط الدقائق الجمالية */}
         {[...Array(12)].map((_, i) => (
           <div key={i} style={{...clockStyles.tick, transform: `rotate(${i * 30}deg)`}} />
         ))}
-        {/* الأرقام الأساسية */}
         <span style={{...clockStyles.num, top: '10px', left: '50%', transform: 'translateX(-50%)'}}>12</span>
         <span style={{...clockStyles.num, bottom: '10px', left: '50%', transform: 'translateX(-50%)'}}>6</span>
         <span style={{...clockStyles.num, left: '10px', top: '50%', transform: 'translateY(-50%)'}}>9</span>
@@ -67,6 +66,19 @@ const PregnancyMonitor = () => {
     localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory));
   }, [alarms, chatHistory]);
 
+  // وظيفة إرسال إشعار FCM
+  const sendFCMNotification = async (title, body) => {
+    try {
+      await CapacitorHttp.post({
+        url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+        headers: { 'Content-Type': 'application/json' },
+        data: { title: title, body: body }
+      });
+    } catch (err) {
+      console.error("FCM Error:", err);
+    }
+  };
+
   const updateData = useCallback((field, value) => {
     setData(prev => {
       const newData = { ...prev, [field]: value };
@@ -94,7 +106,9 @@ const PregnancyMonitor = () => {
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ type: 'ai', text: `(تحليل تلقائي لـ ${section.title}): ${reply}` }, ...prev]);
       
-      // فتح الشات تلقائياً لرؤية التحليل
+      // 3. إرسال إشعار بعد التحليل (المطلوب الجديد)
+      await sendFCMNotification("تم الانتهاء من التحليل", `طبيبتك الذكية قامت بتحليل بيانات ${section.title} بنجاح.`);
+
       setIsChatOpen(true);
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
@@ -127,7 +141,6 @@ const PregnancyMonitor = () => {
 
   return (
     <div style={mergedStyles.container}>
-      {/* قسم الساعة المطور */}
       <div style={mergedStyles.clockSection}>
         <AnalogClock />
         <button style={mergedStyles.miniClockBtn} onClick={() => setShowClockSettings(!showClockSettings)}>
@@ -149,7 +162,6 @@ const PregnancyMonitor = () => {
         💬 تحدث مع طبيبة رقة الذكية
       </button>
 
-      {/* كارت الشات المطور بالكامل */}
       {isChatOpen && (
         <div style={mergedStyles.chatOverlay}>
           <div style={mergedStyles.chatCard}>
@@ -187,8 +199,9 @@ const PregnancyMonitor = () => {
                   style={mergedStyles.chatInput}
                   onKeyPress={(e) => e.key === 'Enter' && handleAIQuery()}
                 />
+                {/* تم تعديل الزر ليحتوي على سهم الإرسال كما طلبت */}
                 <button onClick={handleAIQuery} style={mergedStyles.sendBtn} disabled={isLoading}>
-                  {isLoading ? '...' : '➤'}
+                  {isLoading ? '...' : '➔'} 
                 </button>
               </div>
               <div style={mergedStyles.chatActions}>
@@ -200,7 +213,6 @@ const PregnancyMonitor = () => {
         </div>
       )}
 
-      {/* الأقسام */}
       <div style={mergedStyles.accordion}>
         {sections.map((sec, i) => (
           <div key={sec.id} style={mergedStyles.sectionCard}>
@@ -233,7 +245,7 @@ const PregnancyMonitor = () => {
   );
 };
 
-// --- الستايلات ---
+// --- الستايلات (بدون تغيير مع تحسين بسيط لزر السهم) ---
 const clockStyles = {
   outerRing: { 
     width: '160px', height: '160px', borderRadius: '50%', 
@@ -277,7 +289,7 @@ const mergedStyles = {
   chatInputRow: { display: 'flex', gap: '10px', alignItems: 'center' },
   chatInput: { flex: 1, padding: '14px', borderRadius: '25px', border: '1.5px solid #e1bee7', outline: 'none' },
   iconBtn: { background: '#f3e5f5', border: 'none', borderRadius: '50%', width: '45px', height: '45px', fontSize: '20px' },
-  sendBtn: { background: '#ffd54f', border: 'none', width: '45px', height: '45px', borderRadius: '50%', fontSize: '20px', color: '#4a148c' },
+  sendBtn: { background: '#ffd54f', border: 'none', width: '45px', height: '45px', borderRadius: '50%', fontSize: '24px', color: '#4a148c', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   previewWrapper: { position: 'relative', width: '70px', marginBottom: '10px' },
   miniPreview: { width: '70px', height: '70px', borderRadius: '10px', objectFit: 'cover' },
   removeImg: { position: 'absolute', top: '-5px', right: '-5px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '12px' },
