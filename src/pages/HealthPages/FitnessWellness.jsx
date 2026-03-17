@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
-// تحديث مسار التنبيه كما طلبت
+// التأكد من جلب ملف التنبيه من المسار الصحيح
 import alarmSound from '../../assets/fine-alarm.mp3'; 
 
 // --- مكون الساعة المطور (طراز Fitness Watch) ---
@@ -66,16 +66,46 @@ const PregnancyMonitor = () => {
     localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory));
   }, [alarms, chatHistory]);
 
-  // وظيفة إرسال إشعار FCM
-  const sendFCMNotification = async (title, body) => {
+  // --- دالة الحفظ والإشعار (saveAndNotify) المدمجة ---
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    const savedToken = localStorage.getItem('fcm_token');
+    const scheduledDate = new Date();
+    scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
+
     try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+      // 1. الحفظ في نيون
+      const saveToNeonOptions = {
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: { title: title, body: body }
-      });
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'medical_report',
+          title: `تقرير جديد: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...",
+          scheduled_for: scheduledDate.toISOString(),
+          note: `تحليل آلي لـ ${categoryTitle}`
+        }
+      };
+      await CapacitorHttp.post(saveToNeonOptions);
+
+      // 2. إرسال إشعار فوري عبر FCM
+      if (savedToken) {
+        const fcmOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه طبي جديد 🔔',
+            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`,
+            data: { type: 'medical_report' }
+          }
+        };
+        await CapacitorHttp.post(fcmOptions);
+      }
+      console.log("تم الحفظ والإرسال بنجاح ✅");
     } catch (err) {
-      console.error("FCM Error:", err);
+      console.error("خطأ في عملية المزامنة:", err);
     }
   };
 
@@ -91,23 +121,18 @@ const PregnancyMonitor = () => {
     setIsLoading(true);
     const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
     try {
-      // 1. الحفظ
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: { section: section.title, content: sectionData }
-      });
-      // 2. التحليل
+      // 1. طلب التحليل من الذكاء الاصطناعي
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `بصفتك خبيرة، حللي بيانات ${section.title}: ${sectionData}` }
       });
       const reply = response.data.reply || response.data.message;
-      setChatHistory(prev => [{ type: 'ai', text: `(تحليل تلقائي لـ ${section.title}): ${reply}` }, ...prev]);
       
-      // 3. إرسال إشعار بعد التحليل (المطلوب الجديد)
-      await sendFCMNotification("تم الانتهاء من التحليل", `طبيبتك الذكية قامت بتحليل بيانات ${section.title} بنجاح.`);
+      setChatHistory(prev => [{ type: 'ai', text: `(تحليل تلقائي لـ ${section.title}): ${reply}` }, ...prev]);
+
+      // 2. تفعيل دالة الحفظ والإشعار التي طلبتها
+      await saveAndNotify(section.title, reply);
 
       setIsChatOpen(true);
     } catch (err) { console.error(err); }
@@ -199,7 +224,7 @@ const PregnancyMonitor = () => {
                   style={mergedStyles.chatInput}
                   onKeyPress={(e) => e.key === 'Enter' && handleAIQuery()}
                 />
-                {/* تم تعديل الزر ليحتوي على سهم الإرسال كما طلبت */}
+                {/* زر السهم المطلوب للإرسال */}
                 <button onClick={handleAIQuery} style={mergedStyles.sendBtn} disabled={isLoading}>
                   {isLoading ? '...' : '➔'} 
                 </button>
@@ -245,7 +270,7 @@ const PregnancyMonitor = () => {
   );
 };
 
-// --- الستايلات (بدون تغيير مع تحسين بسيط لزر السهم) ---
+// --- الستايلات ---
 const clockStyles = {
   outerRing: { 
     width: '160px', height: '160px', borderRadius: '50%', 
@@ -253,10 +278,7 @@ const clockStyles = {
     display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px',
     boxShadow: '0 8px 20px rgba(240, 98, 146, 0.3)'
   },
-  clockFace: { 
-    width: '140px', height: '140px', borderRadius: '50%', 
-    background: '#fff', position: 'relative', overflow: 'hidden' 
-  },
+  clockFace: { width: '140px', height: '140px', borderRadius: '50%', background: '#fff', position: 'relative', overflow: 'hidden' },
   tick: { position: 'absolute', width: '2px', height: '8px', background: '#f8bbd0', left: '50%', transformOrigin: '0 70px' },
   num: { position: 'absolute', fontSize: '12px', fontWeight: 'bold', color: '#880e4f' },
   handHour: { position: 'absolute', bottom: '50%', left: '50%', width: '5px', height: '35px', background: '#4a148c', transformOrigin: 'bottom center', borderRadius: '5px' },
@@ -271,20 +293,16 @@ const mergedStyles = {
   miniClockBtn: { background: '#f06292', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' },
   alarmList: { marginTop: '15px', background: '#fff0f5', padding: '10px', borderRadius: '15px' },
   alarmItem: { display: 'flex', justifyContent: 'space-between', marginBottom: '8px', alignItems: 'center' },
-  
   openChatBtn: { width: '100%', background: 'linear-gradient(45deg, #7b1fa2, #9c27b0)', color: 'white', padding: '18px', borderRadius: '20px', border: 'none', fontWeight: 'bold', marginBottom: '20px', fontSize: '16px', boxShadow: '0 4px 12px rgba(123, 31, 162, 0.3)' },
-  
   chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   chatCard: { width: '100%', height: '100%', background: '#fff', display: 'flex', flexDirection: 'column' },
   chatHeader: { background: '#7b1fa2', color: 'white', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   statusDot: { width: '10px', height: '10px', background: '#4caf50', borderRadius: '50%' },
   closeBtn: { background: 'none', border: 'none', color: 'white', fontSize: '24px' },
-  
   chatBody: { flex: 1, padding: '20px', overflowY: 'auto', background: '#f9f9f9', display: 'flex', flexDirection: 'column-reverse', gap: '15px' },
   userMsg: { alignSelf: 'flex-start', background: '#e1bee7', padding: '12px 18px', borderRadius: '20px 20px 20px 5px', maxWidth: '85%', fontSize: '15px', color: '#333' },
   aiMsg: { alignSelf: 'flex-end', background: '#fff', padding: '12px 18px', borderRadius: '20px 20px 5px 20px', maxWidth: '85%', fontSize: '15px', border: '1px solid #eee', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' },
   chatImg: { width: '100%', borderRadius: '10px', marginBottom: '8px' },
-  
   chatFooter: { padding: '15px', background: 'white', borderTop: '1px solid #eee' },
   chatInputRow: { display: 'flex', gap: '10px', alignItems: 'center' },
   chatInput: { flex: 1, padding: '14px', borderRadius: '25px', border: '1.5px solid #e1bee7', outline: 'none' },
@@ -295,7 +313,6 @@ const mergedStyles = {
   removeImg: { position: 'absolute', top: '-5px', right: '-5px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '12px' },
   chatActions: { display: 'flex', justifyContent: 'space-between', marginTop: '10px' },
   actionBtnText: { background: 'none', border: 'none', color: '#7b1fa2', fontSize: '13px' },
-
   sectionCard: { background: '#fff', borderRadius: '20px', marginBottom: '15px', border: '1px solid #f3e5f5', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
   sectionHeader: { padding: '18px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#4a148c' },
   verticalList: { padding: '20px', background: '#fffafb', display: 'flex', flexDirection: 'column', gap: '15px' },
