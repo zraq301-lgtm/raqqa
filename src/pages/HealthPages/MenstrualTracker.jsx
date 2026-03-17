@@ -3,7 +3,7 @@ import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 
-// --- مكون الساعة المطور ---
+// --- مكون الساعة المطور (بدون تغيير) ---
 const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5 }) => {
   const [rotation, setRotation] = useState(0);
   
@@ -37,7 +37,6 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', padding: '20px', background: 'rgba(255,255,255,0.7)', borderRadius: '35px', backdropFilter: 'blur(10px)' }}>
-      
       {prediction && (
         <div style={{ width: '100%', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ background: '#FFF0F3', padding: '10px', borderRadius: '15px', border: '1px solid #FFD1DF', textAlign: 'center' }}>
@@ -77,20 +76,55 @@ const MenstrualTracker = () => {
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState(() => JSON.parse(localStorage.getItem('chat_history')) || []);
+  const [savedReplies, setSavedReplies] = useState(() => JSON.parse(localStorage.getItem('saved_replies')) || []);
   const [openAccordion, setOpenAccordion] = useState(1);
+  const [showSavedList, setShowSavedList] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
-  }, [data, chatHistory]);
+    localStorage.setItem('saved_replies', JSON.stringify(savedReplies));
+  }, [data, chatHistory, savedReplies]);
+
+  const handleSendMessage = async (text = chatInput) => {
+    if (!text.trim()) return;
+    const userMsg = { id: Date.now(), role: 'user', content: text, time: new Date().toLocaleTimeString('ar-EG') };
+    setChatHistory(prev => [...prev, userMsg]);
+    setChatInput('');
+    setLoading(true);
+
+    try {
+      const response = await CapacitorHttp.post({
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: `أنا أنثى مسلمة، استفساري هو: ${text}` }
+      });
+      const responseText = response.data.reply || response.data.content || response.data.message;
+      const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
+      setChatHistory(prev => [...prev, aiMsg]);
+    } catch (err) {
+      console.error("AI Error", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteMessage = (id) => {
+    setChatHistory(prev => prev.filter(msg => msg.id !== id));
+  };
+
+  const saveReply = (msg) => {
+    if (!savedReplies.find(r => r.id === msg.id)) {
+      setSavedReplies(prev => [...prev, msg]);
+      alert("تم حفظ الرد في المفضلة");
+    }
+  };
 
   const handleSaveAndAnalyze = async () => {
     const startStr = data['سجل التواريخ_تاريخ البدء'];
     if (!startStr) return;
-
     setLoading(true);
     
-    // 1. حسابات التوقعات
     const cycleLen = parseInt(data['سجل التواريخ_مدة الدورة']) || 29;
     const start = new Date(startStr);
     const nextDate = new Date(start);
@@ -105,44 +139,27 @@ const MenstrualTracker = () => {
     };
     setPrediction(calc);
 
-    // 2. دالة المزامنة والحفظ في نيون (بناءً على طلبك)
-    const savedToken = localStorage.getItem('fcm_token');
-    const scheduledDate = new Date();
-    scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
-
     try {
-      // حفظ في نيون تحت مسمى period وبناء الداتا المطلوب
+      const savedToken = localStorage.getItem('fcm_token');
+      const scheduledDate = new Date();
+      scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
+
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
           fcmToken: savedToken || undefined,
           user_id: 1,
-          category: 'period', // تم التغيير إلى period بناءً على طلبك
+          category: 'period',
           title: `تحديث رقة: الدورة القادمة 🌸`,
           body: `الموعد المتوقع: ${calc.nextDate}. نتمنى لكِ دوام الصحة.`,
           scheduled_for: scheduledDate.toISOString(),
           note: `تحليل الدورة الشهرية وحفظ البيانات`,
-          payload: { ...data, ...calc } // حفظ كل المدخلات
+          payload: { ...data, ...calc }
         }
       });
+    } catch (e) { console.error("Sync Error", e); }
 
-      // إرسال إشعار فوري من فيربيس
-      if (savedToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تنبيه رقة الذكي 🔔',
-            body: `تم تحديث توقعات دورتك القادمة: ${calc.nextDate}`,
-            data: { type: 'period_update' }
-          }
-        });
-      }
-    } catch (e) { console.error("Sync/FCM Error", e); }
-
-    // 3. تحليل الذكاء الاصطناعي
     try {
       const summary = JSON.stringify(data);
       const response = await CapacitorHttp.post({
@@ -151,15 +168,11 @@ const MenstrualTracker = () => {
         data: { prompt: `أنا أنثى مسلمة، حللي بياناتي بدقة وقدمي تقرير طبي متخصص وطويل جداً: ${summary}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
-      
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
       setShowChat(true);
-    } catch (err) {
-      console.error("AI Error", err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("AI Error", err); }
+    finally { setLoading(false); }
   };
 
   const handleMedia = async (type) => {
@@ -176,7 +189,9 @@ const MenstrualTracker = () => {
     container: { background: 'linear-gradient(180deg, #FFF5F7 0%, #FCE4EC 100%)', minHeight: '100vh', padding: '20px', direction: 'rtl', overflowY: 'auto' },
     card: { background: 'rgba(255,255,255,0.9)', borderRadius: '25px', padding: '20px', boxShadow: '0 8px 30px rgba(233, 30, 99, 0.05)', marginBottom: '15px' },
     input: { width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #FFD1DF', outline: 'none', marginTop: '5px' },
-    btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' }
+    btnPrimary: { width: '100%', padding: '16px', background: '#E91E63', color: 'white', border: 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer' },
+    chatInputBar: { display: 'flex', padding: '15px', background: '#fff', borderTop: '1px solid #eee', gap: '10px' },
+    msgContainer: { position: 'relative', marginBottom: '15px', maxWidth: '85%' }
   };
 
   const sections = [
@@ -188,12 +203,7 @@ const MenstrualTracker = () => {
 
   return (
     <div style={styles.container}>
-      <PeriodClock 
-        startDate={data['سجل التواريخ_تاريخ البدء']} 
-        cycleDuration={data['سجل التواريخ_مدة الدورة']} 
-        periodDays={data['سجل التواريخ_مدة الحيض']} 
-        prediction={prediction} 
-      />
+      <PeriodClock startDate={data['سجل التواريخ_تاريخ البدء']} cycleDuration={data['سجل التواريخ_مدة الدورة']} periodDays={data['سجل التواريخ_مدة الحيض']} prediction={prediction} />
 
       <div style={styles.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -216,12 +226,7 @@ const MenstrualTracker = () => {
               {sec.fields.map(field => (
                 <div key={field}>
                   <label style={{ fontSize: '11px', color: '#999' }}>{field}</label>
-                  <input 
-                    type={field.includes('تاريخ') ? 'date' : 'text'}
-                    style={styles.input}
-                    value={data[`${sec.title}_${field}`] || ''}
-                    onChange={(e) => setData({...data, [`${sec.title}_${field}`]: e.target.value})}
-                  />
+                  <input type={field.includes('تاريخ') ? 'date' : 'text'} style={styles.input} value={data[`${sec.title}_${field}`] || ''} onChange={(e) => setData({...data, [`${sec.title}_${field}`]: e.target.value})} />
                 </div>
               ))}
             </div>
@@ -235,21 +240,52 @@ const MenstrualTracker = () => {
             <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '24px' }}>✕</span>
             <span style={{ fontWeight: 'bold' }}>طبيبة رقة</span>
             <div style={{ display: 'flex', gap: '15px' }}>
+               <span onClick={() => setShowSavedList(!showSavedList)} style={{ cursor: 'pointer' }}>⭐</span>
                <span onClick={() => handleMedia('camera')}>📸</span>
                <span onClick={() => handleMedia('gallery')}>🖼️</span>
             </div>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
-            {chatHistory.map((msg, i) => (
-              <div key={i} style={{ 
-                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                background: msg.role === 'user' ? '#E91E63' : '#fff',
-                color: msg.role === 'user' ? '#fff' : '#333',
-                padding: '15px', borderRadius: '20px', marginBottom: '15px', maxWidth: '85%',
-                marginLeft: msg.role === 'user' ? 'auto' : '0',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.03)', whiteSpace: 'pre-wrap'
-              }}>{msg.content}</div>
+
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5', position: 'relative' }}>
+            {showSavedList && (
+              <div style={{ background: '#fff', border: '1px solid #E91E63', borderRadius: '15px', padding: '10px', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                <h4 style={{ margin: '0 0 10px 0', color: '#E91E63' }}>الردود المحفوظة:</h4>
+                {savedReplies.length === 0 && <p style={{ fontSize: '12px' }}>لا توجد ردود محفوظة</p>}
+                {savedReplies.map(r => (
+                  <div key={r.id} style={{ borderBottom: '1px solid #eee', padding: '5px 0', fontSize: '13px' }}>{r.content.substring(0, 50)}...</div>
+                ))}
+              </div>
+            )}
+
+            {chatHistory.map((msg) => (
+              <div key={msg.id} style={{ ...styles.msgContainer, alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start', marginLeft: msg.role === 'user' ? 'auto' : '0' }}>
+                <div style={{ 
+                  background: msg.role === 'user' ? '#E91E63' : '#fff',
+                  color: msg.role === 'user' ? '#fff' : '#333',
+                  padding: '15px', borderRadius: '20px', boxShadow: '0 4px 10px rgba(0,0,0,0.03)', whiteSpace: 'pre-wrap'
+                }}>
+                  {msg.content}
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '8px', borderTop: '0.5px solid rgba(0,0,0,0.1)', paddingTop: '5px' }}>
+                    <span onClick={() => deleteMessage(msg.id)} style={{ fontSize: '12px', cursor: 'pointer', color: msg.role === 'user' ? '#ffcdd2' : '#f44336' }}>🗑️ حذف</span>
+                    {msg.role === 'ai' && <span onClick={() => saveReply(msg)} style={{ fontSize: '12px', cursor: 'pointer', color: '#4CAF50' }}>⭐ حفظ</span>}
+                  </div>
+                </div>
+              </div>
             ))}
+          </div>
+
+          <div style={styles.chatInputBar}>
+            <input 
+              style={{ ...styles.input, marginTop: 0, flex: 1 }} 
+              placeholder="اكتبي سؤالك هنا..." 
+              value={chatInput} 
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            />
+            <button 
+              onClick={() => handleSendMessage()} 
+              style={{ background: '#E91E63', color: '#fff', border: 'none', borderRadius: '12px', padding: '0 20px', fontWeight: 'bold' }}
+            >إرسال</button>
           </div>
         </div>
       )}
