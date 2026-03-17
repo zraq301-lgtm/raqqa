@@ -1,9 +1,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة بيانات نيون باستخدام المتغير DATABASE_URL
 const dbUrl = new URL(process.env.DATABASE_URL);
-
 const pool = new Pool({
   host: dbUrl.hostname,
   port: dbUrl.port,
@@ -15,14 +13,13 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  // السماح فقط بعمليات الجلب GET
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method Not Allowed' });
 
   const { user_id } = req.query;
   const BASE_URL = "https://raqqa-hjl8.vercel.app";
+  const AI_API_URL = "https://raqqa-v6cd.vercel.app/api/raqqa-ai"; // رابط الذكاء الخاص بك
 
   try {
-    // جلب المواعيد القادمة فقط من جدول notifications
     const query = `
       SELECT id, title, body, category, scheduled_for 
       FROM notifications 
@@ -32,52 +29,55 @@ export default async function handler(req, res) {
     
     const result = await pool.query(query, [user_id || 1]);
 
-    // مصفوفة لربط كل قسم بالصورة والجملة المناسبة (Logic)
-    const processedRows = result.rows.map(row => {
+    // معالجة كل صف لإرساله للذكاء الاصطناعي
+    const processedRows = await Promise.all(result.rows.map(async (row) => {
       let iconName = 'default.png';
-      let customTitle = row.title;
-      let customBody = row.body;
+      
+      // تحديد الأيقونة
+      const icons = {
+        breastfeeding: 'milk.png',
+        pregnancy: 'preg.png',
+        period: 'period.png',
+        fitness: 'fit.png',
+        medical: 'doctor.png',
+        mood: 'mood.png',
+        intimacy: 'heart.png',
+        motherhood: 'baby.png'
+      };
+      iconName = icons[row.category] || 'default.png';
 
-      // تخصيص الصور والأسماء بناءً على الـ Category المكتوب في قاعدة البيانات
-      switch (row.category) {
-        case 'breastfeeding':
-          iconName = 'milk.png';
-          break;
-        case 'pregnancy':
-          iconName = 'preg.png';
-          break;
-        case 'period':
-          iconName = 'period.png';
-          break;
-        case 'fitness':
-          iconName = 'fit.png';
-          break;
-        case 'medical':
-          iconName = 'doctor.png';
-          break;
-        case 'mood':
-          iconName = 'mood.png';
-          break;
-        case 'intimacy':
-          iconName = 'heart.png';
-          break;
-        case 'motherhood':
-          iconName = 'baby.png';
-          break;
-        default:
-          iconName = 'default.png';
+      // --- الجزء الخاص بالذكاء الاصطناعي ---
+      let smartBody = row.body; // النص الأصلي كاحتياط
+
+      try {
+        const aiResponse = await fetch(AI_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: `اكتب نص إشعار قصير وجذاب جداً لقسم: ${row.category}. العنوان الحالي هو: ${row.title}. الموعد المجدد: ${row.scheduled_for}. اجعل الأسلوب ودوداً وداعماً.`
+          })
+        });
+
+        if (aiResponse.ok) {
+          const aiData = await aiResponse.json();
+          // نفترض أن الـ API الخاص بك يعيد النص في حقل اسمه text أو message أو content
+          // قم بتعديل aiData.text بناءً على شكل الرد من الرابط الخاص بك
+          smartBody = aiData.text || aiData.message || aiData.content || row.body;
+        }
+      } catch (aiErr) {
+        console.error("AI API Connection Error:", aiErr.message);
       }
+      // ------------------------------------
 
       return {
         id: row.id,
-        title: customTitle,
-        body: customBody,
+        title: row.title,
+        body: smartBody, // النص الذي تمت صياغته بالذكاء
         scheduled_for: row.scheduled_for,
-        category: row.category, // جلب اسم الفئة
-        // تعديل المسار ليشمل assets/icons كما في مجلد public لديك
+        category: row.category,
         image_url: `${BASE_URL}/assets/icons/${iconName}` 
       };
-    });
+    }));
 
     return res.status(200).json({ rows: processedRows });
 
