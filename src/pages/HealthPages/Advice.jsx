@@ -1,208 +1,192 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Coordinates, CalculationMethod, PrayerTimes, Qibla } from 'adhan';
-import { DateTime } from 'luxon';
-import { motion, AnimatePresence } from 'framer-motion';
-import { LocalNotifications } from '@capacitor/local-notifications';
-import { Compass, Bell, BellOff, MapPin, Play, Square, Settings } from 'lucide-react';
-import clsx from 'clsx';
+import { Coordinates, CalculationMethod, PrayerTimes, AdhanError } from 'adhan';
+import { Moon, Sun, Compass, Volume2, VolumeX, MapPin, Clock, ArrowLeftRight } from 'lucide-react';
 
-// تنسيق الوقت
-const formatTime = (time) => DateTime.fromJSDate(time).toLocaleString(DateTime.TIME_SIMPLE);
+const RoqaPrayerPro = () => {
+  const [coords, setCoords] = useState({ latitude: 30.0444, longitude: 31.2357 }); 
+  const [prayerTimes, setPrayerTimes] = useState(null);
+  const [nextPrayer, setNextPrayer] = useState({ name: '', time: null, countdown: '' });
+  const [qiblaDirection, setQiblaDirection] = useState(0);
+  const [isMuted, setIsMuted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const audioRef = useRef(null);
 
-const PrayerClock = ({ rotation, kabaImg }) => (
-  <div className="relative flex justify-center my-10 group">
-    <div className="w-56 h-56 rounded-full border-4 border-[#e91e63]/30 flex items-center justify-center relative shadow-inner bg-white/20 backdrop-blur-sm transition-all group-hover:border-[#e91e63]/60">
-      
-      {/* مؤشر القبلة: صورة الكعبة */}
-      <motion.div 
-        style={{ rotate: -rotation }}
-        transition={{ type: 'spring', stiffness: 100, damping: 10 }}
-        className="w-40 h-40 origin-center"
-      >
-        <img src={kabaImg} alt="Qibla" className="w-full h-full object-contain" />
-      </motion.div>
-      
-      {/* علامة القبلة */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#e91e63] text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md z-10 flex gap-1 items-center">
-        <Compass className="w-4 h-4" /> القبلة
-      </div>
-
-      {/* بوصلة "ساعة" وهمية حولها */}
-      <div className="absolute inset-2 rounded-full border border-dashed border-[#ba68c8]/30"></div>
-    </div>
-  </div>
-);
-
-const PrayerCard = ({ id, label, time, isNext }) => (
-  <motion.div
-    whileHover={{ x: 5 }}
-    className={clsx(
-      "flex justify-between items-center p-5 rounded-3xl transition-all shadow-sm border",
-      isNext 
-        ? "bg-gradient-to-r from-[#8e24aa] to-[#d81b60] text-white shadow-lg border-transparent scale-105" 
-        : "bg-white/50 text-[#4a148c] border-[#ba68c8]/10 hover:bg-white/70"
-    )}
-  >
-    <div className="flex flex-col gap-0.5">
-      <span className="font-bold text-lg">{label}</span>
-      <span className="text-xs opacity-70">أذان {label}</span>
-    </div>
-    <span className="text-2xl font-mono font-black text-right">{formatTime(time)}</span>
-  </motion.div>
-);
-
-const AlAsilPrayerPage = () => {
-  const [coords, setCoords] = useState(null);
-  const [prayerData, setPrayerData] = useState(null);
-  const [qiblaRotation, setQiblaRotation] = useState(0);
-  const [nextPrayer, setNextPrayer] = useState(null);
-  const [isAzanPlaying, setIsAzanPlaying] = useState(false);
-  
-  const audioRef = useRef(new Audio('/assets/azan.mp3'));
-  const kabaImg = '/assets/Kaaba.png';
-
+  // 1. تحديث الوقت والعد التنازلي والتحقق من الأذان
   useEffect(() => {
-    // جلب الموقع تلقائياً
-    getUserLocation();
-    
-    // مستمع لانتهاء صوت الأذان
-    audioRef.current.addEventListener('ended', () => setIsAzanPlaying(false));
-    return () => audioRef.current.removeEventListener('ended', () => setIsAzanPlaying(false));
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+      if (prayerTimes) {
+        updateCountdown(now);
+        checkAndPlayAzan(now);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [prayerTimes, isMuted]);
+
+  // 2. جلب الموقع وتحديث البيانات
+  useEffect(() => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setCoords({ latitude, longitude });
+        initPrayerData(latitude, longitude);
+      },
+      () => initPrayerData(coords.latitude, coords.longitude)
+    );
   }, []);
 
-  const getUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCoords({ lat: latitude, lng: longitude });
-          calculatePrayers(latitude, longitude);
-        },
-        (error) => {
-          console.error("Location Error:", error);
-          // في حالة الخطأ، يمكنك تعيين إحداثيات افتراضية هنا
-          calculatePrayers(24.4686, 39.6142); // إحداثيات المدينة المنورة كمثال
-        },
-        { enableHighAccuracy: true }
-      );
-    }
-  };
-
-  const calculatePrayers = (lat, lng) => {
+  const initPrayerData = (lat, lng) => {
     const coordinates = new Coordinates(lat, lng);
-    const params = CalculationMethod.Egyptian(); // الهيئة المصرية العامة للمساحة - دقيقة جداً
-    const date = new Date();
-    const times = new PrayerTimes(coordinates, date, params);
-    
-    setPrayerData(times);
-    setQiblaRotation(Qibla(coordinates));
-    setNextPrayer(times.nextPrayer());
-    
-    // جدولة التنبيهات المحلية فوراً
-    scheduleNotifications(times);
+    const params = CalculationMethod.Egyptian(); 
+    const times = new PrayerTimes(coordinates, new Date(), params);
+    setPrayerTimes(times);
+
+    // حساب القبلة
+    const qibla = (Math.atan2(Math.sin((39.8262 - lng) * Math.PI / 180), 
+      Math.cos(lat * Math.PI / 180) * Math.tan(21.4225 * Math.PI / 180) - 
+      Math.sin(lat * Math.PI / 180) * Math.cos((39.8262 - lng) * Math.PI / 180)) * 180 / Math.PI);
+    setQiblaDirection(qibla);
   };
 
-  const scheduleNotifications = async (times) => {
-    await LocalNotifications.requestPermissions();
-    const prayers = [
-      { id: 1, name: 'الفجر', time: times.fajr },
-      { id: 2, name: 'الظهر', time: times.dhuhr },
-      { id: 3, name: 'العصر', time: times.asr },
-      { id: 4, name: 'المغرب', time: times.maghrib },
-      { id: 5, name: 'العشاء', time: times.isha }
-    ];
-
-    const notifications = prayers.map(p => ({
-      id: p.id,
-      title: `حان موعد صلاة ${p.name}`,
-      body: 'تطبيق رؤاقة - حي على الصلاة، حي على الفلاح',
-      schedule: { at: new Date(p.time) }, // سيعمل التنبيه في الوقت بالضبط
-      sound: 'azan.mp3', // يجب أن يكون الملف في مجلد res/raw للأندرويد
-      extra: { prayer: p.name }
-    }));
-
-    // إلغاء التنبيهات السابقة لضمان التحديث
-    await LocalNotifications.cancel({ notifications: [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }] });
-    // جدولة التنبيهات الجديدة للصلوات الخمس اليوم
-    await LocalNotifications.schedule({ notifications });
-  };
-
-  const toggleAzan = () => {
-    if (isAzanPlaying) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
-    } else {
-      audioRef.current.play();
+  // 3. دالة حساب العد التنازلي للصلاة القادمة
+  const updateCountdown = (now) => {
+    const next = prayerTimes.nextPrayer();
+    const nextTime = prayerTimes.timeForPrayer(next);
+    
+    if (nextTime) {
+      const diff = nextTime - now;
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      
+      const namesAR = { fajr: 'الفجر', dhuhr: 'الظهر', asr: 'العصر', maghrib: 'المغرب', isha: 'العشاء', sunrise: 'الشروق' };
+      setNextPrayer({
+        name: namesAR[next] || 'الصلاة القادمة',
+        time: nextTime,
+        countdown: `${hours}:${minutes < 10 ? '0'+minutes : minutes}:${seconds < 10 ? '0'+seconds : seconds}`
+      });
     }
-    setIsAzanPlaying(!isAzanPlaying);
   };
+
+  const checkAndPlayAzan = (now) => {
+    if (!prayerTimes || isMuted) return;
+    const currentHM = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const prayers = [prayerTimes.fajr, prayerTimes.dhuhr, prayerTimes.asr, prayerTimes.maghrib, prayerTimes.isha];
+    
+    prayers.forEach(p => {
+      if (p.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) === currentHM && now.getSeconds() === 0) {
+        audioRef.current.play();
+      }
+    });
+  };
+
+  const prayerList = [
+    { id: 'fajr', label: 'الفجر', time: prayerTimes?.fajr, icon: <Moon size={18}/> },
+    { id: 'dhuhr', label: 'الظهر', time: prayerTimes?.dhuhr, icon: <Sun size={18}/> },
+    { id: 'asr', label: 'العصر', time: prayerTimes?.asr, icon: <Sun size={18}/> },
+    { id: 'maghrib', label: 'المغرب', time: prayerTimes?.maghrib, icon: <Moon size={18}/> },
+    { id: 'isha', label: 'العشاء', time: prayerTimes?.isha, icon: <Moon size={18}/> },
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#fce4ec] to-[#f3e5f5] p-6 flex flex-col items-center font-sans rtl">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-lg bg-white/40 backdrop-blur-2xl border border-white/60 rounded-[50px] p-10 shadow-3xl mt-12 mb-10 relative"
-      >
-        <header className="flex justify-between items-center mb-8 pb-4 border-b border-[#ba68c8]/20">
-          <div className="flex flex-col gap-0.5">
-            <h1 className="text-3xl font-extrabold text-[#8e24aa] flex items-center gap-2.5">
-              <Bell className="w-8 h-8 text-[#e91e63]" /> مواقيت الصلاة
-            </h1>
-            <p className="text-[#d81b60] text-sm opacity-80 font-medium">تطبيق رؤاقة - دقة وتوقيت فعال</p>
+    <div className="min-h-screen bg-[#FFF0F5] font-sans p-4 flex flex-col items-center">
+      <audio ref={audioRef} src="/src/assets/azan.mp3" />
+
+      {/* الجزء العلوي: العد التنازلي - التصميم الاحترافي */}
+      <div className="w-full max-w-md mt-4 mb-8 relative overflow-hidden bg-gradient-to-br from-[#7C4DFF] to-[#FF4081] rounded-[35px] p-6 shadow-2xl text-white">
+        <div className="flex justify-between items-start z-10 relative">
+          <div>
+            <p className="text-rose-100 text-sm font-medium mb-1">متبقي على صلاة {nextPrayer.name}</p>
+            <h2 className="text-4xl font-black tracking-tighter tabular-nums">{nextPrayer.countdown}</h2>
           </div>
-          <button className="text-[#8e24aa] hover:text-[#d81b60] p-2 rounded-full hover:bg-white/40">
-            <Settings className="w-6 h-6" />
-          </button>
-        </header>
+          <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
+            <Clock className="animate-pulse" />
+          </div>
+        </div>
+        
+        {/* شريط التقدم النحيف */}
+        <div className="w-full h-1.5 bg-white/20 rounded-full mt-6 overflow-hidden">
+          <div className="h-full bg-white animate-[progress_2s_ease-in-out_infinite]" style={{ width: '45%' }}></div>
+        </div>
 
-        {/* عرض القبلة على شكل ساعة */}
-        <PrayerClock rotation={qiblaRotation} kabaImg={kabaImg} />
+        {/* دوائر ديكورية خلفية */}
+        <div className="absolute -bottom-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+      </div>
 
-        {/* زر تشغيل/إيقاف الأذان */}
-        <div className="flex justify-center -mt-6 mb-12 relative z-10">
+      {/* الساعة الحالية بتصميم Rose */}
+      <div className="mb-6 text-center">
+        <h1 className="text-5xl font-extralight text-violet-900 tracking-widest">
+          {currentTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+        </h1>
+        <div className="flex items-center justify-center gap-2 mt-2 text-rose-400 font-bold">
+           <MapPin size={14} /> القاهرة الآن
+        </div>
+      </div>
+
+      {/* قائمة المواقيت بأسلوب Glassmorphism ناعم */}
+      <div className="w-full max-w-md bg-white/70 backdrop-blur-2xl border border-white rounded-[40px] p-6 shadow-xl space-y-2">
+        {prayerList.map((p) => {
+          const isNext = nextPrayer.name === p.label;
+          return (
+            <div key={p.id} className={`flex justify-between items-center p-4 rounded-3xl transition-all ${isNext ? 'bg-rose-50 border-rose-100 border scale-[1.02] shadow-sm' : 'hover:bg-white/50'}`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-colors ${isNext ? 'bg-rose-500 text-white' : 'bg-violet-50 text-violet-400'}`}>
+                  {p.icon}
+                </div>
+                <span className={`text-lg font-bold ${isNext ? 'text-rose-600' : 'text-violet-900'}`}>{p.label}</span>
+              </div>
+              <div className="text-right">
+                <span className={`text-xl font-medium ${isNext ? 'text-rose-500' : 'text-violet-700'}`}>
+                  {p.time?.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {isNext && <div className="text-[10px] text-rose-400 font-bold animate-bounce mt-1">القادمة</div>}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* قسم البوصلة الاحترافية */}
+        <div className="mt-8 p-6 bg-gradient-to-b from-white/30 to-transparent rounded-[35px] border-t border-white flex flex-col items-center">
+          <div className="text-xs font-black text-violet-300 uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+            <ArrowLeftRight size={14} /> QIBLA FINDER
+          </div>
+          
+          <div className="relative w-44 h-44 flex items-center justify-center">
+            {/* درجات البوصلة */}
+            <div className="absolute inset-0 border-[1px] border-violet-100 rounded-full"></div>
+            
+            {/* الإبرة المصممة بشكل جمالي */}
+            <div 
+              className="absolute w-full h-full flex items-center justify-center transition-transform duration-1000 ease-out"
+              style={{ transform: `rotate(${qiblaDirection}deg)` }}
+            >
+              <div className="relative h-36 flex flex-col items-center justify-between">
+                <div className="w-4 h-4 bg-rose-600 rotate-45 rounded-sm shadow-lg shadow-rose-300"></div>
+                <div className="w-[2px] h-full bg-gradient-to-b from-rose-500 via-rose-200 to-transparent"></div>
+              </div>
+            </div>
+            
+            {/* الكعبة المشرفة في المركز (أيقونة رمزية) */}
+            <div className="w-12 h-12 bg-violet-900 rounded-2xl shadow-xl flex items-center justify-center z-10 border-4 border-white">
+              <div className="w-6 h-[2px] bg-yellow-400 absolute top-4"></div>
+              <div className="text-[10px] text-white font-bold">KABAA</div>
+            </div>
+          </div>
+          
           <button 
-            onClick={toggleAzan}
-            className={clsx(
-              "flex items-center gap-2.5 px-8 py-4 rounded-full text-white font-bold transition-all shadow-xl",
-              isAzanPlaying 
-                ? "bg-[#e91e63] hover:bg-[#c2185b]" 
-                : "bg-[#8e24aa] hover:bg-[#7b1fa2]"
-            )}
+            onClick={() => setIsMuted(!isMuted)}
+            className="mt-8 px-8 py-3 rounded-full bg-white shadow-lg shadow-rose-100 text-violet-600 font-bold text-sm flex items-center gap-3 active:scale-95 transition-transform"
           >
-            {isAzanPlaying ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-            {isAzanPlaying ? "إيقاف الأذان التجريبي" : "تجربة صوت الأذان"}
+            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            {isMuted ? 'تفعيل صوت الأذان' : 'الأذان مفعّل'}
           </button>
         </div>
-
-        {/* شبكة مواقيت الصلاة */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {prayerData && [
-            { id: 'fajr', label: 'الفجر', time: prayerData.fajr },
-            { id: 'dhuhr', label: 'الظهر', time: prayerData.dhuhr },
-            { id: 'asr', label: 'العصر', time: prayerData.asr },
-            { id: 'maghrib', label: 'المغرب', time: prayerData.maghrib },
-            { id: 'isha', label: 'العشاء', time: prayerData.isha },
-          ].map((prayer) => (
-            <PrayerCard
-              key={prayer.id}
-              id={prayer.id}
-              label={prayer.label}
-              time={prayer.time}
-              isNext={nextPrayer === prayer.id}
-            />
-          ))}
-        </div>
-
-        {coords && (
-          <div className="mt-10 pt-4 border-t border-[#ba68c8]/20 text-center text-[#4a148c]/60 text-xs flex items-center justify-center gap-1.5 font-medium">
-            <MapPin className="w-4 h-4" /> يتم الحساب بناءً على موقعك الحالي: {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}
-          </div>
-        )}
-      </motion.div>
+      </div>
+      
+      <p className="mt-8 text-violet-300 text-[10px] font-medium tracking-widest uppercase pb-10">Powered by Roqa AI Core</p>
     </div>
   );
 };
 
-export default AlAsilPrayerPage;
+export default RoqaPrayerPro;
