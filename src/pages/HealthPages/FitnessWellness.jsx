@@ -1,9 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage } from '../../services/MediaService';
 
-// استيراد الصوت
+// استيراد الصوت من المسار الصحيح
 import alarmSound from '../../assets/fine-alarm.mp3';
 
 const sections = [
@@ -19,43 +18,36 @@ const sections = [
 
 const PregnancyMonitor = () => {
   const [openIdx, setOpenIdx] = useState(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [prompt, setPrompt] = useState("");
-  const [aiResponse, setAiResponse] = useState("");
+  const [chatHistory, setChatHistory] = useState(() => JSON.parse(localStorage.getItem('roqa_chat_history')) || []);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showClockSettings, setShowClockSettings] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
 
-  const [data, setData] = useState(() => {
-    const saved = localStorage.getItem('lady_fitness');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_fitness')) || {});
+  const [alarms, setAlarms] = useState(() => JSON.parse(localStorage.getItem('roqa_alarms')) || {});
 
-  const [alarms, setAlarms] = useState(() => {
-    const savedAlarms = localStorage.getItem('roqa_alarms');
-    return savedAlarms ? JSON.parse(savedAlarms) : {};
-  });
+  const audioRef = useRef(new Audio(alarmSound));
 
-  // تحديث الساعة ثانية بثانية
+  // تحديث وقت الساعة
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // فحص المنبهات (سواء المحددة من قائمة الساعة أو المكتوبة في المدخلات)
+  // فحص المنبهات وتشغيل الصوت
   useEffect(() => {
     const checkAlarms = () => {
       const now = new Date();
       const currentStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
       
-      // فحص منبهات قائمة الساعة
       const hasAlarm = Object.values(alarms).some(time => time === currentStr);
-      // فحص الأوقات المكتوبة في المدخلات
       const hasInputTime = Object.values(data).some(val => val === currentStr);
 
       if ((hasAlarm || hasInputTime) && now.getSeconds() === 0) {
-        const audio = new Audio(alarmSound);
-        audio.play().catch(e => console.warn("Audio trigger required user interaction"));
+        audioRef.current.play().catch(e => console.log("تفاعل مع الصفحة لتفعيل الصوت"));
       }
     };
     const interval = setInterval(checkAlarms, 1000);
@@ -64,7 +56,8 @@ const PregnancyMonitor = () => {
 
   useEffect(() => {
     localStorage.setItem('roqa_alarms', JSON.stringify(alarms));
-  }, [alarms]);
+    localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory));
+  }, [alarms, chatHistory]);
 
   const updateData = useCallback((field, value) => {
     setData(prev => {
@@ -74,21 +67,28 @@ const PregnancyMonitor = () => {
     });
   }, []);
 
+  const sendFirebaseNotification = async (title, body) => {
+    try {
+      await CapacitorHttp.post({
+        url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+        headers: { 'Content-Type': 'application/json' },
+        data: { title, body, to: localStorage.getItem('fcm_token') }
+      });
+    } catch (e) { console.error("Firebase Error", e); }
+  };
+
   const handleSectionAction = async (section) => {
     setIsLoading(true);
-    const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'غير مدخل'}`).join(", ");
+    const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
     try {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `تحليل بيانات ${section.title}: ${sectionData}` }
+        data: { prompt: `حللي هذه البيانات: ${sectionData}` }
       });
-      setAiResponse(response.data.reply || response.data.message);
-      // إشعار Firebase
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.app/api/send-fcm',
-        data: { title: "تحديث جديد", body: `تم تحليل قسم ${section.title}` }
-      });
+      const reply = response.data.reply || response.data.message;
+      setChatHistory([{ type: 'ai', text: reply }, ...chatHistory]);
+      await sendFirebaseNotification(`تحديث ${section.title}`, "تم تحليل بياناتك بنجاح");
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
   };
@@ -96,13 +96,16 @@ const PregnancyMonitor = () => {
   const handleAIQuery = async () => {
     if (!prompt) return;
     setIsLoading(true);
+    const userMsg = prompt;
+    setPrompt(""); // مسح الشريط فوراً لتسهيل الكتابة التالية
     try {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt, image: capturedImage }
+        data: { prompt: userMsg, image: capturedImage }
       });
-      setAiResponse(response.data.reply || response.data.message);
+      const reply = response.data.reply || response.data.message;
+      setChatHistory([{ type: 'user', text: userMsg }, { type: 'ai', text: reply }, ...chatHistory]);
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
   };
@@ -113,7 +116,7 @@ const PregnancyMonitor = () => {
 
   return (
     <div style={mergedStyles.container}>
-      {/* الساعة وقائمة ضبط المواعيد */}
+      {/* الساعة */}
       <div style={mergedStyles.clockSection}>
         <div style={mergedStyles.clockFace}>
           <div style={{...mergedStyles.handHour, transform: `translateX(-50%) rotate(${hoursDeg}deg)`}} />
@@ -121,57 +124,63 @@ const PregnancyMonitor = () => {
           <div style={{...mergedStyles.handSecond, transform: `translateX(-50%) rotate(${secondsDeg}deg)`}} />
           <div style={mergedStyles.centerDot} />
         </div>
-        
         <button style={mergedStyles.miniClockBtn} onClick={() => setShowClockSettings(!showClockSettings)}>
-          {showClockSettings ? "إغلاق الضبط" : "ضبط منبه الأنشطة ⏰"}
+          {showClockSettings ? "إغلاق الضبط" : "ضبط المواعيد ⏰"}
         </button>
-
         {showClockSettings && (
           <div style={mergedStyles.alarmList}>
             {sections.map(s => (
               <div key={s.id} style={mergedStyles.alarmItem}>
-                <span style={{fontSize: '0.8rem'}}>{s.emoji} {s.title}</span>
-                <input 
-                  type="time" 
-                  value={alarms[s.id] || ''} 
-                  onChange={(e) => setAlarms({...alarms, [s.id]: e.target.value})}
-                  style={mergedStyles.timeInput}
-                />
+                <span>{s.emoji} {s.title}</span>
+                <input type="time" value={alarms[s.id] || ''} onChange={(e) => setAlarms({...alarms, [s.id]: e.target.value})} />
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* كارت الذكاء الاصطناعي المطور */}
-      <div style={mergedStyles.aiBigCard}>
-        <h3 style={{margin: '0 0 15px 0'}}>👩‍⚕️ طبيبة رقة الذكية</h3>
-        
-        <div style={mergedStyles.mediaZone}>
-           {capturedImage && <img src={capturedImage} style={mergedStyles.previewImg} alt="Preview" />}
-           <div style={mergedStyles.mediaButtons}>
-              <button onClick={async () => setCapturedImage(await takePhoto())} style={mergedStyles.mediaBtn}>📸 كاميرا</button>
-              <button onClick={async () => setCapturedImage(await fetchImage())} style={mergedStyles.mediaBtn}>🖼️ معرض</button>
-           </div>
-        </div>
+      {/* زر فتح الشات */}
+      <button style={mergedStyles.openChatBtn} onClick={() => setIsChatOpen(true)}>
+        💬 تحدث مع طبيبة رقة الذكية
+      </button>
 
-        <div style={mergedStyles.chatInputArea}>
-           <input 
-             type="text"
-             value={prompt} 
-             onChange={(e) => setPrompt(e.target.value)} 
-             placeholder="اكتبي استفسارك هنا..." 
-             style={mergedStyles.chatInput}
-           />
-           <button onClick={handleAIQuery} style={mergedStyles.sendBtn}>
-             {isLoading ? "..." : "إرسال"}
-           </button>
-        </div>
-        
-        {aiResponse && <div style={mergedStyles.aiResponseBox}><strong>الرد:</strong> {aiResponse}</div>}
-      </div>
+      {/* كارت الشات المنبثق */}
+      {isChatOpen && (
+        <div style={mergedStyles.chatOverlay}>
+          <div style={mergedStyles.chatCard}>
+            <div style={mergedStyles.chatHeader}>
+              <span>👩‍⚕️ طبيبة رقة</span>
+              <button onClick={() => setIsChatOpen(false)} style={{background:'none', border:'none', color:'white', fontSize:'1.2rem'}}>✕</button>
+            </div>
+            
+            <div style={mergedStyles.chatBody}>
+              {chatHistory.map((msg, index) => (
+                <div key={index} style={msg.type === 'user' ? mergedStyles.userMsg : mergedStyles.aiMsg}>
+                  {msg.text}
+                </div>
+              ))}
+            </div>
 
-      {/* الأقسام - كل المدخلات أسفل بعضها مع زر الحفظ */}
+            <div style={mergedStyles.chatFooter}>
+              {capturedImage && <img src={capturedImage} style={mergedStyles.miniPreview} alt="upload" />}
+              <div style={mergedStyles.chatInputRow}>
+                <button onClick={async () => setCapturedImage(await takePhoto())} style={mergedStyles.iconBtn}>📸</button>
+                <button onClick={async () => setCapturedImage(await fetchImage())} style={mergedStyles.iconBtn}>🖼️</button>
+                <input 
+                  value={prompt} 
+                  onChange={(e) => setPrompt(e.target.value)} 
+                  placeholder="اكتبي سؤالك..." 
+                  style={mergedStyles.chatInput}
+                />
+                <button onClick={handleAIQuery} style={mergedStyles.sendBtn}>{isLoading ? "..." : "إرسال"}</button>
+              </div>
+              <button onClick={() => setChatHistory([])} style={mergedStyles.clearBtn}>مسح السجل</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* الأقسام */}
       <div style={mergedStyles.accordion}>
         {sections.map((sec, i) => (
           <div key={sec.id} style={mergedStyles.sectionCard}>
@@ -185,7 +194,7 @@ const PregnancyMonitor = () => {
                   <div key={`${sec.id}-${f}`} style={mergedStyles.inputGroup}>
                     <label style={mergedStyles.label}>{f}</label>
                     <input 
-                      type="text"
+                      type="text" 
                       style={mergedStyles.input} 
                       value={data[`${sec.id}-${f}`] || ''} 
                       onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} 
@@ -193,7 +202,7 @@ const PregnancyMonitor = () => {
                   </div>
                 ))}
                 <button style={mergedStyles.saveSectionBtn} onClick={() => handleSectionAction(sec)} disabled={isLoading}>
-                  {isLoading ? "جاري التحليل..." : `حفظ وتحليل ${sec.title} 🩺`}
+                   حفظ وإرسال تنبيه 🔔
                 </button>
               </div>
             )}
@@ -205,39 +214,40 @@ const PregnancyMonitor = () => {
 };
 
 const mergedStyles = {
-  container: { background: '#fdf7ff', padding: '15px', direction: 'rtl', maxWidth: '500px', margin: 'auto', minHeight: '100vh' },
+  container: { background: '#f8f0fb', padding: '15px', direction: 'rtl', minHeight: '100vh', fontFamily: 'sans-serif' },
+  clockSection: { background: '#fff', borderRadius: '25px', padding: '15px', textAlign: 'center', marginBottom: '15px' },
+  clockFace: { width: '100px', height: '100px', borderRadius: '50%', border: '4px solid #ce93d8', margin: '0 auto 10px', position: 'relative' },
+  handHour: { position: 'absolute', bottom: '50%', left: '50%', width: '4px', height: '30px', background: '#4a148c', transformOrigin: 'bottom center' },
+  handMinute: { position: 'absolute', bottom: '50%', left: '50%', width: '3px', height: '40px', background: '#7b1fa2', transformOrigin: 'bottom center' },
+  handSecond: { position: 'absolute', bottom: '50%', left: '50%', width: '1px', height: '45px', background: '#e91e63', transformOrigin: 'bottom center' },
+  centerDot: { position: 'absolute', top: '50%', left: '50%', width: '8px', height: '8px', background: '#4a148c', borderRadius: '50%', transform: 'translate(-50%, -50%)' },
+  miniClockBtn: { background: '#f06292', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '15px' },
+  alarmList: { background: '#f3e5f5', borderRadius: '15px', padding: '10px', marginTop: '10px' },
+  alarmItem: { display: 'flex', justifyContent: 'space-between', marginBottom: '5px' },
+
+  openChatBtn: { width: '100%', background: '#7b1fa2', color: 'white', padding: '15px', borderRadius: '15px', border: 'none', fontWeight: 'bold', marginBottom: '15px' },
   
-  // الساعة
-  clockSection: { background: '#fff', borderRadius: '25px', padding: '15px', marginBottom: '20px', textAlign: 'center', border: '1px solid #ce93d8' },
-  clockFace: { width: '120px', height: '120px', borderRadius: '50%', background: '#f3e5f5', position: 'relative', margin: '0 auto 15px', border: '5px solid #ce93d8' },
-  handHour: { position: 'absolute', bottom: '50%', left: '50%', width: '5px', height: '35px', background: '#4a148c', transformOrigin: 'bottom center', borderRadius: '5px' },
-  handMinute: { position: 'absolute', bottom: '50%', left: '50%', width: '3px', height: '50px', background: '#7b1fa2', transformOrigin: 'bottom center', borderRadius: '5px' },
-  handSecond: { position: 'absolute', bottom: '50%', left: '50%', width: '1px', height: '55px', background: '#e91e63', transformOrigin: 'bottom center' },
-  centerDot: { position: 'absolute', top: '50%', left: '50%', width: '10px', height: '10px', background: '#4a148c', borderRadius: '50%', transform: 'translate(-50%, -50%)' },
-  miniClockBtn: { background: '#f06292', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '12px', fontSize: '0.9rem', cursor: 'pointer' },
-  alarmList: { marginTop: '15px', background: '#fafafa', borderRadius: '15px', padding: '10px' },
-  alarmItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px solid #eee' },
-  timeInput: { border: '1px solid #ce93d8', borderRadius: '5px', padding: '2px' },
+  chatOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  chatCard: { width: '90%', height: '80%', background: 'white', borderRadius: '20px', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  chatHeader: { background: '#7b1fa2', color: 'white', padding: '15px', display: 'flex', justifyContent: 'space-between' },
+  chatBody: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column-reverse', gap: '10px', background: '#f9f9f9' },
+  userMsg: { alignSelf: 'flex-start', background: '#e1bee7', padding: '10px', borderRadius: '10px', maxWidth: '80%' },
+  aiMsg: { alignSelf: 'flex-end', background: '#fff', border: '1px solid #ddd', padding: '10px', borderRadius: '10px', maxWidth: '80%' },
+  chatFooter: { padding: '10px', borderTop: '1px solid #eee' },
+  chatInputRow: { display: 'flex', gap: '5px', alignItems: 'center' },
+  chatInput: { flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd' },
+  iconBtn: { background: '#f3e5f5', border: 'none', padding: '8px', borderRadius: '50%' },
+  sendBtn: { background: '#ffd54f', border: 'none', padding: '10px', borderRadius: '10px' },
+  miniPreview: { width: '50px', height: '50px', borderRadius: '5px', marginBottom: '5px' },
+  clearBtn: { width: '100%', marginTop: '5px', background: 'none', border: 'none', color: '#999', fontSize: '0.8rem' },
 
-  // كارت الذكاء الاصطناعي
-  aiBigCard: { background: 'linear-gradient(135deg, #4a148c, #7b1fa2)', borderRadius: '25px', padding: '20px', color: 'white', marginBottom: '20px' },
-  mediaZone: { textAlign: 'center', marginBottom: '15px' },
-  previewImg: { width: '100px', height: '100px', borderRadius: '15px', objectFit: 'cover', marginBottom: '10px', border: '2px solid white' },
-  mediaButtons: { display: 'flex', gap: '10px', justifyContent: 'center' },
-  mediaBtn: { background: 'white', color: '#4a148c', border: 'none', padding: '8px 15px', borderRadius: '10px', fontWeight: 'bold' },
-  chatInputArea: { display: 'flex', gap: '8px', background: 'white', padding: '5px', borderRadius: '15px' },
-  chatInput: { flex: 1, border: 'none', outline: 'none', padding: '10px', borderRadius: '10px', fontSize: '1rem' },
-  sendBtn: { background: '#ffd54f', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' },
-  aiResponseBox: { marginTop: '15px', background: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '12px', fontSize: '0.9rem' },
-
-  // الأقسام
-  sectionCard: { background: '#fff', borderRadius: '15px', marginBottom: '10px', border: '1px solid #e1bee7', overflow: 'hidden' },
-  sectionHeader: { padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#4a148c' },
-  verticalList: { padding: '15px', display: 'flex', flexDirection: 'column', gap: '15px' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '5px' },
-  label: { fontSize: '0.85rem', color: '#7b1fa2', fontWeight: 'bold' },
-  input: { padding: '12px', borderRadius: '10px', border: '1px solid #ce93d8', fontSize: '1rem' },
-  saveSectionBtn: { background: '#4a148c', color: 'white', border: 'none', padding: '12px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }
+  sectionCard: { background: '#fff', borderRadius: '15px', marginBottom: '10px', border: '1px solid #e1bee7' },
+  sectionHeader: { padding: '15px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' },
+  verticalList: { padding: '15px', display: 'flex', flexDirection: 'column', gap: '10px' },
+  inputGroup: { display: 'flex', flexDirection: 'column' },
+  label: { fontSize: '0.8rem', color: '#7b1fa2' },
+  input: { padding: '10px', borderRadius: '10px', border: '1px solid #eee' },
+  saveSectionBtn: { background: '#4a148c', color: 'white', border: 'none', padding: '10px', borderRadius: '10px' }
 };
 
 export default PregnancyMonitor;
