@@ -72,7 +72,8 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
 
 const MenstrualTracker = () => {
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('menstrual_data')) || {});
-  const [prediction, setPrediction] = useState(null);
+  // التعديل هنا: استعادة التوقعات المحفوظة عند التشغيل
+  const [prediction, setPrediction] = useState(() => JSON.parse(localStorage.getItem('last_prediction')) || null);
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -85,9 +86,12 @@ const MenstrualTracker = () => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
     localStorage.setItem('saved_notes', JSON.stringify(savedNotes));
-  }, [data, chatHistory, savedNotes]);
+    // حفظ التوقعات في التخزين المحلي لضمان ثباتها
+    if (prediction) {
+      localStorage.setItem('last_prediction', JSON.stringify(prediction));
+    }
+  }, [data, chatHistory, savedNotes, prediction]);
 
-  // --- دالة المزامنة والحفظ (حسب طلبك) ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     const scheduledDate = new Date();
@@ -143,7 +147,6 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
       
-      // حفظ التقرير تلقائياً عند استلام رد الذكاء الاصطناعي
       await saveAndNotify("استشارة فورية", responseText);
 
     } catch (err) {
@@ -195,7 +198,6 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
-      // تنفيذ الحفظ والمزامنة مع نيون وإرسال إشعار
       await saveAndNotify("تحليل الدورة الشهرية", responseText);
 
     } catch (e) { console.error(e); }
