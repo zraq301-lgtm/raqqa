@@ -18,7 +18,9 @@ const PregnancyApp = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('preg_ai_v3')) || []);
   const [promptInput, setPromptInput] = useState('');
-  const [pregnancyMonth, setPregnancyMonth] = useState('');
+  
+  // تعديل: تحميل شهر الحمل من التخزين المحلي عند البداية
+  const [pregnancyMonth, setPregnancyMonth] = useState(localStorage.getItem('saved_preg_month') || '');
   const [deliveryDate, setDeliveryDate] = useState(''); 
 
   const categories = [
@@ -36,9 +38,12 @@ const PregnancyApp = () => {
     return state;
   });
 
-  // حساب تاريخ الولادة المتوقع
+  // حساب تاريخ الولادة المتوقع وحفظ الشهر
   useEffect(() => {
     if (pregnancyMonth) {
+      // حفظ الشهر في التخزين المحلي ليبقى عند الخروج والعودة
+      localStorage.setItem('saved_preg_month', pregnancyMonth);
+
       const currentMonthNum = parseInt(pregnancyMonth);
       if (currentMonthNum >= 1 && currentMonthNum <= 9) {
         const monthsRemaining = 9 - currentMonthNum;
@@ -55,13 +60,12 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // دالة الحفظ والمزامنة (معدلة لضمان العمل)
+  // دالة الحفظ والمزامنة - معدلة لإرسال بيانات الشهر والولادة للـ API
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    // تأمين تاريخ الجدولة
     let scheduledDate = new Date();
-    scheduledDate.setMonth(scheduledDate.getMonth() + 1); // افتراضي بعد شهر إذا لم يتوفر الشهر
+    scheduledDate.setMonth(scheduledDate.getMonth() + 1); 
 
     try {
       const saveToNeonOptions = {
@@ -75,6 +79,9 @@ const PregnancyApp = () => {
           body: currentAnalysis.substring(0, 100) + "...",
           scheduled_for: scheduledDate.toISOString(),
           all_data: JSON.stringify(inputs),
+          // إضافة بيانات شهر الحمل وتاريخ الولادة للرابط
+          pregnancy_month: pregnancyMonth,
+          expected_delivery_date: deliveryDate,
           note: `تحليل آلي لـ ${categoryTitle}`
         }
       };
@@ -171,7 +178,6 @@ const PregnancyApp = () => {
         .header { display: flex; justify-content: space-between; margin-bottom: 25px; align-items: center; }
         .ai-btn { background: #E9D5FF; color: #7C3AED; padding: 12px 20px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(124, 58, 237, 0.1); }
         
-        /* ساعة الحمل المركزية */
         .pregnancy-clock-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; }
         .clock-outer {
           width: 260px; height: 260px; border-radius: 50%; background: white;
@@ -212,10 +218,8 @@ const PregnancyApp = () => {
         </div>
       </header>
 
-      {/* الساعة بحجمها الكامل وتصميم ملكي */}
       <div className="pregnancy-clock-section">
         <div className="clock-outer">
-          {/* الأرقام من 1 لـ 9 */}
           {[1,2,3,4,5,6,7,8,9].map((m) => {
             const angle = (m * 40) - 200; 
             return (
@@ -301,7 +305,6 @@ const PregnancyApp = () => {
         ))}
       </div>
 
-      {/* نافذة الدردشة */}
       <AnimatePresence>
         {showChat && (
           <motion.div className="chat-overlay" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}>
@@ -319,7 +322,7 @@ const PregnancyApp = () => {
               ))}
               {loading && <div style={{textAlign:'center', padding: 10, color: '#7C3AED'}}>جاري معالجة طلبك...</div>}
             </div>
-            <div className="prompt-bar">
+            <div className="prompt-bar" style={{padding:'10px', display:'flex', gap:'5px', background:'white'}}>
               <button className="ai-btn" style={{padding:'10px'}} onClick={() => handleMediaAction('camera')}><Camera size={22}/></button>
               <input className="custom-input" style={{flex: 1}} value={promptInput} onChange={(e) => setPromptInput(e.target.value)} placeholder="اسألي عن الأعراض أو التحاليل..." />
               <button className="ai-btn" style={{padding:'10px'}} onClick={sendCustomPrompt}><Send size={22}/></button>
