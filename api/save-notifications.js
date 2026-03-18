@@ -30,20 +30,32 @@ export default async function handler(req, res) {
     const now = new Date();
     const isSentStatus = false; 
 
-    // --- توحيد المسميات لتظهر في الداتابيز بالعربي كما في الصور ---
-    const categoryMapping = {
-      'menstrual_cycle': 'حيض',
-      'pregnancy_tracking': 'حمل',
-      'breastfeeding_tracking': 'رضاعة',
-      'child_care': 'أمومة',
-      'medical_followup': 'طبيب',
-      'mental_health': 'مشاعر',
-      'religious_guidance': 'فقه',
-      'physical_fitness': 'رشاقة',
-      'marriage_consultancy': 'حميمية'
-    };
+    // --- 1. تحسين الفرز لضمان عدم حدوث خطأ في التصنيف ---
+    let finalCategory = 'عام'; // افتراضي
+    
+    // فحص ذكي للتصنيف القادم
+    const catLower = (category || "").toLowerCase();
+    const titleLower = (title || "").toLowerCase();
 
-    const finalCategory = categoryMapping[category] || category;
+    if (catLower.includes('menstrual') || catLower.includes('period') || titleLower.includes('دورة') || titleLower.includes('حيض')) {
+      finalCategory = 'حيض';
+    } else if (catLower.includes('pregnancy') || catLower.includes('حمل')) {
+      finalCategory = 'حمل';
+    } else if (catLower.includes('medical') || catLower.includes('طبيب') || catLower.includes('report')) {
+      finalCategory = 'طبيب';
+    } else if (catLower.includes('breast') || catLower.includes('رضاعة')) {
+      finalCategory = 'رضاعة';
+    } else if (catLower.includes('child') || catLower.includes('أمومة')) {
+      finalCategory = 'أمومة';
+    } else if (catLower.includes('fitness') || catLower.includes('رشاقة')) {
+      finalCategory = 'رشاقة';
+    } else if (catLower.includes('fiqh') || catLower.includes('فقه')) {
+      finalCategory = 'فقه';
+    } else if (catLower.includes('marriage') || catLower.includes('حميمية')) {
+      finalCategory = 'حميمية';
+    } else if (catLower.includes('mood') || catLower.includes('مشاعر')) {
+      finalCategory = 'مشاعر';
+    }
 
     const query = `
       INSERT INTO notifications (
@@ -67,30 +79,24 @@ export default async function handler(req, res) {
     let finalBody = body;
     let customSchedule = new Date();
 
-    // --- تنفيذ المنطق الزمني لكل تصنيف ---
+    // --- 2. ضبط المنطق الزمني بناءً على الفئة الصحيحة ---
 
-    // 1. الحيض (التاريخ القادم كما هو من الواجهة)
     if (finalCategory === 'حيض') {
-      customSchedule = startDate ? new Date(startDate) : now;
+      // إذا أرسلت الواجهة startDate نستخدمه، وإلا نضيف 28 يوم كافتراض منطقي للدورة القادمة
+      customSchedule = startDate ? new Date(startDate) : new Date(now.getTime() + (28 * 24 * 60 * 60 * 1000));
       finalTitle = "رقة تذكركِ 🌸";
       finalBody = "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ.";
     }
 
-    // 2. الحمل (جدولة شهرية حتى الولادة)
     else if (finalCategory === 'حمل') {
       if (expected_due_date) {
         const dueDate = new Date(expected_due_date);
         let monthsRemaining = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
-        
         let insertedIds = [];
         for (let i = 0; i <= monthsRemaining; i++) {
           const scheduledMonth = new Date();
           scheduledMonth.setMonth(now.getMonth() + i);
-          
-          const mTitle = "رحلة الأمومة ✨";
-          const mBody = i === monthsRemaining ? "اقترب موعد اللقاء المنتظر! ولادة مباركة." : `رقة تذكرك بمتابعة شهرك الجديد من الحمل.`;
-          
-          const values = [commonData.user, fcmToken, 'حمل', mTitle, mBody, isSentStatus, scheduledMonth, startDate, endDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+          const values = [commonData.user, fcmToken, 'حمل', "رحلة الأمومة ✨", "رقة تذكرك بمتابعة شهرك الجديد من الحمل.", isSentStatus, scheduledMonth, startDate, endDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
           const resDb = await pool.query(query, values);
           insertedIds.push(resDb.rows[0].id);
         }
@@ -98,50 +104,31 @@ export default async function handler(req, res) {
       }
     }
 
-    // 3. الرضاعة (ساعة متقدمة)
-    else if (finalCategory === 'رضاعة') {
-      customSchedule = new Date(now.getTime() + (1 * 60 * 60 * 1000));
-      finalTitle = "لحظات الارتباط 🤱";
-      finalBody = "تذكير بموعد رضعة طفلكِ القادمة.";
-    }
-
-    // 4. الأمومة (بعد يومين)
-    else if (finalCategory === 'أمومة') {
-      customSchedule = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000));
-      finalTitle = "أنتِ أم رائعة 💖";
-      finalBody = "تذكير بمهمة طفلكِ القادمة بعد يومين.";
-    }
-
-    // 5. الطبيب (موعد الطبيب - يومين)
     else if (finalCategory === 'طبيب') {
+      // طرح يومين من الموعد القادم
       const docDate = next_appointment ? new Date(next_appointment) : now;
       customSchedule = new Date(docDate.getTime() - (2 * 24 * 60 * 60 * 1000));
       finalTitle = "موعدكِ الطبي القادم 🩺";
       finalBody = "تذكير: موعد طبيبكِ بعد يومين، كوني على استعداد.";
     }
 
-    // 6. الرشاقة (توقيت بالساعة)
-    else if (finalCategory === 'رشاقة') {
-      customSchedule = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // مثال بعد 3 ساعات
-      finalTitle = "وقت النشاط 🏃‍♀️";
-      finalBody = "حان وقت التمرين البسيط للحفاظ على رشقتكِ.";
+    else if (finalCategory === 'رضاعة') {
+      customSchedule = new Date(now.getTime() + (1 * 60 * 60 * 1000)); // بعد ساعة
     }
 
-    // 7. الفقه (بعد يومين)
-    else if (finalCategory === 'فقه') {
-      customSchedule = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000));
-      finalTitle = "رفيقتكِ الفقهية 📖";
-      finalBody = "تذكير بمراجعة الأحكام الخاصة بكِ.";
+    else if (finalCategory === 'أمومة' || finalCategory === 'فقه') {
+      customSchedule = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000)); // بعد يومين
     }
 
-    // 8. الحميمية و المشاعر (بعد ثلاثة أيام)
     else if (finalCategory === 'حميمية' || finalCategory === 'مشاعر') {
-      customSchedule = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
-      finalTitle = finalCategory === 'حميمية' ? "لحظات الود ❤️" : "رقة تهتم بقلبكِ ✨";
-      finalBody = finalCategory === 'حميمية' ? "تذكير بتعزيز الود مع شريك حياتكِ." : "خذي وقتاً لنفسكِ، نحن نهتم بمشاعركِ.";
+      customSchedule = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000)); // بعد 3 أيام
     }
 
-    // الإدخال النهائي في قاعدة البيانات
+    else if (finalCategory === 'رشاقة') {
+      customSchedule = new Date(now.getTime() + (4 * 60 * 60 * 1000)); // بعد 4 ساعات
+    }
+
+    // الإدخال النهائي
     const values = [
       commonData.user, fcmToken, finalCategory, 
       finalTitle, finalBody, isSentStatus, 
