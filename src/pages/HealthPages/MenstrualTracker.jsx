@@ -23,8 +23,7 @@ export default async function handler(req, res) {
     scheduled_for, startDate, endDate,
     milk_amount, baby_status, latitude, longitude,
     next_appointment, current_visit_date,
-    expected_due_date,
-    period_duration, cycle_length 
+    dueDate // استلام موعد الولادة المتوقع من الواجهة
   } = req.body;
 
   try {
@@ -46,26 +45,6 @@ export default async function handler(req, res) {
 
     const finalCategory = categoryMapping[category] || category || 'general';
 
-    // --- منطق الحساب القمري والدورة ---
-    let nextPeriodDate = null;
-    let fertilityStart = null;
-    let fertilityEnd = null;
-
-    if (finalCategory === 'period') {
-      // إذا لم يرسل المستخدم طول الدورة، نفترض 29 يومًا (الشهر القمري)
-      const cycleDays = parseInt(cycle_length) || 29; 
-      
-      // حساب الموعد القادم: تاريخ البدء + طول الدورة
-      nextPeriodDate = new Date(finalStartDate);
-      nextPeriodDate.setDate(finalStartDate.getDate() + cycleDays);
-
-      // حساب فترة الخصوبة بناءً على الدورة القمرية
-      fertilityStart = new Date(finalStartDate);
-      fertilityStart.setDate(finalStartDate.getDate() + (cycleDays - 18));
-      fertilityEnd = new Date(finalStartDate);
-      fertilityEnd.setDate(finalStartDate.getDate() + (cycleDays - 11));
-    }
-
     const query = `
       INSERT INTO notifications (
         user_id, fcm_token, category, title, body, is_sent, 
@@ -77,78 +56,98 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // تنسيق التاريخ للتقويم القمري/الهجري ليظهر في نص الإشعار
-    const lunarFormatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
-      day: 'numeric', month: 'long', year: 'numeric'
-    });
-
     const commonData = {
       user: isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
       loc_lng: longitude || 0,
       loc_lat: latitude || 0,
-      extra: JSON.stringify({ 
-        milk_amount, baby_status, next_appointment, current_visit_date, 
-        expected_due_date, 
-        next_period_date: nextPeriodDate,
-        lunar_next_period: nextPeriodDate ? lunarFormatter.format(nextPeriodDate) : null,
-        fertility_start: fertilityStart, 
-        fertility_end: fertilityEnd,
-        period_duration: period_duration || 7, 
-        cycle_length: cycle_length || 29
-      })
+      extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date, dueDate })
     };
 
     let finalTitle = title;
     let finalBody = body;
     let customSchedule = scheduled_for ? new Date(scheduled_for) : finalStartDate;
 
+    // 1. الرضاعة (3 إشعارات كل 4 ساعات)
     if (finalCategory === 'breastfeeding') {
       let insertedIds = [];
       for (let i = 0; i < 3; i++) {
         const breastfeedingTime = new Date(customSchedule);
         breastfeedingTime.setHours(customSchedule.getHours() + (i * 4)); 
-        const values = [commonData.user, fcmToken, 'breastfeeding', "لحظات الارتباط 🤱", `وقت الرضاعة رقم ${i+1}. رقة تهتم بكِ.`, isSentStatus, breastfeedingTime, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+        const values = [commonData.user, fcmToken, 'breastfeeding', "لحظات الارتباط 🤱", `وقت الرضاعة هو وقت الحب؛ تذكير برضعة طفلكِ رقم ${i+1}. رقة تهتم بكِ.`, isSentStatus, breastfeedingTime, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
         const resDb = await pool.query(query, values);
         insertedIds.push(resDb.rows[0].id);
       }
       return res.status(200).json({ success: true, db_ids: insertedIds });
     }
 
-    else if (finalCategory === 'period') {
-      finalTitle = "رقة تذكركِ 🌸";
-      const lunarDateText = nextPeriodDate ? lunarFormatter.format(nextPeriodDate) : "";
-      finalBody = `موعد دورتكِ القادمة حسب التقويم القمري هو ${lunarDateText}. كوني مستعدة لتدليل نفسكِ.`;
-      customSchedule = nextPeriodDate || customSchedule;
-    }
-
-    else if (finalCategory === 'pregnancy') {
-      if (expected_due_date) {
-        const today = new Date();
-        const dueDate = new Date(expected_due_date);
-        let monthsRemaining = (dueDate.getFullYear() - today.getFullYear()) * 12 + (dueDate.getMonth() - today.getMonth());
+    // 2. الحمل (حساب الأشهر وحفظها في نيون)
+    if (finalCategory === 'pregnancy' && dueDate) {
+      const start = new Date();
+      const end = new Date(dueDate);
+      let insertedIds = [];
+      
+      // حساب فرق الأشهر
+      let monthsCount = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+      
+      for (let i = 0; i <= monthsCount; i++) {
+        const monthlySchedule = new Date(start);
+        monthlySchedule.setMonth(start.getMonth() + i);
         
-        if (monthsRemaining > 0) {
-          let insertedIds = [];
-          for (let i = 1; i <= monthsRemaining; i++) {
-            const scheduledMonth = new Date(today);
-            scheduledMonth.setMonth(today.getMonth() + i);
-            const values = [commonData.user, fcmToken, 'pregnancy', "رحلة الأمومة ✨", `شهر جديد في رحلتكِ المباركة. رقة تتابع معكِ وبجواركِ.`, isSentStatus, scheduledMonth, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
-            const resDb = await pool.query(query, values);
-            insertedIds.push(resDb.rows[0].id);
-          }
-          return res.status(200).json({ success: true, db_ids: insertedIds });
+        // التأكد من عدم تجاوز تاريخ الولادة
+        if (monthlySchedule <= end) {
+          const values = [
+            commonData.user, fcmToken, 'pregnancy', 
+            "رحلة الأمومة ✨", 
+            `تذكير الشهر ${i === 0 ? 'الحالي' : i}: رقة معكِ لمتابعة نمو جنينكِ وتطورات حملكِ.`, 
+            isSentStatus, monthlySchedule, finalStartDate, end, 
+            commonData.loc_lng, commonData.loc_lat, commonData.extra
+          ];
+          const resDb = await pool.query(query, values);
+          insertedIds.push(resDb.rows[0].id);
         }
       }
-      finalTitle = "رحلة الأمومة ✨";
+      return res.status(200).json({ success: true, message: "Pregnancy schedule created", db_ids: insertedIds });
     }
 
-    else if (finalCategory === 'medical') { finalTitle = "موعدكِ الطبي 🩺"; customSchedule = next_appointment ? new Date(next_appointment) : customSchedule; }
-    else if (finalCategory === 'motherhood') { finalTitle = "أنتِ أم رائعة 💖"; }
-    else if (finalCategory === 'mood') { finalTitle = "رقة تهتم بقلبكِ ✨"; }
-    else if (finalCategory === 'fiqh') { finalTitle = "رفيقتكِ الفقهية 📖"; }
-    else if (finalCategory === 'fitness') { finalTitle = "وقت النشاط 🏃‍♀️"; }
-    else if (finalCategory === 'intimacy') { finalTitle = "لحظات الود ❤️"; }
+    // 3. المتابعة الطبية
+    if (finalCategory === 'medical') {
+      finalTitle = "موعدكِ الطبي 🩺";
+      finalBody = "حفاظاً على صحتكِ، نذكركِ بموعد الاستشارة الطبية اليوم. دمتِ بخير.";
+      customSchedule = next_appointment ? new Date(next_appointment) : customSchedule;
+    } 
+    // 4. الدورة الشهرية (منطق التقويم القمري)
+    else if (finalCategory === 'period') {
+      finalTitle = "رقة تذكركِ 🌸";
+      finalBody = "سيدتي، اقترب موعد أيامكِ الهادئة حسب تقويمكِ القمري.. كوني مستعدة لتدليل نفسكِ.";
+      // ملاحظة: الحساب القمري يعتمد على الفرق بين الدورة السابقة (29.5 يوم وسطياً)
+    }
+    // 5. الأمومة
+    else if (finalCategory === 'motherhood') {
+      finalTitle = "أنتِ أم رائعة 💖";
+      finalBody = "تذكير بمهمة طفلكِ القادمة.. اهتمامكِ يصنع مستقبله، ورقة تهتم بكِ.";
+    }
+    // 6. الحالة النفسية
+    else if (finalCategory === 'mood') {
+      finalTitle = "رقة تهتم بقلبكِ ✨";
+      finalBody = "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير.";
+    }
+    // 7. الفقه
+    else if (finalCategory === 'fiqh') {
+      finalTitle = "رفيقتكِ الفقهية 📖";
+      finalBody = "تذكير بالأحكام الخاصة بدورتكِ الحالية؛ لتمارسي عباداتكِ بطمأنينة ويقين.";
+    }
+    // 8. الرياضة
+    else if (finalCategory === 'fitness') {
+      finalTitle = "وقت النشاط 🏃‍♀️";
+      finalBody = "حركتكِ اليوم هي استثمار في صحتكِ.. تمرين بسيط سيجعلكِ تشعرين بالانتعاش.";
+    }
+    // 9. العلاقة الزوجية
+    else if (finalCategory === 'intimacy') {
+      finalTitle = "لحظات الود ❤️";
+      finalBody = "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب.";
+    }
 
+    // إدخال السجل النهائي للحالات العامة
     const values = [
       commonData.user, fcmToken, finalCategory, 
       finalTitle, finalBody, isSentStatus, 
@@ -160,12 +159,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       category_saved: finalCategory, 
-      db_id: result.rows[0].id,
-      lunar_date: nextPeriodDate ? lunarFormatter.format(nextPeriodDate) : null
+      db_id: result.rows[0].id 
     });
 
   } catch (error) {
-    console.error('❌ Neon Error:', error.message);
+    console.error('❌ Neon Insertion Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
