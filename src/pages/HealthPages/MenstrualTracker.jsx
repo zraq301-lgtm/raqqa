@@ -87,6 +87,45 @@ const MenstrualTracker = () => {
     localStorage.setItem('saved_notes', JSON.stringify(savedNotes));
   }, [data, chatHistory, savedNotes]);
 
+  // --- دالة المزامنة والحفظ (حسب طلبك) ---
+  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    const savedToken = localStorage.getItem('fcm_token');
+    const scheduledDate = new Date();
+    scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
+
+    try {
+      await CapacitorHttp.post({
+        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        headers: { 'Content-Type': 'application/json' },
+        data: {
+          fcmToken: savedToken || undefined,
+          user_id: 1,
+          category: 'medical_report',
+          title: `تقرير جديد: ${categoryTitle} 🩺`,
+          body: currentAnalysis.substring(0, 100) + "...",
+          scheduled_for: scheduledDate.toISOString(),
+          note: `تحليل آلي لـ ${categoryTitle}`
+        }
+      });
+
+      if (savedToken) {
+        await CapacitorHttp.post({
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تنبيه طبي جديد 🔔',
+            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`,
+            data: { type: 'medical_report' }
+          }
+        });
+      }
+      console.log("تم الحفظ والإرسال بنجاح ✅");
+    } catch (err) {
+      console.error("خطأ في عملية المزامنة:", err);
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
     const userMsg = { id: Date.now(), role: 'user', content: chatInput, time: new Date().toLocaleTimeString('ar-EG') };
@@ -103,6 +142,10 @@ const MenstrualTracker = () => {
       const responseText = response.data.reply || response.data.content || response.data.message;
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
+      
+      // حفظ التقرير تلقائياً عند استلام رد الذكاء الاصطناعي
+      await saveAndNotify("استشارة فورية", responseText);
+
     } catch (err) {
       console.error("AI Error", err);
     } finally {
@@ -140,19 +183,21 @@ const MenstrualTracker = () => {
     };
     setPrediction(calc);
 
-    // منطق الإشعارات والحفظ في نيون (بدون تغيير)
     try {
-       const savedToken = localStorage.getItem('fcm_token');
-       await CapacitorHttp.post({
-         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-         headers: { 'Content-Type': 'application/json' },
-         data: {
-           user_id: 1, category: 'period', title: `تحديث رقة: الدورة القادمة 🌸`,
-           body: `الموعد المتوقع: ${calc.nextDate}`,
-           scheduled_for: new Date().toISOString(),
-           payload: { ...data, ...calc }
-         }
-       });
+      const summary = JSON.stringify(data);
+      const response = await CapacitorHttp.post({
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: `حللي بيانات الدورة الشهرية بدقة وقدمي تقرير طبي متخصص: ${summary}` }
+      });
+      const responseText = response.data.reply || response.data.content || response.data.message;
+      
+      const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
+      setChatHistory(prev => [...prev, aiMsg]);
+
+      // تنفيذ الحفظ والمزامنة مع نيون وإرسال إشعار
+      await saveAndNotify("تحليل الدورة الشهرية", responseText);
+
     } catch (e) { console.error(e); }
 
     setLoading(false);
@@ -208,7 +253,6 @@ const MenstrualTracker = () => {
       {showSavedList && (
         <div style={styles.card}>
           <h4 style={{ color: '#E91E63' }}>الردود المحفوظة</h4>
-          {savedNotes.length === 0 && <p style={{ fontSize: '12px', color: '#999' }}>لا توجد ردود محفوظة بعد.</p>}
           {savedNotes.map(n => (
             <div key={n.id} style={{ padding: '10px', borderBottom: '1px solid #eee', fontSize: '12px' }}>
               {n.content.substring(0, 50)}...
