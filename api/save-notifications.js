@@ -20,112 +20,141 @@ export default async function handler(req, res) {
 
   let { 
     fcmToken, user_id, category, title, body, 
-    scheduled_for, next_appointment, expected_due_date 
+    scheduled_for, startDate, endDate,
+    milk_amount, baby_status, latitude, longitude,
+    next_appointment, current_visit_date,
+    expected_due_date 
   } = req.body;
 
   try {
-    const isSentStatus = false;
-    let notificationsToInsert = [];
+    const now = new Date();
+    const isSentStatus = false; 
 
-    // 1. تحديد التاريخ الأساسي القادم من الواجهة
-    let baseDate = scheduled_for ? new Date(scheduled_for) : new Date();
+    // --- توحيد المسميات لتظهر في الداتابيز بالعربي كما في الصور ---
+    const categoryMapping = {
+      'menstrual_cycle': 'حيض',
+      'pregnancy_tracking': 'حمل',
+      'breastfeeding_tracking': 'رضاعة',
+      'child_care': 'أمومة',
+      'medical_followup': 'طبيب',
+      'mental_health': 'مشاعر',
+      'religious_guidance': 'فقه',
+      'physical_fitness': 'رشاقة',
+      'marriage_consultancy': 'حميمية'
+    };
 
-    // 2. منطق المعالجة حسب التصنيف (Category)
-    switch (category) {
-      case 'الحمل':
-        if (expected_due_date) {
-          const dueDate = new Date(expected_due_date);
-          let tempDate = new Date(); // يبدأ من تاريخ اليوم
-          
-          // إضافة إشعار لكل شهر حتى تاريخ الولادة
-          while (tempDate < dueDate) {
-            tempDate.setMonth(tempDate.getMonth() + 1);
-            if (tempDate <= dueDate) {
-              notificationsToInsert.push({
-                category: 'الحمل',
-                date: new Date(tempDate),
-                title: "رحلة الأمومة ✨",
-                body: "تذكير شهري لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة."
-              });
-            }
-          }
-        } else {
-          // إذا لم يرسل موعد ولادة، نستخدم التاريخ المرسل العادي
-          notificationsToInsert.push({ category: 'الحمل', date: baseDate, title: title || "الحمل", body: body });
-        }
-        break;
+    const finalCategory = categoryMapping[category] || category;
 
-      case 'موعد الطبيب':
-        let doctorDate = next_appointment ? new Date(next_appointment) : baseDate;
-        // تنبيه قبل الموعد بيومين
-        doctorDate.setDate(doctorDate.getDate() - 2);
-        notificationsToInsert.push({ category: 'موعد الطبيب', date: doctorDate, title: "موعدكِ الطبي 🩺", body: "نذكركِ بموعدكِ الطبي بعد يومين من الآن." });
-        break;
-
-      case 'الرضاعة':
-        let nurseDate = new Date();
-        nurseDate.setHours(nurseDate.getHours() + 1); // ساعة متقدمة
-        notificationsToInsert.push({ category: 'الرضاعة', date: nurseDate, title: "وقت الرضاعة 🤱", body: "تذكير برضعة طفلكِ الآن." });
-        break;
-
-      case 'الأمومة':
-      case 'الفقة':
-      case 'المشاعر النفسية':
-        let afterTwoDays = new Date();
-        afterTwoDays.setDate(afterTwoDays.getDate() + 2);
-        notificationsToInsert.push({ category: category, date: afterTwoDays, title: title || category, body: body });
-        break;
-
-      case 'العلاقات الحميمية':
-        let afterThreeDays = new Date();
-        afterThreeDays.setDate(afterThreeDays.getDate() + 3);
-        notificationsToInsert.push({ category: category, date: afterThreeDays, title: title || category, body: body });
-        break;
-
-      case 'الرشاقة':
-        // نستخدم التاريخ والوقت المرسل للرشاقة بالضبط
-        notificationsToInsert.push({ category: 'الرشاقة', date: baseDate, title: "وقت النشاط 🏃‍♀️", body: "تمرين بسيط سيجعلكِ تشعرين بالانتعاش." });
-        break;
-
-      case 'الحيض':
-      default:
-        // للحيض وأي تصنيف آخر: نستخدم التاريخ المرسل من الواجهة كما هو بالضبط
-        notificationsToInsert.push({ 
-          category: category || 'عام', 
-          date: baseDate, 
-          title: title || "تنبيه رقة", 
-          body: body || "لديكِ موعد مسجل الآن" 
-        });
-        break;
-    }
-
-    // 3. عملية الإدخال في قاعدة البيانات
     const query = `
-      INSERT INTO notifications (user_id, fcm_token, category, title, body, is_sent, scheduled_for)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO notifications (
+        user_id, fcm_token, category, title, body, is_sent, 
+        scheduled_for, period_start_date, period_end_date, 
+        location, extra_data
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 
+              ST_SetSRID(ST_MakePoint($10, $11), 4326), $12) 
       RETURNING id
     `;
 
-    const userIdInt = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
-    let insertedIds = [];
+    const commonData = {
+      user: isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
+      loc_lng: longitude || 0,
+      loc_lat: latitude || 0,
+      extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date, expected_due_date })
+    };
 
-    for (const note of notificationsToInsert) {
-      const resDb = await pool.query(query, [
-        userIdInt, 
-        fcmToken, 
-        note.category, 
-        note.title, 
-        note.body, 
-        isSentStatus, 
-        note.date
-      ]);
-      insertedIds.push(resDb.rows[0].id);
+    let finalTitle = title;
+    let finalBody = body;
+    let customSchedule = new Date();
+
+    // --- تنفيذ المنطق الزمني لكل تصنيف ---
+
+    // 1. الحيض (التاريخ القادم كما هو من الواجهة)
+    if (finalCategory === 'حيض') {
+      customSchedule = startDate ? new Date(startDate) : now;
+      finalTitle = "رقة تذكركِ 🌸";
+      finalBody = "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ.";
     }
 
+    // 2. الحمل (جدولة شهرية حتى الولادة)
+    else if (finalCategory === 'حمل') {
+      if (expected_due_date) {
+        const dueDate = new Date(expected_due_date);
+        let monthsRemaining = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
+        
+        let insertedIds = [];
+        for (let i = 0; i <= monthsRemaining; i++) {
+          const scheduledMonth = new Date();
+          scheduledMonth.setMonth(now.getMonth() + i);
+          
+          const mTitle = "رحلة الأمومة ✨";
+          const mBody = i === monthsRemaining ? "اقترب موعد اللقاء المنتظر! ولادة مباركة." : `رقة تذكرك بمتابعة شهرك الجديد من الحمل.`;
+          
+          const values = [commonData.user, fcmToken, 'حمل', mTitle, mBody, isSentStatus, scheduledMonth, startDate, endDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
+          const resDb = await pool.query(query, values);
+          insertedIds.push(resDb.rows[0].id);
+        }
+        return res.status(200).json({ success: true, message: "تمت جدولة شهور الحمل", db_ids: insertedIds });
+      }
+    }
+
+    // 3. الرضاعة (ساعة متقدمة)
+    else if (finalCategory === 'رضاعة') {
+      customSchedule = new Date(now.getTime() + (1 * 60 * 60 * 1000));
+      finalTitle = "لحظات الارتباط 🤱";
+      finalBody = "تذكير بموعد رضعة طفلكِ القادمة.";
+    }
+
+    // 4. الأمومة (بعد يومين)
+    else if (finalCategory === 'أمومة') {
+      customSchedule = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000));
+      finalTitle = "أنتِ أم رائعة 💖";
+      finalBody = "تذكير بمهمة طفلكِ القادمة بعد يومين.";
+    }
+
+    // 5. الطبيب (موعد الطبيب - يومين)
+    else if (finalCategory === 'طبيب') {
+      const docDate = next_appointment ? new Date(next_appointment) : now;
+      customSchedule = new Date(docDate.getTime() - (2 * 24 * 60 * 60 * 1000));
+      finalTitle = "موعدكِ الطبي القادم 🩺";
+      finalBody = "تذكير: موعد طبيبكِ بعد يومين، كوني على استعداد.";
+    }
+
+    // 6. الرشاقة (توقيت بالساعة)
+    else if (finalCategory === 'رشاقة') {
+      customSchedule = new Date(now.getTime() + (3 * 60 * 60 * 1000)); // مثال بعد 3 ساعات
+      finalTitle = "وقت النشاط 🏃‍♀️";
+      finalBody = "حان وقت التمرين البسيط للحفاظ على رشقتكِ.";
+    }
+
+    // 7. الفقه (بعد يومين)
+    else if (finalCategory === 'فقه') {
+      customSchedule = new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000));
+      finalTitle = "رفيقتكِ الفقهية 📖";
+      finalBody = "تذكير بمراجعة الأحكام الخاصة بكِ.";
+    }
+
+    // 8. الحميمية و المشاعر (بعد ثلاثة أيام)
+    else if (finalCategory === 'حميمية' || finalCategory === 'مشاعر') {
+      customSchedule = new Date(now.getTime() + (3 * 24 * 60 * 60 * 1000));
+      finalTitle = finalCategory === 'حميمية' ? "لحظات الود ❤️" : "رقة تهتم بقلبكِ ✨";
+      finalBody = finalCategory === 'حميمية' ? "تذكير بتعزيز الود مع شريك حياتكِ." : "خذي وقتاً لنفسكِ، نحن نهتم بمشاعركِ.";
+    }
+
+    // الإدخال النهائي في قاعدة البيانات
+    const values = [
+      commonData.user, fcmToken, finalCategory, 
+      finalTitle, finalBody, isSentStatus, 
+      customSchedule, startDate, endDate, 
+      commonData.loc_lng, commonData.loc_lat, commonData.extra
+    ];
+
+    const result = await pool.query(query, values);
     return res.status(200).json({ 
       success: true, 
-      message: "تم الحفظ وتصحيح التصنيفات والتواريخ", 
-      inserted_ids: insertedIds 
+      category_saved: finalCategory, 
+      scheduled_at: customSchedule,
+      db_id: result.rows[0].id 
     });
 
   } catch (error) {
