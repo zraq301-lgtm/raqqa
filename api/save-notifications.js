@@ -21,158 +21,121 @@ export default async function handler(req, res) {
   let { 
     fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
-    milk_amount, baby_status, latitude, longitude,
-    next_appointment, current_visit_date,
-    expected_due_date // استلام موعد الولادة المتوقع من الواجهة
+    next_appointment, expected_due_date, fitness_time
   } = req.body;
 
   try {
-    const finalStartDate = startDate ? new Date(startDate) : new Date();
-    const finalEndDate = endDate ? new Date(endDate) : null;
-    const isSentStatus = false; 
+    const now = new Date();
+    const isSentStatus = false;
 
-    // --- منطق الفرز والتحويل ليتناسب مع عمود category في الصورة ---
-    const categoryMapping = {
-      'menstrual_cycle': 'period',
-      'pregnancy_tracking': 'pregnancy',
-      'breastfeeding_tracking': 'breastfeeding', // تحويل التمريض للرضاعة
-      'child_care': 'motherhood',
-      'medical_followup': 'medical',
-      'mental_health': 'mood',
-      'religious_guidance': 'fiqh',
-      'physical_fitness': 'fitness',
-      'marriage_consultancy': 'intimacy'
-    };
+    // --- منطق التصنيف والجدولة الزمنية ---
+    let finalCategory = category;
+    let finalScheduledDate = scheduled_for ? new Date(scheduled_for) : new Date();
+    let notificationsToInsert = []; // مصفوفة لتخزين عدة إشعارات إذا لزم الأمر (مثل الحمل)
 
-    // القيمة التي ستخزن في عمود category بالداتا بيز
-    const finalCategory = categoryMapping[category] || category || 'general';
+    switch (category) {
+      case 'الحيض':
+        // يسجل موعد الدورة القادمة (يفترض أنه مرسل في scheduled_for)
+        finalScheduledDate = new Date(scheduled_for);
+        break;
 
+      case 'الحمل':
+        if (expected_due_date) {
+          const dueDate = new Date(expected_due_date);
+          let tempDate = new Date();
+          // إضافة إشعار لكل شهر من الآن وحتى تاريخ الولادة
+          while (tempDate < dueDate) {
+            tempDate.setMonth(tempDate.getMonth() + 1);
+            if (tempDate <= dueDate) {
+              notificationsToInsert.push({
+                date: new Date(tempDate),
+                title: "رحلة الحمل 🤰",
+                body: "تذكير شهري: اقترب موعد لقاء طفلكِ، اعتني بنفسكِ جيداً."
+              });
+            }
+          }
+        }
+        break;
+
+      case 'الرضاعة':
+        // تاريخ اليوم ولكن بساعة متقدمة (مثلاً بعد ساعة من الآن)
+        finalScheduledDate = new Date();
+        finalScheduledDate.setHours(finalScheduledDate.getHours() + 1);
+        break;
+
+      case 'الأمومة':
+        // بعد يومان من التاريخ الحالي
+        finalScheduledDate = new Date();
+        finalScheduledDate.setDate(finalScheduledDate.getDate() + 2);
+        break;
+
+      case 'موعد الطبيب':
+        // موعد الطبيب القادم ناقص يومان لتسهيل التنبيه المبكر
+        if (next_appointment) {
+          finalScheduledDate = new Date(next_appointment);
+          finalScheduledDate.setDate(finalScheduledDate.getDate() - 2);
+        }
+        break;
+
+      case 'الرشاقة':
+        // توقيتات بالساعة (إذا أرسلت الواجهة ساعة معينة اليوم)
+        if (fitness_time) {
+          const [hours, minutes] = fitness_time.split(':');
+          finalScheduledDate = new Date();
+          finalScheduledDate.setHours(parseInt(hours), parseInt(minutes), 0);
+        }
+        break;
+
+      case 'الفقة':
+      case 'المشاعر النفسية':
+        // تاريخ بعد يومان
+        finalScheduledDate = new Date();
+        finalScheduledDate.setDate(finalScheduledDate.getDate() + 2);
+        break;
+
+      case 'العلاقات الحميمية':
+        // بعد ثلاثة أيام
+        finalScheduledDate = new Date();
+        finalScheduledDate.setDate(finalScheduledDate.getDate() + 3);
+        break;
+
+      default:
+        finalScheduledDate = scheduled_for ? new Date(scheduled_for) : new Date();
+    }
+
+    // تجهيز الاستعلام
     const query = `
-      INSERT INTO notifications (
-        user_id, fcm_token, category, title, body, is_sent, 
-        scheduled_for, period_start_date, period_end_date, 
-        location, extra_data
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 
-              ST_SetSRID(ST_MakePoint($10, $11), 4326), $12) 
+      INSERT INTO notifications (user_id, fcm_token, category, title, body, is_sent, scheduled_for, extra_data)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `;
 
-    const commonData = {
-      user: isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
-      loc_lng: longitude || 0,
-      loc_lat: latitude || 0,
-      extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date, expected_due_date })
-    };
+    const userIdInt = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
+    const extraData = JSON.stringify({ next_appointment, expected_due_date, original_category: category });
 
-    // --- البدء في تخصيص البيانات بناءً على الـ category الموحد ---
-    
-    let finalTitle = title;
-    let finalBody = body;
-    let customSchedule = scheduled_for ? new Date(scheduled_for) : finalStartDate;
+    let insertedIds = [];
 
-    // 1. الرضاعة
-    if (finalCategory === 'breastfeeding') {
-      let insertedIds = [];
-      for (let i = 0; i < 3; i++) {
-        const breastfeedingTime = new Date(customSchedule);
-        breastfeedingTime.setHours(customSchedule.getHours() + (i * 4)); 
-        const values = [commonData.user, fcmToken, 'breastfeeding', "لحظات الارتباط 🤱", `وقت الرضاعة هو وقت الحب؛ تذكير برضعة طفلكِ رقم ${i+1}. رقة تهتم بكِ.`, isSentStatus, breastfeedingTime, finalStartDate, finalEndDate, commonData.loc_lng, commonData.loc_lat, commonData.extra];
-        const resDb = await pool.query(query, values);
+    // تنفيذ الإدخال
+    if (notificationsToInsert.length > 0) {
+      // حالة الحمل (عدة إشعارات)
+      for (const note of notificationsToInsert) {
+        const resDb = await pool.query(query, [userIdInt, fcmToken, category, note.title, note.body, isSentStatus, note.date, extraData]);
         insertedIds.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, db_ids: insertedIds });
+    } else {
+      // الحالات العادية (إشعار واحد)
+      const resDb = await pool.query(query, [userIdInt, fcmToken, category, title || category, body || `تذكير بخصوص ${category}`, isSentStatus, finalScheduledDate, extraData]);
+      insertedIds.push(resDb.rows[0].id);
     }
 
-    // 2. المتابعة الطبية
-    if (finalCategory === 'medical') {
-      finalTitle = "موعدكِ الطبي 🩺";
-      finalBody = "حفاظاً على صحتكِ، نذكركِ بموعد الاستشارة الطبية اليوم. دمتِ بخير.";
-      customSchedule = next_appointment ? new Date(next_appointment) : customSchedule;
-    } 
-    // 3. الدورة الشهرية
-    else if (finalCategory === 'period') {
-      finalTitle = "رقة تذكركِ 🌸";
-      finalBody = "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة.";
-    }
-    // 4. الحمل (تم تعديله ليحسب الأشهر المتبقية)
-    else if (finalCategory === 'pregnancy') {
-      if (expected_due_date) {
-        const today = new Date();
-        const dueDate = new Date(expected_due_date);
-        
-        // حساب فرق الأشهر
-        let monthsRemaining = (dueDate.getFullYear() - today.getFullYear()) * 12 + (dueDate.getMonth() - today.getMonth());
-        
-        if (monthsRemaining > 0) {
-          let insertedIds = [];
-          for (let i = 1; i <= monthsRemaining; i++) {
-            const scheduledMonth = new Date(today);
-            scheduledMonth.setMonth(today.getMonth() + i);
-            
-            const monthTitle = "رحلة الأمومة ✨";
-            const monthBody = `أنتِ الآن في شهر جديد من رحلتكِ الرائعة. رقة تذكركِ بمتابعة نمو جنينكِ واحتياجاتكِ الصحية.`;
-            
-            const values = [
-              commonData.user, fcmToken, 'pregnancy', 
-              monthTitle, monthBody, isSentStatus, 
-              scheduledMonth, finalStartDate, finalEndDate, 
-              commonData.loc_lng, commonData.loc_lat, commonData.extra
-            ];
-            
-            const resDb = await pool.query(query, values);
-            insertedIds.push(resDb.rows[0].id);
-          }
-          return res.status(200).json({ success: true, message: "Pregnancy schedule created", db_ids: insertedIds });
-        }
-      }
-      // الحالة الافتراضية للحمل إذا لم يوجد تاريخ أو الفرق صفر
-      finalTitle = "رحلة الأمومة ✨";
-      finalBody = "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة.";
-    }
-    // 5. الأمومة
-    else if (finalCategory === 'motherhood') {
-      finalTitle = "أنتِ أم رائعة 💖";
-      finalBody = "تذكير بمهمة طفلكِ القادمة.. اهتمامكِ يصنع مستقبله، ورقة تهتم بكِ.";
-    }
-    // 6. الحالة النفسية
-    else if (finalCategory === 'mood') {
-      finalTitle = "رقة تهتم بقلبكِ ✨";
-      finalBody = "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير.";
-    }
-    // 7. الفقه
-    else if (finalCategory === 'fiqh') {
-      finalTitle = "رفيقتكِ الفقهية 📖";
-      finalBody = "تذكير بالأحكام الخاصة بدورتكِ الحالية؛ لتمارسي عباداتكِ بطمأنينة ويقين.";
-    }
-    // 8. الرياضة
-    else if (finalCategory === 'fitness') {
-      finalTitle = "وقت النشاط 🏃‍♀️";
-      finalBody = "حركتكِ اليوم هي استثمار في صحتكِ.. تمرين بسيط سيجعلكِ تشعرين بالانتعاش.";
-    }
-    // 9. العلاقة الزوجية
-    else if (finalCategory === 'intimacy') {
-      finalTitle = "لحظات الود ❤️";
-      finalBody = "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب.";
-    }
-
-    // إدخال السجل النهائي في قاعدة البيانات للحالات الأخرى
-    const values = [
-      commonData.user, fcmToken, finalCategory, 
-      finalTitle, finalBody, isSentStatus, 
-      customSchedule, finalStartDate, finalEndDate, 
-      commonData.loc_lng, commonData.loc_lat, commonData.extra
-    ];
-
-    const result = await pool.query(query, values);
     return res.status(200).json({ 
       success: true, 
-      category_saved: finalCategory, 
-      db_id: result.rows[0].id 
+      message: "تم حفظ البيانات بنجاح", 
+      inserted_ids: insertedIds 
     });
 
   } catch (error) {
-    console.error('❌ Neon Insertion Error:', error.message);
+    console.error('❌ Database Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
