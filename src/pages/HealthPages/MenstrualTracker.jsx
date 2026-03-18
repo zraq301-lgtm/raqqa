@@ -72,7 +72,6 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
 
 const MenstrualTracker = () => {
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('menstrual_data')) || {});
-  // التعديل هنا: استعادة التوقعات المحفوظة عند التشغيل
   const [prediction, setPrediction] = useState(() => JSON.parse(localStorage.getItem('last_prediction')) || null);
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -86,7 +85,6 @@ const MenstrualTracker = () => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
     localStorage.setItem('chat_history', JSON.stringify(chatHistory));
     localStorage.setItem('saved_notes', JSON.stringify(savedNotes));
-    // حفظ التوقعات في التخزين المحلي لضمان ثباتها
     if (prediction) {
       localStorage.setItem('last_prediction', JSON.stringify(prediction));
     }
@@ -97,19 +95,23 @@ const MenstrualTracker = () => {
     const scheduledDate = new Date();
     scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
 
+    // استخراج البيانات الصحية بدقة لإرسالها لـ نيون
+    const healthPayload = {
+      fcmToken: savedToken || undefined,
+      user_id: 1,
+      category: 'medical_report',
+      title: `تقرير جديد: ${categoryTitle} 🩺`,
+      body: currentAnalysis.substring(0, 100) + "...",
+      scheduled_for: scheduledDate.toISOString(),
+      // إضافة البيانات الصحية هنا في حقل الملاحظات أو كحقول إضافية إذا كان الـ API يدعمها
+      note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${prediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${prediction?.fertility || 'غير محدد'}`
+    };
+
     try {
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'medical_report',
-          title: `تقرير جديد: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: scheduledDate.toISOString(),
-          note: `تحليل آلي لـ ${categoryTitle}`
-        }
+        data: healthPayload
       });
 
       if (savedToken) {
@@ -198,6 +200,7 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
+      // استدعاء الحفظ بعد تحديث الـ prediction لضمان إرسال المواعيد الجديدة
       await saveAndNotify("تحليل الدورة الشهرية", responseText);
 
     } catch (e) { console.error(e); }
