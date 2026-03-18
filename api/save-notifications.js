@@ -22,7 +22,8 @@ export default async function handler(req, res) {
     fcmToken, user_id, category, title, body, 
     scheduled_for, startDate, endDate,
     milk_amount, baby_status, latitude, longitude,
-    next_appointment, current_visit_date 
+    next_appointment, current_visit_date,
+    expected_due_date // استلام موعد الولادة المتوقع من الواجهة
   } = req.body;
 
   try {
@@ -61,7 +62,7 @@ export default async function handler(req, res) {
       user: isNaN(parseInt(user_id)) ? 1 : parseInt(user_id),
       loc_lng: longitude || 0,
       loc_lat: latitude || 0,
-      extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date })
+      extra: JSON.stringify({ milk_amount, baby_status, next_appointment, current_visit_date, expected_due_date })
     };
 
     // --- البدء في تخصيص البيانات بناءً على الـ category الموحد ---
@@ -70,7 +71,7 @@ export default async function handler(req, res) {
     let finalBody = body;
     let customSchedule = scheduled_for ? new Date(scheduled_for) : finalStartDate;
 
-    // 1. الرضاعة (التي كانت تمريض سابقاً)
+    // 1. الرضاعة
     if (finalCategory === 'breastfeeding') {
       let insertedIds = [];
       for (let i = 0; i < 3; i++) {
@@ -94,8 +95,38 @@ export default async function handler(req, res) {
       finalTitle = "رقة تذكركِ 🌸";
       finalBody = "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة.";
     }
-    // 4. الحمل
+    // 4. الحمل (تم تعديله ليحسب الأشهر المتبقية)
     else if (finalCategory === 'pregnancy') {
+      if (expected_due_date) {
+        const today = new Date();
+        const dueDate = new Date(expected_due_date);
+        
+        // حساب فرق الأشهر
+        let monthsRemaining = (dueDate.getFullYear() - today.getFullYear()) * 12 + (dueDate.getMonth() - today.getMonth());
+        
+        if (monthsRemaining > 0) {
+          let insertedIds = [];
+          for (let i = 1; i <= monthsRemaining; i++) {
+            const scheduledMonth = new Date(today);
+            scheduledMonth.setMonth(today.getMonth() + i);
+            
+            const monthTitle = "رحلة الأمومة ✨";
+            const monthBody = `أنتِ الآن في شهر جديد من رحلتكِ الرائعة. رقة تذكركِ بمتابعة نمو جنينكِ واحتياجاتكِ الصحية.`;
+            
+            const values = [
+              commonData.user, fcmToken, 'pregnancy', 
+              monthTitle, monthBody, isSentStatus, 
+              scheduledMonth, finalStartDate, finalEndDate, 
+              commonData.loc_lng, commonData.loc_lat, commonData.extra
+            ];
+            
+            const resDb = await pool.query(query, values);
+            insertedIds.push(resDb.rows[0].id);
+          }
+          return res.status(200).json({ success: true, message: "Pregnancy schedule created", db_ids: insertedIds });
+        }
+      }
+      // الحالة الافتراضية للحمل إذا لم يوجد تاريخ أو الفرق صفر
       finalTitle = "رحلة الأمومة ✨";
       finalBody = "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة.";
     }
@@ -125,7 +156,7 @@ export default async function handler(req, res) {
       finalBody = "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب.";
     }
 
-    // إدخال السجل النهائي في قاعدة البيانات
+    // إدخال السجل النهائي في قاعدة البيانات للحالات الأخرى
     const values = [
       commonData.user, fcmToken, finalCategory, 
       finalTitle, finalBody, isSentStatus, 
