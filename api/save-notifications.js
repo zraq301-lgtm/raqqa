@@ -20,122 +20,116 @@ export default async function handler(req, res) {
 
   let { 
     fcmToken, user_id, category, title, body, 
-    scheduled_for, startDate, endDate,
-    next_appointment, expected_due_date, fitness_time
+    scheduled_for, next_appointment, expected_due_date 
   } = req.body;
 
   try {
-    const now = new Date();
     const isSentStatus = false;
+    let notificationsToInsert = [];
 
-    // --- منطق التصنيف والجدولة الزمنية ---
-    let finalCategory = category;
-    let finalScheduledDate = scheduled_for ? new Date(scheduled_for) : new Date();
-    let notificationsToInsert = []; // مصفوفة لتخزين عدة إشعارات إذا لزم الأمر (مثل الحمل)
+    // 1. تحديد التاريخ الأساسي القادم من الواجهة
+    let baseDate = scheduled_for ? new Date(scheduled_for) : new Date();
 
+    // 2. منطق المعالجة حسب التصنيف (Category)
     switch (category) {
-      case 'الحيض':
-        // يسجل موعد الدورة القادمة (يفترض أنه مرسل في scheduled_for)
-        finalScheduledDate = new Date(scheduled_for);
-        break;
-
       case 'الحمل':
         if (expected_due_date) {
           const dueDate = new Date(expected_due_date);
-          let tempDate = new Date();
-          // إضافة إشعار لكل شهر من الآن وحتى تاريخ الولادة
+          let tempDate = new Date(); // يبدأ من تاريخ اليوم
+          
+          // إضافة إشعار لكل شهر حتى تاريخ الولادة
           while (tempDate < dueDate) {
             tempDate.setMonth(tempDate.getMonth() + 1);
             if (tempDate <= dueDate) {
               notificationsToInsert.push({
+                category: 'الحمل',
                 date: new Date(tempDate),
-                title: "رحلة الحمل 🤰",
-                body: "تذكير شهري: اقترب موعد لقاء طفلكِ، اعتني بنفسكِ جيداً."
+                title: "رحلة الأمومة ✨",
+                body: "تذكير شهري لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة."
               });
             }
           }
+        } else {
+          // إذا لم يرسل موعد ولادة، نستخدم التاريخ المرسل العادي
+          notificationsToInsert.push({ category: 'الحمل', date: baseDate, title: title || "الحمل", body: body });
         }
-        break;
-
-      case 'الرضاعة':
-        // تاريخ اليوم ولكن بساعة متقدمة (مثلاً بعد ساعة من الآن)
-        finalScheduledDate = new Date();
-        finalScheduledDate.setHours(finalScheduledDate.getHours() + 1);
-        break;
-
-      case 'الأمومة':
-        // بعد يومان من التاريخ الحالي
-        finalScheduledDate = new Date();
-        finalScheduledDate.setDate(finalScheduledDate.getDate() + 2);
         break;
 
       case 'موعد الطبيب':
-        // موعد الطبيب القادم ناقص يومان لتسهيل التنبيه المبكر
-        if (next_appointment) {
-          finalScheduledDate = new Date(next_appointment);
-          finalScheduledDate.setDate(finalScheduledDate.getDate() - 2);
-        }
+        let doctorDate = next_appointment ? new Date(next_appointment) : baseDate;
+        // تنبيه قبل الموعد بيومين
+        doctorDate.setDate(doctorDate.getDate() - 2);
+        notificationsToInsert.push({ category: 'موعد الطبيب', date: doctorDate, title: "موعدكِ الطبي 🩺", body: "نذكركِ بموعدكِ الطبي بعد يومين من الآن." });
         break;
 
-      case 'الرشاقة':
-        // توقيتات بالساعة (إذا أرسلت الواجهة ساعة معينة اليوم)
-        if (fitness_time) {
-          const [hours, minutes] = fitness_time.split(':');
-          finalScheduledDate = new Date();
-          finalScheduledDate.setHours(parseInt(hours), parseInt(minutes), 0);
-        }
+      case 'الرضاعة':
+        let nurseDate = new Date();
+        nurseDate.setHours(nurseDate.getHours() + 1); // ساعة متقدمة
+        notificationsToInsert.push({ category: 'الرضاعة', date: nurseDate, title: "وقت الرضاعة 🤱", body: "تذكير برضعة طفلكِ الآن." });
         break;
 
+      case 'الأمومة':
       case 'الفقة':
       case 'المشاعر النفسية':
-        // تاريخ بعد يومان
-        finalScheduledDate = new Date();
-        finalScheduledDate.setDate(finalScheduledDate.getDate() + 2);
+        let afterTwoDays = new Date();
+        afterTwoDays.setDate(afterTwoDays.getDate() + 2);
+        notificationsToInsert.push({ category: category, date: afterTwoDays, title: title || category, body: body });
         break;
 
       case 'العلاقات الحميمية':
-        // بعد ثلاثة أيام
-        finalScheduledDate = new Date();
-        finalScheduledDate.setDate(finalScheduledDate.getDate() + 3);
+        let afterThreeDays = new Date();
+        afterThreeDays.setDate(afterThreeDays.getDate() + 3);
+        notificationsToInsert.push({ category: category, date: afterThreeDays, title: title || category, body: body });
         break;
 
+      case 'الرشاقة':
+        // نستخدم التاريخ والوقت المرسل للرشاقة بالضبط
+        notificationsToInsert.push({ category: 'الرشاقة', date: baseDate, title: "وقت النشاط 🏃‍♀️", body: "تمرين بسيط سيجعلكِ تشعرين بالانتعاش." });
+        break;
+
+      case 'الحيض':
       default:
-        finalScheduledDate = scheduled_for ? new Date(scheduled_for) : new Date();
+        // للحيض وأي تصنيف آخر: نستخدم التاريخ المرسل من الواجهة كما هو بالضبط
+        notificationsToInsert.push({ 
+          category: category || 'عام', 
+          date: baseDate, 
+          title: title || "تنبيه رقة", 
+          body: body || "لديكِ موعد مسجل الآن" 
+        });
+        break;
     }
 
-    // تجهيز الاستعلام
+    // 3. عملية الإدخال في قاعدة البيانات
     const query = `
-      INSERT INTO notifications (user_id, fcm_token, category, title, body, is_sent, scheduled_for, extra_data)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO notifications (user_id, fcm_token, category, title, body, is_sent, scheduled_for)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING id
     `;
 
     const userIdInt = isNaN(parseInt(user_id)) ? 1 : parseInt(user_id);
-    const extraData = JSON.stringify({ next_appointment, expected_due_date, original_category: category });
-
     let insertedIds = [];
 
-    // تنفيذ الإدخال
-    if (notificationsToInsert.length > 0) {
-      // حالة الحمل (عدة إشعارات)
-      for (const note of notificationsToInsert) {
-        const resDb = await pool.query(query, [userIdInt, fcmToken, category, note.title, note.body, isSentStatus, note.date, extraData]);
-        insertedIds.push(resDb.rows[0].id);
-      }
-    } else {
-      // الحالات العادية (إشعار واحد)
-      const resDb = await pool.query(query, [userIdInt, fcmToken, category, title || category, body || `تذكير بخصوص ${category}`, isSentStatus, finalScheduledDate, extraData]);
+    for (const note of notificationsToInsert) {
+      const resDb = await pool.query(query, [
+        userIdInt, 
+        fcmToken, 
+        note.category, 
+        note.title, 
+        note.body, 
+        isSentStatus, 
+        note.date
+      ]);
       insertedIds.push(resDb.rows[0].id);
     }
 
     return res.status(200).json({ 
       success: true, 
-      message: "تم حفظ البيانات بنجاح", 
+      message: "تم الحفظ وتصحيح التصنيفات والتواريخ", 
       inserted_ids: insertedIds 
     });
 
   } catch (error) {
-    console.error('❌ Database Error:', error.message);
+    console.error('❌ Neon Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
