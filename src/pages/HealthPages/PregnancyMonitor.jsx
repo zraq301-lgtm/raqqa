@@ -22,6 +22,7 @@ const PregnancyApp = () => {
   // تحميل شهر الحمل من التخزين المحلي عند البداية
   const [pregnancyMonth, setPregnancyMonth] = useState(localStorage.getItem('saved_preg_month') || '');
   const [deliveryDate, setDeliveryDate] = useState(''); 
+  const [rawDeliveryDate, setRawDeliveryDate] = useState(null); // لحفظ التاريخ بصيغة ISO للقاعدة
 
   const categories = [
     { id: 'weeks', title: 'تطور الأسابيع', icon: <Calendar />, fields: ['الأسبوع الحالي', 'أعراض الأسبوع', 'ملاحظات الطبيب', 'المراجعة القادمة', 'تاريخ الولادة', 'تغيرات الوزن', 'حجم الجنين', 'نصيحة الأسبوع', 'تطور الأعضاء', 'مهام الأسبوع'] },
@@ -38,7 +39,7 @@ const PregnancyApp = () => {
     return state;
   });
 
-  // حساب تاريخ الولادة المتوقع وحفظ الشهر (نظام شمسي دقيق)
+  // حساب تاريخ الولادة المتوقع (نظام شمسي طبي)
   useEffect(() => {
     if (pregnancyMonth) {
       localStorage.setItem('saved_preg_month', pregnancyMonth);
@@ -46,12 +47,13 @@ const PregnancyApp = () => {
       
       if (currentMonthNum >= 1 && currentMonthNum <= 9) {
         const today = new Date();
-        // الحساب الطبي: الحمل 9 أشهر و 7 أيام تقريباً
         const monthsRemaining = 9 - currentMonthNum;
-        const projectedDate = new Date(today.getFullYear(), today.getMonth() + monthsRemaining, today.getDate() + 7);
+        // إضافة الشهور المتبقية + 7 أيام كمعيار طبي عالمي
+        const projected = new Date(today.getFullYear(), today.getMonth() + monthsRemaining, today.getDate() + 7);
         
+        setRawDeliveryDate(projected.toISOString());
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
-        setDeliveryDate(projectedDate.toLocaleDateString('ar-SA', options));
+        setDeliveryDate(projected.toLocaleDateString('ar-SA', options));
       }
     }
   }, [pregnancyMonth]);
@@ -60,10 +62,12 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // دالة الحفظ والمزامنة - ترسل البيانات لجدول Neon
+  // دالة الحفظ والمزامنة - ترسل التاريخ للعمود scheduled_for كما في الصورة
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
-    let todayDate = new Date().toISOString(); 
+    
+    // استخدام تاريخ الولادة المتوقع ليكون هو تاريخ الجدولة في قاعدة البيانات
+    let targetSchedule = rawDeliveryDate || new Date().toISOString(); 
 
     try {
       const saveToNeonOptions = {
@@ -75,12 +79,12 @@ const PregnancyApp = () => {
           category: 'pregnancy_followup',
           title: `تحديث طبي: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: todayDate, 
+          // هنا يتم الربط مع العمود المطلوب في الصورة (scheduled_for)
+          scheduled_for: targetSchedule, 
           all_data: JSON.stringify(inputs),
-          // إرسال توقع الولادة والشهر الحالي للجدول في الواجهة الخلفية
           pregnancy_month: pregnancyMonth,
           expected_delivery_date: deliveryDate,
-          note: `تحليل آلي لـ ${categoryTitle}`
+          note: `توقع الولادة مُجدول في العمود المحدد بالصورة`
         }
       };
       
@@ -93,7 +97,7 @@ const PregnancyApp = () => {
           data: {
             token: savedToken,
             title: 'تقرير حمل جديد 🤰',
-            body: `طبيب راقي قام بتحليل ${categoryTitle}، اضغطي للعرض.`,
+            body: `طبيب راقي قام بتحليل ${categoryTitle}، وحفظ موعد الولادة المتوقع.`,
             data: { type: 'medical_report' }
           }
         });
@@ -176,7 +180,7 @@ const PregnancyApp = () => {
         .header { display: flex; justify-content: space-between; margin-bottom: 25px; align-items: center; }
         .ai-btn { background: #E9D5FF; color: #7C3AED; padding: 12px 20px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(124, 58, 237, 0.1); }
         
-        .pregnancy-clock-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 40px; }
+        .pregnancy-clock-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
         .clock-outer {
           width: 260px; height: 260px; border-radius: 50%; background: white;
           border: 12px solid #FBCFE8; box-shadow: 0 10px 25px rgba(219, 39, 119, 0.15);
@@ -243,8 +247,24 @@ const PregnancyApp = () => {
           </div>
         </div>
         
+        {/* تاريخ الولادة يظهر هنا أسفل الساعة مباشرة */}
         {deliveryDate && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{marginTop: 20, color: '#7C3AED', fontWeight: 'bold', fontSize: '14px', background: 'white', padding: '8px 20px', borderRadius: 20, border: '1px solid #FBCFE8'}}>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            style={{
+              marginTop: 25, 
+              color: '#7C3AED', 
+              fontWeight: 'bold', 
+              fontSize: '15px', 
+              background: 'white', 
+              padding: '10px 25px', 
+              borderRadius: '25px', 
+              border: '2px solid #FBCFE8',
+              boxShadow: '0 4px 12px rgba(219, 39, 119, 0.1)'
+            }}
+          >
+            <Calendar size={16} style={{display:'inline', marginLeft: 8, verticalAlign:'middle'}}/>
             موعد الولادة المتوقع: <span style={{color: '#DB2777'}}>{deliveryDate}</span>
           </motion.div>
         )}
