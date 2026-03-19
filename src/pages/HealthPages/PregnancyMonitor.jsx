@@ -41,9 +41,7 @@ const PregnancyApp = () => {
   // حساب تاريخ الولادة المتوقع وحفظ الشهر
   useEffect(() => {
     if (pregnancyMonth) {
-      // حفظ الشهر في التخزين المحلي ليبقى عند الخروج والعودة
       localStorage.setItem('saved_preg_month', pregnancyMonth);
-
       const currentMonthNum = parseInt(pregnancyMonth);
       if (currentMonthNum >= 1 && currentMonthNum <= 9) {
         const monthsRemaining = 9 - currentMonthNum;
@@ -60,10 +58,13 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // دالة الحفظ والمزامنة - تم تعديلها لترسل البيانات لـ Neon فقط وحذف أي دالة أخرى
+  // دالة الحفظ والمزامنة - تم تعديلها لتأخذ التاريخ الحالي وترسل بيانات الولادة والحمل
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     
+    // التاريخ الذي يحفظ هو تاريخ اليوم (التوقيت الحالي)
+    let todayDate = new Date().toISOString(); 
+
     try {
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
@@ -74,8 +75,10 @@ const PregnancyApp = () => {
           category: 'pregnancy_followup',
           title: `تحديث طبي: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
+          // إرسال تاريخ اليوم الفعلي
+          scheduled_for: todayDate, 
           all_data: JSON.stringify(inputs),
-          // إرسال تاريخ الحمل الحالي وتاريخ الولادة المتوقع كما طلبتم
+          // إرسال تاريخ الحمل الحالي وتوقع الولادة كما هم بالضبط
           pregnancy_month: pregnancyMonth,
           expected_delivery_date: deliveryDate,
           note: `تحليل آلي لـ ${categoryTitle}`
@@ -84,8 +87,20 @@ const PregnancyApp = () => {
       
       await CapacitorHttp.post(saveToNeonOptions);
 
+      if (savedToken) {
+        await CapacitorHttp.post({
+          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            token: savedToken,
+            title: 'تقرير حمل جديد 🤰',
+            body: `طبيب راقي قام بتحليل ${categoryTitle}، اضغطي للعرض.`,
+            data: { type: 'medical_report' }
+          }
+        });
+      }
     } catch (err) {
-      console.error("خطأ المزامنة مع نيون:", err);
+      console.error("خطأ المزامنة:", err);
     }
   };
 
