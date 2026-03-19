@@ -90,15 +90,17 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
-  const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
+  const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction = null) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    // استخدام التاريخ المتوقع من المعامل الممرر لضمان أحدث قيمة
+    // استخدام التوقع الممرر حالياً لضمان الدقة في كل مرة يتم فيها الحفظ
     let actualScheduledDate = new Date().toISOString(); 
-    if (currentPrediction && currentPrediction.nextDate) {
-        const dateParts = currentPrediction.nextDate.split('/');
+    const targetPrediction = currentPrediction || prediction;
+
+    if (targetPrediction && targetPrediction.nextDate) {
+        const dateParts = targetPrediction.nextDate.split('/');
         if (dateParts.length === 3) {
-            // تحويل من صيغة YYYY/M/D المتوقعة من toLocaleDateString('ar-EG')
+            // السنة، الشهر (ناقص 1)، اليوم
             const formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
             actualScheduledDate = formattedDate.toISOString();
         }
@@ -111,7 +113,7 @@ const MenstrualTracker = () => {
       title: `تقرير جديد: ${categoryTitle} 🩺`,
       body: currentAnalysis.substring(0, 100) + "...",
       scheduled_for: actualScheduledDate, 
-      note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${currentPrediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${currentPrediction?.fertility || 'غير محدد'}`
+      note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${targetPrediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${targetPrediction?.fertility || 'غير محدد'}`
     };
 
     try {
@@ -123,7 +125,7 @@ const MenstrualTracker = () => {
 
       if (savedToken) {
         await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          url: 'https://raqqa-fcm.vercel.app/api/send-fcm',
           headers: { 'Content-Type': 'application/json' },
           data: {
             token: savedToken,
@@ -156,7 +158,7 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
       
-      await saveAndNotify("استشارة فورية", responseText, prediction);
+      await saveAndNotify("استشارة فورية", responseText);
 
     } catch (err) {
       console.error("AI Error", err);
@@ -178,7 +180,10 @@ const MenstrualTracker = () => {
 
   const handleSaveAndAnalyze = async () => {
     const startStr = data['سجل التواريخ_تاريخ البدء'];
-    if (!startStr) return;
+    if (!startStr) {
+        alert("الرجاء تحديد تاريخ البدء أولاً");
+        return;
+    }
     setLoading(true);
     
     const cycleLen = parseInt(data['سجل التواريخ_مدة الدورة']) || 29;
@@ -207,7 +212,7 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
-      // تمرير calc مباشرة لضمان أخذ التاريخ الجديد فوراً
+      // استدعاء الحفظ في كل مرة مع التوقع الجديد
       await saveAndNotify("تحليل الدورة الشهرية", responseText, calc);
 
     } catch (e) { console.error(e); }
@@ -258,7 +263,7 @@ const MenstrualTracker = () => {
           <button onClick={() => setShowSavedList(!showSavedList)} style={{ background: '#f0f0f0', border: 'none', padding: '8px 15px', borderRadius: '15px' }}>🔖 المحفوظات</button>
         </div>
         <button onClick={handleSaveAndAnalyze} style={styles.btnPrimary} disabled={loading}>
-          {loading ? "جاري الحفظ والتحليل..." : "حفظ البيانات وتحليل طبي شامل ✨"}
+          {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل طبي شامل ✨"}
         </button>
       </div>
 
