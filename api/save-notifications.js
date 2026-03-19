@@ -24,20 +24,18 @@ export default async function handler(req, res) {
   try {
     const now = new Date();
     
-    // --- 1. تحديد الفئة بناءً على صور الواجهة الجديدة ---
+    // --- 1. تحديد الفئة (الأقسام ثابتة كما طلبت) ---
     let finalCategory = 'عام';
     const checkText = ((category || "") + (title || "") + (body || "")).toLowerCase();
 
     if (checkText.includes('رضاعة') || checkText.includes('milk')) {
       finalCategory = 'رضاعة';
     } 
-    // فئة الرشاقة: تشمل النشاط البدني، القياسات، التغذية، النوم، الهيدرات
     else if (checkText.includes('رشاقة') || checkText.includes('fitness') || checkText.includes('بدني') || 
              checkText.includes('تغذية') || checkText.includes('نوم') || checkText.includes('قياسات') || 
              checkText.includes('حيوية') || checkText.includes('ماء')) {
       finalCategory = 'رشاقة';
     } 
-    // فئة المشاعر: تشمل العلاقات، الود، الذات، النمو، النفسية
     else if (checkText.includes('مشاعر') || checkText.includes('mood') || checkText.includes('علاقات') || 
              checkText.includes('ود') || checkText.includes('ذات') || checkText.includes('نمو') || 
              checkText.includes('نفسية')) {
@@ -49,23 +47,32 @@ export default async function handler(req, res) {
     else if (checkText.includes('فقه') || checkText.includes('fiqh')) {
       finalCategory = 'فقه';
     } 
-    else if (checkText.includes('حيض') || checkText.includes('دورة')) {
+    else if (checkText.includes('حيض') || checkText.includes('دورة') || checkText.includes('period')) {
       finalCategory = 'حيض';
     } 
-    else if (checkText.includes('حمل')) {
+    else if (checkText.includes('حمل') || checkText.includes('pregnancy')) {
       finalCategory = 'حمل';
     } 
-    else if (checkText.includes('حميمية')) {
+    else if (checkText.includes('حميمية') || checkText.includes('marriage')) {
       finalCategory = 'حميمية';
     } 
-    else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام')) {
+    else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام') || checkText.includes('خبرة') || checkText.includes('medical')) {
       finalCategory = 'طبيب';
     }
 
-    // --- 2. ضبط التاريخ (بدون توليف) ---
-    // الكود الآن يأخذ ما ترسله الواجهة حرفياً
-    // الأولوية لـ next_appointment إذا وجد (خاص بالطبيب)، وإلا scheduled_for، وإلا التاريخ الحالي
-    let finalScheduledFor = next_appointment ? new Date(next_appointment) : (scheduled_for ? new Date(scheduled_for) : now);
+    // --- 2. إجبار استلام التواريخ من الواجهة (بدون أي توليف) ---
+    let finalScheduledFor;
+
+    if (finalCategory === 'حيض' && startDate) {
+      // إذا كان حيض، نجبره على أخذ startDate المرسل من الواجهة كـ موعد مجدول
+      finalScheduledFor = new Date(startDate);
+    } else if ((finalCategory === 'طبيب' || checkText.includes('خبرة')) && next_appointment) {
+      // إذا كان طبيب أو خبرة طبية، نجبره على أخذ موعد الطبيب المرسل
+      finalScheduledFor = new Date(next_appointment);
+    } else {
+      // بقية الأقسام تأخذ التاريخ المجدول أو تاريخ اللحظة
+      finalScheduledFor = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : now);
+    }
 
     const query = `
       INSERT INTO notifications (
@@ -83,36 +90,31 @@ export default async function handler(req, res) {
       ui_source_date: scheduled_for || startDate 
     });
 
-    // --- 3. منطق الحمل العكسي (حسب تاريخ الولادة) ---
+    // --- 3. منطق الحمل العكسي ---
     if (finalCategory === 'حمل' && expected_due_date) {
       const dueDate = new Date(expected_due_date);
       let ids = [];
-      
-      // حساب الأشهر المتبقية من اليوم حتى تاريخ الولادة
       let diffMonths = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
       
-      if (diffMonths > 0) {
-        for (let i = 0; i <= diffMonths; i++) {
-          let sDate = new Date(dueDate); 
-          sDate.setMonth(dueDate.getMonth() - i); // الرجوع للخلف شهراً بشهر
-          
-          // نتخطى التواريخ التي سبقت تاريخ اليوم
-          if (sDate < now && i !== diffMonths) continue; 
+      for (let i = 0; i <= diffMonths; i++) {
+        let sDate = new Date(dueDate); 
+        sDate.setMonth(dueDate.getMonth() - i); 
+        
+        if (sDate < now && i !== diffMonths) continue; 
 
-          const v = [
-            parseInt(user_id) || 1, fcmToken, 'حمل', 
-            `متابعة الحمل - متبقي ${i} شهر`, 
-            title || `تذكير بمتابعة حملك`, 
-            false, sDate, null, null, longitude || 0, latitude || 0, extraData
-          ];
-          const resDb = await pool.query(query, v);
-          ids.push(resDb.rows[0].id);
-        }
-        return res.status(200).json({ success: true, message: "تم جدولة أشهر الحمل عكسياً", ids });
+        const v = [
+          parseInt(user_id) || 1, fcmToken, 'حمل', 
+          `متابعة الحمل - الشهر ${diffMonths - i + 1}`, 
+          title || `تذكير بموعد الشهر القادم`, 
+          false, sDate, null, null, longitude || 0, latitude || 0, extraData
+        ];
+        const resDb = await pool.query(query, v);
+        ids.push(resDb.rows[0].id);
       }
+      return res.status(200).json({ success: true, message: "تمت الجدولة العكسية للحمل", ids });
     }
 
-    // التنفيذ للأقسام الأخرى (يأخذ التاريخ كما هو من الواجهة)
+    // التنفيذ النهائي لكل الأقسام مع ضمان عدم ضياع تواريخ الواجهة
     const values = [
       parseInt(user_id) || 1, fcmToken, finalCategory, 
       title, body, false, 
