@@ -10,44 +10,68 @@ const pool = new Pool({
   max: 1, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000
 });
 
+// --- 1. دالة استخراج تاريخ الدورة القادمة (من MenstrualTracker) ---
+function getMenstrualDate(body, extra) {
+  if (extra?.next_period_date) {
+    // الملف يرسل التاريخ بتنسيق "YYYY/MM/DD" أو "DD/MM/YYYY" حسب Locale
+    const d = new Date(extra.next_period_date.replace(/\//g, '-'));
+    return isNaN(d) ? null : d;
+  }
+  return null;
+}
+
+// --- 2. دالة استخراج موعد الولادة المتوقع (من PregnancyMonitor) ---
+function getPregnancyDate(body, extra) {
+  if (extra?.expected_delivery_date) {
+    const d = new Date(extra.expected_delivery_date);
+    return isNaN(d) ? null : d;
+  }
+  return null;
+}
+
+// --- 3. دالة استخراج موعد الطبيب (من DoctorClinical) ---
+function getDoctorDate(body, extra) {
+  // الملف يرسل القيمة في next_appointment أو القيمة المدخلة في الحقول
+  const dateValue = extra?.next_appointment || body.next_appointment;
+  if (dateValue) {
+    const d = new Date(dateValue);
+    return isNaN(d) ? null : d;
+  }
+  return null;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { category, user_id, fcmToken, title, body, extra_data } = req.body;
-  
+  const { 
+    category, user_id, fcmToken, title, body, 
+    scheduled_for, startDate, extra_data 
+  } = req.body;
+
   try {
-    let finalScheduledDate = new Date(); // افتراضي
+    let finalScheduledFor = null;
 
-    // --- دالة حفظ قسم "الدورة الشهرية" (تاريخ الدورة المتوقع) ---
-    if (category === 'menstrual_report') {
-      if (extra_data?.next_period_date) {
-        const dateParts = extra_data.next_period_date.split('/');
-        if (dateParts.length === 3) {
-          // التعامل مع تنسيق (سنة/شهر/يوم) القادم من MenstrualTracker [cite: 236, 237]
-          finalScheduledDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-        }
-      }
+    // --- الربط بين القسم والدالة الخاصة به لضبط التاريخ ---
+    if (category === 'menstrual_report' || body?.includes('دورة')) {
+      finalScheduledFor = getMenstrualDate(req.body, extra_data);
+    } 
+    else if (category === 'pregnancy_followup' || extra_data?.expected_delivery_date) {
+      finalScheduledFor = getPregnancyDate(req.body, extra_data);
+    } 
+    else if (category === 'doctor_clinical' || category === 'طبيب') {
+      finalScheduledFor = getDoctorDate(req.body, extra_data);
+    } 
+    else {
+      // باقي الأقسام: تأخذ التاريخ القادم من الواجهة مباشرة (scheduled_for أو startDate)
+      finalScheduledFor = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : null);
     }
 
-    // --- دالة حفظ قسم "متابعة الحمل" (موعد الولادة المتوقع) ---
-    else if (category === 'pregnancy_followup') {
-      if (extra_data?.expected_delivery_date) {
-        // تنظيف النص من الأحرف العربية الزائدة مثل "مارس" وتحويله لتاريخ صالح 
-        const parsedDelivery = new Date(extra_data.expected_delivery_date);
-        if (!isNaN(parsedDelivery)) finalScheduledDate = parsedDelivery;
-      }
+    // إذا لم يتوفر أي تاريخ من الواجهة أو الدوال، لن نقوم بوضع "تاريخ اليوم" (حسب طلبك)
+    if (!finalScheduledFor) {
+       // يمكنك هنا تركها null أو التعامل معها كخطأ حسب رغبتك
+       // سأتركها كما طلبت: "يستلم من الواجهة حصراً"
     }
 
-    // --- دالة حفظ قسم "طبيب راقي" (موعد الطبيب القادم) ---
-    else if (category === 'doctor_clinical') {
-      const userScheduledDate = extra_data?.next_appointment;
-      if (userScheduledDate) {
-        const parsedDate = new Date(userScheduledDate);
-        if (!isNaN(parsedDate.getTime())) finalScheduledDate = parsedDate; // [cite: 500, 501]
-      }
-    }
-
-    // إعداد الاستعلام للحفظ في جدول التنبيهات (Neon)
     const query = `
       INSERT INTO notifications (
         user_id, fcm_token, category, title, body, is_sent, 
@@ -58,26 +82,26 @@ export default async function handler(req, res) {
     `;
 
     const values = [
-      parseInt(user_id) || 1, 
-      fcmToken, 
-      category, 
-      title, 
-      body, 
-      false, 
-      finalScheduledDate.toISOString(), 
-      JSON.stringify(extra_data)
+      parseInt(user_id) || 1,
+      fcmToken,
+      category || 'عام',
+      title,
+      body,
+      false,
+      finalScheduledFor, // التاريخ المستخرج من الدالة
+      JSON.stringify(extra_data || {})
     ];
 
     const result = await pool.query(query, values);
 
     return res.status(200).json({ 
       success: true, 
-      db_id: result.rows[0].id, 
-      scheduled_for: finalScheduledDate.toISOString() 
+      db_id: result.rows[0].id,
+      saved_date: finalScheduledFor 
     });
 
   } catch (error) {
-    console.error('❌ Database Sync Error:', error.message);
+    console.error('❌ Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
