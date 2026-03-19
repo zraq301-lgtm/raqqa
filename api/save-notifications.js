@@ -13,41 +13,44 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج البيانات كما تُرسل من الواجهة بالضبط
+  // استخراج البيانات كما تُرسل من الواجهة
   let { 
     category, user_id, fcmToken, title, body, 
-    extra_data, scheduled_for, startDate 
+    extra_data, scheduled_for, startDate,
+    expected_due_date, // تاريخ الولادة (الذي نجح معك)
+    next_period_date,  // تاريخ الحيض المتوقع
+    next_appointment   // موعد الطبيب
   } = req.body;
 
   try {
     let finalScheduledFor = null;
 
-    // --- 1. قسم الدورة (مطابقة لـ MenstrualTracker.jsx) ---
-    // الواجهة ترسل: extra_data: { next_period_date: "2026/04/15" }
-    if (extra_data?.next_period_date) {
-      const dateStr = extra_data.next_period_date.replace(/\//g, '-');
-      finalScheduledFor = new Date(dateStr);
-    }
-
-    // --- 2. قسم الحمل (مطابقة لـ PregnancyMonitor.jsx) ---
-    // الواجهة ترسل: expected_due_date مباشرة في body أو داخل extra_data
-    else if (req.body.expected_due_date || extra_data?.expected_due_date) {
-      const pDate = req.body.expected_due_date || extra_data?.expected_due_date;
+    // --- 1. قسم موعد الولادة (لم يتم تغيير أي شيء - كما نجح معك) ---
+    if (expected_due_date || (extra_data && extra_data.expected_due_date)) {
+      const pDate = expected_due_date || extra_data.expected_due_date;
       finalScheduledFor = new Date(pDate);
     }
 
-    // --- 3. قسم الطبيب (مطابقة لـ DoctorClinical.jsx) ---
-    // الواجهة ترسل: next_appointment داخل الـ body مباشرة
-    else if (req.body.next_appointment) {
-      finalScheduledFor = new Date(req.body.next_appointment);
+    // --- 2. قسم تاريخ الحيض المتوقع (تعديل بناءً على MenstrualTracker.jsx) ---
+    else if (next_period_date || (extra_data && extra_data.next_period_date)) {
+      const pDate = next_period_date || extra_data.next_period_date;
+      // استبدال "/" بـ "-" لضمان قبول الصيغة في JavaScript Date
+      const formattedDate = typeof pDate === 'string' ? pDate.replace(/\//g, '-') : pDate;
+      finalScheduledFor = new Date(formattedDate);
     }
 
-    // --- 4. باقي الأقسام (تطوير، صحة، إلخ) ---
+    // --- 3. قسم موعد الطبيب (تعديل بناءً على DoctorClinical.jsx) ---
+    else if (next_appointment || (extra_data && extra_data.next_appointment)) {
+      const dDate = next_appointment || extra_data.next_appointment;
+      finalScheduledFor = new Date(dDate);
+    }
+
+    // --- 4. باقي الأقسام العادية ---
     else if (scheduled_for || startDate) {
       finalScheduledFor = new Date(scheduled_for || startDate);
     }
 
-    // تأكيد أن التاريخ صالح وليس "Invalid Date"
+    // التحقق من صحة التاريخ لضمان عدم حفظ قيم خاطئة
     if (finalScheduledFor && isNaN(finalScheduledFor.getTime())) {
       finalScheduledFor = null;
     }
@@ -61,12 +64,13 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // دمج كل البيانات في extra_data للحفظ الشامل
-    const combinedExtra = JSON.stringify({
+    // تجميع البيانات الإضافية للحفظ في عمود JSON
+    const finalExtra = JSON.stringify({
       ...(typeof extra_data === 'object' ? extra_data : {}),
-      next_appointment: req.body.next_appointment,
-      expected_due_date: req.body.expected_due_date,
-      ui_captured_date: finalScheduledFor
+      next_appointment,
+      expected_due_date,
+      next_period_date,
+      source_api: "v3_fixed_dates"
     });
 
     const values = [
@@ -76,8 +80,8 @@ export default async function handler(req, res) {
       title || 'تنبيه',
       body || '',
       false,
-      finalScheduledFor, // هذا هو التاريخ الذي سيظهر في جدول المواعيد
-      combinedExtra
+      finalScheduledFor, // التاريخ المستهدف للحفظ
+      finalExtra
     ];
 
     const result = await pool.query(query, values);
@@ -85,11 +89,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       db_id: result.rows[0].id,
-      saved_date: finalScheduledFor 
+      captured_date: finalScheduledFor 
     });
 
   } catch (error) {
-    console.error('❌ Database Error:', error.message);
+    console.error('❌ Sync Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
