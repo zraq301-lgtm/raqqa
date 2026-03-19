@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   try {
     const now = new Date();
     
-    // --- 1. تحديد الفئة بناءً على الكلمات المفتاحية ---
+    // --- 1. تحديد الفئة (تمت إضافة "جنين" للحمل) ---
     let finalCategory = 'عام';
     const checkText = ((category || "") + (title || "") + (body || "")).toLowerCase();
 
@@ -44,7 +44,9 @@ export default async function handler(req, res) {
       finalCategory = 'فقه';
     } else if (checkText.includes('حيض') || checkText.includes('دورة')) {
       finalCategory = 'حيض';
-    } else if (checkText.includes('حمل')) {
+    } 
+    // فئة الحمل تشمل "حمل" و "جنين"
+    else if (checkText.includes('حمل') || checkText.includes('جنين') || checkText.includes('pregnancy')) {
       finalCategory = 'حمل';
     } else if (checkText.includes('حميمية')) {
       finalCategory = 'حميمية';
@@ -52,18 +54,16 @@ export default async function handler(req, res) {
       finalCategory = 'طبيب';
     }
 
-    // --- 2. إجبار استلام التاريخ من الواجهة (الحل الجذري) ---
+    // --- 2. إجبار استلام التاريخ من الواجهة ---
     let finalScheduledFor;
-
-    // القاعدة: إذا أرسلت الواجهة أي تاريخ حجز أو توقع، فهو صاحب الأولوية المطلقة
     if (next_appointment) {
-      finalScheduledFor = new Date(next_appointment); // موعد الطبيب المرسل (مثل 25-3)
+      finalScheduledFor = new Date(next_appointment);
     } else if (startDate) {
-      finalScheduledFor = new Date(startDate); // تاريخ الحيض أو البداية المرسل
+      finalScheduledFor = new Date(startDate);
     } else if (scheduled_for) {
-      finalScheduledFor = new Date(scheduled_for); // أي تاريخ جدولة آخر من الواجهة
+      finalScheduledFor = new Date(scheduled_for);
     } else {
-      finalScheduledFor = now; // تاريخ اليوم هو الاحتمال الأخير فقط إذا فرغت الواجهة
+      finalScheduledFor = now;
     }
 
     const query = `
@@ -82,39 +82,41 @@ export default async function handler(req, res) {
       ui_source_date: scheduled_for || startDate || next_appointment 
     });
 
-    // --- 3. منطق الحمل العكسي (تعديل لضمان التاريخ المستقبلي) ---
+    // --- 3. منطق الحمل العكسي (تكرار الصفوف من تاريخ الولادة لليوم) ---
     if (finalCategory === 'حمل' && expected_due_date) {
       const dueDate = new Date(expected_due_date);
       let ids = [];
-      // حساب الأشهر من تاريخ اليوم وحتى تاريخ الولادة
+      
+      // حساب فرق الأشهر بين اليوم وتاريخ الولادة
       let diffMonths = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
       
+      // التكرار العكسي: من i=0 (تاريخ الولادة) وحتى i=diffMonths (تاريخ اليوم)
       for (let i = 0; i <= diffMonths; i++) {
         let sDate = new Date(dueDate); 
-        sDate.setMonth(dueDate.getMonth() - i); // الرجوع للخلف شهراً بشهر من تاريخ الولادة
+        sDate.setMonth(dueDate.getMonth() - i); // يرجع شهراً واحداً في كل لفة
         
-        // لا نسجل المواعيد التي مضت فعلياً قبل اليوم
-        if (sDate < now && i !== diffMonths) continue; 
+        // لا نسجل المواعيد التي مضت قبل اليوم (إلا موعد اليوم الحالي)
+        if (sDate < now && Math.abs(sDate - now) > 86400000) continue; 
 
         const v = [
           parseInt(user_id) || 1, fcmToken, 'حمل', 
-          `متابعة الحمل - الشهر ${diffMonths - i + 1}`, 
-          title || `تذكير بموعد شهرك الجديد من الحمل`, 
+          `متابعة الجنين - شهر ${diffMonths - i + 1}`, 
+          title || `تقرير نمو الجنين وموعد الولادة المتوقع`, 
           false, 
-          sDate, // هذا التاريخ سيسجل في نيون لكل شهر
+          sDate, // التاريخ المجدول (عكسي من تاريخ الولادة)
           null, null, longitude || 0, latitude || 0, extraData
         ];
         const resDb = await pool.query(query, v);
         ids.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, message: "تمت الجدولة العكسية بنجاح", ids });
+      return res.status(200).json({ success: true, message: "تمت جدولة شهور الحمل والجنين عكسياً", ids });
     }
 
-    // للإدخالات العادية (مثل الطبيب والعظام)
+    // للإدخالات العادية (طبيب، عظام، إلخ)
     const values = [
       parseInt(user_id) || 1, fcmToken, finalCategory, 
       title, body, false, 
-      finalScheduledFor, // سيستخدم 2026-03-25 القادم من الواجهة مباشرة
+      finalScheduledFor, 
       startDate ? new Date(startDate) : null, 
       endDate ? new Date(endDate) : null, 
       longitude || 0, latitude || 0, extraData
@@ -124,7 +126,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       category: finalCategory, 
-      applied_schedule: finalScheduledFor, // سيظهر لك في الاستجابة التاريخ الصحيح
+      applied_schedule: finalScheduledFor,
       db_id: result.rows[0].id 
     });
 
