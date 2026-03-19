@@ -13,49 +13,43 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج كل البيانات الممكنة من الطلب
+  // استخراج البيانات كما تُرسل من الواجهة بالضبط
   let { 
     category, user_id, fcmToken, title, body, 
-    scheduled_for, startDate, extra_data,
-    next_appointment, expected_delivery_date, next_period_date
+    extra_data, scheduled_for, startDate 
   } = req.body;
 
   try {
     let finalScheduledFor = null;
 
-    // --- 1. قسم الدورة الشهرية (MenstrualTracker) ---
-    if (category === 'menstrual_report' || next_period_date || (extra_data && extra_data.next_period_date)) {
-      const pDate = next_period_date || extra_data?.next_period_date;
-      if (pDate) {
-        // تنظيف التاريخ من أي تنسيق غريب وتحويله لكائن Date
-        finalScheduledFor = new Date(pDate.replace(/\//g, '-'));
-      }
+    // --- 1. قسم الدورة (مطابقة لـ MenstrualTracker.jsx) ---
+    // الواجهة ترسل: extra_data: { next_period_date: "2026/04/15" }
+    if (extra_data?.next_period_date) {
+      const dateStr = extra_data.next_period_date.replace(/\//g, '-');
+      finalScheduledFor = new Date(dateStr);
     }
 
-    // --- 2. قسم متابعة الحمل (PregnancyMonitor) ---
-    else if (category === 'pregnancy_followup' || expected_delivery_date || (extra_data && extra_data.expected_delivery_date)) {
-      const pregDate = expected_delivery_date || extra_data?.expected_delivery_date;
-      if (pregDate) {
-        finalScheduledFor = new Date(pregDate);
-      }
+    // --- 2. قسم الحمل (مطابقة لـ PregnancyMonitor.jsx) ---
+    // الواجهة ترسل: expected_due_date مباشرة في body أو داخل extra_data
+    else if (req.body.expected_due_date || extra_data?.expected_due_date) {
+      const pDate = req.body.expected_due_date || extra_data?.expected_due_date;
+      finalScheduledFor = new Date(pDate);
     }
 
-    // --- 3. قسم الطبيب (DoctorClinical) ---
-    else if (category === 'doctor_clinical' || next_appointment || (extra_data && extra_data.next_appointment)) {
-      const docDate = next_appointment || extra_data?.next_appointment;
-      if (docDate) {
-        finalScheduledFor = new Date(docDate);
-      }
+    // --- 3. قسم الطبيب (مطابقة لـ DoctorClinical.jsx) ---
+    // الواجهة ترسل: next_appointment داخل الـ body مباشرة
+    else if (req.body.next_appointment) {
+      finalScheduledFor = new Date(req.body.next_appointment);
     }
 
-    // --- 4. الأقسام العادية (إذا لم يكن مما سبق) ---
-    if (!finalScheduledFor) {
-      finalScheduledFor = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : null);
+    // --- 4. باقي الأقسام (تطوير، صحة، إلخ) ---
+    else if (scheduled_for || startDate) {
+      finalScheduledFor = new Date(scheduled_for || startDate);
     }
 
-    // التحقق من صحة التاريخ المحول
+    // تأكيد أن التاريخ صالح وليس "Invalid Date"
     if (finalScheduledFor && isNaN(finalScheduledFor.getTime())) {
-        finalScheduledFor = null; 
+      finalScheduledFor = null;
     }
 
     const query = `
@@ -67,24 +61,23 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // تجميع البيانات الإضافية للحفظ
-    const finalExtraData = JSON.stringify({
+    // دمج كل البيانات في extra_data للحفظ الشامل
+    const combinedExtra = JSON.stringify({
       ...(typeof extra_data === 'object' ? extra_data : {}),
-      next_appointment,
-      expected_delivery_date,
-      next_period_date,
-      source: "integrated_api_v2"
+      next_appointment: req.body.next_appointment,
+      expected_due_date: req.body.expected_due_date,
+      ui_captured_date: finalScheduledFor
     });
 
     const values = [
       parseInt(user_id) || 1,
       fcmToken || null,
       category || 'عام',
-      title || 'تنبيه جديد',
+      title || 'تنبيه',
       body || '',
       false,
-      finalScheduledFor,
-      finalExtraData
+      finalScheduledFor, // هذا هو التاريخ الذي سيظهر في جدول المواعيد
+      combinedExtra
     ];
 
     const result = await pool.query(query, values);
@@ -92,11 +85,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       db_id: result.rows[0].id,
-      applied_date: finalScheduledFor 
+      saved_date: finalScheduledFor 
     });
 
   } catch (error) {
-    console.error('❌ Sync Error:', error.message);
+    console.error('❌ Database Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
