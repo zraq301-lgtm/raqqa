@@ -60,13 +60,10 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // دالة الحفظ والمزامنة - معدلة لإرسال بيانات الشهر والولادة للـ API
+  // دالة الحفظ والمزامنة - تم تعديلها لترسل البيانات لـ Neon فقط وحذف أي دالة أخرى
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    let scheduledDate = new Date();
-    scheduledDate.setMonth(scheduledDate.getMonth() + 1); 
-
     try {
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
@@ -77,9 +74,8 @@ const PregnancyApp = () => {
           category: 'pregnancy_followup',
           title: `تحديث طبي: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: scheduledDate.toISOString(),
           all_data: JSON.stringify(inputs),
-          // إضافة بيانات شهر الحمل وتاريخ الولادة للرابط
+          // إرسال تاريخ الحمل الحالي وتاريخ الولادة المتوقع كما طلبتم
           pregnancy_month: pregnancyMonth,
           expected_delivery_date: deliveryDate,
           note: `تحليل آلي لـ ${categoryTitle}`
@@ -88,20 +84,8 @@ const PregnancyApp = () => {
       
       await CapacitorHttp.post(saveToNeonOptions);
 
-      if (savedToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تقرير حمل جديد 🤰',
-            body: `طبيب راقي قام بتحليل ${categoryTitle}، اضغطي للعرض.`,
-            data: { type: 'medical_report' }
-          }
-        });
-      }
     } catch (err) {
-      console.error("خطأ المزامنة:", err);
+      console.error("خطأ المزامنة مع نيون:", err);
     }
   };
 
