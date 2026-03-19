@@ -24,7 +24,7 @@ export default async function handler(req, res) {
   try {
     const now = new Date();
     
-    // --- 1. تحديد الفئة (الأقسام ثابتة كما طلبت) ---
+    // --- 1. تحديد الفئة بدقة حسب كلمات الصور ---
     let finalCategory = 'عام';
     const checkText = ((category || "") + (title || "") + (body || "")).toLowerCase();
 
@@ -47,31 +47,31 @@ export default async function handler(req, res) {
     else if (checkText.includes('فقه') || checkText.includes('fiqh')) {
       finalCategory = 'فقه';
     } 
-    else if (checkText.includes('حيض') || checkText.includes('دورة') || checkText.includes('period')) {
+    else if (checkText.includes('حيض') || checkText.includes('دورة')) {
       finalCategory = 'حيض';
     } 
-    else if (checkText.includes('حمل') || checkText.includes('pregnancy')) {
+    else if (checkText.includes('حمل')) {
       finalCategory = 'حمل';
     } 
-    else if (checkText.includes('حميمية') || checkText.includes('marriage')) {
+    else if (checkText.includes('حميمية')) {
       finalCategory = 'حميمية';
     } 
-    else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام') || checkText.includes('خبرة') || checkText.includes('medical')) {
+    else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام') || checkText.includes('خبرة')) {
       finalCategory = 'طبيب';
     }
 
-    // --- 2. إجبار استلام التواريخ من الواجهة (بدون أي توليف) ---
+    // --- 2. إجبار استلام التاريخ من الواجهة (حل مشكلة تاريخ اليوم في نيون) ---
+    // القاعدة: إذا أرسلت الواجهة أي موعد مستقبلي، نستخدمه هو أولاً.
     let finalScheduledFor;
 
-    if (finalCategory === 'حيض' && startDate) {
-      // إذا كان حيض، نجبره على أخذ startDate المرسل من الواجهة كـ موعد مجدول
-      finalScheduledFor = new Date(startDate);
-    } else if ((finalCategory === 'طبيب' || checkText.includes('خبرة')) && next_appointment) {
-      // إذا كان طبيب أو خبرة طبية، نجبره على أخذ موعد الطبيب المرسل
+    if (next_appointment) {
       finalScheduledFor = new Date(next_appointment);
+    } else if (startDate && finalCategory === 'حيض') {
+      finalScheduledFor = new Date(startDate);
+    } else if (scheduled_for) {
+      finalScheduledFor = new Date(scheduled_for);
     } else {
-      // بقية الأقسام تأخذ التاريخ المجدول أو تاريخ اللحظة
-      finalScheduledFor = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : now);
+      finalScheduledFor = now; // الملاذ الأخير فقط
     }
 
     const query = `
@@ -99,22 +99,21 @@ export default async function handler(req, res) {
       for (let i = 0; i <= diffMonths; i++) {
         let sDate = new Date(dueDate); 
         sDate.setMonth(dueDate.getMonth() - i); 
-        
         if (sDate < now && i !== diffMonths) continue; 
 
         const v = [
           parseInt(user_id) || 1, fcmToken, 'حمل', 
           `متابعة الحمل - الشهر ${diffMonths - i + 1}`, 
-          title || `تذكير بموعد الشهر القادم`, 
+          title || `تذكير بموعد الشهر الجديد`, 
           false, sDate, null, null, longitude || 0, latitude || 0, extraData
         ];
         const resDb = await pool.query(query, v);
         ids.push(resDb.rows[0].id);
       }
-      return res.status(200).json({ success: true, message: "تمت الجدولة العكسية للحمل", ids });
+      return res.status(200).json({ success: true, message: "تمت الجدولة العكسية بنجاح", ids });
     }
 
-    // التنفيذ النهائي لكل الأقسام مع ضمان عدم ضياع تواريخ الواجهة
+    // الإدخال للأقسام العادية (سيستخدم التاريخ المستقبلي الذي حددناه أعلاه)
     const values = [
       parseInt(user_id) || 1, fcmToken, finalCategory, 
       title, body, false, 
@@ -128,7 +127,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       category: finalCategory, 
-      applied_schedule: finalScheduledFor,
+      applied_schedule: finalScheduledFor, // هذا هو التاريخ الذي سيظهر في نيون
       db_id: result.rows[0].id 
     });
 
