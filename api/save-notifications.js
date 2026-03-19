@@ -23,48 +23,38 @@ export default async function handler(req, res) {
 
   try {
     const now = new Date();
-    
-    // --- 1. تحديد الفئة (تمت إضافة "جنين" للحمل) ---
-    let finalCategory = 'عام';
     const checkText = ((category || "") + (title || "") + (body || "")).toLowerCase();
+    
+    // --- 1. تحديد الفئة بناءً على أقسام واجهة الحمل الجديدة ---
+    let finalCategory = 'عام';
 
-    if (checkText.includes('رضاعة') || checkText.includes('milk')) {
+    // كلمات مفتاحية من واجهة الحمل: (تطور الأسابيع، نمو الجنين، صحة الأم، الفحوصات، المكملات، الاستعداد للولادة)
+    if (checkText.includes('جنين') || checkText.includes('حمل') || checkText.includes('أسابيع') || 
+        checkText.includes('فحوصات') || checkText.includes('مكملات') || checkText.includes('ولادة') || 
+        expected_due_date) {
+      finalCategory = 'حمل';
+    } 
+    else if (checkText.includes('رضاعة') || checkText.includes('milk')) {
       finalCategory = 'رضاعة';
-    } else if (checkText.includes('رشاقة') || checkText.includes('fitness') || checkText.includes('بدني') || 
-               checkText.includes('تغذية') || checkText.includes('نوم') || checkText.includes('قياسات') || 
-               checkText.includes('حيوية') || checkText.includes('ماء')) {
+    } 
+    else if (checkText.includes('رشاقة') || checkText.includes('fitness') || checkText.includes('تغذية') || 
+             checkText.includes('نوم') || checkText.includes('بدني')) {
       finalCategory = 'رشاقة';
-    } else if (checkText.includes('مشاعر') || checkText.includes('mood') || checkText.includes('علاقات') || 
-               checkText.includes('ود') || checkText.includes('ذات') || checkText.includes('نمو') || 
-               checkText.includes('نفسية')) {
+    } 
+    else if (checkText.includes('مشاعر') || checkText.includes('mood') || checkText.includes('علاقات') || 
+             checkText.includes('ود') || checkText.includes('ذات')) {
       finalCategory = 'مشاعر';
-    } else if (checkText.includes('أمومة') || checkText.includes('طفل')) {
-      finalCategory = 'أمومة';
-    } else if (checkText.includes('فقه') || checkText.includes('fiqh')) {
-      finalCategory = 'فقه';
+    } 
+    else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام') || next_appointment) {
+      finalCategory = 'طبيب';
     } else if (checkText.includes('حيض') || checkText.includes('دورة')) {
       finalCategory = 'حيض';
-    } 
-    // فئة الحمل تشمل "حمل" و "جنين"
-    else if (checkText.includes('حمل') || checkText.includes('جنين') || checkText.includes('pregnancy')) {
-      finalCategory = 'حمل';
-    } else if (checkText.includes('حميمية')) {
-      finalCategory = 'حميمية';
-    } else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام') || checkText.includes('خبرة')) {
-      finalCategory = 'طبيب';
     }
 
-    // --- 2. إجبار استلام التاريخ من الواجهة ---
-    let finalScheduledFor;
-    if (next_appointment) {
-      finalScheduledFor = new Date(next_appointment);
-    } else if (startDate) {
-      finalScheduledFor = new Date(startDate);
-    } else if (scheduled_for) {
-      finalScheduledFor = new Date(scheduled_for);
-    } else {
-      finalScheduledFor = now;
-    }
+    // --- 2. إجبار استلام التاريخ من الواجهة لضمان عدم التسجيل بتاريخ اليوم ---
+    let finalScheduledFor = next_appointment ? new Date(next_appointment) : 
+                           (startDate ? new Date(startDate) : 
+                           (scheduled_for ? new Date(scheduled_for) : now));
 
     const query = `
       INSERT INTO notifications (
@@ -82,37 +72,33 @@ export default async function handler(req, res) {
       ui_source_date: scheduled_for || startDate || next_appointment 
     });
 
-    // --- 3. منطق الحمل العكسي (تكرار الصفوف من تاريخ الولادة لليوم) ---
+    // --- 3. الجدولة العكسية من تاريخ الولادة حتى اليوم ---
     if (finalCategory === 'حمل' && expected_due_date) {
       const dueDate = new Date(expected_due_date);
       let ids = [];
-      
-      // حساب فرق الأشهر بين اليوم وتاريخ الولادة
       let diffMonths = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
       
-      // التكرار العكسي: من i=0 (تاريخ الولادة) وحتى i=diffMonths (تاريخ اليوم)
-      for (let i = 0; i <= diffMonths; i++) {
-        let sDate = new Date(dueDate); 
-        sDate.setMonth(dueDate.getMonth() - i); // يرجع شهراً واحداً في كل لفة
-        
-        // لا نسجل المواعيد التي مضت قبل اليوم (إلا موعد اليوم الحالي)
-        if (sDate < now && Math.abs(sDate - now) > 86400000) continue; 
+      if (diffMonths >= 0) {
+        for (let i = 0; i <= diffMonths; i++) {
+          let sDate = new Date(dueDate); 
+          sDate.setMonth(dueDate.getMonth() - i); 
+          
+          if (sDate < now && i !== diffMonths) continue; 
 
-        const v = [
-          parseInt(user_id) || 1, fcmToken, 'حمل', 
-          `متابعة الجنين - شهر ${diffMonths - i + 1}`, 
-          title || `تقرير نمو الجنين وموعد الولادة المتوقع`, 
-          false, 
-          sDate, // التاريخ المجدول (عكسي من تاريخ الولادة)
-          null, null, longitude || 0, latitude || 0, extraData
-        ];
-        const resDb = await pool.query(query, v);
-        ids.push(resDb.rows[0].id);
+          const v = [
+            parseInt(user_id) || 1, fcmToken, 'حمل', 
+            `متابعة الحمل - الشهر ${diffMonths - i + 1}`, 
+            title || `تذكير بخصوص ${body || 'تطورات الحمل والجنين'}`, 
+            false, sDate, null, null, longitude || 0, latitude || 0, extraData
+          ];
+          const resDb = await pool.query(query, v);
+          ids.push(resDb.rows[0].id);
+        }
+        return res.status(200).json({ success: true, message: "تمت الجدولة العكسية لكل أقسام الحمل", ids });
       }
-      return res.status(200).json({ success: true, message: "تمت جدولة شهور الحمل والجنين عكسياً", ids });
     }
 
-    // للإدخالات العادية (طبيب، عظام، إلخ)
+    // للأقسام العادية
     const values = [
       parseInt(user_id) || 1, fcmToken, finalCategory, 
       title, body, false, 
