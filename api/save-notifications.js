@@ -24,17 +24,12 @@ export default async function handler(req, res) {
   try {
     const now = new Date();
     
-    // --- 1. تحديد الفئة بالعربي لضبط شكل الجدول ---
+    // --- 1. تحديد الفئة بدقة (تم إعادة ترتيب الأولويات) ---
     let finalCategory = 'عام';
     const checkText = ((category || "") + (title || "") + (body || "")).toLowerCase();
 
-    if (checkText.includes('حيض') || checkText.includes('دورة') || checkText.includes('period') || checkText.includes('menstrual')) {
-      finalCategory = 'حيض';
-    } else if (checkText.includes('حمل') || checkText.includes('pregnancy')) {
-      finalCategory = 'حمل';
-    } else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('medical')) {
-      finalCategory = 'طبيب';
-    } else if (checkText.includes('رضاعة') || checkText.includes('milk')) {
+    // فحص الفئات الخاصة أولاً لمنع اختلاطها بكلمة "طبيب"
+    if (checkText.includes('رضاعة') || checkText.includes('milk')) {
       finalCategory = 'رضاعة';
     } else if (checkText.includes('أمومة') || checkText.includes('طفل')) {
       finalCategory = 'أمومة';
@@ -42,27 +37,26 @@ export default async function handler(req, res) {
       finalCategory = 'رشاقة';
     } else if (checkText.includes('فقه') || checkText.includes('fiqh')) {
       finalCategory = 'فقه';
-    } else if (checkText.includes('حميمية') || checkText.includes('marriage')) {
-      finalCategory = 'حميمية';
     } else if (checkText.includes('مشاعر') || checkText.includes('mood')) {
       finalCategory = 'مشاعر';
+    } else if (checkText.includes('حيض') || checkText.includes('دورة') || checkText.includes('period')) {
+      finalCategory = 'حيض';
+    } else if (checkText.includes('حمل') || checkText.includes('pregnancy')) {
+      finalCategory = 'حمل';
+    } else if (checkText.includes('حميمية') || checkText.includes('marriage')) {
+      finalCategory = 'حميمية';
+    } else if (checkText.includes('طبيب') || checkText.includes('استشارة') || checkText.includes('عظام') || checkText.includes('medical')) {
+      finalCategory = 'طبيب';
     }
 
-    // --- 2. إجبار التواريخ لتطابق الواجهة بالضبط ---
+    // --- 2. ضبط موعد الطبيب القادم ---
+    // إذا وجد موعد طبيب قادم من الواجهة نعتمد عليه فوراً
+    let finalScheduledFor = scheduled_for ? new Date(scheduled_for) : now;
     
-    // الأولوية لـ scheduled_for القادم من التطبيق، ثم startDate (موعد الدورة القادمة)، ثم الآن
-    let finalScheduledFor = scheduled_for ? new Date(scheduled_for) : (startDate ? new Date(startDate) : now);
-    
-    // في حالة الطبيب: إذا أرسلت الواجهة موعداً، نجدول قبلها بـ 48 ساعة، وإلا نلتزم بالموعد المرسل
-    if (finalCategory === 'طبيب' && next_appointment) {
-      finalScheduledFor = new Date(new Date(next_appointment).getTime() - (2 * 24 * 60 * 60 * 1000));
+    if (next_appointment) {
+        finalScheduledFor = new Date(next_appointment);
     }
 
-    // تجهيز تواريخ الأعمدة لتظهر في Neon (منع الـ NULL)
-    const dbStartDate = startDate ? new Date(startDate) : (finalCategory === 'حيض' ? finalScheduledFor : null);
-    const dbEndDate = endDate ? new Date(endDate) : null;
-
-    // --- 3. تنفيذ الإدخال في قاعدة البيانات ---
     const query = `
       INSERT INTO notifications (
         user_id, fcm_token, category, title, body, is_sent, 
@@ -79,29 +73,43 @@ export default async function handler(req, res) {
       ui_source_date: scheduled_for || startDate 
     });
 
+    // --- 3. منطق الحمل (إنشاء صفوف للأشهر المتبقية بالعكس) ---
+    if (finalCategory === 'حمل' && expected_due_date) {
+      const dueDate = new Date(expected_due_date);
+      let ids = [];
+      
+      // حساب الفرق بالأشهر بين الآن وتاريخ الولادة
+      let diffMonths = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
+      
+      // إنشاء سجل لكل شهر متبقي من الآن وحتى تاريخ الولادة
+      for (let i = 0; i <= diffMonths; i++) {
+        let sDate = new Date(dueDate); 
+        sDate.setMonth(dueDate.getMonth() - i); // الرجوع للخلف من تاريخ الولادة
+        
+        // إذا كان التاريخ المحسوب قد مضى، لا ننشئ له سجل (اختياري)
+        if (sDate < now && i !== diffMonths) continue; 
+
+        const v = [
+          parseInt(user_id) || 1, fcmToken, 'حمل', 
+          `متابعة الحمل - شهر ${diffMonths - i + 1}`, 
+          `تذكير بموعد الشهر القادم بناءً على تاريخ الولادة المتوقع`, 
+          false, sDate, null, null, longitude || 0, latitude || 0, extraData
+        ];
+        const resDb = await pool.query(query, v);
+        ids.push(resDb.rows[0].id);
+      }
+      return res.status(200).json({ success: true, message: "تم جدولة أشهر الحمل بنجاح", ids });
+    }
+
+    // للإدخالات العادية (غير الحمل)
     const values = [
       parseInt(user_id) || 1, fcmToken, finalCategory, 
       title, body, false, 
       finalScheduledFor, 
-      dbStartDate, 
-      dbEndDate, 
+      startDate ? new Date(startDate) : null, 
+      endDate ? new Date(endDate) : null, 
       longitude || 0, latitude || 0, extraData
     ];
-
-    // منطق الحمل: إذا كانت الواجهة ترسل تاريخ ولادة، نجدول شهور بناءً عليه
-    if (finalCategory === 'حمل' && expected_due_date) {
-      const dueDate = new Date(expected_due_date);
-      let months = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
-      let ids = [];
-      for (let i = 0; i <= months; i++) {
-        let sDate = new Date(); sDate.setMonth(now.getMonth() + i);
-        // نضع اليوم الأول من كل شهر للتذكير
-        const v = [parseInt(user_id) || 1, fcmToken, 'حمل', title, `متابعة شهرك الجديد من الحمل`, false, sDate, null, null, longitude || 0, latitude || 0, extraData];
-        const resDb = await pool.query(query, v);
-        ids.push(resDb.rows[0].id);
-      }
-      return res.status(200).json({ success: true, message: "تم التزامن مع واجهة الحمل", ids });
-    }
 
     const result = await pool.query(query, values);
     return res.status(200).json({ 
