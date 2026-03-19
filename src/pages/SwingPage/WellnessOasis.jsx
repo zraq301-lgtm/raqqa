@@ -1,13 +1,20 @@
-import React, { useState } from 'react';
-import { Dumbbell, Droplets, Moon, Sun, CheckCircle2, Heart, Play } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Dumbbell, Droplets, Heart, Sun, CheckCircle2, Play, Sparkles } from 'lucide-react';
 
-const WellnessOasis = () => {
+const DynamicWellnessOasis = () => {
   const [waterCount, setWaterCount] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [tasks, setTasks] = useState([
     { id: 1, text: 'تمارين تمدد (Stretching)', done: false },
-    { id: 2, text: 'قناع طبيعي للوجه', done: false },
-    { id: 3, text: 'قراءة 5 صفحات', done: false },
+    { id: 2, text: 'جلسة تأمل 5 دقائق', done: false },
+    { id: 3, text: 'ترطيب البشرة', done: false },
   ]);
+
+  // تحديث شريط التقدم تلقائياً
+  useEffect(() => {
+    const completed = tasks.filter(t => t.done).length;
+    setProgress((completed / tasks.length) * 100);
+  }, [tasks]);
 
   const toggleTask = (id) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
@@ -15,246 +22,225 @@ const WellnessOasis = () => {
 
   return (
     <div style={styles.container}>
-      {/* Background Decor */}
+      {/* 1. الخلفية المتحركة */}
+      <div style={styles.animatedBg}></div>
       <div style={styles.blob1}></div>
       <div style={styles.blob2}></div>
 
       <div style={styles.glassWrapper}>
-        {/* Header Section */}
+        {/* Header مع أنيميشن الدخول */}
         <header style={styles.header}>
+          <div style={styles.iconFloat}>
+            <Sparkles color="#d4a373" size={30} />
+          </div>
           <h1 style={styles.title}>واحة العافية</h1>
-          <p style={styles.subtitle}>اعتني بنفسكِ، فأنتِ تستحقين الأفضل</p>
+          <p style={styles.subtitle}>أهلاً بكِ في مساحتكِ الخاصة</p>
         </header>
 
-        {/* Workout Card (The New Feature) */}
-        <section style={styles.card}>
-          <div style={styles.cardHeader}>
-            <Dumbbell color="#d4a373" size={24} />
-            <h2 style={styles.cardTitle}>تحدي النشاط اليومي</h2>
-          </div>
-          <div style={styles.workoutContent}>
-            <div style={styles.workoutInfo}>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '5px' }}>يوغا الصباح والركض الخفيف</h3>
-              <p style={{ fontSize: '0.85rem', color: '#666' }}>15 دقيقة لتعزيز مرونة جسمكِ وطاقتكِ</p>
-            </div>
-            <button style={styles.playButton}>
+        {/* 2. شريط الإنجاز الحيوي */}
+        <div style={styles.progressContainer}>
+           <div style={styles.progressText}>
+             <span>إنجازكِ اليوم</span>
+             <span>{Math.round(progress)}%</span>
+           </div>
+           <div style={styles.progressBarBg}>
+             <div style={{ ...styles.progressBarFill, width: `${progress}%` }}></div>
+           </div>
+        </div>
+
+        {/* 3. كرت الرياضة (بلمسة نابضة) */}
+        <section style={styles.cardMain}>
+          <div style={styles.cardContent}>
+            <div style={styles.workoutTag}>خطة اليوم</div>
+            <h2 style={styles.cardTitle}>تمارين الكارديو الخفيفة</h2>
+            <p style={styles.cardDesc}>تنشيط الدورة الدموية في 10 دقائق</p>
+            <button style={styles.pulseButton}>
               <Play fill="white" size={16} />
-              <span>ابدئي الآن</span>
+              <span>ابدئي النشاط</span>
             </button>
           </div>
+          <Dumbbell style={styles.floatingDumbbell} size={60} color="rgba(212, 163, 115, 0.2)" />
         </section>
 
-        {/* Stats Grid */}
+        {/* 4. قسم المتتبعات التفاعلي */}
         <div style={styles.grid}>
-          {/* Water Tracker */}
-          <div style={{ ...styles.card, flex: 1 }}>
-            <div style={styles.cardHeader}>
-              <Droplets color="#00b4d8" size={20} />
-              <span style={styles.smallTitle}>شرب الماء</span>
-            </div>
-            <div style={styles.counterBody}>
-              <span style={styles.counterNum}>{waterCount}/8</span>
-              <button 
-                onClick={() => setWaterCount(Math.min(8, waterCount + 1))}
-                style={styles.addButton}
-              >+</button>
-            </div>
+          <div style={styles.smallCard}>
+            <Droplets className="animate-bounce" color="#00b4d8" size={24} />
+            <span style={styles.counterNum}>{waterCount}</span>
+            <span style={styles.label}>أكواب الماء</span>
+            <button 
+              onClick={() => setWaterCount(prev => Math.min(8, prev + 1))}
+              style={styles.addBtnSmall}
+            >+</button>
           </div>
 
-          {/* Mood Tracker */}
-          <div style={{ ...styles.card, flex: 1 }}>
-            <div style={styles.cardHeader}>
-              <Heart color="#e5989b" size={20} />
-              <span style={styles.smallTitle}>المزاج</span>
-            </div>
-            <div style={styles.emojiRow}>
-              <span>✨</span><span>🌸</span><span>🌙</span>
+          <div style={styles.smallCard}>
+            <Heart style={styles.heartBeat} color="#e5989b" size={24} />
+            <span style={styles.label}>الحالة اليوم</span>
+            <div style={styles.emojiSelection}>
+              <span style={styles.emoji}>🌸</span>
+              <span style={styles.emoji}>✨</span>
+              <span style={styles.emoji}>🍃</span>
             </div>
           </div>
         </div>
 
-        {/* Self-Care Checklist */}
-        <section style={styles.card}>
-          <h2 style={{ ...styles.cardTitle, marginBottom: '15px' }}>قائمة العناية بالذات</h2>
-          {tasks.map(task => (
+        {/* 5. قائمة المهام بأسلوب عصري */}
+        <section style={styles.taskSection}>
+          <h3 style={styles.sectionTitle}>خطوات العناية</h3>
+          {tasks.map((task, index) => (
             <div 
               key={task.id} 
               onClick={() => toggleTask(task.id)}
-              style={{ ...styles.taskItem, opacity: task.done ? 0.6 : 1 }}
+              style={{ 
+                ...styles.taskItem, 
+                animationDelay: `${index * 0.1}s`,
+                backgroundColor: task.done ? '#f0f0f0' : '#fff'
+              }}
             >
-              <CheckCircle2 color={task.done ? "#b7b7a4" : "#e9edc6"} />
-              <span style={{ textDecoration: task.done ? 'line-through' : 'none' }}>
+              <div style={{
+                ...styles.checkCircle,
+                backgroundColor: task.done ? '#b7b7a4' : 'transparent',
+                borderColor: task.done ? '#b7b7a4' : '#d1d1d1'
+              }}>
+                {task.done && <CheckCircle2 size={16} color="white" />}
+              </div>
+              <span style={{ 
+                textDecoration: task.done ? 'line-through' : 'none',
+                color: task.done ? '#999' : '#444'
+              }}>
                 {task.text}
               </span>
             </div>
           ))}
         </section>
-
-        {/* Daily Tip Footer */}
-        <footer style={styles.tipFooter}>
-          <Sun size={18} />
-          <p>نصيحة اليوم: الجمال يبدأ من الداخل، كوني لطيفة مع نفسكِ.</p>
-        </footer>
       </div>
+
+      {/* CSS Keyframes injected via style tag */}
+      <style>{`
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+          100% { transform: translateY(0px); }
+        }
+        @keyframes pulse {
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 163, 115, 0.4); }
+          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(212, 163, 115, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(212, 163, 115, 0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes heartbeat {
+          0% { transform: scale(1); }
+          15% { transform: scale(1.1); }
+          30% { transform: scale(1); }
+          45% { transform: scale(1.1); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 };
 
-// --- CSS in JS Styles ---
 const styles = {
   container: {
-    fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
     direction: 'rtl',
-    backgroundColor: '#f8f9fa',
     minHeight: '100vh',
-    padding: '20px',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: '20px',
+    backgroundColor: '#FAF9F6',
     position: 'relative',
     overflow: 'hidden',
-  },
-  blob1: {
-    position: 'absolute',
-    width: '300px',
-    height: '300px',
-    background: 'linear-gradient(135deg, #faedcd 0%, #fefae0 100%)',
-    borderRadius: '50%',
-    top: '-50px',
-    left: '-50px',
-    zIndex: 0,
-  },
-  blob2: {
-    position: 'absolute',
-    width: '250px',
-    height: '250px',
-    background: 'linear-gradient(135deg, #e9edc6 0%, #d4a37322 100%)',
-    borderRadius: '50%',
-    bottom: '-20px',
-    right: '-20px',
-    zIndex: 0,
+    fontFamily: 'system-ui, -apple-system, sans-serif'
   },
   glassWrapper: {
-    background: 'rgba(255, 255, 255, 0.7)',
-    backdropFilter: 'blur(10px)',
-    borderRadius: '30px',
-    padding: '30px',
     width: '100%',
-    maxWidth: '450px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.05)',
-    zIndex: 1,
-    border: '1px solid rgba(255,255,255,0.3)',
+    maxWidth: '400px',
+    background: 'rgba(255, 255, 255, 0.8)',
+    backdropFilter: 'blur(15px)',
+    borderRadius: '40px',
+    padding: '25px',
+    boxShadow: '0 20px 50px rgba(0,0,0,0.08)',
+    zIndex: 2,
+    animation: 'fadeIn 0.8s ease-out',
+    border: '1px solid rgba(255,255,255,0.5)'
   },
-  header: {
-    textAlign: 'center',
-    marginBottom: '25px',
-  },
-  title: {
-    color: '#d4a373',
-    fontSize: '2rem',
-    fontWeight: '800',
-    margin: 0,
-  },
-  subtitle: {
-    color: '#777',
-    fontSize: '0.9rem',
-    marginTop: '5px',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: '20px',
+  header: { textAlign: 'center', marginBottom: '30px' },
+  title: { fontSize: '1.8rem', color: '#8b5e34', margin: 0, fontWeight: '800' },
+  subtitle: { color: '#a5a5a5', fontSize: '0.9rem' },
+  iconFloat: { animation: 'float 3s ease-in-out infinite' },
+
+  progressContainer: { marginBottom: '25px' },
+  progressText: { display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '8px', color: '#666' },
+  progressBarBg: { height: '8px', background: '#eee', borderRadius: '10px', overflow: 'hidden' },
+  progressBarFill: { height: '100%', background: 'linear-gradient(90deg, #d4a373, #e9edc6)', transition: 'width 0.5s ease-in-out' },
+
+  cardMain: {
+    background: 'linear-gradient(135deg, #fff 0%, #fefae0 100%)',
+    borderRadius: '25px',
     padding: '20px',
+    position: 'relative',
+    overflow: 'hidden',
     marginBottom: '20px',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
-    border: '1px solid #f1f1f1',
+    boxShadow: '0 10px 20px rgba(212, 163, 115, 0.1)'
   },
-  cardHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '10px',
-  },
-  cardTitle: {
-    fontSize: '1.1rem',
-    fontWeight: '600',
-    color: '#555',
-  },
-  workoutContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fefae0',
-    padding: '15px',
-    borderRadius: '15px',
-  },
-  playButton: {
-    backgroundColor: '#d4a373',
+  workoutTag: { display: 'inline-block', padding: '4px 12px', background: '#d4a373', color: '#fff', borderRadius: '20px', fontSize: '0.7rem', marginBottom: '10px' },
+  cardTitle: { fontSize: '1.2rem', margin: '0 0 5px 0', color: '#444' },
+  cardDesc: { fontSize: '0.85rem', color: '#777', marginBottom: '15px' },
+  pulseButton: {
     border: 'none',
-    borderRadius: '12px',
-    padding: '10px 15px',
+    background: '#d4a373',
     color: '#fff',
+    padding: '10px 20px',
+    borderRadius: '15px',
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
     cursor: 'pointer',
-    boxShadow: '0 4px 10px rgba(212, 163, 115, 0.3)',
+    animation: 'pulse 2s infinite'
   },
-  grid: {
-    display: 'flex',
-    gap: '15px',
+  floatingDumbbell: { position: 'absolute', left: '-10px', bottom: '-10px', transform: 'rotate(-20deg)' },
+
+  grid: { display: 'flex', gap: '15px', marginBottom: '25px' },
+  smallCard: { 
+    flex: 1, 
+    background: '#fff', 
+    borderRadius: '20px', 
+    padding: '15px', 
+    display: 'flex', 
+    flexDirection: 'column', 
+    alignItems: 'center', 
+    gap: '8px',
+    boxShadow: '0 5px 15px rgba(0,0,0,0.02)'
   },
-  smallTitle: {
-    fontSize: '0.9rem',
-    fontWeight: '600',
-  },
-  counterBody: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: '10px',
-  },
-  counterNum: {
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    color: '#00b4d8',
-  },
-  addButton: {
-    width: '30px',
-    height: '30px',
-    borderRadius: '50%',
-    border: 'none',
-    backgroundColor: '#e9edc6',
-    cursor: 'pointer',
-    fontSize: '1.2rem',
-  },
-  emojiRow: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    fontSize: '1.4rem',
-    marginTop: '10px',
-  },
+  counterNum: { fontSize: '1.4rem', fontWeight: 'bold', color: '#333' },
+  label: { fontSize: '0.75rem', color: '#999' },
+  addBtnSmall: { border: 'none', background: '#f0f0f0', width: '25px', height: '25px', borderRadius: '50%', cursor: 'pointer' },
+  heartBeat: { animation: 'heartbeat 1.5s infinite' },
+  emojiSelection: { display: 'flex', gap: '8px', marginTop: '5px' },
+  emoji: { cursor: 'pointer', fontSize: '1.1rem' },
+
+  taskSection: { textAlign: 'right' },
+  sectionTitle: { fontSize: '1rem', marginBottom: '15px', color: '#555' },
   taskItem: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    padding: '12px',
-    backgroundColor: '#fcfcfc',
-    borderRadius: '12px',
-    marginBottom: '8px',
-    cursor: 'pointer',
-    transition: '0.3s',
-  },
-  tipFooter: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    backgroundColor: '#d4a37311',
     padding: '15px',
-    borderRadius: '15px',
-    fontSize: '0.85rem',
-    color: '#8a5a44',
-    lineHeight: '1.4',
-  }
+    borderRadius: '18px',
+    marginBottom: '10px',
+    cursor: 'pointer',
+    transition: 'all 0.3s',
+    animation: 'fadeIn 0.5s ease-out forwards'
+  },
+  checkCircle: { width: '22px', height: '22px', borderRadius: '50%', border: '2px solid', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+
+  blob1: { position: 'absolute', top: '-10%', right: '-10%', width: '300px', height: '300px', background: '#faedcd', borderRadius: '50%', filter: 'blur(60px)', opacity: 0.6 },
+  blob2: { position: 'absolute', bottom: '-10%', left: '-10%', width: '250px', height: '250px', background: '#e9edc6', borderRadius: '50%', filter: 'blur(50px)', opacity: 0.5 },
 };
 
-export default WellnessOasis;
+export default DynamicWellnessOasis;
