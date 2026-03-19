@@ -92,18 +92,25 @@ const MenstrualTracker = () => {
 
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
-    const scheduledDate = new Date();
-    scheduledDate.setMonth(scheduledDate.getMonth() + 9); 
+    
+    // إصلاح الخطأ: نستخدم التاريخ المتوقع الحقيقي من الواجهة بدلاً من زيادة 9 أشهر
+    let actualScheduledDate = new Date().toISOString(); 
+    if (prediction && prediction.nextDate) {
+        // تحويل التاريخ من ar-EG (مثل 2026/3/19) إلى صيغة صالحة لـ JS
+        const dateParts = prediction.nextDate.split('/');
+        if (dateParts.length === 3) {
+            const formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+            actualScheduledDate = formattedDate.toISOString();
+        }
+    }
 
-    // استخراج البيانات الصحية بدقة لإرسالها لـ نيون
     const healthPayload = {
       fcmToken: savedToken || undefined,
       user_id: 1,
       category: 'medical_report',
       title: `تقرير جديد: ${categoryTitle} 🩺`,
       body: currentAnalysis.substring(0, 100) + "...",
-      scheduled_for: scheduledDate.toISOString(),
-      // إضافة البيانات الصحية هنا في حقل الملاحظات أو كحقول إضافية إذا كان الـ API يدعمها
+      scheduled_for: actualScheduledDate, // التاريخ الصحيح
       note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${prediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${prediction?.fertility || 'غير محدد'}`
     };
 
@@ -200,7 +207,6 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
-      // استدعاء الحفظ بعد تحديث الـ prediction لضمان إرسال المواعيد الجديدة
       await saveAndNotify("تحليل الدورة الشهرية", responseText);
 
     } catch (e) { console.error(e); }
