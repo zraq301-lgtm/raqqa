@@ -90,15 +90,15 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+  const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    // إصلاح الخطأ: نستخدم التاريخ المتوقع الحقيقي من الواجهة بدلاً من زيادة 9 أشهر
+    // استخدام التاريخ المتوقع من المعامل الممرر لضمان أحدث قيمة
     let actualScheduledDate = new Date().toISOString(); 
-    if (prediction && prediction.nextDate) {
-        // تحويل التاريخ من ar-EG (مثل 2026/3/19) إلى صيغة صالحة لـ JS
-        const dateParts = prediction.nextDate.split('/');
+    if (currentPrediction && currentPrediction.nextDate) {
+        const dateParts = currentPrediction.nextDate.split('/');
         if (dateParts.length === 3) {
+            // تحويل من صيغة YYYY/M/D المتوقعة من toLocaleDateString('ar-EG')
             const formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
             actualScheduledDate = formattedDate.toISOString();
         }
@@ -110,8 +110,8 @@ const MenstrualTracker = () => {
       category: 'medical_report',
       title: `تقرير جديد: ${categoryTitle} 🩺`,
       body: currentAnalysis.substring(0, 100) + "...",
-      scheduled_for: actualScheduledDate, // التاريخ الصحيح
-      note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${prediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${prediction?.fertility || 'غير محدد'}`
+      scheduled_for: actualScheduledDate, 
+      note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${currentPrediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${currentPrediction?.fertility || 'غير محدد'}`
     };
 
     try {
@@ -156,7 +156,7 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
       
-      await saveAndNotify("استشارة فورية", responseText);
+      await saveAndNotify("استشارة فورية", responseText, prediction);
 
     } catch (err) {
       console.error("AI Error", err);
@@ -207,7 +207,8 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
-      await saveAndNotify("تحليل الدورة الشهرية", responseText);
+      // تمرير calc مباشرة لضمان أخذ التاريخ الجديد فوراً
+      await saveAndNotify("تحليل الدورة الشهرية", responseText, calc);
 
     } catch (e) { console.error(e); }
 
@@ -257,7 +258,7 @@ const MenstrualTracker = () => {
           <button onClick={() => setShowSavedList(!showSavedList)} style={{ background: '#f0f0f0', border: 'none', padding: '8px 15px', borderRadius: '15px' }}>🔖 المحفوظات</button>
         </div>
         <button onClick={handleSaveAndAnalyze} style={styles.btnPrimary} disabled={loading}>
-          {loading ? "جاري الحفظ والتحليل..." : "حفظ في نيون وتحليل طبي شامل ✨"}
+          {loading ? "جاري الحفظ والتحليل..." : "حفظ البيانات وتحليل طبي شامل ✨"}
         </button>
       </div>
 
