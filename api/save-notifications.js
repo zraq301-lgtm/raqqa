@@ -22,13 +22,11 @@ export default async function handler(req, res) {
   } = req.body;
 
   try {
-    const now = new Date();
     const checkText = ((category || "") + (title || "") + (body || "")).toLowerCase();
     
     // --- 1. تحديد الفئة بناءً على أقسام واجهة الحمل الجديدة ---
     let finalCategory = 'عام';
 
-    // كلمات مفتاحية من واجهة الحمل: (تطور الأسابيع، نمو الجنين، صحة الأم، الفحوصات، المكملات، الاستعداد للولادة)
     if (checkText.includes('جنين') || checkText.includes('حمل') || checkText.includes('أسابيع') || 
         checkText.includes('فحوصات') || checkText.includes('مكملات') || checkText.includes('ولادة') || 
         expected_due_date) {
@@ -51,10 +49,10 @@ export default async function handler(req, res) {
       finalCategory = 'حيض';
     }
 
-    // --- 2. إجبار استلام التاريخ من الواجهة لضمان عدم التسجيل بتاريخ اليوم ---
+    // --- 2. استلام التاريخ من الواجهة حصراً (دون وضع تاريخ اليوم كبديل) ---
     let finalScheduledFor = next_appointment ? new Date(next_appointment) : 
                            (startDate ? new Date(startDate) : 
-                           (scheduled_for ? new Date(scheduled_for) : now));
+                           (scheduled_for ? new Date(scheduled_for) : null));
 
     const query = `
       INSERT INTO notifications (
@@ -72,19 +70,18 @@ export default async function handler(req, res) {
       ui_source_date: scheduled_for || startDate || next_appointment 
     });
 
-    // --- 3. الجدولة العكسية من تاريخ الولادة حتى اليوم ---
+    // --- 3. الجدولة العكسية من تاريخ الولادة ---
     if (finalCategory === 'حمل' && expected_due_date) {
       const dueDate = new Date(expected_due_date);
+      const nowRef = new Date(); 
       let ids = [];
-      let diffMonths = (dueDate.getFullYear() - now.getFullYear()) * 12 + (dueDate.getMonth() - now.getMonth());
+      let diffMonths = (dueDate.getFullYear() - nowRef.getFullYear()) * 12 + (dueDate.getMonth() - nowRef.getMonth());
       
       if (diffMonths >= 0) {
         for (let i = 0; i <= diffMonths; i++) {
           let sDate = new Date(dueDate); 
           sDate.setMonth(dueDate.getMonth() - i); 
           
-          if (sDate < now && i !== diffMonths) continue; 
-
           const v = [
             parseInt(user_id) || 1, fcmToken, 'حمل', 
             `متابعة الحمل - الشهر ${diffMonths - i + 1}`, 
@@ -98,7 +95,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // للأقسام العادية
+    // للأقسام العادية - يتم الحفظ بالتاريخ القادم من الواجهة
     const values = [
       parseInt(user_id) || 1, fcmToken, finalCategory, 
       title, body, false, 
