@@ -10,61 +10,56 @@ const pool = new Pool({
   max: 1, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000
 });
 
-// دالة إجبارية لتحويل أي نص قادم من الواجهة إلى تاريخ صالح Node.js يفهمه
-const forceParseDate = (dateVal) => {
-  if (!dateVal) return null;
-  try {
-    // إذا كان التاريخ يحتوي على / (مثل 2026/03/20) نحوله إلى -
-    let sanitized = String(dateVal).replace(/\//g, '-').trim();
-    let d = new Date(sanitized);
-    // إذا فشل التحويل العادي، نحاول استخراج الأرقام فقط
-    if (isNaN(d.getTime())) {
-      const match = sanitized.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (match) d = new Date(match[1], match[2] - 1, match[3]);
-    }
-    return isNaN(d.getTime()) ? null : d;
-  } catch (e) { return null; }
+// دالة التنظيف النهائية لضمان تحويل التاريخ القادم من الواجهة مهما كان شكله
+const parseFrontendDate = (val) => {
+  if (!val) return null;
+  // تحويل الأرقام العربية إلى إنجليزية إذا وجدت واستبدال / بـ -
+  let dStr = String(val)
+    .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)) 
+    .replace(/\//g, '-')
+    .trim();
+  
+  const d = new Date(dStr);
+  return isNaN(d.getTime()) ? null : d;
 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // استلام البيانات (الواجهة ترسل أحياناً البيانات داخل extra_data)
   let { 
     category, user_id, fcmToken, title, body, 
     extra_data, scheduled_for, startDate,
-    expected_due_date, 
-    next_period_date,  
-    next_appointment   
+    expected_due_date, next_period_date, next_appointment 
   } = req.body;
 
   try {
     let finalScheduledFor = null;
 
-    // --- 1. قسم موعد الولادة (الناجح تماماً) ---
+    // --- 1. منطق "موعد الولادة" (الناجح تماماً) ---
     if (expected_due_date || extra_data?.expected_due_date) {
-      finalScheduledFor = forceParseDate(expected_due_date || extra_data.expected_due_date);
+      finalScheduledFor = parseFrontendDate(expected_due_date || extra_data.expected_due_date);
     }
 
-    // --- 2. قسم تاريخ الحيض المتوقع (إجبار الاستخراج من MenstrualTracker) ---
+    // --- 2. منطق "تاريخ الحيض" (مطابق لدالة calc.nextDate في MenstrualTracker) ---
     else if (next_period_date || extra_data?.next_period_date) {
-      finalScheduledFor = forceParseDate(next_period_date || extra_data.next_period_date);
+      // الواجهة ترسلها غالباً داخل extra_data.next_period_date
+      finalScheduledFor = parseFrontendDate(next_period_date || extra_data.next_period_date);
     }
 
-    // --- 3. قسم موعد الطبيب (إجبار الاستخراج من DoctorClinical) ---
-    else if (next_appointment || extra_data?.next_appointment) {
-      finalScheduledFor = forceParseDate(next_appointment || extra_data.next_appointment);
+    // --- 3. منطق "موعد الطبيب" (مطابق لـ categories.name في DoctorClinical) ---
+    else if (next_appointment || extra_data?.next_appointment || category === 'طبيب') {
+      // في ملف الطبيب، القيمة قد تأتي في body مباشرة أو داخل extra_data
+      finalScheduledFor = parseFrontendDate(next_appointment || extra_data?.next_appointment);
     }
 
-    // --- 4. باقي الأقسام العادية (تطوير، صحة، إلخ) ---
-    else if (scheduled_for || startDate) {
-      finalScheduledFor = forceParseDate(scheduled_for || startDate);
+    // --- 4. الحالات العامة ---
+    if (!finalScheduledFor && (scheduled_for || startDate)) {
+      finalScheduledFor = parseFrontendDate(scheduled_for || startDate);
     }
 
-    // --- قفل الأمان: إذا لم يأتِ تاريخ من الواجهة، لا تحفظ تاريخ اليوم (اتركه Null) ---
-    // هذا يمنع تسجيل "تاريخ اليوم" بشكل تلقائي إذا فشلت الدوال
-    if (!finalScheduledFor) {
-        // نترك الحقل فارغاً في قاعدة البيانات كما طلبت
-    }
+    // إجبار عدم وضع تاريخ اليوم إذا كانت النتيجة null
+    const saveDate = finalScheduledFor ? finalScheduledFor.toISOString() : null;
 
     const query = `
       INSERT INTO notifications (
@@ -75,22 +70,22 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
+    // تجميع البيانات الإضافية للتأكد من حفظ الأصل للرجوع إليه
     const finalExtra = JSON.stringify({
       ...(typeof extra_data === 'object' ? extra_data : {}),
-      next_appointment,
-      expected_due_date,
-      next_period_date,
-      debug_received_date: next_period_date || next_appointment || "none"
+      original_next_period: next_period_date || extra_data?.next_period_date,
+      original_next_appointment: next_appointment || extra_data?.next_appointment,
+      source: "frontend_sync_v4"
     });
 
     const values = [
       parseInt(user_id) || 1,
       fcmToken || null,
       category || 'عام',
-      title || 'تنبيه',
+      title || 'تنبيه جديد',
       body || '',
       false,
-      finalScheduledFor, 
+      saveDate, 
       finalExtra
     ];
 
@@ -99,11 +94,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       db_id: result.rows[0].id,
-      captured_date: finalScheduledFor 
+      applied_date: saveDate 
     });
 
   } catch (error) {
-    console.error('❌ Sync Error:', error.message);
+    console.error('❌ Database Sync Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
