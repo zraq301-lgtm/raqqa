@@ -90,55 +90,49 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
+  // --- التعديل المطلوب في دالة الحفظ والمزامنة ---
   const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    // إجبار الحفظ أن يأخذ تاريخ الدورة المتوقع القادم فقط
-    let actualScheduledDate = new Date().toISOString(); 
-    if (currentPrediction && currentPrediction.nextDate) {
-        // تحويل التاريخ من ar-EG (مثل 2026/3/19) إلى صيغة صالحة لـ JS
-        const dateParts = currentPrediction.nextDate.split('/');
-        if (dateParts.length === 3) {
-            // التعامل مع التنسيق العربي المتوقع (سنة/شهر/يوم)
-            const formattedDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
-            if (!isNaN(formattedDate)) {
-                actualScheduledDate = formattedDate.toISOString();
-            }
-        }
-    }
+    const fcmToken = localStorage.getItem('fcm_token');
+    const nextDate = currentPrediction?.nextDate; 
 
-    const healthPayload = {
-      fcmToken: savedToken || undefined,
+    const postData = {
       user_id: 1,
-      category: 'medical_report',
-      title: `تحديث رقة: ${categoryTitle} 🩺`,
-      body: currentAnalysis.substring(0, 100) + "...",
-      scheduled_for: actualScheduledDate, // التاريخ القادم المتوقع حصراً
-      note: `تحليل آلي لـ ${categoryTitle} | موعد القادمة: ${currentPrediction?.nextDate || 'غير محدد'} | البداية: ${data['سجل التواريخ_تاريخ البدء']} | النهاية: ${data['سجل التواريخ_تاريخ الانتهاء']} | الخصوبة: ${currentPrediction?.fertility || 'غير محدد'}`
+      category: 'menstrual_report',
+      title: 'تاريخ الحيض المتوقع',
+      body: `موعدك القادم هو ${nextDate}`,
+      fcmToken: fcmToken,
+      // نرسله كمتغير مباشر ليتوافق مع هيكلة قاعدة البيانات (نيون)
+      next_period_date: nextDate, 
+      extra_data: {
+        next_period_date: nextDate,
+        full_analysis: currentAnalysis,
+        start_date: data['سجل التواريخ_تاريخ البدء'],
+        end_date: data['سجل التواريخ_تاريخ الانتهاء']
+      }
     };
 
     try {
-      // الحفظ في قاعدة البيانات (نيون)
+      // الحفظ في قاعدة البيانات (نيون) من خلال API الحفظ الموحد
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: healthPayload
+        data: postData
       });
 
       // إرسال الإشعار عبر فيربيس
-      if (savedToken) {
+      if (fcmToken) {
         await CapacitorHttp.post({
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
           headers: { 'Content-Type': 'application/json' },
           data: {
-            token: savedToken,
-            title: 'تحديث طبي جديد 🔔',
-            body: `تم تحديث ملفكِ وتوقعات موعدكِ القادم: ${currentPrediction?.nextDate}`,
-            data: { type: 'medical_report' }
+            token: fcmToken,
+            title: 'تحديث موعد الدورة 🔔',
+            body: `تم تحديث توقعات موعدكِ القادم: ${nextDate}`,
+            data: { type: 'menstrual_report' }
           }
         });
       }
-      console.log("تم التحديث والمزامنة بنجاح ✅");
+      console.log("تم تحديث تاريخ الدورة بنجاح ✅");
     } catch (err) {
       console.error("خطأ في عملية المزامنة:", err);
     }
@@ -161,7 +155,6 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
       
-      // إرسال وحفظ مع كل استشارة
       await saveAndNotify("استشارة فورية", responseText, prediction);
 
     } catch (err) {
@@ -190,17 +183,16 @@ const MenstrualTracker = () => {
     }
     setLoading(true);
     
-    // الحسابات
     const cycleLen = parseInt(data['سجل التواريخ_مدة الدورة']) || 29;
     const start = new Date(startStr);
-    const nextDate = new Date(start);
-    nextDate.setDate(start.getDate() + cycleLen);
-    const ovulation = new Date(nextDate);
-    ovulation.setDate(nextDate.getDate() - 14);
+    const nextDateObj = new Date(start);
+    nextDateObj.setDate(start.getDate() + cycleLen);
+    const ovulation = new Date(nextDateObj);
+    ovulation.setDate(nextDateObj.getDate() - 14);
     const fertStart = new Date(ovulation); fertStart.setDate(ovulation.getDate() - 5);
 
     const calc = {
-      nextDate: nextDate.toLocaleDateString('ar-EG'),
+      nextDate: nextDateObj.toLocaleDateString('ar-EG'),
       fertility: `${fertStart.toLocaleDateString('ar-EG')} - ${ovulation.toLocaleDateString('ar-EG')}`
     };
     setPrediction(calc);
@@ -217,7 +209,6 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
-      // استدعاء الحفظ والإشعار (كل مرة يتم فيها الضغط على الزر)
       await saveAndNotify("تحليل الدورة الشهرية", responseText, calc);
 
     } catch (e) { console.error(e); }
