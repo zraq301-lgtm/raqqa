@@ -32,25 +32,25 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  // --- الدالة المعدلة لإرسال التاريخ المدخل يدوياً من حقل "الموعد القادم" ---
+  // --- وظيفة الحفظ والمزامنة مع الـ API ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
+    // جلب التوكن من localstorage كما طلبت
     const savedToken = localStorage.getItem('fcm_token');
     
-    // جلب القيمة من حقل "الموعد القادم" الخاص بالقسم المفتوح حالياً
+    // جلب القيمة من حقل "الموعد القادم" الخاص بالقسم المفتوح
     const userScheduledDate = data[`${categoryTitle}_الموعد القادم`];
     
     let finalDate;
     if (userScheduledDate) {
         const parsedDate = new Date(userScheduledDate);
-        // التحقق من صحة التاريخ المحول، إذا كان غير صالح نستخدم التاريخ الحالي كحماية
         finalDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
     } else {
-        // إذا كان الحقل فارغاً، يتم الحفظ بتاريخ اللحظة الحالية
         finalDate = new Date().toISOString();
     }
 
     try {
-      const saveToNeonOptions = {
+      // 1. الحفظ في قاعدة بيانات نيون
+      await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
@@ -59,14 +59,14 @@ const DoctorClinical = () => {
           category: 'medical_report',
           title: `موعد متابعة: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: finalDate, // هنا يتم إجبار الحفظ في الخانة المطلوبة (scheduled_for)
+          scheduled_for: finalDate,
           note: `تحليل آلي لـ ${categoryTitle}`
         }
-      };
-      await CapacitorHttp.post(saveToNeonOptions);
+      });
 
+      // 2. إرسال إشعار FCM إذا توفر التوكن
       if (savedToken) {
-        const fcmOptions = {
+        await CapacitorHttp.post({
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
           headers: { 'Content-Type': 'application/json' },
           data: {
@@ -75,11 +75,9 @@ const DoctorClinical = () => {
             body: `تم حفظ تقرير ${categoryTitle} وجدولة موعد المتابعة بتاريخ ${userScheduledDate || 'اليوم'}.`,
             data: { type: 'medical_report' }
           }
-        };
-        await CapacitorHttp.post(fcmOptions);
+        });
       }
-      
-      console.log("تم الحفظ في قاعدة البيانات بالتاريخ المجدول بنجاح ✅");
+      console.log("تمت المزامنة والحفظ بنجاح ✅");
     } catch (err) {
       console.error("خطأ في المزامنة:", err);
     }
@@ -129,9 +127,7 @@ const DoctorClinical = () => {
       setIsChatOpen(true);
       setUserPrompt('');
 
-      // التعديل المطلوب: لا يتم الحفظ أو إرسال إشعار إذا كان الطلب "سؤال مباشر" (من الشات)
       if (catName !== "سؤال مباشر") {
-          // استدعاء دالة الحفظ مع تمرير اسم القسم لضمان سحب "الموعد القادم" الصحيح
           await saveAndNotify(catName, responseText);
 
           setSavedReports(prev => [{ 
@@ -169,7 +165,7 @@ const DoctorClinical = () => {
   };
 
   return (
-    <div style={{ padding: '10px', paddingBottom: '100px' }}>
+    <div style={{ padding: '10px', paddingBottom: '100px', direction: 'rtl' }}>
       <button style={styles.doctorRaqqaBtn} onClick={() => setIsChatOpen(true)}>
         <span>👩‍⚕️</span> استشاري رقة الطبي
       </button>
