@@ -16,13 +16,13 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج كافة المدخلات من الواجهتين
+  // استخراج كافة المدخلات المحتملة من كلا الواجهتين
   let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note } = req.body;
 
   try {
     let finalDate = null;
 
-    // --- الجزء المشترك لمعالجة التاريخ ---
+    // --- الجزء المشترك لمعالجة التاريخ (طرح يومين) ---
     if (scheduled_for) {
       const dateObj = new Date(scheduled_for);
       if (!isNaN(dateObj.getTime())) {
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       finalDate = new Date().toISOString();
     }
 
-    // --- تحديد أي منطق سيتم تنفيذه بناءً على البيانات القادمة ---
+    // --- تحديد أي منطق سيتم تنفيذه بناءً على نوع البيانات ---
     
     let finalValues;
     const query = `
@@ -44,10 +44,11 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // إذا كانت البيانات قادمة من الواجهة الثانية (تحتوي على note أو تصنيف حيض)
+    // المسار الثاني: إذا كانت البيانات قادمة من واجهة "الاستشارات" أو تحتوي على ملاحظة
     if (note !== undefined || category === 'حيض') {
-      // تنفيذ منطق الكود الثاني بالضبط
-      const mergedExtraData = extra_data || { note: note || '' };
+      const mergedExtraData = extra_data || {};
+      if (note) mergedExtraData.note = note; // إضافة الملاحظة للبيانات الإضافية
+
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
@@ -59,7 +60,7 @@ export default async function handler(req, res) {
         false
       ];
     } 
-    // وإلا، يتم تنفيذ منطق الكود الأول بالضبط
+    // المسار الأول: واجهة التذكير الطبي الافتراضية
     else {
       finalValues = [
         parseInt(user_id) || 1,
@@ -75,12 +76,12 @@ export default async function handler(req, res) {
 
     const result = await pool.query(query, finalValues);
 
-    // الرد بناءً على نوع الواجهة
+    // الرد برسالة مخصصة بناءً على المسار الذي تم تنفيذه
     return res.status(200).json({ 
       success: true, 
       id: result.rows[0].id, 
       scheduled_at: finalDate,
-      message: note !== undefined ? "تمت جدولة التذكير بنجاح" : "تمت جدولة التذكير قبل الموعد بيومين"
+      message: note !== undefined ? "تمت جدولة الاستشارة بنجاح" : "تمت جدولة التذكير الطبي قبل الموعد بيومين"
     });
 
   } catch (error) {
