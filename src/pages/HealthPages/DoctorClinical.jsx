@@ -22,22 +22,22 @@ const DoctorClinical = () => {
     localStorage.setItem('saved_reports', JSON.stringify(savedReports));
   }, [savedReports]);
 
+  // تحديث الأيقونات والأسماء لتطابق الصورة
   const categories = [
-    { name: "العظام", icon: "🦴" }, { name: "العيون", icon: "👁️" }, 
-    { name: "الأسنان", icon: "🦷" }, { name: "القلب", icon: "🫀" }, 
-    { name: "التحاليل", icon: "📝" }, { name: "الجلدية", icon: "✨" },
-    { name: "الباطنة", icon: "🩺" }, { name: "الأعصاب", icon: "🧠" },
-    { name: "الجراحة", icon: "🩹" }, { name: "الصيدلية", icon: "💊" }
+    { name: "العظام", icon: "🦴" }, 
+    { name: "العيون", icon: "👁️" }, 
+    { name: "الأسنان", icon: "🦷" }, 
+    { name: "القلب", icon: "🫀" }, 
+    { name: "التحاليل", icon: "📝" }, 
+    { name: "الجلدية", icon: "🧴" },
+    { name: "المناعة", icon: "🛡️" }, 
+    { name: "الأعصاب", icon: "🧠" }
   ];
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  // --- وظيفة الحفظ والمزامنة مع الـ API ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    // جلب التوكن من localstorage كما طلبت
     const savedToken = localStorage.getItem('fcm_token');
-    
-    // جلب القيمة من حقل "الموعد القادم" الخاص بالقسم المفتوح
     const userScheduledDate = data[`${categoryTitle}_الموعد القادم`];
     
     let finalDate;
@@ -49,7 +49,6 @@ const DoctorClinical = () => {
     }
 
     try {
-      // 1. الحفظ في قاعدة بيانات نيون
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
@@ -64,7 +63,6 @@ const DoctorClinical = () => {
         }
       });
 
-      // 2. إرسال إشعار FCM إذا توفر التوكن
       if (savedToken) {
         await CapacitorHttp.post({
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -77,7 +75,6 @@ const DoctorClinical = () => {
           }
         });
       }
-      console.log("تمت المزامنة والحفظ بنجاح ✅");
     } catch (err) {
       console.error("خطأ في المزامنة:", err);
     }
@@ -127,9 +124,8 @@ const DoctorClinical = () => {
       setIsChatOpen(true);
       setUserPrompt('');
 
-      if (catName !== "سؤال مباشر") {
+      if (catName !== "سؤال مباشر" && catName !== "تحليل صورة") {
           await saveAndNotify(catName, responseText);
-
           setSavedReports(prev => [{ 
             id: Date.now(), 
             title: catName, 
@@ -137,11 +133,8 @@ const DoctorClinical = () => {
             date: new Date().toLocaleDateString() 
           }, ...prev]);
       }
-
     } catch (err) {
-      console.error("فشل الاتصال:", err);
       setAiResponse("حدث خطأ في الشبكة.");
-      setIsChatOpen(true);
     } finally {
       setLoading(false);
     }
@@ -154,94 +147,105 @@ const DoctorClinical = () => {
   };
 
   const styles = {
-    card: { background: '#fff', borderRadius: '25px', padding: '15px', marginBottom: '20px', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.1)' },
-    accItem: { background: '#fff5f7', borderRadius: '15px', marginBottom: '8px', overflow: 'hidden' },
-    input: { width: '100%', padding: '10px', borderRadius: '10px', border: '1px solid #ff4d7d33', fontSize: '0.85rem', outline: 'none' },
-    aiBtn: { background: 'linear-gradient(45deg, #ff4d7d, #9b59b6)', color: 'white', border: 'none', padding: '12px', borderRadius: '15px', marginTop: '10px', cursor: 'pointer', width: '100%', fontWeight: 'bold' },
-    doctorRaqqaBtn: { background: 'linear-gradient(90deg, #9b59b6, #ff4d7d)', color: 'white', border: 'none', padding: '15px', borderRadius: '20px', marginBottom: '15px', width: '100%', fontWeight: 'bold', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
-    chatOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 3000 },
-    chatContent: { background: 'white', width: '100%', maxWidth: '500px', height: '90%', borderTopLeftRadius: '35px', borderTopRightRadius: '35px', padding: '20px', overflowY: 'auto' },
-    chatInput: { flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' }
+    container: { padding: '15px', backgroundColor: '#fff9fb', minHeight: '100vh', direction: 'rtl', fontFamily: 'Arial, sans-serif' },
+    headerCard: { background: 'white', borderRadius: '25px', padding: '20px', textAlign: 'center', boxShadow: '0 10px 30px rgba(255, 182, 193, 0.2)', marginBottom: '25px', position: 'relative' },
+    gridContainer: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '25px' },
+    gridItem: { background: 'white', borderRadius: '20px', padding: '15px 5px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', border: '1px solid #fdf0f4' },
+    iconCircle: { fontSize: '2rem', marginBottom: '5px' },
+    categoryName: { fontSize: '0.85rem', fontWeight: 'bold', color: '#444' },
+    directConsultation: { background: 'white', borderRadius: '25px', padding: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.03)' },
+    inputArea: { width: '100%', border: 'none', background: '#f8f9fa', borderRadius: '15px', padding: '15px', minHeight: '80px', outline: 'none', fontSize: '0.95rem', marginBottom: '15px' },
+    actionRow: { display: 'flex', gap: '10px', justifyContent: 'center' },
+    actionBtn: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '15px', border: '1px solid #eee', background: 'white', fontSize: '0.9rem' },
+    modalOverlay: { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' },
+    modalContent: { background: 'white', width: '100%', maxWidth: '400px', borderRadius: '30px', padding: '25px', position: 'relative', maxHeight: '90vh', overflowY: 'auto' },
+    fieldInput: { width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #ffe4ec', marginBottom: '10px', background: '#fff9fb' },
+    submitBtn: { background: 'linear-gradient(45deg, #ff4d7d, #ff8fa3)', color: 'white', border: 'none', width: '100%', padding: '15px', borderRadius: '15px', fontWeight: 'bold', marginTop: '10px' }
   };
 
   return (
-    <div style={{ padding: '10px', paddingBottom: '100px', direction: 'rtl' }}>
-      <button style={styles.doctorRaqqaBtn} onClick={() => setIsChatOpen(true)}>
-        <span>👩‍⚕️</span> استشاري رقة الطبي
-      </button>
+    <div style={styles.container}>
+      {/* رأس الصفحة */}
+      <div style={styles.headerCard}>
+        <div style={{ position: 'absolute', right: '20px', top: '20px', background: '#ff4d7d', color: 'white', width: '50px', height: '50px', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>✨</div>
+        <h1 style={{ fontSize: '1.4rem', color: '#333', margin: '0 0 5px 0' }}>طبيبة رقة الذكية</h1>
+        <p style={{ fontSize: '0.9rem', color: '#888', margin: 0 }}>استشارات طبية فورية مدعومة بالذكاء الاصطناعي</p>
+      </div>
 
-      <div style={styles.card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#ff4d7d', marginBottom: '15px' }}>
-          <Icon size={24} /> <h2 style={{ fontSize: '1.1rem', margin: 0 }}>متابعة العيادات التخصصية</h2>
-        </div>
-
+      {/* الشبكة (Grid) */}
+      <div style={styles.gridContainer}>
         {categories.map((cat, i) => (
-          <div key={i} style={styles.accItem}>
-            <div style={{ padding: '15px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-              <span style={{fontWeight: 'bold'}}>{cat.icon} {cat.name}</span>
-              <span>{openIdx === i ? '−' : '+'}</span>
-            </div>
-
-            {openIdx === i && (
-              <div style={{ padding: '0 15px 15px 15px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  {fields.map(f => (
-                    <div key={f}>
-                      <label style={{ fontSize: '0.65rem', color: '#777' }}>{f}</label>
-                      <input 
-                        style={styles.input} 
-                        placeholder={f === "الموعد القادم" ? "2026-03-20" : ""}
-                        value={data[`${cat.name}_${f}`] || ''} 
-                        onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})}
-                      />
-                    </div>
-                  ))}
-                </div>
-                <button style={styles.aiBtn} onClick={() => handleProcess(cat.name)} disabled={loading}>
-                  {loading ? 'جاري التحليل...' : '✨ تحليل وحفظ التقرير'}
-                </button>
-              </div>
-            )}
+          <div key={i} style={styles.gridItem} onClick={() => setOpenIdx(i)}>
+            <span style={styles.iconCircle}>{cat.icon}</span>
+            <span style={styles.categoryName}>{cat.name}</span>
           </div>
         ))}
       </div>
 
-      {isChatOpen && (
-        <div style={styles.chatOverlay}>
-          <div style={styles.chatContent}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-              <span style={{ fontWeight: 'bold', color: '#ff4d7d' }}>استشاري رقة الذكي 👩‍⚕️</span>
-              <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: '#eee', borderRadius: '50%', width: '30px', height: '30px' }}>✕</button>
-            </div>
+      {/* استشارة مباشرة */}
+      <div style={styles.directConsultation}>
+        <h3 style={{ color: '#ff4d7d', textAlign: 'center', marginBottom: '15px' }}>استشارة مباشرة</h3>
+        <textarea 
+          style={styles.inputArea} 
+          placeholder="اشرحي ما تشعرين به..." 
+          value={userPrompt}
+          onChange={(e) => setUserPrompt(e.target.value)}
+        />
+        <div style={styles.actionRow}>
+          <button style={styles.actionBtn} onClick={() => handleMediaAction('camera')}>📸 كاميرا</button>
+          <button style={styles.actionBtn} onClick={() => handleMediaAction('gallery')}>🖼️ استوديو</button>
+          <button style={{ ...styles.actionBtn, background: '#ff4d7d', color: 'white', border: 'none' }} onClick={() => handleProcess("سؤال مباشر")}>إرسال</button>
+        </div>
+      </div>
+
+      {/* مودال العيادة (يظهر عند الضغط على أيقونة) */}
+      {openIdx !== null && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <button onClick={() => setOpenIdx(null)} style={{ position: 'absolute', left: '20px', top: '20px', border: 'none', background: '#eee', borderRadius: '50%', width: '30px', height: '30px' }}>✕</button>
+            <h3 style={{ textAlign: 'center', color: '#ff4d7d', marginBottom: '20px' }}>عيادة {categories[openIdx].name} {categories[openIdx].icon}</h3>
             
-            <div style={{ fontSize: '0.9rem', background: '#f9f9f9', padding: '15px', borderRadius: '15px', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>
-              {aiResponse || "مرحباً بكِ!"}
-            </div>
-
-            <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
-              <input 
-                style={styles.chatInput} 
-                placeholder="اسألي الاستشاري هنا..." 
-                value={userPrompt}
-                onChange={(e) => setUserPrompt(e.target.value)}
-              />
-              <button onClick={() => handleProcess("سؤال مباشر")} style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px' }}>✈️</button>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-around', padding: '15px', background: '#fff5f7', borderRadius: '20px', marginBottom: '20px' }}>
-              <button onClick={() => handleMediaAction('camera')} style={{ background: 'white', border: '1px solid #eee', padding: '10px', borderRadius: '12px' }}>📸 كاميرا</button>
-              <button onClick={() => handleMediaAction('gallery')} style={{ background: 'white', border: '1px solid #eee', padding: '10px', borderRadius: '12px' }}>🖼️ استوديو</button>
-            </div>
-
-            {savedReports.map(r => (
-              <div key={r.id} style={{ background: '#fff', padding: '10px', borderRadius: '12px', marginBottom: '10px', border: '1px solid #ff4d7d1a' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong style={{fontSize: '0.8rem'}}>{r.title}</strong>
-                  <button onClick={() => deleteReport(r.id)} style={{ border: 'none', background: 'none', color: '#ff4d7d' }}>🗑️</button>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              {fields.map(f => (
+                <div key={f}>
+                  <label style={{ fontSize: '0.7rem', color: '#999', paddingRight: '5px' }}>{f}</label>
+                  <input 
+                    style={styles.fieldInput}
+                    value={data[`${categories[openIdx].name}_${f}`] || ''}
+                    onChange={e => setData({...data, [`${categories[openIdx].name}_${f}`]: e.target.value})}
+                  />
                 </div>
-                <p style={{ fontSize: '0.75rem' }}>{r.text.substring(0, 80)}...</p>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <button style={styles.submitBtn} onClick={() => { handleProcess(categories[openIdx].name); setOpenIdx(null); }} disabled={loading}>
+              {loading ? 'جاري التحليل...' : 'تحليل وحفظ التقرير ✨'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* شاشة الرد الذكي والتقارير المحفوظة */}
+      {isChatOpen && (
+        <div style={{ ...styles.modalOverlay, alignItems: 'flex-end', padding: 0 }}>
+          <div style={{ ...styles.modalContent, maxWidth: 'none', height: '85%', borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                <strong style={{ color: '#ff4d7d' }}>استشاري رقة الذكي 👩‍⚕️</strong>
+                <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: '#eee', borderRadius: '50%', width: '30px', height: '30px' }}>✕</button>
+             </div>
+             
+             <div style={{ background: '#fff5f7', padding: '15px', borderRadius: '20px', fontSize: '0.9rem', lineHeight: '1.6', whiteSpace: 'pre-wrap', marginBottom: '20px' }}>
+                {aiResponse || "مرحباً بكِ في رقة.. كيف أساعدك اليوم؟"}
+             </div>
+
+             <h4 style={{ fontSize: '0.8rem', color: '#888' }}>السجل الطبي الأخير:</h4>
+             {savedReports.map(r => (
+                <div key={r.id} style={{ padding: '12px', borderBottom: '1px solid #eee', position: 'relative' }}>
+                   <div style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>{r.title} - {r.date}</div>
+                   <div style={{ fontSize: '0.8rem', color: '#666' }}>{r.text.substring(0, 50)}...</div>
+                   <button onClick={() => deleteReport(r.id)} style={{ position: 'absolute', left: 0, top: '15px', border: 'none', background: 'none' }}>🗑️</button>
+                </div>
+             ))}
           </div>
         </div>
       )}
