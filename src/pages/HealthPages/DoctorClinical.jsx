@@ -32,36 +32,30 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  // --- الدالة المعدلة لإرسال التاريخ المدخل يدوياً من حقل "الموعد القادم" ---
+  // --- الدالة المعدلة طبقاً لطلبك للحفاظ على هيكل postData المطلوب ---
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
     
-    // جلب القيمة من حقل "الموعد القادم" الخاص بالقسم المفتوح حالياً
-    const userScheduledDate = data[`${categoryTitle}_الموعد القادم`];
+    // التاريخ المختار من الواجهة (الموعد القادم)
+    const appointmentDate = data[`${categoryTitle}_الموعد القادم`];
     
-    let finalDate;
-    if (userScheduledDate) {
-        const parsedDate = new Date(userScheduledDate);
-        // التحقق من صحة التاريخ المحول، إذا كان غير صالح نستخدم التاريخ الحالي كحماية
-        finalDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
-    } else {
-        // إذا كان الحقل فارغاً، يتم الحفظ بتاريخ اللحظة الحالية
-        finalDate = new Date().toISOString();
-    }
+    const postData = {
+      user_id: 1,
+      category: 'doctor_clinical',
+      title: `موعد طبيب: ${categoryTitle}`,
+      body: userPrompt || currentAnalysis.substring(0, 100) + "...",
+      // إرساله بشكل مباشر ليراه الكود فوراً
+      next_appointment: appointmentDate, 
+      extra_data: {
+        next_appointment: appointmentDate
+      }
+    };
 
     try {
       const saveToNeonOptions = {
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'medical_report',
-          title: `موعد متابعة: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: finalDate, // هنا يتم إجبار الحفظ في الخانة المطلوبة (scheduled_for)
-          note: `تحليل آلي لـ ${categoryTitle}`
-        }
+        data: postData // استخدام الهيكل الجديد هنا
       };
       await CapacitorHttp.post(saveToNeonOptions);
 
@@ -72,7 +66,7 @@ const DoctorClinical = () => {
           data: {
             token: savedToken,
             title: 'تنبيه طبي جديد 🔔',
-            body: `تم حفظ تقرير ${categoryTitle} وجدولة موعد المتابعة بتاريخ ${userScheduledDate || 'اليوم'}.`,
+            body: `تم حفظ تقرير ${categoryTitle} وجدولة موعد المتابعة بتاريخ ${appointmentDate || 'اليوم'}.`,
             data: { type: 'medical_report' }
           }
         };
@@ -127,11 +121,9 @@ const DoctorClinical = () => {
       
       setAiResponse(responseText);
       setIsChatOpen(true);
-      setUserPrompt('');
-
-      // التعديل المطلوب: لا يتم الحفظ أو إرسال إشعار إذا كان الطلب "سؤال مباشر" (من الشات)
+      // لا نحذف الـ userPrompt هنا فوراً لنتمكن من استخدامه في body الخاص بالـ postData إذا لزم الأمر
+      
       if (catName !== "سؤال مباشر") {
-          // استدعاء دالة الحفظ مع تمرير اسم القسم لضمان سحب "الموعد القادم" الصحيح
           await saveAndNotify(catName, responseText);
 
           setSavedReports(prev => [{ 
@@ -141,6 +133,7 @@ const DoctorClinical = () => {
             date: new Date().toLocaleDateString() 
           }, ...prev]);
       }
+      setUserPrompt('');
 
     } catch (err) {
       console.error("فشل الاتصال:", err);
