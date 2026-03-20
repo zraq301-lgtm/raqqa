@@ -90,21 +90,23 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
-  // --- التعديل المطلوب في دالة الحفظ والمزامنة ---
+  // --- تحديث دالة الحفظ والمزامنة لتتوافق مع الـ API ---
   const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
     const fcmToken = localStorage.getItem('fcm_token');
-    const nextDate = currentPrediction?.nextDate; 
+    
+    // نستخدم التاريخ بصيغة ISO للحفظ في القاعدة والتنسيق العربي للإشعار
+    const nextDateRaw = currentPrediction?.nextDateRaw; 
+    const nextDateDisplay = currentPrediction?.nextDate;
 
     const postData = {
       user_id: 1,
       category: 'menstrual_report',
       title: 'تاريخ الحيض المتوقع',
-      body: `موعدك القادم هو ${nextDate}`,
+      body: `موعدك القادم هو ${nextDateDisplay}`,
       fcmToken: fcmToken,
-      // نرسله كمتغير مباشر ليتوافق مع هيكلة قاعدة البيانات (نيون)
-      next_period_date: nextDate, 
+      next_period_date: nextDateRaw, // نرسل التاريخ الخام لضمان التوافق مع نيون
       extra_data: {
-        next_period_date: nextDate,
+        next_period_date: nextDateRaw,
         full_analysis: currentAnalysis,
         start_date: data['سجل التواريخ_تاريخ البدء'],
         end_date: data['سجل التواريخ_تاريخ الانتهاء']
@@ -112,14 +114,12 @@ const MenstrualTracker = () => {
     };
 
     try {
-      // الحفظ في قاعدة البيانات (نيون) من خلال API الحفظ الموحد
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: postData
       });
 
-      // إرسال الإشعار عبر فيربيس
       if (fcmToken) {
         await CapacitorHttp.post({
           url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
@@ -127,7 +127,7 @@ const MenstrualTracker = () => {
           data: {
             token: fcmToken,
             title: 'تحديث موعد الدورة 🔔',
-            body: `تم تحديث توقعات موعدكِ القادم: ${nextDate}`,
+            body: `تم تحديث توقعات موعدكِ القادم: ${nextDateDisplay}`,
             data: { type: 'menstrual_report' }
           }
         });
@@ -187,12 +187,15 @@ const MenstrualTracker = () => {
     const start = new Date(startStr);
     const nextDateObj = new Date(start);
     nextDateObj.setDate(start.getDate() + cycleLen);
+    
     const ovulation = new Date(nextDateObj);
     ovulation.setDate(nextDateObj.getDate() - 14);
     const fertStart = new Date(ovulation); fertStart.setDate(ovulation.getDate() - 5);
 
+    // تجهيز كائن التوقعات مع نسخة خام للتاريخ (ISO)
     const calc = {
       nextDate: nextDateObj.toLocaleDateString('ar-EG'),
+      nextDateRaw: nextDateObj.toISOString().split('T')[0], // YYYY-MM-DD
       fertility: `${fertStart.toLocaleDateString('ar-EG')} - ${ovulation.toLocaleDateString('ar-EG')}`
     };
     setPrediction(calc);
