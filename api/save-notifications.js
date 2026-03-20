@@ -10,73 +10,54 @@ const pool = new Pool({
   max: 1, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000
 });
 
-// دالة سحرية لتحويل أي شكل تاريخ قادم من الواجهة إلى صيغة يفهمها كود السيرفر
-const universalDateParser = (dateVal) => {
-  if (!dateVal) return null;
+// دالة ذكية تستخرج التاريخ من وسط أي نص (مثل الصورة)
+const extractDateFromText = (text) => {
+  if (!text) return null;
   
-  // 1. تنظيف النص من الأرقام العربية وتحويل "/" إلى "-"
-  let cleanDate = String(dateVal)
-    .replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)) 
-    .replace(/\//g, '-')
-    .trim();
+  // تنظيف الأرقام العربية وتحويلها لإنجليزية ليفهمها السيرفر
+  let cleanText = text.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
 
-  // 2. محاولة التحويل
-  let d = new Date(cleanDate);
+  // البحث عن نمط التاريخ (YYYY-MM-DD أو YYYY/MM/DD)
+  const datePattern = /(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/;
+  const match = cleanText.match(datePattern);
 
-  // 3. إذا فشل التحويل (بسبب تنسيق DD-MM-YYYY مثلاً)، نقوم بإعادة ترتيبه
-  if (isNaN(d.getTime())) {
-    const parts = cleanDate.split('-');
-    if (parts.length === 3) {
-      // إذا كان العام في الآخر (DD-MM-YYYY)
-      if (parts[2].length === 4) {
-        d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-      } 
-      // إذا كان العام في الأول (YYYY-MM-DD)
-      else if (parts[0].length === 4) {
-        d = new Date(`${parts[0]}-${parts[1]}-${parts[2]}`);
-      }
-    }
+  if (match) {
+    const d = new Date(`${match[1]}-${match[2]}-${match[3]}`);
+    return isNaN(d.getTime()) ? null : d;
   }
-
-  return isNaN(d.getTime()) ? null : d;
+  return null;
 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const { 
-    category, user_id, fcmToken, title, body, extra_data,
-    expected_due_date, // دالة الولادة
-    next_period_date,  // دالة الحيض الجديدة
-    next_appointment   // دالة الطبيب الجديدة
+  let { 
+    body, title, category, user_id, fcmToken, extra_data,
+    expected_due_date, next_period_date, next_appointment 
   } = req.body;
 
   try {
     let finalScheduledFor = null;
 
-    // الفحص بالترتيب حسب الأولوية والقيم المباشرة التي أضفتها في الواجهة
-    if (expected_due_date) {
-      finalScheduledFor = universalDateParser(expected_due_date);
-    } 
-    else if (next_period_date) {
-      finalScheduledFor = universalDateParser(next_period_date);
-    } 
-    else if (next_appointment) {
-      finalScheduledFor = universalDateParser(next_appointment);
-    }
-    // فحص الاحتياط داخل extra_data
-    else if (extra_data?.next_period_date || extra_data?.next_appointment) {
-      finalScheduledFor = universalDateParser(extra_data.next_period_date || extra_data.next_appointment);
+    // 1. المحاولة الأولى: الاستخراج المباشر من النص (الحل الذي اقترحته أنتِ)
+    // الكود سيبحث داخل الـ body والـ title عن أي تاريخ مكتوب
+    finalScheduledFor = extractDateFromText(body) || extractDateFromText(title);
+
+    // 2. المحاولة الثانية: إذا لم يجد في النص، يبحث في المتغيرات (مثل الولادة)
+    if (!finalScheduledFor) {
+      const fallbackDate = expected_due_date || next_period_date || next_appointment || extra_data?.next_period_date;
+      if (fallbackDate) {
+        finalScheduledFor = new Date(String(fallbackDate).replace(/\//g, '-'));
+      }
     }
 
-    // تجهيز التاريخ بصيغة ISO لقاعدة البيانات أو تركه null
-    const dbDate = finalScheduledFor ? finalScheduledFor.toISOString() : null;
+    // تأكيد صحة التاريخ النهائي
+    const saveDate = (finalScheduledFor && !isNaN(finalScheduledFor.getTime())) 
+                     ? finalScheduledFor.toISOString() 
+                     : null;
 
     const query = `
-      INSERT INTO notifications (
-        user_id, fcm_token, category, title, body, is_sent, 
-        scheduled_for, extra_data
-      )
+      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `;
@@ -87,12 +68,9 @@ export default async function handler(req, res) {
       category || 'عام',
       title || '',
       body || '',
-      false,
-      dbDate, // سيتم تخزين التاريخ المستخرج أو null (لن يخزن تاريخ اليوم)
-      JSON.stringify({
-        ...(extra_data || {}),
-        captured_via: "direct_frontend_vars_v5"
-      })
+      saveDate, 
+      JSON.stringify(extra_data || {}),
+      false
     ];
 
     const result = await pool.query(query, values);
@@ -100,11 +78,12 @@ export default async function handler(req, res) {
     return res.status(200).json({ 
       success: true, 
       db_id: result.rows[0].id,
-      saved_date: dbDate // هذا ما سيؤكد لك نجاح الحفظ في شاشة الاختبار
+      extracted_date: saveDate,
+      note: "تم سحب التاريخ من النص بنجاح" 
     });
 
   } catch (error) {
-    console.error('API Error:', error.message);
+    console.error('❌ Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
