@@ -10,17 +10,20 @@ const pool = new Pool({
   max: 1, connectionTimeoutMillis: 5000, idleTimeoutMillis: 30000
 });
 
-// دالة ذكية تستخرج التاريخ من وسط أي نص (مثل الصورة)
-const extractDateFromText = (text) => {
-  if (!text) return null;
+// دالة محسنة لاستخراج التاريخ من النص أو الصيغ المختلفة
+const parseAnyDate = (input) => {
+  if (!input) return null;
   
-  // تنظيف الأرقام العربية وتحويلها لإنجليزية ليفهمها السيرفر
-  let cleanText = text.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  // تحويل الأرقام العربية إلى إنجليزية
+  let cleanStr = String(input).replace(/[٠-٩]/g, d => "0123456789"["٠١٢٣٤٥٦٧٨٩".indexOf(d)]);
+  
+  // محاولة تحويله مباشرة إذا كان بصيغة تاريخ صحيحة
+  const directDate = new Date(cleanStr.replace(/\//g, '-'));
+  if (!isNaN(directDate.getTime())) return directDate;
 
-  // البحث عن نمط التاريخ (YYYY-MM-DD أو YYYY/MM/DD)
+  // البحث عن نمط التاريخ (YYYY-MM-DD) داخل النص
   const datePattern = /(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})/;
-  const match = cleanText.match(datePattern);
-
+  const match = cleanStr.match(datePattern);
   if (match) {
     const d = new Date(`${match[1]}-${match[2]}-${match[3]}`);
     return isNaN(d.getTime()) ? null : d;
@@ -31,27 +34,25 @@ const extractDateFromText = (text) => {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // استلام كافة الاحتمالات الممكنة لاسم حقل التاريخ من التطبيق
   let { 
     body, title, category, user_id, fcmToken, extra_data,
-    expected_due_date, next_period_date, next_appointment 
+    scheduled_for, expected_due_date, next_period_date, next_appointment 
   } = req.body;
 
   try {
     let finalScheduledFor = null;
 
-    // 1. المحاولة الأولى: الاستخراج المباشر من النص (الحل الذي اقترحته أنتِ)
-    // الكود سيبحث داخل الـ body والـ title عن أي تاريخ مكتوب
-    finalScheduledFor = extractDateFromText(body) || extractDateFromText(title);
+    // 1. الأولوية القصوى: إذا تم إرسال تاريخ صريح في أي من هذه الحقول
+    const explicitDate = scheduled_for || expected_due_date || next_period_date || next_appointment || extra_data?.scheduled_for;
+    finalScheduledFor = parseAnyDate(explicitDate);
 
-    // 2. المحاولة الثانية: إذا لم يجد في النص، يبحث في المتغيرات (مثل الولادة)
+    // 2. المحاولة الثانية: إذا لم يجد تاريخاً صريحاً، يبحث داخل نص الرسالة أو العنوان
     if (!finalScheduledFor) {
-      const fallbackDate = expected_due_date || next_period_date || next_appointment || extra_data?.next_period_date;
-      if (fallbackDate) {
-        finalScheduledFor = new Date(String(fallbackDate).replace(/\//g, '-'));
-      }
+      finalScheduledFor = parseAnyDate(body) || parseAnyDate(title);
     }
 
-    // تأكيد صحة التاريخ النهائي
+    // تأكيد الصيغة النهائية لقاعدة البيانات (ISO String)
     const saveDate = (finalScheduledFor && !isNaN(finalScheduledFor.getTime())) 
                      ? finalScheduledFor.toISOString() 
                      : null;
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
       success: true, 
       db_id: result.rows[0].id,
       extracted_date: saveDate,
-      note: "تم سحب التاريخ من النص بنجاح" 
+      message: saveDate ? "تم حفظ التاريخ بنجاح" : "تم الحفظ بدون تاريخ (لم يتم العثور على تاريخ)" 
     });
 
   } catch (error) {
