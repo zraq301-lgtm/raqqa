@@ -1,7 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة بيانات نيون
 const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
   host: dbUrl.hostname,
@@ -16,26 +15,12 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج كافة المدخلات المحتملة من كلا الواجهتين
   let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note } = req.body;
 
   try {
     let finalDate = null;
 
-    // --- الجزء المشترك لمعالجة التاريخ (طرح يومين) ---
-    if (scheduled_for) {
-      const dateObj = new Date(scheduled_for);
-      if (!isNaN(dateObj.getTime())) {
-        dateObj.setDate(dateObj.getDate() - 2);
-        finalDate = dateObj.toISOString();
-      }
-    }
-
-    if (!finalDate) {
-      finalDate = new Date().toISOString();
-    }
-
-    // --- تحديد أي منطق سيتم تنفيذه بناءً على نوع البيانات ---
+    // --- تحديد المنطق بناءً على النوع ---
     
     let finalValues;
     const query = `
@@ -44,29 +29,56 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // المسار الثاني: إذا كانت البيانات قادمة من واجهة "الاستشارات" أو تحتوي على ملاحظة
-    if (note !== undefined || category === 'حيض') {
-      const mergedExtraData = extra_data || {};
-      if (note) mergedExtraData.note = note; // إضافة الملاحظة للبيانات الإضافية
+    // الحالة الأولى: إذا كان التصنيف "حيض" (يعمل بمنطق الكود الأول تماماً)
+    if (category === 'حيض') {
+      // هنا نحفظ التاريخ كما جاء من الواجهة (أو بالمنطق الذي كان ينجح معك سابقاً)
+      finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
 
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
-        category || 'حيض',
-        title || 'استشارات الطبيب',
+        'حيض',
+        title || 'تذكير الدورة الشهرية',
+        body || '',
+        finalDate,
+        JSON.stringify(extra_data || {}),
+        false
+      ];
+    } 
+    // الحالة الثانية: إذا وجد note أو كانت استشارة طبيب/حمل (منطق طرح يومين)
+    else if (note !== undefined || category === 'medical' || category === 'pregnancy') {
+      if (scheduled_for) {
+        const dateObj = new Date(scheduled_for);
+        if (!isNaN(dateObj.getTime())) {
+          dateObj.setDate(dateObj.getDate() - 2); // طرح يومين فقط لمواعيد الأطباء
+          finalDate = dateObj.toISOString();
+        }
+      }
+      
+      if (!finalDate) finalDate = new Date().toISOString();
+
+      const mergedExtraData = extra_data || {};
+      if (note) mergedExtraData.note = note;
+
+      finalValues = [
+        parseInt(user_id) || 1,
+        fcmToken || null,
+        category || 'medical',
+        title || 'تذكير موعد',
         body || '',
         finalDate,
         JSON.stringify(mergedExtraData),
         false
       ];
-    } 
-    // المسار الأول: واجهة التذكير الطبي الافتراضية
+    }
+    // حالة احتياطية لأي بيانات أخرى
     else {
+      finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
-        category || 'medical',
-        title || 'تذكير طبي',
+        category || 'general',
+        title || 'تذكير',
         body || '',
         finalDate,
         JSON.stringify(extra_data || {}),
@@ -76,12 +88,11 @@ export default async function handler(req, res) {
 
     const result = await pool.query(query, finalValues);
 
-    // الرد برسالة مخصصة بناءً على المسار الذي تم تنفيذه
     return res.status(200).json({ 
       success: true, 
       id: result.rows[0].id, 
       scheduled_at: finalDate,
-      message: note !== undefined ? "تمت جدولة الاستشارة بنجاح" : "تمت جدولة التذكير الطبي قبل الموعد بيومين"
+      message: category === 'حيض' ? "تم تسجيل بيانات الحيض بنجاح" : "تمت جدولة الموعد (قبل التاريخ بيومين)"
     });
 
   } catch (error) {
