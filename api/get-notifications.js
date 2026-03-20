@@ -37,11 +37,18 @@ const TEMPLATES = {
 };
 
 export default async function handler(req, res) {
-  const { method } = req;
+  const { method, headers } = req;
   const AI_API_URL = "https://raqqa-v6cd.vercel.app/api/raqqa-ai";
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
+    // --- التوافق مع كود اكشن جت (التحقق الأمني) ---
+    if (method === 'GET') {
+      if (headers['zazotona'] !== '12sonds25') {
+        return res.status(401).json({ success: false, error: 'Unauthorized Access' });
+      }
+    }
+
     let notificationsToSend = [];
 
     // --- الحالة الأولى: جلب الإشعارات المجدولة (GET) ---
