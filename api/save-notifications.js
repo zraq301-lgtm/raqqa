@@ -14,31 +14,31 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  // التأكد من أن الطريقة هي POST كما هو مرسل من الواجهة
+  // التأكد من أن الطريقة هي POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  // استخراج البيانات بنفس المسميات القادمة من الواجهة (Body)
+  // استخراج البيانات من الكودين
   const { 
     user_id, 
     fcmToken, 
     category, 
     title, 
     body, 
-    scheduled_for, // هذا هو التاريخ المستقبلي القادم من الواجهة
+    scheduled_for, 
+    extra_data, 
     note 
   } = req.body;
 
   try {
     let finalDate;
 
-    // المنطق: إذا وصل تاريخ، اطرح منه يومين. إذا لم يصل، استخدم تاريخ اللحظة.
+    // --- منطق معالجة التاريخ (الموعد - يومين) ---
     if (scheduled_for) {
       const dateObj = new Date(scheduled_for);
 
       if (!isNaN(dateObj.getTime())) {
-        // --- العملية الحسابية المطلوبة: طرح يومين (48 ساعة) ---
         dateObj.setDate(dateObj.getDate() - 2);
         finalDate = dateObj.toISOString();
       } else {
@@ -48,7 +48,10 @@ export default async function handler(req, res) {
       finalDate = new Date().toISOString();
     }
 
-    // الاستعلام للحفظ في جدول notifications في نيون
+    // --- منطق دمج البيانات الإضافية ---
+    const mergedExtraData = extra_data || { note: note || '' };
+
+    // الاستعلام للحفظ في جدول notifications
     const query = `
       INSERT INTO notifications (
         user_id, 
@@ -64,26 +67,25 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // ترتيب القيم للتأكد من مطابقتها لجدول قاعدة البيانات
+    // التعديل المطلوب في المسميات العربية والقيم الافتراضية
     const values = [
       parseInt(user_id) || 1,
       fcmToken || null,
-      category || 'medical_report',
-      title || 'تذكير طبي',
+      category || 'حيض', // تم تغيير الافتراضي من munst إلى حيض
+      title || 'استشارات الطبيب', // تم تغيير الافتراضي من تذكير طبي إلى استشارات الطبيب
       body || '',
-      finalDate, // التاريخ المحسوب (الموعد - يومين)
-      JSON.stringify({ note: note || '' }), // حفظ الملاحظات كـ JSON
-      false // التنبيه لم يرسل بعد
+      finalDate,
+      JSON.stringify(mergedExtraData),
+      false
     ];
 
     const result = await pool.query(query, values);
 
-    // الرد على الواجهة بالنجاح والتاريخ الجديد الذي تم جدولته
     return res.status(200).json({ 
       success: true, 
       id: result.rows[0].id,
       scheduled_at: finalDate, 
-      message: "تم استقبال التاريخ وطرح يومين منه وجدولته بنجاح"
+      message: "تمت جدولة التذكير بنجاح"
     });
 
   } catch (error) {
