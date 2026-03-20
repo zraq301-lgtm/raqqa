@@ -1,7 +1,22 @@
 import pkg from 'pg';
+import admin from 'firebase-admin';
+
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة البيانات باستخدام WHATWG URL API الحديثة
+// 1. إعداد حساب خدمة Firebase
+const serviceAccount = {
+  "type": "service_account",
+  "project_id": "raqqa-43dc8",
+  "client_email": "firebase-adminsdk-fbsvc@raqqa-43dc8.iam.gserviceaccount.com",
+  // معالجة مفتاح الـ Private Key للتعامل مع الـ New Lines في Vercel
+  "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+};
+
+if (!admin.apps.length) {
+  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+}
+
+// 2. إعداد قاعدة بيانات نيون (Neon)
 const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
   host: dbUrl.hostname,
@@ -13,91 +28,128 @@ const pool = new Pool({
   max: 1
 });
 
-// خريطة الأيقونات - سهلة التعديل والإضافة
-const CATEGORY_ICONS = {
-  breastfeeding: 'milk.png',
-  pregnancy: 'preg.png',
-  period: 'period.png',
-  fitness: 'fit.png',
-  medical: 'doctor.png',
-  mood: 'mood.png',
-  intimacy: 'heart.png',
-  motherhood: 'baby.png',
-  default: 'default.png'
+// 3. قوالب النصوص الاحتياطية
+const TEMPLATES = {
+  'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
+  'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
+  'nursing': { t: "لحظات الارتباط 🤱", b: "وقت الرضاعة هو وقت الحب؛ تأكدي من شرب المياه والحصول على قسط من الراحة." },
+  'motherhood': { t: "أنتِ أم رائعة 💖", b: "تذكير بمهمة طفلكِ القادمة.. اهتمامكِ يصنع مستقبله، ورقة تهتم بكِ." },
+  'medical': { t: "موعدكِ الطبي 🩺", b: "حفاظاً على صحتكِ، نذكركِ بموعد الاستشارة الطبية اليوم. دمتِ بخير." },
+  'mood': { t: "رقة تهتم بقلبكِ ✨", b: "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير." },
+  'fiqh': { t: "رفيقتكِ الفقهية 📖", b: "تذكير بالأحكام الخاصة بدورتكِ الحالية؛ لتمارسي عباداتكِ بطمأنينة ويقين." },
+  'fitness': { t: "وقت النشاط 🏃‍♀️", b: "حركتكِ اليوم هي استثمار في صحتكِ.. تمرين بسيط سيجعلكِ تشعرين بالانتعاش." },
+  'intimacy': { t: "لحظات الود ❤️", b: "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب." },
+  'default': { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق المخصص لراحتكِ." }
 };
 
 export default async function handler(req, res) {
-  // التحقق من نوع الطلب
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  const { user_id } = req.query;
-  const BASE_URL = "https://raqqa-hjl8.vercel.app";
+  const { method } = req;
   const AI_API_URL = "https://raqqa-v6cd.vercel.app/api/raqqa-ai";
+  
+  // المسار المحدث بناءً على طلبك (باعتبار public هو المجلد الجذري للملفات الثابتة في Vercel)
+  const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // 1. جلب البيانات من نيون
-    const query = `
-      SELECT id, title, body, category, scheduled_for 
-      FROM notifications 
-      WHERE user_id = $1 AND scheduled_for > NOW()
-      ORDER BY scheduled_for ASC
-    `;
-    
-    const { rows } = await pool.query(query, [user_id || 1]);
+    let notificationsToSend = [];
 
-    // 2. معالجة الصفوف بالتوازي لسرعة الأداء
-    const processedRows = await Promise.all(rows.map(async (row) => {
-      const iconName = CATEGORY_ICONS[row.category] || CATEGORY_ICONS.default;
-      let smartBody = row.body;
+    // --- الحالة الأولى: جلب الإشعارات المجدولة (GET) ---
+    if (method === 'GET') {
+      const { user_id } = req.query;
+      const query = `
+        SELECT id, title, body, category, fcm_token, scheduled_for 
+        FROM notifications 
+        WHERE (user_id = $1 OR $1 IS NULL)
+        AND scheduled_for <= NOW() 
+        AND is_sent = false
+      `;
+      const { rows } = await pool.query(query, [user_id || null]);
+      notificationsToSend = rows;
+    } 
+    // --- الحالة الثانية: إرسال يدوي أو من Make (POST) ---
+    else if (method === 'POST') {
+      const { fcmToken, token, title, body, category, isFromMake } = req.body;
+      notificationsToSend = [{
+        fcm_token: fcmToken || token,
+        title,
+        body,
+        category,
+        isFromManual: true,
+        isFromMake: isFromMake === true || String(isFromMake).toLowerCase() === "true"
+      }];
+    } else {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-      try {
-        // 3. استدعاء الذكاء الاصطناعي الخاص بك
-        const aiResponse = await fetch(AI_API_URL, {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            // تمرير مفاتيح الـ API إذا كان الـ Endpoint يحتاجها مباشرة
-            'x-api-key': process.env.GROQ_API_KEY 
-          },
-          body: JSON.stringify({
-            category: row.category,
-            current_title: row.title,
-            scheduled_date: row.scheduled_for,
-            store_id: process.env.MXBAI_STORE_ID,
-            prompt: `صغ رسالة إشعار دافئة وقصيرة (أقل من 15 كلمة) لمستخدمة تطبيق "رقة" بخصوص ${row.category}. الموعد: ${row.scheduled_for}.`
-          })
-        });
+    // 4. معالجة العمليات بالتوازي
+    const results = await Promise.all(notificationsToSend.map(async (item) => {
+      const category = item.category || 'default';
+      const template = TEMPLATES[category] || TEMPLATES.default;
+      
+      let finalTitle = item.title || template.t;
+      let finalBody = item.body || template.b;
 
-        if (aiResponse.ok) {
-          const aiData = await aiResponse.json();
-          // استخراج النص (تعديل الحقل حسب مخرجات الـ API الخاص بك)
-          smartBody = aiData.text || aiData.message || aiData.content || row.body;
-        }
-      } catch (aiError) {
-        console.warn(`⚠️ AI generation failed for ID ${row.id}, using fallback text.`);
+      // تطبيق القالب إجبارياً إذا كان الطلب من Make
+      if (item.isFromMake) {
+        finalTitle = template.t;
+        finalBody = template.b;
       }
 
-      return {
-        id: row.id,
-        title: row.title,
-        body: smartBody,
-        category: row.category,
-        scheduled_for: row.scheduled_for,
-        image_url: `${BASE_URL}/assets/icons/${iconName}`
+      // تحسين النص بالذكاء الاصطناعي (للإشعارات المجدولة أو التي تفتقر لنص)
+      if (!item.isFromManual || !item.body) {
+        try {
+          const aiRes = await fetch(AI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.GROQ_API_KEY },
+            body: JSON.stringify({ category, prompt: `صغ رسالة قصيرة ودافئة عن ${category}` })
+          });
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            finalBody = aiData.text || aiData.content || finalBody;
+          }
+        } catch (e) { console.warn(`AI skip for ID ${item.id || 'POST'}`); }
+      }
+
+      // رابط الصورة النهائي: https://raqqa-hjl8.vercel.app/assets/notifications/category.png
+      const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
+
+      // بناء حمولة Firebase (حمولة شاملة لضمان ظهور الصور على كل الأجهزة)
+      const messagePayload = {
+        notification: { title: finalTitle, body: finalBody, image: imageUrl },
+        token: item.fcm_token,
+        android: { 
+          priority: "high", 
+          notification: { 
+            channelId: "default", 
+            image: imageUrl,
+            sound: "default" 
+          } 
+        },
+        apns: { 
+          payload: { aps: { mutableContent: true, sound: "default" } }, 
+          fcm_options: { image: imageUrl } 
+        }
       };
+
+      try {
+        if (!item.fcm_token) throw new Error("FCM Token is missing");
+        
+        const messageId = await admin.messaging().send(messagePayload);
+
+        // تحديث قاعدة البيانات لمنع تكرار الإرسال
+        if (item.id) {
+          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+        }
+
+        return { id: item.id, status: 'sent', messageId, imageUrl };
+      } catch (err) {
+        return { id: item.id, status: 'error', error: err.message };
+      }
     }));
 
-    // 4. إرسال النتيجة النهائية
-    return res.status(200).json({ 
-      success: true,
-      count: processedRows.length,
-      rows: processedRows 
-    });
+    return res.status(200).json({ success: true, processed: results.length, results });
 
   } catch (error) {
     console.error('❌ Server Error:', error.message);
-    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
   }
 }
