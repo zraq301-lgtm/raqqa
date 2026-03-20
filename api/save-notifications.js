@@ -1,7 +1,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة بيانات نيون
+// إعداد الاتصال بقاعدة بيانات نيون (Neon)
 const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
   host: dbUrl.hostname,
@@ -14,57 +14,76 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  // التأكد من أن الطريقة هي POST كما هو مرسل من الواجهة
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
 
-  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data } = req.body;
+  // استخراج البيانات بنفس المسميات القادمة من الواجهة (Body)
+  const { 
+    user_id, 
+    fcmToken, 
+    category, 
+    title, 
+    body, 
+    scheduled_for, // هذا هو التاريخ المستقبلي القادم من الواجهة
+    note 
+  } = req.body;
 
   try {
-    let finalDate = null;
+    let finalDate;
 
+    // المنطق: إذا وصل تاريخ، اطرح منه يومين. إذا لم يصل، استخدم تاريخ اللحظة.
     if (scheduled_for) {
-      // 1. تحويل القيمة القادمة إلى كائن تاريخ
       const dateObj = new Date(scheduled_for);
 
       if (!isNaN(dateObj.getTime())) {
-        // 2. المعادلة المطلوبة: طرح يومين (48 ساعة) من التاريخ المدخل
-        // لضمان التذكير قبل الموعد بفترة كافية
+        // --- العملية الحسابية المطلوبة: طرح يومين (48 ساعة) ---
         dateObj.setDate(dateObj.getDate() - 2);
-        
-        // تحويله لصيغة ISO للحفظ في نيون
         finalDate = dateObj.toISOString();
+      } else {
+        finalDate = new Date().toISOString();
       }
-    }
-
-    // إذا لم يتم إرسال تاريخ، أو فشل التحويل، نضع تاريخ اللحظة الحالية كاحتياطي
-    if (!finalDate) {
+    } else {
       finalDate = new Date().toISOString();
     }
 
-    // الاستعلام الخاص بإدخال البيانات في جدول الإشعارات
+    // الاستعلام للحفظ في جدول notifications في نيون
     const query = `
-      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent)
+      INSERT INTO notifications (
+        user_id, 
+        fcm_token, 
+        category, 
+        title, 
+        body, 
+        scheduled_for, 
+        extra_data, 
+        is_sent
+      )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `;
 
+    // ترتيب القيم للتأكد من مطابقتها لجدول قاعدة البيانات
     const values = [
       parseInt(user_id) || 1,
       fcmToken || null,
-      category || 'medical',
+      category || 'medical_report',
       title || 'تذكير طبي',
       body || '',
-      finalDate, // التاريخ المسجل هو (الموعد القادم - يومين)
-      JSON.stringify(extra_data || {}),
-      false
+      finalDate, // التاريخ المحسوب (الموعد - يومين)
+      JSON.stringify({ note: note || '' }), // حفظ الملاحظات كـ JSON
+      false // التنبيه لم يرسل بعد
     ];
 
     const result = await pool.query(query, values);
 
+    // الرد على الواجهة بالنجاح والتاريخ الجديد الذي تم جدولته
     return res.status(200).json({ 
       success: true, 
-      id: result.rows[0].id, 
-      scheduled_at: finalDate,
-      message: "تمت جدولة التذكير قبل الموعد بيومين"
+      id: result.rows[0].id,
+      scheduled_at: finalDate, 
+      message: "تم استقبال التاريخ وطرح يومين منه وجدولته بنجاح"
     });
 
   } catch (error) {
