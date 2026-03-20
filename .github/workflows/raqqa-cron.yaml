@@ -1,18 +1,18 @@
-name: "Raqqa Cron Job (Notifications)"
+name: "Raqqa Cron Job"
 
 on:
   schedule:
-    # التشغيل كل 10 دقائق
+    # سيقوم بالتشغيل كل 10 دقائق تلقائياً
     - cron: '*/10 * * * *'
-  workflow_dispatch: # يسمح لك بتشغيله يدوياً للتجربة من تبويب Actions
+  workflow_dispatch: # زر تشغيل يدوي للتجربة من صفحة Actions
 
 jobs:
-  ping-api:
+  run_notifications:
     runs-on: ubuntu-latest
     steps:
-      - name: "Request Vercel API"
+      - name: "Call Raqqa API"
         run: |
           curl -X GET "https://raqqa-hjl8.vercel.app/api/get-notifications" \
           -H "Content-Type: application/json" \
-          -H "x-cron-auth: ${{ secrets.CRON_SECRET }}" \
+          -H "zazotona: 12sonds25" \
           -v
