@@ -1,7 +1,7 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بقاعدة بيانات نيون (Neon)
+// إعداد الاتصال بقاعدة بيانات نيون
 const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
   host: dbUrl.hostname,
@@ -14,78 +14,73 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  // التأكد من أن الطريقة هي POST
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج البيانات من الكودين
-  const { 
-    user_id, 
-    fcmToken, 
-    category, 
-    title, 
-    body, 
-    scheduled_for, 
-    extra_data, 
-    note 
-  } = req.body;
+  // استخراج كافة المدخلات من الواجهتين
+  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note } = req.body;
 
   try {
-    let finalDate;
+    let finalDate = null;
 
-    // --- منطق معالجة التاريخ (الموعد - يومين) ---
+    // --- الجزء المشترك لمعالجة التاريخ ---
     if (scheduled_for) {
       const dateObj = new Date(scheduled_for);
-
       if (!isNaN(dateObj.getTime())) {
         dateObj.setDate(dateObj.getDate() - 2);
         finalDate = dateObj.toISOString();
-      } else {
-        finalDate = new Date().toISOString();
       }
-    } else {
+    }
+
+    if (!finalDate) {
       finalDate = new Date().toISOString();
     }
 
-    // --- منطق دمج البيانات الإضافية ---
-    const mergedExtraData = extra_data || { note: note || '' };
-
-    // الاستعلام للحفظ في جدول notifications
+    // --- تحديد أي منطق سيتم تنفيذه بناءً على البيانات القادمة ---
+    
+    let finalValues;
     const query = `
-      INSERT INTO notifications (
-        user_id, 
-        fcm_token, 
-        category, 
-        title, 
-        body, 
-        scheduled_for, 
-        extra_data, 
-        is_sent
-      )
+      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id
     `;
 
-    // التعديل المطلوب في المسميات العربية والقيم الافتراضية
-    const values = [
-      parseInt(user_id) || 1,
-      fcmToken || null,
-      category || 'حيض', // تم تغيير الافتراضي من munst إلى حيض
-      title || 'استشارات الطبيب', // تم تغيير الافتراضي من تذكير طبي إلى استشارات الطبيب
-      body || '',
-      finalDate,
-      JSON.stringify(mergedExtraData),
-      false
-    ];
+    // إذا كانت البيانات قادمة من الواجهة الثانية (تحتوي على note أو تصنيف حيض)
+    if (note !== undefined || category === 'حيض') {
+      // تنفيذ منطق الكود الثاني بالضبط
+      const mergedExtraData = extra_data || { note: note || '' };
+      finalValues = [
+        parseInt(user_id) || 1,
+        fcmToken || null,
+        category || 'حيض',
+        title || 'استشارات الطبيب',
+        body || '',
+        finalDate,
+        JSON.stringify(mergedExtraData),
+        false
+      ];
+    } 
+    // وإلا، يتم تنفيذ منطق الكود الأول بالضبط
+    else {
+      finalValues = [
+        parseInt(user_id) || 1,
+        fcmToken || null,
+        category || 'medical',
+        title || 'تذكير طبي',
+        body || '',
+        finalDate,
+        JSON.stringify(extra_data || {}),
+        false
+      ];
+    }
 
-    const result = await pool.query(query, values);
+    const result = await pool.query(query, finalValues);
 
+    // الرد بناءً على نوع الواجهة
     return res.status(200).json({ 
       success: true, 
-      id: result.rows[0].id,
-      scheduled_at: finalDate, 
-      message: "تمت جدولة التذكير بنجاح"
+      id: result.rows[0].id, 
+      scheduled_at: finalDate,
+      message: note !== undefined ? "تمت جدولة التذكير بنجاح" : "تمت جدولة التذكير قبل الموعد بيومين"
     });
 
   } catch (error) {
