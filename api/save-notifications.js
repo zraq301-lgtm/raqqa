@@ -15,13 +15,11 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note } = req.body;
+  // استخراج البيانات (بما في ذلك next_period_date القادم من واجهة الحيض)
+  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note, next_period_date } = req.body;
 
   try {
     let finalDate = null;
-
-    // --- تحديد المنطق بناءً على النوع ---
-    
     let finalValues;
     const query = `
       INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent)
@@ -29,34 +27,35 @@ export default async function handler(req, res) {
       RETURNING id
     `;
 
-    // الحالة الأولى: إذا كان التصنيف "حيض" (يعمل بمنطق الكود الأول تماماً)
-    if (category === 'حيض') {
-      // هنا نحفظ التاريخ كما جاء من الواجهة (أو بالمنطق الذي كان ينجح معك سابقاً)
-      finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
+    // --- 1. منطق واجهة الحيض (استخراج وحفظ التاريخ المتوقع بدقة) ---
+    if (category === 'menstrual_report' || category === 'حيض') {
+      // الأولوية لـ next_period_date القادم من الحسابات البرمجية في الواجهة
+      finalDate = next_period_date || scheduled_for || new Date().toISOString();
 
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
-        'حيض',
-        title || 'تذكير الدورة الشهرية',
-        body || '',
-        finalDate,
+        'menstrual_report',
+        title || 'تاريخ الحيض المتوقع',
+        body || 'تذكير بموعد الدورة القادمة',
+        finalDate, // يُحفظ كما هو بدون طرح أي أيام
         JSON.stringify(extra_data || {}),
         false
       ];
     } 
-    // الحالة الثانية: إذا وجد note أو كانت استشارة طبيب/حمل (منطق طرح يومين)
+    
+    // --- 2. منطق واجهة الاستشارات والطبيب (طرح يومين للتذكير) ---
     else if (note !== undefined || category === 'medical' || category === 'pregnancy') {
       if (scheduled_for) {
         const dateObj = new Date(scheduled_for);
         if (!isNaN(dateObj.getTime())) {
-          dateObj.setDate(dateObj.getDate() - 2); // طرح يومين فقط لمواعيد الأطباء
+          // هنا يتم تطبيق "التذكير المبكر" للمواعيد الطبية فقط
+          dateObj.setDate(dateObj.getDate() - 2);
           finalDate = dateObj.toISOString();
         }
       }
       
-      if (!finalDate) finalDate = new Date().toISOString();
-
+      finalDate = finalDate || new Date().toISOString();
       const mergedExtraData = extra_data || {};
       if (note) mergedExtraData.note = note;
 
@@ -64,16 +63,17 @@ export default async function handler(req, res) {
         parseInt(user_id) || 1,
         fcmToken || null,
         category || 'medical',
-        title || 'تذكير موعد',
+        title || 'تذكير موعد طبي',
         body || '',
         finalDate,
         JSON.stringify(mergedExtraData),
         false
       ];
     }
-    // حالة احتياطية لأي بيانات أخرى
+
+    // --- 3. المسار الافتراضي لأي حالات أخرى ---
     else {
-      finalDate = scheduled_for ? new Date(scheduled_for).toISOString() : new Date().toISOString();
+      finalDate = scheduled_for || new Date().toISOString();
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
@@ -92,7 +92,9 @@ export default async function handler(req, res) {
       success: true, 
       id: result.rows[0].id, 
       scheduled_at: finalDate,
-      message: category === 'حيض' ? "تم تسجيل بيانات الحيض بنجاح" : "تمت جدولة الموعد (قبل التاريخ بيومين)"
+      message: (category === 'menstrual_report' || category === 'حيض') 
+        ? "تم حفظ موعد الدورة المتوقع بدقة ✅" 
+        : "تمت جدولة التذكير الطبي (قبل الموعد بيومين) 🔔"
     });
 
   } catch (error) {
