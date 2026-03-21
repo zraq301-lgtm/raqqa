@@ -203,8 +203,8 @@ const DoctorClinical = () => {
                     <div key={f}>
                       <label style={styles.label}>{f}</label>
                       <input 
+                        type={f === "الموعد القادم" ? "date" : "text"}
                         style={styles.inputField} 
-                        placeholder={f === "الموعد القادم" ? "2026-03-20" : ""}
                         value={data[`${cat.name}_${f}`] || ''} 
                         onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})}
                       />
