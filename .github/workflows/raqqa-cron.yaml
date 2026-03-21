@@ -2,9 +2,8 @@ name: "Raqqa Cron Job"
 
 on:
   schedule:
-    # سيقوم بالتشغيل كل 10 دقائق تلقائياً
-    - cron: '*/10 * * * *'
-  workflow_dispatch: # زر تشغيل يدوي للتجربة من صفحة Actions
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
 
 jobs:
   run_notifications:
