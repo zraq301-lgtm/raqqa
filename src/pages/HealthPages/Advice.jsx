@@ -1,177 +1,113 @@
 import React, { useState, useEffect } from 'react';
-import tipsData from './data/tips.json'; // التأكد من المسار الصحيح للملف
+// حل مشكلة المسار: تأكدي أن ملف tips.json موجود فعلياً في src/data/tips.json
+import localTips from '../../data/tips.json'; 
 
-const HealthTips = () => {
-  const [index, setIndex] = useState(0);
-  const [fade, setFade] = useState(true);
+const HealthAdvice = () => {
+  const [tip, setTip] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
 
-  useEffect(() => {
-    // مؤقت لتغيير النصيحة كل 30 ثانية
-    const timer = setInterval(() => {
-      triggerNext();
-    }, 30000);
-
-    return () => clearInterval(timer);
-  }, [index]);
-
-  const triggerNext = () => {
-    setFade(false); // تأثير الخروج
-    setTimeout(() => {
-      setIndex((prev) => (prev + 1) % tipsData.length);
-      setFade(true); // تأثير الدخول
-    }, 500);
+  // دالة جلب النصيحة من الذكاء الاصطناعي
+  const fetchAiTip = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('https://raqqa-hjl8.vercel.app/api/raqqa-ai', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: "أعطني نصيحة طبية قصيرة ومفيدة للنساء اليوم" }),
+      });
+      
+      if (!response.ok) throw new Error('AI Route not responding');
+      
+      const data = await response.json();
+      // نفترض أن الرابط يعيد نصاً أو كائناً يحتوي على النصيحة
+      setTip({
+        title: "نصيحة الذكاء الاصطناعي",
+        content: data.aiResponse || data.text || data[0].content, 
+        icon: "✨"
+      });
+    } catch (error) {
+      console.log("التحول للنصائح المخزنة بسبب:", error.message);
+      // نظام الأمان: اختيار نصيحة عشوائية من الملف المحلي في حال فشل الـ API
+      const randomLocalTip = localTips[Math.floor(Math.random() * localTips.length)];
+      setTip(randomLocalTip);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const currentTip = tipsData[index];
+  useEffect(() => {
+    fetchAiTip();
+    
+    // تحديث النصيحة كل 24 ساعة (86400000 مللي ثانية)
+    const dailyUpdate = setInterval(fetchAiTip, 86400000);
+    return () => clearInterval(dailyUpdate);
+  }, []);
+
+  if (loading) return <div style={styles.loader}>جاري تحضير نصيحتكِ اليومية... ✨</div>;
 
   return (
-    <div className="tips-wrapper">
-      <div className={`tips-card ${fade ? 'fade-in' : 'fade-out'}`}>
-        {/* شريط التقدم الزمني العلوي */}
-        <div className="progress-container">
-          <div className="progress-bar"></div>
+    <div style={styles.container}>
+      <div style={{...styles.card, opacity: isExiting ? 0 : 1}}>
+        <div style={styles.glassHeader}>
+          <span style={styles.icon}>{tip?.icon || "🌸"}</span>
+          <div style={styles.aiBadge}>ذكاء اصطناعي مباشر</div>
         </div>
-
-        <div className="tip-header">
-          <span className="tip-icon">{currentTip.icon}</span>
-          <span className="tip-badge">نصيحة اليوم</span>
-        </div>
-
-        <h2 className="tip-title">{currentTip.title}</h2>
-        <p className="tip-content">{currentTip.content}</p>
-
-        <div className="tip-footer">
-          <div className="tip-stats">
-            <span>{index + 1} / {tipsData.length}</span>
-          </div>
-          <button className="next-btn" onClick={triggerNext}>
-            النصيحة التالية ➔
-          </button>
-        </div>
+        
+        <h2 style={styles.title}>{tip?.title}</h2>
+        <p style={styles.content}>{tip?.content}</p>
+        
+        <div style={styles.timerInfo}>تتحدث النصيحة تلقائياً كل 24 ساعة</div>
       </div>
 
-      {/* كود CSS المدمج للاحترافية القصوى */}
       <style>{`
-        .tips-wrapper {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          min-height: 400px;
-          direction: rtl;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          background: transparent;
-        }
-
-        .tips-card {
-          background: rgba(255, 255, 255, 0.7);
-          backdrop-filter: blur(15px);
-          -webkit-backdrop-filter: blur(15px);
-          border: 1px solid rgba(255, 255, 255, 0.4);
-          border-radius: 30px;
-          padding: 40px;
-          width: 100%;
-          maxWidth: 420px;
-          box-shadow: 0 20px 40px rgba(255, 182, 193, 0.2);
-          position: relative;
-          overflow: hidden;
-          transition: all 0.5s ease;
-        }
-
-        .progress-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 6px;
-          background: rgba(255, 255, 255, 0.3);
-        }
-
-        .progress-bar {
-          height: 100%;
-          background: linear-gradient(90deg, #ff85a2, #ffb7c5);
-          width: 100%;
-          animation: countdown 30s linear infinite;
-          transform-origin: right;
-        }
-
-        @keyframes countdown {
-          from { transform: scaleX(1); }
-          to { transform: scaleX(0); }
-        }
-
-        .fade-in { opacity: 1; transform: translateY(0); }
-        .fade-out { opacity: 0; transform: translateY(-10px); }
-
-        .tip-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 25px;
-        }
-
-        .tip-icon {
-          font-size: 50px;
-          filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
-        }
-
-        .tip-badge {
-          background: #fff0f5;
-          color: #d81b60;
-          padding: 5px 15px;
-          border-radius: 20px;
-          font-size: 14px;
-          font-weight: bold;
-          border: 1px solid #ffc1e3;
-        }
-
-        .tip-title {
-          color: #880e4f;
-          font-size: 24px;
-          margin-bottom: 15px;
-          font-weight: 800;
-        }
-
-        .tip-content {
-          color: #555;
-          font-size: 18px;
-          line-height: 1.8;
-          min-height: 100px;
-        }
-
-        .tip-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 30px;
-          border-top: 1px solid rgba(255, 182, 193, 0.2);
-          padding-top: 20px;
-        }
-
-        .tip-stats {
-          color: #ad1457;
-          font-weight: bold;
-          font-size: 14px;
-        }
-
-        .next-btn {
-          background: linear-gradient(45deg, #ec407a, #f06292);
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 15px;
-          cursor: pointer;
-          font-weight: 600;
-          transition: transform 0.2s;
-          box-shadow: 0 4px 15px rgba(236, 64, 122, 0.3);
-        }
-
-        .next-btn:hover {
-          transform: scale(1.05);
-          background: #d81b60;
+        @keyframes shimmer {
+          0% { background-position: -1000px 0; }
+          100% { background-position: 1000px 0; }
         }
       `}</style>
     </div>
   );
 };
 
-export default HealthTips;
+const styles = {
+  container: {
+    display: 'flex',
+    justifyContent: 'center',
+    padding: '20px',
+    direction: 'rtl'
+  },
+  card: {
+    background: 'rgba(255, 255, 255, 0.45)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    borderRadius: '28px',
+    padding: '35px',
+    maxWidth: '450px',
+    width: '100%',
+    boxShadow: '0 15px 35px rgba(255, 105, 180, 0.15)',
+    border: '1px solid rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    transition: 'all 0.5s ease'
+  },
+  aiBadge: {
+    background: 'linear-gradient(45deg, #ff85a2, #ffb7c5)',
+    color: '#fff',
+    padding: '4px 12px',
+    borderRadius: '12px',
+    fontSize: '12px',
+    fontWeight: 'bold'
+  },
+  glassHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px'
+  },
+  icon: { fontSize: '55px' },
+  title: { color: '#ad1457', fontSize: '24px', marginBottom: '15px' },
+  content: { color: '#444', fontSize: '18px', lineHeight: '1.7', minHeight: '80px' },
+  timerInfo: { marginTop: '20px', color: '#f06292', fontSize: '13px', opacity: 0.8 },
+  loader: { textAlign: 'center', color: '#d81b60', marginTop: '50px', fontWeight: 'bold' }
+};
+
+export default HealthAdvice;
