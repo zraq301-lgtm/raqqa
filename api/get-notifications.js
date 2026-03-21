@@ -22,7 +22,7 @@ const pool = new Pool({
   max: 1
 });
 
-// 3. قوالب النصوص الاحتياطية (قائمة كاملة)
+// 3. قوالب النصوص الاحتياطية
 const TEMPLATES = {
   'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
   'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
@@ -38,11 +38,13 @@ const TEMPLATES = {
 
 export default async function handler(req, res) {
   const { method, headers } = req;
-  const AI_API_URL = "https://raqqa-v6cd.vercel.app/api/raqqa-ai";
+  
+  // الرابط الجديد للذكاء الاصطناعي
+  const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // --- التوافق مع كود اكشن جت (التحقق الأمني) ---
+    // التحقق الأمني
     if (method === 'GET') {
       if (headers['zazotona'] !== '12sonds25') {
         return res.status(401).json({ success: false, error: 'Unauthorized Access' });
@@ -51,7 +53,7 @@ export default async function handler(req, res) {
 
     let notificationsToSend = [];
 
-    // --- الحالة الأولى: جلب الإشعارات المجدولة (GET) ---
+    // الحالة الأولى: جلب الإشعارات المجدولة (GET)
     if (method === 'GET') {
       const { user_id } = req.query;
       
@@ -69,7 +71,7 @@ export default async function handler(req, res) {
       notificationsToSend = rows;
     } 
     
-    // --- الحالة الثانية: إرسال يدوي أو من أداة خارجية (POST) ---
+    // الحالة الثانية: إرسال يدوي (POST)
     else if (method === 'POST') {
       const { fcmToken, token, title, body, category, isFromMake } = req.body;
       notificationsToSend = [{
@@ -88,7 +90,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: "No notifications to send at this time." });
     }
 
-    // 4. معالجة العمليات بالتوازي لضمان السرعة
+    // 4. معالجة العمليات بالتوازي
     const results = await Promise.all(notificationsToSend.map(async (item) => {
       const category = item.category || 'default';
       const template = TEMPLATES[category] || TEMPLATES.default;
@@ -96,7 +98,7 @@ export default async function handler(req, res) {
       let finalTitle = item.title || template.t;
       let finalBody = item.body || template.b;
 
-      // --- تعديل الذكاء الاصطناعي: إعادة صياغة النص دائماً ليكون رقيقاً ---
+      // تعديل الذكاء الاصطناعي: إعادة صياغة النص باستخدام الرابط الجديد
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
