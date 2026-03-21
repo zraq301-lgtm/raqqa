@@ -22,12 +22,11 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // جلب البيانات من نيون
+    // 1. جلب البيانات من نيون
     const { rows } = await pool.query(`
       SELECT id, title, body, category, fcm_token 
       FROM notifications 
@@ -38,11 +37,10 @@ export default async function handler(req, res) {
     if (rows.length === 0) return res.status(200).json({ message: "No pending notifications" });
 
     const item = rows[0];
-    const category = item.category || 'default';
-    
-    // --- الجزء الحاسم: جلب نص الذكاء الاصطناعي ---
-    let finalBody = item.body; // النص الافتراضي من نيون
+    const category = (item.category || 'default').trim();
+    let finalBody = item.body;
 
+    // 2. محاولة جلب نص الذكاء الاصطناعي مع معالجة الوقت
     try {
       const aiRes = await fetch(AI_API_URL, {
         method: 'POST',
@@ -50,68 +48,78 @@ export default async function handler(req, res) {
         body: JSON.stringify({ 
           category: category, 
           prompt: item.body 
-        })
+        }),
+        // تحديد مهلة 10 ثوانٍ للرد
+        signal: AbortSignal.timeout(10000) 
       });
 
       if (aiRes.ok) {
         const aiData = await aiRes.json();
-        
-        // طباعة الرد في السجلات للتأكد من المسمى (Debug)
-        console.log("AI Raw Response:", JSON.stringify(aiData));
-
-        // محاولة استخراج النص من كل المسميات الممكنة
-        // إذا كان الرابط الجديد يعيد النص داخل 'text' أو 'content' أو 'output' أو 'message'
-        finalBody = aiData.text || aiData.content || aiData.output || aiData.message || aiData.response || item.body;
-      } else {
-        console.error("AI API returned error status:", aiRes.status);
+        console.log("AI Response Received:", aiData);
+        // التحقق من الحقل المسترجع (تأكد من أن AI يعيد 'ai_response' أو غيره)
+        finalBody = aiData.text || aiData.content || aiData.output || aiData.message || aiData.response || aiData.ai_response || item.body;
       }
-    } catch (e) {
-      console.error("Failed to connect to AI API:", e.message);
+    } catch (aiError) {
+      console.error("AI Error:", aiError.message);
+      // في حال الفشل نستخدم النص الأصلي لضمان عدم توقف الإشعار
+      finalBody = item.body;
     }
 
-    // --- رابط الصورة ---
-    const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
+    // 3. تجهيز رابط الصورة
+    const imageUrl = `${BASE_ASSETS_URL}/${category}.png`.replace(/\s/g, '');
 
-    // --- بناء وإرسال الإشعار ---
+    // 4. بناء هيكل الرسالة المحسن
     const messagePayload = {
+      token: item.fcm_token,
       notification: { 
         title: item.title || "رقة 🌸", 
-        body: finalBody, // النص الذي تم تحديثه (أو الأصلي في حال الفشل)
+        body: finalBody,
         image: imageUrl 
       },
-      token: item.fcm_token,
+      // إضافة حقل data لضمان ظهور الصورة في الخلفية ولأنظمة معينة
+      data: {
+        click_action: "FLUTTER_NOTIFICATION_CLICK",
+        image: imageUrl,
+        category: category
+      },
       android: {
         priority: "high",
         notification: {
           image: imageUrl,
           channelId: "default",
-          sound: "default"
+          sound: "default",
+          icon: "stock_ticker_update", // تأكد من وجود أيقونة بهذا الاسم أو حذف السطر
+          color: "#f4a261"
         }
       },
       apns: {
         payload: {
-          aps: { mutableContent: true, sound: "default" }
+          aps: { 
+            mutableContent: true, 
+            sound: "default",
+            category: "NEW_MESSAGE"
+          }
         },
         fcm_options: { image: imageUrl }
       }
     };
 
+    // 5. الإرسال وتحديث قاعدة البيانات
     const messageId = await admin.messaging().send(messagePayload);
     
-    // تحديث نيون لضمان عدم التكرار
     await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
 
     return res.status(200).json({
       success: true,
-      debug: {
-        original: item.body,
-        ai_version: finalBody,
+      messageId,
+      sent_content: {
+        body: finalBody,
         image: imageUrl
-      },
-      messageId
+      }
     });
 
   } catch (error) {
+    console.error("Critical Error:", error);
     return res.status(500).json({ error: error.message });
   }
 }
