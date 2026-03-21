@@ -3,7 +3,7 @@ import admin from 'firebase-admin';
 
 const { Pool } = pkg;
 
-// 1. إعداد Firebase Admin
+// 1. إعداد Firebase Admin (Singleton)
 const serviceAccount = {
   "type": "service_account",
   "project_id": "raqqa-43dc8",
@@ -21,6 +21,7 @@ const pool = new Pool({
   max: 1
 });
 
+// القوالب الاحتياطية في حال فشل الذكاء الاصطناعي أو عدم وجود نص
 const TEMPLATES = {
   'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
   'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
@@ -37,16 +38,17 @@ const TEMPLATES = {
 export default async function handler(req, res) {
   const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
-  // تأكدي من أن هذا المجلد يحتوي فعلياً على ملفات مثل period.png أو fitness.png
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
+    // التحقق الأمني لطلبات الـ Cron Job أو GET
     if (method === 'GET' && headers['zazotona'] !== '12sonds25') {
       return res.status(401).json({ success: false, error: 'Unauthorized Access' });
     }
 
     let notificationsToSend = [];
 
+    // المرحلة 1: جلب البيانات من نيون (Neon)
     if (method === 'GET') {
       const { user_id } = req.query;
       const query = `
@@ -61,49 +63,51 @@ export default async function handler(req, res) {
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
     } else if (method === 'POST') {
-      const { fcmToken, token, title, body, category, isFromMake } = req.body;
+      const { fcmToken, token, title, body, category } = req.body;
       notificationsToSend = [{
         fcm_token: fcmToken || token,
         title, body, category,
-        isFromManual: true,
-        isFromMake: isFromMake === true || String(isFromMake).toLowerCase() === "true"
+        id: null // إرسال يدوي
       }];
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "No pending notifications." });
+      return res.status(200).json({ success: true, message: "No notifications to process." });
     }
 
+    // المرحلة 2: معالجة كل إشعار (ذكاء اصطناعي -> صورة -> فيربيس)
     const results = await Promise.all(notificationsToSend.map(async (item) => {
       const category = item.category || 'default';
       const template = TEMPLATES[category] || TEMPLATES.default;
       
       let finalTitle = item.title || template.t;
-      let finalBody = item.body || template.b;
+      let initialBody = item.body || template.b;
+      let finalBody = initialBody;
 
-      // 1. محاولة جلب النص من الذكاء الاصطناعي
+      // 1. طلب صياغة الذكاء الاصطناعي (AI Rewrite)
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             category, 
-            prompt: `أنتِ مساعدة رقيقة، أعيدي صياغة النص بأسلوب دافئ: "${finalBody}"` 
+            prompt: `أنتِ مساعدة رقيقة في تطبيق "رقة"، أعيدي صياغة هذا التنبيه ليكون مريحاً ودافئاً: "${initialBody}"` 
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          // تأكد من مفتاح الرد (هنا جربنا text أو content أو response)
-          finalBody = aiData.text || aiData.content || aiData.response || finalBody;
+          // فحص كل المفاتيح الممكنة للرد لضمان الحصول على النص
+          finalBody = aiData.text || aiData.content || aiData.response || aiData.result || initialBody;
         }
       } catch (e) {
-        console.error("AI Fetch Error:", e.message);
+        console.error("AI Service Error:", e.message);
       }
 
-      // 2. معالجة الصورة (تأكدي من وجودها على الخادم بالاسم الصحيح)
+      // 2. تجهيز رابط الصورة بناءً على القسم
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
+      // 3. إرسال الإشعار النهائي لـ Firebase
       const messagePayload = {
         notification: { 
           title: finalTitle, 
@@ -115,26 +119,28 @@ export default async function handler(req, res) {
           priority: "high",
           notification: {
             channelId: "default",
-            icon: "stock_ticker_update", // أيقونة افتراضية للتطبيق
-            color: "#FFC0CB", // لون وردي رقيق للإشعار
             image: imageUrl,
             sound: "default"
           }
         },
         apns: {
           payload: {
-            aps: { 
-              mutableContent: true, // ضروري جداً لعرض الصور في iOS
-              sound: "default" 
-            }
+            aps: { mutableContent: true, sound: "default" }
           },
           fcm_options: { image: imageUrl }
         }
       };
 
       try {
+        if (!item.fcm_token) throw new Error("Missing FCM Token");
+        
         const messageId = await admin.messaging().send(messagePayload);
-        if (item.id) await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+
+        // تحديث حالة الإشعار في نيون إذا كان مجدولاً
+        if (item.id) {
+          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+        }
+
         return { id: item.id, status: 'sent', messageId };
       } catch (err) {
         return { id: item.id, status: 'error', error: err.message };
@@ -144,6 +150,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true, results });
 
   } catch (error) {
+    console.error("Critical Handler Error:", error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
