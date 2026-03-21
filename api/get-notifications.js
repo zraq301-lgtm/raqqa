@@ -15,7 +15,7 @@ if (!admin.apps.length) {
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 
-// 2. إعداد Neon
+// 2. إعداد قاعدة بيانات نيون
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -49,7 +49,6 @@ export default async function handler(req, res) {
 
     if (method === 'GET') {
       const { user_id } = req.query;
-      // سحب الإشعارات المستحقة الآن + يوم في المستقبل
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
@@ -76,28 +75,29 @@ export default async function handler(req, res) {
       let finalTitle = item.title || template.t;
       let finalBody = item.body || template.b;
 
-      // --- إصلاح الذكاء الاصطناعي ---
+      // --- تطوير الذكاء الاصطناعي (نص محبب وطويل) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ رقة، أعيدي صياغة هذا النص ليكون دافئاً وقصيراً: ${finalBody}` 
+            prompt: `أنتِ "رقة"، صديقة مخلصة. أعيدي صياغة هذا النص بأسلوب دافئ، رقيق، ومحبب جداً في حوالي 15 كلمة مع استخدام الكثير من الرموز التعبيرية اللطيفة (🌸، ✨، 💖): "${finalBody}"` 
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          // التعديل الجوهري: استخدام .message كما في كود الذكاء الخاص بك
+          // استخراج النص من المفتاح الصحيح
           finalBody = aiData.message || aiData.text || aiData.content || finalBody;
         }
       } catch (e) { 
-        console.warn("AI Logic failed, using original text.");
+        console.warn("AI failed, falling back to template.");
       }
 
+      // --- تفعيل حلب الصورة (Image Fetch) ---
+      // التأكد من أن المسار كامل وصحيح
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
-      // --- إصلاح الصورة والحمولة ---
       const messagePayload = {
         token: item.fcm_token,
         notification: { 
@@ -106,15 +106,17 @@ export default async function handler(req, res) {
           image: imageUrl 
         },
         data: {
-          image: imageUrl, // ضروري لبعض أجهزة أندرويد
-          category: category
+          image: imageUrl, // ضروري لبرمجة Capacitor/Android
+          category: category,
+          click_action: "FLUTTER_NOTIFICATION_CLICK" // لتفتحي التطبيق عند الضغط
         },
         android: { 
           priority: "high", 
           notification: { 
             image: imageUrl, 
             sound: "default",
-            channelId: "default" 
+            channelId: "default",
+            icon: "stock_ticker_update" // تأكد من وجود أيقونة افتراضية
           } 
         },
         apns: { 
@@ -127,14 +129,16 @@ export default async function handler(req, res) {
 
       try {
         const messageId = await admin.messaging().send(messagePayload);
-        if (item.id) await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
-        return { id: item.id, status: 'sent', messageId };
+        if (item.id) {
+            await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+        }
+        return { id: item.id, status: 'sent', messageId, body: finalBody };
       } catch (err) {
         return { id: item.id, status: 'error', error: err.message };
       }
     }));
 
-    return res.status(200).json({ success: true, results });
+    return res.status(200).json({ success: true, processed: results });
 
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
