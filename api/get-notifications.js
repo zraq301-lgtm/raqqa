@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // 1. جلب البيانات من نيون
+    // جلب الإشعار الذي لم يُرسل بعد
     const { rows } = await pool.query(`
       SELECT id, title, body, category, fcm_token 
       FROM notifications 
@@ -37,48 +37,43 @@ export default async function handler(req, res) {
     if (rows.length === 0) return res.status(200).json({ message: "No pending notifications" });
 
     const item = rows[0];
-    const category = (item.category || 'default').trim();
+    const category = item.category || 'default';
     let finalBody = item.body;
 
-    // 2. محاولة جلب نص الذكاء الاصطناعي مع معالجة الوقت
+    // --- المرحلة الحاسمة: طلب النص من كود الذكاء الخاص بك ---
     try {
       const aiRes = await fetch(AI_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          category: category, 
-          prompt: item.body 
-        }),
-        // تحديد مهلة 10 ثوانٍ للرد
-        signal: AbortSignal.timeout(10000) 
+          prompt: `أنتِ رقة، أعيدي صياغة هذا التنبيه بأسلوب دافئ وقصير جداً: ${item.body}` 
+        })
       });
 
       if (aiRes.ok) {
         const aiData = await aiRes.json();
-        console.log("AI Response Received:", aiData);
-        // التحقق من الحقل المسترجع (تأكد من أن AI يعيد 'ai_response' أو غيره)
-        finalBody = aiData.text || aiData.content || aiData.output || aiData.message || aiData.response || aiData.ai_response || item.body;
+        // التعديل الجوهري: استخراج النص من مفتاح message كما هو في كود الذكاء الخاص بك
+        if (aiData.message) {
+          finalBody = aiData.message;
+        }
       }
-    } catch (aiError) {
-      console.error("AI Error:", aiError.message);
-      // في حال الفشل نستخدم النص الأصلي لضمان عدم توقف الإشعار
-      finalBody = item.body;
+    } catch (e) {
+      console.error("AI API connection failed:", e.message);
     }
 
-    // 3. تجهيز رابط الصورة
-    const imageUrl = `${BASE_ASSETS_URL}/${category}.png`.replace(/\s/g, '');
+    // تجهيز رابط الصورة بناءً على القسم
+    const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
-    // 4. بناء هيكل الرسالة المحسن
+    // بناء حمولة الإشعار
     const messagePayload = {
       token: item.fcm_token,
-      notification: { 
-        title: item.title || "رقة 🌸", 
+      notification: {
+        title: item.title || "رقة 🌸",
         body: finalBody,
-        image: imageUrl 
+        image: imageUrl
       },
-      // إضافة حقل data لضمان ظهور الصورة في الخلفية ولأنظمة معينة
+      // إضافة البيانات في كائن data لضمان معالجتها برمجياً في التطبيق
       data: {
-        click_action: "FLUTTER_NOTIFICATION_CLICK",
         image: imageUrl,
         category: category
       },
@@ -86,40 +81,33 @@ export default async function handler(req, res) {
         priority: "high",
         notification: {
           image: imageUrl,
-          channelId: "default",
-          sound: "default",
-          icon: "stock_ticker_update", // تأكد من وجود أيقونة بهذا الاسم أو حذف السطر
-          color: "#f4a261"
+          channelId: "default", // تأكد أن هذا الـ ID معرف في أندرويد
+          sound: "default"
         }
       },
       apns: {
         payload: {
-          aps: { 
-            mutableContent: true, 
-            sound: "default",
-            category: "NEW_MESSAGE"
-          }
+          aps: { mutableContent: true, sound: "default" }
         },
         fcm_options: { image: imageUrl }
       }
     };
 
-    // 5. الإرسال وتحديث قاعدة البيانات
+    // الإرسال الفعلي عبر Firebase
     const messageId = await admin.messaging().send(messagePayload);
-    
+
+    // تحديث حالة الإشعار في نيون
     await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
 
     return res.status(200).json({
       success: true,
-      messageId,
-      sent_content: {
-        body: finalBody,
-        image: imageUrl
-      }
+      sent_content: finalBody,
+      image_path: imageUrl,
+      firebase_id: messageId
     });
 
   } catch (error) {
-    console.error("Critical Error:", error);
+    console.error("Handler Error:", error.message);
     return res.status(500).json({ error: error.message });
   }
 }
