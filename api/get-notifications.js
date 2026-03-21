@@ -35,7 +35,6 @@ export default async function handler(req, res) {
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // التحقق الأمني
     if (method === 'GET' && headers['zazotona'] !== '12sonds25') {
       return res.status(401).json({ success: false, error: 'Unauthorized Access' });
     }
@@ -44,14 +43,17 @@ export default async function handler(req, res) {
 
     if (method === 'GET') {
       const { user_id } = req.query;
+      // --- التعديل الجوهري في الاستعلام (Query) ---
+      // الشرط الآن: أن يكون موعد الإشعار أكبر من الوقت الحالي (أو يساويه) وأصغر من الغد
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
-        AND scheduled_for <= NOW() + INTERVAL '1 day'
         AND is_sent = false
+        AND scheduled_for >= NOW() - INTERVAL '15 minutes' -- السماح بهامش بسيط لو تأخر الكرون جوب
+        AND scheduled_for <= NOW() + INTERVAL '1 day' -- حتى يوم مستقبلي
         ORDER BY scheduled_for ASC
-        LIMIT 5
+        LIMIT 10
       `;
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
@@ -61,7 +63,7 @@ export default async function handler(req, res) {
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "No notifications found." });
+      return res.status(200).json({ success: true, message: "No notifications due now." });
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
@@ -71,48 +73,34 @@ export default async function handler(req, res) {
       let finalTitle = item.title || template.t;
       let finalBody = item.body || template.b;
 
-      // --- [تعديل 1: إجبار الذكاء على الاسترسال بأسلوب رقة] ---
+      // ذكاء اصطناعي مكثف
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ "رقة"، الصديقة الأكثر حناناً. حوّلي هذا التنبيه: (${item.body}) إلى رسالة دافئة ومحببة جداً، يجب ألا يقل النص عن 15 إلى 20 كلمة. ابدأي بكلمات مثل "يا رفيقتي الغالية" واستخدمي الكثير من الزهور والقلوب (🌸✨💖).` 
+            prompt: `أنتِ "رقة"، صديقتنا الحنونة. أعيدي صياغة هذا النص ليكون دافئاً ومحفزاً جداً (أكثر من 15 كلمة) مع إيموجي كثيرة 🌸💖✨: "${finalBody}"` 
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          // التأكد من قراءة مفتاح message أو text
           finalBody = aiData.message || aiData.text || finalBody;
         }
-      } catch (e) { 
-        console.warn("AI Logic failed, using original.");
-      }
+      } catch (e) { console.warn("AI logic skipped."); }
 
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
-      // --- [تعديل 2: تحسين حمولة الإشعار لظهور الصورة كـ BigPicture] ---
       const messagePayload = {
         token: item.fcm_token,
-        notification: { 
-          title: finalTitle, 
-          body: finalBody, 
-          image: imageUrl 
-        },
-        data: {
-          image: imageUrl,
-          category: category,
-          click_action: "FLUTTER_NOTIFICATION_CLICK"
-        },
+        notification: { title: finalTitle, body: finalBody, image: imageUrl },
+        data: { image: imageUrl, category: category },
         android: { 
           priority: "high", 
           notification: { 
             image: imageUrl, 
-            sound: "default",
-            channelId: "default",
-            notificationPriority: "PRIORITY_MAX", // لضمان تمدد الصورة في أندرويد
-            visibility: "public"
+            channelId: "default", 
+            notificationPriority: "PRIORITY_MAX" 
           } 
         },
         apns: { 
@@ -126,13 +114,13 @@ export default async function handler(req, res) {
         if (item.id) {
           await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
-        return { id: item.id, status: 'sent', body_length: finalBody.split(' ').length, body: finalBody };
+        return { id: item.id, status: 'sent', messageId };
       } catch (err) {
         return { id: item.id, status: 'error', error: err.message };
       }
     }));
 
-    return res.status(200).json({ success: true, processed: results });
+    return res.status(200).json({ success: true, results });
 
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
