@@ -15,21 +15,25 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج البيانات (بما في ذلك next_period_date القادم من واجهة الحيض)
-  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note, next_period_date } = req.body;
+  // استخراج البيانات (بما في ذلك latitude و longitude للموقع الجغرافي)
+  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note, next_period_date, latitude, longitude } = req.body;
 
   try {
     let finalDate = null;
     let finalValues;
+    
+    // إضافة عمود location إلى الاستعلام
     const query = `
-      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent, location)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
     `;
 
-    // --- 1. منطق واجهة الحيض (استخراج وحفظ التاريخ المتوقع بدقة) ---
+    // تجهيز صيغة الموقع الجغرافي لقاعدة البيانات
+    const geoPoint = (latitude && longitude) ? `POINT(${longitude} ${latitude})` : null;
+
+    // --- 1. منطق واجهة الحيض ---
     if (category === 'menstrual_report' || category === 'حيض') {
-      // الأولوية لـ next_period_date القادم من الحسابات البرمجية في الواجهة
       finalDate = next_period_date || scheduled_for || new Date().toISOString();
 
       finalValues = [
@@ -38,18 +42,18 @@ export default async function handler(req, res) {
         'menstrual_report',
         title || 'تاريخ الحيض المتوقع',
         body || 'تذكير بموعد الدورة القادمة',
-        finalDate, // يُحفظ كما هو بدون طرح أي أيام
+        finalDate,
         JSON.stringify(extra_data || {}),
-        false
+        false,
+        geoPoint // القيمة لعمود location
       ];
     } 
     
-    // --- 2. منطق واجهة الاستشارات والطبيب (طرح يومين للتذكير) ---
+    // --- 2. منطق واجهة الاستشارات والطبيب ---
     else if (note !== undefined || category === 'medical' || category === 'pregnancy') {
       if (scheduled_for) {
         const dateObj = new Date(scheduled_for);
         if (!isNaN(dateObj.getTime())) {
-          // هنا يتم تطبيق "التذكير المبكر" للمواعيد الطبية فقط
           dateObj.setDate(dateObj.getDate() - 2);
           finalDate = dateObj.toISOString();
         }
@@ -67,11 +71,12 @@ export default async function handler(req, res) {
         body || '',
         finalDate,
         JSON.stringify(mergedExtraData),
-        false
+        false,
+        geoPoint // القيمة لعمود location
       ];
     }
 
-    // --- 3. المسار الافتراضي لأي حالات أخرى ---
+    // --- 3. المسار الافتراضي ---
     else {
       finalDate = scheduled_for || new Date().toISOString();
       finalValues = [
@@ -82,7 +87,8 @@ export default async function handler(req, res) {
         body || '',
         finalDate,
         JSON.stringify(extra_data || {}),
-        false
+        false,
+        geoPoint // القيمة لعمود location
       ];
     }
 
