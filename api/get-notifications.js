@@ -55,12 +55,6 @@ export default async function handler(req, res) {
     if (method === 'GET') {
       const { user_id } = req.query;
       
-      /**
-       * استعلام احترافي:
-       * 1. يجلب فقط الإشعارات التي لم تُرسل (is_sent = false).
-       * 2. النطاق الزمني: من اللحظة الحالية (NOW()) إلى 24 ساعة مستقبلاً.
-       * 3. يضمن عدم جلب أي شيء قديم فات موعده (المواعيد التي لم يمر تاريخها).
-       */
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
@@ -102,34 +96,26 @@ export default async function handler(req, res) {
       let finalTitle = item.title || template.t;
       let finalBody = item.body || template.b;
 
-      // إجبار القالب إذا كان الطلب من أداة Make
-      if (item.isFromMake) {
-        finalTitle = template.t;
-        finalBody = template.b;
-      }
-
-      // تحسين النص بالذكاء الاصطناعي (للإشعارات المجدولة أو التي تفتقر لمحتوى)
-      if (!item.isFromManual || !item.body) {
-        try {
-          const aiRes = await fetch(AI_API_URL, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json', 
-              'x-api-key': process.env.GROQ_API_KEY 
-            },
-            body: JSON.stringify({ 
-              category, 
-              prompt: `بصفتكِ مساعدة رقيقة، صغِ رسالة دافئة ومختصرة جداً عن موضوع ${category} مع الحفاظ على روح الود.` 
-            })
-          });
-          
-          if (aiRes.ok) {
-            const aiData = await aiRes.json();
-            finalBody = aiData.text || aiData.content || finalBody;
-          }
-        } catch (e) { 
-          console.warn(`AI Enrichment skipped for ID ${item.id || 'POST'}:`, e.message); 
+      // --- تعديل الذكاء الاصطناعي: إعادة صياغة النص دائماً ليكون رقيقاً ---
+      try {
+        const aiRes = await fetch(AI_API_URL, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'x-api-key': process.env.GROQ_API_KEY 
+          },
+          body: JSON.stringify({ 
+            category, 
+            prompt: `أنتِ مساعدة رقيقة جداً، قومي بإعادة صياغة هذا النص ليكون دافئاً وودوداً للغاية مع الحفاظ على جوهر المعلومة: "${finalBody}"` 
+          })
+        });
+        
+        if (aiRes.ok) {
+          const aiData = await aiRes.json();
+          finalBody = aiData.text || aiData.content || finalBody;
         }
+      } catch (e) { 
+        console.warn(`AI Enrichment failed for ID ${item.id || 'POST'}:`, e.message); 
       }
 
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
@@ -161,10 +147,8 @@ export default async function handler(req, res) {
       try {
         if (!item.fcm_token) throw new Error("FCM Token is missing");
         
-        // إرسال الإشعار عبر Firebase
         const messageId = await admin.messaging().send(messagePayload);
 
-        // تحديث حالة الإرسال في قاعدة البيانات فور النجاح
         if (item.id) {
           await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
