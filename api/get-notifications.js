@@ -3,7 +3,7 @@ import admin from 'firebase-admin';
 
 const { Pool } = pkg;
 
-// 1. إعداد Firebase Admin (Singleton)
+// 1. إعداد Firebase Admin
 const serviceAccount = {
   "type": "service_account",
   "project_id": "raqqa-43dc8",
@@ -21,140 +21,97 @@ const pool = new Pool({
   max: 1
 });
 
-const TEMPLATES = {
-  'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
-  'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
-  'nursing': { t: "لحظات الارتباط 🤱", b: "وقت الرضاعة هو وقت الحب؛ تأكدي من شرب المياه والحصول على قسط من الراحة." },
-  'motherhood': { t: "أنتِ أم رائعة 💖", b: "تذكير بمهمة طفلكِ القادمة.. اهتمامكِ يصنع مستقبله، ورقة تهتم بكِ." },
-  'medical': { t: "موعدكِ الطبي 🩺", b: "حفاظاً على صحتكِ، نذكركِ بموعد الاستشارة الطبية اليوم. دمتِ بخير." },
-  'mood': { t: "رقة تهتم بقلبكِ ✨", b: "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير." },
-  'fiqh': { t: "رفيقتكِ الفقهية 📖", b: "تذكير بالأحكام الخاصة بدورتكِ الحالية؛ لتمارسي عباداتكِ بطمأنينة ويقين." },
-  'fitness': { t: "وقت النشاط 🏃‍♀️", b: "حركتكِ اليوم هي استثمار في صحتكِ.. تمرين بسيط سيجعلكِ تشعرين بالانتعاش." },
-  'intimacy': { t: "لحظات الود ❤️", b: "تذكير بتعزيز التواصل والود مع شريك حياتكِ.. رقة تتمنى لكِ حياة مليئة بالحب." },
-  'default': { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق المخصص لراحتكِ." }
-};
-
 export default async function handler(req, res) {
   const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    if (method === 'GET' && headers['zazotona'] !== '12sonds25') {
-      return res.status(401).json({ success: false, error: 'Unauthorized Access' });
-    }
+    // جلب البيانات من نيون
+    const { rows } = await pool.query(`
+      SELECT id, title, body, category, fcm_token 
+      FROM notifications 
+      WHERE is_sent = false 
+      LIMIT 1
+    `);
 
-    let notificationsToSend = [];
+    if (rows.length === 0) return res.status(200).json({ message: "No pending notifications" });
 
-    // المرحلة 1: جلب البيانات من نيون (Neon)
-    if (method === 'GET') {
-      const { user_id } = req.query;
-      const query = `
-        SELECT id, title, body, category, fcm_token, scheduled_for 
-        FROM notifications 
-        WHERE (user_id = $1 OR $1 IS NULL)
-        AND scheduled_for >= NOW() 
-        AND scheduled_for <= NOW() + INTERVAL '1 day'
-        AND is_sent = false
-        ORDER BY scheduled_for ASC
-      `;
-      const { rows } = await pool.query(query, [user_id || null]);
-      notificationsToSend = rows;
-    } else if (method === 'POST') {
-      const { fcmToken, token, title, body, category } = req.body;
-      notificationsToSend = [{
-        fcm_token: fcmToken || token,
-        title, body, category,
-        id: null
-      }];
-    }
+    const item = rows[0];
+    const category = item.category || 'default';
+    
+    // --- الجزء الحاسم: جلب نص الذكاء الاصطناعي ---
+    let finalBody = item.body; // النص الافتراضي من نيون
 
-    if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "No notifications to process." });
-    }
+    try {
+      const aiRes = await fetch(AI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          category: category, 
+          prompt: item.body 
+        })
+      });
 
-    // المرحلة 2: المعالجة التسلسلية (AI -> Image -> Firebase)
-    const results = await Promise.all(notificationsToSend.map(async (item) => {
-      const category = item.category || 'default';
-      const template = TEMPLATES[category] || TEMPLATES.default;
-      
-      let finalTitle = item.title || template.t;
-      let initialBody = item.body || template.b;
-      let finalBody = initialBody;
-
-      // 1. استلام صياغة الذكاء الاصطناعي (أصبح الآن يعمل كوسيط قبل بناء الإشعار)
-      try {
-        const aiRes = await fetch(AI_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            category, 
-            prompt: `أنتِ مساعدة رقيقة في تطبيق "رقة"، أعيدي صياغة هذا التنبيه بأسلوب دافئ: "${initialBody}"` 
-          })
-        });
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
         
-        if (aiRes.ok) {
-          const aiData = await aiRes.json();
-          // فحص جميع مفاتيح الاستجابة المحتملة لضمان استلام النص
-          finalBody = aiData.text || aiData.content || aiData.response || aiData.result || initialBody;
-        }
-      } catch (e) {
-        console.error("AI Intermediate Fetch Error:", e.message);
+        // طباعة الرد في السجلات للتأكد من المسمى (Debug)
+        console.log("AI Raw Response:", JSON.stringify(aiData));
+
+        // محاولة استخراج النص من كل المسميات الممكنة
+        // إذا كان الرابط الجديد يعيد النص داخل 'text' أو 'content' أو 'output' أو 'message'
+        finalBody = aiData.text || aiData.content || aiData.output || aiData.message || aiData.response || item.body;
+      } else {
+        console.error("AI API returned error status:", aiRes.status);
       }
+    } catch (e) {
+      console.error("Failed to connect to AI API:", e.message);
+    }
 
-      // 2. تجهيز رابط الصورة (بناءً على القسم المستلم من نيون)
-      const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
+    // --- رابط الصورة ---
+    const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
-      // 3. بناء هيكل الإشعار النهائي لـ Firebase (JSON الكامل)
-      const messagePayload = {
-        notification: { 
-          title: finalTitle, 
-          body: finalBody,
-          image: imageUrl 
-        },
-        token: item.fcm_token,
-        android: {
-          priority: "high",
-          notification: {
-            channelId: "default",
-            image: imageUrl,
-            sound: "default",
-            notificationPriority: "PRIORITY_MAX"
-          }
-        },
-        apns: {
-          payload: {
-            aps: { 
-              mutableContent: true, 
-              sound: "default" 
-            }
-          },
-          fcm_options: { image: imageUrl }
+    // --- بناء وإرسال الإشعار ---
+    const messagePayload = {
+      notification: { 
+        title: item.title || "رقة 🌸", 
+        body: finalBody, // النص الذي تم تحديثه (أو الأصلي في حال الفشل)
+        image: imageUrl 
+      },
+      token: item.fcm_token,
+      android: {
+        priority: "high",
+        notification: {
+          image: imageUrl,
+          channelId: "default",
+          sound: "default"
         }
-      };
-
-      // سجل البيانات للمراقبة (Debug Logs)
-      console.log(`Processing ID ${item.id}:`, { finalBody, imageUrl });
-
-      try {
-        if (!item.fcm_token) throw new Error("Missing FCM Token");
-        
-        const messageId = await admin.messaging().send(messagePayload);
-
-        if (item.id) {
-          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
-        }
-
-        return { id: item.id, status: 'sent', messageId, ai_applied: finalBody !== initialBody };
-      } catch (err) {
-        return { id: item.id, status: 'error', error: err.message };
+      },
+      apns: {
+        payload: {
+          aps: { mutableContent: true, sound: "default" }
+        },
+        fcm_options: { image: imageUrl }
       }
-    }));
+    };
 
-    return res.status(200).json({ success: true, processed: results });
+    const messageId = await admin.messaging().send(messagePayload);
+    
+    // تحديث نيون لضمان عدم التكرار
+    await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+
+    return res.status(200).json({
+      success: true,
+      debug: {
+        original: item.body,
+        ai_version: finalBody,
+        image: imageUrl
+      },
+      messageId
+    });
 
   } catch (error) {
-    console.error("Critical Handler Error:", error.message);
-    return res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 }
