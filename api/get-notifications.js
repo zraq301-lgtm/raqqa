@@ -21,7 +21,6 @@ const pool = new Pool({
   max: 1
 });
 
-// القوالب الاحتياطية في حال فشل الذكاء الاصطناعي أو عدم وجود نص
 const TEMPLATES = {
   'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
   'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
@@ -41,7 +40,6 @@ export default async function handler(req, res) {
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // التحقق الأمني لطلبات الـ Cron Job أو GET
     if (method === 'GET' && headers['zazotona'] !== '12sonds25') {
       return res.status(401).json({ success: false, error: 'Unauthorized Access' });
     }
@@ -67,7 +65,7 @@ export default async function handler(req, res) {
       notificationsToSend = [{
         fcm_token: fcmToken || token,
         title, body, category,
-        id: null // إرسال يدوي
+        id: null
       }];
     }
 
@@ -75,7 +73,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, message: "No notifications to process." });
     }
 
-    // المرحلة 2: معالجة كل إشعار (ذكاء اصطناعي -> صورة -> فيربيس)
+    // المرحلة 2: المعالجة التسلسلية (AI -> Image -> Firebase)
     const results = await Promise.all(notificationsToSend.map(async (item) => {
       const category = item.category || 'default';
       const template = TEMPLATES[category] || TEMPLATES.default;
@@ -84,30 +82,30 @@ export default async function handler(req, res) {
       let initialBody = item.body || template.b;
       let finalBody = initialBody;
 
-      // 1. طلب صياغة الذكاء الاصطناعي (AI Rewrite)
+      // 1. استلام صياغة الذكاء الاصطناعي (أصبح الآن يعمل كوسيط قبل بناء الإشعار)
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             category, 
-            prompt: `أنتِ مساعدة رقيقة في تطبيق "رقة"، أعيدي صياغة هذا التنبيه ليكون مريحاً ودافئاً: "${initialBody}"` 
+            prompt: `أنتِ مساعدة رقيقة في تطبيق "رقة"، أعيدي صياغة هذا التنبيه بأسلوب دافئ: "${initialBody}"` 
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          // فحص كل المفاتيح الممكنة للرد لضمان الحصول على النص
+          // فحص جميع مفاتيح الاستجابة المحتملة لضمان استلام النص
           finalBody = aiData.text || aiData.content || aiData.response || aiData.result || initialBody;
         }
       } catch (e) {
-        console.error("AI Service Error:", e.message);
+        console.error("AI Intermediate Fetch Error:", e.message);
       }
 
-      // 2. تجهيز رابط الصورة بناءً على القسم
+      // 2. تجهيز رابط الصورة (بناءً على القسم المستلم من نيون)
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
-      // 3. إرسال الإشعار النهائي لـ Firebase
+      // 3. بناء هيكل الإشعار النهائي لـ Firebase (JSON الكامل)
       const messagePayload = {
         notification: { 
           title: finalTitle, 
@@ -120,34 +118,40 @@ export default async function handler(req, res) {
           notification: {
             channelId: "default",
             image: imageUrl,
-            sound: "default"
+            sound: "default",
+            notificationPriority: "PRIORITY_MAX"
           }
         },
         apns: {
           payload: {
-            aps: { mutableContent: true, sound: "default" }
+            aps: { 
+              mutableContent: true, 
+              sound: "default" 
+            }
           },
           fcm_options: { image: imageUrl }
         }
       };
+
+      // سجل البيانات للمراقبة (Debug Logs)
+      console.log(`Processing ID ${item.id}:`, { finalBody, imageUrl });
 
       try {
         if (!item.fcm_token) throw new Error("Missing FCM Token");
         
         const messageId = await admin.messaging().send(messagePayload);
 
-        // تحديث حالة الإشعار في نيون إذا كان مجدولاً
         if (item.id) {
           await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
 
-        return { id: item.id, status: 'sent', messageId };
+        return { id: item.id, status: 'sent', messageId, ai_applied: finalBody !== initialBody };
       } catch (err) {
         return { id: item.id, status: 'error', error: err.message };
       }
     }));
 
-    return res.status(200).json({ success: true, results });
+    return res.status(200).json({ success: true, processed: results });
 
   } catch (error) {
     console.error("Critical Handler Error:", error.message);
