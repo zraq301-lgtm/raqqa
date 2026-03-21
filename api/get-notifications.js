@@ -3,7 +3,7 @@ import admin from 'firebase-admin';
 
 const { Pool } = pkg;
 
-// 1. إعداد Firebase Admin (بنمط Singleton لمنع تكرار التهيئة)
+// 1. إعداد Firebase Admin
 const serviceAccount = {
   "type": "service_account",
   "project_id": "raqqa-43dc8",
@@ -15,14 +15,12 @@ if (!admin.apps.length) {
   admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 }
 
-// 2. إعداد قاعدة بيانات نيون (Neon)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
   max: 1
 });
 
-// 3. قوالب النصوص الاحتياطية
 const TEMPLATES = {
   'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
   'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
@@ -38,25 +36,19 @@ const TEMPLATES = {
 
 export default async function handler(req, res) {
   const { method, headers } = req;
-  
-  // الرابط الجديد للذكاء الاصطناعي
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
+  // تأكدي من أن هذا المجلد يحتوي فعلياً على ملفات مثل period.png أو fitness.png
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    // التحقق الأمني
-    if (method === 'GET') {
-      if (headers['zazotona'] !== '12sonds25') {
-        return res.status(401).json({ success: false, error: 'Unauthorized Access' });
-      }
+    if (method === 'GET' && headers['zazotona'] !== '12sonds25') {
+      return res.status(401).json({ success: false, error: 'Unauthorized Access' });
     }
 
     let notificationsToSend = [];
 
-    // الحالة الأولى: جلب الإشعارات المجدولة (GET)
     if (method === 'GET') {
       const { user_id } = req.query;
-      
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
@@ -66,31 +58,22 @@ export default async function handler(req, res) {
         AND is_sent = false
         ORDER BY scheduled_for ASC
       `;
-      
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
-    } 
-    
-    // الحالة الثانية: إرسال يدوي (POST)
-    else if (method === 'POST') {
+    } else if (method === 'POST') {
       const { fcmToken, token, title, body, category, isFromMake } = req.body;
       notificationsToSend = [{
         fcm_token: fcmToken || token,
-        title,
-        body,
-        category,
+        title, body, category,
         isFromManual: true,
         isFromMake: isFromMake === true || String(isFromMake).toLowerCase() === "true"
       }];
-    } else {
-      return res.status(405).json({ error: 'Method not allowed' });
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "No notifications to send at this time." });
+      return res.status(200).json({ success: true, message: "No pending notifications." });
     }
 
-    // 4. معالجة العمليات بالتوازي
     const results = await Promise.all(notificationsToSend.map(async (item) => {
       const category = item.category || 'default';
       const template = TEMPLATES[category] || TEMPLATES.default;
@@ -98,77 +81,69 @@ export default async function handler(req, res) {
       let finalTitle = item.title || template.t;
       let finalBody = item.body || template.b;
 
-      // تعديل الذكاء الاصطناعي: إعادة صياغة النص باستخدام الرابط الجديد
+      // 1. محاولة جلب النص من الذكاء الاصطناعي
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json', 
-            'x-api-key': process.env.GROQ_API_KEY 
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             category, 
-            prompt: `أنتِ مساعدة رقيقة جداً، قومي بإعادة صياغة هذا النص ليكون دافئاً وودوداً للغاية مع الحفاظ على جوهر المعلومة: "${finalBody}"` 
+            prompt: `أنتِ مساعدة رقيقة، أعيدي صياغة النص بأسلوب دافئ: "${finalBody}"` 
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          finalBody = aiData.text || aiData.content || finalBody;
+          // تأكد من مفتاح الرد (هنا جربنا text أو content أو response)
+          finalBody = aiData.text || aiData.content || aiData.response || finalBody;
         }
-      } catch (e) { 
-        console.warn(`AI Enrichment failed for ID ${item.id || 'POST'}:`, e.message); 
+      } catch (e) {
+        console.error("AI Fetch Error:", e.message);
       }
 
+      // 2. معالجة الصورة (تأكدي من وجودها على الخادم بالاسم الصحيح)
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
-      // بناء الحمولة لـ Firebase Cloud Messaging
       const messagePayload = {
         notification: { 
           title: finalTitle, 
-          body: finalBody, 
+          body: finalBody,
           image: imageUrl 
         },
         token: item.fcm_token,
-        android: { 
-          priority: "high", 
-          notification: { 
-            channelId: "default", 
+        android: {
+          priority: "high",
+          notification: {
+            channelId: "default",
+            icon: "stock_ticker_update", // أيقونة افتراضية للتطبيق
+            color: "#FFC0CB", // لون وردي رقيق للإشعار
             image: imageUrl,
-            sound: "default" 
-          } 
+            sound: "default"
+          }
         },
-        apns: { 
-          payload: { 
-            aps: { mutableContent: true, sound: "default" } 
-          }, 
-          fcm_options: { image: imageUrl } 
+        apns: {
+          payload: {
+            aps: { 
+              mutableContent: true, // ضروري جداً لعرض الصور في iOS
+              sound: "default" 
+            }
+          },
+          fcm_options: { image: imageUrl }
         }
       };
 
       try {
-        if (!item.fcm_token) throw new Error("FCM Token is missing");
-        
         const messageId = await admin.messaging().send(messagePayload);
-
-        if (item.id) {
-          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
-        }
-
-        return { id: item.id, status: 'sent', messageId, scheduled: item.scheduled_for };
+        if (item.id) await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+        return { id: item.id, status: 'sent', messageId };
       } catch (err) {
         return { id: item.id, status: 'error', error: err.message };
       }
     }));
 
-    return res.status(200).json({ 
-      success: true, 
-      processed_count: results.length, 
-      results 
-    });
+    return res.status(200).json({ success: true, results });
 
   } catch (error) {
-    console.error('❌ Critical Server Error:', error.message);
-    return res.status(500).json({ success: false, error: 'Internal Server Error' });
+    return res.status(500).json({ success: false, error: error.message });
   }
 }
