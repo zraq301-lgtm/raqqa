@@ -1,99 +1,177 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import tipsData from './data/tips.json'; // التأكد من المسار الصحيح للملف
 
-const WomenHealthTips = () => {
-  const [currentTip, setCurrentTip] = useState(0);
+const HealthTips = () => {
+  const [index, setIndex] = useState(0);
+  const [fade, setFade] = useState(true);
 
-  const tips = [
-    {
-      title: "التغذية المتوازنة",
-      content: "احرصي على تناول الأطعمة الغنية بالحديد والكالسيوم، خاصة الخضروات الورقية ومنتجات الألبان لتعزيز صحة العظام.",
-      icon: "🥗"
-    },
-    {
-      title: "شرب الماء",
-      content: "اشربي ما لا يقل عن 8 أكواب من الماء يومياً للحفاظ على نضارة بشرتكِ وتحسين عملية التمثيل الغذائي.",
-      icon: "💧"
-    },
-    {
-      title: "النشاط البدني",
-      content: "المشي لمدة 30 دقيقة يومياً يساعد في تحسين الحالة المزاجية وتنظيم الهرمونات بشكل طبيعي.",
-      icon: "🧘‍♀️"
-    },
-    {
-      title: "النوم الكافي",
-      content: "النوم لمدة 7-8 ساعات ليلاً ضروري جداً لتجديد خلايا الجسم والحفاظ على التوازن النفسي.",
-      icon: "🌙"
-    }
-  ];
+  useEffect(() => {
+    // مؤقت لتغيير النصيحة كل 30 ثانية
+    const timer = setInterval(() => {
+      triggerNext();
+    }, 30000);
 
-  const nextTip = () => {
-    setCurrentTip((prev) => (prev + 1) % tips.length);
+    return () => clearInterval(timer);
+  }, [index]);
+
+  const triggerNext = () => {
+    setFade(false); // تأثير الخروج
+    setTimeout(() => {
+      setIndex((prev) => (prev + 1) % tipsData.length);
+      setFade(true); // تأثير الدخول
+    }, 500);
   };
 
-  // تنسيقات CSS مدمجة
-  const styles = {
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '40px 20px',
-      fontFamily: 'system-ui, -apple-system, sans-serif',
-      direction: 'rtl',
-      backgroundColor: '#fff5f7', // لون خلفية وردي فاتح جداً
-      minHeight: '300px',
-      borderRadius: '20px',
-      boxShadow: '0 10px 25px rgba(0,0,0,0.05)',
-      maxWidth: '500px',
-      margin: '20px auto',
-      border: '1px solid #ffebee'
-    },
-    icon: {
-      fontSize: '50px',
-      marginBottom: '15px'
-    },
-    title: {
-      color: '#d81b60', // لون وردي غامق
-      fontSize: '24px',
-      fontWeight: 'bold',
-      marginBottom: '15px'
-    },
-    content: {
-      color: '#555',
-      fontSize: '18px',
-      lineHeight: '1.6',
-      textAlign: 'center',
-      marginBottom: '25px',
-      padding: '0 10px'
-    },
-    button: {
-      backgroundColor: '#ec407a',
-      color: 'white',
-      border: 'none',
-      padding: '12px 25px',
-      borderRadius: '25px',
-      fontSize: '16px',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 4px 12px rgba(236, 64, 122, 0.3)'
-    }
-  };
+  const currentTip = tipsData[index];
 
   return (
-    <div style={styles.container}>
-      <div style={styles.icon}>{tips[currentTip].icon}</div>
-      <h2 style={styles.title}>{tips[currentTip].title}</h2>
-      <p style={styles.content}>{tips[currentTip].content}</p>
-      <button 
-        style={styles.button}
-        onClick={nextTip}
-        onMouseOver={(e) => e.target.style.backgroundColor = '#d81b60'}
-        onMouseOut={(e) => e.target.style.backgroundColor = '#ec407a'}
-      >
-        نصيحة أخرى ✨
-      </button>
+    <div className="tips-wrapper">
+      <div className={`tips-card ${fade ? 'fade-in' : 'fade-out'}`}>
+        {/* شريط التقدم الزمني العلوي */}
+        <div className="progress-container">
+          <div className="progress-bar"></div>
+        </div>
+
+        <div className="tip-header">
+          <span className="tip-icon">{currentTip.icon}</span>
+          <span className="tip-badge">نصيحة اليوم</span>
+        </div>
+
+        <h2 className="tip-title">{currentTip.title}</h2>
+        <p className="tip-content">{currentTip.content}</p>
+
+        <div className="tip-footer">
+          <div className="tip-stats">
+            <span>{index + 1} / {tipsData.length}</span>
+          </div>
+          <button className="next-btn" onClick={triggerNext}>
+            النصيحة التالية ➔
+          </button>
+        </div>
+      </div>
+
+      {/* كود CSS المدمج للاحترافية القصوى */}
+      <style>{`
+        .tips-wrapper {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 400px;
+          direction: rtl;
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background: transparent;
+        }
+
+        .tips-card {
+          background: rgba(255, 255, 255, 0.7);
+          backdrop-filter: blur(15px);
+          -webkit-backdrop-filter: blur(15px);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          border-radius: 30px;
+          padding: 40px;
+          width: 100%;
+          maxWidth: 420px;
+          box-shadow: 0 20px 40px rgba(255, 182, 193, 0.2);
+          position: relative;
+          overflow: hidden;
+          transition: all 0.5s ease;
+        }
+
+        .progress-container {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 6px;
+          background: rgba(255, 255, 255, 0.3);
+        }
+
+        .progress-bar {
+          height: 100%;
+          background: linear-gradient(90deg, #ff85a2, #ffb7c5);
+          width: 100%;
+          animation: countdown 30s linear infinite;
+          transform-origin: right;
+        }
+
+        @keyframes countdown {
+          from { transform: scaleX(1); }
+          to { transform: scaleX(0); }
+        }
+
+        .fade-in { opacity: 1; transform: translateY(0); }
+        .fade-out { opacity: 0; transform: translateY(-10px); }
+
+        .tip-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 25px;
+        }
+
+        .tip-icon {
+          font-size: 50px;
+          filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+        }
+
+        .tip-badge {
+          background: #fff0f5;
+          color: #d81b60;
+          padding: 5px 15px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: bold;
+          border: 1px solid #ffc1e3;
+        }
+
+        .tip-title {
+          color: #880e4f;
+          font-size: 24px;
+          margin-bottom: 15px;
+          font-weight: 800;
+        }
+
+        .tip-content {
+          color: #555;
+          font-size: 18px;
+          line-height: 1.8;
+          min-height: 100px;
+        }
+
+        .tip-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 30px;
+          border-top: 1px solid rgba(255, 182, 193, 0.2);
+          padding-top: 20px;
+        }
+
+        .tip-stats {
+          color: #ad1457;
+          font-weight: bold;
+          font-size: 14px;
+        }
+
+        .next-btn {
+          background: linear-gradient(45deg, #ec407a, #f06292);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 15px;
+          cursor: pointer;
+          font-weight: 600;
+          transition: transform 0.2s;
+          box-shadow: 0 4px 15px rgba(236, 64, 122, 0.3);
+        }
+
+        .next-btn:hover {
+          transform: scale(1.05);
+          background: #d81b60;
+        }
+      `}</style>
     </div>
   );
 };
 
-export default WomenHealthTips;
+export default HealthTips;
