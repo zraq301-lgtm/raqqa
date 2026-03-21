@@ -11,13 +11,26 @@
   "android": {
     "allowMixedContent": true,
     "captureInput": true,
-    "webContentsDebuggingEnabled": false
+    "webContentsDebuggingEnabled": false,
+    "buildOptions": {
+      "release": {
+        "signingConfig": "release"
+      }
+    }
   },
   "plugins": {
     "CapacitorHttp": {
       "enabled": true
     },
     "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#445271",
+      "sound": "beep.wav"
+    },
+    "FirebaseMessaging": {
       "presentationOptions": ["badge", "sound", "alert"]
     },
     "OneSignal": {
