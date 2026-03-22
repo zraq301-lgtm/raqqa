@@ -22,7 +22,7 @@ const pool = new Pool({
   max: 1
 });
 
-// خريطة التصنيفات بناءً على كود الحفظ الخاص بك
+// خريطة التصنيفات لتوحيد الصور والأسماء
 const CATEGORY_MAP = {
   'menstrual': 'menstrual',
   'pregnancy': 'pregnancy',
@@ -50,16 +50,17 @@ export default async function handler(req, res) {
 
     if (method === 'GET') {
       const { user_id } = req.query;
-      // شرط الوقت: من الآن وحتى يوم مستقبلي (+1 day)
+      
+      // التعديل الجوهري هنا: جلب الإشعارات من "الآن" وحتى "يوم مستقبلي"
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
         AND is_sent = false
-        AND scheduled_for >= NOW() - INTERVAL '30 minutes'
         AND scheduled_for <= NOW() + INTERVAL '1 day'
+        AND scheduled_for >= NOW() - INTERVAL '1 hour'
         ORDER BY scheduled_for ASC
-        LIMIT 15
+        LIMIT 20
       `;
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "No notifications found for the next 24 hours." });
+      return res.status(200).json({ success: true, message: "لا توجد إشعارات مستحقة حالياً أو لليوم القادم." });
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
@@ -80,7 +81,7 @@ export default async function handler(req, res) {
       let finalBody = item.body;
       const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('ar-EG') : "اليوم";
 
-      // --- استدعاء الذكاء الاصطناعي لكتابة الإشعار (15 كلمة + تاريخ) ---
+      // --- استدعاء الذكاء الاصطناعي (15 كلمة + التاريخ) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
@@ -102,7 +103,7 @@ export default async function handler(req, res) {
           if (aiMessage) finalBody = aiMessage;
         }
       } catch (e) { 
-        console.warn("AI fallback used."); 
+        console.warn("AI logic failed, using default text."); 
       }
 
       const messagePayload = {
@@ -116,7 +117,7 @@ export default async function handler(req, res) {
       try {
         const messageId = await admin.messaging().send(messagePayload);
         
-        // --- وظيفة الحذف التلقائي بعد الإرسال الناجح ---
+        // --- الحذف التلقائي بعد الإرسال الناجح لتنظيف قاعدة البيانات ---
         if (item.id) {
           await pool.query('DELETE FROM notifications WHERE id = $1', [item.id]);
         }
