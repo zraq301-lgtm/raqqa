@@ -15,46 +15,65 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استخراج البيانات (بما في ذلك latitude و longitude للموقع الجغرافي)
   let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note, next_period_date, latitude, longitude } = req.body;
 
   try {
     let finalDate = null;
     let finalValues;
-    
-    // إضافة عمود location إلى الاستعلام
+    let finalCategory = category || 'general';
+
+    // مصفوفة التصنيفات المطلوبة لتوحيد المسميات في قاعدة البيانات
+    const categoryMap = {
+      'حيض': 'menstrual',
+      'menstrual_report': 'menstrual',
+      'حمل': 'pregnancy',
+      'pregnancy': 'pregnancy',
+      'رضاعة': 'breastfeeding',
+      'أمومة': 'motherhood',
+      'رشاقة': 'fitness',
+      'طبيب': 'medical',
+      'medical': 'medical',
+      'فقه': 'jurisprudence',
+      'علاقات': 'relationships',
+      'مشاعر': 'emotions'
+    };
+
+    // تحديد التصنيف النهائي بناءً على القيمة القادمة
+    if (categoryMap[category]) {
+      finalCategory = categoryMap[category];
+    }
+
     const query = `
       INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent, location)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
     `;
 
-    // تجهيز صيغة الموقع الجغرافي لقاعدة البيانات
     const geoPoint = (latitude && longitude) ? `POINT(${longitude} ${latitude})` : null;
 
-    // --- 1. منطق واجهة الحيض ---
-    if (category === 'menstrual_report' || category === 'حيض') {
+    // --- 1. منطق واجهة الحيض (تم تعديل الـ body ليحفظ التقرير) ---
+    if (finalCategory === 'menstrual') {
       finalDate = next_period_date || scheduled_for || new Date().toISOString();
 
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
-        'menstrual_report',
-        title || 'تاريخ الحيض المتوقع',
-        body || 'تذكير بموعد الدورة القادمة',
+        'menstrual',
+        title || 'تقرير الحيض',
+        body || 'تذكير بموعد الدورة القادمة', // هنا يحفظ التقرير في عمود body
         finalDate,
         JSON.stringify(extra_data || {}),
         false,
-        geoPoint // القيمة لعمود location
+        geoPoint
       ];
     } 
     
-    // --- 2. منطق واجهة الاستشارات والطبيب ---
-    else if (note !== undefined || category === 'medical' || category === 'pregnancy') {
+    // --- 2. منطق واجهة الاستشارات والطبيب (الحفاظ على دالة التاريخ - يومين) ---
+    else if (note !== undefined || finalCategory === 'medical' || finalCategory === 'pregnancy') {
       if (scheduled_for) {
         const dateObj = new Date(scheduled_for);
         if (!isNaN(dateObj.getTime())) {
-          dateObj.setDate(dateObj.getDate() - 2);
+          dateObj.setDate(dateObj.getDate() - 2); // الحفاظ على طرح اليومين
           finalDate = dateObj.toISOString();
         }
       }
@@ -66,29 +85,29 @@ export default async function handler(req, res) {
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
-        category || 'medical',
-        title || 'تذكير موعد طبي',
+        finalCategory,
+        title || 'تذكير موعد',
         body || '',
         finalDate,
         JSON.stringify(mergedExtraData),
         false,
-        geoPoint // القيمة لعمود location
+        geoPoint
       ];
     }
 
-    // --- 3. المسار الافتراضي ---
+    // --- 3. المسار الافتراضي لبقية التصنيفات (الرشاقة، الفقه، المشاعر، إلخ) ---
     else {
       finalDate = scheduled_for || new Date().toISOString();
       finalValues = [
         parseInt(user_id) || 1,
         fcmToken || null,
-        category || 'general',
-        title || 'تذكير',
+        finalCategory,
+        title || 'تذكير جديد',
         body || '',
         finalDate,
         JSON.stringify(extra_data || {}),
         false,
-        geoPoint // القيمة لعمود location
+        geoPoint
       ];
     }
 
@@ -98,9 +117,10 @@ export default async function handler(req, res) {
       success: true, 
       id: result.rows[0].id, 
       scheduled_at: finalDate,
-      message: (category === 'menstrual_report' || category === 'حيض') 
-        ? "تم حفظ موعد الدورة المتوقع بدقة ✅" 
-        : "تمت جدولة التذكير الطبي (قبل الموعد بيومين) 🔔"
+      category: finalCategory,
+      message: (finalCategory === 'menstrual') 
+        ? "تم حفظ تقرير الحيض في قاعدة البيانات ✅" 
+        : `تمت جدولة التذكير بنجاح ضمن تصنيف ${finalCategory} 🔔`
     });
 
   } catch (error) {
