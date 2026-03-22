@@ -94,7 +94,9 @@ const MenstrualTracker = () => {
   const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
     const fcmToken = localStorage.getItem('fcm_token');
     
-    // نستخدم التاريخ بصيغة ISO للحفظ في القاعدة والتنسيق العربي للإشعار
+    // استخراج ملخص من 5 كلمات فقط من تقرير الذكاء الاصطناعي
+    const summaryReport = currentAnalysis.split(' ').slice(0, 5).join(' ') + '...';
+    
     const nextDateRaw = currentPrediction?.nextDateRaw; 
     const nextDateDisplay = currentPrediction?.nextDate;
 
@@ -102,9 +104,9 @@ const MenstrualTracker = () => {
       user_id: 1,
       category: 'menstrual_report',
       title: 'تاريخ الحيض المتوقع',
-      body: `موعدك القادم هو ${nextDateDisplay}`,
+      body: summaryReport, // حفظ ملخص الـ 5 كلمات هنا كما طلبت
       fcmToken: fcmToken,
-      next_period_date: nextDateRaw, // نرسل التاريخ الخام لضمان التوافق مع نيون
+      next_period_date: nextDateRaw,
       extra_data: {
         next_period_date: nextDateRaw,
         full_analysis: currentAnalysis,
@@ -192,10 +194,9 @@ const MenstrualTracker = () => {
     ovulation.setDate(nextDateObj.getDate() - 14);
     const fertStart = new Date(ovulation); fertStart.setDate(ovulation.getDate() - 5);
 
-    // تجهيز كائن التوقعات مع نسخة خام للتاريخ (ISO)
     const calc = {
       nextDate: nextDateObj.toLocaleDateString('ar-EG'),
-      nextDateRaw: nextDateObj.toISOString().split('T')[0], // YYYY-MM-DD
+      nextDateRaw: nextDateObj.toISOString().split('T')[0],
       fertility: `${fertStart.toLocaleDateString('ar-EG')} - ${ovulation.toLocaleDateString('ar-EG')}`
     };
     setPrediction(calc);
