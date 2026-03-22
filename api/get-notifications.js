@@ -32,7 +32,6 @@ const TEMPLATES = {
 export default async function handler(req, res) {
   const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
-  // التأكد من المسار الصحيح للصور
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
@@ -70,39 +69,48 @@ export default async function handler(req, res) {
       const template = TEMPLATES[category] || TEMPLATES.default;
       
       let finalTitle = item.title || template.t;
-      let inputBody = item.body || template.b;
-      let finalBody = inputBody;
+      let rawBody = item.body || template.b;
+      let finalBody = rawBody;
 
-      // ذكاء اصطناعي متخصص (تحليل العنوان والمحتوى مع تحديد عدد الكلمات)
+      // --- تطوير منطق الذكاء الاصطناعي المتخصص ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `بصفتك "رقة"، حللي هذا الإشعار (العنوان: ${finalTitle}، المحتوى: ${inputBody}). أعيدي صياغة المحتوى بأسلوب حنون ودافيء جداً. 
-            شروط هامة: 
-            1. لا يزيد النص عن 15 كلمة ولا يقل عنها كثيراً.
-            2. استخدمي إيموجي رقيقة 🌸✨.
-            3. اجعلي الرد متخصصاً بناءً على سياق العنوان والمحتوى المقدم.` 
+            prompt: `أنتِ "رقة". حللي البيانات التالية (العنوان: "${finalTitle}"، النص: "${rawBody}"). 
+            اكتبي إشعاراً متخصصاً جداً بناءً على هذا المحتوى. 
+            شروط صارمة:
+            1. طول النص يجب أن يكون 15 كلمة تقريباً (لا تزيد عن 18 ولا تقل عن 12).
+            2. استخدمي لغة دافئة مع إيموجي 🌸✨.
+            3. لا تكرري العنوان في النص، بل اكتبي محتوى جديداً ومكملاً له.`
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          finalBody = aiData.message || aiData.text || finalBody;
+          // التأكد من استلام الرسالة من الرد
+          const aiMessage = aiData.message || aiData.text || aiData.response;
+          if (aiMessage) finalBody = aiMessage;
         }
-      } catch (e) { console.warn("AI logic skipped."); }
+      } catch (e) { 
+        console.warn("AI logic failed, using template."); 
+      }
 
-      // جلب الصورة بناءً على التصنيف لضمان ظهورها
+      // ضبط الصورة بناءً على الفئة (Category) لتأتي الصورة الصحيحة
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
       const messagePayload = {
         token: item.fcm_token,
-        notification: { title: finalTitle, body: finalBody, image: imageUrl },
+        notification: { 
+          title: finalTitle, 
+          body: finalBody, 
+          image: imageUrl 
+        },
         data: { 
           image: imageUrl, 
           category: category,
-          click_action: "FLUTTER_NOTIFICATION_CLICK" 
+          click_action: "FLUTTER_NOTIFICATION_CLICK"
         },
         android: { 
           priority: "high", 
