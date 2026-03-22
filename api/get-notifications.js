@@ -28,7 +28,7 @@ const CATEGORY_MAP = {
   'pregnancy': 'pregnancy',
   'breastfeeding': 'breastfeeding',
   'motherhood': 'motherhood',
-  'fitness': 'fitness',
+  'fitness': 'الرشاقة', // تم التعديل من fitness إلى الرشاقة
   'medical': 'medical',
   'jurisprudence': 'jurisprudence',
   'relationships': 'relationships',
@@ -51,7 +51,6 @@ export default async function handler(req, res) {
     if (method === 'GET') {
       const { user_id } = req.query;
       
-      // التعديل الجوهري هنا: جلب الإشعارات من "الآن" وحتى "يوم مستقبلي"
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
@@ -74,26 +73,31 @@ export default async function handler(req, res) {
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
-      const category = CATEGORY_MAP[item.category] || 'general';
-      const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
+      const categoryLabel = CATEGORY_MAP[item.category] || 'عام';
+      const categoryKey = item.category || 'general'; // نستخدم المفتاح الأصلي للصورة لضمان عدم كسر الرابط
+      const imageUrl = `${BASE_ASSETS_URL}/${categoryKey}.png`;
       
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body;
       const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('ar-EG') : "اليوم";
 
-      // --- استدعاء الذكاء الاصطناعي (15 كلمة + التاريخ) ---
+      // --- استدعاء الذكاء الاصطناعي (تعديل لكتابة إشعار طويل ومخصص) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ "رقة". حللي البيانات: (التصنيف: ${category}، العنوان: ${finalTitle}، النص: ${item.body}، التاريخ: ${scheduledDate}). 
-            اكتبي إشعاراً دافئاً. 
-            الشروط: 
-            1. الطول 15 كلمة بالضبط. 
-            2. اذكري تاريخ ${scheduledDate} في النص. 
-            3. استخدمي إيموجي 🌸✨. 
-            4. الأسلوب أنثوي دافئ.`
+            prompt: `أنتِ المساعدة الذكية "رقة". المطلوب كتابة إشعار طويل، ملهم، ودافئ بناءً على البيانات التالية:
+            - التصنيف: ${categoryLabel}
+            - العنوان الأصلي: ${finalTitle}
+            - محتوى الرسالة: ${item.body}
+            - موعد الإشعار: ${scheduledDate}
+
+            الشروط:
+            1. اكتب نصاً طويلاً ومفصلاً (فقرة غنية) يشرح للمستخدمة أهمية هذا التنبيه بأسلوب أنثوي رقيق.
+            2. ادمجي التاريخ ${scheduledDate} بشكل طبيعي داخل النص.
+            3. استخدمي تعبيرات تشجيعية وإيموجي تناسب التصنيف (مثل 🌸✨🌿).
+            4. اجعلي الإشعار يبدو كرسالة من صديقة مهتمة وليس مجرد نظام آلي.`
           })
         });
         
@@ -109,7 +113,7 @@ export default async function handler(req, res) {
       const messagePayload = {
         token: item.fcm_token,
         notification: { title: finalTitle, body: finalBody, image: imageUrl },
-        data: { image: imageUrl, category: category, click_action: "FLUTTER_NOTIFICATION_CLICK" },
+        data: { image: imageUrl, category: categoryKey, click_action: "FLUTTER_NOTIFICATION_CLICK" },
         android: { priority: "high", notification: { image: imageUrl, channelId: "default" } },
         apns: { payload: { aps: { mutableContent: true, sound: "default" } }, fcm_options: { image: imageUrl } }
       };
@@ -117,7 +121,6 @@ export default async function handler(req, res) {
       try {
         const messageId = await admin.messaging().send(messagePayload);
         
-        // --- الحذف التلقائي بعد الإرسال الناجح لتنظيف قاعدة البيانات ---
         if (item.id) {
           await pool.query('DELETE FROM notifications WHERE id = $1', [item.id]);
         }
