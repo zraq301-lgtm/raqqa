@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// حل مشكلة المسار: تأكدي أن ملف tips.json موجود فعلياً في src/data/tips.json
+// تأكدي أن ملف tips.json موجود في src/data/tips.json
 import localTips from '../../data/tips.json'; 
 
 const HealthAdvice = () => {
@@ -7,7 +7,6 @@ const HealthAdvice = () => {
   const [loading, setLoading] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
-  // دالة جلب النصيحة من الذكاء الاصطناعي
   const fetchAiTip = async () => {
     try {
       setLoading(true);
@@ -19,15 +18,13 @@ const HealthAdvice = () => {
       if (!response.ok) throw new Error('AI Route not responding');
       
       const data = await response.json();
-      // نفترض أن الرابط يعيد نصاً أو كائناً يحتوي على النصيحة
       setTip({
-        title: "نصيحة الذكاء الاصطناعي",
+        title: "نصيحة اليوم",
         content: data.aiResponse || data.text || data[0].content, 
-        icon: "✨"
+        icon: "🌸"
       });
     } catch (error) {
       console.log("التحول للنصائح المخزنة بسبب:", error.message);
-      // نظام الأمان: اختيار نصيحة عشوائية من الملف المحلي في حال فشل الـ API
       const randomLocalTip = localTips[Math.floor(Math.random() * localTips.length)];
       setTip(randomLocalTip);
     } finally {
@@ -37,8 +34,6 @@ const HealthAdvice = () => {
 
   useEffect(() => {
     fetchAiTip();
-    
-    // تحديث النصيحة كل 24 ساعة (86400000 مللي ثانية)
     const dailyUpdate = setInterval(fetchAiTip, 86400000);
     return () => clearInterval(dailyUpdate);
   }, []);
@@ -47,22 +42,24 @@ const HealthAdvice = () => {
 
   return (
     <div style={styles.container}>
-      <div style={{...styles.card, opacity: isExiting ? 0 : 1}}>
-        <div style={styles.glassHeader}>
-          <span style={styles.icon}>{tip?.icon || "🌸"}</span>
-          <div style={styles.aiBadge}>ذكاء اصطناعي مباشر</div>
+      {/* الإطار الوردي الخارجي */}
+      <div style={styles.floralBorder}>
+        <div style={{...styles.card, opacity: isExiting ? 0 : 1}}>
+          <div style={styles.glassHeader}>
+            <span style={styles.icon}>{tip?.icon || "🌺"}</span>
+          </div>
+          
+          <h2 style={styles.title}>{tip?.title}</h2>
+          <p style={styles.content}>{tip?.content}</p>
+          
+          <div style={styles.timerInfo}>تحديث النصيحة كل 24 ساعة</div>
         </div>
-        
-        <h2 style={styles.title}>{tip?.title}</h2>
-        <p style={styles.content}>{tip?.content}</p>
-        
-        <div style={styles.timerInfo}>تتحدث النصيحة تلقائياً كل 24 ساعة</div>
       </div>
 
       <style>{`
-        @keyframes shimmer {
-          0% { background-position: -1000px 0; }
-          100% { background-position: 1000px 0; }
+        @keyframes rotateBorder {
+          0% { filter: hue-rotate(0deg); }
+          100% { filter: hue-rotate(360deg); }
         }
       `}</style>
     </div>
@@ -73,41 +70,69 @@ const styles = {
   container: {
     display: 'flex',
     justifyContent: 'center',
-    padding: '20px',
-    direction: 'rtl'
+    alignItems: 'center',
+    padding: '40px 20px',
+    direction: 'rtl',
+    minHeight: '300px'
+  },
+  // إطار الورود (استخدام Border Image أو تكرار زخرفي)
+  floralBorder: {
+    padding: '15px',
+    borderRadius: '35px',
+    background: 'linear-gradient(45deg, #ff85a2, #fce4ec, #ff85a2)', // ألوان وردية واضحة
+    boxShadow: '0 10px 30px rgba(255, 133, 162, 0.3)',
+    position: 'relative',
   },
   card: {
-    background: 'rgba(255, 255, 255, 0.45)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    borderRadius: '28px',
-    padding: '35px',
-    maxWidth: '450px',
+    background: 'rgba(255, 255, 255, 0.9)', // تقليل الشفافية لجعل الخط أوضح
+    backdropFilter: 'blur(15px)',
+    WebkitBackdropFilter: 'blur(15px)',
+    borderRadius: '25px',
+    padding: '30px',
+    maxWidth: '400px',
     width: '100%',
-    boxShadow: '0 15px 35px rgba(255, 105, 180, 0.15)',
-    border: '1px solid rgba(255, 255, 255, 0.6)',
+    border: '2px solid #ffc1e3', // إطار داخلي وردي
     textAlign: 'center',
     transition: 'all 0.5s ease'
   },
-  aiBadge: {
-    background: 'linear-gradient(45deg, #ff85a2, #ffb7c5)',
-    color: '#fff',
-    padding: '4px 12px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 'bold'
-  },
   glassHeader: {
     display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px'
+    justifyContent: 'center',
+    marginBottom: '15px'
   },
-  icon: { fontSize: '55px' },
-  title: { color: '#ad1457', fontSize: '24px', marginBottom: '15px' },
-  content: { color: '#444', fontSize: '18px', lineHeight: '1.7', minHeight: '80px' },
-  timerInfo: { marginTop: '20px', color: '#f06292', fontSize: '13px', opacity: 0.8 },
-  loader: { textAlign: 'center', color: '#d81b60', marginTop: '50px', fontWeight: 'bold' }
+  icon: { 
+    fontSize: '60px',
+    filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.1))' 
+  },
+  title: { 
+    color: '#c2185b', // وردي غامق جداً وواضح
+    fontSize: '26px', 
+    fontWeight: 'bold',
+    marginBottom: '15px',
+    textShadow: '1px 1px 1px rgba(0,0,0,0.05)'
+  },
+  content: { 
+    color: '#2d3436', // لون رمادي غامق جداً يقترب للأسود للوضوح التام
+    fontSize: '19px', 
+    fontWeight: '500',
+    lineHeight: '1.8', 
+    minHeight: '80px' 
+  },
+  timerInfo: { 
+    marginTop: '25px', 
+    color: '#d81b60', 
+    fontSize: '14px', 
+    fontWeight: '600',
+    borderTop: '1px solid #fce4ec',
+    paddingTop: '15px'
+  },
+  loader: { 
+    textAlign: 'center', 
+    color: '#d81b60', 
+    marginTop: '50px', 
+    fontWeight: 'bold',
+    fontSize: '18px' 
+  }
 };
 
 export default HealthAdvice;
