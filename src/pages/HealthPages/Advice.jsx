@@ -1,35 +1,82 @@
 import React, { useState, useEffect } from 'react';
-// تأكدي أن ملف tips.json موجود في src/data/tips.json
+import { CapacitorHttp } from '@capacitor/core';
 import localTips from '../../data/tips.json'; 
 
 const HealthAdvice = () => {
   const [tip, setTip] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isExiting, setIsExiting] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [userInput, setUserInput] = useState("");
+  const [savedReplies, setSavedReplies] = useState([]);
 
+  // --- منطق النصيحة اليومية باستخدام CapacitorHttp ---
   const fetchAiTip = async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://raqqa-hjl8.vercel.app/api/raqqa-ai', {
-        method: 'POST',
-        body: JSON.stringify({ prompt: "أعطني نصيحة طبية قصيرة ومفيدة للنساء اليوم" }),
-      });
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: "أعطني نصيحة طبية قصيرة ومفيدة للنساء اليوم" }
+      };
+
+      const response = await CapacitorHttp.post(options);
+      const data = response.data;
       
-      if (!response.ok) throw new Error('AI Route not responding');
-      
-      const data = await response.json();
       setTip({
         title: "نصيحة اليوم",
-        content: data.aiResponse || data.text || data[0].content, 
+        content: data.reply || data.aiResponse || data.text || "حافظي على شرب الماء بانتظام لصحة بشرتك.",
         icon: "🌸"
       });
     } catch (error) {
-      console.log("التحول للنصائح المخزنة بسبب:", error.message);
+      console.error("التحول للنصائح المخزنة:", error);
       const randomLocalTip = localTips[Math.floor(Math.random() * localTips.length)];
       setTip(randomLocalTip);
     } finally {
       setLoading(false);
     }
+  };
+
+  // --- منطق شات طبيبة رقة ---
+  const handleChatProcess = async () => {
+    if (!userInput.trim()) return;
+    const newMessage = { role: 'user', text: userInput };
+    setChatMessages([...chatMessages, newMessage]);
+    setUserInput("");
+
+    try {
+      const options = {
+        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        headers: { 'Content-Type': 'application/json' },
+        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userInput}` }
+      };
+
+      const response = await CapacitorHttp.post(options);
+      const aiText = response.data.reply || response.data.message;
+      
+      const aiMessage = { role: 'ai', text: aiText };
+      setChatMessages(prev => [...prev, aiMessage]);
+
+      // حفظ تلقائي في قاعدة البيانات (اختياري)
+      await CapacitorHttp.post({
+        url: 'https://raqqa-v6cd.vercel.app/api/save-health',
+        headers: { 'Content-Type': 'application/json' },
+        data: { question: userInput, answer: aiText }
+      });
+    } catch (err) {
+      setChatMessages(prev => [...prev, { role: 'ai', text: "عذراً، واجهت مشكلة في الاتصال." }]);
+    }
+  };
+
+  const saveToLibrary = (msg) => {
+    if (!savedReplies.find(item => item.text === msg.text)) {
+      setSavedReplies([...savedReplies, msg]);
+    }
+  };
+
+  const deleteSaved = (index) => {
+    const newSaved = savedReplies.filter((_, i) => i !== index);
+    setSavedReplies(newSaved);
   };
 
   useEffect(() => {
@@ -42,97 +89,122 @@ const HealthAdvice = () => {
 
   return (
     <div style={styles.container}>
-      {/* الإطار الوردي الخارجي */}
+      {/* كارت النصيحة بإطار الورد الكامل */}
       <div style={styles.floralBorder}>
-        <div style={{...styles.card, opacity: isExiting ? 0 : 1}}>
+        <div style={styles.card}>
           <div style={styles.glassHeader}>
             <span style={styles.icon}>{tip?.icon || "🌺"}</span>
           </div>
-          
           <h2 style={styles.title}>{tip?.title}</h2>
           <p style={styles.content}>{tip?.content}</p>
           
-          <div style={styles.timerInfo}>تحديث النصيحة كل 24 ساعة</div>
+          <button onClick={() => setIsChatOpen(true)} style={styles.chatButton}>
+            💬 استشارة طبيبة رقة
+          </button>
         </div>
       </div>
 
-      <style>{`
-        @keyframes rotateBorder {
-          0% { filter: hue-rotate(0deg); }
-          100% { filter: hue-rotate(360deg); }
-        }
-      `}</style>
+      {/* مودال الشات (طبيبة رقة) */}
+      {isChatOpen && (
+        <div style={styles.chatOverlay}>
+          <div style={styles.chatWindow}>
+            <div style={styles.chatHeader}>
+              <span>طبيبة رقة الذكية 👩‍⚕️</span>
+              <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>✕</button>
+            </div>
+            
+            <div style={styles.messageBox}>
+              {chatMessages.map((m, i) => (
+                <div key={i} style={m.role === 'user' ? styles.userMsg : styles.aiMsg}>
+                  {m.text}
+                  {m.role === 'ai' && (
+                    <button onClick={() => saveToLibrary(m)} style={styles.miniSaveBtn}>📌 حفظ</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* أدوات الميديا */}
+            <div style={styles.mediaBar}>
+              <button onClick={() => alert("فتح الكاميرا...")} title="كاميرا">📷</button>
+              <button onClick={() => alert("رفع صورة...")} title="رفع صورة">🖼️</button>
+              <button onClick={() => alert("تسجيل صوتي...")} title="ميكروفون">🎤</button>
+            </div>
+
+            <div style={styles.inputArea}>
+              <input 
+                value={userInput} 
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="اسألي طبيبة رقة..."
+                style={styles.chatInput}
+              />
+              <button onClick={handleChatProcess} style={styles.sendBtn}>إرسال</button>
+            </div>
+
+            {/* قائمة الردود المحفوظة */}
+            {savedReplies.length > 0 && (
+              <div style={styles.savedSection}>
+                <h4 style={{fontSize: '12px', color: '#c2185b'}}>الردود المحفوظة:</h4>
+                {savedReplies.map((s, idx) => (
+                  <div key={idx} style={styles.savedItem}>
+                    <span style={{flex: 1}}>{s.text.substring(0, 30)}...</span>
+                    <button onClick={() => deleteSaved(idx)} style={styles.delBtn}>🗑️</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 const styles = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '40px 20px',
-    direction: 'rtl',
-    minHeight: '300px'
-  },
-  // إطار الورود (استخدام Border Image أو تكرار زخرفي)
+  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', direction: 'rtl' },
   floralBorder: {
-    padding: '15px',
+    padding: '10px',
     borderRadius: '35px',
-    background: 'linear-gradient(45deg, #ff85a2, #fce4ec, #ff85a2)', // ألوان وردية واضحة
-    boxShadow: '0 10px 30px rgba(255, 133, 162, 0.3)',
-    position: 'relative',
+    background: 'url("https://www.transparenttextures.com/patterns/pollen.png"), linear-gradient(45deg, #ff85a2, #fce4ec, #ff85a2)',
+    boxShadow: '0 10px 30px rgba(255, 133, 162, 0.4)',
   },
   card: {
-    background: 'rgba(255, 255, 255, 0.9)', // تقليل الشفافية لجعل الخط أوضح
-    backdropFilter: 'blur(15px)',
-    WebkitBackdropFilter: 'blur(15px)',
+    background: '#fff',
     borderRadius: '25px',
-    padding: '30px',
-    maxWidth: '400px',
-    width: '100%',
-    border: '2px solid #ffc1e3', // إطار داخلي وردي
+    padding: '25px',
+    maxWidth: '380px',
     textAlign: 'center',
-    transition: 'all 0.5s ease'
+    border: '2px solid #fff'
   },
-  glassHeader: {
-    display: 'flex',
-    justifyContent: 'center',
-    marginBottom: '15px'
+  icon: { fontSize: '50px' },
+  title: { color: '#c2185b', fontSize: '22px', fontWeight: 'bold' },
+  content: { color: '#2d3436', fontSize: '17px', lineHeight: '1.6', margin: '15px 0' },
+  chatButton: {
+    background: '#ad1457',
+    color: '#fff',
+    border: 'none',
+    padding: '10px 20px',
+    borderRadius: '15px',
+    cursor: 'pointer',
+    fontWeight: 'bold'
   },
-  icon: { 
-    fontSize: '60px',
-    filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.1))' 
-  },
-  title: { 
-    color: '#c2185b', // وردي غامق جداً وواضح
-    fontSize: '26px', 
-    fontWeight: 'bold',
-    marginBottom: '15px',
-    textShadow: '1px 1px 1px rgba(0,0,0,0.05)'
-  },
-  content: { 
-    color: '#2d3436', // لون رمادي غامق جداً يقترب للأسود للوضوح التام
-    fontSize: '19px', 
-    fontWeight: '500',
-    lineHeight: '1.8', 
-    minHeight: '80px' 
-  },
-  timerInfo: { 
-    marginTop: '25px', 
-    color: '#d81b60', 
-    fontSize: '14px', 
-    fontWeight: '600',
-    borderTop: '1px solid #fce4ec',
-    paddingTop: '15px'
-  },
-  loader: { 
-    textAlign: 'center', 
-    color: '#d81b60', 
-    marginTop: '50px', 
-    fontWeight: 'bold',
-    fontSize: '18px' 
-  }
+  // استايلات الشات
+  chatOverlay: { position: 'fixed', inset: 0, bg: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, background: 'rgba(0,0,0,0.4)' },
+  chatWindow: { width: '90%', maxWidth: '400px', background: '#fff', borderRadius: '20px', height: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
+  chatHeader: { background: '#c2185b', color: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' },
+  messageBox: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' },
+  userMsg: { alignSelf: 'flex-start', background: '#fce4ec', padding: '10px', borderRadius: '12px', maxWidth: '80%' },
+  aiMsg: { alignSelf: 'flex-end', background: '#f0f0f0', padding: '10px', borderRadius: '12px', maxWidth: '80%', borderRight: '4px solid #c2185b' },
+  mediaBar: { display: 'flex', gap: '15px', padding: '10px', justifyContent: 'center', borderTop: '1px solid #eee' },
+  inputArea: { display: 'flex', padding: '10px', gap: '5px' },
+  chatInput: { flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd' },
+  sendBtn: { background: '#c2185b', color: '#fff', border: 'none', borderRadius: '10px', padding: '0 15px' },
+  savedSection: { padding: '10px', background: '#f9f9f9', borderTop: '2px solid #eee', maxHeight: '100px', overflowY: 'auto' },
+  savedItem: { display: 'flex', fontSize: '11px', marginBottom: '5px', alignItems: 'center', background: '#fff', padding: '3px' },
+  delBtn: { background: 'none', border: 'none', color: 'red', cursor: 'pointer' },
+  miniSaveBtn: { display: 'block', fontSize: '10px', marginTop: '5px', color: '#ad1457', border: 'none', background: 'none', cursor: 'pointer' },
+  closeBtn: { background: 'none', border: 'none', color: '#fff', fontSize: '18px' },
+  loader: { textAlign: 'center', color: '#d81b60', marginTop: '50px' }
 };
 
 export default HealthAdvice;
