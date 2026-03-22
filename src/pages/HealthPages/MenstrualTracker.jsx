@@ -90,11 +90,9 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
-  // --- تحديث دالة الحفظ والمزامنة لتتوافق مع الـ API ---
   const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
     const fcmToken = localStorage.getItem('fcm_token');
     
-    // استخراج ملخص من 5 كلمات فقط من تقرير الذكاء الاصطناعي
     const summaryReport = currentAnalysis.split(' ').slice(0, 5).join(' ') + '...';
     
     const nextDateRaw = currentPrediction?.nextDateRaw; 
@@ -104,7 +102,7 @@ const MenstrualTracker = () => {
       user_id: 1,
       category: 'menstrual_report',
       title: 'تاريخ الحيض المتوقع',
-      body: summaryReport, // حفظ ملخص الـ 5 كلمات هنا كما طلبت
+      body: summaryReport,
       fcmToken: fcmToken,
       next_period_date: nextDateRaw,
       extra_data: {
@@ -151,7 +149,7 @@ const MenstrualTracker = () => {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة بياناتي: ${JSON.stringify(data)}` }
+        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة كامل بياناتي الصحية بما فيها العمر والوزن وبيانات الفوط الصحية: ${JSON.stringify(data)}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
@@ -206,7 +204,7 @@ const MenstrualTracker = () => {
       const response = await CapacitorHttp.post({
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `حللي بيانات الدورة الشهرية بدقة وقدمي تقرير طبي متخصص: ${summary}` }
+        data: { prompt: `حللي بيانات الدورة الشهرية بدقة مع التركيز الشديد على (العمر: ${data['البيانات الحيوية_العمر']} والوزن: ${data['البيانات الحيوية_الوزن']}) بالإضافة لبيانات الفوط الصحية والأعراض، وقدمي تقرير طبي متخصص يوضح أن هذه البيانات تخص توقع الدورة القادمة: ${summary}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
       
@@ -246,6 +244,7 @@ const MenstrualTracker = () => {
     { id: 2, title: "البيانات الحيوية", emoji: "⚖️", fields: ["العمر", "الوزن"] },
     { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع"] },
     { id: 4, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء"] },
+    { id: 5, title: "الفوطة الصحية", emoji: "🧼", fields: ["عدد تغيير الفوطة", "انواع الفوط الصحية", "كثافة الدم", "النظافة", "ملحوظات"] },
   ];
 
   return (
