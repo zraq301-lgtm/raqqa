@@ -22,7 +22,7 @@ const pool = new Pool({
   max: 1
 });
 
-// خريطة التصنيفات لتوحيد الصور والأسماء بناءً على كود الحفظ
+// خريطة التصنيفات بناءً على كود الحفظ الخاص بك
 const CATEGORY_MAP = {
   'menstrual': 'menstrual',
   'pregnancy': 'pregnancy',
@@ -50,15 +50,16 @@ export default async function handler(req, res) {
 
     if (method === 'GET') {
       const { user_id } = req.query;
+      // شرط الوقت: من الآن وحتى يوم مستقبلي (+1 day)
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
         AND is_sent = false
-        AND scheduled_for >= NOW() - INTERVAL '15 minutes'
+        AND scheduled_for >= NOW() - INTERVAL '30 minutes'
         AND scheduled_for <= NOW() + INTERVAL '1 day'
         ORDER BY scheduled_for ASC
-        LIMIT 10
+        LIMIT 15
       `;
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
@@ -68,11 +69,10 @@ export default async function handler(req, res) {
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "No notifications due now." });
+      return res.status(200).json({ success: true, message: "No notifications found for the next 24 hours." });
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
-      // تحديد التصنيف والصورة
       const category = CATEGORY_MAP[item.category] || 'general';
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
       
@@ -80,19 +80,19 @@ export default async function handler(req, res) {
       let finalBody = item.body;
       const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('ar-EG') : "اليوم";
 
-      // --- منطق الذكاء الاصطناعي (تحليل البيانات + التاريخ + 15 كلمة) ---
+      // --- استدعاء الذكاء الاصطناعي لكتابة الإشعار (15 كلمة + تاريخ) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             prompt: `أنتِ "رقة". حللي البيانات: (التصنيف: ${category}، العنوان: ${finalTitle}، النص: ${item.body}، التاريخ: ${scheduledDate}). 
-            اكتبي إشعاراً دافئاً جداً. 
+            اكتبي إشعاراً دافئاً. 
             الشروط: 
             1. الطول 15 كلمة بالضبط. 
-            2. اذكري التاريخ "${scheduledDate}" داخل النص. 
+            2. اذكري تاريخ ${scheduledDate} في النص. 
             3. استخدمي إيموجي 🌸✨. 
-            4. الأسلوب أنثوي وداعم.`
+            4. الأسلوب أنثوي دافئ.`
           })
         });
         
@@ -102,46 +102,26 @@ export default async function handler(req, res) {
           if (aiMessage) finalBody = aiMessage;
         }
       } catch (e) { 
-        console.warn("AI logic failed, using original text."); 
+        console.warn("AI fallback used."); 
       }
 
       const messagePayload = {
         token: item.fcm_token,
-        notification: { 
-          title: finalTitle, 
-          body: finalBody, 
-          image: imageUrl 
-        },
-        data: { 
-          image: imageUrl, 
-          category: category,
-          click_action: "FLUTTER_NOTIFICATION_CLICK"
-        },
-        android: { 
-          priority: "high", 
-          notification: { 
-            image: imageUrl, 
-            channelId: "default", 
-            notificationPriority: "PRIORITY_MAX" 
-          } 
-        },
-        apns: { 
-          payload: { 
-            aps: { 
-              mutableContent: true, 
-              sound: "default" 
-            } 
-          }, 
-          fcm_options: { image: imageUrl } 
-        }
+        notification: { title: finalTitle, body: finalBody, image: imageUrl },
+        data: { image: imageUrl, category: category, click_action: "FLUTTER_NOTIFICATION_CLICK" },
+        android: { priority: "high", notification: { image: imageUrl, channelId: "default" } },
+        apns: { payload: { aps: { mutableContent: true, sound: "default" } }, fcm_options: { image: imageUrl } }
       };
 
       try {
         const messageId = await admin.messaging().send(messagePayload);
+        
+        // --- وظيفة الحذف التلقائي بعد الإرسال الناجح ---
         if (item.id) {
-          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
+          await pool.query('DELETE FROM notifications WHERE id = $1', [item.id]);
         }
-        return { id: item.id, status: 'sent', messageId };
+        
+        return { id: item.id, status: 'sent_and_deleted', messageId };
       } catch (err) {
         return { id: item.id, status: 'error', error: err.message };
       }
