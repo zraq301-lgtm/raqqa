@@ -73,10 +73,8 @@ const PregnancyMonitor = () => {
       
       Object.entries(alarms).forEach(([id, time]) => {
         if (time === currentTime && now.getSeconds() === 0) {
-          // تشغيل الصوت (في حال كان التطبيق مفتوحاً)
           audioRef.current.play().catch(e => console.log("Audio deferred"));
           
-          // إرسال تنبيه للنظام (يعمل حتى لو التطبيق مغلق)
           const section = sections.find(s => s.id === id);
           LocalNotifications.schedule({
             notifications: [
@@ -84,7 +82,7 @@ const PregnancyMonitor = () => {
                 title: `تنبيه رقة ⏰ - ${section?.title}`,
                 body: `عزيزتي، حان وقت تسجيل بيانات ${section?.title} المحددة.`,
                 id: Math.floor(Math.random() * 10000),
-                sound: 'fine_alarm.mp3', // هذا يعتمد على وجوده في موارد النظام (Native)
+                sound: 'fine_alarm.mp3',
                 actionTypeId: '',
                 extra: null
               }
@@ -98,6 +96,12 @@ const PregnancyMonitor = () => {
 
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
+    
+    // إعداد تاريخ اليوم ويوم مستقبلي (بعد 24 ساعة)
+    const today = new Date();
+    const futureDate = new Date();
+    futureDate.setDate(today.getDate() + 1); // إضافة يوم واحد
+
     try {
       await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
@@ -105,10 +109,11 @@ const PregnancyMonitor = () => {
         data: {
           fcmToken: savedToken || undefined,
           user_id: 1,
-          category: 'medical_report',
+          category: 'الرشاقة', // تم التعديل هنا لتكون القيمة "الرشاقة"
           title: `تقرير جديد: ${categoryTitle} 🩺`,
           body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: new Date().toISOString(),
+          // إرسال تاريخ اليوم + تاريخ اليوم المستقبلي كنص توضيحي أو استخدام التاريخ المستقبلي كقيمة أساسية
+          scheduled_for: `Today: ${today.toISOString()} | Future: ${futureDate.toISOString()}`, 
           note: `تحليل آلي لـ ${categoryTitle}`
         }
       });
