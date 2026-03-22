@@ -32,6 +32,7 @@ const TEMPLATES = {
 export default async function handler(req, res) {
   const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
+  // التأكد من المسار الصحيح للصور
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
@@ -43,15 +44,13 @@ export default async function handler(req, res) {
 
     if (method === 'GET') {
       const { user_id } = req.query;
-      // --- التعديل الجوهري في الاستعلام (Query) ---
-      // الشرط الآن: أن يكون موعد الإشعار أكبر من الوقت الحالي (أو يساويه) وأصغر من الغد
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
         AND is_sent = false
-        AND scheduled_for >= NOW() - INTERVAL '15 minutes' -- السماح بهامش بسيط لو تأخر الكرون جوب
-        AND scheduled_for <= NOW() + INTERVAL '1 day' -- حتى يوم مستقبلي
+        AND scheduled_for >= NOW() - INTERVAL '15 minutes'
+        AND scheduled_for <= NOW() + INTERVAL '1 day'
         ORDER BY scheduled_for ASC
         LIMIT 10
       `;
@@ -71,15 +70,20 @@ export default async function handler(req, res) {
       const template = TEMPLATES[category] || TEMPLATES.default;
       
       let finalTitle = item.title || template.t;
-      let finalBody = item.body || template.b;
+      let inputBody = item.body || template.b;
+      let finalBody = inputBody;
 
-      // ذكاء اصطناعي مكثف
+      // ذكاء اصطناعي متخصص (تحليل العنوان والمحتوى مع تحديد عدد الكلمات)
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ "رقة"، صديقتنا الحنونة. أعيدي صياغة هذا النص ليكون دافئاً ومحفزاً جداً (أكثر من 15 كلمة) مع إيموجي كثيرة 🌸💖✨: "${finalBody}"` 
+            prompt: `بصفتك "رقة"، حللي هذا الإشعار (العنوان: ${finalTitle}، المحتوى: ${inputBody}). أعيدي صياغة المحتوى بأسلوب حنون ودافيء جداً. 
+            شروط هامة: 
+            1. لا يزيد النص عن 15 كلمة ولا يقل عنها كثيراً.
+            2. استخدمي إيموجي رقيقة 🌸✨.
+            3. اجعلي الرد متخصصاً بناءً على سياق العنوان والمحتوى المقدم.` 
           })
         });
         
@@ -89,12 +93,17 @@ export default async function handler(req, res) {
         }
       } catch (e) { console.warn("AI logic skipped."); }
 
+      // جلب الصورة بناءً على التصنيف لضمان ظهورها
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
       const messagePayload = {
         token: item.fcm_token,
         notification: { title: finalTitle, body: finalBody, image: imageUrl },
-        data: { image: imageUrl, category: category },
+        data: { 
+          image: imageUrl, 
+          category: category,
+          click_action: "FLUTTER_NOTIFICATION_CLICK" 
+        },
         android: { 
           priority: "high", 
           notification: { 
@@ -104,7 +113,12 @@ export default async function handler(req, res) {
           } 
         },
         apns: { 
-          payload: { aps: { mutableContent: true, sound: "default" } }, 
+          payload: { 
+            aps: { 
+              mutableContent: true, 
+              sound: "default" 
+            } 
+          }, 
           fcm_options: { image: imageUrl } 
         }
       };
