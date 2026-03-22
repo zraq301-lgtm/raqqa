@@ -10,8 +10,8 @@ const HealthAdvice = () => {
   const [userInput, setUserInput] = useState("");
   const [savedReplies, setSavedReplies] = useState([]);
 
-  // --- منطق النصيحة اليومية باستخدام CapacitorHttp ---
-  const fetchAiTip = async () => {
+  // --- 1. منطق جلب النصيحة (AI أولاً ثم Local) دون نيون ---
+  const fetchDailyTip = async () => {
     try {
       setLoading(true);
       const options = {
@@ -21,15 +21,15 @@ const HealthAdvice = () => {
       };
 
       const response = await CapacitorHttp.post(options);
-      const data = response.data;
-      
-      setTip({
-        title: "نصيحة اليوم",
-        content: data.reply || data.aiResponse || data.text || "حافظي على شرب الماء بانتظام لصحة بشرتك.",
-        icon: "🌸"
-      });
+      const aiText = response.data.reply || response.data.message;
+
+      if (aiText) {
+        setTip({ title: "نصيحة اليوم", content: aiText, icon: "🌸" });
+      } else {
+        throw new Error("Empty AI response");
+      }
     } catch (error) {
-      console.error("التحول للنصائح المخزنة:", error);
+      console.log("فشل AI، جاري الجلب من الملف المحلي:", error);
       const randomLocalTip = localTips[Math.floor(Math.random() * localTips.length)];
       setTip(randomLocalTip);
     } finally {
@@ -37,118 +37,113 @@ const HealthAdvice = () => {
     }
   };
 
-  // --- منطق شات طبيبة رقة ---
-  const handleChatProcess = async () => {
+  // --- 2. منطق شات "طبيبة رقة" دون نيون ---
+  const handleAiChat = async () => {
     if (!userInput.trim()) return;
-    const newMessage = { role: 'user', text: userInput };
-    setChatMessages([...chatMessages, newMessage]);
+    const userMsg = { role: 'user', text: userInput };
+    setChatMessages(prev => [...prev, userMsg]);
+    const currentInput = userInput;
     setUserInput("");
 
     try {
       const options = {
         url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userInput}` }
+        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${currentInput}` }
       };
 
       const response = await CapacitorHttp.post(options);
-      const aiText = response.data.reply || response.data.message;
+      const reply = response.data.reply || response.data.message;
       
-      const aiMessage = { role: 'ai', text: aiText };
-      setChatMessages(prev => [...prev, aiMessage]);
-
-      // حفظ تلقائي في قاعدة البيانات (اختياري)
-      await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-health',
-        headers: { 'Content-Type': 'application/json' },
-        data: { question: userInput, answer: aiText }
-      });
+      const aiMsg = { role: 'ai', text: reply };
+      setChatMessages(prev => [...prev, aiMsg]);
+      
     } catch (err) {
-      setChatMessages(prev => [...prev, { role: 'ai', text: "عذراً، واجهت مشكلة في الاتصال." }]);
+      setChatMessages(prev => [...prev, { role: 'ai', text: "عذراً، لم أستطع الاتصال بالخادم." }]);
     }
   };
 
-  const saveToLibrary = (msg) => {
-    if (!savedReplies.find(item => item.text === msg.text)) {
-      setSavedReplies([...savedReplies, msg]);
-    }
+  // وظائف إدارة الردود المحفوظة (محلياً في واجهة المستخدم)
+  const addToLibrary = (msg) => {
+    setSavedReplies(prev => [...prev, { ...msg, id: Date.now() }]);
   };
 
-  const deleteSaved = (index) => {
-    const newSaved = savedReplies.filter((_, i) => i !== index);
-    setSavedReplies(newSaved);
+  const deleteFromLibrary = (id) => {
+    setSavedReplies(prev => prev.filter(item => item.id !== id));
   };
 
   useEffect(() => {
-    fetchAiTip();
-    const dailyUpdate = setInterval(fetchAiTip, 86400000);
-    return () => clearInterval(dailyUpdate);
+    fetchDailyTip();
+    const interval = setInterval(fetchDailyTip, 86400000);
+    return () => clearInterval(interval);
   }, []);
 
-  if (loading) return <div style={styles.loader}>جاري تحضير نصيحتكِ اليومية... ✨</div>;
+  if (loading) return <div style={styles.loader}>جاري تحضير عالمكِ الصحي... ✨</div>;
 
   return (
     <div style={styles.container}>
-      {/* كارت النصيحة بإطار الورد الكامل */}
-      <div style={styles.floralBorder}>
-        <div style={styles.card}>
-          <div style={styles.glassHeader}>
-            <span style={styles.icon}>{tip?.icon || "🌺"}</span>
+      {/* كارت النصيحة الكبير بإطار الورد */}
+      <div style={styles.floralFullFrame}>
+        <div style={styles.mainCard}>
+          <div style={styles.headerIcon}>
+            <span style={styles.mainEmoji}>{tip?.icon || "🌺"}</span>
           </div>
-          <h2 style={styles.title}>{tip?.title}</h2>
-          <p style={styles.content}>{tip?.content}</p>
+          <h2 style={styles.mainTitle}>{tip?.title}</h2>
+          <p style={styles.mainContent}>{tip?.content}</p>
           
-          <button onClick={() => setIsChatOpen(true)} style={styles.chatButton}>
-            💬 استشارة طبيبة رقة
+          <button onClick={() => setIsChatOpen(true)} style={styles.openChatBtn}>
+             استشارة طبيبة رقة 👩‍⚕️
           </button>
         </div>
       </div>
 
-      {/* مودال الشات (طبيبة رقة) */}
+      {/* واجهة الشات المحسنة */}
       {isChatOpen && (
-        <div style={styles.chatOverlay}>
-          <div style={styles.chatWindow}>
+        <div style={styles.overlay}>
+          <div style={styles.chatContainer}>
             <div style={styles.chatHeader}>
-              <span>طبيبة رقة الذكية 👩‍⚕️</span>
+              <span>طبيبة رقة الذكية</span>
               <button onClick={() => setIsChatOpen(false)} style={styles.closeBtn}>✕</button>
             </div>
-            
-            <div style={styles.messageBox}>
-              {chatMessages.map((m, i) => (
-                <div key={i} style={m.role === 'user' ? styles.userMsg : styles.aiMsg}>
-                  {m.text}
-                  {m.role === 'ai' && (
-                    <button onClick={() => saveToLibrary(m)} style={styles.miniSaveBtn}>📌 حفظ</button>
-                  )}
+
+            <div style={styles.chatBody}>
+              {chatMessages.map((m, idx) => (
+                <div key={idx} style={m.role === 'user' ? styles.userRow : styles.aiRow}>
+                  <div style={m.role === 'user' ? styles.userBubble : styles.aiBubble}>
+                    {m.text}
+                    {m.role === 'ai' && (
+                      <button onClick={() => addToLibrary(m)} style={styles.saveIconBtn}>📌 حفظ في المكتبة</button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* أدوات الميديا */}
-            <div style={styles.mediaBar}>
-              <button onClick={() => alert("فتح الكاميرا...")} title="كاميرا">📷</button>
-              <button onClick={() => alert("رفع صورة...")} title="رفع صورة">🖼️</button>
-              <button onClick={() => alert("تسجيل صوتي...")} title="ميكروفون">🎤</button>
+            {/* أدوات الميديا والتحكم */}
+            <div style={styles.mediaRow}>
+              <button onClick={() => alert("فتح الكاميرا...")}>📷</button>
+              <button onClick={() => alert("رفع من الاستوديو...")}>🖼️</button>
+              <button onClick={() => alert("بدء التسجيل...")}>🎤</button>
             </div>
 
-            <div style={styles.inputArea}>
+            <div style={styles.inputRow}>
               <input 
-                value={userInput} 
+                style={styles.inputField} 
+                value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                placeholder="اسألي طبيبة رقة..."
-                style={styles.chatInput}
+                placeholder="اكتبي سؤالك هنا..."
               />
-              <button onClick={handleChatProcess} style={styles.sendBtn}>إرسال</button>
+              <button onClick={handleAiChat} style={styles.sendIconBtn}>◀</button>
             </div>
 
-            {/* قائمة الردود المحفوظة */}
+            {/* قائمة الردود المحفوظة (المكتبة) */}
             {savedReplies.length > 0 && (
-              <div style={styles.savedSection}>
-                <h4 style={{fontSize: '12px', color: '#c2185b'}}>الردود المحفوظة:</h4>
-                {savedReplies.map((s, idx) => (
-                  <div key={idx} style={styles.savedItem}>
-                    <span style={{flex: 1}}>{s.text.substring(0, 30)}...</span>
-                    <button onClick={() => deleteSaved(idx)} style={styles.delBtn}>🗑️</button>
+              <div style={styles.librarySection}>
+                <p style={styles.libTitle}>الردود المحفوظة:</p>
+                {savedReplies.map(item => (
+                  <div key={item.id} style={styles.libItem}>
+                    <span>{item.text.substring(0, 35)}...</span>
+                    <button onClick={() => deleteFromLibrary(item.id)}>🗑️</button>
                   </div>
                 ))}
               </div>
@@ -161,50 +156,55 @@ const HealthAdvice = () => {
 };
 
 const styles = {
-  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px', direction: 'rtl' },
-  floralBorder: {
-    padding: '10px',
-    borderRadius: '35px',
-    background: 'url("https://www.transparenttextures.com/patterns/pollen.png"), linear-gradient(45deg, #ff85a2, #fce4ec, #ff85a2)',
-    boxShadow: '0 10px 30px rgba(255, 133, 162, 0.4)',
+  container: { display: 'flex', justifyContent: 'center', padding: '30px 15px', direction: 'rtl' },
+  floralFullFrame: {
+    padding: '20px',
+    borderRadius: '45px',
+    background: 'linear-gradient(135deg, #ff85a2 0%, #ffb7c5 50%, #ff85a2 100%)',
+    boxShadow: '0 20px 40px rgba(255, 133, 162, 0.4)',
+    width: '100%',
+    maxWidth: '500px', 
   },
-  card: {
+  mainCard: {
     background: '#fff',
-    borderRadius: '25px',
-    padding: '25px',
-    maxWidth: '380px',
+    borderRadius: '35px',
+    padding: '40px 25px',
     textAlign: 'center',
-    border: '2px solid #fff'
+    border: '3px solid #fce4ec',
   },
-  icon: { fontSize: '50px' },
-  title: { color: '#c2185b', fontSize: '22px', fontWeight: 'bold' },
-  content: { color: '#2d3436', fontSize: '17px', lineHeight: '1.6', margin: '15px 0' },
-  chatButton: {
-    background: '#ad1457',
+  mainEmoji: { fontSize: '70px', display: 'block', marginBottom: '10px' },
+  mainTitle: { color: '#ad1457', fontSize: '28px', fontWeight: 'bold', marginBottom: '20px' },
+  mainContent: { color: '#333', fontSize: '20px', lineHeight: '1.8', fontWeight: '500' },
+  openChatBtn: {
+    marginTop: '30px',
+    background: '#c2185b',
     color: '#fff',
     border: 'none',
-    padding: '10px 20px',
-    borderRadius: '15px',
+    padding: '12px 25px',
+    borderRadius: '20px',
+    fontSize: '16px',
+    fontWeight: 'bold',
     cursor: 'pointer',
-    fontWeight: 'bold'
+    boxShadow: '0 4px 15px rgba(194, 24, 91, 0.3)'
   },
-  // استايلات الشات
-  chatOverlay: { position: 'fixed', inset: 0, bg: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, background: 'rgba(0,0,0,0.4)' },
-  chatWindow: { width: '90%', maxWidth: '400px', background: '#fff', borderRadius: '20px', height: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' },
-  chatHeader: { background: '#c2185b', color: '#fff', padding: '15px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' },
-  messageBox: { flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' },
-  userMsg: { alignSelf: 'flex-start', background: '#fce4ec', padding: '10px', borderRadius: '12px', maxWidth: '80%' },
-  aiMsg: { alignSelf: 'flex-end', background: '#f0f0f0', padding: '10px', borderRadius: '12px', maxWidth: '80%', borderRight: '4px solid #c2185b' },
-  mediaBar: { display: 'flex', gap: '15px', padding: '10px', justifyContent: 'center', borderTop: '1px solid #eee' },
-  inputArea: { display: 'flex', padding: '10px', gap: '5px' },
-  chatInput: { flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #ddd' },
-  sendBtn: { background: '#c2185b', color: '#fff', border: 'none', borderRadius: '10px', padding: '0 15px' },
-  savedSection: { padding: '10px', background: '#f9f9f9', borderTop: '2px solid #eee', maxHeight: '100px', overflowY: 'auto' },
-  savedItem: { display: 'flex', fontSize: '11px', marginBottom: '5px', alignItems: 'center', background: '#fff', padding: '3px' },
-  delBtn: { background: 'none', border: 'none', color: 'red', cursor: 'pointer' },
-  miniSaveBtn: { display: 'block', fontSize: '10px', marginTop: '5px', color: '#ad1457', border: 'none', background: 'none', cursor: 'pointer' },
-  closeBtn: { background: 'none', border: 'none', color: '#fff', fontSize: '18px' },
-  loader: { textAlign: 'center', color: '#d81b60', marginTop: '50px' }
+  overlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', justifyContent: 'center', alignItems: 'flex-end' },
+  chatContainer: { width: '100%', maxWidth: '450px', background: '#fff', height: '85vh', borderTopLeftRadius: '30px', borderTopRightRadius: '30px', display: 'flex', flexDirection: 'column' },
+  chatHeader: { background: '#ad1457', color: '#fff', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold' },
+  chatBody: { flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' },
+  userRow: { alignSelf: 'flex-start', maxWidth: '85%' },
+  userBubble: { background: '#fce4ec', padding: '12px 18px', borderRadius: '18px 18px 0 18px', color: '#333' },
+  aiRow: { alignSelf: 'flex-end', maxWidth: '85%' },
+  aiBubble: { background: '#f0f0f0', padding: '12px 18px', borderRadius: '18px 18px 18px 0', borderRight: '5px solid #ad1457' },
+  mediaRow: { display: 'flex', justifyContent: 'center', gap: '25px', padding: '10px', background: '#f9f9f9', fontSize: '22px' },
+  inputRow: { padding: '15px', display: 'flex', gap: '10px', borderTop: '1px solid #eee' },
+  inputField: { flex: 1, padding: '12px', borderRadius: '15px', border: '1px solid #ddd', fontSize: '15px' },
+  sendIconBtn: { background: '#ad1457', color: '#fff', border: 'none', borderRadius: '12px', width: '45px', fontSize: '20px' },
+  librarySection: { padding: '15px', background: '#fff5f8', maxHeight: '150px', overflowY: 'auto' },
+  libTitle: { fontSize: '13px', fontWeight: 'bold', color: '#ad1457', marginBottom: '5px' },
+  libItem: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '8px', borderBottom: '1px solid #ffebee', alignItems: 'center' },
+  closeBtn: { background: 'none', border: 'none', color: '#fff', fontSize: '20px' },
+  saveIconBtn: { display: 'block', marginTop: '8px', background: 'none', border: 'none', color: '#c2185b', fontSize: '11px', cursor: 'pointer' },
+  loader: { textAlign: 'center', color: '#ad1457', marginTop: '100px', fontWeight: 'bold', fontSize: '20px' }
 };
 
 export default HealthAdvice;
