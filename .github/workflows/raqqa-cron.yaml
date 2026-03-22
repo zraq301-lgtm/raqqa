@@ -2,7 +2,9 @@ name: "Raqqa Cron Job"
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    # سيتم التنفيذ في الساعة 06:00 و 18:00 بتوقيت UTC
+    # وهو ما يعادل 9:00 صباحاً و 9:00 مساءً بتوقيت القاهرة
+    - cron: "0 6,18 * * *"
   workflow_dispatch:
 
 jobs:
