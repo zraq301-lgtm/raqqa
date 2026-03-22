@@ -22,10 +22,18 @@ const pool = new Pool({
   max: 1
 });
 
-// القوالب المحدثة بناءً على الصورة المرفقة
-const TEMPLATES = {
-  'menstrual_report': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
-  'default': { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق المخصص لراحتكِ." }
+// خريطة التصنيفات لتوحيد الصور والأسماء بناءً على كود الحفظ
+const CATEGORY_MAP = {
+  'menstrual': 'menstrual',
+  'pregnancy': 'pregnancy',
+  'breastfeeding': 'breastfeeding',
+  'motherhood': 'motherhood',
+  'fitness': 'fitness',
+  'medical': 'medical',
+  'jurisprudence': 'jurisprudence',
+  'relationships': 'relationships',
+  'emotions': 'emotions',
+  'general': 'general'
 };
 
 export default async function handler(req, res) {
@@ -55,8 +63,8 @@ export default async function handler(req, res) {
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
     } else if (method === 'POST') {
-      const { fcmToken, token, title, body, category } = req.body;
-      notificationsToSend = [{ fcm_token: fcmToken || token, title, body, category }];
+      const { fcmToken, token, title, body, category, scheduled_for } = req.body;
+      notificationsToSend = [{ fcm_token: fcmToken || token, title, body, category, scheduled_for }];
     }
 
     if (notificationsToSend.length === 0) {
@@ -64,40 +72,38 @@ export default async function handler(req, res) {
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
-      // الاعتماد على التصنيف القادم من قاعدة البيانات (مثل menstrual_report)
-      const category = item.category || 'default';
-      const template = TEMPLATES[category] || TEMPLATES.default;
+      // تحديد التصنيف والصورة
+      const category = CATEGORY_MAP[item.category] || 'general';
+      const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
       
-      let finalTitle = item.title || template.t;
-      let rawBody = item.body || template.b;
-      let finalBody = rawBody;
+      let finalTitle = item.title || "رقة 🌸";
+      let finalBody = item.body;
+      const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('ar-EG') : "اليوم";
 
-      // --- منطق الذكاء الاصطناعي المتطور (تحليل البيانات + تحديد الطول) ---
+      // --- منطق الذكاء الاصطناعي (تحليل البيانات + التاريخ + 15 كلمة) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ "رقة". حللي البيانات التالية بعناية (العنوان: "${finalTitle}"، النص الأصلي: "${rawBody}"). 
-            اكتبي إشعاراً متخصصاً جداً بأسلوب حنون ودافيء. 
-            شروط صارمة:
-            1. يجب أن يكون طول النص 15 كلمة تقريباً (لا يقل عن 13 ولا يزيد عن 17).
-            2. استخدمي إيموجي رقيقة 🌸✨.
-            3. لا تكرري كلمات العنوان في النص، بل اكتبي محتوى جديداً يكمل المعنى.`
+            prompt: `أنتِ "رقة". حللي البيانات: (التصنيف: ${category}، العنوان: ${finalTitle}، النص: ${item.body}، التاريخ: ${scheduledDate}). 
+            اكتبي إشعاراً دافئاً جداً. 
+            الشروط: 
+            1. الطول 15 كلمة بالضبط. 
+            2. اذكري التاريخ "${scheduledDate}" داخل النص. 
+            3. استخدمي إيموجي 🌸✨. 
+            4. الأسلوب أنثوي وداعم.`
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
           const aiMessage = aiData.message || aiData.text || aiData.response;
-          if (aiMessage && aiMessage.length > 10) finalBody = aiMessage;
+          if (aiMessage) finalBody = aiMessage;
         }
       } catch (e) { 
-        console.warn("AI logic failed, using default text."); 
+        console.warn("AI logic failed, using original text."); 
       }
-
-      // جلب الصورة بناءً على الاسم الموجود في الصورة (menstrual_report.png)
-      const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
       const messagePayload = {
         token: item.fcm_token,
