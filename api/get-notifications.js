@@ -22,10 +22,9 @@ const pool = new Pool({
   max: 1
 });
 
+// القوالب المحدثة بناءً على الصورة المرفقة
 const TEMPLATES = {
-  'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
-  'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
-  'mood': { t: "رقة تهتم بقلبكِ ✨", b: "كيف حالكِ اليوم؟ خذي نفساً عميقاً، وتذكري أن مشاعركِ دائماً محل تقدير." },
+  'menstrual_report': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
   'default': { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق المخصص لراحتكِ." }
 };
 
@@ -65,6 +64,7 @@ export default async function handler(req, res) {
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
+      // الاعتماد على التصنيف القادم من قاعدة البيانات (مثل menstrual_report)
       const category = item.category || 'default';
       const template = TEMPLATES[category] || TEMPLATES.default;
       
@@ -72,32 +72,31 @@ export default async function handler(req, res) {
       let rawBody = item.body || template.b;
       let finalBody = rawBody;
 
-      // --- تطوير منطق الذكاء الاصطناعي المتخصص ---
+      // --- منطق الذكاء الاصطناعي المتطور (تحليل البيانات + تحديد الطول) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ "رقة". حللي البيانات التالية (العنوان: "${finalTitle}"، النص: "${rawBody}"). 
-            اكتبي إشعاراً متخصصاً جداً بناءً على هذا المحتوى. 
+            prompt: `أنتِ "رقة". حللي البيانات التالية بعناية (العنوان: "${finalTitle}"، النص الأصلي: "${rawBody}"). 
+            اكتبي إشعاراً متخصصاً جداً بأسلوب حنون ودافيء. 
             شروط صارمة:
-            1. طول النص يجب أن يكون 15 كلمة تقريباً (لا تزيد عن 18 ولا تقل عن 12).
-            2. استخدمي لغة دافئة مع إيموجي 🌸✨.
-            3. لا تكرري العنوان في النص، بل اكتبي محتوى جديداً ومكملاً له.`
+            1. يجب أن يكون طول النص 15 كلمة تقريباً (لا يقل عن 13 ولا يزيد عن 17).
+            2. استخدمي إيموجي رقيقة 🌸✨.
+            3. لا تكرري كلمات العنوان في النص، بل اكتبي محتوى جديداً يكمل المعنى.`
           })
         });
         
         if (aiRes.ok) {
           const aiData = await aiRes.json();
-          // التأكد من استلام الرسالة من الرد
           const aiMessage = aiData.message || aiData.text || aiData.response;
-          if (aiMessage) finalBody = aiMessage;
+          if (aiMessage && aiMessage.length > 10) finalBody = aiMessage;
         }
       } catch (e) { 
-        console.warn("AI logic failed, using template."); 
+        console.warn("AI logic failed, using default text."); 
       }
 
-      // ضبط الصورة بناءً على الفئة (Category) لتأتي الصورة الصحيحة
+      // جلب الصورة بناءً على الاسم الموجود في الصورة (menstrual_report.png)
       const imageUrl = `${BASE_ASSETS_URL}/${category}.png`;
 
       const messagePayload = {
