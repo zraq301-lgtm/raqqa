@@ -6,6 +6,7 @@ import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
+import { CapacitorUpdater } from '@capgo/capacitor-updater'; // إضافة استيراد المكتبة
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
@@ -38,7 +39,9 @@ const Main = () => {
   };
 
   useEffect(() => {
+    // إبلاغ Capgo بأن التطبيق جاهز ومستقر (هذا يمنع التراجع التلقائي عن التحديثات)
     if (Capacitor.isNativePlatform()) {
+      CapacitorUpdater.notifyAppReady();
       
       const initPush = async () => {
         try {
@@ -72,7 +75,6 @@ const Main = () => {
 
       // 4. استلام الإشعارات أثناء فتح التطبيق
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        // بدلاً من alert المزعج، يمكنك استخدام console أو notification بار محلي
         console.log("📩 إشعار جديد مستلم:", notification.title);
       });
     }
