@@ -113,8 +113,8 @@ jobs:
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
       - name: 9. رفع التحديث السحابي إلى Capgo (OTA)
-        # تم ضبط كافة المعاملات لضمان الربط المباشر بالقناة وتخطي أخطاء المنظمة
-        run: npx @capgo/cli@latest bundle upload --apikey ${{ secrets.CAPGO_TOKEN }} --path dist_web --channel production --app-id 71ca3dbf-f065-4a17-980a-cde8e32a5296 --no-code-check
+        # تم تعديل --app-id إلى --app ليتوافق مع الإصدار الأخير من CLI
+        run: npx @capgo/cli@latest bundle upload --apikey ${{ secrets.CAPGO_TOKEN }} --path dist_web --channel production --app 71ca3dbf-f065-4a17-980a-cde8e32a5296 --no-code-check
 
       - name: 10. حفظ الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
