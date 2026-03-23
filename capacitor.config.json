@@ -2,7 +2,6 @@
   "appId": "com.raqqa.app",
   "appName": "Roqa",
   "webDir": "dist_web",
-  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
     "allowNavigation": ["*"],
@@ -10,18 +9,9 @@
   },
   "android": {
     "allowMixedContent": true,
-    "captureInput": true,
-    "webContentsDebuggingEnabled": false,
-    "buildOptions": {
-      "release": {
-        "signingConfig": "release"
-      }
-    }
+    "webContentsDebuggingEnabled": false
   },
   "plugins": {
-    "CapacitorUpdater": {
-      "appId": "71ca3dbf-f065-4a17-980a-cde8e32a5296"
-    },
     "CapacitorHttp": {
       "enabled": true
     },
@@ -30,17 +20,10 @@
     },
     "LocalNotifications": {
       "smallIcon": "ic_stat_icon_config_sample",
-      "iconColor": "#445271",
-      "sound": "beep.wav"
-    },
-    "FirebaseMessaging": {
-      "presentationOptions": ["badge", "sound", "alert"]
+      "iconColor": "#445271"
     },
     "OneSignal": {
       "appId": "726fe629-0b1e-4294-9a4b-39cf50212b42"
-    },
-    "Geolocation": {
-      "enabled": true
     }
   }
 }
