@@ -19,6 +19,9 @@
     }
   },
   "plugins": {
+    "CapacitorUpdater": {
+      "appId": "71ca3dbf-f065-4a17-980a-cde8e32a5296"
+    },
     "CapacitorHttp": {
       "enabled": true
     },
