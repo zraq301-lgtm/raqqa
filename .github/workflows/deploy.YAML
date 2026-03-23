@@ -3,7 +3,7 @@ name: Capgo Deploy Raqqa 🌸
 on:
   push:
     branches:
-      - main  # تأكد أن هذا هو اسم الفرع الرئيسي لمشروعك (main أو master)
+      - main  # تأكد أن فرعك هو main وليس master
 
 jobs:
   deploy:
@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20' # أو النسخة التي تستخدمها
+          node-version: '20'
 
       # 3. تثبيت المكتبات (Dependencies)
       - name: Install Dependencies
@@ -26,8 +26,9 @@ jobs:
 
       # 4. بناء ملفات الويب (Build)
       - name: Build Project
-        run: npm run build # هذا الأمر ينشئ مجلد dist أو build تلقائياً
+        run: npm run build
 
       # 5. رفع التحديث إلى Capgo
+      # قمت هنا بإضافة --bundle dist_web لأن هذا هو المجلد الذي ينتجه مشروعك
       - name: Upload to Capgo
-        run: npx @capgo/cli@latest upload -t ${{ secrets.CAPGO_TOKEN }}
+        run: npx @capgo/cli@latest upload -t ${{ secrets.CAPGO_TOKEN }} --bundle dist_web
