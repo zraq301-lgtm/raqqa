@@ -26,20 +26,20 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات (بما فيها Capgo)
+      - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # إضافة Capgo ومكتبات الإشعارات لضمان التوافق
           npm install @capgo/capacitor-updater onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد وتعديل الـ SDK إلى 35
+      - name: 4. إضافة منصة أندرويد وتعديل الـ SDK (Min 23 & Target 35)
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          # تحديث ملف variables.gradle لدعم الـ SDK 35 حل مشكلة التعارض
           VAR_FILE="android/variables.gradle"
+          # تم رفع الـ min إلى 23 لحل مشكلة savedstate-android
+          sed -i "s/minSdkVersion = .*/minSdkVersion = 23/" $VAR_FILE
           sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
           sed -i "s/targetSdkVersion = .*/targetSdkVersion = 35/" $VAR_FILE
           npx cap sync android
@@ -83,22 +83,22 @@ jobs:
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
           
-          # إضافة التبعيات اللازمة داخل ملف build.gradle
+          # إضافة التبعيات
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
           
-          # توحيد اسم الحزمة
+          # توحيد اسم الحزمة وتعديل الـ SDK لتجاهل التحذيرات
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           
-          # إضافة الصلاحيات
+          # إضافة الصلاحيات (تم استبعاد INTERNET لتجنب التكرار)
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           
-          # تفعيل Cleartext
+          # تفعيل Cleartext وتجاوز تحذير الـ SDK غير المدعوم
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
+          echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
       - name: 7. بناء ملفات APK و AAB
         run: |
