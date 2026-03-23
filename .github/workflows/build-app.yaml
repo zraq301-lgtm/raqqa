@@ -1,4 +1,4 @@
-name: Roqa Production Build Signed (Clean Build with Capgo & Android 35)
+name: Roqa Production Build Signed (Clean Build & Auto Assets)
 
 on:
   push:
@@ -26,17 +26,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تثبيت المكتبات وتجهيز الأيقونات
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          npm install @capgo/capacitor-updater onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          # تثبيت أداة توليد الأيقونات وشاشة البداية
+          npm install @capacitor/assets --save-dev
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد وتعديل الـ SDK (Min 23 & Target 35)
+      - name: 4. إضافة منصة أندرويد وتوليد الصور
         run: |
           npx cap config set webDir dist_web
           npx cap add android
+          # سحب الأيقونات وشاشة البداية (الفيديو) من المسار الموضح في الصور
+          # يفترض أن الصور موجودة في المسار: موارد/الرقة/
+          npx capacitor-assets generate --android --icon-source "موارد/الرقة/icon-only.png" --splash-source "موارد/الرقة/splash_video.mp4"
+          
           VAR_FILE="android/variables.gradle"
           sed -i "s/minSdkVersion = .*/minSdkVersion = 23/" $VAR_FILE
           sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
@@ -112,11 +117,7 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع التحديث السحابي إلى Capgo (OTA)
-        # هذا هو الهيكل الجديد للأمر المتوافق مع إصدار 7.88.5
-        run: npx @capgo/cli@latest bundle upload 71ca3dbf-f065-4a17-980a-cde8e32a5296 --apikey ${{ secrets.CAPGO_TOKEN }} --path dist_web --channel production --no-code-check
-
-      - name: 10. حفظ الملفات الجاهزة للتحميل
+      - name: 9. حفظ الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Final-Packages
