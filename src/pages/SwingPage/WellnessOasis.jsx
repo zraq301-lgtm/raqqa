@@ -1,99 +1,82 @@
-import React, { useState } from 'react';
-
-// يمكنك استبدال هذه البيانات ببيانات من الـ API لاحقاً
-const POSTS_DATA = [
-  {
-    id: 1,
-    author: "@Sara_Alwan",
-    time: "30 دم",
-    title: "فطوري الصحي اليوم 😋",
-    image: "https://images.unsplash.com/photo-1494390248081-4e521a5940db?q=80&w=400", // صورة تجريبية للشوفان
-    category: "تغذية صحية",
-    likes: "1,580",
-    comments: "55"
-  },
-  {
-    id: 2,
-    author: "@Mona_Fit",
-    time: "50 دم",
-    title: "تحدي الـ 30 يوم للياقة المنزلية بدأ!",
-    image: "https://images.unsplash.com/photo-1518611012118-2969c636000c?q=80&w=400", // صورة تجريبية للرياضة
-    category: "تمارين رياضة",
-    likes: "1,500",
-    comments: "33"
-  }
-];
+import React, { useState, useEffect } from 'react';
 
 const WahaDashboard = () => {
+  // مصفوفة فارغة بانتظار بياناتك من JSON أو GitHub
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   return (
     <div style={styles.pageWrapper}>
-      {/* Header */}
+      {/* Header - ثابت في الأعلى */}
       <header style={styles.header}>
         <div style={styles.headerTitle}>واحة العافية - مجتمع صحي للنساء</div>
       </header>
 
-      <div style={styles.mainContainer}>
-        {/* Sidebar الأيمن (قائمة الأقسام) */}
-        <aside style={styles.sidebar}>
+      <div style={styles.mainVerticalContainer}>
+        
+        {/* 1. قسم البحث والأقسام (أعلى الصفحة) */}
+        <section style={styles.topSection}>
           <div style={styles.searchBox}>
             <input type="text" placeholder="بحث في المنتدى..." style={styles.searchInput} />
           </div>
-          <nav style={styles.navMenu}>
-            <NavItem icon="📄" label="المنشورات الأحدث" active color="#fce4ec" />
-            <NavItem icon="🍎" label="التغذية الصحية" color="#e8f5e9" />
-            <NavItem icon="🍹" label="وصفات مشروبات" color="#fff3e0" />
-            <NavItem icon="🏋️‍♀️" label="تمارين رياضة" color="#fce4ec" />
-            <NavItem icon="📈" label="قصص نجاح" color="#fffde7" />
-          </nav>
-        </aside>
-
-        {/* Content Area الوسطى */}
-        <section style={styles.contentArea}>
-          <div style={styles.sectionHeader}>
-            <h2 style={{ fontSize: '22px', color: '#444' }}>صفحة المنتدى - واحة العافية</h2>
-            <span style={{ color: '#888' }}>النشاط الأحدث</span>
-          </div>
-
-          <div style={styles.postsGrid}>
-            {POSTS_DATA.map(post => (
-              <PostCard key={post.id} post={post} />
-            ))}
+          <div style={styles.horizontalNav}>
+            <NavItem icon="📄" label="الأحدث" active color="#fce4ec" />
+            <NavItem icon="🍎" label="تغذية" color="#e8f5e9" />
+            <NavItem icon="🍹" label="مشروبات" color="#fff3e0" />
+            <NavItem icon="🏋️‍♀️" label="رياضة" color="#fce4ec" />
           </div>
         </section>
 
-        {/* Right Action Sidebar (إنشاء منشور) */}
-        <aside style={styles.actionSidebar}>
+        {/* 2. قسم إنشاء منشور (تحت الأقسام مباشرة) */}
+        <section style={styles.createSection}>
           <div style={styles.createPostCard}>
             <div style={styles.createHeader}>
-              <span>Start a Post</span>
+              <span>شاركينا تجربتكِ اليوم..</span>
               <span>📝</span>
             </div>
-            <textarea placeholder="بماذا تشعرين اليوم؟" style={styles.textArea}></textarea>
+            <textarea placeholder="ماذا يدور في ذهنكِ؟" style={styles.textArea}></textarea>
             <div style={styles.actionIcons}>
-              <span>🖼️ Photo</span>
-              <span>🎥 Video</span>
-              <span>📝 Text</span>
+              <span>🖼️ صورة</span>
+              <span>🎥 فيديو</span>
+              <span>🎤 صوت</span>
             </div>
           </div>
-        </aside>
+        </section>
+
+        {/* 3. منطقة عرض الكروت (أسفل بعضها البعض) */}
+        <section style={styles.contentArea}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>آخر النشاطات</h2>
+          </div>
+
+          <div style={styles.verticalPostsList}>
+            {posts.length > 0 ? (
+              posts.map(post => <PostCard key={post.id} post={post} />)
+            ) : (
+              <div style={styles.emptyState}>
+                ✨ لا توجد منشورات حالياً، كوني الأولى في النشر!
+              </div>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
 };
 
-// مكون صغير لعناصر القائمة
+// مكون عناصر التنقل الأفقي
 const NavItem = ({ icon, label, active, color }) => (
   <div style={{
     ...styles.navItem,
-    backgroundColor: active ? color : 'transparent',
-    borderRight: active ? '4px solid #ad1457' : 'none'
+    backgroundColor: color,
+    border: active ? '2px solid #ad1457' : '1px solid #eee'
   }}>
     <span style={styles.navIcon}>{icon}</span>
     <span style={styles.navLabel}>{label}</span>
   </div>
 );
 
-// مكون كارت المنشور
+// مكون كارت المنشور (يحافظ على الشكل الجمالي)
 const PostCard = ({ post }) => (
   <div style={styles.card}>
     <div style={styles.cardHeader}>
@@ -107,7 +90,7 @@ const PostCard = ({ post }) => (
       <span>•••</span>
     </div>
     <h3 style={styles.cardTitle}>{post.title}</h3>
-    <img src={post.image} alt="post" style={styles.cardImage} />
+    {post.image && <img src={post.image} alt="post" style={styles.cardImage} />}
     <div style={styles.cardFooter}>
       <span style={styles.categoryTag}>{post.category}</span>
       <div style={styles.interactions}>
@@ -120,104 +103,115 @@ const PostCard = ({ post }) => (
 
 const styles = {
   pageWrapper: {
-    backgroundColor: '#fdf7f2', // لون الخلفية الكريمي من الصورة
+    backgroundColor: '#fdf7f2',
     minHeight: '100vh',
     direction: 'rtl',
-    fontFamily: 'Arial, sans-serif'
+    fontFamily: 'Arial, sans-serif',
+    paddingBottom: '50px'
   },
   header: {
     background: 'linear-gradient(to right, #a5d6a7, #f8bbd0)',
-    padding: '15px',
+    padding: '20px 15px',
     textAlign: 'center',
-    borderRadius: '0 0 20px 20px',
-    margin: '0 20px'
+    borderRadius: '0 0 25px 25px',
+    boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
   },
   headerTitle: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.6)',
     display: 'inline-block',
-    padding: '8px 30px',
-    borderRadius: '15px',
-    fontWeight: 'bold',
-    color: '#2d3436'
-  },
-  mainContainer: {
-    display: 'grid',
-    gridTemplateColumns: '250px 1fr 300px',
-    gap: '20px',
-    padding: '20px'
-  },
-  sidebar: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    padding: '8px 25px',
     borderRadius: '20px',
-    padding: '15px'
+    fontWeight: 'bold',
+    color: '#333',
+    fontSize: '18px'
   },
-  searchBox: { marginBottom: '20px' },
+  mainVerticalContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px',
+    padding: '15px',
+    maxWidth: '600px', // تحديد العرض ليكون مريحاً للعين في المنتصف
+    margin: '0 auto'
+  },
+  topSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '15px'
+  },
+  searchBox: { width: '100%' },
   searchInput: {
     width: '100%',
-    padding: '10px',
-    borderRadius: '10px',
+    padding: '12px',
+    borderRadius: '15px',
     border: '1px solid #ddd',
-    outline: 'none'
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  horizontalNav: {
+    display: 'flex',
+    gap: '10px',
+    overflowX: 'auto',
+    padding: '5px 0',
+    scrollbarWidth: 'none' // إخفاء شريط التمرير
   },
   navItem: {
     display: 'flex',
     alignItems: 'center',
-    padding: '12px',
-    borderRadius: '12px',
-    marginBottom: '8px',
+    padding: '8px 15px',
+    borderRadius: '20px',
+    whiteSpace: 'nowrap',
     cursor: 'pointer',
-    transition: '0.3s'
+    minWidth: 'fit-content'
   },
-  navIcon: { fontSize: '20px', marginLeft: '10px' },
-  navLabel: { fontSize: '14px', fontWeight: 'bold', color: '#444' },
-  contentArea: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  sectionHeader: { textAlign: 'right', marginBottom: '10px' },
-  postsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
+  navIcon: { marginLeft: '5px' },
+  navLabel: { fontSize: '13px', fontWeight: 'bold' },
+  createSection: { width: '100%' },
+  createPostCard: {
+    backgroundColor: '#fff',
+    borderRadius: '20px',
+    padding: '15px',
+    boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+    border: '1px solid #fce4ec'
+  },
+  createHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '10px', color: '#ad1457', fontSize: '14px', fontWeight: 'bold' },
+  textArea: {
+    width: '100%',
+    height: '60px',
+    border: 'none',
+    backgroundColor: '#fafafa',
+    borderRadius: '12px',
+    padding: '10px',
+    resize: 'none',
+    outline: 'none',
+    boxSizing: 'border-box'
+  },
+  actionIcons: { display: 'flex', justifyContent: 'space-around', marginTop: '10px', color: '#777', fontSize: '12px' },
+  contentArea: { width: '100%' },
+  sectionHeader: { marginBottom: '15px', borderRight: '4px solid #ad1457', paddingRight: '10px' },
+  sectionTitle: { fontSize: '18px', color: '#444', margin: 0 },
+  verticalPostsList: {
+    display: 'flex',
+    flexDirection: 'column',
     gap: '20px'
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: '20px',
-    padding: '15px',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
-  },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '10px' },
-  userInfo: { display: 'flex', alignItems: 'center', gap: '10px' },
-  avatar: { width: '35px', height: '35px', borderRadius: '50%', backgroundColor: '#eee' },
-  userName: { fontWeight: 'bold', fontSize: '14px' },
-  postTime: { fontSize: '12px', color: '#999' },
-  cardTitle: { fontSize: '16px', margin: '10px 0', color: '#333' },
-  cardImage: { width: '100%', borderRadius: '15px', height: '180px', objectFit: 'cover' },
-  cardFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '15px' },
-  categoryTag: { backgroundColor: '#f0f0f0', padding: '4px 12px', borderRadius: '10px', fontSize: '12px' },
-  interactions: { display: 'flex', gap: '15px', color: '#666', fontSize: '13px' },
-  actionSidebar: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  createPostCard: {
-    backgroundColor: '#fff',
-    borderRadius: '20px',
     padding: '20px',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.05)'
+    boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
+    border: '1px solid #eee'
   },
-  createHeader: { display: 'flex', justifyContent: 'space-between', marginBottom: '15px', color: '#ad1457', fontWeight: 'bold' },
-  textArea: {
-    width: '100%',
-    height: '80px',
-    border: 'none',
-    backgroundColor: '#f9f9f9',
-    borderRadius: '10px',
-    padding: '10px',
-    resize: 'none',
-    outline: 'none'
-  },
-  actionIcons: {
-    display: 'flex',
-    justifyContent: 'space-around',
-    marginTop: '15px',
-    fontSize: '13px',
-    color: '#777'
-  }
+  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  userInfo: { display: 'flex', alignItems: 'center', gap: '10px' },
+  avatar: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#fce4ec', border: '1px solid #ffd1dc' },
+  userName: { fontWeight: 'bold', fontSize: '15px' },
+  postTime: { fontSize: '12px', color: '#999' },
+  cardTitle: { fontSize: '17px', margin: '15px 0', color: '#2d3436', lineHeight: '1.5' },
+  cardImage: { width: '100%', borderRadius: '15px', maxHeight: '300px', objectFit: 'cover' },
+  cardFooter: { display: 'flex', justifyContent: 'space-between', marginTop: '15px', alignItems: 'center' },
+  categoryTag: { backgroundColor: '#f8f9fa', padding: '5px 12px', borderRadius: '10px', fontSize: '11px', color: '#666' },
+  interactions: { display: 'flex', gap: '15px', color: '#555', fontSize: '14px' },
+  emptyState: { textAlign: 'center', padding: '40px', color: '#999', fontStyle: 'italic' },
 };
 
 export default WahaDashboard;
