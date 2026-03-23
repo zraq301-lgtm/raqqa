@@ -1,11 +1,10 @@
-name: Roqa Production Build Signed (Clean Build with Node 24 Support)
+name: Roqa Production Build Signed (Clean Build with Capgo & Android 35)
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-# إضافة المتغير لتعطيل تحذير Node 20 وتفعيل Node 24 في الـ Actions
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -27,19 +26,22 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تنظيف وتثبيت المكتبات (بما فيها Capgo)
         run: |
           rm -rf android
-          # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          # إضافة مكتبة الإشعارات المحلية لضمان عمل النظام الجديد ودعم الوسائط
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          # إضافة Capgo ومكتبات الإشعارات لضمان التوافق
+          npm install @capgo/capacitor-updater onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد ومزامنتها
+      - name: 4. إضافة منصة أندرويد وتعديل الـ SDK إلى 35
         run: |
           npx cap config set webDir dist_web
           npx cap add android
+          # تحديث ملف variables.gradle لدعم الـ SDK 35 حل مشكلة التعارض
+          VAR_FILE="android/variables.gradle"
+          sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
+          sed -i "s/targetSdkVersion = .*/targetSdkVersion = 35/" $VAR_FILE
           npx cap sync android
 
       - name: 5. حقن ملف google-services.json
@@ -76,29 +78,26 @@ jobs:
           }
           EOF
 
-      - name: 6. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name ودعم الوسائط
+      - name: 6. تهيئة الإعدادات المتقدمة (OneSignal & Cleartext)
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
           
-          # إضافة مكتبة OneSignal ومكتبات Firebase Messaging لدعم الصور
+          # إضافة التبعيات اللازمة داخل ملف build.gradle
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
           
-          # توحيد اسم الحزمة ليتوافق مع Firebase (raqqa بدلاً من roqa)
+          # توحيد اسم الحزمة
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           
-          # إضافة صلاحيات الإشعارات والموقع والوصول للوسائط
+          # إضافة الصلاحيات
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' $MANIFEST
           
-          # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
+          # تفعيل Cleartext
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
       - name: 7. بناء ملفات APK و AAB
@@ -115,17 +114,20 @@ jobs:
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
+          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات الجاهزة للتحميل
+      - name: 9. رفع التحديث السحابي إلى Capgo (OTA)
+        run: npx @capgo/cli@latest upload -t ${{ secrets.CAPGO_TOKEN }} --bundle dist_web
+
+      - name: 10. حفظ الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-Package
+          name: Roqa-Final-Packages
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
