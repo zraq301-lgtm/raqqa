@@ -6,7 +6,8 @@ import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
-import { CapacitorUpdater } from '@capgo/capacitor-updater'; // إضافة استيراد المكتبة
+
+// تم حذف استيراد CapacitorUpdater الخاص بـ Capgo
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
@@ -23,15 +24,13 @@ if (!getApps().length) {
 
 const Main = () => {
   
-  // وظيفة معدلة: تخزين محلي فقط (بدون إرسال للسيرفر لمنع الإشعارات التلقائية)
+  // وظيفة حفظ التوكن محلياً في ذاكرة الهاتف
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
     
-    // حفظ التوكن في ذاكرة الهاتف فقط
     localStorage.setItem('fcm_token', tokenValue);
     console.log("📍 تم حفظ التوكن في ذاكرة الهاتف بنجاح.");
 
-    // إعداد معرف المستخدم محلياً إذا لم يوجد
     if (!localStorage.getItem('user_id')) {
       const uId = 'user_' + Math.floor(Math.random() * 1000000);
       localStorage.setItem('user_id', uId);
@@ -39,13 +38,12 @@ const Main = () => {
   };
 
   useEffect(() => {
-    // إبلاغ Capgo بأن التطبيق جاهز ومستقر (هذا يمنع التراجع التلقائي عن التحديثات)
     if (Capacitor.isNativePlatform()) {
-      CapacitorUpdater.notifyAppReady();
+      // تم إزالة CapacitorUpdater.notifyAppReady() لتجنب أخطاء المكتبة المحذوفة
       
       const initPush = async () => {
         try {
-          // 1. طلب تصريح الإشعارات من المستخدم
+          // 1. التحقق من صلاحيات الإشعارات
           let permStatus = await PushNotifications.checkPermissions();
           
           if (permStatus.receive === 'prompt') {
@@ -53,7 +51,7 @@ const Main = () => {
           }
 
           if (permStatus.receive === 'granted') {
-            // 2. تسجيل الجهاز في Firebase لجلب التوكن
+            // 2. تسجيل الجهاز في Firebase
             await PushNotifications.register();
           }
         } catch (error) {
@@ -63,7 +61,7 @@ const Main = () => {
 
       initPush();
 
-      // 3. استلام التوكن وحفظه "محلياً فقط"
+      // 3. مستمع لتوليد التوكن وحفظه
       PushNotifications.addListener('registration', (token) => {
         console.log("🚀 FCM Token Generated:", token.value);
         handleTokenLocally(token.value);
@@ -73,11 +71,18 @@ const Main = () => {
         console.error("Registration Error: ", error.error);
       });
 
-      // 4. استلام الإشعارات أثناء فتح التطبيق
+      // 4. مستمع لاستلام الإشعارات أثناء فتح التطبيق
       PushNotifications.addListener('pushNotificationReceived', (notification) => {
         console.log("📩 إشعار جديد مستلم:", notification.title);
       });
     }
+    
+    // تنظيف المستمعين عند إغلاق المكون
+    return () => {
+      if (Capacitor.isNativePlatform()) {
+        PushNotifications.removeAllListeners();
+      }
+    };
   }, []);
 
   return (
