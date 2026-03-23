@@ -1,4 +1,4 @@
-name: Roqa Production Build (Clean & Fix)
+name: Raqqa Final Production Build (APK + AAB + Sign)
 
 on:
   push:
@@ -26,23 +26,31 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تنظيف وتثبيت الأدوات
         run: |
           rm -rf android
-          # حذف أي أثر للمكتبات المسببة للمشاكل قبل التثبيت
           npm uninstall @capgo/capacitor-updater @capgo/cli
           npm install --legacy-peer-deps
+          # تثبيت أداة توليد الأيقونات
+          npm install @capacitor/assets --save-dev
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد وتعديل الـ SDK
+      - name: 4. إضافة أندرويد وتوليد الأيقونات وتغيير الاسم
         run: |
           npx cap config set webDir dist_web
           npx cap add android
+          
+          # توليد الأيقونات من مسار resources
+          npx capacitor-assets generate --android --icon-source "resources/icon-only.png" --splash-source "resources/icon-background.png"
+          
+          # تغيير اسم التطبيق إلى "رقة" بالعربي في ملف Strings
+          STRINGS_FILE="android/app/src/main/res/values/strings.xml"
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
+          
           VAR_FILE="android/variables.gradle"
           sed -i "s/minSdkVersion = .*/minSdkVersion = 23/" $VAR_FILE
           sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
           sed -i "s/targetSdkVersion = .*/targetSdkVersion = 35/" $VAR_FILE
-          # إضافة السطر التالي لتجنب مشاكل الـ SDK 35
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
           npx cap sync android
 
@@ -60,16 +68,10 @@ jobs:
               {
                 "client_info": {
                   "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
-                  "android_client_info": {
-                    "package_name": "com.raqqa.app"
-                  }
+                  "android_client_info": { "package_name": "com.raqqa.app" }
                 },
-                "api_key": [
-                  { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" }
-                ],
-                "services": {
-                  "appinvite_service": { "other_platform_oauth_client": [] }
-                }
+                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
               }
             ],
             "configuration_version": "1"
@@ -92,22 +94,28 @@ jobs:
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 8. التوقيع الرقمي (Keystore)
+      - name: 8. التوقيع الرقمي الكامل (Signing)
         run: |
-          keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          # إنشاء ملف التوقيع
+          keytool -genkey -v -keystore raqqa_production.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" \
+            -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
           
+          # توقيع APK
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks roqa_release.jks \
-            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
+          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_production.jks \
+            --ks-pass pass:"raqqa_pass_2026" --out Raqqa-Signed.apk "$APK_RAW"
           
-          cp "$APK_RAW" Roqa-Raw-Release.apk
+          # توقيع AAB (للمتجر)
+          AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          jarsigner -keystore raqqa_production.jks -storepass "raqqa_pass_2026" "$AAB_RAW" raqqa_alias
+          cp "$AAB_RAW" Raqqa-Signed.aab
 
-      - name: 9. حفظ الملفات (Artifacts)
+      - name: 9. حفظ جميع الملفات النهائية
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-Build
+          name: Raqqa-Final-Release-Packages
           path: |
-            Roqa-Final-Signed.apk
-            roqa_release.jks
+            Raqqa-Signed.apk
+            Raqqa-Signed.aab
+            raqqa_production.jks
