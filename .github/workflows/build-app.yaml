@@ -38,7 +38,6 @@ jobs:
           npx cap config set webDir dist_web
           npx cap add android
           VAR_FILE="android/variables.gradle"
-          # رفع الـ min إلى 23 وتحديث الـ SDK لحل مشاكل التوافق مع المكتبات الجديدة
           sed -i "s/minSdkVersion = .*/minSdkVersion = 23/" $VAR_FILE
           sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
           sed -i "s/targetSdkVersion = .*/targetSdkVersion = 35/" $VAR_FILE
@@ -82,21 +81,13 @@ jobs:
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
-          
-          # إضافة التبعيات
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
-          
-          # توحيد اسم الحزمة وتصحيح المسارات
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          
-          # إضافة الصلاحيات المطلوبة
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          
-          # تفعيل مرور البيانات وتجاوز تحذير الإصدار غير المدعوم
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
@@ -122,8 +113,8 @@ jobs:
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
       - name: 9. رفع التحديث السحابي إلى Capgo (OTA)
-        # تم تصحيح الأمر هنا باستخدام bundle upload ليتوافق مع الإصدار 7.x من CLI
-        run: npx @capgo/cli@latest bundle upload -t ${{ secrets.CAPGO_TOKEN }} --bundle dist_web
+        # تم تصحيح الأمر ليتوافق مع الإصدار 7.x (استخدام --apikey و --path)
+        run: npx @capgo/cli@latest bundle upload --apikey ${{ secrets.CAPGO_TOKEN }} --path dist_web
 
       - name: 10. حفظ الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
