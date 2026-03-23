@@ -1,0 +1,33 @@
+name: Capgo Deploy Raqqa 🌸
+
+on:
+  push:
+    branches:
+      - main  # تأكد أن هذا هو اسم الفرع الرئيسي لمشروعك (main أو master)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. جلب الكود من GitHub
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. إعداد بيئة Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # أو النسخة التي تستخدمها
+
+      # 3. تثبيت المكتبات (Dependencies)
+      - name: Install Dependencies
+        run: npm install
+
+      # 4. بناء ملفات الويب (Build)
+      - name: Build Project
+        run: npm run build # هذا الأمر ينشئ مجلد dist أو build تلقائياً
+
+      # 5. رفع التحديث إلى Capgo
+      - name: Upload to Capgo
+        run: npx @capgo/cli@latest upload -t ${{ secrets.CAPGO_TOKEN }}
