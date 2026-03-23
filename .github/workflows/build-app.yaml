@@ -1,4 +1,4 @@
-name: Roqa Production Build Signed (Clean Build & Auto Assets)
+name: Roqa Production Build (Clean & Fix)
 
 on:
   push:
@@ -26,26 +26,24 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات وتجهيز الأيقونات
+      - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
+          # حذف أي أثر للمكتبات المسببة للمشاكل قبل التثبيت
+          npm uninstall @capgo/capacitor-updater @capgo/cli
           npm install --legacy-peer-deps
-          # تثبيت أداة توليد الأيقونات وشاشة البداية
-          npm install @capacitor/assets --save-dev
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد وتوليد الصور
+      - name: 4. إضافة منصة أندرويد وتعديل الـ SDK
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          # سحب الأيقونات وشاشة البداية (الفيديو) من المسار الموضح في الصور
-          # يفترض أن الصور موجودة في المسار: موارد/الرقة/
-          npx capacitor-assets generate --android --icon-source "موارد/الرقة/icon-only.png" --splash-source "موارد/الرقة/splash_video.mp4"
-          
           VAR_FILE="android/variables.gradle"
           sed -i "s/minSdkVersion = .*/minSdkVersion = 23/" $VAR_FILE
           sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
           sed -i "s/targetSdkVersion = .*/targetSdkVersion = 35/" $VAR_FILE
+          # إضافة السطر التالي لتجنب مشاكل الـ SDK 35
+          echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
           npx cap sync android
 
       - name: 5. حقن ملف google-services.json
@@ -67,14 +65,10 @@ jobs:
                   }
                 },
                 "api_key": [
-                  {
-                    "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ"
-                  }
+                  { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" }
                 ],
                 "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
-                  }
+                  "appinvite_service": { "other_platform_oauth_client": [] }
                 }
               }
             ],
@@ -82,19 +76,14 @@ jobs:
           }
           EOF
 
-      - name: 6. تهيئة الإعدادات المتقدمة (OneSignal & Cleartext)
+      - name: 6. ضبط الـ Manifest والهوية
         run: |
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
-          sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
-          sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
-          echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
 
       - name: 7. بناء ملفات APK و AAB
         run: |
@@ -113,15 +102,12 @@ jobs:
           /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
-          AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
-          cp "$AAB_RAW" Roqa-Final-Signed.aab
+          cp "$APK_RAW" Roqa-Raw-Release.apk
 
-      - name: 9. حفظ الملفات الجاهزة للتحميل
+      - name: 9. حفظ الملفات (Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-Packages
+          name: Roqa-Production-Build
           path: |
             Roqa-Final-Signed.apk
-            Roqa-Final-Signed.aab
             roqa_release.jks
