@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 env:
+  # تفعيل Node 24 وتجاوز التحذيرات 
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -15,7 +16,7 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - [cite_start]name: 2. إعداد البيئة (Node 22 & Java 17) [cite: 2]
         uses: actions/setup-java@v4
         with:
           java-version: '17'
@@ -26,32 +27,31 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت الأدوات الاحترافية
+      - [cite_start]name: 3. تنظيف وتثبيت المكتبات [cite: 3]
         run: |
           rm -rf android
           npm uninstall @capgo/capacitor-updater @capgo/cli
           npm install --legacy-peer-deps
-          # تثبيت أداة توليد الأصول الرسمية من Capacitor
+          # تثبيت أداة الأصول لضمان توليد الأيقونات
           npm install @capacitor/assets --save-dev
           npm run build --if-present
 
-      - name: 4. إعداد منصة أندرويد وتوليد الأيقونات (رقة)
+      - [cite_start]name: 4. إعداد أندرويد وتوليد الأيقونات (رقة) [cite: 4]
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
-          # توليد الأيقونات باستخدام المسارات الظاهرة في الصورة المرفوعة
-          # نستخدم icon-foreground و icon-background للأيقونة المتكيفة (Adaptive Icon)
+          # توليد الأيقونات من المسار الفعلي الظاهر في الصورة
           npx capacitor-assets generate --android \
             --icon-foreground-source "موارد/الرقة/icon-foreground.png" \
             --icon-background-source "موارد/الرقة/icon-background.png" \
             --splash-source "موارد/الرقة/icon-only.png"
           
-          # تغيير اسم التطبيق إلى "رقة" في ملف الموارد
+          # تغيير اسم التطبيق إلى "رقة" بالعربي
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           
-          # ضبط إعدادات الـ SDK 35
+          # ضبط إعدادات الـ SDK لدعم أحدث الإصدارات
           VAR_FILE="android/variables.gradle"
           sed -i "s/minSdkVersion = .*/minSdkVersion = 23/" $VAR_FILE
           sed -i "s/compileSdkVersion = .*/compileSdkVersion = 35/" $VAR_FILE
@@ -59,7 +59,7 @@ jobs:
           echo "android.suppressUnsupportedCompileSdk=35" >> android/gradle.properties
           npx cap sync android
 
-      - name: 5. حقن ملف google-services.json
+      - [cite_start]name: 5. حقن ملف google-services.json [cite: 5, 6, 7]
         shell: bash
         run: |
           cat <<EOF > android/app/google-services.json
@@ -83,44 +83,48 @@ jobs:
           }
           EOF
 
-      - name: 6. ضبط الهوية والـ Manifest
+      - [cite_start]name: 6. تهيئة الصلاحيات وتصحيح اسم الحزمة [cite: 10, 11, 12]
         run: |
+          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          
+          # توحيد اسم الحزمة ليتوافق مع Firebase [cite: 11]
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
+          
+          # إضافة الصلاحيات الأساسية وتفعيل Cleartext [cite: 12, 13]
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 7. بناء ملفات APK و AAB (Release)
+      - [cite_start]name: 7. بناء ملفات APK و AAB [cite: 14]
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 8. التوقيع الرقمي الكامل (Key Generation & Signing)
+      - [cite_start]name: 8. التوقيع الرقمي الكامل (Signing) [cite: 15, 16]
         run: |
-          # إنشاء مفتاح التوقيع الجديد
-          keytool -genkey -v -keystore raqqa_production.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+          # إنشاء مفتاح التوقيع الخاص بـ "رقة"
+          keytool -genkey -v -keystore raqqa_release.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" \
             -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع ملف APK
+          # توقيع الـ APK [cite: 16]
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_production.jks \
-            --ks-pass pass:"raqqa_pass_2026" --out Raqqa-Signed.apk "$APK_RAW"
+          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_release.jks \
+            --ks-pass pass:"raqqa_pass_2026" --out Raqqa-Final-Signed.apk "$APK_RAW"
           
-          # توقيع ملف AAB لمتجر جوجل
+          # توقيع الـ AAB [cite: 16]
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore raqqa_production.jks -storepass "raqqa_pass_2026" "$AAB_RAW" raqqa_alias
-          cp "$AAB_RAW" Raqqa-Signed.aab
+          jarsigner -keystore raqqa_release.jks -storepass "raqqa_pass_2026" "$AAB_RAW" raqqa_alias
+          cp "$AAB_RAW" Raqqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات النهائية كـ Artifacts
+      - [cite_start]name: 9. رفع الملفات الجاهزة [cite: 17, 18]
         uses: actions/upload-artifact@v4
         with:
-          name: Raqqa-Final-Release-Packages
+          name: Raqqa-Final-Release
           path: |
-            Raqqa-Signed.apk
-            Raqqa-Signed.aab
-            raqqa_production.jks
+            Raqqa-Final-Signed.apk
+            Raqqa-Final-Signed.aab
+            raqqa_release.jks
