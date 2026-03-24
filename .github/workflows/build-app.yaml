@@ -32,17 +32,28 @@ jobs:
           rm -rf android
           # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          # إضافة مكتبة الإشعارات المحلية لضمان عمل النظام الجديد ودعم الوسائط
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          # إضافة مكتبة الإشعارات ومكتبة التحديثات المباشرة
+          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد ومزامنتها
+      - name: 🚀 4. دفع التحديث المباشر إلى Ionic Appflow
+        run: |
+          # تثبيت أدوات Ionic بشكل مؤقت لإرسال التحديث فقط
+          npm install -g @ionic/cli
+          # إرسال الكود المصدري كـ Live Update للقناة الأساسية
+          ionic deploy build \
+            --app-id="0cdc2a84" \
+            --channel="Production" \
+            --token="${{ secrets.IONIC_SECRET }}" \
+            --commit-msgs="Auto Update: ${{ github.event.head_commit.message }}"
+
+      - name: 5. إضافة منصة أندرويد ومزامنتها
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           npx cap sync android
 
-      - name: 5. حقن ملف google-services.json
+      - name: 6. حقن ملف google-services.json
         shell: bash
         run: |
           cat <<EOF > android/app/google-services.json
@@ -76,7 +87,7 @@ jobs:
           }
           EOF
 
-      - name: 6. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name ودعم الوسائط
+      - name: 7. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name ودعم الوسائط
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
@@ -101,14 +112,14 @@ jobs:
           # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 7. بناء ملفات APK و AAB
+      - name: 8. بناء ملفات APK و AAB
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      - name: 8. التوقيع الرقمي (Keystore)
+      - name: 9. التوقيع الرقمي (Keystore)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -122,7 +133,7 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات الجاهزة للتحميل
+      - name: 10. رفع الملفات الجاهزة للتحميل
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
