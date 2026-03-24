@@ -111,13 +111,18 @@ jobs:
           
           # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
+          
+          # إصلاح تعارض مكتبة التشفير Bouncy Castle المسببة للخطأ
+          echo "configurations.all { resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.79' }" >> $APP_BUILD_GRADLE
 
-      - name: 8. بناء ملفات APK و AAB
+      - name: 8. بناء ملفات APK و AAB (مع تنظيف الكاش)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
-          ./gradlew bundleRelease
+          # تنظيف الكاش وحل مشاكل الملفات المؤقتة
+          ./gradlew clean
+          ./gradlew assembleRelease --no-daemon
+          ./gradlew bundleRelease --no-daemon
 
       - name: 9. التوقيع الرقمي (Keystore)
         run: |
