@@ -1,4 +1,4 @@
-name: Roqa Production Build (Gradle Upgrade Fix)
+name: Roqa Final Absolute Fix (External Gradle)
 
 on:
   push:
@@ -20,23 +20,23 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-
+      
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات
+      - name: 3. تثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
+          npm install @capacitor/live-updates @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm run build --if-present
 
       - name: 🚀 4. تحديث Appflow
         run: |
           npm install -g @ionic/cli
-          ionic deploy build --app-id="0cdc2a84" --channel="Production" --token="${{ secrets.IONIC_SECRET }}" --commit-msgs="Upgrade Gradle to Fix Version 65 Error"
+          ionic deploy build --app-id="0cdc2a84" --channel="Production" --token="${{ secrets.IONIC_SECRET }}" --commit-msgs="Force Build with System Gradle"
 
       - name: 5. إضافة منصة أندرويد
         run: |
@@ -55,44 +55,35 @@ jobs:
           }
           EOF
 
-      - name: 7. ضبط الهوية وحل تعارض المكتبات
+      - name: 7. تعديل ملفات الإعداد (تغيير الهوية)
         run: |
           APP_GRADLE="android/app/build.gradle"
-          PROJECT_GRADLE="android/build.gradle"
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
-          
-          # تغيير اسم الحزمة
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-          # إجبار إصدار مستقر من المكتبة المسببة للأزمة
-          echo "allprojects {
-              configurations.all {
-                  resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
-              }
-          }" >> $PROJECT_GRADLE
-
-      - name: 8. ترقية Gradle وبناء التطبيق (المنقذ)
+      - name: 8. البناء باستخدام Gradle النظام (تجاوز gradlew القديم)
         run: |
           cd android
-          chmod +x gradlew
-          # ترقية Gradle يدوياً إلى إصدار 8.7 لدعم Java 21 والمكتبات الحديثة
-          ./gradlew wrapper --gradle-version 8.7
-          # البناء الفعلي
-          ./gradlew clean assembleRelease --no-daemon --stacktrace
+          # استخدام gradle المثبت في نظام Ubuntu بدلاً من الملف المحلي المتعطل
+          gradle clean assembleRelease --no-daemon
 
-      - name: 9. التوقيع الرقمي
+      - name: 9. التوقيع الرقمي (Keystore)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
+          
+          # محاولة استخراج AAB وبنائه أيضاً
+          gradle bundleRelease --no-daemon
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 10. حفظ الملفات النهائية
+      - name: 10. حفظ الملفات
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
