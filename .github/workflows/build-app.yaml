@@ -16,12 +16,11 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Java 17)
+      - name: 2. إعداد البيئة (Java 17 & Node 22)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          # تم إزالة خاصية الكاش هنا لمنع الخطأ الذي يظهر لك
       
       - name: 3. إعداد Node.js
         uses: actions/setup-node@v4
@@ -30,31 +29,35 @@ jobs:
 
       - name: 4. تثبيت المكتبات وبناء الويب
         run: |
-          # تنظيف أي مخلفات قديمة
           rm -rf android
           npm install --legacy-peer-deps
-          npm install @capacitor/assets @capacitor/live-updates @capacitor/push-notifications @capacitor/local-notifications --save-dev --legacy-peer-deps
+          # تثبيت أداة الأصول بإصدار مستقر
+          npm install @capacitor/assets@latest --save-dev --legacy-peer-deps
           npm run build --if-present
 
-      - name: 5. إضافة منصة أندرويد وتوليد الأيقونات
+      - name: 🚀 5. تحديث Appflow (Ionic Dashboard)
+        run: |
+          npm install -g @ionic/cli
+          # محاولة الرفع للمنصة مع تجنب توقف البناء إذا فشل التوكين
+          ionic deploy build --app-id="0cdc2a84" --channel="Production" --token="${{ secrets.IONIC_SECRET }}" --commit-msgs="Final Build Fix" || echo "Appflow upload skipped"
+
+      - name: 6. إضافة منصة أندرويد وتوليد الأيقونات (تصحيح المسارات)
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
-          # توليد الأيقونات (تأكد من وجود المسار موارد/الرقة في مستودعك)
-          npx capacitor-assets generate --android \
-            --icon-foreground-source "$ASSETS_PATH/icon-foreground.png" \
-            --icon-background-source "$ASSETS_PATH/icon-background.png" \
-            --splash-source "$ASSETS_PATH/icon-only.png"
+          # استخدام الأمر المختصر لتفادي خطأ unknown option
+          # سيبحث النظام عن الأيقونات في المسار موارد/الرقة
+          npx capacitor-assets generate --android --icon "$ASSETS_PATH/icon-only.png" --splash "$ASSETS_PATH/icon-only.png" || npx capacitor-assets generate --android
           
-          # تغيير اسم التطبيق إلى "رقة"
+          # تغيير اسم التطبيق
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           if [ -f "$STRINGS_FILE" ]; then
             sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           fi
           npx cap sync android
 
-      - name: 6. حقن ملف google-services.json
+      - name: 7. حقن ملف google-services.json وضبط الهوية
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -63,47 +66,27 @@ jobs:
             "configuration_version": "1"
           }
           EOF
-
-      - name: 7. ضبط الهوية وإصلاح التعارضات
-        run: |
-          APP_GRADLE="android/app/build.gradle"
-          PROJECT_GRADLE="android/build.gradle"
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           
-          # توحيد اسم الحزمة com.raqqa.app
+          APP_GRADLE="android/app/build.gradle"
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
-          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-          # حل تعارض مكتبة BouncyCastle
-          echo "allprojects { configurations.all { resolutionStrategy { eachDependency { details -> if (details.requested.group == 'org.bouncycastle') { details.useVersion '1.77' } } } } } }" >> $PROJECT_GRADLE
-
-      - name: 8. بناء التطبيق النهائي
+      - name: 8. بناء وتوقيع التطبيق (Final Release)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean assembleRelease bundleRelease --no-daemon
-
-      - name: 9. التوقيع الرقمي (Signing)
-        run: |
-          # إنشاء مفتاح التوقيع
-          keytool -genkey -v -keystore raqqa_final.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع الـ APK
-          APK_PATH=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_final.jks --ks-pass pass:"raqqa_pass_2026" --out Raqqa-Final-Signed.apk "$APK_PATH"
+          # التوقيع
+          keytool -genkey -v -keystore raqqa_prod.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع الـ AAB
-          AAB_PATH=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore raqqa_final.jks -storepass "raqqa_pass_2026" "$AAB_PATH" raqqa_alias
-          cp "$AAB_PATH" Raqqa-Final-Signed.aab
+          APK_PATH=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_prod.jks --ks-pass pass:"raqqa_pass_2026" --out ../Raqqa-Final-Signed.apk "$APK_PATH"
 
-      - name: 10. رفع الملفات الجاهزة
+      - name: 9. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
-          name: Raqqa-Production-Packages
+          name: Raqqa-Ready-Build
           path: |
             Raqqa-Final-Signed.apk
-            Raqqa-Final-Signed.aab
-            raqqa_final.jks
+            raqqa_prod.jks
