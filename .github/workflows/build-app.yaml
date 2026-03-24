@@ -1,4 +1,4 @@
-name: Roqa Production Build Signed (Clean Build with Node 24 Support)
+name: Roqa Production Build Signed (Absolute Fix)
 
 on:
   push:
@@ -30,7 +30,6 @@ jobs:
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # تثبيت الإضافات باستخدام الإصدارات المتوافقة تلقائياً
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
           npm run build --if-present
 
@@ -73,37 +72,38 @@ jobs:
           }
           EOF
 
-      - name: 7. حل تعارضات المكتبات وحقن إعدادات أندرويد
+      - name: 7. الحل الجذري لتعارضات التشفير (Nuclear Fix)
         run: |
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
           PROJECT_BUILD_GRADLE="android/build.gradle"
           
-          # توحيد اسم الحزمة
+          # 1. إجبار استبدال المكتبة المسببة للأزمة في كل مكان
+          echo "
+          subprojects {
+              project.configurations.all {
+                  resolutionStrategy.eachDependency { details ->
+                      if (details.requested.group == 'org.bouncycastle') {
+                          details.useVersion '1.77'
+                      }
+                  }
+              }
+          }" >> $PROJECT_BUILD_GRADLE
+
+          # 2. تعديل Manifest وتغيير اسم الحزمة
+          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-          # إجبار نظام أندرويد على استخدام نسخة مستقرة من مكتبة التشفير لحل خطأ الـ Jar
-          # نستخدم إصدار 1.77 لأنه الأكثر توافقاً مع Gradle 8
-          echo "allprojects {
-              configurations.all {
-                  resolutionStrategy {
-                      force 'org.bouncycastle:bcprov-jdk18on:1.77'
-                  }
-              }
-          }" >> $PROJECT_BUILD_GRADLE
-
-      - name: 8. بناء ملفات APK و AAB (Clean Build)
+      - name: 8. بناء الملفات مع تخطي مشاكل الـ Jar
         run: |
-          # حذف كاش Gradle المسبب للمشاكل قبل البناء مباشرة
+          # حذف كاش الـ Jar اللعين قبل الثانية الصفر
           rm -rf /home/runner/.gradle/caches/jars-9/
           cd android
           chmod +x gradlew
-          ./gradlew clean
-          ./gradlew assembleRelease --no-daemon
-          ./gradlew bundleRelease --no-daemon
+          # تشغيل البناء مع أوامر صارمة لمنع استخدام الكاش القديم
+          ./gradlew clean assembleRelease --no-daemon --no-build-cache --stacktrace
 
       - name: 9. التوقيع الرقمي (Keystore)
         run: |
