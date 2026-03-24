@@ -12,6 +12,11 @@
     "webContentsDebuggingEnabled": false
   },
   "plugins": {
+    "LiveUpdates": {
+      "appId": "0cdc2a84",
+      "channel": "Production",
+      "autoUpdateMethod": "background"
+    },
     "CapacitorHttp": {
       "enabled": true
     },
