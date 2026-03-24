@@ -1,4 +1,4 @@
-name: Roqa Final Absolute Fix (External Gradle)
+name: Roqa Production Build (Force Upgrade Fix)
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
       - name: 🚀 4. تحديث Appflow
         run: |
           npm install -g @ionic/cli
-          ionic deploy build --app-id="0cdc2a84" --channel="Production" --token="${{ secrets.IONIC_SECRET }}" --commit-msgs="Force Build with System Gradle"
+          ionic deploy build --app-id="0cdc2a84" --channel="Production" --token="${{ secrets.IONIC_SECRET }}" --commit-msgs="Force Upgrade Gradle Engine"
 
       - name: 5. إضافة منصة أندرويد
         run: |
@@ -55,20 +55,32 @@ jobs:
           }
           EOF
 
-      - name: 7. تعديل ملفات الإعداد (تغيير الهوية)
+      - name: 7. تعديل الهوية وإجبار نسخة قديمة من مكتبة التشفير
         run: |
           APP_GRADLE="android/app/build.gradle"
+          PROJECT_GRADLE="android/build.gradle"
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
+          
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 8. البناء باستخدام Gradle النظام (تجاوز gradlew القديم)
+          # إجبار المشروع على استخدام نسخة bcprov قديمة لا تتطلب Java 21
+          echo "allprojects {
+              configurations.all {
+                  resolutionStrategy.force 'org.bouncycastle:bcprov-jdk15to18:1.77'
+              }
+          }" >> $PROJECT_GRADLE
+
+      - name: 8. تحديث Gradle Wrapper وبناء التطبيق
         run: |
           cd android
-          # استخدام gradle المثبت في نظام Ubuntu بدلاً من الملف المحلي المتعطل
-          gradle clean assembleRelease --no-daemon
+          # تحديث نسخة Gradle إلى 8.4 (تدعم Java 17 بشكل مثالي وتتخطى خطأ الإصدار 65)
+          gradle wrapper --gradle-version 8.4
+          chmod +x gradlew
+          # البدء بالبناء
+          ./gradlew clean assembleRelease --no-daemon
 
       - name: 9. التوقيع الرقمي (Keystore)
         run: |
@@ -77,8 +89,7 @@ jobs:
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
-          # محاولة استخراج AAB وبنائه أيضاً
-          gradle bundleRelease --no-daemon
+          ./gradlew bundleRelease --no-daemon
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
