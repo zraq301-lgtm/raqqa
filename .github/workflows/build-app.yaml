@@ -26,11 +26,14 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تنظيف وتثبيت المكتبات (إصدار مستقر)
         run: |
           rm -rf android
+          # تنظيف كاش npm تماماً
+          npm cache clean --force
           npm install --legacy-peer-deps
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
+          # تثبيت إصدار محدد ومستقر لتجنب تعارض المكتبات الأخير
+          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates@6.0.3 --save --legacy-peer-deps
           npm run build --if-present
 
       - name: 🚀 4. دفع التحديث المباشر إلى Ionic Appflow
@@ -72,39 +75,31 @@ jobs:
           }
           EOF
 
-      - name: 7. تهيئة OneSignal وحل تعارضات المكتبات (Critical Fix)
+      - name: 7. تنظيف كاش النظام وحقن حل التشفير
         run: |
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
+          # حذف كاش Gradle للمكتبة المسببة للمشكلة يدوياً من نظام التشغيل
+          rm -rf /home/runner/.gradle/caches/jars-9/
+          
           APP_BUILD_GRADLE="android/app/build.gradle"
           PROJECT_BUILD_GRADLE="android/build.gradle"
           
-          # توحيد اسم الحزمة
-          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          
-          # إضافة صلاحيات الإشعارات والموقع
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
-
-          # --- الحل الجذري لخطأ Failed to create Jar file ---
-          # نقوم بحذف المكتبة المتعارضة من إعدادات المشروع بالكامل قبل البناء
+          # إجبار المشروع على تجاهل النسخة المتعارضة
           echo "allprojects {
               configurations.all {
                   resolutionStrategy {
-                      force 'org.bouncycastle:bcprov-jdk18on:1.79'
+                      force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
                   }
               }
           }" >> $PROJECT_BUILD_GRADLE
 
-      - name: 8. بناء ملفات APK و AAB (Clean Build)
+      - name: 8. بناء ملفات APK و AAB (Clean Force)
         run: |
           cd android
           chmod +x gradlew
-          # مسح الكاش تماماً قبل البدء
+          # تشغيل البناء مع إيقاف الـ Daemon تماماً وحذف الملفات المؤقتة
           ./gradlew clean
-          ./gradlew assembleRelease --no-daemon --stacktrace
-          ./gradlew bundleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --no-build-cache
+          ./gradlew bundleRelease --no-daemon --no-build-cache
 
       - name: 9. التوقيع الرقمي (Keystore)
         run: |
