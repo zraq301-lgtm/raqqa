@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# إضافة المتغير لتعطيل تحذير Node 20 وتفعيل Node 24 في الـ Actions
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -30,17 +29,13 @@ jobs:
       - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
-          # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          # إضافة مكتبة الإشعارات ومكتبة التحديثات المباشرة
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
           npm run build --if-present
 
       - name: 🚀 4. دفع التحديث المباشر إلى Ionic Appflow
         run: |
-          # تثبيت أدوات Ionic بشكل مؤقت لإرسال التحديث فقط
           npm install -g @ionic/cli
-          # إرسال الكود المصدري كـ Live Update للقناة الأساسية
           ionic deploy build \
             --app-id="0cdc2a84" \
             --channel="Production" \
@@ -67,62 +62,49 @@ jobs:
               {
                 "client_info": {
                   "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
-                  "android_client_info": {
-                    "package_name": "com.raqqa.app"
-                  }
+                  "android_client_info": { "package_name": "com.raqqa.app" }
                 },
-                "api_key": [
-                  {
-                    "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ"
-                  }
-                ],
-                "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
-                  }
-                }
+                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
               }
             ],
             "configuration_version": "1"
           }
           EOF
 
-      - name: 7. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name ودعم الوسائط
+      - name: 7. تهيئة OneSignal وحل تعارضات المكتبات (Critical Fix)
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
+          PROJECT_BUILD_GRADLE="android/build.gradle"
           
-          # إضافة مكتبة OneSignal ومكتبات Firebase Messaging لدعم الصور
-          sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
-          sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
-          
-          # توحيد اسم الحزمة ليتوافق مع Firebase (raqqa بدلاً من roqa)
+          # توحيد اسم الحزمة
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           
-          # إضافة صلاحيات الإشعارات والموقع والوصول للوسائط
+          # إضافة صلاحيات الإشعارات والموقع
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' $MANIFEST
-          
-          # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
-          
-          # إصلاح تعارض مكتبة التشفير Bouncy Castle المسببة للخطأ
-          echo "configurations.all { resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.79' }" >> $APP_BUILD_GRADLE
 
-      - name: 8. بناء ملفات APK و AAB (مع تنظيف الكاش)
+          # --- الحل الجذري لخطأ Failed to create Jar file ---
+          # نقوم بحذف المكتبة المتعارضة من إعدادات المشروع بالكامل قبل البناء
+          echo "allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      force 'org.bouncycastle:bcprov-jdk18on:1.79'
+                  }
+              }
+          }" >> $PROJECT_BUILD_GRADLE
+
+      - name: 8. بناء ملفات APK و AAB (Clean Build)
         run: |
           cd android
           chmod +x gradlew
-          # تنظيف الكاش وحل مشاكل الملفات المؤقتة
+          # مسح الكاش تماماً قبل البدء
           ./gradlew clean
-          ./gradlew assembleRelease --no-daemon
-          ./gradlew bundleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --stacktrace
+          ./gradlew bundleRelease --no-daemon --stacktrace
 
       - name: 9. التوقيع الرقمي (Keystore)
         run: |
