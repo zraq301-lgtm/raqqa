@@ -1,4 +1,4 @@
-name: Roqa Production Build Signed (Final with Icons & Arabic Name)
+name: Roqa Production Build (Professional Fix - Final)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  ASSETS_PATH: "موارد/الرقة" # تأكد من وجود أيقونة icon-only.png في هذا المسار
+  ASSETS_PATH: "موارد/الرقة"
 
 jobs:
   build:
@@ -16,42 +16,45 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - name: 2. إعداد البيئة (Java 17 & Node 22)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'zulu' # توزيعة zulu أكثر استقراراً لعمليات بناء الـ Jar المعقدة
+          distribution: 'zulu'
 
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات (تشمل التحديثات الحية)
+      - name: 3. تثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # إضافة مكتبات التحديثات الحية والأيقونات والإشعارات
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates @capacitor/assets --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد وحل مشكلة الـ Build
+      - name: 4. إضافة منصة أندرويد وإصلاح Gradle برمجياً
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          # حل مشكلة فشل إنشاء ملف bcprov-jdk18on التي عطلت البناء سابقاً
-          echo "configurations.all { resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77' }" >> android/build.gradle
+          
+          # الانتقال لمجلد أندرويد لتنفيذ الإصلاحات
+          cd android
+          
+          # حل مشكلة التوافقية ومكتبة التشفير (bcprov)
+          echo "configurations.all { resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77' }" >> build.gradle
+          
+          # تحديث Gradle Wrapper لإصدار مستقر يتوافق مع Java 17
+          ./gradlew wrapper --gradle-version 8.4
 
-      - name: 5. ضبط اسم التطبيق (رقة) بالعربي وتوليد الأيقونات
+      - name: 5. ضبط اسم التطبيق (رقة) والأيقونات
         run: |
-          # تغيير اسم التطبيق في ملف الأندرويد ليظهر "رقة"
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           
-          # توليد الأيقونات وصور البداية (Splash)
-          # سيبحث عن الأيقونة في المسار المخصص، وإذا لم يجدها سيستخدم الافتراضية
+          # توليد الأيقونات
           npx capacitor-assets generate --android --icon "$ASSETS_PATH/icon-only.png" --splash "$ASSETS_PATH/icon-only.png" || npx capacitor-assets generate --android
-          
           npx cap sync android
 
       - name: 6. حقن ملف google-services.json
@@ -64,36 +67,28 @@ jobs:
           }
           EOF
 
-      - name: 7. تهيئة OneSignal وتصحيح الهوية ودعم الوسائط
+      - name: 7. تهيئة الصلاحيات وتفعيل التحديثات الحية
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
           
-          # إضافة مكتبات OneSignal لدعم الصور في الإشعارات
-          sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
-          sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
-          
-          # توحيد اسم الحزمة (Package Name)
-          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
+          # تصحيح اسم الحزمة وتفعيل Cleartext لضمان عمل التحديثات الحية
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          
-          # إضافة الصلاحيات اللازمة
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          
-          # تفعيل مرور البيانات (Cleartext) للتحديثات الحية
+          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
+          
+          # إضافة صلاحية الإشعارات
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
 
-      - name: 8. بناء وتوقيع ملفات APK و AAB (بدون كاش)
+      - name: 8. بناء وتوقيع ملفات APK و AAB
         run: |
           cd android
           chmod +x gradlew
-          # استخدام --no-build-cache لضمان عدم حدوث تعارض في ملفات التشفير Jar
-          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache
           
+          # البناء مع تعطيل الـ Daemon والكاش لضمان نظافة العملية
+          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache --stacktrace
+          
+          # التوقيع الرقمي
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
@@ -106,7 +101,7 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" ../Roqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات الجاهزة للتحميل
+      - name: 9. رفع الملفات الجاهزة
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
