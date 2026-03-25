@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // 'base' يضمن عمل الروابط والملفات داخلياً في الأندرويد ويحل مشكلة الصفحة البيضاء
-  base: './', 
+  // تغيير 'base' إلى اسم المستودع لضمان تحميل الملفات من المسار الصحيح على GitHub Pages
+  // هذا سيحل مشكلة الصفحة البيضاء فوراً
+  base: '/raqqa/', 
   
   plugins: [react()],
   
