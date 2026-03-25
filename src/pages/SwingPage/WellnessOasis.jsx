@@ -12,8 +12,7 @@ const WahaDashboard = () => {
         const response = await fetch('https://raqqa-v6cd.vercel.app/health');
         const data = await response.json();
         
-        // ملاحظة: تأكدي أن البيانات القادمة مصفوفة (Array)
-        // إذا كانت البيانات داخل كائن مثل data.posts، عدلي السطر التالي
+        // التأكد من استخراج المصفوفة بشكل صحيح
         setPosts(Array.isArray(data) ? data : (data.posts || []));
       } catch (error) {
         console.error("خطأ في جلب البيانات:", error);
@@ -27,28 +26,28 @@ const WahaDashboard = () => {
 
   return (
     <div style={styles.pageWrapper}>
-      {/* Header - ثابت في الأعلى */}
+      {/* Header */}
       <header style={styles.header}>
         <div style={styles.headerTitle}>واحة العافية - مجتمع صحي للنساء</div>
       </header>
 
       <div style={styles.mainVerticalContainer}>
         
-        {/* 1. قسم البحث فقط (تم حذف الأقسام) */}
+        {/* 1. قسم البحث (تم حذف الأقسام كما طلبت) */}
         <section style={styles.topSection}>
           <div style={styles.searchBox}>
             <input type="text" placeholder="بحث في المنتدى..." style={styles.searchInput} />
           </div>
         </section>
 
-        {/* 2. قسم إنشاء منشور */}
+        {/* 2. قسم إنشاء منشور (تم إصلاح خطأ التاج هنا) */}
         <section style={styles.createSection}>
           <div style={styles.createPostCard}>
             <div style={styles.createHeader}>
               <span>شاركينا تجربتكِ اليوم..</span>
               <span>📝</span>
             </div>
-            <遷extarea placeholder="ماذا يدور في ذهنكِ؟" style={styles.textArea}></textarea>
+            <textarea placeholder="ماذا يدور في ذهنكِ؟" style={styles.textArea}></textarea>
             <div style={styles.actionIcons}>
               <span>🖼️ صورة</span>
               <span>🎥 فيديو</span>
@@ -88,8 +87,7 @@ const PostCard = ({ post }) => (
     <div style={styles.cardHeader}>
       <div style={styles.userInfo}>
         <div style={styles.avatar}>
-          {/* عرض أول حرف من الاسم إذا لم توجد صورة */}
-          <span style={{fontSize: '10px'}}>{post.author?.charAt(0)}</span>
+          <span style={{fontSize: '10px'}}>{post.author ? post.author.charAt(0) : 'U'}</span>
         </div>
         <div>
           <div style={styles.userName}>{post.author || "مستخدمة"}</div>
