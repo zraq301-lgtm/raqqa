@@ -1,4 +1,4 @@
-name: Raqqa Production Build & Deploy (Final Fix)
+name: Raqqa Final Shield Fix (BouncyCastle & Deploy Fix)
 
 on:
   push:
@@ -31,55 +31,50 @@ jobs:
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # تثبيت مكتبات التحديثات والأصول بشكل صريح
           npm install @capacitor/live-updates @capacitor/assets@latest --save-dev --legacy-peer-deps
           npm run build --if-present
 
-      - name: 🚀 5. النشر على Ionic Dashboard (تفعيل القناة)
+      - name: 🚀 5. النشر على Ionic Dashboard
         run: |
           npm install -g @ionic/cli
-          # تنفيذ عملية الرفع الفعلي للكود المصدري لضمان ظهور التحديثات في الرابط
           ionic deploy build --app-id="0cdc2a84" \
                              --channel="Production" \
                              --token="${{ secrets.IONIC_SECRET }}" \
-                             --commit-msgs="تفعيل التحديثات المباشرة - إصدار الإنتاج" || echo "Appflow upload skipped"
+                             --commit-msgs="Fix BouncyCastle Conflict" || echo "Appflow upload skipped"
 
       - name: 6. إضافة منصة أندرويد وتوليد الأيقونات
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          
-          # توليد الأيقونات من المسار موارد/الرقة
           npx capacitor-assets generate --android --icon "$ASSETS_PATH/icon-only.png" --splash "$ASSETS_PATH/icon-only.png" || npx capacitor-assets generate --android
           
-          # تعريب اسم التطبيق في ملف الأندرويد
+          # تعريب اسم التطبيق
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           if [ -f "$STRINGS_FILE" ]; then
             sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           fi
           npx cap sync android
 
-      - name: 7. ضبط إعدادات التحديثات الحية (Live Update Config)
+      - name: 7. حل مشكلة BouncyCastle (المستوى الجذري)
         run: |
-          # حقن إعدادات القناة داخل ملف الإعدادات الأصلي لضمان اتصال التطبيق بالمنصة
-          CONFIG_PATH="android/app/src/main/assets/capacitor.config.json"
-          cat <<EOF > $CONFIG_PATH
-          {
-            "appId": "com.raqqa.app",
-            "appName": "رقة",
-            "webDir": "public",
-            "plugins": {
-              "LiveUpdates": {
-                "appId": "0cdc2a84",
-                "channel": "Production",
-                "autoUpdateMethod": "background"
+          PROJECT_GRADLE="android/build.gradle"
+          # إجبار جميع المشاريع الفرعية على استخدام إصدار 1.77 المستقر من المكتبة المتسببة في الخطأ
+          echo "
+          allprojects {
+              configurations.all {
+                  resolutionStrategy {
+                      eachDependency { details ->
+                          if (details.requested.group == 'org.bouncycastle') {
+                              details.useVersion '1.77'
+                          }
+                      }
+                  }
               }
-            }
-          }
-          EOF
+          }" >> $PROJECT_GRADLE
 
-      - name: 8. حقن ملف google-services.json وتصحيح الهوية
+      - name: 8. حقن ملفات الإعدادات والهوية
         run: |
+          # حقن google-services.json
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -88,27 +83,28 @@ jobs:
           }
           EOF
           
+          # تصحيح الـ Namespace
           APP_GRADLE="android/app/build.gradle"
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
 
-      - name: 9. بناء وتوقيع التطبيق النهائي (Release)
+      - name: 9. بناء وتوقيع التطبيق (Release)
         run: |
           cd android
+          # تنظيف الكاش يدوياً قبل البناء لتجنب ملفات الـ Jar التالفة
+          rm -rf /home/runner/.gradle/caches/jars-9/
           chmod +x gradlew
           ./gradlew clean assembleRelease bundleRelease --no-daemon
-          
-          # إنشاء مفتاح التوقيع الرقمي
-          keytool -genkey -v -keystore raqqa_prod.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
-          
-          # توقيع ملف APK
-          APK_PATH=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_prod.jks --ks-pass pass:"raqqa_pass_2026" --out ../Raqqa-Final-Signed.apk "$APK_PATH"
 
-      - name: 10. رفع المخرجات (Artifacts)
+          # التوقيع الرقمي
+          keytool -genkey -v -keystore raqqa_final.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
+          APK_PATH=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_final.jks --ks-pass pass:"raqqa_pass_2026" --out ../Raqqa-Final-Signed.apk "$APK_PATH"
+
+      - name: 10. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
-          name: Raqqa-Production-Ready
+          name: Raqqa-Production-Package
           path: |
             Raqqa-Final-Signed.apk
-            android/raqqa_prod.jks
+            android/raqqa_final.jks
