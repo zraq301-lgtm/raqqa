@@ -1,4 +1,4 @@
-name: Roqa Production Build Signed (Ultimate Stability)
+name: Roqa Final Stable Build
 
 on:
   push:
@@ -19,92 +19,66 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          distribution: 'zulu' # زولو أكثر استقراراً مع مكتبات التشفير
       
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات
+      - name: 3. تنظيف وتثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # تثبيت المكتبات المطلوبة للإنتاج
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
+          npm install @capacitor/live-updates@0.5.0 --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة الأندرويد وحل مشكلة bcprov (الجار القاتل)
+      - name: 4. إضافة الأندرويد وإصلاح تعارض التشفير (الجراحة الدقيقة)
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
-          # حقن حل مشكلة التشفير التي تسبب الفشل في السجل (ExecutionException)
-          # نقوم بإجبار Gradle على استخدام نسخة مستقرة 1.77 بدلاً من 1.79 المسببة للخطأ
-          echo "subprojects {
-              configurations.all {
-                  resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77'
-              }
-          }" >> android/build.gradle
+          # الانتقال لداخل مجلد أندرويد لتعديل الملفات الرئيسية
+          cd android
+          
+          # إصلاح ملف build.gradle الرئيسي لإجبار نسخة التشفير المستقرة 1.77
+          # نستخدم 'sed' للبحث عن سطر 'allprojects' والحقن بداخله مباشرة
+          sed -i '/allprojects {/a \    configurations.all { resolutionStrategy.force "org.bouncycastle:bcprov-jdk18on:1.77" }' build.gradle
+          
+          # منع الـ Live Updates من سحب النسخة 1.79 المكسورة
+          echo "configurations.all { resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77' }" >> app/build.gradle
 
-      - name: 5. حقن ملف google-services.json
-        shell: bash
+      - name: 5. ضبط الاسم العربي (رقة) وحقن Firebase
         run: |
+          STRINGS_XML="android/app/src/main/res/values/strings.xml"
+          APP_GRADLE="android/app/build.gradle"
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          
+          # تغيير الاسم للعربي
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
+          
+          # توحيد اسم الحزمة
+          sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
+          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
+          
+          # حقن google-services.json
           cat <<EOF > android/app/google-services.json
           {
-            "project_info": {
-              "project_number": "162488255991",
-              "project_id": "raqqa-43dc8",
-              "storage_bucket": "raqqa-43dc8.firebasestorage.app"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
-                  "android_client_info": { "package_name": "com.raqqa.app" }
-                },
-                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
-              }
-            ],
+            "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
+            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
             "configuration_version": "1"
           }
           EOF
-
-      - name: 6. ضبط اسم التطبيق (رقة) والصلاحيات وتوحيد الهوية
-        run: |
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
-          APP_BUILD_GRADLE="android/app/build.gradle"
-          STRINGS_XML="android/app/src/main/res/values/strings.xml"
-          
-          # تغيير اسم التطبيق ليظهر "رقة" بالعربي أسفل الأيقونة
-          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
-          
-          # إضافة مكتبات OneSignal و Firebase
-          sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
-          sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
-          
-          # توحيد الهوية لـ com.raqqa.app
-          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          
-          # إضافة الصلاحيات الضرورية
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
           
           npx cap sync android
 
-      - name: 7. بناء ملفات APK و AAB (Clean Build)
+      - name: 6. البناء النهائي (بدون Daemon وبدون Cache)
         run: |
           cd android
           chmod +x gradlew
-          # البناء بدون Daemon لتجنب تعليق الذاكرة في السيرفر
-          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache
+          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache --stacktrace
 
-      - name: 8. التوقيع الرقمي (Keystore)
+      - name: 7. التوقيع الرقمي (Keystore)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -118,10 +92,10 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 9. رفع الملفات الجاهزة للتحميل
+      - name: 8. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-Package
+          name: Roqa-Final-Package
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
