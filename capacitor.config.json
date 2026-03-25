@@ -1,34 +1,16 @@
 {
   "appId": "com.raqqa.app",
-  "appName": "Roqa",
+  "appName": "رقة",
   "webDir": "dist_web",
+  "bundledWebRuntime": false,
   "server": {
-    "androidScheme": "https",
-    "allowNavigation": ["*"],
+    "url": "https://YOUR_USERNAME.github.io/raqqa/",
+    "allowNavigation": [
+      "*.github.io"
+    ],
     "cleartext": true
   },
   "android": {
-    "allowMixedContent": true,
-    "webContentsDebuggingEnabled": false
-  },
-  "plugins": {
-    "LiveUpdates": {
-      "appId": "0cdc2a84",
-      "channel": "Production",
-      "autoUpdateMethod": "background"
-    },
-    "CapacitorHttp": {
-      "enabled": true
-    },
-    "PushNotifications": {
-      "presentationOptions": ["badge", "sound", "alert"]
-    },
-    "LocalNotifications": {
-      "smallIcon": "ic_stat_icon_config_sample",
-      "iconColor": "#445271"
-    },
-    "OneSignal": {
-      "appId": "726fe629-0b1e-4294-9a4b-39cf50212b42"
-    }
+    "allowMixedContent": true
   }
 }
