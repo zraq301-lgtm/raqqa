@@ -1,4 +1,4 @@
-name: Roqa Ultimate Fix (Java 21 Upgrade)
+name: Roqa Production Build (Force Gradle 8.5)
 
 on:
   push:
@@ -15,46 +15,52 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Java 21 & Node 22)
+      - name: 2. إعداد Java 21 (بأداء مستقر)
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # التحديث لـ 21 لحل مشكلة Unsupported class file
+          java-version: '21'
           distribution: 'zulu'
-      
-      - name: إعداد Node.js
+          cache: 'gradle'
+
+      - name: 3. إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تثبيت المكتبات وبناء الويب
+      - name: 4. تثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
           npm install --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة الأندرويد وتحديث Gradle (الحل الفردي)
+      - name: 5. إضافة الأندرويد وإصلاح Gradle يدوياً
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
           cd android
-          # تحديث الجريدل لنسخة تدعم جافا 21 تماماً
-          ./gradlew wrapper --gradle-version 8.5 --distribution-type all
+          # إجبار استخدام Gradle 8.5 المتوافق تماماً مع Java 21
+          wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
+          unzip -q gradle-8.5-bin.zip
+          export GRADLE_HOME=$PWD/gradle-8.5
+          export PATH=$GRADLE_HOME/bin:$PATH
+          
+          # تحديث الـ Wrapper
+          gradle wrapper --gradle-version 8.5
 
-      - name: 5. ضبط الاسم العربي (رقة) وحقن Firebase
+      - name: 6. حقن ملفات الهوية (رقة) و Firebase
         run: |
           STRINGS_XML="android/app/src/main/res/values/strings.xml"
           APP_GRADLE="android/app/build.gradle"
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
           
-          # تغيير الاسم للعربي
+          # تغيير الاسم للعربي (رقة)
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
           
-          # توحيد اسم الحزمة لـ com.raqqa.app
+          # توحيد اسم الحزمة
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           
-          # حقن google-services.json
+          # إنشاء ملف google-services.json
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -65,13 +71,15 @@ jobs:
           
           npx cap sync android
 
-      - name: 6. البناء النهائي (Release)
+      - name: 7. البناء النهائي (بدون Daemon لتوفير الذاكرة)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+          # أضفنا سطر لزيادة ذاكرة الـ JVM ومنع الـ Daemon من الانهيار
+          export GRADLE_OPTS="-Xmx2048m -Dorg.gradle.daemon=false"
+          ./gradlew assembleRelease bundleRelease --stacktrace
 
-      - name: 7. التوقيع الرقمي (Keystore)
+      - name: 8. التوقيع الرقمي (Keystore)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -83,10 +91,10 @@ jobs:
           
           cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
 
-      - name: 8. رفع المخرجات
+      - name: 9. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-Package
+          name: Roqa-Production-Package
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
