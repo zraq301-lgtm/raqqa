@@ -1,8 +1,9 @@
 import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react'; // أضفنا useCallback
+import { useEffect, useState, useCallback } from 'react'; 
 import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core'; 
-import { LocalNotifications } from '@capacitor/local-notifications'; // استيراد مكتبة الإشعارات
+import { LocalNotifications } from '@capacitor/local-notifications'; 
+import { LiveUpdates } from '@capacitor/live-updates'; // [إضافة] استيراد مكتبة التحديثات الحية
 
 // استيراد الصور من مجلد الأصول (Assets)
 import healthImg from './assets/health.jpg';
@@ -120,7 +121,19 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- [جديد] منطق جلب وجدولة الإشعارات من نيون ---
+  // --- [جديد] وظيفة مزامنة التحديثات الحية من GitHub ---
+  const syncAppUpdates = useCallback(async () => {
+    try {
+      const result = await LiveUpdates.sync();
+      if (result.nextBundle) {
+        await LiveUpdates.reload();
+      }
+    } catch (err) {
+      console.error("Live Updates Error:", err);
+    }
+  }, []);
+
+  // --- منطق جلب وجدولة الإشعارات من نيون ---
   const syncNotifications = useCallback(async () => {
     try {
       const response = await CapacitorHttp.get({
@@ -131,17 +144,14 @@ function App() {
       if (response.data && response.data.rows) {
         const reminders = response.data.rows;
         
-        // طلب إذن الإشعارات
         const perms = await LocalNotifications.checkPermissions();
         if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
 
-        // مسح المجدول سابقاً لتحديثه
         const pending = await LocalNotifications.getPending();
         if (pending.notifications.length > 0) {
           await LocalNotifications.cancel({ notifications: pending.notifications });
         }
 
-        // جدولة الإشعارات القادمة فقط بالصور من الـ API
         const notificationsToSchedule = reminders
           .filter(rem => new Date(rem.scheduled_for) > new Date())
           .map(rem => ({
@@ -149,7 +159,7 @@ function App() {
             title: rem.title,
             body: rem.body,
             schedule: { at: new Date(rem.scheduled_for) },
-            largeIcon: rem.image_url, // الرابط القادم من الـ API
+            largeIcon: rem.image_url,
             smallIcon: 'ic_stat_name',
             sound: 'default'
           }));
@@ -165,6 +175,9 @@ function App() {
   }, []);
 
   useEffect(() => {
+    // تشغيل نظام التحديثات الحية
+    syncAppUpdates();
+
     // تشغيل نظام الإشعارات
     syncNotifications();
 
@@ -182,7 +195,7 @@ function App() {
     return () => {
       listener.then(l => l.remove());
     };
-  }, [syncNotifications]); // إضافة syncNotifications للاعتمادية
+  }, [syncNotifications, syncAppUpdates]);
 
   return (
     <div className="app-container">
