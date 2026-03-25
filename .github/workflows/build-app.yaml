@@ -1,4 +1,4 @@
-name: Raqqa Final Shield Fix (Production Build)
+name: Raqqa Production Build & Deploy (Final Fix)
 
 on:
   push:
@@ -31,33 +31,54 @@ jobs:
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # تثبيت أداة الأصول بإصدار مستقر
-          npm install @capacitor/assets@latest --save-dev --legacy-peer-deps
+          # تثبيت مكتبات التحديثات والأصول بشكل صريح
+          npm install @capacitor/live-updates @capacitor/assets@latest --save-dev --legacy-peer-deps
           npm run build --if-present
 
-      - name: 🚀 5. تحديث Appflow (Ionic Dashboard)
+      - name: 🚀 5. النشر على Ionic Dashboard (تفعيل القناة)
         run: |
           npm install -g @ionic/cli
-          # محاولة الرفع للمنصة مع تجنب توقف البناء إذا فشل التوكين
-          ionic deploy build --app-id="0cdc2a84" --channel="Production" --token="${{ secrets.IONIC_SECRET }}" --commit-msgs="Final Build Fix" || echo "Appflow upload skipped"
+          # تنفيذ عملية الرفع الفعلي للكود المصدري لضمان ظهور التحديثات في الرابط
+          ionic deploy build --app-id="0cdc2a84" \
+                             --channel="Production" \
+                             --token="${{ secrets.IONIC_SECRET }}" \
+                             --commit-msgs="تفعيل التحديثات المباشرة - إصدار الإنتاج" || echo "Appflow upload skipped"
 
-      - name: 6. إضافة منصة أندرويد وتوليد الأيقونات (تصحيح المسارات)
+      - name: 6. إضافة منصة أندرويد وتوليد الأيقونات
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
-          # استخدام الأمر المختصر لتفادي خطأ unknown option
-          # سيبحث النظام عن الأيقونات في المسار موارد/الرقة
+          # توليد الأيقونات من المسار موارد/الرقة
           npx capacitor-assets generate --android --icon "$ASSETS_PATH/icon-only.png" --splash "$ASSETS_PATH/icon-only.png" || npx capacitor-assets generate --android
           
-          # تغيير اسم التطبيق
+          # تعريب اسم التطبيق في ملف الأندرويد
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           if [ -f "$STRINGS_FILE" ]; then
             sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           fi
           npx cap sync android
 
-      - name: 7. حقن ملف google-services.json وضبط الهوية
+      - name: 7. ضبط إعدادات التحديثات الحية (Live Update Config)
+        run: |
+          # حقن إعدادات القناة داخل ملف الإعدادات الأصلي لضمان اتصال التطبيق بالمنصة
+          CONFIG_PATH="android/app/src/main/assets/capacitor.config.json"
+          cat <<EOF > $CONFIG_PATH
+          {
+            "appId": "com.raqqa.app",
+            "appName": "رقة",
+            "webDir": "public",
+            "plugins": {
+              "LiveUpdates": {
+                "appId": "0cdc2a84",
+                "channel": "Production",
+                "autoUpdateMethod": "background"
+              }
+            }
+          }
+          EOF
+
+      - name: 8. حقن ملف google-services.json وتصحيح الهوية
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -71,22 +92,23 @@ jobs:
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
 
-      - name: 8. بناء وتوقيع التطبيق (Final Release)
+      - name: 9. بناء وتوقيع التطبيق النهائي (Release)
         run: |
           cd android
           chmod +x gradlew
           ./gradlew clean assembleRelease bundleRelease --no-daemon
           
-          # التوقيع
+          # إنشاء مفتاح التوقيع الرقمي
           keytool -genkey -v -keystore raqqa_prod.jks -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" -dname "CN=RaqqaApp, OU=Dev, O=Raqqa, L=Cairo, S=Egypt, C=EG"
           
+          # توقيع ملف APK
           APK_PATH=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks raqqa_prod.jks --ks-pass pass:"raqqa_pass_2026" --out ../Raqqa-Final-Signed.apk "$APK_PATH"
 
-      - name: 9. رفع المخرجات
+      - name: 10. رفع المخرجات (Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: Raqqa-Ready-Build
+          name: Raqqa-Production-Ready
           path: |
             Raqqa-Final-Signed.apk
-            raqqa_prod.jks
+            android/raqqa_prod.jks
