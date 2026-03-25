@@ -4,13 +4,22 @@
   "webDir": "dist_web",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://YOUR_USERNAME.github.io/raqqa/",
+    "androidScheme": "https",
+    "cleartext": true,
     "allowNavigation": [
-      "*.github.io"
-    ],
-    "cleartext": true
+      "zraq301-lgtm.github.io"
+    ]
+  },
+  "plugins": {
+    "LiveUpdates": {
+      "appId": "raqqa-native-1",
+      "channel": "Production",
+      "autoUpdateMethod": "background",
+      "maxVersions": 3
+    }
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "captureInput": true
   }
 }
