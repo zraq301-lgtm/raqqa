@@ -18,11 +18,12 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - name: 2. إعداد البيئة (Java 17 & Node 22)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'temurin'
+          # تم تغيير التوزيعة إلى zulu لحل مشاكل تعارض المكتبات الأمنية (bcprov)
+          distribution: 'zulu' 
       
       - name: إعداد Node.js
         uses: actions/setup-node@v4
@@ -78,10 +79,14 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon
+          # تم إضافة --no-build-cache لتجاوز الملفات التالفة التي سببت خطأ Build السابق
+          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache
+          
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
           APK_RAW=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks --ks-pass pass:"roqa_pass_2026" --out ../Roqa-Native-Signed.apk "$APK_RAW"
+          
           AAB_RAW=$(find app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" ../Roqa-Native-Signed.aab
