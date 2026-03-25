@@ -1,11 +1,10 @@
-name: Roqa Production Build Signed (Clean Build with Node 24 Support)
+name: Roqa Production Build Signed (Ultimate Stability)
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
 
-# إضافة المتغير لتعطيل تحذير Node 20 وتفعيل Node 24 في الـ Actions
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -30,17 +29,23 @@ jobs:
       - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
-          # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          # إضافة مكتبة الإشعارات المحلية لضمان عمل النظام الجديد ودعم الوسائط
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          # تثبيت المكتبات المطلوبة للإنتاج
+          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد ومزامنتها
+      - name: 4. إضافة الأندرويد وحل مشكلة bcprov (الجار القاتل)
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          npx cap sync android
+          
+          # حقن حل مشكلة التشفير التي تسبب الفشل في السجل (ExecutionException)
+          # نقوم بإجبار Gradle على استخدام نسخة مستقرة 1.77 بدلاً من 1.79 المسببة للخطأ
+          echo "subprojects {
+              configurations.all {
+                  resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77'
+              }
+          }" >> android/build.gradle
 
       - name: 5. حقن ملف google-services.json
         shell: bash
@@ -56,57 +61,48 @@ jobs:
               {
                 "client_info": {
                   "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
-                  "android_client_info": {
-                    "package_name": "com.raqqa.app"
-                  }
+                  "android_client_info": { "package_name": "com.raqqa.app" }
                 },
-                "api_key": [
-                  {
-                    "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ"
-                  }
-                ],
-                "services": {
-                  "appinvite_service": {
-                    "other_platform_oauth_client": []
-                  }
-                }
+                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
               }
             ],
             "configuration_version": "1"
           }
           EOF
 
-      - name: 6. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name ودعم الوسائط
+      - name: 6. ضبط اسم التطبيق (رقة) والصلاحيات وتوحيد الهوية
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
+          STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # إضافة مكتبة OneSignal ومكتبات Firebase Messaging لدعم الصور
+          # تغيير اسم التطبيق ليظهر "رقة" بالعربي أسفل الأيقونة
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
+          
+          # إضافة مكتبات OneSignal و Firebase
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
           
-          # توحيد اسم الحزمة ليتوافق مع Firebase (raqqa بدلاً من roqa)
+          # توحيد الهوية لـ com.raqqa.app
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           
-          # إضافة صلاحيات الإشعارات والموقع والوصول للوسائط
+          # إضافة الصلاحيات الضرورية
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' $MANIFEST
-          
-          # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
+          
+          npx cap sync android
 
-      - name: 7. بناء ملفات APK و AAB
+      - name: 7. بناء ملفات APK و AAB (Clean Build)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
-          ./gradlew bundleRelease
+          # البناء بدون Daemon لتجنب تعليق الذاكرة في السيرفر
+          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache
 
       - name: 8. التوقيع الرقمي (Keystore)
         run: |
