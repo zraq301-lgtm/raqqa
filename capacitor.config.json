@@ -6,9 +6,7 @@
   "server": {
     "androidScheme": "https",
     "cleartext": true,
-    "allowNavigation": [
-      "zraq301-lgtm.github.io"
-    ]
+    "allowNavigation": []
   },
   "plugins": {
     "LiveUpdates": {
@@ -16,10 +14,21 @@
       "channel": "Production",
       "autoUpdateMethod": "background",
       "maxVersions": 3
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#445271"
     }
   },
   "android": {
     "allowMixedContent": true,
-    "captureInput": true
+    "captureInput": true,
+    "buildOptions": {
+      "releaseKeystore": "roqa_release.jks",
+      "releaseKeyAlias": "roqa_alias"
+    }
   }
 }
