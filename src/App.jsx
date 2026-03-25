@@ -3,7 +3,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
-import { LiveUpdates } from '@capacitor/live-updates'; // [إضافة] استيراد مكتبة التحديثات الحية
+
+// [التصحيح] تغيير طريقة الاستيراد لتجنب خطأ الـ Build
+import * as LiveUpdates from '@capacitor/live-updates'; 
 
 // استيراد الصور من مجلد الأصول (Assets)
 import healthImg from './assets/health.jpg';
