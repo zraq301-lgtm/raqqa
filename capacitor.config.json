@@ -6,21 +6,20 @@
   "server": {
     "androidScheme": "https",
     "cleartext": true,
-    "allowNavigation": []
+    "allowNavigation": [
+      "raw.githubusercontent.com"
+    ]
   },
   "plugins": {
-    "LiveUpdates": {
-      "appId": "raqqa-native-1",
-      "channel": "Production",
-      "autoUpdateMethod": "background",
-      "maxVersions": 3
-    },
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
     },
     "LocalNotifications": {
       "smallIcon": "ic_stat_icon_config_sample",
       "iconColor": "#445271"
+    },
+    "CapacitorUpdater": {
+      "autoUpdate": false
     }
   },
   "android": {
