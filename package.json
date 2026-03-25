@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "preinstall": "npm config set legacy-peer-deps true",
     "build": "vite build --outDir dist_web",
     "preview": "vite preview"
   },
@@ -49,6 +50,9 @@
     "terser": "^5.27.0"
   },
   "overrides": {
+    "@capacitor/live-updates": {
+      "@capacitor/core": "$@capacitor/core"
+    },
     "capacitor-voice-recorder": {
       "@capacitor/core": "$@capacitor/core"
     }
