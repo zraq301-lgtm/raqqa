@@ -1,4 +1,4 @@
-name: Roqa Production Build (Ultimate Fix - BouncyCastle Resolve)
+name: Roqa Production Build (Professional Stable Build)
 
 on:
   push:
@@ -20,49 +20,53 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'zulu' # توزيعة Zulu هي الأكثر توافقاً مع مكتبات التشفير
+          distribution: 'zulu'
 
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تنظيف الكاش السحابي (هذا هو مفتاح الحل)
-        run: |
-          # حذف أي بقايا لملفات التشفير المتعلقة بـ Gradle في السيرفر
-          rm -rf ~/.gradle/caches/jars-9/
-          rm -rf ~/.gradle/caches/modules-2/files-2.1/org.bouncycastle
-
-      - name: 4. تثبيت المكتبات وبناء الويب
+      - name: 3. تثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          # تثبيت المكتبات مع التأكد من توافق الإصدارات
+          # تثبيت المكتبات الضرورية فقط للإنتاج
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications @capacitor/live-updates @capacitor/assets --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 5. إضافة الأندرويد وحقن إصلاح التوافقية
+      - name: 4. إضافة الأندرويد وإصلاح تعارض Gradle (Force Fix)
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
-          # إجبار Gradle على استخدام إصدار 1.77 (المستقر) بدلاً من 1.79 الذي يسبب الخطأ
+          cd android
+          # تحديث Gradle Wrapper لإصدار مستقر جداً (8.4) يتوافق مع Java 17
+          ./gradlew wrapper --gradle-version 8.4 --distribution-type all
+          
+          # حل مشكلة مكتبة التشفير bcprov التي تسبب الـ ExecutionException
           echo "subprojects {
               configurations.all {
                   resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77'
               }
-          }" >> android/build.gradle
+          }" >> build.gradle
 
-      - name: 6. ضبط اسم التطبيق (رقة) بالعربي والأيقونات
+      - name: 5. ضبط الهوية (رقة) وتوليد الأيقونات
         run: |
+          # تغيير اسم التطبيق ليظهر "رقة" بالعربي أسفل الأيقونة
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           
-          # توليد الأيقونات (سيستخدم الافتراضي إذا لم يجد الملف)
-          npx capacitor-assets generate --android --icon "$ASSETS_PATH/icon-only.png" --splash "$ASSETS_PATH/icon-only.png" || npx capacitor-assets generate --android
+          # تصحيح اسم الحزمة Package Name
+          APP_GRADLE="android/app/build.gradle"
+          sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
+          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
+          
+          # توليد الأيقونات (أو استخدام الافتراضي في حال الفشل)
+          npx capacitor-assets generate --android --icon "$ASSETS_PATH/icon-only.png" || npx capacitor-assets generate --android
           npx cap sync android
 
-      - name: 7. حقن ملف google-services.json وتصحيح الهوية
+      - name: 6. حقن ملف google-services.json
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -71,32 +75,29 @@ jobs:
             "configuration_version": "1"
           }
           EOF
-          
-          APP_BUILD_GRADLE="android/app/build.gradle"
-          MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
-          sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
-          sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
-      - name: 8. بناء وتوقيع الملفات (بدون Daemon وبدون Cache)
+      - name: 7. البناء النهائي والتوقيع (Signed APK & AAB)
         run: |
           cd android
           chmod +x gradlew
-          # البناء النظيف تماماً لتجنب خطأ التشفير
-          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache
+          # البناء مع تنظيف كامل وتجاهل الكاش التالف
+          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache --stacktrace
           
+          # إنشاء مفتاح التوقيع
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
+          # توقيع APK
           APK_RAW=$(find app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks --ks-pass pass:"roqa_pass_2026" --out ../Roqa-Final-Signed.apk "$APK_RAW"
           
+          # توقيع AAB لمتجر جوجل
           AAB_RAW=$(find app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" ../Roqa-Final-Signed.aab
 
-      - name: 9. رفع المخرجات
+      - name: 8. رفع الملفات الجاهزة (Artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
