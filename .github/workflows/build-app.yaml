@@ -1,4 +1,4 @@
-name: Roqa Final Stable Build
+name: Roqa Ultimate Fix (Java 21 Upgrade)
 
 on:
   push:
@@ -15,38 +15,31 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Node 22 & Java 17)
+      - name: 2. إعداد البيئة (Java 21 & Node 22)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
-          distribution: 'zulu' # زولو أكثر استقراراً مع مكتبات التشفير
+          java-version: '21' # التحديث لـ 21 لحل مشكلة Unsupported class file
+          distribution: 'zulu'
       
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: 3. تنظيف وتثبيت المكتبات وبناء الويب
+      - name: 3. تثبيت المكتبات وبناء الويب
         run: |
           rm -rf android
           npm install --legacy-peer-deps
-          npm install @capacitor/live-updates@0.5.0 --save --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. إضافة الأندرويد وإصلاح تعارض التشفير (الجراحة الدقيقة)
+      - name: 4. إضافة الأندرويد وتحديث Gradle (الحل الفردي)
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           
-          # الانتقال لداخل مجلد أندرويد لتعديل الملفات الرئيسية
           cd android
-          
-          # إصلاح ملف build.gradle الرئيسي لإجبار نسخة التشفير المستقرة 1.77
-          # نستخدم 'sed' للبحث عن سطر 'allprojects' والحقن بداخله مباشرة
-          sed -i '/allprojects {/a \    configurations.all { resolutionStrategy.force "org.bouncycastle:bcprov-jdk18on:1.77" }' build.gradle
-          
-          # منع الـ Live Updates من سحب النسخة 1.79 المكسورة
-          echo "configurations.all { resolutionStrategy.force 'org.bouncycastle:bcprov-jdk18on:1.77' }" >> app/build.gradle
+          # تحديث الجريدل لنسخة تدعم جافا 21 تماماً
+          ./gradlew wrapper --gradle-version 8.5 --distribution-type all
 
       - name: 5. ضبط الاسم العربي (رقة) وحقن Firebase
         run: |
@@ -57,7 +50,7 @@ jobs:
           # تغيير الاسم للعربي
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
           
-          # توحيد اسم الحزمة
+          # توحيد اسم الحزمة لـ com.raqqa.app
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           
@@ -72,11 +65,11 @@ jobs:
           
           npx cap sync android
 
-      - name: 6. البناء النهائي (بدون Daemon وبدون Cache)
+      - name: 6. البناء النهائي (Release)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --no-daemon --no-build-cache --stacktrace
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
 
       - name: 7. التوقيع الرقمي (Keystore)
         run: |
@@ -88,9 +81,7 @@ jobs:
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
-          AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
-          cp "$AAB_RAW" Roqa-Final-Signed.aab
+          cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
 
       - name: 8. رفع المخرجات
         uses: actions/upload-artifact@v4
@@ -99,4 +90,3 @@ jobs:
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
-            roqa_release.jks
