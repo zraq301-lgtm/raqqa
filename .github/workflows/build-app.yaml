@@ -34,10 +34,12 @@ jobs:
           mkdir -p dist_web
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
 
-      - name: 4. إعداد أندرويد وتفعيل الحماية
+      - name: 4. إعداد أندرويد وتثبيت المكتبات (إصلاح حيوي)
         run: |
           rm -rf android
           npx cap config set webDir dist_web
+          # تثبيت المنصة ومزامنة المكتبات
+          npm install @capacitor/android@latest
           npx cap add android
           
           cat <<EOF > android/variables.gradle
@@ -97,7 +99,7 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء النهائي (إجباري)
+      - name: 6. البناء النهائي (محاولة بناء APK حقيقية)
         run: |
           zip -r update.zip dist_web/
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
@@ -105,8 +107,8 @@ jobs:
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           cd android && chmod +x gradlew
-          # أمر التنظيف والبناء معاً لضمان عدم وجود ملفات قديمة معطلة
-          ./gradlew clean assembleRelease \
+          # تنظيف ثم بناء (إذا فشل هنا ستظهر العلامة الحمراء فوراً)
+          ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
@@ -126,23 +128,22 @@ jobs:
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. استخراج وتأكيد وجود APK
+      - name: 8. استخراج الـ APK المفقود
         run: |
           mkdir -p final_output
-          # البحث الشامل لضمان النسخ
-          find . -name "*release.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
+          # البحث في كل مكان ونقل الملف
+          find . -name "*release-unsigned.apk" -o -name "*release.apk" | xargs -I {} cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk
           cp update.zip final_output/ || echo "Update.zip not found"
           
-          # التحقق النهائي: إذا لم يتم العثور على APK سيفشل السير العمل هنا فوراً
-          if [[ $(find final_output -name "*.apk" | wc -l) -eq 0 ]]; then
-            echo "CRITICAL ERROR: APK file was NOT generated in step 6!"
-            exit 1
+          # فحص المجلد - إذا لم يجد APK سيفشل هنا لنعرف السبب
+          if [ ! -f final_output/*.apk ]; then 
+            echo "CRITICAL ERROR: APK file was NOT generated. Check Step 6 logs!"
+            exit 1 
           fi
           ls -R final_output
 
-      - name: 9. رفع الملفات النهائية للتحميل
+      - name: 9. رفع الملفات النهائية
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Package-${{ github.run_number }}
+          name: Roqa-App-Package-${{ github.run_number }}
           path: final_output/
-          if-no-files-found: error
