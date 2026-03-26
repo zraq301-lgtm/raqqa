@@ -27,15 +27,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 3. بناء الويب (Vite) وتوليد رقم الإصدار
+      - name: 3. بناء الويب وتوليد رقم الإصدار
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
           mkdir -p dist_web
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-          echo "Build Version: ${{ github.run_number }}"
 
-      - name: 4. إعداد أندرويد وتفعيل الحماية (R8/ProGuard)
+      - name: 4. إعداد أندرويد وتفعيل الحماية
         run: |
           rm -rf android
           npx cap config set webDir dist_web
@@ -86,16 +85,9 @@ jobs:
           }
           EOF
 
-          cat <<EOF > android/app/proguard-rules.pro
-          -keep class com.getcapacitor.** { *; }
-          -keep class * extends com.getcapacitor.Plugin
-          -keep class com.google.firebase.** { *; }
-          -dontwarn com.google.firebase.**
-          EOF
-
           npx cap sync android
 
-      - name: 5. ضبط الهوية (Firebase & Arabic Branding)
+      - name: 5. ضبط الهوية (Firebase & Name)
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -104,9 +96,8 @@ jobs:
             "configuration_version": "1"
           }
           EOF
-          if [ -f android/app/src/main/res/values/strings.xml ]; then
-            sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
-          fi
+          # تغيير اسم التطبيق للعربية بأمان
+          sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
       - name: 6. البناء النهائي والتوقيع الرقمي
         run: |
@@ -116,13 +107,13 @@ jobs:
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           cd android && chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease \
+          ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. تحديث فرع التحديثات الحية (Updates)
+      - name: 7. تحديث فرع التحديثات (Updates)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -136,17 +127,13 @@ jobs:
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. تجهيز الملفات النهائية (البحث الشامل عن APK)
+      - name: 8. استخراج الملفات (البحث في كامل المجلد)
         run: |
           mkdir -p final_output
-          # البحث في كل مجلدات أندرويد عن أي ملف APK تم إنتاجه ونسخه فوراً للمجلد الجديد
-          find android/app/build/outputs/ -name "*.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
-          # البحث عن ملف الـ AAB للمتجر
-          find android/app/build/outputs/ -name "*.aab" -exec cp -v {} final_output/Roqa_Store_Build_${{ github.run_number }}.aab \;
-          # نسخ ملف التحديث الحي
-          cp update.zip final_output/ || echo "No update.zip found"
-          # فحص المجلد قبل الرفع للتأكد من وجود الملفات
-          ls -lh final_output/
+          # البحث من الجذر لضمان إيجاد الـ APK أينما كان
+          find . -name "*.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
+          cp update.zip final_output/ || echo "Update.zip not found"
+          ls -R final_output
 
       - name: 9. رفع الملفات النهائية
         uses: actions/upload-artifact@v4
