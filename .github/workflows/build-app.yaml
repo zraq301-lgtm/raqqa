@@ -28,12 +28,14 @@ jobs:
 
       - name: 4. تثبيت المكتبات وبناء الويب
         run: |
+          # تنظيف وبناء جديد للويب
           rm -rf android
           npm install --legacy-peer-deps
           npm run build --if-present
 
       - name: 4.5 تجهيز ملفات التحديث (ZIP & JSON)
         run: |
+          # إنشاء بصمة الإصدار وملف التحديث الصامت
           echo "{\"version\": ${{ github.run_number }}, \"date\": \"$(date)\"}" > dist_web/version.json
           cd dist_web && zip -r ../update.zip . && cd ..
 
@@ -46,54 +48,72 @@ jobs:
           unzip -q gradle-8.5-bin.zip
           ./gradle-8.5/bin/gradle wrapper --gradle-version 8.5
 
-      - name: 6. ضبط الـ SDK 35 وحقن الهوية (بدون OneSignal)
+      - name: 6. ضبط الـ SDK 35 وحقن الهوية (الحل النهائي للتعارض)
         run: |
           APP_GRADLE="android/app/build.gradle"
+          GRADLE_PROPS="android/gradle.properties"
           STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # إجبار الـ SDK على 35 في كل مكان بالملف
+          # --- [الإضافة الجديدة: إجبار Gradle على قبول SDK 35] ---
+          echo "android.suppressUnsupportedCompileSdk=35" >> $GRADLE_PROPS
+          
+          # إجبار الـ SDK على 35 في ملف البناء
           sed -i 's/compileSdk .*/compileSdk 35/' $APP_GRADLE
           sed -i 's/targetSdk .*/targetSdk 35/' $APP_GRADLE
           
-          # ضبط اسم التطبيق بالعربي (رقة)
+          # ضبط اسم التطبيق بالعربي (رقة) ليعمل بشكل سليم
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
           
-          # ضبط اسم الحزمة
+          # ضبط اسم الحزمة وتوحيده مع Firebase
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           
-          # حقن Firebase
+          # حقن ملف Firebase لضمان عمل الإشعارات والخدمات
           cat <<EOF > android/app/google-services.json
           {
-            "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
-            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
+            "project_info": { 
+              "project_number": "162488255991", 
+              "project_id": "raqqa-43dc8", 
+              "storage_bucket": "raqqa-43dc8.firebasestorage.app" 
+            },
+            "client": [ 
+              { 
+                "client_info": { 
+                  "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", 
+                  "android_client_info": { "package_name": "com.raqqa.app" } 
+                }, 
+                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], 
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } } 
+              } 
+            ],
             "configuration_version": "1"
           }
           EOF
           
           npx cap sync android
 
-      - name: 7. البناء النهائي مع تنظيف كامل (Clean)
+      - name: 7. البناء النهائي مع تنظيف كامل (Clean Build)
         run: |
           cd android
           chmod +x gradlew
-          # أضفنا سطر الـ clean للتخلص من أي ملفات معطوبة من المحاولات السابقة
+          # إجراء تنظيف كامل وبناء النسخة مع رفع الذاكرة
           ./gradlew clean assembleRelease bundleRelease --stacktrace -Dorg.gradle.jvmargs="-Xmx2048m"
 
-      - name: 8. التوقيع الرقمي
+      - name: 8. التوقيع الرقمي (Sign APK & AAB)
         run: |
+          # إنشاء مفتاح توقيع مؤقت للنسخة النهائية
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          # استخدام build-tools 35 ليتناسب مع الـ SDK الجديد
+          # استخدام build-tools 35 ليتناسب مع الـ SDK الجديد وتوقيع التطبيق
           /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
           cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
 
-      - name: 9. رفع المخرجات
+      - name: 9. رفع المخرجات النهائية للتحميل
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
