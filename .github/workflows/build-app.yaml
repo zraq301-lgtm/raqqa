@@ -84,7 +84,6 @@ jobs:
               implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
           }
           EOF
-
           npx cap sync android
 
       - name: 5. ضبط الهوية (Firebase & Name)
@@ -96,10 +95,9 @@ jobs:
             "configuration_version": "1"
           }
           EOF
-          # تغيير اسم التطبيق للعربية بأمان
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء النهائي والتوقيع الرقمي
+      - name: 6. البناء النهائي (إجباري)
         run: |
           zip -r update.zip dist_web/
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
@@ -107,7 +105,8 @@ jobs:
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           cd android && chmod +x gradlew
-          ./gradlew assembleRelease \
+          # أمر التنظيف والبناء معاً لضمان عدم وجود ملفات قديمة معطلة
+          ./gradlew clean assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
@@ -123,21 +122,27 @@ jobs:
           rm -rf ./*
           cp $HOME/version.json .
           cp $HOME/update.zip .
-          git add version.json update.zip
+          git add .
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. استخراج الملفات (البحث في كامل المجلد)
+      - name: 8. استخراج وتأكيد وجود APK
         run: |
           mkdir -p final_output
-          # البحث من الجذر لضمان إيجاد الـ APK أينما كان
-          find . -name "*.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
+          # البحث الشامل لضمان النسخ
+          find . -name "*release.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
           cp update.zip final_output/ || echo "Update.zip not found"
+          
+          # التحقق النهائي: إذا لم يتم العثور على APK سيفشل السير العمل هنا فوراً
+          if [[ $(find final_output -name "*.apk" | wc -l) -eq 0 ]]; then
+            echo "CRITICAL ERROR: APK file was NOT generated in step 6!"
+            exit 1
+          fi
           ls -R final_output
 
-      - name: 9. رفع الملفات النهائية
+      - name: 9. رفع الملفات النهائية للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-App-${{ github.run_number }}
+          name: Roqa-Package-${{ github.run_number }}
           path: final_output/
           if-no-files-found: error
