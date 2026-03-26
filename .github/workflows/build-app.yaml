@@ -1,151 +1,20 @@
-name: Roqa Final Protected Build & Live Update
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
-    steps:
-      - name: 1. جلب الكود
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: 2. إعداد البيئة (Node & Java)
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: إعداد Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: 3. بناء الويب (Vite) وتوليد رقم الإصدار
-        run: |
-          npm install --legacy-peer-deps
-          npm run build --if-present
-          mkdir -p dist_web
-          echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-
-      - name: 4. إعداد أندرويد وتفعيل الحماية (R8/ProGuard)
-        run: |
-          rm -rf android
-          npx cap config set webDir dist_web
-          npx cap add android
-          
-          cat <<EOF > android/variables.gradle
-          ext {
-              minSdkVersion = 22
-              compileSdkVersion = 34
-              targetSdkVersion = 34
-              androidxActivityVersion = '1.8.0'
-              androidxAppCompatVersion = '1.6.1'
-              androidxCoreVersion = '1.12.0'
-              androidxMaterialVersion = '1.10.0'
-              coreSplashScreenVersion = '1.0.1'
-              firebaseMessagingVersion = '24.0.0'
-          }
-          EOF
-
-          cat <<EOF > android/app/build.gradle
-          apply plugin: 'com.android.application'
-          apply plugin: 'com.google.gms.google-services'
-          android {
-              namespace "com.raqqa.app"
-              compileSdkVersion rootProject.ext.compileSdkVersion
-              defaultConfig {
-                  applicationId "com.raqqa.app"
-                  minSdkVersion rootProject.ext.minSdkVersion
-                  targetSdkVersion rootProject.ext.targetSdkVersion
-                  versionCode ${{ github.run_number }}
-                  versionName "1.0.${{ github.run_number }}"
-              }
-              buildTypes {
-                  release {
-                      minifyEnabled true
-                      shrinkResources true
-                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-                  }
-              }
-          }
-          dependencies {
-              implementation fileTree(dir: 'libs', include: ['*.jar'])
-              implementation project(':capacitor-android')
-              implementation project(':capacitor-cordova-android-plugins')
-              implementation "androidx.appcompat:appcompat:\${rootProject.ext.androidxAppCompatVersion}"
-              implementation "com.google.firebase:firebase-messaging:\${rootProject.ext.firebaseMessagingVersion}"
-              implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
-          }
-          EOF
-
-          cat <<EOF > android/app/proguard-rules.pro
-          -keep class com.getcapacitor.** { *; }
-          -keep class * extends com.getcapacitor.Plugin
-          -keep class com.google.firebase.** { *; }
-          -dontwarn com.google.firebase.**
-          EOF
-
-          npx cap sync android
-
-      - name: 5. ضبط الهوية (Firebase & Arabic Branding)
-        run: |
-          cat <<EOF > android/app/google-services.json
-          {
-            "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
-            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
-            "configuration_version": "1"
-          }
-          EOF
-          if [ -f android/app/src/main/res/values/strings.xml ]; then
-            sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
-          fi
-
-      - name: 6. البناء النهائي والتوقيع الرقمي
-        run: |
-          zip -r update.zip dist_web/
-          keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
-          
-          cd android && chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease \
-            -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
-            -Pandroid.injected.signing.store.password=roqa_pass_2026 \
-            -Pandroid.injected.signing.key.alias=raqqa_alias \
-            -Pandroid.injected.signing.key.password=roqa_pass_2026
-
-      - name: 7. تحديث فرع التحديثات الحية (Updates)
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          cp dist_web/version.json $HOME/version.json
-          cp update.zip $HOME/update.zip
-          git checkout -B updates
-          rm -rf ./*
-          cp $HOME/version.json .
-          cp $HOME/update.zip .
-          git add version.json update.zip
-          git commit -m "Live Update: Build ${{ github.run_number }}"
-          git push origin updates --force
-
-      - name: 8. تجهيز الملفات النهائية بشكل مستقل
+- name: 8. تجهيز الملفات النهائية بشكل مستقل
         run: |
           # إنشاء مجلد مؤقت لوضع الملفات الهامة فيه
           mkdir -p final_output
-          # نسخ الـ APK والـ AAB والـ ZIP إلى المجلد الجديد بأسماء واضحة
-          cp android/app/build/outputs/apk/release/app-release.apk final_output/Roqa_Build_${{ github.run_number }}.apk
-          cp android/app/build/outputs/bundle/release/app-release.aab final_output/Roqa_Store_Build_${{ github.run_number }}.aab
-          cp update.zip final_output/
+          
+          # البحث عن أي ملف APK ناتج ونسخه للمجلد الجديد باسم واضح
+          find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
+          
+          # البحث عن أي ملف AAB ناتج ونسخه للمجلد الجديد باسم واضح
+          find android/app/build/outputs/bundle/release/ -name "*.aab" -exec cp {} final_output/Roqa_Store_Build_${{ github.run_number }}.aab \;
+          
+          # نسخ ملف التحديث الحي
+          cp update.zip final_output/ || echo "No update.zip found"
 
       - name: 9. رفع الملفات (ستجدها في الواجهة فور التحميل)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Final-App-${{ github.run_number }}
           path: final_output/
+          if-no-files-found: error
