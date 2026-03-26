@@ -1,4 +1,4 @@
-name: Roqa Production Build (Final Fix)
+name: Roqa Production Build (Final Global Fix)
 
 on:
   push:
@@ -29,12 +29,11 @@ jobs:
 
       - name: 4. توليد مشروع الأندرويد وحقن المتغيرات الشاملة
         run: |
-          # مسح المجلد القديم لضمان بناء نظيف
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # إنشاء ملف variables.gradle بكل المتغيرات المطلوبة لتجنب الأخطاء
+          # إنشاء ملف variables.gradle بكل القيم اللي Gradle سأل عنها (الحل الجذري)
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -61,7 +60,7 @@ jobs:
           APP_GRADLE="android/app/build.gradle"
           STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # تغيير اسم التطبيق للعربي (رقة)
+          # تغيير اسم التطبيق للعربي ليظهر أسفل الأيقونة
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
           
           # توحيد الـ Package Name ليتوافق مع Firebase
@@ -79,33 +78,33 @@ jobs:
 
       - name: 6. البناء الفعلي (Gradle Build) وتجهيز التحديث
         run: |
-          # ضغط مجلد dist_web لنظام التحديث الداخلي
+          # ضغط ملفات الويب لنظام التحديث الداخلي
           zip -r update.zip dist_web/
           
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease --stacktrace
 
-      - name: 7. التوقيع الرقمي النهائي (APK & AAB)
+      - name: 7. التوقيع الرقمي النهائي
         run: |
           # توليد مفتاح توقيع مؤقت لـ "رقة"
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع الـ APK باستخدام apksigner
+          # توقيع الـ APK
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
-          # تجهيز الـ AAB للرفع
+          # تجهيز الـ AAB
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 8. رفع الملفات الجاهزة (Artifacts)
+      - name: 8. رفع المخرجات (Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-Build-v${{ github.run_number }}
+          name: Roqa-Final-v${{ github.run_number }}
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
