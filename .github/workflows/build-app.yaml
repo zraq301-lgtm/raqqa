@@ -15,7 +15,7 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد Java 21 (بدون كاش لتجنب أخطاء المسارات)
+      - name: 2. إعداد Java 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
@@ -34,86 +34,66 @@ jobs:
 
       - name: 4.5 تجهيز ملفات التحديث (ZIP & JSON)
         run: |
-          # إنشاء بصمة الإصدار بناءً على رقم الـ Run في جيت لضمان التصاعد
           echo "{\"version\": ${{ github.run_number }}, \"date\": \"$(date)\"}" > dist_web/version.json
-          # ضغط ملفات الويب في طرد واحد للتحديث الصامت
           cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 5. إضافة الأندرويد وإصلاح Gradle يدوياً
+      - name: 5. إضافة الأندرويد وإعداد Gradle 8.5
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          
           cd android
-          # تنزيل وإعداد Gradle 8.5 يدوياً لضمان التوافق الكامل مع Java 21
           wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
           unzip -q gradle-8.5-bin.zip
-          export GRADLE_HOME=$PWD/gradle-8.5
-          export PATH=$GRADLE_HOME/bin:$PATH
-          
-          # تحديث الـ Wrapper الخاص بالمشروع
-          gradle wrapper --gradle-version 8.5
+          ./gradle-8.5/bin/gradle wrapper --gradle-version 8.5
 
-      - name: 6. حقن إعدادات رقة (Firebase + SDK 35 + App Name)
+      - name: 6. ضبط الـ SDK 35 وحقن الهوية (بدون OneSignal)
         run: |
-          STRINGS_XML="android/app/src/main/res/values/strings.xml"
           APP_GRADLE="android/app/build.gradle"
+          STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # أ- تغيير اسم التطبيق ليظهر "رقة" بالعربي أسفل الأيقونة
-          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
-          
-          # ب- تحديث الـ SDK لـ 35 لحل مشكلة تعارض المكتبات الأخيرة
+          # إجبار الـ SDK على 35 في كل مكان بالملف
           sed -i 's/compileSdk .*/compileSdk 35/' $APP_GRADLE
           sed -i 's/targetSdk .*/targetSdk 35/' $APP_GRADLE
           
-          # ج- توحيد اسم الحزمة ليتوافق مع Firebase
+          # ضبط اسم التطبيق بالعربي (رقة)
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
+          
+          # ضبط اسم الحزمة
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_GRADLE
           
-          # د- إنشاء ملف إعدادات Firebase (بدون OneSignal)
+          # حقن Firebase
           cat <<EOF > android/app/google-services.json
           {
-            "project_info": { 
-              "project_number": "162488255991", 
-              "project_id": "raqqa-43dc8", 
-              "storage_bucket": "raqqa-43dc8.firebasestorage.app" 
-            },
-            "client": [ 
-              { 
-                "client_info": { 
-                  "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", 
-                  "android_client_info": { "package_name": "com.raqqa.app" } 
-                }, 
-                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], 
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } } 
-              } 
-            ],
+            "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
+            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
             "configuration_version": "1"
           }
           EOF
           
           npx cap sync android
 
-      - name: 7. البناء النهائي (Optimized Memory)
+      - name: 7. البناء النهائي مع تنظيف كامل (Clean)
         run: |
           cd android
           chmod +x gradlew
-          export GRADLE_OPTS="-Xmx2048m -Dorg.gradle.daemon=false"
-          ./gradlew assembleRelease bundleRelease --stacktrace
+          # أضفنا سطر الـ clean للتخلص من أي ملفات معطوبة من المحاولات السابقة
+          ./gradlew clean assembleRelease bundleRelease --stacktrace -Dorg.gradle.jvmargs="-Xmx2048m"
 
-      - name: 8. التوقيع الرقمي (Keystore)
+      - name: 8. التوقيع الرقمي
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
+          # استخدام build-tools 35 ليتناسب مع الـ SDK الجديد
+          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
           cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
 
-      - name: 9. رفع المخرجات النهائية
+      - name: 9. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
