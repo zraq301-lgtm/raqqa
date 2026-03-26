@@ -4,10 +4,10 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// [التصحيح النهائي] استبدال المكتبة التي تسبب فشل البناء بمكتبة التحديث الذاتي
+// استبدال المكتبة بمكتبة التحديث الذاتي الموثوقة
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
-// استيراد الصور من مجلد الأصول (Assets)
+// استيراد الأصول (Assets)
 import healthImg from './assets/health.jpg';
 import feelingsImg from './assets/feelings.jpg';
 import intimacyImg from './assets/intimacy.jpg';
@@ -16,7 +16,7 @@ import insightImg from './assets/insight.jpg';
 import videosImg from './assets/videos.jpg';
 import virtualImg from './assets/virtual.jpg';
 
-// استيراد الصفحات والمكونات
+// استيراد الصفحات
 import Health from './pages/Health';
 import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
@@ -27,7 +27,9 @@ import VirtualWorld from './pages/VirtualWorld';
 
 import './App.css';
 
-// وظيفة لضمان صعود التمرير للأعلى عند تغيير الصفحة
+/**
+ * وظيفة لضمان صعود التمرير للأعلى عند تغيير الصفحة لتعزيز تجربة المستخدم
+ */
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => { 
@@ -36,7 +38,9 @@ function ScrollToTop() {
   return null;
 }
 
-// --- مكون النصيحة العشوائية (TipOverlay) المطور ليدعم (نص/صورة/فيديو) ---
+/**
+ * مكون النصيحة الذكية (TipOverlay) - يدعم النصوص، الصور، وفيديوهات اليوتيوب
+ */
 function TipOverlay() {
   const [tip, setTip] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -59,11 +63,9 @@ function TipOverlay() {
           if (data.content) {
             setTip(data.content);
             setIsVisible(true);
-            
             tipData.count += 1;
             localStorage.setItem('raqqa_tip_tracker', JSON.stringify(tipData));
-
-            // إخفاء تلقائي بعد 20 ثانية
+            // إخفاء التنبيه تلقائياً بعد 20 ثانية
             setTimeout(() => setIsVisible(false), 20000);
           }
         } catch (err) {
@@ -71,7 +73,6 @@ function TipOverlay() {
         }
       }
     };
-
     checkAndShowTip();
   }, [pathname]);
 
@@ -79,9 +80,11 @@ function TipOverlay() {
 
   const renderContent = () => {
     const content = tip.trim();
+    // التحقق إذا كان المحتوى صورة
     if (content.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
       return <img src={content} alt="رقة نصيحة" className="tip-media-content" />;
     }
+    // التحقق إذا كان المحتوى فيديو يوتيوب
     if (content.includes('youtube.com') || content.includes('youtu.be')) {
       let videoId = content.split('v=')[1] || content.split('/').pop();
       if (videoId.includes('&')) videoId = videoId.split('&')[0];
@@ -101,21 +104,13 @@ function TipOverlay() {
   };
 
   return (
-    <div 
-      className="tip-card-overlay" 
-      onClick={() => setIsVisible(false)}
-      onPointerMove={(e) => {
-        if (Math.abs(e.movementX) > 10) setIsVisible(false);
-      }}
-    >
-      <div className="tip-card-content">
+    <div className="tip-card-overlay" onClick={() => setIsVisible(false)}>
+      <div className="tip-card-content" onClick={(e) => e.stopPropagation()}>
         <div className="tip-header">
           <span className="tip-icon">💡 إشراقة رقة</span>
-          <button className="tip-close-btn">×</button>
+          <button className="tip-close-btn" onClick={() => setIsVisible(false)}>×</button>
         </div>
-        <div className="tip-body">
-          {renderContent()}
-        </div>
+        <div className="tip-body">{renderContent()}</div>
         <div className="tip-timer-bar"></div>
       </div>
     </div>
@@ -123,35 +118,38 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- [المنطق الجديد] وظيفة مزامنة التحديثات الحية من GitHub مباشرة ---
+  // --- [النظام الاحترافي] مزامنة التحديثات من فرع Updates المخصص ---
   const syncAppUpdates = useCallback(async () => {
+    const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
     try {
-      // جلب رقم الإصدار من ملف version.json الذي يخرجه الـ GitHub Action
+      // 1. فحص رقم الإصدار من ملف version.json
       const githubResponse = await CapacitorHttp.get({
-        url: 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/dist_web/version.json'
+        url: `${BASE_URL}/version.json`
       });
       
       const latestVersion = githubResponse.data.version;
-      const currentVersion = localStorage.getItem('raqqa_version_build') || '0';
+      const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
 
-      if (latestVersion > parseInt(currentVersion)) {
-        // تحميل ملف الـ ZIP مباشرة من مستودعك
+      if (latestVersion > currentVersion) {
+        // 2. تحميل الحزمة المضغوطة (Internal Update)
         const bundle = await CapacitorUpdater.download({
-          url: 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.zip',
+          url: `${BASE_URL}/update.zip`,
           version: latestVersion.toString()
         });
 
         if (bundle) {
+          // 3. تخزين الإصدار الجديد وتطبيق التحديث
           localStorage.setItem('raqqa_version_build', latestVersion.toString());
-          await CapacitorUpdater.set(bundle); // تطبيق التحديث وإعادة تشغيل التطبيق صمتاً
+          await CapacitorUpdater.set(bundle); 
+          // سيقوم التطبيق بإعادة تشغيل نفسه تلقائياً بالنسخة الجديدة
         }
       }
     } catch (err) {
-      console.log("GitHub Update: No updates found or URL offline.");
+      console.log("OTA Update: No updates found at /updates branch.");
     }
   }, []);
 
-  // --- منطق جلب وجدولة الإشعارات من نيون ---
+  // --- نظام جدولة الإشعارات المحلية من قاعدة البيانات ---
   const syncNotifications = useCallback(async () => {
     try {
       const response = await CapacitorHttp.get({
@@ -161,15 +159,16 @@ function App() {
 
       if (response.data && response.data.rows) {
         const reminders = response.data.rows;
-        
         const perms = await LocalNotifications.checkPermissions();
         if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
 
+        // تنظيف الإشعارات القديمة المجدولة
         const pending = await LocalNotifications.getPending();
         if (pending.notifications.length > 0) {
           await LocalNotifications.cancel({ notifications: pending.notifications });
         }
 
+        // جدولة الإشعارات الجديدة
         const notificationsToSchedule = reminders
           .filter(rem => new Date(rem.scheduled_for) > new Date())
           .map(rem => ({
@@ -177,8 +176,8 @@ function App() {
             title: rem.title,
             body: rem.body,
             schedule: { at: new Date(rem.scheduled_for) },
-            largeIcon: rem.image_url,
-            smallIcon: 'ic_stat_name',
+            extra: { url: rem.image_url },
+            smallIcon: 'ic_stat_name', // يجب التأكد من وجودها في Android Res
             sound: 'default'
           }));
 
@@ -192,26 +191,21 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // تشغيل نظام التحديثات الحية من GitHub
     syncAppUpdates();
-
-    // تشغيل نظام الإشعارات
     syncNotifications();
 
+    // التعامل مع زر الرجوع في أندرويد
     const setupBackButton = async () => {
-      const backButtonListener = await CapApp.addListener('backButton', ({ canGoBack }) => {
+      return await CapApp.addListener('backButton', ({ canGoBack }) => {
         if (!canGoBack) { 
           CapApp.exitApp(); 
         } else { 
           window.history.back(); 
         }
       });
-      return backButtonListener;
     };
     const listener = setupBackButton();
-    return () => {
-      listener.then(l => l.remove());
-    };
+    return () => { listener.then(l => l.remove()); };
   }, [syncNotifications, syncAppUpdates]);
 
   return (
@@ -219,20 +213,16 @@ function App() {
       <ScrollToTop />
       <TipOverlay />
       
+      {/* القائمة العلوية */}
       <header className="top-sticky-menu">
         <div className="top-cards-container">
           <Link to="/videos" className="top-card">
             <img src={videosImg} alt="المكتبة" className="custom-img-icon" />
-            <div className="card-text">
-              <span className="card-label">المكتبة</span>
-            </div>
+            <div className="card-text"><span className="card-label">المكتبة</span></div>
           </Link>
-
           <Link to="/virtual-world" className="top-card">
             <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
-            <div className="card-text">
-              <span className="card-label">عالم رقة</span>
-            </div>
+            <div className="card-text"><span className="card-label">عالم رقة</span></div>
           </Link>
         </div>
       </header>
@@ -250,30 +240,27 @@ function App() {
         </Routes>
       </main>
 
+      {/* القائمة السفلية الذكية */}
       <nav className="bottom-sticky-menu">
         <div className="nav-grid">
           <Link to="/feelings" className="nav-item">
             <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
             <span className="nav-label">المشاعر</span>
           </Link>
-
           <Link to="/intimacy" className="nav-item">
             <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
             <span className="nav-label">الحميمية</span>
           </Link>
-          
           <Link to="/health" className="nav-item center-action">
             <div className="center-circle">
               <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
             </div>
             <span className="nav-label bold">صحتك</span>
           </Link>
-
           <Link to="/swing-forum" className="nav-item">
             <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
             <span className="nav-label">الأرجوحة</span>
           </Link>
-
           <Link to="/insight" className="nav-item">
             <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
             <span className="nav-label">القفقة</span>
