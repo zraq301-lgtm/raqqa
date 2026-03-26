@@ -32,9 +32,7 @@ jobs:
           npm install --legacy-peer-deps
           npm run build --if-present
           mkdir -p dist_web
-          # إنشاء ملف الإصدار للتحديثات الحية
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-          echo "Build Version: ${{ github.run_number }}"
 
       - name: 4. إعداد أندرويد وتفعيل الحماية (R8/ProGuard)
         run: |
@@ -42,7 +40,6 @@ jobs:
           npx cap config set webDir dist_web
           npx cap add android
           
-          # حقن متغيرات الأندرويد لضمان التوافق مع SDK 34
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -57,7 +54,6 @@ jobs:
           }
           EOF
 
-          # بناء ملف build.gradle برمجياً لتجنب أخطاء المسارات
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -89,7 +85,6 @@ jobs:
           }
           EOF
 
-          # حقن قواعد الحماية لمنع الهندسة العكسية
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -108,7 +103,6 @@ jobs:
             "configuration_version": "1"
           }
           EOF
-          # تغيير اسم التطبيق إلى "رقة" في ملف الموارد
           if [ -f android/app/src/main/res/values/strings.xml ]; then
             sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
           fi
@@ -116,7 +110,6 @@ jobs:
       - name: 6. البناء النهائي والتوقيع الرقمي
         run: |
           zip -r update.zip dist_web/
-          # توليد مفتاح توقيع مؤقت للبناء
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
@@ -132,26 +125,27 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # تأمين الملفات في مسار محايد قبل تبديل الفروع
           cp dist_web/version.json $HOME/version.json
           cp update.zip $HOME/update.zip
-          
           git checkout -B updates
           rm -rf ./*
           cp $HOME/version.json .
           cp $HOME/update.zip .
-          
           git add version.json update.zip
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. رفع الملفات النهائية (التحميل المباشر)
+      - name: 8. تجهيز الملفات النهائية بشكل مستقل
+        run: |
+          # إنشاء مجلد مؤقت لوضع الملفات الهامة فيه
+          mkdir -p final_output
+          # نسخ الـ APK والـ AAB والـ ZIP إلى المجلد الجديد بأسماء واضحة
+          cp android/app/build/outputs/apk/release/app-release.apk final_output/Roqa_Build_${{ github.run_number }}.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab final_output/Roqa_Store_Build_${{ github.run_number }}.aab
+          cp update.zip final_output/
+
+      - name: 9. رفع الملفات (ستجدها في الواجهة فور التحميل)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-Package-Build-${{ github.run_number }}
-          # استخدام النجمة (*) يحل مشكلة تغير أسماء الملفات أو المسارات الفرعية
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            android/app/build/outputs/bundle/release/*.aab
-            update.zip
+          name: Roqa-Final-App-${{ github.run_number }}
+          path: final_output/
