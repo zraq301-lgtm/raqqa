@@ -4,7 +4,7 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// [التغيير الجديد] استبدال LiveUpdates بمكتبة التحديث اليدوي من جت
+// [التصحيح النهائي] استبدال المكتبة التي تسبب فشل البناء بمكتبة التحديث الذاتي
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 // استيراد الصور من مجلد الأصول (Assets)
@@ -36,7 +36,7 @@ function ScrollToTop() {
   return null;
 }
 
-// --- مكون النصيحة العشوائية (TipOverlay) ---
+// --- مكون النصيحة العشوائية (TipOverlay) المطور ليدعم (نص/صورة/فيديو) ---
 function TipOverlay() {
   const [tip, setTip] = useState(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -63,6 +63,7 @@ function TipOverlay() {
             tipData.count += 1;
             localStorage.setItem('raqqa_tip_tracker', JSON.stringify(tipData));
 
+            // إخفاء تلقائي بعد 20 ثانية
             setTimeout(() => setIsVisible(false), 20000);
           }
         } catch (err) {
@@ -70,6 +71,7 @@ function TipOverlay() {
         }
       }
     };
+
     checkAndShowTip();
   }, [pathname]);
 
@@ -102,6 +104,9 @@ function TipOverlay() {
     <div 
       className="tip-card-overlay" 
       onClick={() => setIsVisible(false)}
+      onPointerMove={(e) => {
+        if (Math.abs(e.movementX) > 10) setIsVisible(false);
+      }}
     >
       <div className="tip-card-content">
         <div className="tip-header">
@@ -118,34 +123,31 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- [الخطة الجديدة] وظيفة السحب الصامت المباشر من GitHub ---
+  // --- [المنطق الجديد] وظيفة مزامنة التحديثات الحية من GitHub مباشرة ---
   const syncAppUpdates = useCallback(async () => {
     try {
-      // 1. جلب بصمة الإصدار الحالية من جت (GitHub Raw)
-      const githubCheck = await CapacitorHttp.get({
+      // جلب رقم الإصدار من ملف version.json الذي يخرجه الـ GitHub Action
+      const githubResponse = await CapacitorHttp.get({
         url: 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/dist_web/version.json'
       });
-
-      const latestVersion = githubCheck.data.version;
       
-      // 2. التحقق من الإصدار المخزن محلياً
-      const currentVersion = localStorage.getItem('raqqa_current_version') || '0';
+      const latestVersion = githubResponse.data.version;
+      const currentVersion = localStorage.getItem('raqqa_version_build') || '0';
 
-      if (latestVersion > currentVersion) {
-        // 3. تحميل ملف التحديث الـ Zip مباشرة من جت
+      if (latestVersion > parseInt(currentVersion)) {
+        // تحميل ملف الـ ZIP مباشرة من مستودعك
         const bundle = await CapacitorUpdater.download({
           url: 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.zip',
           version: latestVersion.toString()
         });
 
-        // 4. تطبيق التحديث وإعادة التشغيل صمتاً
         if (bundle) {
-          localStorage.setItem('raqqa_current_version', latestVersion.toString());
-          await CapacitorUpdater.set(bundle);
+          localStorage.setItem('raqqa_version_build', latestVersion.toString());
+          await CapacitorUpdater.set(bundle); // تطبيق التحديث وإعادة تشغيل التطبيق صمتاً
         }
       }
     } catch (err) {
-      console.log("GitHub Update Check: No new updates or connection issue.");
+      console.log("GitHub Update: No updates found or URL offline.");
     }
   }, []);
 
@@ -159,6 +161,7 @@ function App() {
 
       if (response.data && response.data.rows) {
         const reminders = response.data.rows;
+        
         const perms = await LocalNotifications.checkPermissions();
         if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
 
@@ -189,7 +192,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    // تشغيل نظام التحديث السحابي المباشر من جت
+    // تشغيل نظام التحديثات الحية من GitHub
     syncAppUpdates();
 
     // تشغيل نظام الإشعارات
@@ -224,6 +227,7 @@ function App() {
               <span className="card-label">المكتبة</span>
             </div>
           </Link>
+
           <Link to="/virtual-world" className="top-card">
             <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
             <div className="card-text">
@@ -252,20 +256,24 @@ function App() {
             <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
             <span className="nav-label">المشاعر</span>
           </Link>
+
           <Link to="/intimacy" className="nav-item">
             <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
             <span className="nav-label">الحميمية</span>
           </Link>
+          
           <Link to="/health" className="nav-item center-action">
             <div className="center-circle">
               <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
             </div>
             <span className="nav-label bold">صحتك</span>
           </Link>
+
           <Link to="/swing-forum" className="nav-item">
             <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
             <span className="nav-label">الأرجوحة</span>
           </Link>
+
           <Link to="/insight" className="nav-item">
             <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
             <span className="nav-label">القفقة</span>
