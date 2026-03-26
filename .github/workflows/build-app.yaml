@@ -1,4 +1,4 @@
-name: Roqa Production Build (Force Gradle 8.5)
+name: Roqa Production Build (Final Fix)
 
 on:
   push:
@@ -15,16 +15,16 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد Java 21
+      - name: 2. إعداد Java 17 (الأكثر استقراراً للأندرويد)
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'zulu'
+          java-version: '17'
+          distribution: 'temurin'
 
       - name: 3. إعداد Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
 
       - name: 4. تثبيت المكتبات وبناء الويب
         run: |
@@ -37,37 +37,34 @@ jobs:
           echo "{\"version\": ${{ github.run_number }}, \"date\": \"$(date)\"}" > dist_web/version.json
           cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 5. إضافة الأندرويد وإعداد Gradle 8.5
+      - name: 5. إضافة الأندرويد وإعداد Gradle
         run: |
           npx cap config set webDir dist_web
           npx cap add android
-          cd android
-          wget https://services.gradle.org/distributions/gradle-8.5-bin.zip
-          unzip -q gradle-8.5-bin.zip
-          ./gradle-8.5/bin/gradle wrapper --gradle-version 8.5
+          npx cap sync android
 
-      - name: 6. ضبط الـ SDK 35 وحقن الهوية (الحل الجذري)
+      - name: 6. ضبط الـ SDK وحقن الهوية (نسخة الاستقرار)
         run: |
           APP_GRADLE="android/app/build.gradle"
           PROJECT_GRADLE="android/build.gradle"
           GRADLE_PROPS="android/gradle.properties"
           STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # إجبار Gradle على قبول SDK 35 وتفعيل Jetifier
-          echo "android.suppressUnsupportedCompileSdk=35" >> $GRADLE_PROPS
+          # إجبار المشروع كاملاً على SDK 34 لضمان عمل كل الـ Plugins بدون أخطاء Metadata
           echo "android.useAndroidX=true" >> $GRADLE_PROPS
           echo "android.enableJetifier=true" >> $GRADLE_PROPS
+          echo "android.nonTransitiveRClass=false" >> $GRADLE_PROPS
           
-          # حقن قاعدة عامة لإجبار كل المكتبات (Plugins) على SDK 35
+          # حقن قاعدة ذهبية لتوحيد الـ SDK في كل المكتبات الفرعية تلقائياً
           cat <<EOF >> $PROJECT_GRADLE
           subprojects {
               afterEvaluate { project ->
                   if (project.hasProperty('android')) {
                       project.android {
-                          compileSdk 35
-                          buildToolsVersion "35.0.0"
+                          compileSdk 34
+                          buildToolsVersion "34.0.0"
                           defaultConfig {
-                              targetSdk 35
+                              targetSdk 34
                           }
                       }
                   }
@@ -75,9 +72,9 @@ jobs:
           }
           EOF
           
-          # تحديث التطبيق الأساسي
-          sed -i 's/compileSdk .*/compileSdk 35/' $APP_GRADLE
-          sed -i 's/targetSdk .*/targetSdk 35/' $APP_GRADLE
+          # تحديث ملف التطبيق الرئيسي
+          sed -i 's/compileSdk .*/compileSdk 34/' $APP_GRADLE
+          sed -i 's/targetSdk .*/targetSdk 34/' $APP_GRADLE
           
           # ضبط اسم التطبيق (رقة) واسم الحزمة
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
@@ -95,20 +92,20 @@ jobs:
           
           npx cap sync android
 
-      - name: 7. البناء النهائي (Clean Build)
+      - name: 7. البناء النهائي
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew clean assembleRelease bundleRelease --stacktrace -Dorg.gradle.jvmargs="-Xmx2048m"
+          ./gradlew assembleRelease bundleRelease --stacktrace
 
-      - name: 8. التوقيع الرقمي
+      - name: 8. التوقيع الرقمي (بأدوات SDK 34)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/35.0.0/apksigner sign --ks roqa_release.jks \
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
           cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
@@ -116,7 +113,7 @@ jobs:
       - name: 9. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-Package
+          name: Roqa-Final-Package
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
