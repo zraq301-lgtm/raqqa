@@ -32,6 +32,14 @@ jobs:
           npm install --legacy-peer-deps
           npm run build --if-present
 
+      # --- [الخطوة الجديدة: تجهيز طرد التحديث الصامت لـ GitHub] ---
+      - name: 4.5 تجهيز ملفات التحديث (ZIP & JSON)
+        run: |
+          # إنشاء بصمة الإصدار بناءً على رقم الـ Run في جيت لضمان التصاعد
+          echo "{\"version\": ${{ github.run_number }}, \"date\": \"$(date)\"}" > dist_web/version.json
+          # ضغط ملفات الويب في طرد واحد
+          cd dist_web && zip -r ../update.zip . && cd ..
+
       - name: 5. إضافة الأندرويد وإصلاح Gradle يدوياً
         run: |
           npx cap config set webDir dist_web
@@ -93,10 +101,12 @@ jobs:
           # تجهيز ملف AAB للنشر على المتجر
           cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
 
-      - name: 9. رفع المخرجات الجاهزة
+      - name: 9. رفع المخرجات الجاهزة (بما في ذلك ملفات التحديث)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Production-Package
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
+            update.zip
+            dist_web/version.json
