@@ -1,4 +1,4 @@
-name: Roqa Final Protected Build
+name: Roqa Final Protected Build & Live Update
 
 on:
   push:
@@ -8,9 +8,15 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # إضافة صلاحيات الكتابة لتمكين الـ Action من رفع ملفات التحديث للمستودع
+    permissions:
+      contents: write
+
     steps:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 2. إعداد البيئة (Node & Java)
         uses: actions/setup-java@v4
@@ -20,20 +26,25 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: 3. بناء الويب (Vite)
+      - name: 3. بناء الويب وتوليد رقم الإصدار
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
+          # إنشاء ملف الإصدار برقم بناء GitHub التصاعدي
+          echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
+          echo "Build Version: ${{ github.run_number }}"
 
       - name: 4. توليد مشروع الأندرويد وحقن الحماية
         run: |
           rm -rf android
+          # التأكد من وجود مجلد dist_web
           mkdir -p dist_web
           npx cap config set webDir dist_web
           npx cap add android
           
-          # أ. ضبط المتغيرات
+          # أ. ضبط المتغيرات البرمجية
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -48,7 +59,7 @@ jobs:
           }
           EOF
 
-          # ب. تحديث build.gradle مع تفعيل الحماية والتعمية ودعم Firebase
+          # ب. تحديث build.gradle وتفعيل R8/ProGuard للحماية
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -60,8 +71,8 @@ jobs:
                   applicationId "com.raqqa.app"
                   minSdkVersion rootProject.ext.minSdkVersion
                   targetSdkVersion rootProject.ext.targetSdkVersion
-                  versionCode 1
-                  versionName "1.0"
+                  versionCode ${{ github.run_number }}
+                  versionName "1.0.${{ github.run_number }}"
               }
               buildTypes {
                   release {
@@ -82,7 +93,7 @@ jobs:
           }
           EOF
 
-          # ج. إنشاء قواعد الحماية (ProGuard Rules) لمنع تعطل Firebase و Capacitor
+          # ج. قواعد ProGuard لحماية كود رقة ومنع تعطل الإضافات
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -92,9 +103,9 @@ jobs:
 
           npx cap sync android
 
-      - name: 5. ضبط الأيقونات، الاسم (رقة)، و Firebase
+      - name: 5. تخصيص الهوية (Firebase & Arabic Name)
         run: |
-          # حقن ملف Firebase
+          # حقن ملف إعدادات Firebase
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -103,15 +114,15 @@ jobs:
           }
           EOF
 
-          # ضبط اسم التطبيق بالعربي
+          # تغيير اسم التطبيق إلى "رقة" في الأندرويد
           sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
-          
-          # ملاحظة: الأيقونات يجب أن تكون موجودة في مجلد src/assets ليتم نسخها تلقائياً
-          # إذا كنت تستخدم Capacitor Assets Tool يفضل تشغيله هنا.
 
-      - name: 6. البناء والتوقيع الرقمي
+      - name: 6. البناء والتوقيع الرقمي للمتجر
         run: |
+          # تجهيز ملف التحديث الحي
           zip -r update.zip dist_web/
+          
+          # إنشاء مفتاح توقيع مؤقت (Keystore)
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
@@ -123,10 +134,28 @@ jobs:
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. رفع الـ Artifacts
+      - name: 7. نقل التحديثات إلى فرع Updates (لحل مشكلة الـ 404)
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # إنشاء مجلد مؤقت للملفات التي سيتم الوصول إليها عبر الرابط
+          mkdir -p public_updates
+          cp dist_web/version.json public_updates/
+          cp update.zip public_updates/
+          
+          # الرفع إلى فرع منفصل يسمى updates
+          git checkout -B updates
+          rm -rf ./*
+          cp -r public_updates/* .
+          git add version.json update.zip
+          git commit -m "Live Update: Build ${{ github.run_number }}"
+          git push origin updates --force
+
+      - name: 8. رفع الملفات النهائية (Artifacts)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Production-Build
+          name: Roqa-Production-Package
           path: |
             android/app/build/outputs/apk/release/app-release.apk
             android/app/build/outputs/bundle/release/app-release.aab
