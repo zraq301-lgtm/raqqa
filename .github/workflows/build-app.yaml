@@ -23,28 +23,37 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-      - uses: actions/setup-node@v4
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # تم حذف سطر cache: 'npm' لتجنب خطأ فقدان ملف package-lock.json
 
       - name: 3. بناء الويب وتوليد رقم الإصدار
         run: |
+          # التثبيت باستخدام legacy-peer-deps لتجنب تضارب المكتبات
           npm install --legacy-peer-deps
+          
+          # تنفيذ عملية البناء (Vite)
           npm run build --if-present
+          
+          # التأكد من وجود مجلد dist_web لملفات التحديث
+          mkdir -p dist_web
+          
           # إنشاء ملف الإصدار برقم بناء GitHub التصاعدي
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
           echo "Build Version: ${{ github.run_number }}"
 
       - name: 4. توليد مشروع الأندرويد وحقن الحماية
         run: |
+          # تنظيف أي بناء سابق
           rm -rf android
-          # التأكد من وجود مجلد dist_web
-          mkdir -p dist_web
+          
+          # ربط Capacitor بمجلد بناء الويب
           npx cap config set webDir dist_web
           npx cap add android
           
-          # أ. ضبط المتغيرات البرمجية
+          # أ. ضبط المتغيرات البرمجية للأندرويد
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -59,7 +68,7 @@ jobs:
           }
           EOF
 
-          # ب. تحديث build.gradle وتفعيل R8/ProGuard للحماية
+          # ب. تحديث build.gradle وتفعيل الحماية (R8/ProGuard)
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -93,7 +102,7 @@ jobs:
           }
           EOF
 
-          # ج. قواعد ProGuard لحماية كود رقة ومنع تعطل الإضافات
+          # ج. قواعد ProGuard لحماية كود رقة من الهندسة العكسية
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -114,15 +123,17 @@ jobs:
           }
           EOF
 
-          # تغيير اسم التطبيق إلى "رقة" في الأندرويد
-          sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
+          # تغيير اسم التطبيق ليظهر بـ "رقة" على الجوال
+          if [ -f android/app/src/main/res/values/strings.xml ]; then
+            sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
+          fi
 
       - name: 6. البناء والتوقيع الرقمي للمتجر
         run: |
-          # تجهيز ملف التحديث الحي
+          # تجهيز ملف التحديث الحي (OTA Update)
           zip -r update.zip dist_web/
           
-          # إنشاء مفتاح توقيع مؤقت (Keystore)
+          # إنشاء مفتاح توقيع (Keystore) تلقائياً للبناء الحالي
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
@@ -139,12 +150,12 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # إنشاء مجلد مؤقت للملفات التي سيتم الوصول إليها عبر الرابط
+          # تجهيز الملفات في مجلد منفصل
           mkdir -p public_updates
           cp dist_web/version.json public_updates/
           cp update.zip public_updates/
           
-          # الرفع إلى فرع منفصل يسمى updates
+          # الانتقال لفرع updates ورفع الملفات
           git checkout -B updates
           rm -rf ./*
           cp -r public_updates/* .
