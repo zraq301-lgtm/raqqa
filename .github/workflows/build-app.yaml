@@ -1,4 +1,4 @@
-name: Roqa Final Protected Build
+name: Roqa Final Protected Build & Live Update
 
 on:
   push:
@@ -17,29 +17,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 2. إعداد البيئة
+      - name: 2. إعداد البيئة (Node & Java)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      - uses: actions/setup-node@v4
+      - name: إعداد Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: 3. بناء الويب (Vite)
+      - name: 3. بناء الويب (Vite) وتوليد رقم الإصدار
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
           mkdir -p dist_web
+          # إنشاء ملف الإصدار للتحديثات الحية
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
+          echo "Build Version: ${{ github.run_number }}"
 
-      - name: 4. إعداد أندرويد وحقن الحماية
+      - name: 4. إعداد أندرويد وتفعيل الحماية (R8/ProGuard)
         run: |
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # ضبط متغيرات الأندرويد
+          # حقن متغيرات الأندرويد لضمان التوافق مع SDK 34
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -54,7 +57,7 @@ jobs:
           }
           EOF
 
-          # ضبط ملف البناء الرئيسي
+          # بناء ملف build.gradle برمجياً لتجنب أخطاء المسارات
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -86,7 +89,7 @@ jobs:
           }
           EOF
 
-          # قواعد الحماية
+          # حقن قواعد الحماية لمنع الهندسة العكسية
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -96,7 +99,7 @@ jobs:
 
           npx cap sync android
 
-      - name: 5. الهوية و Firebase
+      - name: 5. ضبط الهوية (Firebase & Arabic Branding)
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -105,16 +108,19 @@ jobs:
             "configuration_version": "1"
           }
           EOF
+          # تغيير اسم التطبيق إلى "رقة" في ملف الموارد
           if [ -f android/app/src/main/res/values/strings.xml ]; then
             sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
           fi
 
-      - name: 6. البناء والتوقيع
+      - name: 6. البناء النهائي والتوقيع الرقمي
         run: |
           zip -r update.zip dist_web/
+          # توليد مفتاح توقيع مؤقت للبناء
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
           cd android && chmod +x gradlew
           ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
@@ -122,12 +128,12 @@ jobs:
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. رفع ملفات التحديث (Updates Branch)
+      - name: 7. تحديث فرع التحديثات الحية (Updates)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # تأمين ملفات التحديث قبل تبديل الفروع
+          # تأمين الملفات في مسار محايد قبل تبديل الفروع
           cp dist_web/version.json $HOME/version.json
           cp update.zip $HOME/update.zip
           
@@ -137,13 +143,15 @@ jobs:
           cp $HOME/update.zip .
           
           git add version.json update.zip
-          git commit -m "Update Build ${{ github.run_number }}"
+          git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. رفع الـ Artifacts
+      - name: 8. رفع الملفات النهائية (التحميل المباشر)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Package
+          name: Roqa-Final-Package-Build-${{ github.run_number }}
+          # استخدام النجمة (*) يحل مشكلة تغير أسماء الملفات أو المسارات الفرعية
           path: |
-            android/app/build/outputs/apk/release/app-release.apk
-            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+            update.zip
