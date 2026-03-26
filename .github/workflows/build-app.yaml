@@ -1,4 +1,4 @@
-name: Roqa Production Build (Final Global Fix)
+name: Roqa Production Build (Ultimate Root Fix)
 
 on:
   push:
@@ -27,13 +27,13 @@ jobs:
           npm install --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. توليد مشروع الأندرويد وحقن المتغيرات الشاملة
+      - name: 4. توليد مشروع الأندرويد وحقن المتغيرات (الحل الجذري)
         run: |
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # إنشاء ملف variables.gradle بكل القيم اللي Gradle سأل عنها (الحل الجذري)
+          # إنشاء ملف variables.gradle بكل المتغيرات اللي Gradle بيحتاجها
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -60,14 +60,14 @@ jobs:
           APP_GRADLE="android/app/build.gradle"
           STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # تغيير اسم التطبيق للعربي ليظهر أسفل الأيقونة
+          # تغيير اسم التطبيق للعربي (رقة)
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
           
-          # توحيد الـ Package Name ليتوافق مع Firebase
+          # توحيد الـ Package Name
           sed -i "s/applicationId .*/applicationId \"com.raqqa.app\"/" $APP_GRADLE
           sed -i "s/namespace .*/namespace \"com.raqqa.app\"/" $APP_GRADLE
           
-          # حقن ملف google-services.json الأصلي
+          # حقن ملف Firebase
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -78,33 +78,31 @@ jobs:
 
       - name: 6. البناء الفعلي (Gradle Build) وتجهيز التحديث
         run: |
-          # ضغط ملفات الويب لنظام التحديث الداخلي
+          # ضغط المجلد لنظام التحديث
           zip -r update.zip dist_web/
           
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --stacktrace
+          # تنظيف وبناء
+          ./gradlew clean assembleRelease bundleRelease --stacktrace
 
       - name: 7. التوقيع الرقمي النهائي
         run: |
-          # توليد مفتاح توقيع مؤقت لـ "رقة"
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع الـ APK
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
-          # تجهيز الـ AAB
           AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 8. رفع المخرجات (Artifacts)
+      - name: 8. رفع المخرجات
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Final-v${{ github.run_number }}
+          name: Roqa-Success-Build-v${{ github.run_number }}
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
