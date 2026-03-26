@@ -136,17 +136,19 @@ jobs:
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. تجهيز الملفات النهائية بشكل مستقل
+      - name: 8. تجهيز الملفات النهائية (البحث الشامل عن APK)
         run: |
           mkdir -p final_output
-          # استخدام النجمة لنسخ الملفات بغض النظر عن اسمها البرمجي الداخلي
-          cp android/app/build/outputs/apk/release/*.apk final_output/Roqa_Build_${{ github.run_number }}.apk || echo "No APK found"
-          cp android/app/build/outputs/bundle/release/*.aab final_output/Roqa_Store_Build_${{ github.run_number }}.aab || echo "No AAB found"
+          # البحث في كل مجلدات أندرويد عن أي ملف APK تم إنتاجه ونسخه فوراً للمجلد الجديد
+          find android/app/build/outputs/ -name "*.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
+          # البحث عن ملف الـ AAB للمتجر
+          find android/app/build/outputs/ -name "*.aab" -exec cp -v {} final_output/Roqa_Store_Build_${{ github.run_number }}.aab \;
+          # نسخ ملف التحديث الحي
           cp update.zip final_output/ || echo "No update.zip found"
-          # طباعة محتوى المجلد للتأكد في السجلات
-          ls -R final_output
+          # فحص المجلد قبل الرفع للتأكد من وجود الملفات
+          ls -lh final_output/
 
-      - name: 9. رفع الملفات (ستجدها في الواجهة فور التحميل)
+      - name: 9. رفع الملفات النهائية
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Final-App-${{ github.run_number }}
