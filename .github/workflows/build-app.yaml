@@ -30,10 +30,12 @@ jobs:
       - name: 4. توليد مشروع الأندرويد (The Nuclear Fix)
         run: |
           rm -rf android
+          # التأكد من وجود مجلد dist_web قبل المزامنة
+          mkdir -p dist_web
           npx cap config set webDir dist_web
           npx cap add android
           
-          # أ. حقن ملف variables.gradle بكل الاحتمالات
+          # أ. حقن ملف variables.gradle
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -53,10 +55,10 @@ jobs:
           }
           EOF
 
-          # ب. الخطوة الخارج الصندوق: "إعادة كتابة" ملف build.gradle الخاص بالتطبيق
-          # لمنع أي خطأ property unknown عن طريق تعريفها بقيم افتراضية داخل الملف نفسه
+          # ب. تحديث build.gradle الخاص بالتطبيق لدعم Firebase واسم الحزمة
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
+          apply plugin: 'com.google.gms.google-services'
 
           android {
               namespace "com.raqqa.app"
@@ -68,9 +70,6 @@ jobs:
                   versionCode 1
                   versionName "1.0"
                   testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-                  aaptOptions {
-                      nocompress 'capgen'
-                  }
               }
               buildTypes {
                   release {
@@ -89,16 +88,14 @@ jobs:
               implementation "com.google.firebase:firebase-messaging:\${rootProject.ext.firebaseMessagingVersion}"
               implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
           }
-
-          apply plugin: 'com.google.gms.google-services'
           EOF
 
           npx cap sync android
 
       - name: 5. ضبط الهوية وحقن Firebase
         run: |
-          # ضبط اسم التطبيق بالعربي (رقة)
-          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' android/app/src/main/res/values/strings.xml
+          # ضبط اسم التطبيق بالعربي (رقة) - استخدام معالج أكثر دقة لـ XML
+          sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
           
           # حقن ملف google-services.json
           cat <<EOF > android/app/google-services.json
@@ -109,30 +106,35 @@ jobs:
           }
           EOF
 
-      - name: 6. البناء النهائي (Gradle)
+      - name: 6. البناء النهائي والتوقيع (The Combined Step)
         run: |
+          # ضغط نسخة الويب للتحديثات
           zip -r update.zip dist_web/
+          
+          # إنشاء مفتاح التوقيع
+          keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" \
+            -dname "CN=RaqqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease bundleRelease --stacktrace
+          # البناء باستخدام Gradle مع تمرير مفاتيح التوقيع مباشرة
+          ./gradlew assembleRelease bundleRelease \
+            -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
+            -Pandroid.injected.signing.store.password=raqqa_pass_2026 \
+            -Pandroid.injected.signing.key.alias=raqqa_alias \
+            -Pandroid.injected.signing.key.password=raqqa_pass_2026
 
-      - name: 7. التوقيع الرقمي
+      - name: 7. تجميع الملفات النهائية
         run: |
-          keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
-            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
-          
-          APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
-            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
-          
-          cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
+          cp android/app/build/outputs/apk/release/app-release.apk Raqqa-Final-Signed.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab Raqqa-Final-Signed.aab
 
       - name: 8. الرفع النهائي
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-OOTB-Build
+          name: Raqqa-Final-Build
           path: |
-            Roqa-Final-Signed.apk
-            Roqa-Final-Signed.aab
+            Raqqa-Final-Signed.apk
+            Raqqa-Final-Signed.aab
             update.zip
