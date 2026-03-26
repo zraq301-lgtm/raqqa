@@ -1,4 +1,4 @@
-- name: 6. ضبط الـ SDK 35 وحقن الهوية (الحل الشامل)
+name: 6. ضبط الـ SDK 35 وحقن الهوية (الحل الشامل)
         run: |
           APP_GRADLE="android/app/build.gradle"
           GRADLE_PROPS="android/gradle.properties"
