@@ -22,20 +22,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 3. بناء ملفات الويب (React Build)
+      - name: 3. بناء ملفات الويب (Vite Build)
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
+          # التأكد من وجود مجلد dist_web
+          ls -d dist_web/
 
       - name: 4. توليد مشروع الأندرويد وحقن الملفات
         run: |
-          # أ. مسح أي محاولات قديمة وبناء المجلد من الصفر
           rm -rf android
-          npx cap config set webDir dist
+          # إجبار Capacitor على استخدام مجلد dist_web الخاص بك
+          npx cap config set webDir dist_web
           npx cap add android
           
-          # ب. إنشاء ملف variables.gradle (لأن المشروع لسه مولود ومفهوش الملف ده)
-          # السطر ده بيحل مشكلة "unknown property" اللي ظهرت في السجل اللي فات
+          # إنشاء ملف variables.gradle لتجنب أخطاء التوافقية (Core Fix)
           mkdir -p android
           cat <<EOF > android/variables.gradle
           ext {
@@ -57,19 +58,19 @@ jobs:
           
           npx cap sync android
 
-      - name: 5. تخصيص الهوية (رقة + Package Name)
+      - name: 5. تخصيص الهوية (رقة) وحقن Firebase
         run: |
           APP_GRADLE="android/app/build.gradle"
           STRINGS_XML="android/app/src/main/res/values/strings.xml"
           
-          # تغيير اسم التطبيق للعربي
+          # تغيير اسم التطبيق للعربي ليظهر أسفل الأيقونة
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
           
-          # تغيير applicationId ليتوافق مع Firebase (com.raqqa.app)
+          # توحيد الـ Package Name ليتوافق مع Firebase
           sed -i "s/applicationId .*/applicationId \"com.raqqa.app\"/" $APP_GRADLE
           sed -i "s/namespace .*/namespace \"com.raqqa.app\"/" $APP_GRADLE
           
-          # حقن ملف Firebase (google-services.json)
+          # حقن ملف google-services.json
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -78,32 +79,35 @@ jobs:
           }
           EOF
 
-      - name: 6. البناء الفعلي (Gradle Build) وتوليد التحديث الداخلي
+      - name: 6. البناء الفعلي (Gradle Build) وتجهيز التحديث الصامت
         run: |
-          # إنشاء ملف التحديث (ZIP) للمستقبل
-          zip -r update.zip dist/
+          # ضغط مجلد dist_web لنظام التحديث الداخلي
+          zip -r update.zip dist_web/
           
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease bundleRelease --stacktrace
 
-      - name: 7. التوقيع الرقمي النهائي
+      - name: 7. التوقيع الرقمي النهائي (APK & AAB)
         run: |
-          # إنشاء مفتاح توقيع مؤقت (أو استخدم Secret لو عندك)
+          # توليد مفتاح توقيع مؤقت لـ "رقة"
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
+          # توقيع الـ APK
           APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
           
-          cp android/app/build/outputs/bundle/release/app-release.aab Roqa-Final-Signed.aab
+          # تجهيز الـ AAB أيضاً
+          AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 8. رفع الـ APK والـ Update ZIP
+      - name: 8. رفع المخرجات الجاهزة
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Full-Package
+          name: Roqa-Full-Package-v${{ github.run_number }}
           path: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
