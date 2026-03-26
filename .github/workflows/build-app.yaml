@@ -1,4 +1,4 @@
-name: Roqa Out-Of-The-Box Build
+name: Roqa Final Protected Build
 
 on:
   push:
@@ -12,12 +12,11 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة
+      - name: 2. إعداد البيئة (Node & Java)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-      
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -27,15 +26,14 @@ jobs:
           npm install --legacy-peer-deps
           npm run build --if-present
 
-      - name: 4. توليد مشروع الأندرويد (The Nuclear Fix)
+      - name: 4. توليد مشروع الأندرويد وحقن الحماية
         run: |
           rm -rf android
-          # التأكد من وجود مجلد dist_web قبل المزامنة
           mkdir -p dist_web
           npx cap config set webDir dist_web
           npx cap add android
           
-          # أ. حقن ملف variables.gradle
+          # أ. ضبط المتغيرات
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -45,17 +43,12 @@ jobs:
               androidxAppCompatVersion = '1.6.1'
               androidxCoreVersion = '1.12.0'
               androidxMaterialVersion = '1.10.0'
-              androidxBrowserVersion = '1.6.0'
-              androidxLocalBroadcastManagerVersion = '1.1.0'
-              androidxExifInterfaceVersion = '1.3.6'
-              androidxCoordinatorLayoutVersion = '1.2.0'
               coreSplashScreenVersion = '1.0.1'
-              googlePlayServicesLocationVersion = '21.0.1'
               firebaseMessagingVersion = '24.0.0'
           }
           EOF
 
-          # ب. تحديث build.gradle الخاص بالتطبيق لدعم Firebase واسم الحزمة
+          # ب. تحديث build.gradle مع تفعيل الحماية والتعمية ودعم Firebase
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -69,11 +62,11 @@ jobs:
                   targetSdkVersion rootProject.ext.targetSdkVersion
                   versionCode 1
                   versionName "1.0"
-                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
               buildTypes {
                   release {
-                      minifyEnabled false
+                      minifyEnabled true
+                      shrinkResources true
                       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                   }
               }
@@ -81,23 +74,27 @@ jobs:
 
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
-              implementation "androidx.appcompat:appcompat:\${rootProject.ext.androidxAppCompatVersion}"
-              implementation "androidx.core:core-ktx:\${rootProject.ext.androidxCoreVersion}"
               implementation project(':capacitor-android')
               implementation project(':capacitor-cordova-android-plugins')
+              implementation "androidx.appcompat:appcompat:\${rootProject.ext.androidxAppCompatVersion}"
               implementation "com.google.firebase:firebase-messaging:\${rootProject.ext.firebaseMessagingVersion}"
               implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
           }
           EOF
 
+          # ج. إنشاء قواعد الحماية (ProGuard Rules) لمنع تعطل Firebase و Capacitor
+          cat <<EOF > android/app/proguard-rules.pro
+          -keep class com.getcapacitor.** { *; }
+          -keep class * extends com.getcapacitor.Plugin
+          -keep class com.google.firebase.** { *; }
+          -dontwarn com.google.firebase.**
+          EOF
+
           npx cap sync android
 
-      - name: 5. ضبط الهوية وحقن Firebase
+      - name: 5. ضبط الأيقونات، الاسم (رقة)، و Firebase
         run: |
-          # ضبط اسم التطبيق بالعربي (رقة) - استخدام معالج أكثر دقة لـ XML
-          sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
-          
-          # حقن ملف google-services.json
+          # حقن ملف Firebase
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -106,35 +103,31 @@ jobs:
           }
           EOF
 
-      - name: 6. البناء النهائي والتوقيع (The Combined Step)
+          # ضبط اسم التطبيق بالعربي
+          sed -i 's/Raqqa/رقة/g' android/app/src/main/res/values/strings.xml
+          
+          # ملاحظة: الأيقونات يجب أن تكون موجودة في مجلد src/assets ليتم نسخها تلقائياً
+          # إذا كنت تستخدم Capacitor Assets Tool يفضل تشغيله هنا.
+
+      - name: 6. البناء والتوقيع الرقمي
         run: |
-          # ضغط نسخة الويب للتحديثات
           zip -r update.zip dist_web/
-          
-          # إنشاء مفتاح التوقيع
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "raqqa_pass_2026" -keypass "raqqa_pass_2026" \
-            -dname "CN=RaqqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          cd android
-          chmod +x gradlew
-          # البناء باستخدام Gradle مع تمرير مفاتيح التوقيع مباشرة
+          cd android && chmod +x gradlew
           ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
-            -Pandroid.injected.signing.store.password=raqqa_pass_2026 \
+            -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
-            -Pandroid.injected.signing.key.password=raqqa_pass_2026
+            -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. تجميع الملفات النهائية
-        run: |
-          cp android/app/build/outputs/apk/release/app-release.apk Raqqa-Final-Signed.apk
-          cp android/app/build/outputs/bundle/release/app-release.aab Raqqa-Final-Signed.aab
-
-      - name: 8. الرفع النهائي
+      - name: 7. رفع الـ Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Raqqa-Final-Build
+          name: Roqa-Production-Build
           path: |
-            Raqqa-Final-Signed.apk
-            Raqqa-Final-Signed.aab
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/bundle/release/app-release.aab
             update.zip
