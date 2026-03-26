@@ -1,12 +1,40 @@
-- name: 4. توليد مشروع الأندرويد وحقن المتغيرات الشاملة
+name: Roqa Production Build (Final Fix)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. جلب الكود من GitHub
+        uses: actions/checkout@v4
+
+      - name: 2. إعداد البيئة (Java 17 & Node 20)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 3. بناء ملفات الويب (Vite Build)
         run: |
+          npm install --legacy-peer-deps
+          npm run build --if-present
+
+      - name: 4. توليد مشروع الأندرويد وحقن المتغيرات الشاملة
+        run: |
+          # مسح المجلد القديم لضمان بناء نظيف
           rm -rf android
-          # إجبار Capacitor على استخدام مجلد dist_web
           npx cap config set webDir dist_web
           npx cap add android
           
-          # إنشاء ملف variables.gradle شامل (الحل الجذري لنقص التعريفات)
-          mkdir -p android
+          # إنشاء ملف variables.gradle بكل المتغيرات المطلوبة لتجنب الأخطاء
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -22,8 +50,63 @@
               androidxCoordinatorLayoutVersion = '1.2.0'
               coreSplashScreenVersion = '1.0.1'
               googlePlayServicesLocationVersion = '21.0.1'
-              firebaseMessagingVersion = '23.4.0'
+              firebaseMessagingVersion = '24.0.0'
           }
           EOF
           
           npx cap sync android
+
+      - name: 5. تخصيص الهوية (رقة) وحقن Firebase
+        run: |
+          APP_GRADLE="android/app/build.gradle"
+          STRINGS_XML="android/app/src/main/res/values/strings.xml"
+          
+          # تغيير اسم التطبيق للعربي (رقة)
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_XML
+          
+          # توحيد الـ Package Name ليتوافق مع Firebase
+          sed -i "s/applicationId .*/applicationId \"com.raqqa.app\"/" $APP_GRADLE
+          sed -i "s/namespace .*/namespace \"com.raqqa.app\"/" $APP_GRADLE
+          
+          # حقن ملف google-services.json الأصلي
+          cat <<EOF > android/app/google-services.json
+          {
+            "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
+            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
+            "configuration_version": "1"
+          }
+          EOF
+
+      - name: 6. البناء الفعلي (Gradle Build) وتجهيز التحديث
+        run: |
+          # ضغط مجلد dist_web لنظام التحديث الداخلي
+          zip -r update.zip dist_web/
+          
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease bundleRelease --stacktrace
+
+      - name: 7. التوقيع الرقمي النهائي (APK & AAB)
+        run: |
+          # توليد مفتاح توقيع مؤقت لـ "رقة"
+          keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
+          # توقيع الـ APK باستخدام apksigner
+          APK_RAW=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
+            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_RAW"
+          
+          # تجهيز الـ AAB للرفع
+          AAB_RAW=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          cp "$AAB_RAW" Roqa-Final-Signed.aab
+
+      - name: 8. رفع الملفات الجاهزة (Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roqa-Final-Build-v${{ github.run_number }}
+          path: |
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
+            update.zip
