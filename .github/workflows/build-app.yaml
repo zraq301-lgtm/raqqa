@@ -17,10 +17,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 2. إعداد البيئة (الترقية إلى Java 21)
+      - name: 2. إعداد البيئة (Java 21 & Node 20)
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # تم التحديث لحل مشكلة مكتبة Bouncy Castle
+          java-version: '21'
           distribution: 'temurin'
       
       - name: إعداد Node.js
@@ -35,13 +35,14 @@ jobs:
           mkdir -p dist_web
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
 
-      - name: 4. إعداد أندرويد وتثبيت المكتبات
+      - name: 4. إعداد أندرويد وتثبيت Capacitor
         run: |
           rm -rf android
+          npm install @capacitor/android@latest @capacitor/core@latest @capacitor/cli@latest
           npx cap config set webDir dist_web
-          npm install @capacitor/android@latest
           npx cap add android
           
+          # إعداد متغيرات Gradle
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -56,6 +57,7 @@ jobs:
           }
           EOF
 
+          # تعديل ملف build.gradle لدعم Java 21
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -90,6 +92,7 @@ jobs:
               implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
           }
           EOF
+          
           npx cap sync android
 
       - name: 5. ضبط الهوية (Firebase & Name)
@@ -103,21 +106,24 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء النهائي والتوقيع الرقمي
+      - name: 6. بناء ملف التحديث الحي (ZIP)
+        run: zip -r update.zip dist_web/
+
+      - name: 7. بناء الـ APK (العملية المنفصلة)
         run: |
-          zip -r update.zip dist_web/
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          cd android && chmod +x gradlew
+          cd android
+          chmod +x gradlew
           ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. تحديث فرع التحديثات (Updates)
+      - name: 8. تحديث فرع التحديثات (Updates)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -131,20 +137,23 @@ jobs:
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 8. استخراج الـ APK وتأكيد النجاح
+      - name: 9. استخراج الملفات وتأكيد وجود APK
         run: |
           mkdir -p final_output
+          # نسخ ملف الـ APK
           find . -name "*release.apk" -exec cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk \;
-          cp update.zip final_output/ || echo "Update.zip not found"
+          # نسخ ملف التحديث
+          cp update.zip final_output/
           
+          # فحص نهائي صارم
           if [ ! -f final_output/*.apk ]; then 
-            echo "CRITICAL ERROR: APK not generated even with Java 21!"
+            echo "خطأ فادح: لم يتم العثور على ملف APK في المخرجات!"
             exit 1 
           fi
-          ls -R final_output
+          ls -lh final_output/
 
-      - name: 9. رفع الملفات النهائية
+      - name: 10. رفع المجلد النهائي للتحميل
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-App-Final-${{ github.run_number }}
+          name: Roqa-Package-${{ github.run_number }}
           path: final_output/
