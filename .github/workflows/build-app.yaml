@@ -32,8 +32,10 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
+          # إنشاء ملف الإصدار داخل مجلد dist_web وللجذر أيضاً
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-          # ضغط محتويات مجلد التوزيع فقط لضمان عمل التحديث
+          echo "{\"version\": ${{ github.run_number }}}" > version.json
+          # ضغط المحتويات من الداخل لضمان وجود index.html في جذر الزيب
           cd dist_web && zip -r ../update.zip . && cd ..
 
       - name: 4. إعداد أندرويد وتفعيل Firebase
@@ -108,8 +110,9 @@ jobs:
 
           npx cap sync android
 
-      - name: 5. ضبط الهوية والأيقونة
+      - name: 5. ضبط الهوية والأيقونة وتصريحات المانيفست
         run: |
+          # إضافة ملف Firebase
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -117,6 +120,8 @@ jobs:
             "configuration_version": "1"
           }
           EOF
+          
+          # تعديل اسم التطبيق في ملف الـ strings
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
       - name: 6. البناء والتوقيع النهائي للـ APK والـ AAB
@@ -146,27 +151,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 8. تحديث فرع التحديث الهوائي (Updates) مع التنظيف الشامل
+      - name: 8. تحديث فرع التحديث الهوائي (Updates)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # حفظ الملفات المطلوبة في مكان آمن خارج المجلد الحالي
-          cp dist_web/version.json $HOME/version.json
+          # نسخ الملفات للجذر لضمان عمل الروابط المباشرة
+          cp version.json $HOME/version.json
           cp update.zip $HOME/update.zip
           
-          # جلب فرع التحديثات والانتقال إليه
           git fetch origin updates || true
           git checkout -B updates
           
-          # تنظيف الفرع من كافة الملفات القديمة (بما في ذلك كود المصدر)
           git rm -rf . --ignore-unmatch
           
-          # إعادة الملفات الجديدة فقط إلى المجلد الرئيسي للفرع
           cp $HOME/version.json .
           cp $HOME/update.zip .
           
-          # رفع الملفين فقط إلى فرع updates
           git add version.json update.zip
-          git commit -m "Live Update: Build ${{ github.run_number }} (Cleaned)"
+          git commit -m "Live Update: Build ${{ github.run_number }} (Verified Root Structure)"
           git push origin updates --force
