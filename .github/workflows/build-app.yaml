@@ -15,10 +15,10 @@ jobs:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
 
-      - name: 2. إعداد البيئة (Java 17)
+      - name: 2. إعداد البيئة (Java 21 - الحل القاطع)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21' # التحديث لـ 21 يحل مشكلة معالجة مكتبة BouncyCastle
           distribution: 'temurin'
 
       - name: 3. إعداد Node.js
@@ -33,17 +33,14 @@ jobs:
           mkdir -p dist_web
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
 
-      - name: 5. إنشاء وتكوين مشروع أندرويد (إصلاح شامل)
+      - name: 5. إنشاء وتكوين مشروع أندرويد
         run: |
           rm -rf android
           npx cap config set webDir dist_web
-          # تثبيت إصدارات محددة من Capacitor لضمان التوافق
-          npm install @capacitor/android@5.7.0 
+          npm install @capacitor/android@latest
           npx cap add android
           
-          # تعديل إصدار Gradle Wrapper يدوياً لإصدار يحل مشاكل الـ Instrumentation
-          sed -i 's/gradle-8.2.1-all.zip/gradle-8.0.2-all.zip/g' android/gradle/wrapper/gradle-wrapper.properties
-
+          # الحفاظ على Gradle 8.2.1 ليتوافق مع Capacitor
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -58,7 +55,6 @@ jobs:
           }
           EOF
 
-          # تعديل build.gradle لمنع تعارض BouncyCastle
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -79,7 +75,6 @@ jobs:
                       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                   }
               }
-              // منع Gradle من محاولة معالجة مكتبة التشفير بشكل خاطئ
               packagingOptions {
                   resources {
                       excludes += ['META-INF/versions/21/org/bouncycastle/**']
@@ -93,8 +88,6 @@ jobs:
               implementation "androidx.appcompat:appcompat:\${rootProject.ext.androidxAppCompatVersion}"
               implementation "com.google.firebase:firebase-messaging:\${rootProject.ext.firebaseMessagingVersion}"
               implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
-              // إجبار نسخة مستقرة لا تحتوي على ملفات Java 21 المتعارضة
-              implementation 'org.bouncycastle:bcprov-jdk18on:1.76'
           }
           EOF
           npx cap sync android
@@ -114,10 +107,10 @@ jobs:
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
 
-      - name: 7. البناء النهائي (بدون Daemon وبذاكرة محددة)
+      - name: 7. البناء النهائي
         run: |
           cd android && chmod +x gradlew
-          # تنظيف الكاشات تماماً قبل البدء
+          # حذف الكاش لضمان بناء نظيف تماماً بـ Java 21
           rm -rf ~/.gradle/caches/jars-9
           ./gradlew assembleRelease --no-daemon \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
@@ -132,7 +125,6 @@ jobs:
           zip -r update.zip dist_web/
           cp update.zip final_output/
           
-          # دفع التحديثات للفرع
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B updates
