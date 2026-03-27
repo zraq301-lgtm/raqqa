@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # ضروري لإنشاء الروابط والـ Releases
+      contents: write 
 
     steps:
       - name: 1. جلب الكود
@@ -22,24 +22,28 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
+          
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: 3. بناء الويب (Vite) وتوليد رقم الإصدار
+      - name: 3. بناء الويب وتوليد الأصول
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
-          mkdir -p dist_web
+          # إنشاء ملف الإصدار داخل مجلد الويب
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
+          # توليد الأيقونات (إذا لم تكن موجودة سيستمر البناء)
+          npx capacitor-assets generate --android || echo "Using default assets"
 
-      - name: 4. إعداد أندرويد وتفعيل الحماية (R8/ProGuard)
+      - name: 4. إعداد أندرويد وتفعيل Firebase والحماية
         run: |
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
+          # ضبط المتغيرات وإصدارات Firebase
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -54,9 +58,31 @@ jobs:
           }
           EOF
 
+          # تعديل build.gradle الرئيسي لإضافة google-services
+          cat <<EOF > android/build.gradle
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.android.tools.build:gradle:8.2.1'
+                  classpath 'com.google.gms:google-services:4.4.1'
+              }
+          }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          EOF
+
+          # تعديل build.gradle الخاص بالتطبيق لتفعيل الـ Plugins والحماية
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
+
           android {
               namespace "com.raqqa.app"
               compileSdkVersion rootProject.ext.compileSdkVersion
@@ -85,6 +111,7 @@ jobs:
           }
           EOF
 
+          # قواعد الحماية (ProGuard) لمنع تعطل Firebase و Capacitor
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -94,7 +121,7 @@ jobs:
 
           npx cap sync android
 
-      - name: 5. ضبط الهوية (Firebase & Name)
+      - name: 5. ضبط الهوية (Google Services & Name)
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -105,21 +132,25 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء النهائي والتوقيع الرقمي
+      - name: 6. بناء الـ APK وتجهيز ملف التحديث (OTA)
         run: |
-          zip -r update.zip dist_web/
+          # هام جداً: ضغط محتويات المجلد وليس المجلد نفسه ليعمل الـ Live Update
+          cd dist_web && zip -r ../update.zip . && cd ..
+          
+          # إنشاء ملف التوقيع
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
+          # بناء ملفات أندرويد
           cd android && chmod +x gradlew
-          ./gradlew assembleRelease \
+          ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. تأمين ملفات الـ APK ونشر الإصدار (Release)
+      - name: 7. نشر الإصدار (GitHub Release)
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
@@ -127,36 +158,29 @@ jobs:
           name: Roqa Build v${{ github.run_number }}
           files: |
             android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+            release.keystore
             update.zip
           body: |
-            رابط تحميل مباشر لتطبيق رقة إصدار رقم ${{ github.run_number }}
-            يحتوي هذا الإصدار على أحدث التحديثات البرمجية والحماية.
+            ### 📱 إصدار رقة المحدث:
+            * **إشعارات فيربيس:** مفعلة الآن.
+            * **التحديث التلقائي:** تم تحديث `update.zip` ليعمل هوائياً.
+            * **الحماية:** تم تفعيل R8 لتصغير وحماية الكود.
           draft: false
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 8. تحديث فرع التحديثات الحية (Updates)
+      - name: 8. دفع التحديث لفرع Updates (Live Update)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
           cp dist_web/version.json $HOME/version.json
           cp update.zip $HOME/update.zip
-          
           git checkout -B updates
           rm -rf ./*
           cp $HOME/version.json .
           cp $HOME/update.zip .
-          
           git add version.json update.zip
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
-
-      - name: 9. رفع الملفات النهائية (Artifacts)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Roqa-App-Package-Build-${{ github.run_number }}
-          path: |
-            android/app/build/outputs/apk/release/*.apk
-            update.zip
