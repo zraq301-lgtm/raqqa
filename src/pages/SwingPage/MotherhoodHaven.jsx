@@ -1,169 +1,159 @@
 import React, { useState } from 'react';
 
-const MotherhoodPage = () => {
-  // حالات تفاعلية بسيطة
-  const [subscribed, setSubscribed] = useState(false);
-
-  // لوحة الألوان (ألوان هادئة ومريحة للعين)
-  const theme = {
-    primary: '#F7DAD9', // وردي باستيل ناعم
-    secondary: '#D5ECC2', // أخضر نعناعي هادئ
-    accent: '#98DDCA', // فيروزي فاتح
-    text: '#5D5D5D',
-    white: '#FFFFFF',
-    lightBg: '#F9F9F9'
-  };
+const ModernMotherhood = () => {
+  // قائمة الأقسام الخمسة (مصفوفة البيانات)
+  const sections = [
+    {
+      id: 1,
+      title: "رعاية حديثي الولادة",
+      description: "دليل شامل للتعامل مع طفلك في أسابيعه الأولى، من الاستحمام وحتى تنظيم النوم.",
+      icon: "👶",
+      color: "#FFE5E5" // وردي ناعم
+    },
+    {
+      id: 2,
+      title: "التغذية السليمة",
+      description: "وصفات صحية وجداول غذائية مدروسة لكل مرحلة عمرية لضمان نمو طفلك السليم.",
+      icon: "🥗",
+      color: "#F0FFF0" // أخضر نعناعي
+    },
+    {
+      id: 3,
+      title: "الصحة النفسية للأم",
+      description: "لأن سعادتك هي أساس سعادة طفلك، نقدم لكِ نصائح لتجاوز ضغوط التربية.",
+      icon: "🧘‍♀️",
+      color: "#E6E6FA" // لافندر
+    },
+    {
+      id: 4,
+      title: "ألعاب وتنمية مهارات",
+      description: "أنشطة تفاعلية وألعاب ذكاء لتطوير مهارات طفلك الحركية والذهنية يومياً.",
+      icon: "🧩",
+      color: "#FFF9E3" // أصفر زبدي
+    },
+    {
+      id: 5,
+      title: "الاستشارات المتخصصة",
+      description: "تواصل مباشر مع خبراء في التربية وعلم نفس الطفل للإجابة على تساؤلاتك.",
+      icon: "👩‍⚕️",
+      color: "#E0F7FA" // أزرق سماوي
+    }
+  ];
 
   const styles = {
-    container: {
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+    page: {
       direction: 'rtl',
-      color: theme.text,
-      backgroundColor: theme.white,
-      lineHeight: '1.6',
+      fontFamily: "'Segoe UI', Tahoma, Geneva, sans-serif",
+      backgroundColor: '#fdfbfb',
+      color: '#444',
+      margin: 0,
+      paddingBottom: '50px'
     },
     header: {
-      background: `linear-gradient(135deg, ${theme.primary} 0%, #fff 100%)`,
-      padding: '80px 5%',
       textAlign: 'center',
-      borderRadius: '0 0 50px 50px',
+      padding: '60px 20px',
+      background: 'linear-gradient(to bottom, #fff, #fdfbfb)',
     },
-    nav: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      padding: '20px 5%',
-      alignItems: 'center',
-      backgroundColor: '#fff',
-    },
-    logo: {
-      fontSize: '22px',
-      fontWeight: 'bold',
-      color: '#D8A7B1',
-    },
-    heroTitle: {
-      fontSize: '2.8rem',
+    title: {
+      fontSize: '2.5rem',
       color: '#867070',
-      marginBottom: '20px',
+      marginBottom: '10px'
     },
-    section: {
-      padding: '60px 10%',
+    subtitle: {
+      color: '#999',
+      fontSize: '1.1rem'
     },
-    grid: {
+    // شبكة الأقسام الخمسة
+    gridContainer: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
       gap: '25px',
-      marginTop: '30px',
+      padding: '0 8%',
+      maxWidth: '1200px',
+      margin: '0 auto'
     },
-    card: {
-      backgroundColor: theme.white,
-      padding: '30px',
-      borderRadius: '20px',
-      boxShadow: '0 10px 20px rgba(0,0,0,0.05)',
-      border: `1px solid ${theme.primary}`,
-      transition: 'transform 0.3s ease',
-    },
-    iconCircle: {
-      width: '50px',
-      height: '50px',
-      backgroundColor: theme.secondary,
+    card: (bgColor) => ({
+      backgroundColor: '#fff',
+      borderRadius: '24px',
+      padding: '40px 30px',
+      textAlign: 'center',
+      transition: 'all 0.3s ease',
+      border: `2px solid ${bgColor}`,
+      cursor: 'pointer',
+      boxShadow: '0 4px 15px rgba(0,0,0,0.02)',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }),
+    iconWrapper: (bgColor) => ({
+      width: '70px',
+      height: '70px',
+      backgroundColor: bgColor,
       borderRadius: '50%',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      fontSize: '32px',
+      marginBottom: '20px'
+    }),
+    cardTitle: {
+      fontSize: '1.4rem',
       marginBottom: '15px',
-      fontSize: '20px'
+      color: '#555'
     },
-    ctaSection: {
-      backgroundColor: theme.primary,
-      padding: '50px',
-      borderRadius: '30px',
+    cardText: {
+      fontSize: '0.95rem',
+      color: '#777',
+      lineHeight: '1.7'
+    },
+    footer: {
       textAlign: 'center',
-      margin: '40px 0',
-    },
-    input: {
-      padding: '12px 20px',
-      borderRadius: '25px',
-      border: 'none',
-      width: '250px',
-      marginLeft: '10px',
-      outline: 'none',
-    },
-    button: {
-      padding: '12px 30px',
-      borderRadius: '25px',
-      border: 'none',
-      backgroundColor: '#867070',
-      color: '#fff',
-      cursor: 'pointer',
-      fontWeight: 'bold',
-      transition: '0.3s',
+      marginTop: '60px',
+      padding: '20px',
+      borderTop: '1px solid #eee',
+      color: '#bbb'
     }
   };
 
-  const adviceList = [
-    { title: "تغذية الرضيع", desc: "دليلك الشامل للرضاعة الطبيعية والأطعمة الأولى.", icon: "🍼" },
-    { title: "النوم الهادئ", desc: "نصائح الخبراء لمساعدة طفلك (ولكِ) على نوم متواصل.", icon: "🌙" },
-    { title: "التربية الإيجابية", desc: "بناء شخصية الطفل من خلال الحب والتفاهم والحدود.", icon: "🎈" },
-  ];
-
   return (
-    <div style={styles.container}>
-      {/* Navigation */}
-      <nav style={styles.nav}>
-        <div style={styles.logo}>🌸 ملاذ الأمومة</div>
-        <div style={{ display: 'flex', gap: '20px', fontSize: '14px' }}>
-          <span>المقالات</span>
-          <span>الدورات</span>
-          <span>استشارات</span>
-        </div>
-      </nav>
-
-      {/* Hero */}
+    <div style={styles.page}>
+      {/* رأس الصفحة */}
       <header style={styles.header}>
-        <h1 style={styles.heroTitle}>لأنكِ لستِ وحدكِ في هذه الرحلة</h1>
-        <p style={{ fontSize: '1.2rem', maxWidth: '700px', margin: '0 auto' }}>
-          نقدم لكِ الدعم العلمي والعاطفي الذي تحتاجينه لتربية أطفال سعداء ومبدعين.
-        </p>
+        <h1 style={styles.title}>عالم الأمومة الذكي</h1>
+        <p style={styles.subtitle}>رفيقكِ الدائم في رحلة التربية والحب</p>
       </header>
 
-      {/* Advice Grid */}
-      <section style={styles.section}>
-        <h2 style={{ textAlign: 'center', color: '#867070' }}>محاور الرعاية الأساسية</h2>
-        <div style={styles.grid}>
-          {adviceList.map((item, index) => (
-            <div key={index} style={styles.card} 
-                 onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-10px)'}
-                 onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-              <div style={styles.iconCircle}>{item.icon}</div>
-              <h3 style={{ marginBottom: '10px' }}>{item.title}</h3>
-              <p style={{ fontSize: '15px', color: '#777' }}>{item.desc}</p>
+      {/* شبكة الأقسام الخمسة */}
+      <main style={styles.gridContainer}>
+        {sections.map((item) => (
+          <div 
+            key={item.id} 
+            style={styles.card(item.color)}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-10px)';
+              e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.08)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.02)';
+            }}
+          >
+            <div style={styles.iconWrapper(item.color)}>
+              {item.icon}
             </div>
-          ))}
-        </div>
-      </section>
+            <h3 style={styles.cardTitle}>{item.title}</h3>
+            <p style={styles.cardText}>{item.description}</p>
+          </div>
+        ))}
+      </main>
 
-      {/* Interaction Section */}
-      <section style={styles.section}>
-        <div style={styles.ctaSection}>
-          <h2 style={{ marginBottom: '15px' }}>انضمي إلى مجتمعنا البريدي</h2>
-          <p style={{ marginBottom: '25px' }}>احصلي على نصيحة تربوية أسبوعية مباشرة في بريدك.</p>
-          {!subscribed ? (
-            <div>
-              <input type="email" placeholder="بريدك الإلكتروني" style={styles.input} />
-              <button style={styles.button} onClick={() => setSubscribed(true)}>اشتركي الآن</button>
-            </div>
-          ) : (
-            <p style={{ fontWeight: 'bold', color: '#4E9F3D' }}>شكراً لانضمامكِ إلينا! ✨</p>
-          )}
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer style={{ textAlign: 'center', padding: '40px', color: '#bbb', fontSize: '13px' }}>
-        © 2026 جميع الحقوق محفوظة لـ ملاذ الأمومة والطفولة
+      {/* التذييل */}
+      <footer style={styles.footer}>
+        <p>© 2026 جميع الحقوق محفوظة لـ "ملاذ الأم والطفل"</p>
       </footer>
     </div>
   );
 };
 
-export default MotherhoodPage;
+export default ModernMotherhood;
