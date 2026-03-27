@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # ضروري لإنشاء الروابط والـ Releases
 
     steps:
       - name: 1. جلب الكود
@@ -119,14 +119,22 @@ jobs:
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. تأمين ملفات الـ APK (الخطوة الحاسمة)
-        run: |
-          mkdir -p final_artifacts
-          # البحث عن ملف الـ APK ونقله لمجلد آمن خارج مجلد أندرويد
-          find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} final_artifacts/Roqa_v${{ github.run_number }}.apk \;
-          cp update.zip final_artifacts/
-          echo "Files secured in final_artifacts directory"
-          ls final_artifacts
+      - name: 7. تأمين ملفات الـ APK ونشر الإصدار (Release)
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Roqa Build v${{ github.run_number }}
+          files: |
+            android/app/build/outputs/apk/release/*.apk
+            update.zip
+          body: |
+            رابط تحميل مباشر لتطبيق رقة إصدار رقم ${{ github.run_number }}
+            يحتوي هذا الإصدار على أحدث التحديثات البرمجية والحماية.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 8. تحديث فرع التحديثات الحية (Updates)
         run: |
@@ -145,8 +153,10 @@ jobs:
           git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 9. رفع الملفات النهائية (التحميل المباشر)
+      - name: 9. رفع الملفات النهائية (Artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-App-Package-Build-${{ github.run_number }}
-          path: final_artifacts/
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            update.zip
