@@ -28,37 +28,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 3. بناء الويب وتوليد الأصول
+      - name: 3. بناء الويب وتجهيز التحديث الهوائي
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
-          # إنشاء ملف الإصدار داخل مجلد الويب
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-          # توليد الأيقونات (إذا لم تكن موجودة سيستمر البناء)
-          npx capacitor-assets generate --android || echo "Using default assets"
+          # ضغط التحديث الهوائي بشكل صحيح
+          cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 4. إعداد أندرويد وتفعيل Firebase والحماية
+      - name: 4. إعداد أندرويد وتفعيل Firebase
         run: |
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # ضبط المتغيرات وإصدارات Firebase
-          cat <<EOF > android/variables.gradle
-          ext {
-              minSdkVersion = 22
-              compileSdkVersion = 34
-              targetSdkVersion = 34
-              androidxActivityVersion = '1.8.0'
-              androidxAppCompatVersion = '1.6.1'
-              androidxCoreVersion = '1.12.0'
-              androidxMaterialVersion = '1.10.0'
-              coreSplashScreenVersion = '1.0.1'
-              firebaseMessagingVersion = '24.0.0'
-          }
-          EOF
-
-          # تعديل build.gradle الرئيسي لإضافة google-services
+          # تعديل ملف build.gradle الرئيسي (Project Level)
           cat <<EOF > android/build.gradle
           buildscript {
               repositories {
@@ -78,20 +62,21 @@ jobs:
           }
           EOF
 
-          # تعديل build.gradle الخاص بالتطبيق لتفعيل الـ Plugins والحماية
+          # تعديل ملف build.gradle الخاص بالتطبيق (App Level) بشكل مباشر لتجنب أخطاء المتغيرات
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
 
           android {
               namespace "com.raqqa.app"
-              compileSdkVersion rootProject.ext.compileSdkVersion
+              compileSdkVersion 34
               defaultConfig {
                   applicationId "com.raqqa.app"
-                  minSdkVersion rootProject.ext.minSdkVersion
-                  targetSdkVersion rootProject.ext.targetSdkVersion
+                  minSdkVersion 22
+                  targetSdkVersion 34
                   versionCode ${{ github.run_number }}
                   versionName "1.0.${{ github.run_number }}"
+                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
               buildTypes {
                   release {
@@ -101,17 +86,19 @@ jobs:
                   }
               }
           }
+
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
               implementation project(':capacitor-android')
               implementation project(':capacitor-cordova-android-plugins')
-              implementation "androidx.appcompat:appcompat:\${rootProject.ext.androidxAppCompatVersion}"
-              implementation "com.google.firebase:firebase-messaging:\${rootProject.ext.firebaseMessagingVersion}"
-              implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
+              implementation "androidx.appcompat:appcompat:1.6.1"
+              implementation "com.google.firebase:firebase-messaging:24.0.0"
+              implementation "androidx.core:core-splashscreen:1.0.1"
+              implementation "com.google.android.material:material:1.10.0"
           }
           EOF
 
-          # قواعد الحماية (ProGuard) لمنع تعطل Firebase و Capacitor
+          # قواعد الحماية
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -121,7 +108,7 @@ jobs:
 
           npx cap sync android
 
-      - name: 5. ضبط الهوية (Google Services & Name)
+      - name: 5. ضبط الهوية والأيقونة
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -132,17 +119,13 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. بناء الـ APK وتجهيز ملف التحديث (OTA)
+      - name: 6. البناء والتوقيع النهائي
         run: |
-          # هام جداً: ضغط محتويات المجلد وليس المجلد نفسه ليعمل الـ Live Update
-          cd dist_web && zip -r ../update.zip . && cd ..
-          
-          # إنشاء ملف التوقيع
+          # إنشاء مفتاح التوقيع
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # بناء ملفات أندرويد
           cd android && chmod +x gradlew
           ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
@@ -151,7 +134,6 @@ jobs:
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
       - name: 7. نشر الإصدار (GitHub Release)
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
@@ -161,17 +143,11 @@ jobs:
             android/app/build/outputs/bundle/release/*.aab
             release.keystore
             update.zip
-          body: |
-            ### 📱 إصدار رقة المحدث:
-            * **إشعارات فيربيس:** مفعلة الآن.
-            * **التحديث التلقائي:** تم تحديث `update.zip` ليعمل هوائياً.
-            * **الحماية:** تم تفعيل R8 لتصغير وحماية الكود.
-          draft: false
-          prerelease: false
+          body: "إصدار رقة الجديد مع تفعيل Firebase و Live Update."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 8. دفع التحديث لفرع Updates (Live Update)
+      - name: 8. تحديث فرع التحديث الهوائي (Updates)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
