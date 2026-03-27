@@ -33,7 +33,7 @@ jobs:
           npm install --legacy-peer-deps
           npm run build --if-present
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-          # ضغط التحديث الهوائي بشكل صحيح
+          # ضغط محتويات مجلد التوزيع فقط لضمان عمل التحديث
           cd dist_web && zip -r ../update.zip . && cd ..
 
       - name: 4. إعداد أندرويد وتفعيل Firebase
@@ -42,7 +42,7 @@ jobs:
           npx cap config set webDir dist_web
           npx cap add android
           
-          # تعديل ملف build.gradle الرئيسي (Project Level)
+          # تعديل ملف build.gradle الرئيسي
           cat <<EOF > android/build.gradle
           buildscript {
               repositories {
@@ -62,7 +62,7 @@ jobs:
           }
           EOF
 
-          # تعديل ملف build.gradle الخاص بالتطبيق (App Level) بشكل مباشر لتجنب أخطاء المتغيرات
+          # تعديل ملف build.gradle الخاص بالتطبيق
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -98,7 +98,7 @@ jobs:
           }
           EOF
 
-          # قواعد الحماية
+          # قواعد الحماية ProGuard
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -119,9 +119,8 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء والتوقيع النهائي
+      - name: 6. البناء والتوقيع النهائي للـ APK والـ AAB
         run: |
-          # إنشاء مفتاح التوقيع
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
@@ -133,7 +132,7 @@ jobs:
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. نشر الإصدار (GitHub Release)
+      - name: 7. نشر الإصدار على GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
@@ -143,20 +142,31 @@ jobs:
             android/app/build/outputs/bundle/release/*.aab
             release.keystore
             update.zip
-          body: "إصدار رقة الجديد مع تفعيل Firebase و Live Update."
+          body: "تم إصدار نسخة رقة الجديدة. الإشعارات مفعلة والتحديث الهوائي جاهز."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 8. تحديث فرع التحديث الهوائي (Updates)
+      - name: 8. تحديث فرع التحديث الهوائي (Updates) مع التنظيف الشامل
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # حفظ الملفات المطلوبة في مكان آمن خارج المجلد الحالي
           cp dist_web/version.json $HOME/version.json
           cp update.zip $HOME/update.zip
+          
+          # جلب فرع التحديثات والانتقال إليه
+          git fetch origin updates || true
           git checkout -B updates
-          rm -rf ./*
+          
+          # تنظيف الفرع من كافة الملفات القديمة (بما في ذلك كود المصدر)
+          git rm -rf . --ignore-unmatch
+          
+          # إعادة الملفات الجديدة فقط إلى المجلد الرئيسي للفرع
           cp $HOME/version.json .
           cp $HOME/update.zip .
+          
+          # رفع الملفين فقط إلى فرع updates
           git add version.json update.zip
-          git commit -m "Live Update: Build ${{ github.run_number }}"
+          git commit -m "Live Update: Build ${{ github.run_number }} (Cleaned)"
           git push origin updates --force
