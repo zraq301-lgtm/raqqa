@@ -28,7 +28,7 @@ import VirtualWorld from './pages/VirtualWorld';
 import './App.css';
 
 /**
- * وظيفة لضمان صعود التمرير للأعلى عند تغيير الصفحة لتعزيز تجربة المستخدم
+ * وظيفة لضمان صعود التمرير للأعلى عند تغيير الصفحة
  */
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -39,7 +39,7 @@ function ScrollToTop() {
 }
 
 /**
- * مكون النصيحة الذكية (TipOverlay) - يدعم النصوص، الصور، وفيديوهات اليوتيوب
+ * مكون النصيحة الذكية (TipOverlay)
  */
 function TipOverlay() {
   const [tip, setTip] = useState(null);
@@ -65,7 +65,6 @@ function TipOverlay() {
             setIsVisible(true);
             tipData.count += 1;
             localStorage.setItem('raqqa_tip_tracker', JSON.stringify(tipData));
-            // إخفاء التنبيه تلقائياً بعد 20 ثانية
             setTimeout(() => setIsVisible(false), 20000);
           }
         } catch (err) {
@@ -80,11 +79,9 @@ function TipOverlay() {
 
   const renderContent = () => {
     const content = tip.trim();
-    // التحقق إذا كان المحتوى صورة
     if (content.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
       return <img src={content} alt="رقة نصيحة" className="tip-media-content" />;
     }
-    // التحقق إذا كان المحتوى فيديو يوتيوب
     if (content.includes('youtube.com') || content.includes('youtu.be')) {
       let videoId = content.split('v=')[1] || content.split('/').pop();
       if (videoId.includes('&')) videoId = videoId.split('&')[0];
@@ -118,38 +115,48 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- [النظام الاحترافي] مزامنة التحديثات من فرع Updates المخصص ---
+  // --- [النظام الاحترافي] مزامنة التحديثات من GitHub مباشرة ---
   const syncAppUpdates = useCallback(async () => {
+    // الرابط المباشر الذي يعمل بنجاح
     const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
+    
     try {
-      // 1. فحص رقم الإصدار من ملف version.json
+      // 1. فحص رقم الإصدار (أضفنا طابع زمني لمنع التخزين المؤقت/Cache)
       const githubResponse = await CapacitorHttp.get({
-        url: `${BASE_URL}/version.json`
+        url: `${BASE_URL}/version.json?t=${new Date().getTime()}`
       });
       
       const latestVersion = githubResponse.data.version;
       const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
 
+      // إذا كان الإصدار على GitHub (مثلاً 1276) أكبر من الموجود في الجهاز
       if (latestVersion > currentVersion) {
-        // 2. تحميل الحزمة المضغوطة (Internal Update)
+        console.log(`New version detected: ${latestVersion}. Downloading update...`);
+        
+        // 2. تحميل الحزمة المضغوطة
         const bundle = await CapacitorUpdater.download({
           url: `${BASE_URL}/update.zip`,
           version: latestVersion.toString()
         });
 
         if (bundle) {
-          // 3. تخزين الإصدار الجديد وتطبيق التحديث
+          // 3. تخزين الإصدار وتطبيق التحديث فجأة
           localStorage.setItem('raqqa_version_build', latestVersion.toString());
-          await CapacitorUpdater.set(bundle); 
-          // سيقوم التطبيق بإعادة تشغيل نفسه تلقائياً بالنسخة الجديدة
+          
+          // تأخير بسيط لضمان حفظ البيانات ثم إعادة التشغيل بالنسخة الجديدة
+          setTimeout(async () => {
+            await CapacitorUpdater.set(bundle); 
+          }, 1000);
         }
+      } else {
+        console.log("App is up to date.");
       }
     } catch (err) {
-      console.log("OTA Update: No updates found at /updates branch.");
+      console.log("OTA Update: No connectivity or updates branch unavailable.");
     }
   }, []);
 
-  // --- نظام جدولة الإشعارات المحلية من قاعدة البيانات ---
+  // --- نظام جدولة الإشعارات ---
   const syncNotifications = useCallback(async () => {
     try {
       const response = await CapacitorHttp.get({
@@ -162,13 +169,11 @@ function App() {
         const perms = await LocalNotifications.checkPermissions();
         if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
 
-        // تنظيف الإشعارات القديمة المجدولة
         const pending = await LocalNotifications.getPending();
         if (pending.notifications.length > 0) {
           await LocalNotifications.cancel({ notifications: pending.notifications });
         }
 
-        // جدولة الإشعارات الجديدة
         const notificationsToSchedule = reminders
           .filter(rem => new Date(rem.scheduled_for) > new Date())
           .map(rem => ({
@@ -177,7 +182,7 @@ function App() {
             body: rem.body,
             schedule: { at: new Date(rem.scheduled_for) },
             extra: { url: rem.image_url },
-            smallIcon: 'ic_stat_name', // يجب التأكد من وجودها في Android Res
+            smallIcon: 'ic_stat_name',
             sound: 'default'
           }));
 
@@ -194,7 +199,6 @@ function App() {
     syncAppUpdates();
     syncNotifications();
 
-    // التعامل مع زر الرجوع في أندرويد
     const setupBackButton = async () => {
       return await CapApp.addListener('backButton', ({ canGoBack }) => {
         if (!canGoBack) { 
@@ -213,7 +217,6 @@ function App() {
       <ScrollToTop />
       <TipOverlay />
       
-      {/* القائمة العلوية */}
       <header className="top-sticky-menu">
         <div className="top-cards-container">
           <Link to="/videos" className="top-card">
@@ -240,7 +243,6 @@ function App() {
         </Routes>
       </main>
 
-      {/* القائمة السفلية الذكية */}
       <nav className="bottom-sticky-menu">
         <div className="nav-grid">
           <Link to="/feelings" className="nav-item">
