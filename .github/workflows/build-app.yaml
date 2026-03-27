@@ -22,13 +22,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle' # تفعيل الكاش لمنع ملفات الـ Jar التالفة من التراكم
+          # تم إزالة الكاش من هنا لمنع خطأ "No file matched"
 
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: 3. بناء الويب وتوليد رقم الإصدار
         run: |
@@ -101,7 +100,7 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء النهائي (إصلاح تعارض المكتبات وتوليد APK)
+      - name: 6. البناء النهائي (إصلاح وتوليد APK)
         run: |
           zip -r update.zip dist_web/
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
@@ -110,10 +109,9 @@ jobs:
           
           cd android && chmod +x gradlew
           
-          # حذف مجلدات الكاش التي تسبب خطأ "Failed to create Jar file"
+          # حذف الكاش المتسبب في المشكلة السابقة يدوياً
           rm -rf ~/.gradle/caches/jars-9/
           
-          # استخدام --no-daemon لضمان عدم قفل الملفات أثناء البناء في GitHub
           ./gradlew assembleRelease --no-daemon \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
