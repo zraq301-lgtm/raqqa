@@ -2,12 +2,13 @@
   "appId": "com.raqqa.app",
   "appName": "رقة",
   "webDir": "dist_web",
-  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
     "cleartext": true,
     "allowNavigation": [
-      "raw.githubusercontent.com"
+      "raw.githubusercontent.com",
+      "raqqa-ruddy.vercel.app",
+      "raqqa-hjl8.vercel.app"
     ]
   },
   "plugins": {
@@ -20,14 +21,13 @@
     },
     "CapacitorUpdater": {
       "autoUpdate": false
+    },
+    "CapacitorHttp": {
+      "enabled": true
     }
   },
   "android": {
     "allowMixedContent": true,
-    "captureInput": true,
-    "buildOptions": {
-      "releaseKeystore": "roqa_release.jks",
-      "releaseKeyAlias": "roqa_alias"
-    }
+    "captureInput": true
   }
 }
