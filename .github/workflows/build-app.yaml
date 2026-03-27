@@ -22,7 +22,6 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          # تم إزالة الكاش من هنا لمنع خطأ "No file matched"
 
       - name: إعداد Node.js
         uses: actions/setup-node@v4
@@ -36,13 +35,14 @@ jobs:
           mkdir -p dist_web
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
 
-      - name: 4. إعداد أندرويد وتثبيت المكتبات (إصلاح حيوي)
+      - name: 4. إعداد أندرويد وتثبيت المكتبات (إصلاح جذري)
         run: |
           rm -rf android
           npx cap config set webDir dist_web
           npm install @capacitor/android@latest
           npx cap add android
           
+          # تعديل متغيرات Gradle
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -57,6 +57,7 @@ jobs:
           }
           EOF
 
+          # تعديل build.gradle مع إضافة استثناء لمكتبة التشفير المتعارضة
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -75,6 +76,12 @@ jobs:
                       minifyEnabled true
                       shrinkResources true
                       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+                  }
+              }
+              configurations.all {
+                  resolutionStrategy {
+                      // إجبار النظام على نسخة مستقرة ومنع التضارب
+                      force 'org.bouncycastle:bcprov-jdk18on:1.78.1'
                   }
               }
           }
@@ -100,7 +107,7 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء النهائي (إصلاح وتوليد APK)
+      - name: 6. البناء النهائي (الحل القاطع للمكتبات)
         run: |
           zip -r update.zip dist_web/
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
@@ -109,10 +116,13 @@ jobs:
           
           cd android && chmod +x gradlew
           
-          # حذف الكاش المتسبب في المشكلة السابقة يدوياً
-          rm -rf ~/.gradle/caches/jars-9/
+          # تنظيف الكاش بشكل عدواني لمنع تكرار الخطأ
+          rm -rf ~/.gradle/caches/
+          rm -rf ~/.gradle/wrapper/dists/
           
-          ./gradlew assembleRelease --no-daemon \
+          # البناء مع تعطيل الـ Daemon وإضافة خيارات الذاكرة
+          ./gradlew assembleRelease --no-daemon --stacktrace \
+            -Dorg.gradle.jvmargs="-Xmx2048m -Dfile.encoding=UTF-8" \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
