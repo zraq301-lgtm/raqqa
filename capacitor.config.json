@@ -8,7 +8,8 @@
     "allowNavigation": [
       "raw.githubusercontent.com",
       "raqqa-ruddy.vercel.app",
-      "raqqa-hjl8.vercel.app"
+      "raqqa-hjl8.vercel.app",
+      "github.com"
     ]
   },
   "plugins": {
@@ -20,7 +21,8 @@
       "iconColor": "#445271"
     },
     "CapacitorUpdater": {
-      "autoUpdate": false
+      "autoUpdate": false,
+      "stats": false
     },
     "CapacitorHttp": {
       "enabled": true
