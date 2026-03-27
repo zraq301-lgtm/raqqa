@@ -4,7 +4,7 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// استبدال المكتبة بمكتبة التحديث الذاتي الموثوقة
+// مكتبة التحديث الذاتي (المتوافقة مع الباكج الجديد)
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 // استيراد الأصول (Assets)
@@ -117,11 +117,10 @@ function TipOverlay() {
 function App() {
   // --- [النظام الاحترافي] مزامنة التحديثات من GitHub مباشرة ---
   const syncAppUpdates = useCallback(async () => {
-    // الرابط المباشر الذي يعمل بنجاح
     const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
     
     try {
-      // 1. فحص رقم الإصدار (أضفنا طابع زمني لمنع التخزين المؤقت/Cache)
+      // استخدام CapacitorHttp من الكور (متوافق مع package.json الجديد)
       const githubResponse = await CapacitorHttp.get({
         url: `${BASE_URL}/version.json?t=${new Date().getTime()}`
       });
@@ -129,30 +128,28 @@ function App() {
       const latestVersion = githubResponse.data.version;
       const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
 
-      // إذا كان الإصدار على GitHub (مثلاً 1276) أكبر من الموجود في الجهاز
       if (latestVersion > currentVersion) {
-        console.log(`New version detected: ${latestVersion}. Downloading update...`);
+        console.log(`New version detected: ${latestVersion}. Downloading...`);
         
-        // 2. تحميل الحزمة المضغوطة
         const bundle = await CapacitorUpdater.download({
           url: `${BASE_URL}/update.zip`,
           version: latestVersion.toString()
         });
 
         if (bundle) {
-          // 3. تخزين الإصدار وتطبيق التحديث فجأة
           localStorage.setItem('raqqa_version_build', latestVersion.toString());
           
-          // تأخير بسيط لضمان حفظ البيانات ثم إعادة التشغيل بالنسخة الجديدة
+          // تفعيل التحديث وإعادة التحميل فوراً
           setTimeout(async () => {
             await CapacitorUpdater.set(bundle); 
-          }, 1000);
+            window.location.reload();
+          }, 1500);
         }
       } else {
         console.log("App is up to date.");
       }
     } catch (err) {
-      console.log("OTA Update: No connectivity or updates branch unavailable.");
+      console.log("OTA Update Info: Connectivity issue or no new updates.");
     }
   }, []);
 
