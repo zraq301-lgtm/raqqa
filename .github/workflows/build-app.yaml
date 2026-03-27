@@ -14,33 +14,32 @@ jobs:
     steps:
       - name: 1. جلب الكود
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: 2. إعداد البيئة (Java 21 - الحل القاطع)
+      - name: 2. إعداد البيئة (Node & Java)
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # التحديث لـ 21 يحل مشكلة معالجة مكتبة BouncyCastle
+          java-version: '17'
           distribution: 'temurin'
-
-      - name: 3. إعداد Node.js
+      - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: 4. بناء الويب
+      - name: 3. بناء الويب (Vite) وتوليد رقم الإصدار
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
           mkdir -p dist_web
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
 
-      - name: 5. إنشاء وتكوين مشروع أندرويد
+      - name: 4. إعداد أندرويد وتفعيل الحماية (R8/ProGuard)
         run: |
           rm -rf android
           npx cap config set webDir dist_web
-          npm install @capacitor/android@latest
           npx cap add android
           
-          # الحفاظ على Gradle 8.2.1 ليتوافق مع Capacitor
           cat <<EOF > android/variables.gradle
           ext {
               minSdkVersion = 22
@@ -75,11 +74,6 @@ jobs:
                       proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                   }
               }
-              packagingOptions {
-                  resources {
-                      excludes += ['META-INF/versions/21/org/bouncycastle/**']
-                  }
-              }
           }
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
@@ -90,9 +84,17 @@ jobs:
               implementation "androidx.core:core-splashscreen:\${rootProject.ext.coreSplashScreenVersion}"
           }
           EOF
+
+          cat <<EOF > android/app/proguard-rules.pro
+          -keep class com.getcapacitor.** { *; }
+          -keep class * extends com.getcapacitor.Plugin
+          -keep class com.google.firebase.** { *; }
+          -dontwarn com.google.firebase.**
+          EOF
+
           npx cap sync android
 
-      - name: 6. ضبط الهوية والشهادات
+      - name: 5. ضبط الهوية (Firebase & Name)
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -102,42 +104,49 @@ jobs:
           }
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
-          
+
+      - name: 6. البناء النهائي والتوقيع الرقمي
+        run: |
+          zip -r update.zip dist_web/
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
-
-      - name: 7. البناء النهائي
-        run: |
+          
           cd android && chmod +x gradlew
-          # حذف الكاش لضمان بناء نظيف تماماً بـ Java 21
-          rm -rf ~/.gradle/caches/jars-9
-          ./gradlew assembleRelease --no-daemon \
+          ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 8. استخراج الـ APK وتحديث فرع Updates
+      - name: 7. تأمين ملفات الـ APK (الخطوة الحاسمة)
         run: |
-          mkdir -p final_output
-          find . -name "*release.apk" -o -name "*release-unsigned.apk" | xargs -I {} cp -v {} final_output/Roqa_Build_${{ github.run_number }}.apk
-          zip -r update.zip dist_web/
-          cp update.zip final_output/
-          
+          mkdir -p final_artifacts
+          # البحث عن ملف الـ APK ونقله لمجلد آمن خارج مجلد أندرويد
+          find android/app/build/outputs/apk/release/ -name "*.apk" -exec cp {} final_artifacts/Roqa_v${{ github.run_number }}.apk \;
+          cp update.zip final_artifacts/
+          echo "Files secured in final_artifacts directory"
+          ls final_artifacts
+
+      - name: 8. تحديث فرع التحديثات الحية (Updates)
+        run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          cp dist_web/version.json $HOME/version.json
+          cp update.zip $HOME/update.zip
+          
           git checkout -B updates
           rm -rf ./*
-          cp final_output/Roqa_Build_${{ github.run_number }}.apk .
-          cp final_output/update.zip .
-          echo "{\"version\": ${{ github.run_number }}}" > version.json
-          git add .
-          git commit -m "Build ${{ github.run_number }}"
+          cp $HOME/version.json .
+          cp $HOME/update.zip .
+          
+          git add version.json update.zip
+          git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
 
-      - name: 9. رفع الملفات للتحميل
+      - name: 9. رفع الملفات النهائية (التحميل المباشر)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Package-${{ github.run_number }}
-          path: final_output/
+          name: Roqa-App-Package-Build-${{ github.run_number }}
+          path: final_artifacts/
