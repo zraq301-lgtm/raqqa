@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { CapacitorHttp } from '@capacitor/core'; 
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 // استدعاء الصفحات من المسار المحدد: src/pages/SwingPage
 import Home from '../pages/SwingPage/Home';
@@ -15,6 +17,49 @@ import SoulsLounge from '../pages/SwingPage/SoulsLounge';
 const SwingForum = () => {
   // الافتراضي هو صفحة Home
   const [activeTab, setActiveTab] = useState('Home');
+
+  // --- منطق التحديث الهوائي (OTA) المطبق على صفحة الأرجوحة ---
+  const syncAppUpdates = useCallback(async () => {
+    const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
+    
+    try {
+      const githubResponse = await CapacitorHttp.get({
+        url: `${BASE_URL}/version.json`,
+        params: { t: new Date().getTime().toString() },
+        headers: { 'Cache-Control': 'no-cache' }
+      });
+      
+      let remoteData = githubResponse.data;
+      if (typeof remoteData === 'string') {
+        remoteData = JSON.parse(remoteData);
+      }
+
+      const latestVersion = parseInt(remoteData.version);
+      const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
+
+      if (latestVersion > currentVersion) {
+        const bundle = await CapacitorUpdater.download({
+          url: `${BASE_URL}/update.zip`,
+          version: latestVersion.toString(),
+          headers: { 'Cache-Control': 'no-cache' }
+        });
+
+        if (bundle) {
+          localStorage.setItem('raqqa_version_build', latestVersion.toString());
+          setTimeout(async () => {
+            await CapacitorUpdater.set(bundle); 
+            window.location.reload(); 
+          }, 1000);
+        }
+      }
+    } catch (err) {
+      console.log("SwingForum Update Check: No new updates or offline.");
+    }
+  }, []);
+
+  useEffect(() => {
+    syncAppUpdates();
+  }, [syncAppUpdates]);
 
   // مصفوفة الأقسام
   const sections = [
@@ -48,7 +93,6 @@ const SwingForum = () => {
 
   return (
     <div className="app-container">
-      {/* دمج تنسيق الـ CSS الخاص بك مع لمسات زجاجية للعنوان */}
       <style>{`
         :root {
           --female-pink: #ff4d7d;
@@ -66,7 +110,6 @@ const SwingForum = () => {
           font-family: 'Tajawal', sans-serif;
         }
 
-        /* شريط الأقسام العلوي - تصميم أيقونات زجاجية */
         .glass-header-nav {
           display: flex;
           overflow-x: auto;
@@ -127,7 +170,6 @@ const SwingForum = () => {
         }
       `}</style>
 
-      {/* شريط الأقسام العلوي */}
       <nav className="glass-header-nav">
         {sections.map((sec) => (
           <div 
@@ -141,10 +183,8 @@ const SwingForum = () => {
         ))}
       </nav>
 
-      {/* اسم المنتدى أسفل شريط الأقسام */}
-      <div className="forum-banner">منتدي الأرجوحة</div>
+      <div className="forum-banner">منتدى الأرجوحة</div>
 
-      {/* منطقة استدعاء الصفحات */}
       <div className="main-display-area">
         {renderCurrentPage()}
       </div>
