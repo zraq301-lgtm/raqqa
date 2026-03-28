@@ -1,4 +1,4 @@
-name: Roqa Final Protected Build & Live Update
+name: Roqa Final Production Build
 
 on:
   push:
@@ -12,7 +12,7 @@ jobs:
       contents: write 
 
     steps:
-      - name: 1. جلب الكود (Checkout)
+      - name: 1. جلب الكود من GitHub
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -22,29 +22,85 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          # تم إزالة cache هنا لتجنب الخطأ الذي واجهته
           
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: 3. بناء ملفات الويب والتحديث الهوائي
+      - name: 3. تثبيت المكتبات وبناء مشروع React
         run: |
           npm install --legacy-peer-deps
+          # تثبيت أداة الأيقونات محلياً لضمان وجودها
+          npm install @capacitor/assets --save-dev
           npm run build --if-present
-          echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
-          echo "{\"version\": ${{ github.run_number }}}" > version.json
-          cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 4. إنشاء مشروع أندرويد وحقن الإعدادات
+      - name: 4. إعداد أندرويد وحقن التصاريح (Manifest)
         run: |
-          # تنظيف وبناء مجلد أندرويد
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # إعداد ملفات بناء أندرويد
+          # تعديل الـ AndroidManifest.xml لإضافة التصاريح (الكاميرا، الميكروفون، الصور، Firebase)
+          cat <<EOF > android/app/src/main/AndroidManifest.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.CAMERA" />
+              <uses-permission android:name="android.permission.RECORD_AUDIO" />
+              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.WAKE_LOCK" />
+              <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme">
+                  
+                  <activity
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+                      android:name="com.raqqa.app.MainActivity"
+                      android:label="@string/title_activity_main"
+                      android:theme="@style/AppTheme.NoActionBarLaunch"
+                      android:launchMode="singleTask"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+
+                  <provider
+                      android:name="androidx.core.content.FileProvider"
+                      android:authorities="\${applicationId}.fileprovider"
+                      android:exported="false"
+                      android:grantUriPermissions="true">
+                      <meta-data
+                          android:name="android.support.FILE_PROVIDER_PATHS"
+                          android:resource="@xml/file_paths"></meta-data>
+                  </provider>
+              </application>
+          </manifest>
+          EOF
+
+          # إنشاء ملف مسارات الملفات (ضروري لرفع الصور)
+          mkdir -p android/app/src/main/res/xml
+          echo '<paths><external-path name="my_images" path="." /></paths>' > android/app/src/main/res/xml/file_paths.xml
+
+      - name: 5. توليد الأيقونات من المجلد المحلي
+        run: |
+          # تأكد من وجود صورة باسم logo.png أو icon.png في مجلد resources أو الجذر
+          # هذا الأمر يسحب من الملفات المحلية التي رفعتها أنت على جيت هب
+          npx capacitor-assets generate --android
+
+      - name: 6. إعداد ملفات Gradle و ProGuard
+        run: |
+          # تعديل ملف build.gradle الرئيسي
           cat <<EOF > android/build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
@@ -56,10 +112,10 @@ jobs:
           allprojects { repositories { google(); mavenCentral() } }
           EOF
 
+          # تعديل ملف build.gradle الخاص بالتطبيق
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
-
           android {
               namespace "com.raqqa.app"
               compileSdkVersion 34
@@ -81,37 +137,12 @@ jobs:
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
               implementation project(':capacitor-android')
-              implementation project(':capacitor-cordova-android-plugins')
-              implementation "androidx.appcompat:appcompat:1.6.1"
               implementation "com.google.firebase:firebase-messaging:24.0.0"
-              implementation "androidx.core:core-splashscreen:1.0.1"
-              implementation "com.google.android.material:material:1.10.0"
+              implementation "androidx.appcompat:appcompat:1.6.1"
           }
           EOF
 
-          # حل مشكلة الـ Plugin عبر إنشاء الـ MainActivity برمجياً
-          mkdir -p android/app/src/main/java/com/raqqa/app/
-          cat <<EOF > android/app/src/main/java/com/raqqa/app/MainActivity.java
-          package com.raqqa.app;
-          import android.os.Bundle;
-          import com.getcapacitor.BridgeActivity;
-          import ee.forgr.capacitor_updater.CapacitorUpdaterPlugin;
-
-          public class MainActivity extends BridgeActivity {
-              @Override
-              public void onCreate(Bundle savedInstanceState) {
-                  super.onCreate(savedInstanceState);
-                  registerPlugin(CapacitorUpdaterPlugin.class);
-              }
-          }
-          EOF
-
-          # إضافة تصريحات الإنترنت للمانيفست
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' android/app/src/main/AndroidManifest.xml
-
-          npx cap sync android
-
-      - name: 5. ضبط الهوية وملف Firebase
+      - name: 7. ضبط ملف Firebase والاسم
         run: |
           cat <<EOF > android/app/google-services.json
           {
@@ -121,45 +152,30 @@ jobs:
           }
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
+          npx cap sync android
 
-      - name: 6. البناء والتوقيع (APK & AAB)
+      - name: 8. البناء والتوقيع (APK & AAB)
         run: |
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          cd android
-          chmod +x gradlew
+          cd android && chmod +x gradlew
           ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. رفع الإصدار إلى GitHub Releases
+      - name: 9. رفع الملفات النهائية إلى Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Roqa Build v${{ github.run_number }}
+          tag_name: prod-${{ github.run_number }}
+          name: Roqa Production v${{ github.run_number }}
           files: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
-            update.zip
-          body: "تم إصدار نسخة رقة الجديدة (بناء رقم ${{ github.run_number }}). تم إصلاح أخطاء التخزين المؤقت وحقن المكتبات."
+            release.keystore
+          body: "إصدار نهائي مستقر (Production). تم إضافة تصاريح الكاميرا، الميكروفون، والإشعارات، وتوليد الأيقونات محلياً."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 8. تحديث فرع التحديثات (Updates)
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          cp version.json $HOME/version.json
-          cp update.zip $HOME/update.zip
-          git fetch origin updates || true
-          git checkout -B updates
-          git rm -rf . --ignore-unmatch
-          cp $HOME/version.json .
-          cp $HOME/update.zip .
-          git add version.json update.zip
-          git commit -m "Live Update: Build ${{ github.run_number }}"
-          git push origin updates --force
