@@ -16,21 +16,27 @@ import SoulsLounge from '../pages/SwingPage/SoulsLounge';
 
 const SwingForum = () => {
   const [activeTab, setActiveTab] = useState('Home');
-  const [isUpdating, setIsUpdating] = useState(false); // حالة لمعرفة إذا كان جاري التحديث
+  const [isUpdating, setIsUpdating] = useState(false); 
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1';
 
-  // دالة الفحص والتحديث (تمت إضافة setIsUpdating لإعطاء مؤشر للمستخدم)
   const syncAppUpdates = useCallback(async (isManual = false) => {
     if (isManual) setIsUpdating(true);
+    
+    // تأكد من صحة هذا الرابط في متصفحك أولاً
     const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
     
     try {
       const githubResponse = await CapacitorHttp.get({
         url: `${BASE_URL}/version.json`,
-        params: { t: new Date().getTime().toString() }, // منع الكاش
+        params: { t: new Date().getTime().toString() }, 
         headers: { 'Cache-Control': 'no-cache' }
       });
       
+      // فحص حالة الاستجابة قبل المعالجة
+      if (githubResponse.status !== 200) {
+        throw new Error(`سيرفر GitHub أعاد خطأ رقم: ${githubResponse.status}`);
+      }
+
       let remoteData = githubResponse.data;
       if (typeof remoteData === 'string') remoteData = JSON.parse(remoteData);
 
@@ -52,8 +58,12 @@ const SwingForum = () => {
         if (isManual) alert("تطبيق رقة محدث بالفعل لأخر إصدار ✅");
       }
     } catch (err) {
-      console.log("Update Error:", err);
-      if (isManual) alert("عذراً، تعذر الاتصال بسيرفر التحديث حالياً.");
+      console.error("Detailed Update Error:", err);
+      if (isManual) {
+        // التعديل المطلوب لمعرفة السبب بالضبط
+        const errorMsg = err.message || JSON.stringify(err);
+        alert(`فشل الفحص!\nالسبب التقني: ${errorMsg}\n\nتأكد من اتصال الإنترنت أو صحة رابط GitHub.`);
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -101,7 +111,6 @@ const SwingForum = () => {
           --soft-bg: #fff5f7;
           --glass-white: rgba(255, 255, 255, 0.9);
         }
-
         .app-container { display: flex; flex-direction: column; height: 100vh; background-color: var(--soft-bg); direction: rtl; font-family: 'Tajawal', sans-serif; }
         .glass-header-nav { display: flex; overflow-x: auto; padding: 15px 10px; background: var(--glass-white); backdrop-filter: blur(12px); border-bottom: 2px solid var(--female-pink-light); gap: 12px; position: sticky; top: 0; z-index: 1000; }
         .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px 20px; background: white; border-radius: 20px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; }
@@ -111,28 +120,9 @@ const SwingForum = () => {
         .s-label { font-size: 0.85rem; font-weight: bold; color: var(--female-pink); }
         .forum-banner { text-align: center; padding: 12px; background: #fff; color: var(--female-pink); font-size: 1.3rem; font-weight: 900; border-bottom: 1px dashed var(--female-pink); }
         .main-display-area { flex: 1; overflow-y: auto; padding: 20px; }
-
-        /* ستايل شريط التحديث اليدوي */
-        .update-footer {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 8px 15px;
-          background: white;
-          border-top: 1px solid #eee;
-        }
+        .update-footer { display: flex; justify-content: space-between; align-items: center; padding: 8px 15px; background: white; border-top: 1px solid #eee; }
         .version-text { font-size: 10px; color: #888; }
-        .update-btn {
-          background: var(--female-pink-light);
-          color: var(--female-pink);
-          border: none;
-          padding: 5px 12px;
-          border-radius: 12px;
-          font-size: 11px;
-          font-weight: bold;
-          cursor: pointer;
-          transition: 0.2s;
-        }
+        .update-btn { background: var(--female-pink-light); color: var(--female-pink); border: none; padding: 5px 12px; border-radius: 12px; font-size: 11px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .update-btn:active { transform: scale(0.95); background: var(--female-pink); color: white; }
       `}</style>
 
@@ -146,19 +136,11 @@ const SwingForum = () => {
       </nav>
 
       <div className="forum-banner">منتدى الأرجوحة</div>
+      <div className="main-display-area">{renderCurrentPage()}</div>
 
-      <div className="main-display-area">
-        {renderCurrentPage()}
-      </div>
-
-      {/* شريط الإصدار مع زر التحديث اليدوي */}
       <footer className="update-footer">
         <span className="version-text">رقة - بناء: {currentBuildVersion}</span>
-        <button 
-          className="update-btn" 
-          onClick={() => syncAppUpdates(true)}
-          disabled={isUpdating}
-        >
+        <button className="update-btn" onClick={() => syncAppUpdates(true)} disabled={isUpdating}>
           {isUpdating ? "جاري الفحص..." : "فحص التحديثات ✨"}
         </button>
       </footer>
