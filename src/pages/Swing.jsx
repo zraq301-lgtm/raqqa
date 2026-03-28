@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
-// استدعاء الصفحات من المسار المحدد: src/pages/SwingPage
+// استدعاء الصفحات
 import Home from '../pages/SwingPage/Home';
 import MotherhoodHaven from '../pages/SwingPage/MotherhoodHaven';
 import LittleOnesAcademy from '../pages/SwingPage/LittleOnesAcademy';
@@ -15,27 +15,24 @@ import PassionsCrafts from '../pages/SwingPage/PassionsCrafts';
 import SoulsLounge from '../pages/SwingPage/SoulsLounge';
 
 const SwingForum = () => {
-  // الافتراضي هو صفحة Home
   const [activeTab, setActiveTab] = useState('Home');
-
-  // جلب رقم الإصدار المخزن حالياً لإظهاره في الواجهة
+  const [isUpdating, setIsUpdating] = useState(false); // حالة لمعرفة إذا كان جاري التحديث
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1';
 
-  // --- منطق التحديث الهوائي (OTA) المطبق على صفحة الأرجوحة ---
-  const syncAppUpdates = useCallback(async () => {
+  // دالة الفحص والتحديث (تمت إضافة setIsUpdating لإعطاء مؤشر للمستخدم)
+  const syncAppUpdates = useCallback(async (isManual = false) => {
+    if (isManual) setIsUpdating(true);
     const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
     
     try {
       const githubResponse = await CapacitorHttp.get({
         url: `${BASE_URL}/version.json`,
-        params: { t: new Date().getTime().toString() },
+        params: { t: new Date().getTime().toString() }, // منع الكاش
         headers: { 'Cache-Control': 'no-cache' }
       });
       
       let remoteData = githubResponse.data;
-      if (typeof remoteData === 'string') {
-        remoteData = JSON.parse(remoteData);
-      }
+      if (typeof remoteData === 'string') remoteData = JSON.parse(remoteData);
 
       const latestVersion = parseInt(remoteData.version);
       const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
@@ -44,19 +41,21 @@ const SwingForum = () => {
         const bundle = await CapacitorUpdater.download({
           url: `${BASE_URL}/update.zip`,
           version: latestVersion.toString(),
-          headers: { 'Cache-Control': 'no-cache' }
         });
 
         if (bundle) {
           localStorage.setItem('raqqa_version_build', latestVersion.toString());
-          setTimeout(async () => {
-            await CapacitorUpdater.set(bundle); 
-            window.location.reload(); 
-          }, 1000);
+          await CapacitorUpdater.set(bundle); 
+          window.location.reload(); 
         }
+      } else {
+        if (isManual) alert("تطبيق رقة محدث بالفعل لأخر إصدار ✅");
       }
     } catch (err) {
-      console.log("SwingForum Update Check: No new updates or offline.");
+      console.log("Update Error:", err);
+      if (isManual) alert("عذراً، تعذر الاتصال بسيرفر التحديث حالياً.");
+    } finally {
+      setIsUpdating(false);
     }
   }, []);
 
@@ -64,7 +63,6 @@ const SwingForum = () => {
     syncAppUpdates();
   }, [syncAppUpdates]);
 
-  // مصفوفة الأقسام
   const sections = [
     { id: 'Home', label: 'الرئيسية', icon: '🏠' },
     { id: 'MotherhoodHaven', label: 'ملاذ الأمومة', icon: '🍼' },
@@ -104,91 +102,43 @@ const SwingForum = () => {
           --glass-white: rgba(255, 255, 255, 0.9);
         }
 
-        .app-container {
-          display: flex;
-          flex-direction: column;
-          height: 100vh;
-          background-color: var(--soft-bg);
-          direction: rtl;
-          font-family: 'Tajawal', sans-serif;
-        }
-
-        .glass-header-nav {
-          display: flex;
-          overflow-x: auto;
-          padding: 15px 10px;
-          background: var(--glass-white);
-          backdrop-filter: blur(12px);
-          border-bottom: 2px solid var(--female-pink-light);
-          gap: 12px;
-          scrollbar-width: none;
-          position: sticky;
-          top: 0;
-          z-index: 1000;
-        }
-
-        .glass-header-nav::-webkit-scrollbar { display: none; }
-
-        .section-item {
-          flex: 0 0 auto;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 10px 20px;
-          background: white;
-          border-radius: 20px;
-          border: 1px solid var(--female-pink-light);
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .section-item.active {
-          background: var(--female-pink);
-          transform: translateY(-3px);
-          box-shadow: 0 5px 15px rgba(255, 77, 125, 0.3);
-        }
-
-        .section-item.active .s-label, .section-item.active .s-icon {
-          color: white;
-        }
-
+        .app-container { display: flex; flex-direction: column; height: 100vh; background-color: var(--soft-bg); direction: rtl; font-family: 'Tajawal', sans-serif; }
+        .glass-header-nav { display: flex; overflow-x: auto; padding: 15px 10px; background: var(--glass-white); backdrop-filter: blur(12px); border-bottom: 2px solid var(--female-pink-light); gap: 12px; position: sticky; top: 0; z-index: 1000; }
+        .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 10px 20px; background: white; border-radius: 20px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; }
+        .section-item.active { background: var(--female-pink); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(255, 77, 125, 0.3); }
+        .section-item.active .s-label, .section-item.active .s-icon { color: white; }
         .s-icon { font-size: 1.6rem; margin-bottom: 5px; }
         .s-label { font-size: 0.85rem; font-weight: bold; color: var(--female-pink); }
+        .forum-banner { text-align: center; padding: 12px; background: #fff; color: var(--female-pink); font-size: 1.3rem; font-weight: 900; border-bottom: 1px dashed var(--female-pink); }
+        .main-display-area { flex: 1; overflow-y: auto; padding: 20px; }
 
-        .forum-banner {
-          text-align: center;
-          padding: 12px;
-          background: #fff;
-          color: var(--female-pink);
-          font-size: 1.3rem;
-          font-weight: 900;
-          margin: 0;
-          border-bottom: 1px dashed var(--female-pink);
-        }
-
-        .main-display-area {
-          flex: 1;
-          overflow-y: auto;
-          padding: 20px;
-        }
-
-        .version-indicator {
-          text-align: center;
-          font-size: 10px;
-          color: #bbb;
-          padding: 5px;
-          background: #fff;
+        /* ستايل شريط التحديث اليدوي */
+        .update-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 8px 15px;
+          background: white;
           border-top: 1px solid #eee;
         }
+        .version-text { font-size: 10px; color: #888; }
+        .update-btn {
+          background: var(--female-pink-light);
+          color: var(--female-pink);
+          border: none;
+          padding: 5px 12px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: bold;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+        .update-btn:active { transform: scale(0.95); background: var(--female-pink); color: white; }
       `}</style>
 
       <nav className="glass-header-nav">
         {sections.map((sec) => (
-          <div 
-            key={sec.id} 
-            className={`section-item ${activeTab === sec.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(sec.id)}
-          >
+          <div key={sec.id} className={`section-item ${activeTab === sec.id ? 'active' : ''}`} onClick={() => setActiveTab(sec.id)}>
             <span className="s-icon">{sec.icon}</span>
             <span className="s-label">{sec.label}</span>
           </div>
@@ -201,10 +151,17 @@ const SwingForum = () => {
         {renderCurrentPage()}
       </div>
 
-      {/* إضافة سطر الإصدار للتأكد من نجاح التحديث الهوائي */}
-      <div className="version-indicator">
-        رقة - إصدار البناء: {currentBuildVersion}
-      </div>
+      {/* شريط الإصدار مع زر التحديث اليدوي */}
+      <footer className="update-footer">
+        <span className="version-text">رقة - بناء: {currentBuildVersion}</span>
+        <button 
+          className="update-btn" 
+          onClick={() => syncAppUpdates(true)}
+          disabled={isUpdating}
+        >
+          {isUpdating ? "جاري الفحص..." : "فحص التحديثات ✨"}
+        </button>
+      </footer>
     </div>
   );
 };
