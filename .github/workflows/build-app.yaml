@@ -22,30 +22,29 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
+          # تم إزالة cache هنا لتجنب الخطأ الذي واجهته
           
       - name: إعداد Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: 3. بناء الويب وتجهيز ملفات التحديث (Live Update)
+      - name: 3. بناء ملفات الويب والتحديث الهوائي
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
           echo "{\"version\": ${{ github.run_number }}}" > version.json
-          # ضغط محتويات مجلد dist_web فقط
           cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 4. إعداد أندرويد وحقن الـ Plugins برمجياً
+      - name: 4. إنشاء مشروع أندرويد وحقن الإعدادات
         run: |
+          # تنظيف وبناء مجلد أندرويد
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # إعداد ملفات Gradle الرئيسية
+          # إعداد ملفات بناء أندرويد
           cat <<EOF > android/build.gradle
           buildscript {
               repositories { google(); mavenCentral() }
@@ -57,7 +56,6 @@ jobs:
           allprojects { repositories { google(); mavenCentral() } }
           EOF
 
-          # إعداد ملف build.gradle للتطبيق
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -71,7 +69,6 @@ jobs:
                   targetSdkVersion 34
                   versionCode ${{ github.run_number }}
                   versionName "1.0.${{ github.run_number }}"
-                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
               buildTypes {
                   release {
@@ -81,7 +78,6 @@ jobs:
                   }
               }
           }
-
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
               implementation project(':capacitor-android')
@@ -93,7 +89,7 @@ jobs:
           }
           EOF
 
-          # تسجيل Plugin التحديث الهوائي يدوياً لحل مشكلة "Not Implemented"
+          # حل مشكلة الـ Plugin عبر إنشاء الـ MainActivity برمجياً
           mkdir -p android/app/src/main/java/com/raqqa/app/
           cat <<EOF > android/app/src/main/java/com/raqqa/app/MainActivity.java
           package com.raqqa.app;
@@ -110,7 +106,7 @@ jobs:
           }
           EOF
 
-          # إضافة صلاحيات الإنترنت للمانيفست
+          # إضافة تصريحات الإنترنت للمانيفست
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' android/app/src/main/AndroidManifest.xml
 
           npx cap sync android
@@ -126,24 +122,21 @@ jobs:
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء والتوقيع النهائي (APK & AAB)
+      - name: 6. البناء والتوقيع (APK & AAB)
         run: |
-          # إنشاء مفتاح التوقيع
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           cd android
           chmod +x gradlew
-          # تشغيل البناء مع تمرير معاملات التوقيع مباشرة
           ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
-            -Pandroid.injected.signing.key.password=roqa_pass_2026 \
-            --stacktrace
+            -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. رفع الملفات إلى GitHub Releases
+      - name: 7. رفع الإصدار إلى GitHub Releases
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
@@ -152,7 +145,7 @@ jobs:
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
             update.zip
-          body: "إصدار رقم ${{ github.run_number }} - تم حل مشكلة تعريف المكتبة وإضافة تصريحات الإنترنت."
+          body: "تم إصدار نسخة رقة الجديدة (بناء رقم ${{ github.run_number }}). تم إصلاح أخطاء التخزين المؤقت وحقن المكتبات."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
