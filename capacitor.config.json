@@ -2,15 +2,10 @@
   "appId": "com.raqqa.app",
   "appName": "رقة",
   "webDir": "dist_web",
+  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
-    "cleartext": true,
-    "allowNavigation": [
-      "raw.githubusercontent.com",
-      "raqqa-ruddy.vercel.app",
-      "raqqa-hjl8.vercel.app",
-      "github.com"
-    ]
+    "cleartext": true
   },
   "plugins": {
     "PushNotifications": {
@@ -20,16 +15,18 @@
       "smallIcon": "ic_stat_icon_config_sample",
       "iconColor": "#445271"
     },
-    "CapacitorUpdater": {
-      "autoUpdate": false,
-      "stats": false
-    },
     "CapacitorHttp": {
       "enabled": true
+    },
+    "Camera": {
+      "presentationStyle": "fullscreen"
     }
   },
   "android": {
     "allowMixedContent": true,
-    "captureInput": true
+    "captureInput": true,
+    "buildOptions": {
+      "releaseType": "AAB"
+    }
   }
 }
