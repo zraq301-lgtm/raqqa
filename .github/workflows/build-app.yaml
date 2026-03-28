@@ -32,39 +32,30 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
-          # إنشاء ملف الإصدار داخل مجلد dist_web وللجذر أيضاً
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
           echo "{\"version\": ${{ github.run_number }}}" > version.json
-          # ضغط المحتويات من الداخل لضمان وجود index.html في جذر الزيب
           cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 4. إعداد أندرويد وتفعيل الإضافات (Fix Plugin Implementation)
+      - name: 4. إعداد أندرويد وتثبيت الإضافات
         run: |
+          # تنظيف وبناء مجلد أندرويد من جديد
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # تعديل ملف build.gradle الرئيسي ليدعم Firebase
+          # تعديل build.gradle الرئيسي
           cat <<EOF > android/build.gradle
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
               dependencies {
                   classpath 'com.android.tools.build:gradle:8.2.1'
                   classpath 'com.google.gms:google-services:4.4.1'
               }
           }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           EOF
 
-          # تعديل ملف build.gradle الخاص بالتطبيق مع الحفاظ على ربط الـ Plugins
+          # تعديل build.gradle الخاص بالتطبيق (مع مسار ديناميكي للمكتبة)
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -78,7 +69,6 @@ jobs:
                   targetSdkVersion 34
                   versionCode ${{ github.run_number }}
                   versionName "1.0.${{ github.run_number }}"
-                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
               buildTypes {
                   release {
@@ -98,34 +88,32 @@ jobs:
               implementation "com.google.android.material:material:1.10.0"
           }
 
-          // السطر البرمجي لربط كافة الـ Plugins (بما فيها CapacitorUpdater) تلقائياً
-          apply from: "../../node_modules/@capacitor/android/capacitor.build.gradle"
+          // تم تعديل المسار ليكون أكثر دقة لبيئة GitHub Actions
+          apply from: "../../../node_modules/@capacitor/android/capacitor.build.gradle"
           EOF
 
-          # قواعد الحماية ProGuard لضمان عدم حذف كود المكتبات أثناء الضغط
+          # إضافة قواعد ProGuard
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
-          -keep class com.google.firebase.** { *; }
           -keep class com.capgo.** { *; }
-          -dontwarn com.google.firebase.**
           EOF
 
-          # المزامنة الفعلية لربط الـ Plugins بكود الجافا
+          # تنفيذ المزامنة (هذه الخطوة هي التي تربط CapacitorUpdater فعلياً)
           npx cap sync android
 
-      - name: 5. ضبط الهوية والأيقونة وتصريحات المانيفست
+      - name: 5. ضبط الهوية والإعدادات النهائية
         run: |
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
-            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
+            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ] } ],
             "configuration_version": "1"
           }
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء والتوقيع النهائي للـ APK
+      - name: 6. البناء والتوقيع (Build APK)
         run: |
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -138,16 +126,15 @@ jobs:
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. نشر الإصدار على GitHub Release
+      - name: 7. نشر الإصدار (GitHub Release)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: Roqa Build v${{ github.run_number }}
           files: |
             android/app/build/outputs/apk/release/*.apk
-            release.keystore
             update.zip
-          body: "إصدار جديد برقم بناء ${{ github.run_number }}. تم دمج وتفعيل محرك التحديث الهوائي بنجاح."
+          body: "إصدار جديد برقم بناء ${{ github.run_number }}. تم حل مشكلة ربط المكتبات بنجاح."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
