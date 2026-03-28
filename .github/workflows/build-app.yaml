@@ -32,12 +32,11 @@ jobs:
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
-          # إنشاء ملفات التحديث الهوائي
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
           echo "{\"version\": ${{ github.run_number }}}" > version.json
           cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 4. إعداد أندرويد وحقن المكتبات (Capacitor Sync)
+      - name: 4. إعداد أندرويد وحقن المكتبات يدوياً
         run: |
           rm -rf android
           npx cap config set webDir dist_web
@@ -46,24 +45,16 @@ jobs:
           # تعديل ملف build.gradle الرئيسي
           cat <<EOF > android/build.gradle
           buildscript {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
+              repositories { google(); mavenCentral() }
               dependencies {
                   classpath 'com.android.tools.build:gradle:8.2.1'
                   classpath 'com.google.gms:google-services:4.4.1'
               }
           }
-          allprojects {
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
+          allprojects { repositories { google(); mavenCentral() } }
           EOF
 
-          # تعديل ملف build.gradle الخاص بالتطبيق مع التأكد من وجود التبعيات
+          # تعديل ملف build.gradle للتطبيق مع إضافة مكتبة التحديث الهوائي
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -99,15 +90,25 @@ jobs:
           }
           EOF
 
-          # قواعد الحماية ProGuard لضمان عدم حذف مكتبات Capacitor
-          cat <<EOF > android/app/proguard-rules.pro
-          -keep class com.getcapacitor.** { *; }
-          -keep class * extends com.getcapacitor.Plugin
-          -keep class com.google.firebase.** { *; }
-          -dontwarn com.google.firebase.**
+          # --- الخطوة الأهم: تسجيل الـ Plugin يدوياً في كود الجافا ---
+          cat <<EOF > android/app/src/main/java/com/raqqa/app/MainActivity.java
+          package com.raqqa.app;
+          import android.os.Bundle;
+          import com.getcapacitor.BridgeActivity;
+          import ee.forgr.capacitor_updater.CapacitorUpdaterPlugin;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  registerPlugin(CapacitorUpdaterPlugin.class);
+              }
+          }
           EOF
 
-          # الخطوة المحورية: دمج كل الـ Plugins داخل مجلد أندرويد
+          # ضبط المانيفست للسماح بالإنترنت والتحديث
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' android/app/src/main/AndroidManifest.xml
+
           npx cap sync android
 
       - name: 5. ضبط الهوية وملف Firebase
@@ -144,7 +145,7 @@ jobs:
             android/app/build/outputs/bundle/release/*.aab
             release.keystore
             update.zip
-          body: "تم إصدار نسخة رقة الجديدة. تم دمج Capacitor Plugins بنجاح والتحديث الهوائي جاهز."
+          body: "تم إصدار نسخة رقة الجديدة. تم إصلاح مشكلة Plugin Implementation برمجياً."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -152,17 +153,13 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
           cp version.json $HOME/version.json
           cp update.zip $HOME/update.zip
-          
           git fetch origin updates || true
           git checkout -B updates
           git rm -rf . --ignore-unmatch
-          
           cp $HOME/version.json .
           cp $HOME/update.zip .
-          
           git add version.json update.zip
-          git commit -m "Live Update: Build ${{ github.run_number }} (Production Ready)"
+          git commit -m "Live Update: Build ${{ github.run_number }}"
           git push origin updates --force
