@@ -98,15 +98,11 @@ jobs:
               implementation "com.google.android.material:material:1.10.0"
           }
 
-          // هذا السطر هو السر لربط CapacitorUpdater وتجنب رسالة Not Implemented
-          try {
-              apply from: "../../node_modules/@capacitor/android/capacitor.build.gradle"
-          } catch (Exception e) {
-              logger.info("Capacitor build.gradle not found, skipping")
-          }
+          // السطر البرمجي لربط كافة الـ Plugins (بما فيها CapacitorUpdater) تلقائياً
+          apply from: "../../node_modules/@capacitor/android/capacitor.build.gradle"
           EOF
 
-          # قواعد الحماية ProGuard لضمان عدم حذف كود المكتبات
+          # قواعد الحماية ProGuard لضمان عدم حذف كود المكتبات أثناء الضغط
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
@@ -115,7 +111,7 @@ jobs:
           -dontwarn com.google.firebase.**
           EOF
 
-          # المزامنة النهائية لربط كل المكتبات (بما فيها CapacitorUpdater)
+          # المزامنة الفعلية لربط الـ Plugins بكود الجافا
           npx cap sync android
 
       - name: 5. ضبط الهوية والأيقونة وتصريحات المانيفست
@@ -151,7 +147,7 @@ jobs:
             android/app/build/outputs/apk/release/*.apk
             release.keystore
             update.zip
-          body: "إصدار جديد برقم بناء ${{ github.run_number }}. تم تفعيل محرك التحديث الهوائي بشكل صحيح."
+          body: "إصدار جديد برقم بناء ${{ github.run_number }}. تم دمج وتفعيل محرك التحديث الهوائي بنجاح."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
