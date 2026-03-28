@@ -18,6 +18,9 @@ const SwingForum = () => {
   // الافتراضي هو صفحة Home
   const [activeTab, setActiveTab] = useState('Home');
 
+  // جلب رقم الإصدار المخزن حالياً لإظهاره في الواجهة
+  const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1';
+
   // --- منطق التحديث الهوائي (OTA) المطبق على صفحة الأرجوحة ---
   const syncAppUpdates = useCallback(async () => {
     const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
@@ -168,6 +171,15 @@ const SwingForum = () => {
           overflow-y: auto;
           padding: 20px;
         }
+
+        .version-indicator {
+          text-align: center;
+          font-size: 10px;
+          color: #bbb;
+          padding: 5px;
+          background: #fff;
+          border-top: 1px solid #eee;
+        }
       `}</style>
 
       <nav className="glass-header-nav">
@@ -187,6 +199,11 @@ const SwingForum = () => {
 
       <div className="main-display-area">
         {renderCurrentPage()}
+      </div>
+
+      {/* إضافة سطر الإصدار للتأكد من نجاح التحديث الهوائي */}
+      <div className="version-indicator">
+        رقة - إصدار البناء: {currentBuildVersion}
       </div>
     </div>
   );
