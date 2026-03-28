@@ -28,34 +28,42 @@ jobs:
         with:
           node-version: '20'
 
-      - name: 3. بناء الويب وتجهيز التحديث الهوائي
+      - name: 3. تثبيت المكتبات وبناء الويب
         run: |
           npm install --legacy-peer-deps
           npm run build --if-present
+          # إنشاء ملفات التحديث الهوائي
           echo "{\"version\": ${{ github.run_number }}}" > dist_web/version.json
           echo "{\"version\": ${{ github.run_number }}}" > version.json
           cd dist_web && zip -r ../update.zip . && cd ..
 
-      - name: 4. إعداد أندرويد وتثبيت الإضافات
+      - name: 4. إعداد أندرويد وحقن المكتبات (Capacitor Sync)
         run: |
-          # تنظيف وبناء مجلد أندرويد من جديد
           rm -rf android
           npx cap config set webDir dist_web
           npx cap add android
           
-          # تعديل build.gradle الرئيسي
+          # تعديل ملف build.gradle الرئيسي
           cat <<EOF > android/build.gradle
           buildscript {
-              repositories { google(); mavenCentral() }
+              repositories {
+                  google()
+                  mavenCentral()
+              }
               dependencies {
                   classpath 'com.android.tools.build:gradle:8.2.1'
                   classpath 'com.google.gms:google-services:4.4.1'
               }
           }
-          allprojects { repositories { google(); mavenCentral() } }
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
           EOF
 
-          # تعديل build.gradle الخاص بالتطبيق (مع مسار ديناميكي للمكتبة)
+          # تعديل ملف build.gradle الخاص بالتطبيق مع التأكد من وجود التبعيات
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -69,6 +77,7 @@ jobs:
                   targetSdkVersion 34
                   versionCode ${{ github.run_number }}
                   versionName "1.0.${{ github.run_number }}"
+                  testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
               }
               buildTypes {
                   release {
@@ -82,59 +91,60 @@ jobs:
           dependencies {
               implementation fileTree(dir: 'libs', include: ['*.jar'])
               implementation project(':capacitor-android')
+              implementation project(':capacitor-cordova-android-plugins')
               implementation "androidx.appcompat:appcompat:1.6.1"
               implementation "com.google.firebase:firebase-messaging:24.0.0"
               implementation "androidx.core:core-splashscreen:1.0.1"
               implementation "com.google.android.material:material:1.10.0"
           }
-
-          // تم تعديل المسار ليكون أكثر دقة لبيئة GitHub Actions
-          apply from: "../../../node_modules/@capacitor/android/capacitor.build.gradle"
           EOF
 
-          # إضافة قواعد ProGuard
+          # قواعد الحماية ProGuard لضمان عدم حذف مكتبات Capacitor
           cat <<EOF > android/app/proguard-rules.pro
           -keep class com.getcapacitor.** { *; }
           -keep class * extends com.getcapacitor.Plugin
-          -keep class com.capgo.** { *; }
+          -keep class com.google.firebase.** { *; }
+          -dontwarn com.google.firebase.**
           EOF
 
-          # تنفيذ المزامنة (هذه الخطوة هي التي تربط CapacitorUpdater فعلياً)
+          # الخطوة المحورية: دمج كل الـ Plugins داخل مجلد أندرويد
           npx cap sync android
 
-      - name: 5. ضبط الهوية والإعدادات النهائية
+      - name: 5. ضبط الهوية وملف Firebase
         run: |
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
-            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ] } ],
+            "client": [ { "client_info": { "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2", "android_client_info": { "package_name": "com.raqqa.app" } }, "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ], "services": { "appinvite_service": { "other_platform_oauth_client": [] } } } ],
             "configuration_version": "1"
           }
           EOF
           sed -i 's/app_name">.*</app_name">رقة</g' android/app/src/main/res/values/strings.xml || echo "Strings.xml not found"
 
-      - name: 6. البناء والتوقيع (Build APK)
+      - name: 6. البناء والتوقيع النهائي (APK & AAB)
         run: |
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
           cd android && chmod +x gradlew
-          ./gradlew assembleRelease \
+          ./gradlew assembleRelease bundleRelease \
             -Pandroid.injected.signing.store.file=$(pwd)/../release.keystore \
             -Pandroid.injected.signing.store.password=roqa_pass_2026 \
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 7. نشر الإصدار (GitHub Release)
+      - name: 7. نشر الإصدار على GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
           name: Roqa Build v${{ github.run_number }}
           files: |
             android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+            release.keystore
             update.zip
-          body: "إصدار جديد برقم بناء ${{ github.run_number }}. تم حل مشكلة ربط المكتبات بنجاح."
+          body: "تم إصدار نسخة رقة الجديدة. تم دمج Capacitor Plugins بنجاح والتحديث الهوائي جاهز."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -142,13 +152,17 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
           cp version.json $HOME/version.json
           cp update.zip $HOME/update.zip
+          
           git fetch origin updates || true
           git checkout -B updates
           git rm -rf . --ignore-unmatch
+          
           cp $HOME/version.json .
           cp $HOME/update.zip .
+          
           git add version.json update.zip
-          git commit -m "Live Update: Build ${{ github.run_number }}"
+          git commit -m "Live Update: Build ${{ github.run_number }} (Production Ready)"
           git push origin updates --force
