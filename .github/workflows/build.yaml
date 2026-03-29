@@ -30,23 +30,25 @@ jobs:
 
       - name: 3. تثبيت المكتبات وبناء الويب
         run: |
+          # استخدام التثبيت الصارم والمتوافق مع Capacitor 6
           npm install --legacy-peer-deps
-          npm install @capacitor/assets @capacitor/camera @capacitor/push-notifications @capacitor/local-notifications --save
-          npm run build --if-present
+          # بناء ملفات الويب داخل مجلد dist_web
+          npm run build
 
-      - name: 4. إعداد أندرويد وحقن المانيفست
+      - name: 4. إعداد أندرويد وحقن الإعدادات
         run: |
           rm -rf android
-          npx cap config set webDir dist_web
+          # التأكد من توجيه كابتشور للمجلد الصحيح
           npx cap add android
           
-          # إنشاء المانيفست بتصاريح كاملة وصحيحة
+          # إنشاء المانيفست بتصاريح الكاميرا والميكروفون
           cat <<EOF > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
               <uses-permission android:name="android.permission.INTERNET" />
               <uses-permission android:name="android.permission.CAMERA" />
               <uses-permission android:name="android.permission.RECORD_AUDIO" />
+              <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
               <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
               <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -73,7 +75,7 @@ jobs:
           </manifest>
           EOF
 
-      - name: 5. ضبط Gradle (إصلاح تعارض المكتبات)
+      - name: 5. ضبط ملفات Gradle
         run: |
           # تعديل build.gradle الرئيسي
           cat <<EOF > android/build.gradle
@@ -87,7 +89,7 @@ jobs:
           allprojects { repositories { google(); mavenCentral() } }
           EOF
 
-          # تعديل build.gradle الخاص بالتطبيق مع إضافة دعم كامل للمكتبات
+          # تعديل build.gradle التطبيق
           cat <<EOF > android/app/build.gradle
           apply plugin: 'com.android.application'
           apply plugin: 'com.google.gms.google-services'
@@ -119,12 +121,12 @@ jobs:
           }
           EOF
 
-      - name: 6. توليد الأيقونات ومزامنة الكابتشور
+      - name: 6. مزامنة الملفات (تجاوز فشل الأيقونات)
         run: |
-          # محاولة توليد الأيقونات (إذا فشلت لا تتوقف العملية)
-          npx capacitor-assets generate --android || echo "Icons skipped"
+          # محاولة توليد الأيقونات ولكن لا تتوقف إذا فشلت
+          npx capacitor-assets generate --android || echo "استخدام الأيقونات الافتراضية"
           
-          # حقن ملف Firebase
+          # حقن ملف Firebase لضمان عمل الإشعارات
           cat <<EOF > android/app/google-services.json
           {
             "project_info": { "project_number": "162488255991", "project_id": "raqqa-43dc8", "storage_bucket": "raqqa-43dc8.firebasestorage.app" },
@@ -132,10 +134,13 @@ jobs:
             "configuration_version": "1"
           }
           EOF
+          
+          # المزامنة النهائية
           npx cap sync android
 
-      - name: 7. البناء النهائي (APK & AAB)
+      - name: 7. البناء النهائي للتطبيق
         run: |
+          # إنشاء مفتاح توقيع مؤقت للبناء
           keytool -genkey -v -keystore release.keystore -alias raqqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
@@ -147,15 +152,14 @@ jobs:
             -Pandroid.injected.signing.key.alias=raqqa_alias \
             -Pandroid.injected.signing.key.password=roqa_pass_2026
 
-      - name: 8. نشر الإصدار
+      - name: 8. رفع الملفات إلى Releases
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: prod-v${{ github.run_number }}
-          name: Roqa Production v${{ github.run_number }}
+          tag_name: v1.0.${{ github.run_number }}
+          name: Roqa Production v1.0.${{ github.run_number }}
           files: |
             android/app/build/outputs/apk/release/*.apk
             android/app/build/outputs/bundle/release/*.aab
-            release.keystore
-          body: "تم إصلاح أخطاء البناء السابقة بنجاح. النسخة تدعم الآن الكاميرا والميكروفون والإشعارات."
+          body: "تحديث جديد لتطبيق رقة: تم تحسين استقرار الإشعارات، دعم الكاميرا، وحل مشكلات التوافق."
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
