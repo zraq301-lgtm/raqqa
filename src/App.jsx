@@ -4,9 +4,6 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// مكتبة التحديث الذاتي
-import { CapacitorUpdater } from '@capgo/capacitor-updater';
-
 // استيراد الأصول (Assets)
 import healthImg from './assets/health.jpg';
 import feelingsImg from './assets/feelings.jpg';
@@ -115,59 +112,6 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- [النظام المطور] مزامنة التحديثات مع حل مشاكل الكاش والتحليل ---
-  const syncAppUpdates = useCallback(async () => {
-    const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
-    
-    try {
-      console.log("Checking for updates...");
-      
-      const githubResponse = await CapacitorHttp.get({
-        url: `${BASE_URL}/version.json`,
-        params: { t: new Date().getTime().toString() }, // كسر الكاش بقوة
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      
-      // تصحيح: CapacitorHttp قد يعيد البيانات كنص String أحياناً
-      let remoteData = githubResponse.data;
-      if (typeof remoteData === 'string') {
-        remoteData = JSON.parse(remoteData);
-      }
-
-      const latestVersion = parseInt(remoteData.version);
-      const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
-
-      console.log(`Update status: Server(${latestVersion}) vs Local(${currentVersion})`);
-
-      if (latestVersion > currentVersion) {
-        console.log("New version found! Downloading...");
-        
-        const bundle = await CapacitorUpdater.download({
-          url: `${BASE_URL}/update.zip`,
-          version: latestVersion.toString(),
-          headers: { 'Cache-Control': 'no-cache' }
-        });
-
-        if (bundle) {
-          // حفظ رقم النسخة في الذاكرة قبل التفعيل
-          localStorage.setItem('raqqa_version_build', latestVersion.toString());
-          
-          console.log("Download complete. Installing update...");
-          
-          // تأخير بسيط لضمان استقرار حفظ البيانات
-          setTimeout(async () => {
-            await CapacitorUpdater.set(bundle); 
-            window.location.reload(); // إعادة تشغيل التطبيق بالنسخة الجديدة
-          }, 1000);
-        }
-      } else {
-        console.log("App is already up to date.");
-      }
-    } catch (err) {
-      console.error("OTA Sync Failed:", err);
-    }
-  }, []);
-
   // --- نظام جدولة الإشعارات ---
   const syncNotifications = useCallback(async () => {
     try {
@@ -208,7 +152,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    syncAppUpdates();
     syncNotifications();
 
     const setupBackButton = async () => {
@@ -222,7 +165,7 @@ function App() {
     };
     const listener = setupBackButton();
     return () => { listener.then(l => l.remove()); };
-  }, [syncNotifications, syncAppUpdates]);
+  }, [syncNotifications]);
 
   return (
     <div className="app-container">
