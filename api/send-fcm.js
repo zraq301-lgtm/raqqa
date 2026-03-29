@@ -1,40 +1,57 @@
 import admin from 'firebase-admin';
 
-// إعداد حساب الخدمة الخاص بفيربيس
+// 1. معالجة المفتاح الخاص بشكل آمن لـ Node 24
+// هذه الخطوة تضمن تنظيف المفتاح من أي علامات اقتباس زائدة أو مسافات
+const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+const formattedKey = rawKey 
+  ? rawKey.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1').trim() 
+  : undefined;
+
+// سجل فحص يظهر في Vercel Logs (يمكنك حذفه بعد التأكد من العمل)
+console.log(`[Firebase Init] Key Present: ${!!formattedKey}, Length: ${formattedKey?.length}`);
+
 const serviceAccount = {
   "type": "service_account",
   "project_id": "raqqa-43dc8",
   "client_email": "firebase-adminsdk-fbsvc@raqqa-43dc8.iam.gserviceaccount.com",
-  "private_key": process.env.FIREBASE_PRIVATE_KEY ? process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') : undefined,
+  "private_key": formattedKey,
 };
 
+// 2. منع إعادة تهيئة Firebase إذا كان يعمل بالفعل
 if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  } catch (initError) {
+    console.error('❌ Firebase Init Error:', initError.message);
+  }
 }
 
 export default async function handler(req, res) {
-  // استقبال طلبات POST من ميك أو من الواجهة
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // استلام البيانات
   let { 
     fcmToken, 
     title, 
     body, 
     category,
     token,
-    isFromMake // متغير نستخدمه للتأكد إذا كان الطلب من ميك
+    isFromMake 
   } = req.body;
 
   const targetToken = fcmToken || token;
 
   try {
-    // 1. التحقق من وجود توكن الجهاز
     if (!targetToken) {
       return res.status(400).json({ error: "Missing Device Token (fcmToken)" });
     }
 
-    // --- قوالب النصوص الذكية ---
+    // التحقق من صلاحية المفتاح قبل المحاولة
+    if (!formattedKey) {
+      throw new Error("FIREBASE_PRIVATE_KEY is missing or undefined in environment variables.");
+    }
+
     const templates = {
       'period': { t: "رقة تذكركِ 🌸", b: "سيدتي، اقترب موعد أيامكِ الهادئة.. كوني مستعدة لتدليل نفسكِ رعايةً وراحة." },
       'pregnancy': { t: "رحلة الأمومة ✨", b: "تذكير رقيق لمتابعة نمو جنينكِ.. رقة معكِ في كل خطوة من هذه الرحلة." },
@@ -50,22 +67,18 @@ export default async function handler(req, res) {
     const finalCategory = category || 'general';
     const selected = templates[finalCategory] || { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق." };
 
-    // ⚡ التعديل الجوهري: إذا كان الطلب من ميك، نستخدم القالب إجبارياً ونتجاهل النصوص المرسلة
     let finalTitle, finalBody;
     
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       finalTitle = selected.t;
       finalBody = selected.b;
     } else {
-      // إذا كان من الواجهة، نستخدم النص المرسل أو القالب كاحتياط
       finalTitle = title && title.trim() !== "" ? title : selected.t;
       finalBody = body && body.trim() !== "" ? body : selected.b;
     }
 
-    // 3. تحديث رابط الصورة
     const imageUrl = `https://raqqa-hjl8.vercel.app/assets/notifications/${finalCategory}.png`;
 
-    // 4. بناء كائن الإشعار
     const messagePayload = {
       notification: { 
         title: finalTitle, 
@@ -95,7 +108,6 @@ export default async function handler(req, res) {
       }
     };
 
-    // 5. الإرسال الفوري لـ Firebase
     const messageId = await admin.messaging().send(messagePayload);
 
     return res.status(200).json({ 
@@ -103,8 +115,7 @@ export default async function handler(req, res) {
       message_id: messageId,
       details: {
         sent_to: targetToken,
-        category: finalCategory,
-        using_template: true
+        category: finalCategory
       }
     });
 
