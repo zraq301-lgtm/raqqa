@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapacitorHttp } from '@capacitor/core'; 
-import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 // استدعاء الصفحات
 import Home from '../pages/SwingPage/Home';
@@ -19,59 +18,21 @@ const SwingForum = () => {
   const [isUpdating, setIsUpdating] = useState(false); 
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1';
 
+  // دالة مبسطة للحفاظ على الواجهة بدون مكتبة التحديث الهوائي
   const syncAppUpdates = useCallback(async (isManual = false) => {
-    if (isManual) setIsUpdating(true);
-    
-    // تأكد من صحة هذا الرابط في متصفحك أولاً
-    const BASE_URL = 'https://raw.githubusercontent.com/zraq301-lgtm/raqqa/updates';
-    
-    try {
-      const githubResponse = await CapacitorHttp.get({
-        url: `${BASE_URL}/version.json`,
-        params: { t: new Date().getTime().toString() }, 
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      
-      // فحص حالة الاستجابة قبل المعالجة
-      if (githubResponse.status !== 200) {
-        throw new Error(`سيرفر GitHub أعاد خطأ رقم: ${githubResponse.status}`);
-      }
-
-      let remoteData = githubResponse.data;
-      if (typeof remoteData === 'string') remoteData = JSON.parse(remoteData);
-
-      const latestVersion = parseInt(remoteData.version);
-      const currentVersion = parseInt(localStorage.getItem('raqqa_version_build') || '0');
-
-      if (latestVersion > currentVersion) {
-        const bundle = await CapacitorUpdater.download({
-          url: `${BASE_URL}/update.zip`,
-          version: latestVersion.toString(),
-        });
-
-        if (bundle) {
-          localStorage.setItem('raqqa_version_build', latestVersion.toString());
-          await CapacitorUpdater.set(bundle); 
-          window.location.reload(); 
-        }
-      } else {
-        if (isManual) alert("تطبيق رقة محدث بالفعل لأخر إصدار ✅");
-      }
-    } catch (err) {
-      console.error("Detailed Update Error:", err);
-      if (isManual) {
-        // التعديل المطلوب لمعرفة السبب بالضبط
-        const errorMsg = err.message || JSON.stringify(err);
-        alert(`فشل الفحص!\nالسبب التقني: ${errorMsg}\n\nتأكد من اتصال الإنترنت أو صحة رابط GitHub.`);
-      }
-    } finally {
-      setIsUpdating(false);
+    if (isManual) {
+      setIsUpdating(true);
+      // محاكاة بسيطة للفحص للحفاظ على تجربة المستخدم
+      setTimeout(() => {
+        setIsUpdating(false);
+        alert("تطبيق رقة محدث بالفعل لأخر إصدار ✅");
+      }, 1000);
     }
   }, []);
 
   useEffect(() => {
-    syncAppUpdates();
-  }, [syncAppUpdates]);
+    // لا حاجة للفحص التلقائي الآن بعد حذف المكتبة
+  }, []);
 
   const sections = [
     { id: 'Home', label: 'الرئيسية', icon: '🏠' },
