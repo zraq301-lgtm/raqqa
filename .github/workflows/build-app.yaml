@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# إضافة المتغير لتعطيل تحذير Node 20 وتفعيل Node 24 في الـ Actions
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -32,11 +31,8 @@ jobs:
       - name: 3. تنظيف وتثبيت المكتبات
         run: |
           rm -rf android
-          # استخدام --legacy-peer-deps لحل تعارض المكتبات القديمة
           npm install --legacy-peer-deps
-          # إضافة مكتبة الإشعارات المحلية لضمان عمل النظام الجديد ودعم الوسائط
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
-          # تثبيت أداة الموارد بشكل صحيح
           npm install @capacitor/assets --save-dev
           npm run build --if-present
 
@@ -52,14 +48,16 @@ jobs:
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
           
-          # تصحيح أمر توليد الأيقونات (تم تعديله ليتوافق مع الإصدار الأخير)
-          # سنقوم بنسخ الملفات للمسار الافتراضي الذي تطلبه الأداة ثم تشغيلها
+          # إنشاء مجلد assets وتجهيز الصور
           mkdir -p assets
-          cp موارد/icon-only.png assets/icon-only.png
-          cp موارد/icon-background.png assets/icon-background.png
-          cp موارد/icon-foreground.png assets/icon-foreground.png
-          cp موارد/splash_video.mp4 assets/splash.mp4 || true
           
+          # البحث عن المجلد الذي يحتوي على الصور ونسخها بغض النظر عن اسم المجلد (عربي أو إنجليزي)
+          find . -name "icon-only.png" -exec cp {} assets/icon-only.png \;
+          find . -name "icon-background.png" -exec cp {} assets/icon-background.png \;
+          find . -name "icon-foreground.png" -exec cp {} assets/icon-foreground.png \;
+          find . -name "splash_video.mp4" -exec cp {} assets/splash.mp4 \; || true
+          
+          # تشغيل أداة الأيقونات
           npx capacitor-assets generate --android
 
       - name: 6. حقن ملف google-services.json
@@ -96,29 +94,16 @@ jobs:
           }
           EOF
 
-      - name: 7. تهيئة OneSignal وحقن الصلاحيات وتصحيح الـ Package Name ودعم الوسائط
+      - name: 7. تهيئة OneSignal وتعديل الصلاحيات واسم الحزمة
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
-          
-          # إضافة مكتبة OneSignal ومكتبات Firebase Messaging لدعم الصور
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
-          
-          # توحيد اسم الحزمة ليتوافق مع Firebase (raqqa بدلاً من roqa)
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
-          
-          # إضافة صلاحيات الإشعارات والموقع والوصول للوسائط
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.CAMERA" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />' $MANIFEST
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />' $MANIFEST
-          
-          # تفعيل مرور البيانات (Cleartext) للـ APIs غير المشفرة
           sed -i 's/<application/<application android:usesCleartextTraffic="true"/' $MANIFEST
 
       - name: 8. بناء ملفات APK و AAB
@@ -153,12 +138,3 @@ jobs:
             roqa_release.jks
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 11. رفع النسخ كـ Artifacts (إضافي)
-        uses: actions/upload-artifact@v4
-        with:
-          name: Roqa-Production-Package
-          path: |
-            Roqa-Final-Signed.apk
-            Roqa-Final-Signed.aab
-            roqa_release.jks
