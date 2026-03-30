@@ -7,7 +7,6 @@ import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 
-// إعدادات Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
   authDomain: "raqqa-43dc8.firebaseapp.com",
@@ -26,7 +25,7 @@ const Main = () => {
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
     localStorage.setItem('fcm_token', tokenValue);
-    console.log("📍 تم حفظ التوكن في ذاكرة الهاتف بنجاح.");
+    console.log("📍 FCM Token Saved");
 
     if (!localStorage.getItem('user_id')) {
       const uId = 'user_' + Math.floor(Math.random() * 1000000);
@@ -36,32 +35,30 @@ const Main = () => {
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      
       const setupPush = async () => {
         try {
-          // أ. إضافة المستمعين أولاً لضمان عدم ضياع أي حدث
+          // 1. إضافة المستمعين
           await PushNotifications.addListener('registration', (token) => {
-            console.log("🚀 FCM Token Generated:", token.value);
             handleTokenLocally(token.value);
           });
 
-          await PushNotifications.addListener('registrationError', (error) => {
-            console.error("Registration Error: ", error.error);
-          });
-
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-            console.log("📩 إشعار جديد مستلم:", notification.title);
+            console.log("📩 إشعار جديد:", notification.title);
           });
 
-          // ب. التحقق من الصلاحيات وطلبها
+          // 2. إضافة مستمع لفتح الإشعار (مهم جداً لتجربة المستخدم)
+          await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+            console.log("🖱️ تم النقر على الإشعار:", notification.actionId);
+            // هنا يمكنك إضافة منطق التوجه لصفحة معينة
+          });
+
+          // 3. طلب الصلاحيات والتسجيل
           let permStatus = await PushNotifications.checkPermissions();
-          
           if (permStatus.receive === 'prompt') {
             permStatus = await PushNotifications.requestPermissions();
           }
 
           if (permStatus.receive === 'granted') {
-            // ج. التسجيل النهائي
             await PushNotifications.register();
           }
         } catch (error) {
@@ -71,13 +68,7 @@ const Main = () => {
 
       setupPush();
     }
-    
-    return () => {
-      if (Capacitor.isNativePlatform()) {
-        PushNotifications.removeAllListeners();
-      }
-    };
-  }, []);
+  }, []); // أزلت removeAllListeners لضمان بقاء التطبيق مستعداً
 
   return (
     <BrowserRouter>
