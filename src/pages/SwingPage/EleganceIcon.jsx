@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Sparkles, Heart, Wand2, Shirt, Moon, Sun, RefreshCcw, ShoppingBag, Eye, Star } from 'lucide-react';
+import { Sparkles, Heart, Wand2, Shirt, Moon, Sun, RefreshCcw, ShoppingBag, Star } from 'lucide-react';
 
-const UNSPLASH_KEY = process.env.REACT_APP_UNSPLASH_KEY;
+// استخدام متغير البيئة الخاص بك
+const UNSPLASH_KEY = import.meta.env.REACT_APP_UNSPLASH_KEY || "";
 
-// --- البيانات الذكية (Beauty & Fashion Data) ---
 const raqqaContent = {
   beauty: [
     { id: 1, mood: "متعبة", title: "إعادة إحياء العينين", desc: "استخدمي ملعقة باردة لتقليل الانتفاخ، ثم سيروم الكافيين لإخفاء الإجهاد فوراً.", tag: "عناية فورية", query: "skincare,serum,eyes" },
@@ -12,26 +12,28 @@ const raqqaContent = {
     { id: 3, mood: "متحمسة", title: "مكياج السهرة المخملي", desc: "جربي أحمر شفاه قوي مع لمسة هايلايتر على عظمة الوجنة لإطلالة لا تُنسى.", tag: "تألقي", query: "makeup,lipstick,luxury" }
   ],
   fashion: [
-    { id: 10, type: "كاجوال", title: "تنسيق مريح للمحجبات", desc: "القميص الطويل (Oversized) مع بنطال واسع وحجاب قطني يعطيكِ راحة وأناقة.", query: "hijab,modest,streetstyle" },
+    { id: 10, type: "كاجوال", title: "تنسيق مريح للمحجبات", desc: "القميص الطويل مع بنطال واسع وحجاب قطني يعطيكِ راحة وأناقة.", query: "hijab,modest,streetstyle" },
     { id: 11, type: "رسمي", title: "بليزر العمل المحتشم", desc: "البليزر الطويل مع حزام خصر وتنورة مستقيمة لإطلالة احترافية قوية.", query: "hijab,office,modest" },
     { id: 12, type: "مناسبات", title: "فخامة الساتان والحرير", desc: "فساتين السهرة ذات الطبقات المتعددة تمنحكِ وقاراً وجمالاً في ليلة العمر.", query: "hijab,evening,dress" }
   ]
 };
 
 const RaqqaWomanCenter = () => {
-  const [mainTab, setMainTab] = useState('beauty'); // beauty or fashion
+  const [mainTab, setMainTab] = useState('beauty');
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchImages = async (query) => {
+    if (!UNSPLASH_KEY) return;
     setLoading(true);
     try {
-      // إذا كنا في قسم الأزياء نؤكد على كلمات المحجبات (hijab, modest)
       const fullQuery = mainTab === 'fashion' ? `hijab,modest,fashion,${query}` : `beauty,cosmetics,${query}`;
       const response = await fetch(`https://api.unsplash.com/search/photos?query=${fullQuery}&per_page=4&client_id=${UNSPLASH_KEY}`);
       const data = await response.json();
       setImages(data.results || []);
-    } catch (err) { console.error("Unsplash Error:", err); }
+    } catch (err) { 
+      console.error("Unsplash Error:", err); 
+    }
     setLoading(false);
   };
 
@@ -42,7 +44,6 @@ const RaqqaWomanCenter = () => {
 
   return (
     <Container>
-      {/* الترويسة ونظام التبديل الرئيسي */}
       <HeaderSection>
         <MainTitle>رقة للجمال والأناقة</MainTitle>
         <TabSwitcher>
@@ -55,9 +56,7 @@ const RaqqaWomanCenter = () => {
         </TabSwitcher>
       </HeaderSection>
 
-      {/* محتوى القسم المختار */}
       <ContentGrid>
-        {/* الجزء الجانبي: نصائح ذكية */}
         <Sidebar>
           <SectionTitle>{mainTab === 'beauty' ? 'نصائح الجمال' : 'تنسيقات محجبات'}</SectionTitle>
           {(mainTab === 'beauty' ? raqqaContent.beauty : raqqaContent.fashion).map((item) => (
@@ -65,7 +64,7 @@ const RaqqaWomanCenter = () => {
               <Badge>{item.mood || item.type}</Badge>
               <h4>{item.title}</h4>
               <p>{item.desc}</p>
-            </RecipeBtn>
+            </TipCard>
           ))}
           
           <FeaturedBox>
@@ -75,7 +74,6 @@ const RaqqaWomanCenter = () => {
           </FeaturedBox>
         </Sidebar>
 
-        {/* الجزء الرئيسي: معرض الصور الحية */}
         <MainDisplay>
           {loading ? (
             <LoadingOverlay>جاري جلب الإلهام...</LoadingOverlay>
@@ -100,7 +98,7 @@ const RaqqaWomanCenter = () => {
   );
 };
 
-// --- التنسيقات الفاخرة ---
+// --- التنسيقات ---
 
 const Container = styled.div`
   min-height: 100vh; background: #fffcfc; padding: 40px 6%; direction: rtl; font-family: 'Cairo', sans-serif;
