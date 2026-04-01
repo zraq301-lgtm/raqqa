@@ -4,40 +4,45 @@ import { vrCategories } from '../vrData';
 const VirtualWorld = () => {
   const [activeVideo, setActiveVideo] = useState(null);
 
-  return (
-    <div className="relaxation-container" style={{ padding: '20px', direction: 'rtl', minHeight: '100vh', backgroundColor: '#fcfcfc' }}>
-      <h1 style={{ color: '#555', textAlign: 'center', marginBottom: '30px', fontWeight: '300' }}>مملكة الاسترخاء 🌸</h1>
+  // دالة ذكية لتحويل الـ ID لنسخة التشغيل السريع من يوتيوب
+  const getYoutubeEmbed = (id) => {
+    return `https://www.youtube.com/embed/${id}?autoplay=1&mute=0&rel=0&controls=1&showinfo=0`;
+  };
 
+  return (
+    <div style={styles.page}>
+      <h1 style={styles.header}>مملكة الاسترخاء 🌸</h1>
+
+      {/* مشغل الفيديو - يفتح عند الضغط على أي رحلة */}
       {activeVideo && (
-        <div style={glassStyles.videoModal}>
-          <button onClick={() => setActiveVideo(null)} style={glassStyles.closeBtn}>رجوع للرئيسية ×</button>
-          
-          {/* تم تعديل الرابط هنا ليكون video-embed لسرعة التحميل */}
+        <div style={styles.videoModal}>
+          <button onClick={() => setActiveVideo(null)} style={styles.closeBtn}>رجوع ×</button>
           <iframe 
-            src={`https://www.airpano.com/video-embed.php?id=${activeVideo}`} 
-            style={{ width: '100%', height: '100%', border: 'none' }}
+            src={getYoutubeEmbed(activeVideo)} 
+            style={styles.iframe}
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; vr"
             allowFullScreen
-            allow="gyroscope; accelerometer; magnetometer"
-            title="Fast VR Player"
           />
         </div>
       )}
 
-      {vrCategories && vrCategories.map((category) => (
-        <div key={category.id} style={{ ...glassStyles.section, backgroundColor: category.color }}>
-          <h3 style={{ margin: '0 0 5px 0', color: '#444' }}>{category.title}</h3>
-          <p style={{ fontSize: '0.85rem', color: '#777', marginBottom: '15px' }}>{category.description}</p>
+      {/* عرض الأقسام بتصميم رقيق */}
+      {vrCategories.map((category) => (
+        <div key={category.id} style={{ ...styles.section, backgroundColor: category.color }}>
+          <h3 style={styles.catTitle}>{category.title}</h3>
+          <p style={styles.catDesc}>{category.description}</p>
           
-          <div style={glassStyles.grid}>
-            {category.trips.map((trip) => (
-              <div 
-                key={trip.id} 
-                onClick={() => setActiveVideo(trip.id)}
-                style={glassStyles.card}
-              >
-                📍 {trip.name}
-              </div>
-            ))}
+          <div style={styles.grid}>
+            {category.trips.length > 0 ? (
+              category.trips.map((trip, index) => (
+                <div key={index} onClick={() => setActiveVideo(trip.id)} style={styles.card}>
+                  ✨ {trip.name}
+                </div>
+              ))
+            ) : (
+              <p style={styles.emptyText}>قريباً رحلات جديدة في هذا العالم...</p>
+            )}
           </div>
         </div>
       ))}
@@ -45,37 +50,30 @@ const VirtualWorld = () => {
   );
 };
 
-const glassStyles = {
-  section: {
-    borderRadius: '24px',
-    padding: '20px',
-    marginBottom: '25px',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.03)',
-    border: '1px solid rgba(255, 255, 255, 0.8)'
-  },
-  grid: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '10px'
-  },
+const styles = {
+  page: { padding: '20px', direction: 'rtl', minHeight: '100vh', backgroundColor: '#fff' },
+  header: { color: '#444', textAlign: 'center', marginBottom: '30px', fontWeight: 'bold' },
+  section: { borderRadius: '25px', padding: '20px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.8)' },
+  catTitle: { margin: '0', color: '#333', fontSize: '1.2rem' },
+  catDesc: { fontSize: '0.8rem', color: '#666', marginBottom: '15px' },
+  grid: { display: 'flex', flexWrap: 'wrap', gap: '10px' },
   card: {
     background: 'rgba(255, 255, 255, 0.6)',
-    backdropFilter: 'blur(8px)',
-    padding: '12px 18px',
-    borderRadius: '16px',
-    border: '1px solid rgba(255, 255, 255, 0.4)',
+    backdropFilter: 'blur(5px)',
+    padding: '12px 20px',
+    borderRadius: '15px',
+    border: '1px solid rgba(255, 255, 255, 0.5)',
     cursor: 'pointer',
-    fontSize: '0.85rem',
-    color: '#555'
+    fontSize: '0.9rem',
+    color: '#444'
   },
-  videoModal: {
-    position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-    zIndex: 9999, backgroundColor: '#000'
-  },
+  emptyText: { fontSize: '0.8rem', color: '#aaa', fontStyle: 'italic' },
+  videoModal: { position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 9999, backgroundColor: '#000' },
+  iframe: { width: '100%', height: '100%', border: 'none' },
   closeBtn: {
     position: 'absolute', top: '25px', left: '20px', zIndex: 10000,
-    padding: '10px 20px', borderRadius: '50px', backgroundColor: '#FFD1DC', border: 'none',
-    fontWeight: 'bold'
+    padding: '10px 25px', borderRadius: '50px', backgroundColor: '#FFD1DC', border: 'none',
+    fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.2)'
   }
 };
 
