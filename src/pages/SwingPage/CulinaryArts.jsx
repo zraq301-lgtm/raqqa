@@ -7,15 +7,9 @@ const API_BASE = "https://www.themealdb.com/api/json/v1/1";
 
 const translateTag = (tag) => {
   const translations = {
-    'Seafood': 'مأكولات بحرية',
-    'Dessert': 'حلويات',
-    'Beef': 'لحوم حمراء',
-    'Chicken': 'دواجن',
-    'Breakfast': 'فطور',
-    'Vegetarian': 'نباتي',
-    'Italian': 'إيطالي',
-    'Canadian': 'كندي',
-    'Miscellaneous': 'منوعات'
+    'Seafood': 'مأكولات بحرية', 'Dessert': 'حلويات', 'Beef': 'لحوم حمراء',
+    'Chicken': 'دواجن', 'Breakfast': 'فطور', 'Vegetarian': 'نباتي',
+    'Italian': 'إيطالي', 'Canadian': 'كندي', 'Miscellaneous': 'منوعات'
   };
   return translations[tag] || tag;
 };
@@ -37,8 +31,7 @@ const RaqqaArabicKitchen = () => {
 
     try {
       const res = await axios.get(url);
-      const mealData = res.data.meals;
-      setMeals(Array.isArray(mealData) ? mealData : []);
+      setMeals(res.data.meals || []);
     } catch (err) { 
       console.error(err); 
       setMeals([]); 
@@ -46,56 +39,69 @@ const RaqqaArabicKitchen = () => {
     setLoading(false);
   };
 
+  // وظيفة جلب الفيديو بدقة لكل أكلة عند الضغط
+  const handleVideoOpen = async (idMeal, currentYoutube) => {
+    if (currentYoutube) {
+      window.open(currentYoutube, '_blank');
+      return;
+    }
+    // جلب التفاصيل إذا كان الرابط ناقصاً
+    try {
+      const res = await axios.get(`${API_BASE}/lookup.php?i=${idMeal}`);
+      const video = res.data.meals[0].strYoutube;
+      if (video) window.open(video, '_blank');
+      else alert("عذراً، الفيديو غير متوفر لهذه الوصفة");
+    } catch (e) { console.log(e); }
+  };
+
   useEffect(() => { fetchData('random'); }, []);
 
   return (
     <PageContainer>
       <HeaderSection>
-        {/* زر مطبخ رقة الأنيق مع أيقونة الشيف */}
-        <BrandButton onClick={() => window.location.href = 'https://raqqa-hjl8-hbz4qczwr-raqqs-projects.vercel.app/'}>
+        {/* زر مطبخ رقة الكبير مع صورة الشيف المكبرة 4 مرات */}
+        <BrandBadge>
           <img src="/assets/icons/chef.png" alt="Chef" onError={(e) => e.target.style.display='none'} />
-          <Utensils size={24} className="icon-fallback" />
           مطبخ رقة
-        </BrandButton>
-        
-        <Title>مطبخ رقة</Title>
+        </BrandBadge>
         <Subtitle>أشهى الوصفات العالمية بلمسة عربية</Subtitle>
       </HeaderSection>
 
       <SearchWrapper>
         <Search size={22} color="#b2bec3" />
         <StyledInput 
-          placeholder="ابحثي عن وجبة بالإنجليزية (مثل: Pizza)..." 
+          placeholder="ابحثي عن وجبة (مثل: Pizza)..." 
           onKeyDown={(e) => e.key === 'Enter' && fetchData('search', e.target.value)}
         />
       </SearchWrapper>
 
       <FilterBar>
-        <NavButton active={activeTab === 'Random'} onClick={() => {fetchData('random'); setActiveTab('Random')}}>
-          <Star size={18} /> عشوائي
-        </NavButton>
-        <NavButton active={activeTab === 'Dessert'} onClick={() => {fetchData('cat', 'Dessert'); setActiveTab('Dessert')}}>
-          <IceCream size={18} /> حلويات
-        </NavButton>
-        <NavButton active={activeTab === 'Seafood'} onClick={() => {fetchData('cat', 'Seafood'); setActiveTab('Seafood')}}>
-          <Fish size={18} /> بحريات
-        </NavButton>
-        <NavButton active={activeTab === 'Meat'} onClick={() => {fetchData('cat', 'Beef'); setActiveTab('Meat')}}>
-          <Beef size={18} /> لحوم
-        </NavButton>
-        <NavButton active={activeTab === 'Italian'} onClick={() => {fetchData('area', 'Italian'); setActiveTab('Italian')}}>
-          <Pizza size={18} /> إيطالي
-        </NavButton>
-        <NavButton active={activeTab === 'Breakfast'} onClick={() => {fetchData('cat', 'Breakfast'); setActiveTab('Breakfast')}}>
-          <Coffee size={18} /> فطور
-        </NavButton>
+        {['Random', 'Dessert', 'Seafood', 'Beef', 'Italian', 'Breakfast'].map((tab) => (
+          <NavButton 
+            key={tab}
+            active={activeTab === tab} 
+            onClick={() => {
+              const type = tab === 'Random' ? 'random' : (tab === 'Italian' ? 'area' : 'cat');
+              fetchData(type, tab === 'Beef' ? 'Beef' : tab); 
+              setActiveTab(tab);
+            }}
+          >
+             {tab === 'Random' && <Star size={18} />}
+             {tab === 'Dessert' && <IceCream size={18} />}
+             {tab === 'Seafood' && <Fish size={18} />}
+             {tab === 'Beef' && <Beef size={18} />}
+             {tab === 'Italian' && <Pizza size={18} />}
+             {tab === 'Breakfast' && <Coffee size={18} />}
+             {translateTag(tab)}
+          </NavButton>
+        ))}
       </FilterBar>
 
       {loading ? (
         <LoadingBox><Loader2 className="spin" size={40} /> جاري جلب الوصفات...</LoadingBox>
       ) : (
         <RecipesGrid>
-          {meals && meals.map((meal, index) => (
+          {meals.map((meal, index) => (
             <RecipeCard key={meal.idMeal} delay={index * 0.1}>
               <ImageWrapper>
                 <img src={meal.strMealThumb} alt={meal.strMeal} />
@@ -103,14 +109,10 @@ const RaqqaArabicKitchen = () => {
               </ImageWrapper>
               <CardContent>
                 <h3>{meal.strMeal}</h3>
-                <p>المنشأ: {translateTag(meal.strArea)}</p>
-                {/* تم التأكد هنا من فتح رابط اليوتيوب الملحق بكل وجبة */}
-                <ChefButton 
-                  disabled={!meal.strYoutube}
-                  onClick={() => meal.strYoutube && window.open(meal.strYoutube, '_blank')}
-                >
+                <p>المنشأ: {translateTag(meal.strArea) || 'عالمي'}</p>
+                <ChefButton onClick={() => handleVideoOpen(meal.idMeal, meal.strYoutube)}>
                   <Play size={18} fill="white" />
-                  {meal.strYoutube ? 'شاهد الشيف' : 'فيديو غير متوفر'}
+                  شاهد الشيف
                 </ChefButton>
               </CardContent>
             </RecipeCard>
@@ -121,7 +123,7 @@ const RaqqaArabicKitchen = () => {
   );
 };
 
-// --- التنسيقات المطورة ---
+// --- التنسيقات المعدلة ---
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(30px); }
@@ -133,29 +135,24 @@ const PageContainer = styled.div`
 `;
 
 const HeaderSection = styled.header`
-  text-align: center; margin-bottom: 50px; display: flex; flex-direction: column; align-items: center; gap: 15px;
+  text-align: center; margin-bottom: 50px; display: flex; flex-direction: column; align-items: center; gap: 5px;
 `;
 
-const BrandButton = styled.button`
-  background: white; border: none; padding: 10px 25px; border-radius: 50px;
-  display: flex; align-items: center; gap: 12px; font-size: 1.2rem; font-weight: 800;
-  color: #ef5777; cursor: pointer; box-shadow: 0 10px 25px rgba(239, 87, 119, 0.15);
-  transition: 0.3s; margin-bottom: 10px; font-family: 'Cairo';
+const BrandBadge = styled.div`
+  background: white; padding: 20px 40px; border-radius: 60px;
+  display: flex; align-items: center; gap: 20px; font-size: 2.2rem; font-weight: 900;
+  color: #ef5777; box-shadow: 0 15px 35px rgba(239, 87, 119, 0.15);
+  margin-bottom: 10px; cursor: default; /* منع شكل اليد عند التأشير لأنه ليس رابطاً */
   
-  img { width: 30px; height: 30px; object-fit: contain; }
-  .icon-fallback { color: #ef5777; }
-  
-  &:hover { transform: scale(1.05); background: #ef5777; color: white; 
-    .icon-fallback { color: white; }
+  img { 
+    width: 120px; /* تم تكبير الصورة 4 مرات (من 30px إلى 120px) */
+    height: 120px; 
+    object-fit: contain; 
   }
 `;
 
-const Title = styled.h1`
-  font-size: 3rem; color: #1e272e; font-weight: 900; margin: 0;
-`;
-
 const Subtitle = styled.p`
-  color: #ef5777; font-size: 1.2rem; margin: 0; font-weight: 600;
+  color: #808e9b; font-size: 1.2rem; margin: 0; font-weight: 600;
 `;
 
 const SearchWrapper = styled.div`
@@ -175,9 +172,9 @@ const NavButton = styled.button`
   background: ${props => props.active ? '#ef5777' : '#fff'};
   color: ${props => props.active ? '#fff' : '#485460'};
   border: none; padding: 10px 22px; border-radius: 15px; display: flex; align-items: center; gap: 8px;
-  cursor: pointer; font-family: 'Cairo'; font-weight: 700; transition: 0.4s;
+  cursor: pointer; font-family: 'Cairo'; font-weight: 700; transition: 0.3s;
   box-shadow: 0 10px 20px rgba(0,0,0,0.02);
-  &:hover { transform: translateY(-3px); box-shadow: 0 12px 20px rgba(239, 87, 119, 0.2); }
+  &:hover { transform: translateY(-3px); }
 `;
 
 const RecipesGrid = styled.div`
@@ -187,8 +184,7 @@ const RecipesGrid = styled.div`
 const RecipeCard = styled.div`
   background: #fff; border-radius: 30px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.04);
   animation: ${fadeInUp} 0.6s ease forwards; animation-delay: ${props => props.delay}s;
-  opacity: 0; transition: 0.3s ease;
-  &:hover { transform: translateY(-10px); }
+  opacity: 0;
 `;
 
 const ImageWrapper = styled.div`
@@ -203,7 +199,7 @@ const Badge = styled.span`
 
 const CardContent = styled.div`
   padding: 25px;
-  h3 { color: #1e272e; font-size: 1.3rem; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  h3 { color: #1e272e; font-size: 1.3rem; margin-bottom: 8px; }
   p { color: #808e9b; font-size: 0.95rem; margin-bottom: 20px; }
 `;
 
@@ -211,12 +207,11 @@ const ChefButton = styled.button`
   width: 100%; background: #1e272e; color: #fff; border: none; padding: 14px; border-radius: 18px;
   display: flex; align-items: center; justify-content: center; gap: 10px; font-family: 'Cairo';
   font-weight: 800; cursor: pointer; transition: 0.3s;
-  &:disabled { background: #d2dae2; cursor: not-allowed; }
-  &:hover:not(:disabled) { background: #ef5777; }
+  &:hover { background: #ef5777; }
 `;
 
 const LoadingBox = styled.div`
-  text-align: center; padding: 80px; font-family: 'Cairo'; font-weight: 700;
+  text-align: center; padding: 80px; font-family: 'Cairo';
   .spin { animation: spin 1s linear infinite; margin-bottom: 15px; color: #ef5777; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 `;
