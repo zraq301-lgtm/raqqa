@@ -1,188 +1,183 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { Sparkles, Heart, Wand2, Shirt, Moon, Sun, RefreshCcw, ShoppingBag, Star } from 'lucide-react';
+import axios from 'axios';
+import styled from 'styled-components';
+import { Sparkles, Wand2, Shirt, Heart, ShoppingBag, RefreshCw } from 'lucide-react';
 
-// استخدام متغير البيئة الخاص بك
-const UNSPLASH_KEY = import.meta.env.REACT_APP_UNSPLASH_KEY || "";
+// تأكد أن المتغير في Vercel مكتوب بهذا الاسم بالضبط
+const UNSPLASH_KEY = import.meta.env.VITE_UNSPLASH_KEY || import.meta.env.REACT_APP_UNSPLASH_KEY;
 
-const raqqaContent = {
-  beauty: [
-    { id: 1, mood: "متعبة", title: "إعادة إحياء العينين", desc: "استخدمي ملعقة باردة لتقليل الانتفاخ، ثم سيروم الكافيين لإخفاء الإجهاد فوراً.", tag: "عناية فورية", query: "skincare,serum,eyes" },
-    { id: 2, mood: "هادئة", title: "طقوس بشرة زجاجية", desc: "دلكي بشرتك بحجر الجواشا وزيت الورد لتحفيز الكولاجين الطبيعي ونحت الوجه.", tag: "استرخاء", query: "skincare,massage,oil" },
-    { id: 3, mood: "متحمسة", title: "مكياج السهرة المخملي", desc: "جربي أحمر شفاه قوي مع لمسة هايلايتر على عظمة الوجنة لإطلالة لا تُنسى.", tag: "تألقي", query: "makeup,lipstick,luxury" }
-  ],
-  fashion: [
-    { id: 10, type: "كاجوال", title: "تنسيق مريح للمحجبات", desc: "القميص الطويل مع بنطال واسع وحجاب قطني يعطيكِ راحة وأناقة.", query: "hijab,modest,streetstyle" },
-    { id: 11, type: "رسمي", title: "بليزر العمل المحتشم", desc: "البليزر الطويل مع حزام خصر وتنورة مستقيمة لإطلالة احترافية قوية.", query: "hijab,office,modest" },
-    { id: 12, type: "مناسبات", title: "فخامة الساتان والحرير", desc: "فساتين السهرة ذات الطبقات المتعددة تمنحكِ وقاراً وجمالاً في ليلة العمر.", query: "hijab,evening,dress" }
-  ]
-};
-
-const RaqqaWomanCenter = () => {
-  const [mainTab, setMainTab] = useState('beauty');
-  const [images, setImages] = useState([]);
+const RaqqaDynamicCenter = () => {
+  const [mainTab, setMainTab] = useState('beauty'); // beauty | fashion
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchImages = async (query) => {
-    if (!UNSPLASH_KEY) return;
+  // دالة جلب البيانات الحية بناءً على القسم
+  const fetchLiveContent = async () => {
+    if (!UNSPLASH_KEY) {
+      console.error("المفتاح غير موجود! تأكد من إضافته في إعدادات Vercel");
+      return;
+    }
+    
     setLoading(true);
+    // كلمات بحث ذكية لضمان صور محجبات في قسم الأزياء وصور تجميل في الجمال
+    const query = mainTab === 'fashion' 
+      ? "hijab modest fashion style" 
+      : "skincare makeup cosmetics organic";
+
     try {
-      const fullQuery = mainTab === 'fashion' ? `hijab,modest,fashion,${query}` : `beauty,cosmetics,${query}`;
-      const response = await fetch(`https://api.unsplash.com/search/photos?query=${fullQuery}&per_page=4&client_id=${UNSPLASH_KEY}`);
-      const data = await response.json();
-      setImages(data.results || []);
-    } catch (err) { 
-      console.error("Unsplash Error:", err); 
+      const response = await axios.get(`https://api.unsplash.com/search/photos`, {
+        params: {
+          query: query,
+          per_page: 12,
+          orientation: 'portrait',
+          client_id: UNSPLASH_KEY
+        }
+      });
+
+      // تحويل الصور إلى "بطاقات نصائح" ديناميكية
+      const dynamicData = response.data.results.map((img, index) => ({
+        id: img.id,
+        image: img.urls.regular,
+        title: mainTab === 'fashion' ? `تنسيق رقم ${index + 1}` : `سر الجمال رقم ${index + 1}`,
+        description: img.alt_description || (mainTab === 'fashion' ? "إطلالة محتشمة وعصرية تناسبك" : "وصفة طبيعية لنضارة بشرتك"),
+        likes: img.likes,
+        user: img.user.name
+      }));
+
+      setItems(dynamicData);
+    } catch (err) {
+      console.error("خطأ في الاتصال بـ Unsplash:", err);
     }
     setLoading(false);
   };
 
+  // جلب البيانات عند تغيير القسم أو فتح الصفحة
   useEffect(() => {
-    const initialQuery = mainTab === 'beauty' ? raqqaContent.beauty[0].query : raqqaContent.fashion[0].query;
-    fetchImages(initialQuery);
+    fetchLiveContent();
   }, [mainTab]);
 
   return (
     <Container>
-      <HeaderSection>
-        <MainTitle>رقة للجمال والأناقة</MainTitle>
+      <Header>
+        <MainTitle>رقة: الإلهام الحي</MainTitle>
+        <p>محتوى متجدد لحظياً من أكبر منصات الصور العالمية</p>
+        
         <TabSwitcher>
           <SwitchBtn active={mainTab === 'beauty'} onClick={() => setMainTab('beauty')}>
-            <Wand2 size={20} /> عالم الجمال
+            <Wand2 size={18} /> نصائح الجمال
           </SwitchBtn>
           <SwitchBtn active={mainTab === 'fashion'} onClick={() => setMainTab('fashion')}>
-            <Shirt size={20} /> معرض الأزياء
+            <Shirt size={18} /> أزياء محجبات
           </SwitchBtn>
         </TabSwitcher>
-      </HeaderSection>
+      </Header>
 
-      <ContentGrid>
-        <Sidebar>
-          <SectionTitle>{mainTab === 'beauty' ? 'نصائح الجمال' : 'تنسيقات محجبات'}</SectionTitle>
-          {(mainTab === 'beauty' ? raqqaContent.beauty : raqqaContent.fashion).map((item) => (
-            <TipCard key={item.id} onClick={() => fetchImages(item.query)}>
-              <Badge>{item.mood || item.type}</Badge>
-              <h4>{item.title}</h4>
-              <p>{item.desc}</p>
-            </TipCard>
+      {loading ? (
+        <LoadingArea>
+          <RefreshCw className="spin" size={40} />
+          <p>جاري جلب أحدث الصور والتوجهات...</p>
+        </LoadingArea>
+      ) : (
+        <MasonryGrid>
+          {items.map((item) => (
+            <BeautyCard key={item.id}>
+              <div className="img-container">
+                <img src={item.image} alt={item.title} />
+                <div className="overlay-badge">
+                   <Heart size={12} fill="white" /> {item.likes}
+                </div>
+              </div>
+              <CardInfo>
+                <Badge>{mainTab === 'fashion' ? 'أزياء' : 'جمال'}</Badge>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+                <div className="footer">
+                  <span>بواسطة: {item.user}</span>
+                  <button><ShoppingBag size={16} /> استعراض</button>
+                </div>
+              </CardInfo>
+            </BeautyCard>
           ))}
-          
-          <FeaturedBox>
-            <Star size={20} color="#ff7675" fill="#ff7675" />
-            <h5>نصيحة اليوم الذهبية</h5>
-            <p>الثقة هي أجمل ما ترتدينه، لكن لا تنسي واقي الشمس!</p>
-          </FeaturedBox>
-        </Sidebar>
+        </MasonryGrid>
+      )}
 
-        <MainDisplay>
-          {loading ? (
-            <LoadingOverlay>جاري جلب الإلهام...</LoadingOverlay>
-          ) : (
-            <ImageGrid>
-              {images.map((img) => (
-                <ImageCard key={img.id}>
-                  <img src={img.urls.regular} alt="Raqqa View" />
-                  <Overlay>
-                    <div className="top-icons"><Heart size={18} /></div>
-                    <div className="bottom-info">
-                      <ShoppingBag size={16} /> استعراض التنسيق
-                    </div>
-                  </Overlay>
-                </ImageCard>
-              ))}
-            </ImageGrid>
-          )}
-        </MainDisplay>
-      </ContentGrid>
+      <RefreshButton onClick={fetchLiveContent}>
+        <RefreshCw size={20} /> تحديث المحتوى
+      </RefreshButton>
     </Container>
   );
 };
 
-// --- التنسيقات ---
+// --- التنسيقات (Styled Components) ---
 
 const Container = styled.div`
-  min-height: 100vh; background: #fffcfc; padding: 40px 6%; direction: rtl; font-family: 'Cairo', sans-serif;
+  min-height: 100vh; background: #fffafb; padding: 50px 5%; direction: rtl; font-family: 'Cairo', sans-serif;
 `;
 
-const HeaderSection = styled.div`
+const Header = styled.div`
   text-align: center; margin-bottom: 50px;
+  p { color: #888; margin-top: 10px; }
 `;
 
 const MainTitle = styled.h1`
-  font-size: 2.8rem; color: #2d3436; font-weight: 900; margin-bottom: 30px;
-  background: linear-gradient(45deg, #ff7675, #6c5ce7); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  font-size: 3rem; color: #1e272e; font-weight: 900;
 `;
 
 const TabSwitcher = styled.div`
-  display: inline-flex; background: #f1f2f6; padding: 8px; border-radius: 50px; gap: 5px;
+  margin-top: 30px; display: inline-flex; background: #eee; padding: 6px; border-radius: 50px;
 `;
 
 const SwitchBtn = styled.button`
-  padding: 12px 30px; border-radius: 40px; border: none; cursor: pointer;
-  display: flex; align-items: center; gap: 10px; font-family: 'Cairo'; font-weight: 800;
-  transition: 0.4s ease;
-  background: ${props => props.active ? 'white' : 'transparent'};
-  color: ${props => props.active ? '#6c5ce7' : '#636e72'};
-  box-shadow: ${props => props.active ? '0 10px 20px rgba(0,0,0,0.05)' : 'none'};
+  padding: 12px 25px; border: none; border-radius: 50px; cursor: pointer;
+  display: flex; align-items: center; gap: 8px; font-family: 'Cairo'; font-weight: 800;
+  background: ${props => props.active ? '#ff7675' : 'transparent'};
+  color: ${props => props.active ? 'white' : '#555'};
+  transition: 0.3s;
 `;
 
-const ContentGrid = styled.div`
-  display: grid; grid-template-columns: 1fr 2.5fr; gap: 40px;
-  @media (max-width: 1000px) { grid-template-columns: 1fr; }
+const MasonryGrid = styled.div`
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px;
 `;
 
-const Sidebar = styled.div`
-  display: flex; flex-direction: column; gap: 20px;
+const BeautyCard = styled.div`
+  background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  transition: 0.3s;
+  &:hover { transform: translateY(-10px); }
+  .img-container {
+    position: relative; height: 350px;
+    img { width: 100%; height: 100%; object-fit: cover; }
+    .overlay-badge {
+      position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.5);
+      color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem;
+    }
+  }
 `;
 
-const SectionTitle = styled.h3`
-  color: #2d3436; border-right: 4px solid #ff7675; padding-right: 15px; margin-bottom: 10px;
-`;
-
-const TipCard = styled.div`
-  background: white; padding: 25px; border-radius: 25px; cursor: pointer;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.02); transition: 0.3s;
-  &:hover { transform: scale(1.03); box-shadow: 0 15px 30px rgba(0,0,0,0.05); }
-  h4 { margin: 10px 0; color: #2d3436; }
-  p { font-size: 0.9rem; color: #636e72; line-height: 1.6; }
+const CardInfo = styled.div`
+  padding: 20px;
+  h3 { font-size: 1.2rem; margin: 10px 0; color: #2d3436; }
+  p { font-size: 0.9rem; color: #636e72; line-height: 1.6; height: 50px; overflow: hidden; }
+  .footer {
+    margin-top: 15px; display: flex; justify-content: space-between; align-items: center;
+    span { font-size: 0.75rem; color: #b2bec3; }
+    button { border: none; background: #f1f2f6; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-family: 'Cairo'; }
+  }
 `;
 
 const Badge = styled.span`
-  background: #fff0f0; color: #ff7675; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 800;
+  background: #fff0f0; color: #ff7675; padding: 3px 10px; border-radius: 5px; font-size: 0.7rem; font-weight: 800;
 `;
 
-const MainDisplay = styled.div`
-  min-height: 600px;
+const LoadingArea = styled.div`
+  text-align: center; padding: 100px; color: #ff7675;
+  .spin { animation: rotate 2s linear infinite; margin-bottom: 20px; }
+  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 `;
 
-const ImageGrid = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;
+const RefreshButton = styled.button`
+  position: fixed; bottom: 30px; left: 30px; background: #1e272e; color: white;
+  border: none; padding: 15px 25px; border-radius: 50px; display: flex; align-items: center; gap: 10px;
+  font-family: 'Cairo'; font-weight: 700; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 `;
 
-const ImageCard = styled.div`
-  position: relative; height: 380px; border-radius: 30px; overflow: hidden;
-  img { width: 100%; height: 100%; object-fit: cover; transition: 0.6s; }
-  &:hover img { transform: scale(1.1); }
-  &:hover div { opacity: 1; }
-`;
-
-const Overlay = styled.div`
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.8));
-  display: flex; flex-direction: column; justify-content: space-between;
-  padding: 25px; opacity: 0; transition: 0.4s;
-  .top-icons { text-align: left; color: white; }
-  .bottom-info { color: white; display: flex; align-items: center; gap: 8px; font-weight: 700; }
-`;
-
-const FeaturedBox = styled.div`
-  background: #2d3436; color: white; padding: 30px; border-radius: 30px; margin-top: 20px;
-  h5 { font-size: 1.1rem; margin: 10px 0; color: #ff7675; }
-  p { font-size: 0.9rem; opacity: 0.8; }
-`;
-
-const LoadingOverlay = styled.div`
-  display: flex; align-items: center; justify-content: center; height: 100%; font-weight: 800; color: #6c5ce7;
-`;
-
-export default RaqqaWomanCenter;
+export default RaqqaDynamicCenter;
