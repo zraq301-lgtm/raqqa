@@ -1,171 +1,192 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import styled from 'styled-components';
-import { Search, Shuffle, Grid, Globe, Fish, Loader2 } from 'lucide-react';
+import styled, { keyframes } from 'styled-components';
+import { Search, Play, Star, Coffee, Fish, Beef, Pizza, IceCream, Utensils, Loader2 } from 'lucide-react';
 
 const API_BASE = "https://www.themealdb.com/api/json/v1/1";
 
-const RaqqaUltimateKitchen = () => {
+// قاموس ترجمة للأقسام لضمان ظهورها بالعربي
+const translateTag = (tag) => {
+  const translations = {
+    'Seafood': 'مأكولات بحرية',
+    'Dessert': 'حلويات',
+    'Beef': 'لحوم حمراء',
+    'Chicken': 'دواجن',
+    'Breakfast': 'فطور',
+    'Vegetarian': 'نباتي',
+    'Italian': 'إيطالي',
+    'Canadian': 'كندي',
+    'Miscellaneous': 'منوعات'
+  };
+  return translations[tag] || tag;
+};
+
+const RaqqaArabicKitchen = () => {
   const [meals, setMeals] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('random');
+  const [activeTab, setActiveTab] = useState('Random');
 
-  // دالة مركزية للتحكم في كل الروابط التي أرسلتها
   const fetchData = async (type, value = '') => {
     setLoading(true);
     let url = "";
-
     switch (type) {
-      case 'search': // الرابط الثاني (البحث بالاسم أو الحرف)
-        url = `${API_BASE}/search.php?s=${value}`;
-        break;
-      case 'letter': // الرابط الثاني (البحث بأول حرف)
-        url = `${API_BASE}/search.php?f=${value || 'a'}`;
-        break;
-      case 'lookup': // الرابط الثالث (البحث برقم التعريف)
-        url = `${API_BASE}/lookup.php?i=${value || '52772'}`;
-        break;
-      case 'random': // الرابط الرابع والخامس (عشوائي)
-        url = `${API_BASE}/random.php`;
-        break;
-      case 'categories': // الرابط السادس (التصنيفات)
-        url = `${API_BASE}/categories.php`;
-        break;
-      case 'area': // الرابط السابع (حسب البلد - كندي مثلاً)
-        url = `${API_BASE}/filter.php?a=${value || 'Canadian'}`;
-        break;
-      case 'filter': // الرابط الثامن (حسب النوع - مأكولات بحرية)
-        url = `${API_BASE}/filter.php?c=${value || 'Seafood'}`;
-        break;
-      default:
-        url = `${API_BASE}/random.php`;
+      case 'search': url = `${API_BASE}/search.php?s=${value}`; break;
+      case 'cat': url = `${API_BASE}/filter.php?c=${value}`; break;
+      case 'area': url = `${API_BASE}/filter.php?a=${value}`; break;
+      default: url = `${API_BASE}/randomselection.php`; 
     }
 
     try {
       const res = await axios.get(url);
-      // التعامل مع اختلاف شكل البيانات المرجعة من الروابط المختلفة
-      if (type === 'categories') {
-        setMeals(res.data.categories.map(cat => ({ 
-          strMeal: cat.strCategory, 
-          strMealThumb: cat.strCategoryThumb, 
-          idMeal: cat.idCategory,
-          isCategory: true 
-        })));
-      } else {
-        setMeals(res.data.meals || []);
-      }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-    }
+      setMeals(res.data.meals || []);
+    } catch (err) { console.error(err); }
     setLoading(false);
   };
 
   useEffect(() => { fetchData('random'); }, []);
 
   return (
-    <Container>
-      <Header>
-        <h1>محرّك أطباق رقة</h1>
-        <p>كل روابط الـ API في مكان واحد</p>
-      </Header>
+    <PageContainer>
+      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <Title>مطبخ رقة</Title>
+        <Subtitle>أشهى الوصفات العالمية بلمسة عربية</Subtitle>
+      </header>
 
-      <SearchSection>
-        <div className="search-bar">
-          <Search size={20} />
-          <input 
-            placeholder="ابحث بالاسم (الرابط 2)..." 
-            onKeyDown={(e) => e.key === 'Enter' && fetchData('search', e.target.value)}
-          />
-        </div>
+      {/* محرك البحث */}
+      <SearchWrapper>
+        <Search size={22} color="#b2bec3" />
+        <StyledInput 
+          placeholder="ابحثي عن وجبة بالإنجليزية (مثل: Pizza)..." 
+          onKeyDown={(e) => e.key === 'Enter' && fetchData('search', e.target.value)}
+        />
+      </SearchWrapper>
 
-        <FilterButtons>
-          <button onClick={() => {fetchData('random'); setActiveTab('random')}} className={activeTab === 'random' ? 'active' : ''}>
-            <Shuffle size={16} /> عشوائي (رابط 4)
-          </button>
-          <button onClick={() => {fetchData('filter', 'Seafood'); setActiveTab('seafood')}} className={activeTab === 'seafood' ? 'active' : ''}>
-            <Fish size={16} /> بحريات (رابط 8)
-          </button>
-          <button onClick={() => {fetchData('area', 'Canadian'); setActiveTab('area')}} className={activeTab === 'area' ? 'active' : ''}>
-            <Globe size={16} /> كندي (رابط 7)
-          </button>
-          <button onClick={() => {fetchData('categories'); setActiveTab('cat')}} className={activeTab === 'cat' ? 'active' : ''}>
-            <Grid size={16} /> أقسام (رابط 6)
-          </button>
-        </FilterButtons>
-      </SearchSection>
+      {/* الأزرار الأنيقة باللغة العربية */}
+      <FilterBar>
+        <NavButton active={activeTab === 'Random'} onClick={() => {fetchData('random'); setActiveTab('Random')}}>
+          <Star size={18} /> عشوائي
+        </NavButton>
+        <NavButton active={activeTab === 'Dessert'} onClick={() => {fetchData('cat', 'Dessert'); setActiveTab('Dessert')}}>
+          <IceCream size={18} /> حلويات
+        </NavButton>
+        <NavButton active={activeTab === 'Seafood'} onClick={() => {fetchData('cat', 'Seafood'); setActiveTab('Seafood')}}>
+          <Fish size={18} /> بحريات
+        </NavButton>
+        <NavButton active={activeTab === 'Meat'} onClick={() => {fetchData('cat', 'Beef'); setActiveTab('Meat')}}>
+          <Beef size={18} /> لحوم
+        </NavButton>
+        <NavButton active={activeTab === 'Italian'} onClick={() => {fetchData('area', 'Italian'); setActiveTab('Italian')}}>
+          <Pizza size={18} /> إيطالي
+        </NavButton>
+        <NavButton active={activeTab === 'Breakfast'} onClick={() => {fetchData('cat', 'Breakfast'); setActiveTab('Breakfast')}}>
+          <Coffee size={18} /> فطور
+        </NavButton>
+      </FilterBar>
 
       {loading ? (
-        <LoadingBox><Loader2 className="spin" /> جاري جلب البيانات من الروابط...</LoadingBox>
+        <LoadingBox><Loader2 className="spin" size={40} /> جاري جلب الوصفات...</LoadingBox>
       ) : (
-        <ResultsGrid>
-          {meals.map((meal) => (
-            <Card key={meal.idMeal}>
-              <img src={meal.strMealThumb} alt={meal.strMeal} />
-              <div className="info">
+        <RecipesGrid>
+          {meals.map((meal, index) => (
+            <RecipeCard key={meal.idMeal} delay={index * 0.1}>
+              <ImageWrapper>
+                <img src={meal.strMealThumb} alt={meal.strMeal} />
+                <Badge>{translateTag(meal.strCategory) || 'وصفة مختارة'}</Badge>
+              </ImageWrapper>
+              <CardContent>
                 <h3>{meal.strMeal}</h3>
-                {!meal.isCategory && (
-                  <button onClick={() => window.open(meal.strYoutube || `https://www.google.com/search?q=${meal.strMeal}+recipe`)}>
-                    عرض التفاصيل
-                  </button>
-                )}
-              </div>
-            </Card>
+                <p>المنشأ: {translateTag(meal.strArea)}</p>
+                <ChefButton onClick={() => window.open(meal.strYoutube, '_blank')}>
+                  <Play size={18} fill="white" />
+                  شاهد الشيف
+                </ChefButton>
+              </CardContent>
+            </RecipeCard>
           ))}
-        </ResultsGrid>
+        </RecipesGrid>
       )}
-    </Container>
+    </PageContainer>
   );
 };
 
-// --- التنسيقات (Styled Components) ---
-const Container = styled.div`
-  direction: rtl; font-family: 'Cairo', sans-serif; padding: 40px 5%; background: #fdfbfb; min-height: 100vh;
+// --- التنسيقات الفاخرة ---
+const fadeInUp = keyframes`
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 `;
 
-const Header = styled.div`
-  text-align: center; margin-bottom: 40px;
-  h1 { color: #2d3436; font-weight: 900; }
-  p { color: #636e72; }
+const PageContainer = styled.div`
+  min-height: 100vh; background: #fffafb; padding: 60px 8%; direction: rtl; font-family: 'Cairo', sans-serif;
 `;
 
-const SearchSection = styled.div`
-  max-width: 800px; margin: 0 auto 50px;
-  .search-bar {
-    display: flex; align-items: center; background: white; padding: 12px 20px; border-radius: 50px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 20px;
-    input { flex: 1; border: none; outline: none; padding: 0 15px; font-family: 'Cairo'; }
-  }
+const Title = styled.h1`
+  font-size: 3.2rem; color: #1e272e; font-weight: 900; margin-bottom: 10px;
 `;
 
-const FilterButtons = styled.div`
-  display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;
-  button {
-    display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 50px;
-    border: 1px solid #eee; background: white; cursor: pointer; transition: 0.3s; font-family: 'Cairo';
-    &.active { background: #ff7675; color: white; border-color: #ff7675; }
-    &:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-  }
+const Subtitle = styled.p`
+  color: #ef5777; font-size: 1.2rem; margin-bottom: 40px; font-weight: 600;
 `;
 
-const ResultsGrid = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px;
+const SearchWrapper = styled.div`
+  max-width: 700px; margin: 0 auto 35px; background: #fff; border-radius: 20px;
+  padding: 15px 25px; display: flex; align-items: center; box-shadow: 0 20px 40px rgba(0,0,0,0.03);
 `;
 
-const Card = styled.div`
-  background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.03);
-  transition: 0.3s;
-  &:hover { transform: scale(1.03); }
-  img { width: 100%; height: 180px; object-fit: cover; }
-  .info { padding: 15px; text-align: center;
-    h3 { font-size: 1rem; margin-bottom: 12px; height: 40px; overflow: hidden; }
-    button { width: 100%; padding: 8px; border: none; border-radius: 10px; background: #f1f2f6; cursor: pointer; }
-  }
+const StyledInput = styled.input`
+  flex: 1; border: none; outline: none; margin-right: 15px; font-size: 1.1rem; font-family: 'Cairo';
+`;
+
+const FilterBar = styled.div`
+  display: flex; justify-content: center; gap: 15px; margin-bottom: 60px; flex-wrap: wrap;
+`;
+
+const NavButton = styled.button`
+  background: ${props => props.active ? '#ef5777' : '#fff'};
+  color: ${props => props.active ? '#fff' : '#485460'};
+  border: none; padding: 12px 28px; border-radius: 15px; display: flex; align-items: center; gap: 10px;
+  cursor: pointer; font-family: 'Cairo'; font-weight: 700; transition: 0.4s;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.02);
+  &:hover { transform: translateY(-5px); box-shadow: 0 15px 25px rgba(239, 87, 119, 0.2); }
+`;
+
+const RecipesGrid = styled.div`
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 40px;
+`;
+
+const RecipeCard = styled.div`
+  background: #fff; border-radius: 35px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.04);
+  animation: ${fadeInUp} 0.7s ease forwards; animation-delay: ${props => props.delay}s;
+  opacity: 0; transition: 0.4s ease;
+  &:hover { transform: scale(1.02); }
+`;
+
+const ImageWrapper = styled.div`
+  position: relative; height: 260px;
+  img { width: 100%; height: 100%; object-fit: cover; }
+`;
+
+const Badge = styled.span`
+  position: absolute; top: 25px; right: 25px; background: #ffffffcc; backdrop-filter: blur(8px);
+  padding: 6px 18px; border-radius: 50px; font-size: 0.85rem; font-weight: 800; color: #ef5777;
+`;
+
+const CardContent = styled.div`
+  padding: 30px;
+  h3 { color: #1e272e; font-size: 1.4rem; margin-bottom: 10px; }
+  p { color: #808e9b; font-size: 1rem; margin-bottom: 25px; }
+`;
+
+const ChefButton = styled.button`
+  width: 100%; background: #1e272e; color: #fff; border: none; padding: 15px; border-radius: 20px;
+  display: flex; align-items: center; justify-content: center; gap: 12px; font-family: 'Cairo';
+  font-weight: 800; cursor: pointer; transition: 0.3s;
+  &:hover { background: #ef5777; }
 `;
 
 const LoadingBox = styled.div`
-  text-align: center; padding: 50px; color: #636e72;
-  .spin { animation: rotate 2s linear infinite; }
-  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  text-align: center; padding: 100px;
+  .spin { animation: spin 1s linear infinite; margin-bottom: 20px; color: #ef5777; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 `;
 
-export default RaqqaUltimateKitchen;
+export default RaqqaArabicKitchen;
