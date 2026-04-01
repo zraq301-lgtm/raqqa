@@ -33,13 +33,19 @@ const RaqqaArabicKitchen = () => {
       case 'search': url = `${API_BASE}/search.php?s=${value}`; break;
       case 'cat': url = `${API_BASE}/filter.php?c=${value}`; break;
       case 'area': url = `${API_BASE}/filter.php?a=${value}`; break;
-      default: url = `${API_BASE}/randomselection.php`; 
+      // تم تصحيح الرابط هنا من randomselection إلى random
+      default: url = `${API_BASE}/random.php`; 
     }
 
     try {
       const res = await axios.get(url);
-      setMeals(res.data.meals || []);
-    } catch (err) { console.error(err); }
+      // التأكد من أن البيانات مصفوفة حتى لو كانت وجبة واحدة (Random)
+      const mealData = res.data.meals;
+      setMeals(Array.isArray(mealData) ? mealData : []);
+    } catch (err) { 
+      console.error(err); 
+      setMeals([]); // إفراغ النتائج في حال حدوث خطأ لمنع الشاشة البيضاء
+    }
     setLoading(false);
   };
 
@@ -87,7 +93,7 @@ const RaqqaArabicKitchen = () => {
         <LoadingBox><Loader2 className="spin" size={40} /> جاري جلب الوصفات...</LoadingBox>
       ) : (
         <RecipesGrid>
-          {meals.map((meal, index) => (
+          {meals && meals.map((meal, index) => (
             <RecipeCard key={meal.idMeal} delay={index * 0.1}>
               <ImageWrapper>
                 <img src={meal.strMealThumb} alt={meal.strMeal} />
