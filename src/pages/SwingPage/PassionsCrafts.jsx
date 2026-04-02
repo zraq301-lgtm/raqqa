@@ -1,69 +1,178 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const AIDecorPreview = () => {
-  const [isGenerating, setIsGenerating] = useState(false);
+const PassionAndCraft = () => {
+  const [latestPost, setLatestPost] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // محاكاة عملية التوليد بالذكاء الاصطناعي
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 3000);
-  };
+  // إعدادات الموقع والـ API
+  const SITE_URL = "raqqastor3.wordpress.com";
+  const CATEGORY_SLUG = "passion-and-craft"; // الاسم اللطيف الذي أنشأناه
+
+  useEffect(() => {
+    const fetchLatestPost = async () => {
+      try {
+        // جلب آخر مقال من تصنيف شغف وحرف فقط
+        const response = await axios.get(
+          `https://public-api.wordpress.com/wp/v2/sites/${SITE_URL}/posts`,
+          {
+            params: {
+              category_slug: CATEGORY_SLUG,
+              per_page: 1, // جلب آخر مقال واحد فقط
+              _embed: true // لجلب الصور البارزة والمعلومات الإضافية
+            }
+          }
+        );
+
+        if (response.data.length > 0) {
+          setLatestPost(response.data[0]);
+        }
+      } catch (error) {
+        console.error("خطأ في جلب المقال:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestPost();
+  }, []);
+
+  if (loading) return <div className="loading">جاري جلب الإلهام...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8 flex items-center justify-center font-sans">
-      
-      {/* Container الرئيسي بأسلوب Glassmorphism */}
-      <div className="max-w-4xl w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
-        
-        {/* الجانب الأيسر: منطقة الرفع والعرض */}
-        <div className="flex-1 p-8 border-b md:border-b-0 md:border-r border-white/10">
-          <h2 className="text-white text-2xl font-bold mb-6 flex items-center gap-2">
-            <span className="bg-purple-500 p-2 rounded-lg text-sm">AI</span>
-            محلل الديكور الذكي
-          </h2>
-          
-          <div className="relative group cursor-pointer border-2 border-dashed border-white/30 rounded-2xl h-64 flex flex-col items-center justify-center hover:border-purple-400 transition-all duration-300">
-            <div className="text-white/60 group-hover:scale-110 transition-transform text-center p-4">
-              <p className="mb-2">📷 ارفع صورة غرفتك هنا</p>
-              <p className="text-xs">يدعم JPG, PNG بجودة عالية</p>
-            </div>
-          </div>
+    <div className="container">
+      <header className="header">
+        <h1>شغف وحرف</h1>
+        <p>حيث يلتقي الإبداع بالفرص</p>
+      </header>
 
-          <button 
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className={`w-full mt-6 py-4 rounded-xl font-bold text-white transition-all shadow-lg shadow-purple-500/20 
-              ${isGenerating ? 'bg-gray-600 cursor-wait' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 active:scale-95'}`}
-          >
-            {isGenerating ? 'جاري تحليل الإضاءة والمساحة...' : 'ابدأ التحويل الإبداعي ✨'}
-          </button>
-        </div>
+      {latestPost ? (
+        <div className="glass-card">
+          {/* عرض الصورة البارزة إذا وجدت */}
+          {latestPost._embedded && latestPost._embedded['wp:featuredmedia'] && (
+            <img 
+              src={latestPost._embedded['wp:featuredmedia'][0].source_url} 
+              alt="Passion" 
+              className="featured-image"
+            />
+          )}
 
-        {/* الجانب الأيمن: الخيارات والنتائج */}
-        <div className="w-full md:w-80 p-8 bg-black/20">
-          <h3 className="text-white/80 text-sm font-semibold mb-4 tracking-wider">اختر نمط الإلهام</h3>
-          
-          <div className="space-y-3">
-            {['مودرن هادئ', 'بوهيمي دافئ', 'مينيماليزم', 'صناعي (Industrial)'].map((style, idx) => (
-              <div key={idx} className="p-3 bg-white/5 border border-white/10 rounded-xl text-white/70 hover:bg-white/10 cursor-pointer transition-colors text-sm flex justify-between items-center">
-                {style}
-                <div className="w-2 h-2 rounded-full bg-purple-400 shadow-[0_0_8px_rgba(168,85,247,0.6)]"></div>
-              </div>
-            ))}
-          </div>
+          <div className="card-content">
+            <h2 className="post-title" dangerouslySetInnerHTML={{ __html: latestPost.title.rendered }} />
+            
+            <div 
+              className="post-excerpt" 
+              dangerouslySetInnerHTML={{ __html: latestPost.excerpt.rendered }} 
+            />
 
-          <hr className="my-6 border-white/10" />
-
-          <div className="bg-gradient-to-tr from-purple-500/20 to-blue-500/20 p-4 rounded-2xl border border-white/10">
-            <p className="text-white text-xs leading-relaxed">
-              💡 <strong>نصيحة إبداعية:</strong> نمط الإضاءة الجانبية سيبرز جمال قطع الأثاث الخشبية في غرفتك بشكل أفضل.
-            </p>
+            <a href={latestPost.link} target="_blank" rel="noopener noreferrer" className="read-more-btn">
+              اقرئي المقال كاملاً
+            </a>
           </div>
         </div>
+      ) : (
+        <p className="no-post">لا يوجد مقالات منشورة حالياً في هذا القسم.</p>
+      )}
 
-      </div>
+      {/* تنسيقات CSS المدمجة */}
+      <style>{`
+        .container {
+          min-height: 100vh;
+          background: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 100%);
+          padding: 40px 20px;
+          font-family: 'Cairo', sans-serif;
+          direction: rtl;
+        }
+
+        .header {
+          text-align: center;
+          margin-bottom: 50px;
+        }
+
+        .header h1 {
+          color: #7b1fa2;
+          font-size: 2.5rem;
+          margin-bottom: 10px;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+          color: #9c27b0;
+          font-style: italic;
+        }
+
+        .glass-card {
+          max-width: 800px;
+          margin: 0 auto;
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(15px);
+          -webkit-backdrop-filter: blur(15px);
+          border-radius: 30px;
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
+          transition: transform 0.3s ease;
+        }
+
+        .glass-card:hover {
+          transform: translateY(-5px);
+        }
+
+        .featured-image {
+          width: 100%;
+          height: 350px;
+          object-fit: cover;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card-content {
+          padding: 30px;
+        }
+
+        .post-title {
+          color: #4a148c;
+          font-size: 1.8rem;
+          margin-bottom: 15px;
+        }
+
+        .post-excerpt {
+          color: #555;
+          line-height: 1.8;
+          font-size: 1.1rem;
+          margin-bottom: 25px;
+        }
+
+        .read-more-btn {
+          display: inline-block;
+          background: linear-gradient(45deg, #e91e63, #9c27b0);
+          color: white;
+          padding: 12px 30px;
+          border-radius: 50px;
+          text-decoration: none;
+          font-weight: bold;
+          box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+          transition: all 0.3s ease;
+        }
+
+        .read-more-btn:hover {
+          box-shadow: 0 6px 20px rgba(233, 30, 99, 0.5);
+          transform: scale(1.05);
+        }
+
+        .loading, .no-post {
+          text-align: center;
+          padding: 100px;
+          font-size: 1.2rem;
+          color: #7b1fa2;
+        }
+
+        @media (max-width: 600px) {
+          .post-title { font-size: 1.4rem; }
+          .featured-image { height: 200px; }
+        }
+      `}</style>
     </div>
   );
 };
 
-export default AIDecorPreview;
+export default PassionAndCraft;
