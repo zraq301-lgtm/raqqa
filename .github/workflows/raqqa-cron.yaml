@@ -11,9 +11,37 @@ jobs:
   run_notifications:
     runs-on: ubuntu-latest
     steps:
+      # --- الخطوة الأولى: الكود الأصلي الخاص بك (لا تغيير فيه) ---
       - name: "Call Raqqa API"
         run: |
           curl -X GET "https://raqqa-hjl8.vercel.app/api/get-notifications" \
           -H "Content-Type: application/json" \
           -H "zazotona: 12sonds25" \
           -v
+
+      # --- الخطوة الثانية: فحص وردبريس والدفع إلى Firebase عبر الرابط الجديد ---
+      - name: "Check WordPress and Push to FCM"
+        run: |
+          # 1. جلب بيانات أحدث مقال من وردبريس
+          WP_DATA=$(curl -s "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?per_page=1")
+          
+          # 2. استخراج البيانات (ID, Title, Link, Image) باستخدام Python لضمان الدقة
+          POST_ID=$(echo $WP_DATA | python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['id']) if data else print('')")
+          POST_TITLE=$(echo $WP_DATA | python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['title']['rendered']) if data else print('')")
+          POST_LINK=$(echo $WP_DATA | python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['link']) if data else print('')")
+          POST_IMG=$(echo $WP_DATA | python3 -c "import sys, json; data=json.load(sys.stdin); print(data[0]['jetpack_featured_media_url']) if data else print('')")
+
+          # التأكد من وجود بيانات قبل إرسال الطلب لـ Vercel
+          if [ ! -z "$POST_ID" ]; then
+            echo "New Post Found! ID: $POST_ID. Sending to Firebase via Vercel..."
+            
+            # 3. إرسال البيانات إلى رابط الـ FCM الجديد الخاص بك
+            # تم استخدام POST لإرسال بيانات المقال بداخل الـ Body
+            curl -X POST "https://raqqa-hjl8.vercel.app/api/send-fcm" \
+            -H "Content-Type: application/json" \
+            -H "zazotona: 12sonds25" \
+            -d "{\"type\": \"wordpress_new_post\", \"id\": \"$POST_ID\", \"title\": \"$POST_TITLE\", \"url\": \"$POST_LINK\", \"image\": \"$POST_IMG\"}" \
+            -v
+          else
+            echo "No new posts found on WordPress site."
+          fi
