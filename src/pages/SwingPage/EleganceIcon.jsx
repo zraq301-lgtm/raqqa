@@ -1,237 +1,210 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Sparkles, Leaf, RefreshCw, Star, Wand2, ShieldCheck, HeartPulse } from 'lucide-react';
-import { CapacitorHttp } from '@capacitor/core';
+import { Sparkles, PlayCircle, Image as ImageIcon, BookOpen, RefreshCcw, ExternalLink } from 'lucide-react';
+
+// --- إعدادات الرابط ---
+const WP_URL = "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com";
+const CATEGORY_ID = "788431179"; // معرف فئة العناية والأناقة
 
 // --- الأنيميشن ---
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
+const fadeInUp = keyframes`
+  from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const spin = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-`;
-
-// --- التصميم ---
-const PageWrapper = styled.div`
-  min-height: 100vh;
-  background: linear-gradient(135deg, #fff5f7 0%, #f4f1ff 100%);
-  padding: 30px 5%;
+// --- المكونات المرئية (Styled Components) ---
+const Container = styled.div`
   direction: rtl;
   font-family: 'Cairo', sans-serif;
+  background: #fdfafb;
+  min-height: 100vh;
+  padding: 40px 20px;
 `;
 
-const Header = styled.header`
+const Header = styled.div`
   text-align: center;
-  margin-bottom: 50px;
-  animation: ${fadeIn} 0.8s ease-out;
+  margin-bottom: 60px;
+  h1 { color: #4a3a3a; font-size: 2.5rem; margin-bottom: 10px; }
+  p { color: #8e7f7f; font-size: 1.1rem; }
 `;
 
-const Grid = styled.div`
+const BlogGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 30px;
-  max-width: 1300px;
+  max-width: 1200px;
   margin: 0 auto;
 `;
 
-const ProductCard = styled.div`
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(15px);
-  border-radius: 35px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  padding: 25px;
-  box-shadow: 0 15px 35px rgba(255, 182, 193, 0.15);
-  display: flex;
-  flex-direction: column;
-  animation: ${fadeIn} 0.6s ease-out both;
+const ArticleCard = styled.article`
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  animation: ${fadeInUp} 0.6s ease forwards;
+  &:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(255, 182, 193, 0.2); }
 `;
 
-const ImageContainer = styled.div`
+const MediaWrapper = styled.div`
   width: 100%;
-  height: 300px;
-  border-radius: 25px;
+  height: 220px;
+  background: #eee;
+  position: relative;
   overflow: hidden;
-  background: white;
-  margin-bottom: 20px;
+
+  iframe, video { width: 100%; height: 100%; border: none; }
   img { width: 100%; height: 100%; object-fit: cover; }
 `;
 
-const AIDescription = styled.div`
-  background: ${props => props.type === 'care' ? 'rgba(235, 245, 255, 0.6)' : 'rgba(255, 245, 247, 0.6)'};
-  border-radius: 20px;
-  padding: 15px;
-  margin-top: 15px;
-  font-size: 0.95rem;
-  color: #5c4b41;
-  line-height: 1.6;
-  border-right: 4px solid ${props => props.type === 'care' ? '#5dade2' : '#ffb7c5'};
+const ContentArea = styled.div`
+  padding: 20px;
+  h2 { font-size: 1.3rem; color: #333; margin-bottom: 15px; line-height: 1.4; }
+  .excerpt { color: #666; font-size: 0.95rem; line-height: 1.6; height: 80px; overflow: hidden; }
 `;
 
-const Badge = styled.div`
-  display: inline-flex;
+const Tag = styled.span`
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 5px 12px;
+  border-radius: 50px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #d63384;
+  z-index: 10;
+  display: flex;
   align-items: center;
   gap: 5px;
-  background: #fff0f3;
-  color: #ff8fa3;
-  padding: 5px 15px;
-  border-radius: 50px;
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-bottom: 10px;
 `;
 
-const LoadMoreBtn = styled.button`
-  display: block;
-  margin: 40px auto;
-  padding: 15px 40px;
-  background: #4a403a;
-  color: white;
-  border: none;
-  border-radius: 50px;
-  font-size: 1.1rem;
-  cursor: pointer;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-  &:disabled { opacity: 0.6; cursor: not-allowed; }
+const LoadingSection = styled.div`
+  text-align: center;
+  padding: 100px;
+  color: #d63384;
+  svg { animation: spin 2s linear infinite; }
+  @keyframes spin { 100% { transform: rotate(-360deg); } }
 `;
 
-const RotatingIcon = styled(RefreshCw)`
-  animation: ${props => props.$loading ? spin : 'none'} 2s linear infinite;
-`;
+// --- وظيفة معالجة المحتوى (الفيديو والصور) ---
+const RenderMedia = ({ post }) => {
+  const content = post.content.rendered;
+  
+  // 1. البحث عن فيديوهات YouTube أو Vimeo في المحتوى
+  const youtubeMatch = content.match(/youtube\.com\/embed\/([^"\s]+)/);
+  const vimeoMatch = content.match(/vimeo\.com\/([^"\s]+)/);
+  const videoTagMatch = content.match(/<video[^>]*src="([^"]+)"/);
+
+  if (youtubeMatch) {
+    return <iframe src={`https://www.youtube.com/embed/${youtubeMatch[1]}`} title="video" allowFullScreen />;
+  }
+  if (vimeoMatch) {
+    return <iframe src={`https://player.vimeo.com/video/${vimeoMatch[1]}`} title="video" allowFullScreen />;
+  }
+  if (videoTagMatch) {
+    return <video src={videoTagMatch[1]} controls />;
+  }
+
+  // 2. إذا لم يوجد فيديو، نعرض الصورة البارزة (Featured Image)
+  return (
+    <img 
+      src={post.jetpack_featured_media_url || "https://via.placeholder.com/600x400?text=Raqqa+Store"} 
+      alt={post.title.rendered} 
+    />
+  );
+};
 
 // --- المكون الرئيسي ---
-const RaqqaBeautyAI = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [offset, setOffset] = useState(0);
+const RaqqaBlog = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const getCareData = async (isLoadMore = false) => {
+  const fetchPosts = async () => {
     setLoading(true);
     try {
-      // 1. جلب المنتجات الخام من API المكياج
-      const res = await fetch(`https://makeup-api.herokuapp.com/api/v1/products.json?product_tags=Natural`);
-      const allData = await res.json();
-      
-      // نأخذ 3 منتجات فقط في كل طلب لضمان سرعة استجابة الذكاء الاصطناعي وعدم حدوث Time-out
-      const nextBatch = allData.slice(offset, offset + 3);
-
-      // 2. معالجة كل منتج بشكل منفصل عبر CapacitorHttp
-      const enhancedProducts = await Promise.all(nextBatch.map(async (product) => {
-        try {
-          const aiResponse = await CapacitorHttp.post({
-            url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
-            headers: { 'Content-Type': 'application/json' },
-            data: { 
-              prompt: `اكتب شرحاً لمنتج الجمال التالي باللغة العربية. 
-              المنتج: ${product.name}. 
-              المطلوب: اكتب "الوصف:" ثم شرح مختصر، وبعدها اكتب "نصيحة العناية:" ثم طريقة الاستخدام السليمة.` 
-            },
-          });
-
-          const fullText = aiResponse.data.result || aiResponse.data.output || "";
-          
-          // دالة ذكية لتقسيم النص القادم من الذكاء الاصطناعي
-          const parts = fullText.split(/نصيحة العناية:|طريقة الاستخدام:/);
-          const description = parts[0]?.replace(/الوصف:/g, "").trim();
-          const careTip = parts[1]?.trim();
-
-          return { 
-            ...product, 
-            arabicDesc: description || "تحليل المكونات جارٍ...",
-            careTip: careTip || "يفضل استشارة خبير لنتائج مثالية." 
-          };
-        } catch (e) {
-          return { ...product, arabicDesc: "عذراً، فشل الاتصال بالذكاء الاصطناعي.", careTip: "تأكد من اتصالك بالإنترنت." };
-        }
-      }));
-
-      if (isLoadMore) {
-        setProducts(prev => [...prev, ...enhancedProducts]);
-      } else {
-        setProducts(enhancedProducts);
-      }
-      setOffset(prev => prev + 3);
+      // جلب المقالات بناءً على معرف القسم
+      const response = await fetch(`${WP_URL}/posts?categories=${CATEGORY_ID}&_embed`);
+      const data = await response.json();
+      setPosts(data);
     } catch (error) {
-      console.error("Main Fetch Error", error);
+      console.error("خطأ في جلب البيانات:", error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    getCareData();
+    fetchPosts();
   }, []);
 
   return (
-    <PageWrapper>
+    <Container>
       <Header>
-        <Badge><Sparkles size={16} /> مدعوم بالذكاء الاصطناعي</Badge>
-        <h1 style={{ color: '#4a403a', fontWeight: '900', fontSize: '2.5rem' }}>موسوعة رقة الذكية</h1>
-        <p style={{ color: '#8c7e74' }}>دليل العناية الشخصية المخصص لكِ</p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+          <Sparkles color="#d63384" size={32} />
+        </div>
+        <h1>العناية والأناقة</h1>
+        <p>أحدث المقالات والنصائح من عالم الجمال</p>
       </Header>
 
-      <Grid>
-        {products.map((product) => (
-          <ProductCard key={product.id + Math.random()}>
-            <ImageContainer>
-              <img 
-                src={product.api_featured_image} 
-                alt={product.name}
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=Beauty+Product'; }}
-              />
-            </ImageContainer>
+      {loading ? (
+        <LoadingSection>
+          <RefreshCcw size={48} />
+          <p>جاري تحميل الأناقة...</p>
+        </LoadingSection>
+      ) : (
+        <BlogGrid>
+          {posts.map((post) => (
+            <ArticleCard key={post.id}>
+              <MediaWrapper>
+                {/* تحديد الوسائط تلقائياً (فيديو أم صورة) */}
+                {post.content.rendered.includes('iframe') || post.content.rendered.includes('<video') ? (
+                  <Tag><PlayCircle size={14} /> فيديو</Tag>
+                ) : (
+                  <Tag><ImageIcon size={14} /> مقال مصور</Tag>
+                )}
+                <RenderMedia post={post} />
+              </MediaWrapper>
 
-            <div style={{ flexGrow: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                <ShieldCheck size={18} color="#ffb7c5" />
-                <span style={{color: '#a393a1', fontWeight: 'bold'}}>{product.brand || 'طبيعي'}</span>
-              </div>
-              
-              <h3 style={{ fontSize: '1.2rem', color: '#4a403a', marginBottom: '15px', fontWeight: '800' }}>
-                {product.name}
-              </h3>
-
-              <AIDescription>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', color: '#ff8fa3', fontWeight: 'bold' }}>
-                  <Wand2 size={16} /> وصف الذكاء الاصطناعي:
+              <ContentArea>
+                <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                <div 
+                  className="excerpt" 
+                  dangerouslySetInnerHTML={{ __html: post.excerpt.rendered.substring(0, 120) + '...' }} 
+                />
+                
+                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <a 
+                    href={post.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    style={{ 
+                      color: '#d63384', 
+                      textDecoration: 'none', 
+                      fontWeight: 'bold', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '5px' 
+                    }}
+                  >
+                    إقرئي المزيد <ExternalLink size={16} />
+                  </a>
+                  <span style={{ fontSize: '0.8rem', color: '#aaa' }}>
+                    {new Date(post.date).toLocaleDateString('ar-EG')}
+                  </span>
                 </div>
-                {product.arabicDesc}
-              </AIDescription>
+              </ContentArea>
+            </ArticleCard>
+          ))}
+        </BlogGrid>
+      )}
 
-              <AIDescription type="care">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', color: '#5dade2', fontWeight: 'bold' }}>
-                  <HeartPulse size={16} /> طريقة العناية السليمة:
-                </div>
-                {product.careTip}
-              </AIDescription>
-            </div>
-          </ProductCard>
-        ))}
-      </Grid>
-
-      <LoadMoreBtn disabled={loading} onClick={() => getCareData(true)}>
-        {loading ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <RotatingIcon $loading={loading} size={20} /> جاري التحليل...
-          </div>
-        ) : "إظهار المزيد من نصائح الخبراء"}
-      </LoadMoreBtn>
-
-      <button 
-        onClick={() => { setOffset(0); getCareData(false); window.scrollTo(0,0); }}
-        style={{
-          position: 'fixed', bottom: '30px', left: '30px', background: '#ffb7c5', 
-          border: 'none', width: '60px', height: '60px', borderRadius: '50%', 
-          boxShadow: '0 10px 25px rgba(0,0,0,0.2)', cursor: 'pointer', color: 'white',
-          display: 'flex', justifyContent: 'center', alignItems: 'center'
-        }}
-      >
-        <RotatingIcon $loading={loading} size={24} />
-      </button>
-    </PageWrapper>
+      {!loading && posts.length === 0 && (
+        <div style={{ textAlign: 'center', color: '#666' }}>لا توجد مقالات حالياً في هذا القسم.</div>
+      )}
+    </Container>
   );
 };
 
-export default RaqqaBeautyAI;
+export default RaqqaBlog;
