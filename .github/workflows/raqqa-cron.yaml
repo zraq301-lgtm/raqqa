@@ -2,7 +2,7 @@ name: "Raqqa Cron Job"
 
 on:
   schedule:
-    # سيتم التنفيذ الساعة 9 صباحاً و 9 مساءً بتوقيت القاهرة
+    # 9 صباحاً و 9 مساءً بتوقيت القاهرة
     - cron: "0 6,18 * * *"
   workflow_dispatch:
 
@@ -10,7 +10,7 @@ jobs:
   run_notifications:
     runs-on: ubuntu-latest
     steps:
-      # --- الخطوة الأولى: الكود الأصلي (لا تغيير) ---
+      # --- الخطوة الأولى: الكود الأصلي الخاص بك (GET) ---
       - name: "Call Raqqa API"
         run: |
           curl -X GET "https://raqqa-hjl8.vercel.app/api/get-notifications" \
@@ -18,40 +18,45 @@ jobs:
           -H "zazotona: 12sonds25" \
           -v
 
-      # --- الخطوة الثانية: فحص وردبريس والدفع بتنسيق JSON سليم ---
-      - name: "Check WordPress and Push to FCM"
-        run: |
-          # 1. جلب بيانات أحدث مقال
-          WP_DATA=$(curl -s "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?per_page=1")
-          
-          # 2. استخراج البيانات وتحويلها لـ JSON آمن (Safe JSON) لتجنب خطأ 400
-          # نستخدم Python لإنشاء الـ Body بالكامل لضمان عدم وجود أخطاء في الرموز أو الفواصل
-          PAYLOAD=$(echo $WP_DATA | python3 -c "
-import sys, json
-data = json.load(sys.stdin)
-if data:
-    post = data[0]
-    payload = {
-        'type': 'wordpress_new_post',
-        'id': str(post.get('id', '')),
-        'title': post.get('title', {}).get('rendered', 'مقال جديد'),
-        'url': post.get('link', ''),
-        'image': post.get('jetpack_featured_media_url', '')
-    }
-    print(json.dumps(payload))
-else:
-    print('')
-")
+      # --- الخطوة الثانية: فحص وردبريس باستخدام Node.js (للتوافق مع ريآكت) ---
+      - name: "Check WordPress and Push to FCM (Node.js)"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              // 1. جلب بيانات وردبريس
+              const response = await fetch("https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?per_page=1");
+              const posts = await response.json();
 
-          # 3. إرسال البيانات إذا كانت موجودة
-          if [ ! -z "$PAYLOAD" ]; then
-            echo "Payload prepared: $PAYLOAD"
-            
-            curl -X POST "https://raqqa-hjl8.vercel.app/api/send-fcm" \
-            -H "Content-Type: application/json" \
-            -H "zazotona: 12sonds25" \
-            -d "$PAYLOAD" \
-            -v
-          else
-            echo "No new posts found."
-          fi
+              if (posts && posts.length > 0) {
+                const post = posts[0];
+                
+                // 2. تجهيز البيانات بتنسيق JSON سليم تماماً
+                const payload = {
+                  type: "wordpress_new_post",
+                  id: String(post.id),
+                  title: post.title.rendered,
+                  url: post.link,
+                  image: post.jetpack_featured_media_url || ""
+                };
+
+                console.log("Sending Payload:", payload);
+
+                // 3. الإرسال إلى رابط فيرسل الخاص بك (POST)
+                const res = await fetch("https://raqqa-hjl8.vercel.app/api/send-fcm", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "zazotona": "12sonds25"
+                  },
+                  body: JSON.stringify(payload)
+                });
+
+                console.log("Vercel Response Status:", res.status);
+              } else {
+                console.log("No posts found.");
+              }
+            } catch (error) {
+              console.error("Error details:", error);
+              core.setFailed(error.message);
+            }
