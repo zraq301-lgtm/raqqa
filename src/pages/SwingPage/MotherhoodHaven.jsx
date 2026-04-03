@@ -1,144 +1,78 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const EducationalAwareness = () => {
-  // المحاور الخمسة المحددة
-  const educationAxios = [
-    {
-      id: 1,
-      title: "السلوك",
-      description: "تحليل وتوجيه الأفعال الظاهرة للطفل وكيفية تعديلها بأساليب تربوية حديثة بعيداً عن الانفعال.",
-      icon: "🤝",
-      color: "#FCE4EC" // وردي ناعم
-    },
-    {
-      id: 2,
-      title: "القناعات",
-      description: "غرس القيم والمبادئ الجوهرية التي تشكل هوية الطفل وتبني ثقته بنفسه وبالعالم من حوله.",
-      icon: "💎",
-      color: "#E8F5E9" // أخضر هادئ
-    },
-    {
-      id: 3,
-      title: "الانتقادات",
-      description: "كيفية التعامل مع النقد الخارجي أو نقد الذات، وتحويله إلى أداة للبناء وليس للهدم في نفسية الطفل.",
-      icon: "📢",
-      color: "#FFF3E0" // برتقالي خافت
-    },
-    {
-      id: 4,
-      title: "التصورات",
-      description: "فهم كيف يرى الطفل نفسه ويرى والديه، وتصحيح الصور الذهنية المغلوطة التي قد تتكون لديه.",
-      icon: "🧠",
-      color: "#F3E5F5" // لافندر
-    },
-    {
-      id: 5,
-      title: "المفاهيم",
-      description: "تفكيك وشرح المصطلحات التربوية الكبرى وتبسيطها لتصبح ممارسات يومية سهلة التطبيق.",
-      icon: "📚",
-      color: "#E1F5FE" // أزرق سماوي
-    }
-  ];
+const MotherhoodArticles = () => {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const styles = {
-    wrapper: {
-      direction: 'rtl',
-      fontFamily: "'Segoe UI', Tahoma, sans-serif",
-      backgroundColor: '#f8f9fa',
-      minHeight: '100vh',
-      padding: '40px 5%',
-      color: '#333'
-    },
-    header: {
-      textAlign: 'center',
-      marginBottom: '50px'
-    },
-    mainTitle: {
-      fontSize: '2.2rem',
-      color: '#5D4037',
-      marginBottom: '10px'
-    },
-    line: {
-      width: '60px',
-      height: '3px',
-      backgroundColor: '#D81B60',
-      margin: '0 auto 20px'
-    },
-    // تصميم الشبكة للأقسام الخمسة
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '20px',
-      maxWidth: '1200px',
-      margin: '0 auto'
-    },
-    card: (bgColor) => ({
-      backgroundColor: '#fff',
-      borderRadius: '15px',
-      padding: '30px',
-      borderRight: `8px solid ${bgColor}`, // تمييز جانبي باللون
-      boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px'
-    }),
-    iconArea: {
-      fontSize: '2.5rem',
-    },
-    title: {
-      fontSize: '1.5rem',
-      color: '#444',
-      margin: 0
-    },
-    desc: {
-      fontSize: '1rem',
-      color: '#666',
-      lineHeight: '1.8',
-      margin: 0
-    },
-    footer: {
-      marginTop: '60px',
-      textAlign: 'center',
-      color: '#999',
-      fontSize: '0.9rem'
-    }
-  };
+  // الرابط الأساسي للموقع
+  const BASE_URL = "https://raqqastor3.wordpress.com/wp-json/wp/v2";
+  // الـ Slug الخاص بالفئة التي سننشئها
+  const CATEGORY_SLUG = "motherhood"; 
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        // 1. جلب معرف الفئة (ID) باستخدام الـ Slug
+        const catRes = await fetch(`${BASE_URL}/categories?slug=${CATEGORY_SLUG}`);
+        const categories = await catRes.json();
+        
+        if (categories.length > 0) {
+          const categoryId = categories[0].id;
+          
+          // 2. جلب المقالات التابعة لهذا المعرف فقط
+          const postRes = await fetch(`${BASE_URL}/posts?categories=${categoryId}&_embed`);
+          const data = await postRes.json();
+          setArticles(data);
+        }
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchArticles();
+  }, []);
+
+  if (loading) return <div className="text-center p-10">جاري تحميل مقالات التربية...</div>;
 
   return (
-    <div style={styles.wrapper}>
-      <header style={styles.header}>
-        <h1 style={styles.mainTitle}>منهج الوعي التربوي</h1>
-        <div style={styles.line}></div>
-        <p>خمسة ركائز أساسية لبناء علاقة تربوية واعية ومستدامة</p>
-      </header>
+    <div className="p-4 bg-gray-50 min-h-screen">
+      <h1 className="text-2xl font-bold text-pink-600 mb-6 text-right">عالم الأمومة والتربية</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {articles.map((post) => (
+          <div key={post.id} className="bg-white rounded-2xl shadow-sm overflow-hidden border border-pink-100">
+            {/* عرض الصورة البارزة إذا وجدت */}
+            {post._embedded?.['wp:featuredmedia'] && (
+              <img 
+                src={post._embedded['wp:featuredmedia'][0].source_url} 
+                alt={post.title.rendered}
+                className="w-full h-48 object-cover"
+              />
+            )}
+            
+            <div className="p-4 text-right">
+              <h2 
+                className="text-xl font-semibold mb-2 text-gray-800"
+                dangerouslySetInnerHTML={{ __html: post.title.rendered }}
+              />
+              
+              {/* عرض مقتطف من المقال */}
+              <div 
+                className="text-gray-600 text-sm mb-4"
+                dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }}
+              />
 
-      <main style={styles.grid}>
-        {educationAxios.map((item) => (
-          <div 
-            key={item.id} 
-            style={styles.card(item.color)}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.03)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.05)';
-            }}
-          >
-            <div style={styles.iconArea}>{item.icon}</div>
-            <h2 style={styles.title}>{item.title}</h2>
-            <p style={styles.desc}>{item.description}</p>
+              <button className="text-pink-500 font-medium hover:underline">
+                اقرئي المزيد
+              </button>
+            </div>
           </div>
         ))}
-      </main>
-
-      <footer style={styles.footer}>
-        <p>جميع الحقوق محفوظة © 2026 | منصة التربية الفكرية</p>
-      </footer>
+      </div>
     </div>
   );
 };
 
-export default EducationalAwareness;
+export default MotherhoodArticles;
