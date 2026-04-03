@@ -5,8 +5,9 @@ const PassionAndCraft = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // الموقع والـ ID المستخرج من الرابط
   const SITE_URL = "raqqastor3.wordpress.com";
-  const CATEGORY_SLUG = "passion-and-craft";
+  const CATEGORY_ID = "788402012"; 
 
   useEffect(() => {
     const fetchAllPosts = async () => {
@@ -15,8 +16,8 @@ const PassionAndCraft = () => {
           `https://public-api.wordpress.com/wp/v2/sites/${SITE_URL}/posts`,
           {
             params: {
-              category_slug: CATEGORY_SLUG,
-              per_page: 20, // جلب حتى 20 مقال
+              categories: CATEGORY_ID, // البحث باستخدام ID القسم المستخرج
+              per_page: 20, 
               _embed: true 
             }
           }
@@ -31,7 +32,7 @@ const PassionAndCraft = () => {
     fetchAllPosts();
   }, []);
 
-  // دالة ذكية لتحويل روابط يوتيوب داخل النص إلى Iframe
+  // دالة تحويل روابط يوتيوب داخل النص إلى Iframe
   const formatContent = (content) => {
     const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/g;
     const embedHtml = '<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/$1" frameborder="0" allowfullscreen></iframe></div>';
@@ -104,7 +105,6 @@ const PassionAndCraft = () => {
           border-radius: 10px;
         }
 
-        /* تنسيق الشبكة (Grid) ليكون متجاوباً */
         .posts-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -113,7 +113,6 @@ const PassionAndCraft = () => {
           margin: 0 auto;
         }
 
-        /* الكارت العصري */
         .modern-card {
           background: rgba(255, 255, 255, 0.7);
           backdrop-filter: blur(10px);
@@ -172,10 +171,9 @@ const PassionAndCraft = () => {
           font-size: 1rem;
         }
 
-        /* تنسيق الفيديو داخل الكارت */
         .video-wrapper {
           position: relative;
-          padding-bottom: 56.25%; /* نسبة 16:9 */
+          padding-bottom: 56.25%;
           height: 0;
           overflow: hidden;
           margin: 15px 0;
@@ -224,7 +222,6 @@ const PassionAndCraft = () => {
           font-size: 1.5rem;
         }
 
-        /* للموبايل: جعل الكارت يملأ العرض */
         @media (max-width: 480px) {
           .posts-grid {
             grid-template-columns: 1fr;
