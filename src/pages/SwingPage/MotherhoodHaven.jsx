@@ -7,6 +7,27 @@ const MotherhoodSection = () => {
   const CATEGORY_ID = "768006428";
   const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed`;
 
+  // وظيفة سحرية لتحويل الروابط النصية إلى ميديا (فيديو وصور)
+  const parseContent = (htmlContent) => {
+    let content = htmlContent;
+
+    // 1. تحويل روابط اليوتيوب النصية إلى مشغل فيديو
+    const youtubeRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*))/g;
+    content = content.replace(youtubeRegex, (match, url, videoId) => {
+      return `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+    });
+
+    // 2. تحويل روابط الصور المباشرة التي تنتهي بامتدادات صور إلى وسم img
+    const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp)(?:\?.*)?)/g;
+    content = content.replace(imageRegex, (match) => {
+      // نتأكد ألا نقوم باستبدال رابط موجود أصلاً داخل وسم src
+      if (content.includes(`src="${match}"`)) return match;
+      return `<img src="${match}" alt="محتوى إضافي" class="content-image" />`;
+    });
+
+    return content;
+  };
+
   useEffect(() => {
     const fetchMotherhoodArticles = async () => {
       try {
@@ -19,14 +40,13 @@ const MotherhoodSection = () => {
         setLoading(false);
       }
     };
-
     fetchMotherhoodArticles();
   }, []);
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen text-pink-500 font-bold">
-        <div className="animate-pulse text-xl">جاري تحميل عالم الأمومة والجمال...</div>
+        <div className="animate-pulse text-xl">جاري تحميل عالم رقة...</div>
       </div>
     );
   }
@@ -34,94 +54,85 @@ const MotherhoodSection = () => {
   return (
     <div className="p-4 bg-gradient-to-b from-[#fff5f7] to-white min-h-screen font-sans" dir="rtl">
       
-      {/* أيقونة "رقة" الموجهة - بديل العنوان العلوي */}
+      {/* أيقونة رقة الصغيرة */}
       <div className="fixed top-4 right-4 z-50">
-        <div className="bg-pink-500 text-white px-4 py-1 rounded-full shadow-lg flex items-center gap-2 border-2 border-white">
-          <span className="text-xs font-bold tracking-widest">رقة</span>
-          <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+        <div className="bg-pink-500 text-white px-3 py-1 rounded-full shadow-md flex items-center gap-2 border border-white">
+          <span className="text-[10px] font-bold">رقة</span>
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-12 pt-10">
+      <div className="max-w-4xl mx-auto space-y-8 pt-6">
         {articles.map((post) => (
           <article 
             key={post.id} 
-            className="backdrop-blur-lg bg-white/80 rounded-[2rem] shadow-xl shadow-pink-100/50 border border-white overflow-hidden transition-all duration-300"
+            className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden"
           >
-            {/* الصورة البارزة الكبيرة */}
+            {/* الصورة البارزة */}
             {post._embedded?.['wp:featuredmedia'] && (
-              <div className="w-full h-64 md:h-80 overflow-hidden">
+              <div className="w-full h-56 overflow-hidden">
                 <img 
                   src={post._embedded['wp:featuredmedia'][0].source_url} 
                   alt={post.title.rendered}
-                  className="w-full h-full object-cover shadow-inner"
+                  className="w-full h-full object-cover"
                 />
               </div>
             )}
 
-            <div className="p-6 md:p-10">
-              {/* عنوان المقال */}
+            <div className="p-6">
               <h2 
-                className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 leading-tight"
+                className="text-xl font-bold text-gray-800 mb-4"
                 dangerouslySetInnerHTML={{ __html: post.title.rendered }}
               />
 
-              {/* محتوى المقال */}
-              <div className="prose prose-pink max-w-none text-gray-700 leading-loose text-right">
+              <div className="prose prose-pink max-w-none text-right">
                 <div 
                   className="wordpress-content"
-                  dangerouslySetInnerHTML={{ __html: post.content.rendered }} 
+                  // هنا نستخدم الوظيفة الجديدة لمعالجة الروابط قبل عرضها
+                  dangerouslySetInnerHTML={{ __html: parseContent(post.content.rendered) }} 
                 />
               </div>
 
-              {/* تذييل المقال */}
-              <div className="mt-8 pt-6 border-t border-pink-50 flex justify-between items-center text-xs text-pink-400">
-                <span>تاريخ النشر: {new Date(post.date).toLocaleDateString('ar-EG')}</span>
-                <span className="bg-pink-100 px-3 py-1 rounded-full">قسم التربية</span>
+              <div className="mt-6 pt-4 border-t border-gray-50 flex justify-between items-center text-[10px] text-gray-400">
+                <span>{new Date(post.date).toLocaleDateString('ar-EG')}</span>
+                <span className="text-pink-300">#قسم_التربية</span>
               </div>
             </div>
           </article>
         ))}
       </div>
 
-      {/* تنسيقات CSS لضمان ظهور الصور والفيديو بشكل صحيح */}
       <style jsx global>{`
         .wordpress-content {
-          word-wrap: break-word;
+          line-height: 1.8;
+          color: #4a4a4a;
         }
-        /* عرض الصور بشكل كامل */
-        .wordpress-content img {
+        .video-container {
+          position: relative;
+          padding-bottom: 56.25%;
+          height: 0;
+          overflow: hidden;
+          margin: 20px 0;
+          border-radius: 15px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .video-container iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+        }
+        .content-image {
+          max-width: 100%;
+          height: auto;
+          border-radius: 15px;
+          margin: 15px 0;
           display: block;
-          max-width: 100% !important;
-          height: auto !important;
-          border-radius: 20px;
-          margin: 25px auto;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-        }
-        /* عرض الفيديوهات (يوتيوب وغيرها) بشكل كامل */
-        .wordpress-content iframe, 
-        .wordpress-content video,
-        .wordpress-content embed {
-          width: 100% !important;
-          height: auto !important;
-          aspect-ratio: 16 / 9;
-          border-radius: 20px;
-          margin: 25px 0;
-          border: none;
-          box-shadow: 0 10px 30px rgba(219, 39, 119, 0.15);
         }
         .wordpress-content p {
-          margin-bottom: 1.5rem;
-          font-size: 1.15rem;
-          color: #4a5568;
-        }
-        .wordpress-content a {
-          color: #db2777;
-          text-decoration: underline;
-        }
-        /* إخفاء أي روابط تظهر كنصوص بجانب الميديا */
-        .wp-block-embed__wrapper {
-          margin: 0;
+          margin-bottom: 1rem;
         }
       `}</style>
     </div>
