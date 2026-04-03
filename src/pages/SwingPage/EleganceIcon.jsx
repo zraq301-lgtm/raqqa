@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Sparkles, Leaf, ShoppingCart, RefreshCw, Star } from 'lucide-react';
+import { Sparkles, Leaf, ShoppingCart, RefreshCw, Star, Info } from 'lucide-react';
 
-// --- 1. الأنميشن لظهور الكروت بنعومة ---
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-// --- 2. التصميم (Styled Components) بلمسة جمالية ناعمة ---
 const PageWrapper = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, #fff5f7 0%, #f4f1ff 100%);
@@ -17,96 +15,51 @@ const PageWrapper = styled.div`
   font-family: 'Cairo', sans-serif;
 `;
 
-const Header = styled.header`
-  text-align: center;
-  margin-bottom: 40px;
-  animation: ${fadeIn} 0.8s ease-out;
-`;
-
 const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 25px;
-  max-width: 1200px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); /* تكبير العرض الأدنى للكارت */
+  gap: 30px;
+  max-width: 1300px;
   margin: 0 auto;
 `;
 
 const ProductCard = styled.div`
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  border-radius: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 25px;
   padding: 20px;
-  box-shadow: 0 10px 30px rgba(255, 182, 193, 0.15);
-  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  animation: ${fadeIn} 0.5s ease-out both;
-  animation-delay: ${props => props.index * 0.1}s;
-
-  &:hover {
-    transform: translateY(-10px);
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 20px 40px rgba(255, 182, 193, 0.25);
-  }
+  transition: 0.3s;
+  &:hover { transform: scale(1.02); }
 `;
 
 const ImageContainer = styled.div`
   width: 100%;
-  height: 220px;
+  height: 350px; /* تكبير حجم الصورة */
   border-radius: 20px;
   overflow: hidden;
-  background: white;
   margin-bottom: 15px;
-  position: relative;
-
   img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    transition: 0.5s;
+    object-fit: cover; /* جعل الصورة تملأ المساحة بشكل أجمل */
   }
 `;
 
-const CategoryBadge = styled.span`
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #ffb7c5;
-  color: white;
-  padding: 5px 12px;
-  border-radius: 50px;
-  font-size: 0.7rem;
-  font-weight: bold;
-`;
-
-const PriceTag = styled.div`
-  color: #ff8fa3;
-  font-size: 1.2rem;
-  font-weight: 900;
+const DescriptionText = styled.p`
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.6;
   margin: 10px 0;
+  max-height: 80px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 `;
 
-const BuyButton = styled.button`
-  background: linear-gradient(90deg, #ffb7c5, #ff8fa3);
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 15px;
-  font-family: 'Cairo';
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: auto;
-  transition: 0.3s;
-
-  &:hover { opacity: 0.9; transform: scale(1.02); }
-`;
-
-// --- 3. المكون الرئيسي ---
 const RaqqaBeautyCare = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -114,11 +67,8 @@ const RaqqaBeautyCare = () => {
   const getCareProducts = async () => {
     setLoading(true);
     try {
-      // نستخدم فلتر "Natural" لجلب منتجات العناية الطبيعية فقط
       const response = await fetch('https://makeup-api.herokuapp.com/api/v1/products.json?product_tags=Natural');
       const data = await response.json();
-      
-      // نختار أول 12 منتج لضمان سرعة الصفحة
       setProducts(data.slice(0, 12));
     } catch (error) {
       console.error("Error fetching data");
@@ -127,69 +77,49 @@ const RaqqaBeautyCare = () => {
     }
   };
 
-  useEffect(() => {
-    getCareProducts();
-  }, []);
+  useEffect(() => { getCareProducts(); }, []);
 
   return (
     <PageWrapper>
-      <Header>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '10px' }}>
-          <Leaf color="#ffb7c5" fill="#ffb7c5" />
-          <Sparkles color="#ffb7c5" />
-        </div>
-        <h1 style={{ color: '#5c4b41', fontWeight: '900', fontSize: '2.2rem' }}>رقة: جمالك الطبيعي</h1>
-        <p style={{ color: '#8c7e74' }}>كتالوج العناية بالبشرة والجمال المستوحى من الطبيعة</p>
-      </Header>
+      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+        <h1 style={{ color: '#4a403a' }}>جمالك الطبيعي بالعربي</h1>
+        <p>منتجات مختارة بعناية مع الشرح</p>
+      </header>
 
       {loading ? (
-        <div style={{ textAlign: 'center', color: '#ffb7c5', marginTop: '100px' }}>
-          <RefreshCw className="animate-spin" size={40} />
-          <p>جاري تحضير عالمك الخاص...</p>
-        </div>
+        <div style={{ textAlign: 'center' }}><RefreshCw className="animate-spin" /></div>
       ) : (
         <Grid>
-          {products.map((product, index) => (
-            <ProductCard key={product.id} index={index}>
+          {products.map((product) => (
+            <ProductCard key={product.id}>
               <ImageContainer>
-                <CategoryBadge>{product.category || 'عناية طبيعية'}</CategoryBadge>
-                <img 
-                  src={product.api_featured_image} 
-                  alt={product.name}
-                  onError={(e) => { e.target.src = 'https://via.placeholder.com/300?text=Raqqa+Beauty'; }}
-                />
+                <img src={product.api_featured_image} alt={product.name} />
               </ImageContainer>
+              
+              <h3 style={{ fontSize: '1.1rem', color: '#333' }}>{product.name}</h3>
+              
+              {/* قسم الوصف: سيظهر بالإنجليزية من الـ API، للترجمة التلقائية يمكن للمستخدم استخدام ترجمة جوجل للمتصفح */}
+              <DescriptionText>
+                {product.description || "لا يوجد وصف متاح لهذا المنتج حالياً."}
+              </DescriptionText>
 
-              <div style={{ flexGrow: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#ffb7c5', fontSize: '0.8rem' }}>
-                  <Star size={14} fill="#ffb7c5" /> <span style={{color: '#a393a1'}}>{product.brand}</span>
+              <div style={{ marginTop: 'auto' }}>
+                <div style={{ fontWeight: 'bold', color: '#ff8fa3', marginBottom: '10px' }}>
+                  السعر: {product.price > 0 ? `${product.price} $` : 'اتصلي لمعرفة السعر'}
                 </div>
-                <h3 style={{ fontSize: '1rem', color: '#4a403a', margin: '8px 0', height: '45px', overflow: 'hidden' }}>
-                  {product.name}
-                </h3>
-                <PriceTag>{product.price > 0 ? `${product.price} $` : 'عرض خاص'}</PriceTag>
+                <button 
+                  onClick={() => window.open(product.product_link, '_blank')}
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '12px',
+                    backgroundColor: '#ffb7c5', border: 'none', cursor: 'pointer'
+                  }}
+                >
+                  <ShoppingCart size={18} /> شراء الآن
+                </button>
               </div>
-
-              <BuyButton onClick={() => window.open(product.product_link, '_blank')}>
-                <ShoppingCart size={18} /> تسوقي الآن
-              </BuyButton>
             </ProductCard>
           ))}
         </Grid>
-      )}
-
-      {/* زر تحديث البيانات */}
-      {!loading && (
-        <button 
-          onClick={getCareProducts}
-          style={{
-            position: 'fixed', bottom: '20px', left: '20px', background: 'white', 
-            border: 'none', padding: '15px', borderRadius: '50%', boxShadow: '0 5px 15px rgba(0,0,0,0.1)',
-            cursor: 'pointer', color: '#ff8fa3'
-          }}
-        >
-          <RefreshCw size={24} />
-        </button>
       )}
     </PageWrapper>
   );
