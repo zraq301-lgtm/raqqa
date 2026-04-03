@@ -4,9 +4,7 @@ const MotherhoodSection = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // المعرف الخاص بفئة الأمومة
   const CATEGORY_ID = "768006428";
-  // تم استخدام _embed لجلب الصور البارزة ومعلومات الكاتب
   const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed`;
 
   useEffect(() => {
@@ -34,15 +32,17 @@ const MotherhoodSection = () => {
   }
 
   return (
-    <div className="p-4 bg-gradient-to-b from-[#fff5f7] to-white min-h-screen font-sans dir-rtl" dir="rtl">
-      {/* رأس الصفحة */}
-      <header className="mb-10 text-center">
-        <h1 className="text-3xl font-extrabold text-pink-600 mb-2">رقة الأمومة</h1>
-        <p className="text-gray-500 text-sm">محتوى خاص لكل أم تهتم بتربية جيل مبدع</p>
-        <div className="h-1 w-20 bg-pink-300 mx-auto mt-4 rounded-full"></div>
-      </header>
+    <div className="p-4 bg-gradient-to-b from-[#fff5f7] to-white min-h-screen font-sans" dir="rtl">
+      
+      {/* أيقونة "رقة" الموجهة - بديل العنوان العلوي */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="bg-pink-500 text-white px-4 py-1 rounded-full shadow-lg flex items-center gap-2 border-2 border-white">
+          <span className="text-xs font-bold tracking-widest">رقة</span>
+          <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+        </div>
+      </div>
 
-      <div className="max-w-4xl mx-auto space-y-12">
+      <div className="max-w-4xl mx-auto space-y-12 pt-10">
         {articles.map((post) => (
           <article 
             key={post.id} 
@@ -66,14 +66,8 @@ const MotherhoodSection = () => {
                 dangerouslySetInnerHTML={{ __html: post.title.rendered }}
               />
 
-              {/* محتوى المقال (الصور الداخلية، الفيديوهات، النصوص) */}
-              <div 
-                className="prose prose-pink max-w-none text-gray-700 leading-loose text-right"
-                style={{
-                  textAlign: 'right',
-                }}
-              >
-                {/* هذا الجزء هو المسؤول عن عرض الفيديوهات والصور داخل المقال */}
+              {/* محتوى المقال */}
+              <div className="prose prose-pink max-w-none text-gray-700 leading-loose text-right">
                 <div 
                   className="wordpress-content"
                   dangerouslySetInnerHTML={{ __html: post.content.rendered }} 
@@ -90,30 +84,44 @@ const MotherhoodSection = () => {
         ))}
       </div>
 
-      {/* تنسيقات CSS إضافية لضمان جمالية الصور والفيديو داخل المحتوى */}
+      {/* تنسيقات CSS لضمان ظهور الصور والفيديو بشكل صحيح */}
       <style jsx global>{`
-        .wordpress-content img {
-          max-width: 100%;
-          height: auto;
-          border-radius: 20px;
-          margin: 20px 0;
-          box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+        .wordpress-content {
+          word-wrap: break-word;
         }
-        .wordpress-content iframe {
-          width: 100%;
+        /* عرض الصور بشكل كامل */
+        .wordpress-content img {
+          display: block;
+          max-width: 100% !important;
+          height: auto !important;
+          border-radius: 20px;
+          margin: 25px auto;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+        /* عرض الفيديوهات (يوتيوب وغيرها) بشكل كامل */
+        .wordpress-content iframe, 
+        .wordpress-content video,
+        .wordpress-content embed {
+          width: 100% !important;
+          height: auto !important;
           aspect-ratio: 16 / 9;
           border-radius: 20px;
-          margin: 20px 0;
-          border: 2px solid #fff;
-          box-shadow: 0 10px 30px rgba(219, 39, 119, 0.2);
+          margin: 25px 0;
+          border: none;
+          box-shadow: 0 10px 30px rgba(219, 39, 119, 0.15);
         }
         .wordpress-content p {
           margin-bottom: 1.5rem;
-          font-size: 1.1rem;
+          font-size: 1.15rem;
+          color: #4a5568;
         }
-        .wordpress-content figure {
+        .wordpress-content a {
+          color: #db2777;
+          text-decoration: underline;
+        }
+        /* إخفاء أي روابط تظهر كنصوص بجانب الميديا */
+        .wp-block-embed__wrapper {
           margin: 0;
-          padding: 0;
         }
       `}</style>
     </div>
