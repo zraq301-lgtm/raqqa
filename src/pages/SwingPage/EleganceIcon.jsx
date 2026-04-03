@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Sparkles, Leaf, RefreshCw, Star, Wand2, ShieldCheck, HeartPulse } from 'lucide-react';
-import { CapacitorHttp } from '@capacitor/core'; // استيراد المحرك الجديد
+import { CapacitorHttp } from '@capacitor/core';
 
 // --- الأنيميشن ---
 const fadeIn = keyframes`
@@ -9,7 +9,12 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
-// --- التصميم المطور ---
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+// --- التصميم ---
 const PageWrapper = styled.div`
   min-height: 100vh;
   background: linear-gradient(135deg, #fff5f7 0%, #f4f1ff 100%);
@@ -33,12 +38,12 @@ const Grid = styled.div`
 `;
 
 const ProductCard = styled.div`
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(15px);
   border-radius: 35px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   padding: 25px;
-  box-shadow: 0 15px 35px rgba(255, 182, 193, 0.1);
+  box-shadow: 0 15px 35px rgba(255, 182, 193, 0.15);
   display: flex;
   flex-direction: column;
   animation: ${fadeIn} 0.6s ease-out both;
@@ -46,28 +51,23 @@ const ProductCard = styled.div`
 
 const ImageContainer = styled.div`
   width: 100%;
-  height: 320px;
+  height: 300px;
   border-radius: 25px;
   overflow: hidden;
   background: white;
   margin-bottom: 20px;
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: 0.5s;
-  }
+  img { width: 100%; height: 100%; object-fit: cover; }
 `;
 
 const AIDescription = styled.div`
-  background: rgba(255, 255, 255, 0.5);
+  background: ${props => props.type === 'care' ? 'rgba(235, 245, 255, 0.6)' : 'rgba(255, 245, 247, 0.6)'};
   border-radius: 20px;
   padding: 15px;
   margin-top: 15px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: #5c4b41;
   line-height: 1.6;
-  border-right: 4px solid ${props => props.type === 'care' ? '#8fd3ff' : '#ffb7c5'};
+  border-right: 4px solid ${props => props.type === 'care' ? '#5dade2' : '#ffb7c5'};
 `;
 
 const Badge = styled.div`
@@ -91,55 +91,59 @@ const LoadMoreBtn = styled.button`
   color: white;
   border: none;
   border-radius: 50px;
-  font-size: 1rem;
+  font-size: 1.1rem;
   cursor: pointer;
-  transition: 0.3s;
-  &:hover { transform: scale(1.05); background: #2d2622; }
-  &:disabled { opacity: 0.5; }
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+`;
+
+const RotatingIcon = styled(RefreshCw)`
+  animation: ${props => props.$loading ? spin : 'none'} 2s linear infinite;
 `;
 
 // --- المكون الرئيسي ---
 const RaqqaBeautyAI = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
+  const [offset, setOffset] = useState(0);
 
   const getCareData = async (isLoadMore = false) => {
     setLoading(true);
     try {
-      // 1. جلب المنتجات (استخدام fetch العادي أو CapacitorHttp)
+      // 1. جلب المنتجات الخام من API المكياج
       const res = await fetch(`https://makeup-api.herokuapp.com/api/v1/products.json?product_tags=Natural`);
-      const data = await res.json();
+      const allData = await res.json();
       
-      // نأخذ عينة مختلفة في كل مرة "للتمثيل"
-      const start = isLoadMore ? products.length : 0;
-      const limitedData = data.slice(start, start + 6);
+      // نأخذ 3 منتجات فقط في كل طلب لضمان سرعة استجابة الذكاء الاصطناعي وعدم حدوث Time-out
+      const nextBatch = allData.slice(offset, offset + 3);
 
-      // 2. معالجة كل منتج عبر الذكاء الاصطناعي باستخدام CapacitorHttp
-      const enhancedProducts = await Promise.all(limitedData.map(async (product) => {
+      // 2. معالجة كل منتج بشكل منفصل عبر CapacitorHttp
+      const enhancedProducts = await Promise.all(nextBatch.map(async (product) => {
         try {
-          const options = {
+          const aiResponse = await CapacitorHttp.post({
             url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
             headers: { 'Content-Type': 'application/json' },
             data: { 
-              prompt: `المنتج: ${product.name}. 
-              المطلوب: 1- وصف مختصر بالعربي. 
-              2- نصيحة دقيقة لكيفية العناية واستخدام هذا المنتج بشكل سليم للحصول على أفضل نتيجة.` 
+              prompt: `اكتب شرحاً لمنتج الجمال التالي باللغة العربية. 
+              المنتج: ${product.name}. 
+              المطلوب: اكتب "الوصف:" ثم شرح مختصر، وبعدها اكتب "نصيحة العناية:" ثم طريقة الاستخدام السليمة.` 
             },
-          };
+          });
 
-          const response = await CapacitorHttp.post(options);
-          // نفترض أن الـ API يعيد نصاً يحتوي على الوصف والنصيحة
-          const aiText = response.data.result || response.data.output;
+          const fullText = aiResponse.data.result || aiResponse.data.output || "";
           
-          // تقسيم النص (هنا نحاول استخراج نصيحة العناية إذا كانت موجودة)
+          // دالة ذكية لتقسيم النص القادم من الذكاء الاصطناعي
+          const parts = fullText.split(/نصيحة العناية:|طريقة الاستخدام:/);
+          const description = parts[0]?.replace(/الوصف:/g, "").trim();
+          const careTip = parts[1]?.trim();
+
           return { 
             ...product, 
-            arabicDesc: aiText || "منتج طبيعي رائع للعناية اليومية.",
-            careTip: "ينصح باستخدامه على بشرة نظيفة بحركات دائرية مرتين يومياً." // قيمة افتراضية أو مستخرجة
-          }; 
+            arabicDesc: description || "تحليل المكونات جارٍ...",
+            careTip: careTip || "يفضل استشارة خبير لنتائج مثالية." 
+          };
         } catch (e) {
-          return { ...product, arabicDesc: "منتج مثالي لتعزيز روتين الجمال.", careTip: "يحفظ في مكان بارد وجاف." };
+          return { ...product, arabicDesc: "عذراً، فشل الاتصال بالذكاء الاصطناعي.", careTip: "تأكد من اتصالك بالإنترنت." };
         }
       }));
 
@@ -148,8 +152,9 @@ const RaqqaBeautyAI = () => {
       } else {
         setProducts(enhancedProducts);
       }
+      setOffset(prev => prev + 3);
     } catch (error) {
-      console.error("Fetch Error", error);
+      console.error("Main Fetch Error", error);
     } finally {
       setLoading(false);
     }
@@ -162,9 +167,9 @@ const RaqqaBeautyAI = () => {
   return (
     <PageWrapper>
       <Header>
-        <Badge><Sparkles size={16} /> دليل رقة الذكي</Badge>
-        <h1 style={{ color: '#4a403a', fontWeight: '900', fontSize: '2.5rem', marginBottom: '10px' }}>موسوعة العناية والجمال</h1>
-        <p style={{ color: '#8c7e74', fontSize: '1.1rem' }}>نحلل لكِ المكونات ونرشدكِ لطريقة الاستخدام الصحيحة</p>
+        <Badge><Sparkles size={16} /> مدعوم بالذكاء الاصطناعي</Badge>
+        <h1 style={{ color: '#4a403a', fontWeight: '900', fontSize: '2.5rem' }}>موسوعة رقة الذكية</h1>
+        <p style={{ color: '#8c7e74' }}>دليل العناية الشخصية المخصص لكِ</p>
       </Header>
 
       <Grid>
@@ -174,14 +179,14 @@ const RaqqaBeautyAI = () => {
               <img 
                 src={product.api_featured_image} 
                 alt={product.name}
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/400x500?text=Raqqa+Beauty'; }}
+                onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=Beauty+Product'; }}
               />
             </ImageContainer>
 
             <div style={{ flexGrow: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                 <ShieldCheck size={18} color="#ffb7c5" />
-                <span style={{color: '#a393a1', fontWeight: 'bold'}}>{product.brand || 'ماركة طبيعية'}</span>
+                <span style={{color: '#a393a1', fontWeight: 'bold'}}>{product.brand || 'طبيعي'}</span>
               </div>
               
               <h3 style={{ fontSize: '1.2rem', color: '#4a403a', marginBottom: '15px', fontWeight: '800' }}>
@@ -190,40 +195,32 @@ const RaqqaBeautyAI = () => {
 
               <AIDescription>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', color: '#ff8fa3', fontWeight: 'bold' }}>
-                  <Wand2 size={14} /> تحليل رقة الذكي:
+                  <Wand2 size={16} /> وصف الذكاء الاصطناعي:
                 </div>
                 {product.arabicDesc}
               </AIDescription>
 
               <AIDescription type="care">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px', color: '#5dade2', fontWeight: 'bold' }}>
-                  <HeartPulse size={14} /> بروتوكول العناية:
+                  <HeartPulse size={16} /> طريقة العناية السليمة:
                 </div>
                 {product.careTip}
               </AIDescription>
-            </div>
-
-            <div style={{ marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '15px', fontSize: '0.8rem', color: '#999', textAlign: 'center' }}>
-              تصنيف: {product.category || 'جمال وعناية'}
             </div>
           </ProductCard>
         ))}
       </Grid>
 
-      {loading ? (
-        <div style={{ textAlign: 'center', color: '#ffb7c5', margin: '40px 0' }}>
-          <RefreshCw className="animate-spin" size={40} />
-          <p>جاري استشارة الذكاء الاصطناعي...</p>
-        </div>
-      ) : (
-        <LoadMoreBtn onClick={() => getCareData(true)}>
-          إظهار المزيد من المنتجات
-        </LoadMoreBtn>
-      )}
+      <LoadMoreBtn disabled={loading} onClick={() => getCareData(true)}>
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <RotatingIcon $loading={loading} size={20} /> جاري التحليل...
+          </div>
+        ) : "إظهار المزيد من نصائح الخبراء"}
+      </LoadMoreBtn>
 
-      {/* زر التحديث العلوي السريع */}
       <button 
-        onClick={() => { window.scrollTo(0,0); getCareData(false); }}
+        onClick={() => { setOffset(0); getCareData(false); window.scrollTo(0,0); }}
         style={{
           position: 'fixed', bottom: '30px', left: '30px', background: '#ffb7c5', 
           border: 'none', width: '60px', height: '60px', borderRadius: '50%', 
@@ -231,7 +228,7 @@ const RaqqaBeautyAI = () => {
           display: 'flex', justifyContent: 'center', alignItems: 'center'
         }}
       >
-        <RefreshCw size={24} />
+        <RotatingIcon $loading={loading} size={24} />
       </button>
     </PageWrapper>
   );
