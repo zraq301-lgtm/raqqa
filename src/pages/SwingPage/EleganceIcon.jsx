@@ -90,7 +90,7 @@ const LoadMoreButton = styled.button`
   border: 2px solid #ffb7c5;
   padding: 12px 35px;
   border-radius: 50px;
-  font-family: 'Cairo';
+  font-family: 'Cairo', sans-serif;
   font-weight: bold;
   cursor: pointer;
   transition: 0.3s;
@@ -116,16 +116,17 @@ const RaqqaArabicCatalog = () => {
     const fetchData = async () => {
       try {
         const res = await fetch('https://makeup-api.herokuapp.com/api/v1/products.json?product_tags=Natural');
+        if (!res.ok) throw new Error('Network response was not ok');
         const data = await res.json();
         setAllProducts(data);
       } catch (e) {
-        console.error("Fetch Error");
+        console.error("Fetch Error:", e);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []); // يعمل مرة واحدة فقط عند فتح الصفحة
+  }, []);
 
   const loadMore = () => {
     setVisibleCount(prev => prev + 6);
@@ -158,7 +159,7 @@ const RaqqaArabicCatalog = () => {
                   <img 
                     src={item.api_featured_image} 
                     alt={item.name} 
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/400x400?text=Beauty+Care'; }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://via.placeholder.com/400x400?text=Beauty+Care'; }}
                   />
                 </LargeImageHolder>
                 <InfoPanel>
