@@ -16,56 +16,61 @@ jobs:
           -H "zazotona: 12sonds25" \
           -v
 
-      - name: "Check WordPress Category and Push to FCM"
+      - name: "Check WordPress Categories and Push to FCM"
         uses: actions/github-script@v7
         with:
           script: |
             try {
-              // إضافة ID الفئة (788431179) ليكون الجلب دقيقاً لقسم العناية والأناقة
-              const categoryId = "788431179";
-              const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${categoryId}&per_page=1`;
+              // قائمة المعرفات (IDs) للفئات الثلاث المطلوبة
+              const categoryIds = ["189211019", "788402012", "768006428"];
               
-              const response = await fetch(wpUrl);
-              const posts = await response.json();
-
-              if (posts && posts.length > 0) {
-                const post = posts[0];
+              for (const catId of categoryIds) {
+                console.log(`Checking category: ${catId}`);
                 
-                // هيكل البيانات الاحترافي لتجنب خطأ 400
-                const payload = {
-                  to: "/topics/all_users", // تأكد أن تطبيقك مشترك في هذا الـ Topic
-                  notification: {
-                    title: "✨ مقال جديد: " + post.title.rendered,
-                    body: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
-                    image: post.jetpack_featured_media_url || ""
-                  },
-                  data: {
-                    id: String(post.id),
-                    url: post.link,
-                    type: "wordpress_article"
+                const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${catId}&per_page=1`;
+                
+                const response = await fetch(wpUrl);
+                const posts = await response.json();
+
+                if (posts && posts.length > 0) {
+                  const post = posts[0];
+                  
+                  // تجهيز البيانات المرسلة لـ Vercel
+                  const payload = {
+                    to: "/topics/all_users",
+                    notification: {
+                      title: "✨ مقال جديد: " + post.title.rendered,
+                      body: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
+                      image: post.jetpack_featured_media_url || ""
+                    },
+                    data: {
+                      id: String(post.id),
+                      url: post.link,
+                      type: "wordpress_article",
+                      category_id: catId
+                    }
+                  };
+
+                  console.log(`Sending Payload for Category ${catId}:`, JSON.stringify(payload));
+
+                  const res = await fetch("https://raqqa-hjl8.vercel.app/api/send-fcm", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "zazotona": "12sonds25"
+                    },
+                    body: JSON.stringify(payload)
+                  });
+
+                  const resData = await res.text();
+                  console.log(`Category ${catId} - Status: ${res.status}, Response: ${resData}`);
+                  
+                  if (res.status === 400) {
+                    console.error(`Failed to send notification for category ${catId}`);
                   }
-                };
-
-                console.log("Sending Payload to Vercel:", JSON.stringify(payload));
-
-                const res = await fetch("https://raqqa-hjl8.vercel.app/api/send-fcm", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "zazotona": "12sonds25"
-                  },
-                  body: JSON.stringify(payload)
-                });
-
-                const resData = await res.text();
-                console.log(`Status: ${res.status}, Response: ${resData}`);
-                
-                if (res.status === 400) {
-                  core.setFailed("Firebase returned 400. Check if the Payload structure matches your Vercel logic.");
+                } else {
+                  console.log(`No new posts found in category: ${catId}`);
                 }
-
-              } else {
-                console.log("No new posts found in this category.");
               }
             } catch (error) {
               console.error("Critical Error:", error);
