@@ -1,13 +1,11 @@
 import admin from 'firebase-admin';
 
 // 1. معالجة المفتاح الخاص بشكل آمن لـ Node 24
-// هذه الخطوة تضمن تنظيف المفتاح من أي علامات اقتباس زائدة أو مسافات
 const rawKey = process.env.FIREBASE_PRIVATE_KEY;
 const formattedKey = rawKey 
   ? rawKey.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1').trim() 
   : undefined;
 
-// سجل فحص يظهر في Vercel Logs (يمكنك حذفه بعد التأكد من العمل)
 console.log(`[Firebase Init] Key Present: ${!!formattedKey}, Length: ${formattedKey?.length}`);
 
 const serviceAccount = {
@@ -17,7 +15,6 @@ const serviceAccount = {
   "private_key": formattedKey,
 };
 
-// 2. منع إعادة تهيئة Firebase إذا كان يعمل بالفعل
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
@@ -37,17 +34,21 @@ export default async function handler(req, res) {
     body, 
     category,
     token,
-    isFromMake 
+    isFromMake,
+    type,       // أضفنا هذا لاستقبال نوع الطلب (وردبريس أم لا)
+    image       // أضفنا هذا لاستقبال صورة المقال من وردبريس
   } = req.body;
 
   const targetToken = fcmToken || token;
 
   try {
-    if (!targetToken) {
+    // --- تعديل ذكي: إذا كان الطلب من وردبريس، نرسل لـ Topic بدلاً من Token واحد ---
+    const isWordPress = type === "wordpress_article";
+    
+    if (!targetToken && !isWordPress) {
       return res.status(400).json({ error: "Missing Device Token (fcmToken)" });
     }
 
-    // التحقق من صلاحية المفتاح قبل المحاولة
     if (!formattedKey) {
       throw new Error("FIREBASE_PRIVATE_KEY is missing or undefined in environment variables.");
     }
@@ -67,31 +68,32 @@ export default async function handler(req, res) {
     const finalCategory = category || 'general';
     const selected = templates[finalCategory] || { t: "تنبيه من رقة 🌸", b: "لديكِ تحديث جديد في التطبيق." };
 
-    let finalTitle, finalBody;
+    let finalTitle, finalBody, finalImage;
     
     if (isFromMake === true || String(isFromMake).toLowerCase() === "true") {
       finalTitle = selected.t;
       finalBody = selected.b;
+      finalImage = `https://raqqa-hjl8.vercel.app/assets/notifications/${finalCategory}.png`;
     } else {
       finalTitle = title && title.trim() !== "" ? title : selected.t;
       finalBody = body && body.trim() !== "" ? body : selected.b;
+      // إذا كانت هناك صورة مرسلة (من وردبريس) نستخدمها، وإلا نستخدم الصورة الافتراضية للفئة
+      finalImage = image || `https://raqqa-hjl8.vercel.app/assets/notifications/${finalCategory}.png`;
     }
 
-    const imageUrl = `https://raqqa-hjl8.vercel.app/assets/notifications/${finalCategory}.png`;
-
+    // تجهيز كائن الرسالة
     const messagePayload = {
       notification: { 
         title: finalTitle, 
         body: finalBody,
-        image: imageUrl 
+        image: finalImage 
       },
-      token: targetToken,
       android: {
         priority: "high",
         notification: {
           channelId: "default",
           sound: "default",
-          image: imageUrl,
+          image: finalImage,
           visibility: "public"
         }
       },
@@ -103,10 +105,17 @@ export default async function handler(req, res) {
           }
         },
         fcm_options: {
-          image: imageUrl
+          image: finalImage
         }
       }
     };
+
+    // --- تحديد الوجهة: إما Token جهاز واحد أو Topic لجميع المستخدمين ---
+    if (isWordPress) {
+      messagePayload.topic = "all_users"; 
+    } else {
+      messagePayload.token = targetToken;
+    }
 
     const messageId = await admin.messaging().send(messagePayload);
 
@@ -114,7 +123,7 @@ export default async function handler(req, res) {
       success: true, 
       message_id: messageId,
       details: {
-        sent_to: targetToken,
+        sent_to: isWordPress ? "topic:all_users" : targetToken,
         category: finalCategory
       }
     });
