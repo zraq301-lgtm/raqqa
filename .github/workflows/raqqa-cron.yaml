@@ -9,6 +9,7 @@ jobs:
   run_notifications:
     runs-on: ubuntu-latest
     steps:
+      # --- الوظيفة الناجحة (جلب من نيون والإرسال) ---
       - name: "Call Raqqa API (Original GET)"
         run: |
           curl -X GET "https://raqqa-hjl8.vercel.app/api/get-notifications" \
@@ -16,6 +17,7 @@ jobs:
           -H "zazotona: 12sonds25" \
           -v
 
+      # --- الوظيفة المعدلة (وردبريس بنفس تنسيق نيون) ---
       - name: "Check WordPress Categories and Push to FCM"
         uses: actions/github-script@v7
         with:
@@ -33,24 +35,21 @@ jobs:
                 if (posts && posts.length > 0) {
                   const post = posts[0];
                   
-                  // الهيكل المحدث المتوافق مع Firebase V1 لتجنب خطأ 400
+                  // تنظيف العنوان من وسوم HTML
+                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "");
+                  
+                  // ملاحظة: قمنا بتغيير المسميات لتطابق ما يخرج من نيون عادةً
+                  // استبدلنا 'id' بـ 'notification_id' أو أي مسمى يستخدمه الـ API الخاص بك
                   const payload = {
-                    message: {
-                      topic: "all_users",
-                      notification: {
-                        title: "✨ مقال جديد: " + post.title.rendered.replace(/<\/?[^>]+(>|$)/g, ""),
-                        body: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
-                        image: post.jetpack_featured_media_url || ""
-                      },
-                      data: {
-                        id: String(post.id),
-                        url: post.link,
-                        type: "wordpress_article"
-                      }
-                    }
+                    title: "✨ " + cleanTitle,
+                    message: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
+                    url: post.link,
+                    image: post.jetpack_featured_media_url || "",
+                    type: "wordpress", // لتمييز المصدر
+                    post_id: String(post.id)
                   };
 
-                  console.log(`Sending Payload for Category ${catId}`);
+                  console.log(`Sending WP Post to FCM API:`, JSON.stringify(payload));
 
                   const res = await fetch("https://raqqa-hjl8.vercel.app/api/send-fcm", {
                     method: "POST",
@@ -58,11 +57,11 @@ jobs:
                       "Content-Type": "application/json",
                       "zazotona": "12sonds25"
                     },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(payload) // نرسل الـ Payload بدون تغليف إضافي كما يفعل نيون
                   });
 
                   const resData = await res.text();
-                  console.log(`Category ${catId} - Status: ${res.status}, Response: ${resData}`);
+                  console.log(`Status: ${res.status}, Response: ${resData}`);
                 }
               }
             } catch (error) {
