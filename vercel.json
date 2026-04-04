@@ -19,7 +19,15 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!api/).*)",
+      "source": "/shop.html",
+      "destination": "/shop.html"
+    },
+    {
+      "source": "/download.html",
+      "destination": "/download.html"
+    },
+    {
+      "source": "/((?!api/|shop.html|download.html).*)",
       "destination": "/index.html"
     }
   ]
