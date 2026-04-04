@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر رقة - علي إكسبريس</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.2); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-rose-50 to-violet-100 min-h-screen p-6">
+
+    <div x-data="shopData()" x-init="fetchProducts()">
+        <h1 class="text-3xl font-bold text-center text-violet-800 mb-8">مختارات رقة من علي إكسبريس</h1>
+
+        <template x-if="loading">
+            <div class="text-center text-violet-600">جاري تحميل المنتجات...</div>
+        </template>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <template x-for="product in products" :key="product.id">
+                <div class="glass rounded-2xl p-4 shadow-lg hover:scale-105 transition-transform">
+                    <img :src="product.picture" class="w-full h-40 object-contain rounded-lg">
+                    <h2 class="text-sm font-bold mt-2 h-10 overflow-hidden" x-text="product.name"></h2>
+                    <div class="flex justify-between mt-4 items-center">
+                        <span class="text-violet-700 font-black" x-text="product.price + ' ج.م'"></span>
+                        <a :href="product.url" target="_blank" class="bg-violet-600 text-white px-4 py-1 rounded-full text-xs">تسوق الآن</a>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        function shopData() {
+            return {
+                products: [],
+                loading: true,
+                async fetchProducts() {
+                    // ملاحظة: بما أنها صفحة ستاتيك، سنحتاج لعمل بروكسب بسيط أو استخدام رابط XML مباشرة إذا كان يدعم CORS
+                    const feedUrl = "رابط_الـ_XML_الخاص_بك";
+                    try {
+                        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedUrl)}`);
+                        const data = await response.json();
+                        const parser = new DOMParser();
+                        const xml = parser.parseFromString(data.contents, "text/xml");
+                        const offers = xml.querySelectorAll("offer");
+                        
+                        this.products = Array.from(offers).slice(0, 24).map(offer => ({
+                            name: offer.querySelector("name").textContent,
+                            price: offer.querySelector("price").textContent,
+                            picture: offer.querySelector("picture").textContent,
+                            url: offer.querySelector("url").textContent
+                        }));
+                        this.loading = false;
+                    } catch (e) { console.error("Error:", e); }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
