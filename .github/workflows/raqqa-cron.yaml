@@ -1,67 +1,61 @@
-name: "Raqqa Cron Job"
+name: "Raqqa Smart Sync (Neon & WordPress)"
 
 on:
   schedule:
-    # التنفيذ الساعة 9 صباحاً و 9 مساءً بتوقيت القاهرة (06:00 و 18:00 UTC)
+    # التنفيذ كل 12 ساعة (الساعة 6 صباحاً و 6 مساءً بالتوقيت العالمي)
     - cron: "0 6,18 * * *"
-  workflow_dispatch: # لتفعيل زر التشغيل اليدوي للتجربة
+  workflow_dispatch: # زر التشغيل اليدوي للتجربة
 
 jobs:
-  run_notifications:
+  sync_process:
     runs-on: ubuntu-latest
     steps:
-      # --- الخطوة الأولى: الكود الأصلي الخاص بك (جلب التنبيهات العامة) ---
-      - name: "Call Raqqa API (Original GET)"
+      # --- الوظيفة الأولى: جلب الإشعارات المجدولة من نيون وإرسالها ---
+      - name: "1. Trigger Neon Scheduled Notifications"
         run: |
+          echo "جاري جلب الإشعارات المجدولة من قاعدة بيانات نيون..."
           curl -X GET "https://raqqa-hjl8.vercel.app/api/get-notifications" \
           -H "Content-Type: application/json" \
           -H "zazotona: 12sonds25" \
           -v
 
-      # --- الخطوة الثانية: فحص فئات وردبريس الثلاث وإرسال إشعارات FCM ---
-      - name: "Check WordPress Categories and Push to FCM"
+      # --- الوظيفة الثانية: فحص وردبريس وإرسال المقالات الجديدة ---
+      - name: "2. Check WordPress & Sync to Vercel"
         uses: actions/github-script@v7
         with:
           script: |
             try {
-              // مصفوفة بمعرفات الفئات الثلاث التي أرسلتها
               const categoryIds = ["189211019", "788402012", "768006428"];
               const siteDomain = "raqqastor3.wordpress.com";
-              const vercelApi = "https://raqqa-hjl8.vercel.app/api/send-fcm";
+              const vercelApi = "https://raqqa-hjl8.vercel.app/api/get-notifications"; // نفس الرابط لأنه يعالج POST الآن
 
               for (const catId of categoryIds) {
-                console.log(`--- Checking Category: ${catId} ---`);
+                console.log(`Checking WordPress Category: ${catId}`);
                 
-                // جلب أحدث مقال من هذه الفئة
+                // جلب أحدث مقال من وردبريس
                 const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
-                const response = await fetch(wpUrl);
-                
-                if (!response.ok) {
-                  console.log(`Failed to fetch WP for category ${catId}`);
-                  continue;
-                }
-
-                const posts = await response.json();
+                const wpRes = await fetch(wpUrl);
+                const posts = await wpRes.json();
 
                 if (posts && posts.length > 0) {
                   const post = posts[0];
                   
-                  // تنظيف العنوان من وسوم HTML (مثل <strong> أو &nbsp;)
+                  // تنظيف العنوان من وسوم HTML
                   const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
                   
-                  // تجهيز البيانات المرسلة (Payload) لتطابق تحديث الـ API الجديد
+                  // تجهيز البيانات المتوافقة مع تحديث كود Vercel الأخير
                   const payload = {
-                    type: "wordpress_article", // مفتاح أساسي ليقوم السيرفر بالإرسال لـ Topic
+                    type: "wordpress_article",
+                    postId: String(post.id),
                     title: "✨ مقال جديد: " + cleanTitle,
                     body: "اكتشفي أسرار الأناقة والجمال الجديدة في رقة..",
                     image: post.jetpack_featured_media_url || "",
-                    url: post.link,
-                    category: "general" // فئة افتراضية لتجنب خطأ القوالب
+                    category: "general" 
                   };
 
-                  console.log(`Sending notification for: ${cleanTitle}`);
+                  console.log(`Sending Post ${post.id} to Vercel for verification...`);
 
-                  // إرسال الطلب لـ Vercel
+                  // إرسال البيانات لـ Vercel ليقوم بفحص التكرار في نيون والإرسال لـ Firebase
                   const res = await fetch(vercelApi, {
                     method: "POST",
                     headers: {
@@ -71,13 +65,13 @@ jobs:
                     body: JSON.stringify(payload)
                   });
 
-                  const resultText = await res.text();
-                  console.log(`Vercel Response (${catId}): Status ${res.status} - ${resultText}`);
+                  const result = await res.json();
+                  console.log(`Vercel Response for ${catId}:`, JSON.stringify(result));
                 } else {
                   console.log(`No posts found in category ${catId}`);
                 }
               }
             } catch (error) {
-              console.error("Action Error:", error.message);
+              console.error("Critical Error in WordPress Sync:", error.message);
               core.setFailed(error.message);
             }
