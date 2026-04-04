@@ -1,38 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Sparkles, PlayCircle, Image as ImageIcon, BookOpen, RefreshCcw, ExternalLink } from 'lucide-react';
+import { Sparkles, PlayCircle, Image as ImageIcon, RefreshCcw, ExternalLink, AlertCircle } from 'lucide-react';
 
-// --- إعدادات الرابط ---
-const WP_URL = "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com";
-const CATEGORY_ID = "788431179"; // معرف فئة العناية والأناقة
+// --- الإعدادات المستخرجة من الرابط الخاص بك ---
+const SITE_DOMAIN = "raqqastor3.wordpress.com";
+const CATEGORY_ID = "189211019"; // المعرف الصحيح المستخرج من tag_ID
+const WP_API_BASE = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}`;
 
-// --- الأنيميشن ---
 const fadeInUp = keyframes`
-  from { opacity: 0; transform: translateY(30px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-// --- المكونات المرئية (Styled Components) ---
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
 const Container = styled.div`
   direction: rtl;
   font-family: 'Cairo', sans-serif;
-  background: #fdfafb;
+  background: #fffafa;
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 30px 15px;
 `;
 
 const Header = styled.div`
   text-align: center;
-  margin-bottom: 60px;
-  h1 { color: #4a3a3a; font-size: 2.5rem; margin-bottom: 10px; }
-  p { color: #8e7f7f; font-size: 1.1rem; }
+  margin-bottom: 40px;
+  .category-name { 
+    color: #4a3a3a; 
+    font-size: 2.2rem; 
+    margin: 10px 0;
+    font-weight: 700;
+  }
+  .site-tag { color: #d63384; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
 `;
 
 const BlogGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 30px;
-  max-width: 1200px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+  max-width: 1100px;
   margin: 0 auto;
 `;
 
@@ -40,168 +49,163 @@ const ArticleCard = styled.article`
   background: white;
   border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-  transition: all 0.3s ease;
-  animation: ${fadeInUp} 0.6s ease forwards;
-  &:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(255, 182, 193, 0.2); }
+  box-shadow: 0 10px 25px rgba(214, 51, 132, 0.08);
+  transition: transform 0.3s ease;
+  animation: ${fadeInUp} 0.5s ease-out;
+  &:hover { transform: translateY(-8px); }
 `;
 
-const MediaWrapper = styled.div`
+const MediaContainer = styled.div`
   width: 100%;
   height: 220px;
-  background: #eee;
+  background: #fdf2f7;
   position: relative;
-  overflow: hidden;
-
-  iframe, video { width: 100%; height: 100%; border: none; }
-  img { width: 100%; height: 100%; object-fit: cover; }
+  img, iframe, video { width: 100%; height: 100%; object-fit: cover; border: none; }
 `;
 
-const ContentArea = styled.div`
-  padding: 20px;
-  h2 { font-size: 1.3rem; color: #333; margin-bottom: 15px; line-height: 1.4; }
-  .excerpt { color: #666; font-size: 0.95rem; line-height: 1.6; height: 80px; overflow: hidden; }
-`;
-
-const Tag = styled.span`
+const Badge = styled.div`
   position: absolute;
   top: 15px;
   right: 15px;
   background: rgba(255, 255, 255, 0.9);
-  padding: 5px 12px;
+  padding: 6px 12px;
   border-radius: 50px;
-  font-size: 0.75rem;
-  font-weight: bold;
+  font-size: 0.7rem;
   color: #d63384;
-  z-index: 10;
   display: flex;
   align-items: center;
   gap: 5px;
+  font-weight: bold;
+  z-index: 2;
 `;
 
-const LoadingSection = styled.div`
-  text-align: center;
-  padding: 100px;
+const Loader = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 0;
   color: #d63384;
-  svg { animation: spin 2s linear infinite; }
-  @keyframes spin { 100% { transform: rotate(-360deg); } }
+  svg { animation: ${spin} 1.5s linear infinite; }
 `;
 
-// --- وظيفة معالجة المحتوى (الفيديو والصور) ---
-const RenderMedia = ({ post }) => {
-  const content = post.content.rendered;
-  
-  // 1. البحث عن فيديوهات YouTube أو Vimeo في المحتوى
-  const youtubeMatch = content.match(/youtube\.com\/embed\/([^"\s]+)/);
-  const vimeoMatch = content.match(/vimeo\.com\/([^"\s]+)/);
-  const videoTagMatch = content.match(/<video[^>]*src="([^"]+)"/);
-
-  if (youtubeMatch) {
-    return <iframe src={`https://www.youtube.com/embed/${youtubeMatch[1]}`} title="video" allowFullScreen />;
-  }
-  if (vimeoMatch) {
-    return <iframe src={`https://player.vimeo.com/video/${vimeoMatch[1]}`} title="video" allowFullScreen />;
-  }
-  if (videoTagMatch) {
-    return <video src={videoTagMatch[1]} controls />;
-  }
-
-  // 2. إذا لم يوجد فيديو، نعرض الصورة البارزة (Featured Image)
-  return (
-    <img 
-      src={post.jetpack_featured_media_url || "https://via.placeholder.com/600x400?text=Raqqa+Store"} 
-      alt={post.title.rendered} 
-    />
-  );
-};
-
-// --- المكون الرئيسي ---
 const RaqqaBlog = () => {
   const [posts, setPosts] = useState([]);
+  const [categoryInfo, setCategoryInfo] = useState({ name: "جاري التحميل...", description: "" });
   const [loading, setLoading] = useState(true);
-
-  const fetchPosts = async () => {
-    setLoading(true);
-    try {
-      // جلب المقالات بناءً على معرف القسم
-      const response = await fetch(`${WP_URL}/posts?categories=${CATEGORY_ID}&_embed`);
-      const data = await response.json();
-      setPosts(data);
-    } catch (error) {
-      console.error("خطأ في جلب البيانات:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchPosts();
+    const loadContent = async () => {
+      setLoading(true);
+      try {
+        // 1. جلب بيانات الفئة أولاً لاستخراج الاسم الصحيح (العناية والأناقة)
+        const catRes = await fetch(`${WP_API_BASE}/categories/${CATEGORY_ID}`);
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          setCategoryInfo({ name: catData.name, description: catData.description });
+        }
+
+        // 2. جلب المقالات التابعة لهذه الفئة
+        const postsRes = await fetch(`${WP_API_BASE}/posts?categories=${CATEGORY_ID}&_embed&per_page=10`);
+        if (!postsRes.ok) throw new Error("فشل في جلب المقالات");
+        
+        const postsData = await postsRes.json();
+        setPosts(postsData);
+      } catch (err) {
+        setError("عذراً، حدث خطأ أثناء الاتصال بوردبريس.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadContent();
   }, []);
+
+  const renderMedia = (post) => {
+    const content = post.content.rendered;
+    // دعم اليوتيوب
+    const ytMatch = content.match(/youtube\.com\/embed\/([^"\s?]+)/);
+    if (ytMatch) return <iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} title="video" allowFullScreen />;
+
+    // دعم الفيديو المباشر
+    const videoMatch = content.match(/<video[^>]*src="([^"]+)"/);
+    if (videoMatch) return <video src={videoMatch[1]} controls />;
+
+    // الصورة البارزة
+    const imgUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 
+                   post.jetpack_featured_media_url || 
+                   "https://via.placeholder.com/600x400?text=Raqqa+Store";
+    
+    return <img src={imgUrl} alt={post.title.rendered} />;
+  };
+
+  if (loading) return (
+    <Container>
+      <Loader><RefreshCcw size={48} /><p>نجهز لكِ الأناقة...</p></Loader>
+    </Container>
+  );
+
+  if (error) return (
+    <Container>
+      <div style={{ textAlign: 'center', color: '#ff4d4d' }}>
+        <AlertCircle size={40} />
+        <p>{error}</p>
+      </div>
+    </Container>
+  );
 
   return (
     <Container>
       <Header>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
-          <Sparkles color="#d63384" size={32} />
-        </div>
-        <h1>العناية والأناقة</h1>
-        <p>أحدث المقالات والنصائح من عالم الجمال</p>
+        <span className="site-tag">موقع رقة</span>
+        <h1 className="category-name">{categoryInfo.name}</h1>
+        {categoryInfo.description && <p style={{ color: '#888' }}>{categoryInfo.description}</p>}
       </Header>
 
-      {loading ? (
-        <LoadingSection>
-          <RefreshCcw size={48} />
-          <p>جاري تحميل الأناقة...</p>
-        </LoadingSection>
-      ) : (
-        <BlogGrid>
-          {posts.map((post) => (
-            <ArticleCard key={post.id}>
-              <MediaWrapper>
-                {/* تحديد الوسائط تلقائياً (فيديو أم صورة) */}
-                {post.content.rendered.includes('iframe') || post.content.rendered.includes('<video') ? (
-                  <Tag><PlayCircle size={14} /> فيديو</Tag>
-                ) : (
-                  <Tag><ImageIcon size={14} /> مقال مصور</Tag>
-                )}
-                <RenderMedia post={post} />
-              </MediaWrapper>
+      <BlogGrid>
+        {posts.map((post) => (
+          <ArticleCard key={post.id}>
+            <MediaContainer>
+              <Badge>
+                {post.content.rendered.includes('iframe') ? <><PlayCircle size={12}/> فيديو</> : <><ImageIcon size={12}/> مقال</>}
+              </Badge>
+              {renderMedia(post)}
+            </MediaContainer>
+            
+            <div style={{ padding: '20px' }}>
+              <h3 
+                style={{ fontSize: '1.2rem', color: '#333', lineHeight: '1.5', marginBottom: '12px' }}
+                dangerouslySetInnerHTML={{ __html: post.title.rendered }} 
+              />
+              <div 
+                style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px', height: '60px', overflow: 'hidden' }}
+                dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} 
+              />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <a 
+                  href={post.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ color: '#d63384', textDecoration: 'none', fontWeight: '700', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                >
+                  إقرئي المزيد <ExternalLink size={14} />
+                </a>
+                <span style={{ fontSize: '0.75rem', color: '#bbb' }}>
+                  {new Date(post.date).toLocaleDateString('ar-EG')}
+                </span>
+              </div>
+            </div>
+          </ArticleCard>
+        ))}
+      </BlogGrid>
 
-              <ContentArea>
-                <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-                <div 
-                  className="excerpt" 
-                  dangerouslySetInnerHTML={{ __html: post.excerpt.rendered.substring(0, 120) + '...' }} 
-                />
-                
-                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <a 
-                    href={post.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{ 
-                      color: '#d63384', 
-                      textDecoration: 'none', 
-                      fontWeight: 'bold', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '5px' 
-                    }}
-                  >
-                    إقرئي المزيد <ExternalLink size={16} />
-                  </a>
-                  <span style={{ fontSize: '0.8rem', color: '#aaa' }}>
-                    {new Date(post.date).toLocaleDateString('ar-EG')}
-                  </span>
-                </div>
-              </ContentArea>
-            </ArticleCard>
-          ))}
-        </BlogGrid>
-      )}
-
-      {!loading && posts.length === 0 && (
-        <div style={{ textAlign: 'center', color: '#666' }}>لا توجد مقالات حالياً في هذا القسم.</div>
+      {posts.length === 0 && (
+        <div style={{ textAlign: 'center', marginTop: '50px', color: '#999' }}>
+          <p>لا توجد مقالات منشورة في هذه الفئة حالياً.</p>
+        </div>
       )}
     </Container>
   );
