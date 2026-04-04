@@ -21,37 +21,36 @@ jobs:
         with:
           script: |
             try {
-              // قائمة المعرفات (IDs) للفئات الثلاث المطلوبة
               const categoryIds = ["189211019", "788402012", "768006428"];
               
               for (const catId of categoryIds) {
                 console.log(`Checking category: ${catId}`);
                 
                 const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${catId}&per_page=1`;
-                
                 const response = await fetch(wpUrl);
                 const posts = await response.json();
 
                 if (posts && posts.length > 0) {
                   const post = posts[0];
                   
-                  // تجهيز البيانات المرسلة لـ Vercel
+                  // الهيكل المحدث المتوافق مع Firebase V1 لتجنب خطأ 400
                   const payload = {
-                    to: "/topics/all_users",
-                    notification: {
-                      title: "✨ مقال جديد: " + post.title.rendered,
-                      body: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
-                      image: post.jetpack_featured_media_url || ""
-                    },
-                    data: {
-                      id: String(post.id),
-                      url: post.link,
-                      type: "wordpress_article",
-                      category_id: catId
+                    message: {
+                      topic: "all_users",
+                      notification: {
+                        title: "✨ مقال جديد: " + post.title.rendered.replace(/<\/?[^>]+(>|$)/g, ""),
+                        body: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
+                        image: post.jetpack_featured_media_url || ""
+                      },
+                      data: {
+                        id: String(post.id),
+                        url: post.link,
+                        type: "wordpress_article"
+                      }
                     }
                   };
 
-                  console.log(`Sending Payload for Category ${catId}:`, JSON.stringify(payload));
+                  console.log(`Sending Payload for Category ${catId}`);
 
                   const res = await fetch("https://raqqa-hjl8.vercel.app/api/send-fcm", {
                     method: "POST",
@@ -64,12 +63,6 @@ jobs:
 
                   const resData = await res.text();
                   console.log(`Category ${catId} - Status: ${res.status}, Response: ${resData}`);
-                  
-                  if (res.status === 400) {
-                    console.error(`Failed to send notification for category ${catId}`);
-                  }
-                } else {
-                  console.log(`No new posts found in category: ${catId}`);
                 }
               }
             } catch (error) {
