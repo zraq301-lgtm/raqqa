@@ -22,13 +22,12 @@ const pool = new Pool({
   max: 1
 });
 
-// خريطة التصنيفات لتوحيد الصور والأسماء
 const CATEGORY_MAP = {
   'menstrual': 'menstrual',
   'pregnancy': 'pregnancy',
   'breastfeeding': 'breastfeeding',
   'motherhood': 'motherhood',
-  'fitness': 'الرشاقة', // تم التعديل من fitness إلى الرشاقة
+  'fitness': 'الرشاقة',
   'medical': 'medical',
   'jurisprudence': 'jurisprudence',
   'relationships': 'relationships',
@@ -42,15 +41,16 @@ export default async function handler(req, res) {
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
+    // التحقق من الهوية لطلبات GET
     if (method === 'GET' && headers['zazotona'] !== '12sonds25') {
       return res.status(401).json({ success: false, error: 'Unauthorized Access' });
     }
 
     let notificationsToSend = [];
 
+    // --- منطق جلب البيانات ---
     if (method === 'GET') {
       const { user_id } = req.query;
-      
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for 
         FROM notifications 
@@ -63,41 +63,61 @@ export default async function handler(req, res) {
       `;
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
+
     } else if (method === 'POST') {
-      const { fcmToken, token, title, body, category, scheduled_for } = req.body;
-      notificationsToSend = [{ fcm_token: fcmToken || token, title, body, category, scheduled_for }];
+      const { fcmToken, token, title, body, category, scheduled_for, type, postId, image } = req.body;
+
+      // --- وظيفة وردبريس الجديدة: فحص التكرار في نيون ---
+      if (type === "wordpress_article" && postId) {
+        const checkQuery = `SELECT post_id FROM sent_posts WHERE post_id = $1 LIMIT 1`;
+        const { rows: existing } = await pool.query(checkQuery, [String(postId)]);
+        
+        if (existing.length > 0) {
+          return res.status(200).json({ success: true, message: "تم إرسال هذا المقال مسبقاً، تخطي التكرار." });
+        }
+        // إعداد بيانات الإرسال لوردبريس (الإرسال لـ Topic)
+        notificationsToSend = [{ 
+          fcm_token: null, // سيتم استبداله بـ topic في الأسفل
+          title, 
+          body, 
+          category: category || 'general', 
+          isWordPress: true, 
+          wpPostId: postId,
+          wpImage: image 
+        }];
+      } else {
+        // الطلب العادي (POST يدوي)
+        notificationsToSend = [{ fcm_token: fcmToken || token, title, body, category, scheduled_for }];
+      }
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "لا توجد إشعارات مستحقة حالياً أو لليوم القادم." });
+      return res.status(200).json({ success: true, message: "لا توجد إشعارات مستحقة." });
     }
 
+    // --- معالجة الإرسال ---
     const results = await Promise.all(notificationsToSend.map(async (item) => {
-      const categoryLabel = CATEGORY_MAP[item.category] || 'عام';
-      const categoryKey = item.category || 'general'; // نستخدم المفتاح الأصلي للصورة لضمان عدم كسر الرابط
-      const imageUrl = `${BASE_ASSETS_URL}/${categoryKey}.png`;
+      const categoryKey = item.category || 'general';
+      const categoryLabel = CATEGORY_MAP[categoryKey] || 'عام';
+      
+      // تحديد الصورة (إذا كانت من وردبريس نستخدم صورتها، وإلا نستخدم صورة التصنيف)
+      const imageUrl = item.wpImage || `${BASE_ASSETS_URL}/${categoryKey}.png`;
       
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body;
       const scheduledDate = item.scheduled_for ? new Date(item.scheduled_for).toLocaleDateString('ar-EG') : "اليوم";
 
-      // --- استدعاء الذكاء الاصطناعي (تعديل لكتابة إشعار طويل ومخصص) ---
+      // --- استدعاء الذكاء الاصطناعي (يتم استدعاؤه لجميع الأنواع لزيادة الجودة) ---
       try {
         const aiRes = await fetch(AI_API_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `أنتِ المساعدة الذكية "رقة". المطلوب كتابة إشعار طويل، ملهم، ودافئ بناءً على البيانات التالية:
+            prompt: `أنتِ المساعدة الذكية "رقة". المطلوب كتابة إشعار طويل، ملهم، ودافئ بناءً على:
             - التصنيف: ${categoryLabel}
-            - العنوان الأصلي: ${finalTitle}
-            - محتوى الرسالة: ${item.body}
-            - موعد الإشعار: ${scheduledDate}
-
-            الشروط:
-            1. اكتب نصاً طويلاً ومفصلاً (فقرة غنية) يشرح للمستخدمة أهمية هذا التنبيه بأسلوب أنثوي رقيق.
-            2. ادمجي التاريخ ${scheduledDate} بشكل طبيعي داخل النص.
-            3. استخدمي تعبيرات تشجيعية وإيموجي تناسب التصنيف (مثل 🌸✨🌿).
-            4. اجعلي الإشعار يبدو كرسالة من صديقة مهتمة وليس مجرد نظام آلي.`
+            - العنوان: ${finalTitle}
+            - الرسالة: ${finalBody}
+            - الموعد: ${scheduledDate}`
           })
         });
         
@@ -106,34 +126,47 @@ export default async function handler(req, res) {
           const aiMessage = aiData.message || aiData.text || aiData.response;
           if (aiMessage) finalBody = aiMessage;
         }
-      } catch (e) { 
-        console.warn("AI logic failed, using default text."); 
-      }
+      } catch (e) { console.warn("AI fail, using default."); }
 
+      // إعداد كائن الرسالة لـ Firebase
       const messagePayload = {
-        token: item.fcm_token,
         notification: { title: finalTitle, body: finalBody, image: imageUrl },
         data: { image: imageUrl, category: categoryKey, click_action: "FLUTTER_NOTIFICATION_CLICK" },
         android: { priority: "high", notification: { image: imageUrl, channelId: "default" } },
         apns: { payload: { aps: { mutableContent: true, sound: "default" } }, fcm_options: { image: imageUrl } }
       };
 
+      // تحديد الوجهة (Topic لوردبريس، أو Token للجهاز)
+      if (item.isWordPress) {
+        messagePayload.topic = "all_users";
+      } else {
+        messagePayload.token = item.fcm_token;
+      }
+
       try {
         const messageId = await admin.messaging().send(messagePayload);
         
+        // --- بعد نجاح الإرسال: تحديث قاعدة البيانات ---
         if (item.id) {
+          // حذف الإشعارات المجدولة القديمة
           await pool.query('DELETE FROM notifications WHERE id = $1', [item.id]);
         }
         
-        return { id: item.id, status: 'sent_and_deleted', messageId };
+        if (item.isWordPress && item.wpPostId) {
+          // تسجيل مقال وردبريس في نيون لمنع التكرار
+          await pool.query('INSERT INTO sent_posts (post_id, title) VALUES ($1, $2)', [String(item.wpPostId), finalTitle]);
+        }
+        
+        return { id: item.id || item.wpPostId, status: 'sent', messageId };
       } catch (err) {
-        return { id: item.id, status: 'error', error: err.message };
+        return { id: item.id || item.wpPostId, status: 'error', error: err.message };
       }
     }));
 
     return res.status(200).json({ success: true, results });
 
   } catch (error) {
+    console.error("Handler Error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
