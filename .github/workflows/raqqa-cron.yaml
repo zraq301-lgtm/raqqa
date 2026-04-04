@@ -2,14 +2,15 @@ name: "Raqqa Cron Job"
 
 on:
   schedule:
+    # التنفيذ الساعة 9 صباحاً و 9 مساءً بتوقيت القاهرة (06:00 و 18:00 UTC)
     - cron: "0 6,18 * * *"
-  workflow_dispatch:
+  workflow_dispatch: # لتفعيل زر التشغيل اليدوي للتجربة
 
 jobs:
   run_notifications:
     runs-on: ubuntu-latest
     steps:
-      # --- الوظيفة الناجحة (جلب من نيون والإرسال) ---
+      # --- الخطوة الأولى: الكود الأصلي الخاص بك (جلب التنبيهات العامة) ---
       - name: "Call Raqqa API (Original GET)"
         run: |
           curl -X GET "https://raqqa-hjl8.vercel.app/api/get-notifications" \
@@ -17,54 +18,66 @@ jobs:
           -H "zazotona: 12sonds25" \
           -v
 
-      # --- الوظيفة المعدلة (وردبريس بنفس تنسيق نيون) ---
+      # --- الخطوة الثانية: فحص فئات وردبريس الثلاث وإرسال إشعارات FCM ---
       - name: "Check WordPress Categories and Push to FCM"
         uses: actions/github-script@v7
         with:
           script: |
             try {
+              // مصفوفة بمعرفات الفئات الثلاث التي أرسلتها
               const categoryIds = ["189211019", "788402012", "768006428"];
-              
+              const siteDomain = "raqqastor3.wordpress.com";
+              const vercelApi = "https://raqqa-hjl8.vercel.app/api/send-fcm";
+
               for (const catId of categoryIds) {
-                console.log(`Checking category: ${catId}`);
+                console.log(`--- Checking Category: ${catId} ---`);
                 
-                const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${catId}&per_page=1`;
+                // جلب أحدث مقال من هذه الفئة
+                const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
                 const response = await fetch(wpUrl);
+                
+                if (!response.ok) {
+                  console.log(`Failed to fetch WP for category ${catId}`);
+                  continue;
+                }
+
                 const posts = await response.json();
 
                 if (posts && posts.length > 0) {
                   const post = posts[0];
                   
-                  // تنظيف العنوان من وسوم HTML
-                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "");
+                  // تنظيف العنوان من وسوم HTML (مثل <strong> أو &nbsp;)
+                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
                   
-                  // ملاحظة: قمنا بتغيير المسميات لتطابق ما يخرج من نيون عادةً
-                  // استبدلنا 'id' بـ 'notification_id' أو أي مسمى يستخدمه الـ API الخاص بك
+                  // تجهيز البيانات المرسلة (Payload) لتطابق تحديث الـ API الجديد
                   const payload = {
-                    title: "✨ " + cleanTitle,
-                    message: "اكتشفي أسرار الأناقة والجمال الجديدة الآن..",
-                    url: post.link,
+                    type: "wordpress_article", // مفتاح أساسي ليقوم السيرفر بالإرسال لـ Topic
+                    title: "✨ مقال جديد: " + cleanTitle,
+                    body: "اكتشفي أسرار الأناقة والجمال الجديدة في رقة..",
                     image: post.jetpack_featured_media_url || "",
-                    type: "wordpress", // لتمييز المصدر
-                    post_id: String(post.id)
+                    url: post.link,
+                    category: "general" // فئة افتراضية لتجنب خطأ القوالب
                   };
 
-                  console.log(`Sending WP Post to FCM API:`, JSON.stringify(payload));
+                  console.log(`Sending notification for: ${cleanTitle}`);
 
-                  const res = await fetch("https://raqqa-hjl8.vercel.app/api/send-fcm", {
+                  // إرسال الطلب لـ Vercel
+                  const res = await fetch(vercelApi, {
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
                       "zazotona": "12sonds25"
                     },
-                    body: JSON.stringify(payload) // نرسل الـ Payload بدون تغليف إضافي كما يفعل نيون
+                    body: JSON.stringify(payload)
                   });
 
-                  const resData = await res.text();
-                  console.log(`Status: ${res.status}, Response: ${resData}`);
+                  const resultText = await res.text();
+                  console.log(`Vercel Response (${catId}): Status ${res.status} - ${resultText}`);
+                } else {
+                  console.log(`No posts found in category ${catId}`);
                 }
               }
             } catch (error) {
-              console.error("Critical Error:", error);
+              console.error("Action Error:", error.message);
               core.setFailed(error.message);
             }
