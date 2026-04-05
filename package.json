@@ -38,7 +38,8 @@
     "luxon": "^3.4.4",
     "unsplash-js": "^7.0.19",
     "styled-components": "^6.1.8",
-    "@capacitor/preferences": "^6.0.0"
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor-community/fcm": "^6.0.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
