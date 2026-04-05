@@ -6,6 +6,7 @@ import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
+import { FCM } from '@capacitor-community/fcm'; // إضافة مكتبة الـ FCM للتعامل مع الـ Topics
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
@@ -38,18 +39,25 @@ const Main = () => {
       const setupPush = async () => {
         try {
           // 1. إضافة المستمعين
-          await PushNotifications.addListener('registration', (token) => {
+          await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
+            
+            // --- التعديل المطلوب: الاشتراك في موضوع "جميع المستخدمين" ---
+            try {
+              await FCM.subscribeTo({ topic: 'all_users' });
+              console.log("✅ Subscribed to all_users topic");
+            } catch (err) {
+              console.error("❌ Topic Subscription Error:", err);
+            }
           });
 
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log("📩 إشعار جديد:", notification.title);
           });
 
-          // 2. إضافة مستمع لفتح الإشعار (مهم جداً لتجربة المستخدم)
+          // 2. إضافة مستمع لفتح الإشعار
           await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
             console.log("🖱️ تم النقر على الإشعار:", notification.actionId);
-            // هنا يمكنك إضافة منطق التوجه لصفحة معينة
           });
 
           // 3. طلب الصلاحيات والتسجيل
@@ -68,7 +76,7 @@ const Main = () => {
 
       setupPush();
     }
-  }, []); // أزلت removeAllListeners لضمان بقاء التطبيق مستعداً
+  }, []); 
 
   return (
     <BrowserRouter>
