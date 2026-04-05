@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Sparkles, PlayCircle, Image as ImageIcon, RefreshCcw, ExternalLink, AlertCircle } from 'lucide-react';
 
-// --- الإعدادات المستخرجة من الرابط الخاص بك ---
+// --- الإعدادات الصحيحة بناءً على الرابط الجديد ---
 const SITE_DOMAIN = "raqqastor3.wordpress.com";
-const CATEGORY_ID = "189211019"; // المعرف الصحيح المستخرج من tag_ID
-const WP_API_BASE = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}`;
+const CATEGORY_ID = "788431179"; // تم التحديث بناءً على الرابط: tag_ID=788431179
+const API_URL = `https://public-api.wordpress.com/rest/v1.1/sites/${SITE_DOMAIN}/posts?category=${CATEGORY_ID}&number=10`;
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -91,55 +91,28 @@ const Loader = styled.div`
 
 const RaqqaBlog = () => {
   const [posts, setPosts] = useState([]);
-  const [categoryInfo, setCategoryInfo] = useState({ name: "جاري التحميل...", description: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const loadContent = async () => {
-      setLoading(true);
+    const fetchPosts = async () => {
       try {
-        // 1. جلب بيانات الفئة أولاً لاستخراج الاسم الصحيح (العناية والأناقة)
-        const catRes = await fetch(`${WP_API_BASE}/categories/${CATEGORY_ID}`);
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          setCategoryInfo({ name: catData.name, description: catData.description });
-        }
-
-        // 2. جلب المقالات التابعة لهذه الفئة
-        const postsRes = await fetch(`${WP_API_BASE}/posts?categories=${CATEGORY_ID}&_embed&per_page=10`);
-        if (!postsRes.ok) throw new Error("فشل في جلب المقالات");
+        setLoading(true);
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("فشل الاتصال بالموقع");
         
-        const postsData = await postsRes.json();
-        setPosts(postsData);
+        const data = await response.json();
+        setPosts(data.posts || []);
       } catch (err) {
-        setError("عذراً، حدث خطأ أثناء الاتصال بوردبريس.");
+        setError("عذراً، لا يمكن جلب المقالات حالياً.");
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadContent();
+    fetchPosts();
   }, []);
-
-  const renderMedia = (post) => {
-    const content = post.content.rendered;
-    // دعم اليوتيوب
-    const ytMatch = content.match(/youtube\.com\/embed\/([^"\s?]+)/);
-    if (ytMatch) return <iframe src={`https://www.youtube.com/embed/${ytMatch[1]}`} title="video" allowFullScreen />;
-
-    // دعم الفيديو المباشر
-    const videoMatch = content.match(/<video[^>]*src="([^"]+)"/);
-    if (videoMatch) return <video src={videoMatch[1]} controls />;
-
-    // الصورة البارزة
-    const imgUrl = post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 
-                   post.jetpack_featured_media_url || 
-                   "https://via.placeholder.com/600x400?text=Raqqa+Store";
-    
-    return <img src={imgUrl} alt={post.title.rendered} />;
-  };
 
   if (loading) return (
     <Container>
@@ -149,7 +122,7 @@ const RaqqaBlog = () => {
 
   if (error) return (
     <Container>
-      <div style={{ textAlign: 'center', color: '#ff4d4d' }}>
+      <div style={{ textAlign: 'center', color: '#ff4d4d', marginTop: '50px' }}>
         <AlertCircle size={40} />
         <p>{error}</p>
       </div>
@@ -160,33 +133,35 @@ const RaqqaBlog = () => {
     <Container>
       <Header>
         <span className="site-tag">موقع رقة</span>
-        <h1 className="category-name">{categoryInfo.name}</h1>
-        {categoryInfo.description && <p style={{ color: '#888' }}>{categoryInfo.description}</p>}
+        <h1 className="category-name">آخر المقالات</h1>
       </Header>
 
       <BlogGrid>
         {posts.map((post) => (
-          <ArticleCard key={post.id}>
+          <ArticleCard key={post.ID}>
             <MediaContainer>
               <Badge>
-                {post.content.rendered.includes('iframe') ? <><PlayCircle size={12}/> فيديو</> : <><ImageIcon size={12}/> مقال</>}
+                {post.content.includes('iframe') ? <><PlayCircle size={12}/> فيديو</> : <><ImageIcon size={12}/> مقال</>}
               </Badge>
-              {renderMedia(post)}
+              <img 
+                src={post.featured_image || "https://via.placeholder.com/600x400?text=Raqqa+Store"} 
+                alt={post.title} 
+              />
             </MediaContainer>
             
             <div style={{ padding: '20px' }}>
               <h3 
                 style={{ fontSize: '1.2rem', color: '#333', lineHeight: '1.5', marginBottom: '12px' }}
-                dangerouslySetInnerHTML={{ __html: post.title.rendered }} 
+                dangerouslySetInnerHTML={{ __html: post.title }} 
               />
               <div 
                 style={{ color: '#666', fontSize: '0.9rem', marginBottom: '20px', height: '60px', overflow: 'hidden' }}
-                dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} 
+                dangerouslySetInnerHTML={{ __html: post.excerpt }} 
               />
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <a 
-                  href={post.link} 
+                  href={post.URL} 
                   target="_blank" 
                   rel="noopener noreferrer"
                   style={{ color: '#d63384', textDecoration: 'none', fontWeight: '700', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '5px' }}
