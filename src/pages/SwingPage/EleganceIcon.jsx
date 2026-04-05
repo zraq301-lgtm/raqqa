@@ -1,197 +1,151 @@
 import React, { useState, useEffect } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { PlayCircle, Image as ImageIcon, RefreshCcw, ExternalLink, AlertCircle, Film } from 'lucide-react';
 
-// --- الإعدادات المحدثة بالـ ID الجديد ---
-const SITE_DOMAIN = "raqqastor3.wordpress.com";
-const CATEGORY_ID = "347212703"; 
-const API_URL = `https://public-api.wordpress.com/rest/v1.1/sites/${SITE_DOMAIN}/posts?category=${CATEGORY_ID}&number=10`;
-
-const fadeInUp = keyframes`
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-`;
-
-const spin = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-`;
-
-const Container = styled.div`
-  direction: rtl;
-  font-family: 'Cairo', sans-serif;
-  background: #fffafa;
-  min-height: 100vh;
-  padding: 30px 15px;
-`;
-
-const Header = styled.div`
-  text-align: center;
-  margin-bottom: 40px;
-  .category-name { color: #4a3a3a; font-size: 2.2rem; margin: 10px 0; font-weight: 700; }
-  .site-tag { color: #d63384; font-weight: 600; font-size: 0.9rem; text-transform: uppercase; }
-`;
-
-const BlogGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 25px;
-  max-width: 1100px;
-  margin: 0 auto;
-`;
-
-const ArticleCard = styled.article`
-  background: white;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 10px 25px rgba(214, 51, 132, 0.08);
-  transition: transform 0.3s ease;
-  animation: ${fadeInUp} 0.5s ease-out;
-  &:hover { transform: translateY(-8px); }
-`;
-
-const MediaWrapper = styled.div`
-  width: 100%;
-  height: 220px;
-  background: #000;
-  position: relative;
-  iframe, video, img { width: 100%; height: 100%; object-fit: cover; border: none; }
-`;
-
-const Badge = styled.div`
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 6px 12px;
-  border-radius: 50px;
-  font-size: 0.75rem;
-  color: #d63384;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: bold;
-  z-index: 10;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-`;
-
-const Loader = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 100px 0;
-  color: #d63384;
-  svg { animation: ${spin} 1.5s linear infinite; }
-`;
-
-const RaqqaBlog = () => {
-  const [posts, setPosts] = useState([]);
+const EleganceSection = () => {
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  // الإعدادات الخاصة بقسم الأناقة والجمال
+  const CATEGORY_ID = "347212703"; // المعرف الجديد الذي استخرجناه
+  const SITE_DOMAIN = "raqqastor3.wordpress.com";
+  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}/posts?categories=${CATEGORY_ID}&_embed`;
+
+  // الوظيفة السحرية لتحويل الروابط النصية إلى ميديا (فيديو وصور)
+  const parseContent = (htmlContent) => {
+    let content = htmlContent;
+
+    // 1. تحويل روابط اليوتيوب النصية إلى مشغل فيديو
+    const youtubeRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*))/g;
+    content = content.replace(youtubeRegex, (match, url, videoId) => {
+      return `<div class="video-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
+    });
+
+    // 2. تحويل روابط الصور المباشرة إلى وسم img
+    const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp)(?:\?.*)?)/g;
+    content = content.replace(imageRegex, (match) => {
+      if (content.includes(`src="${match}"`)) return match;
+      return `<img src="${match}" alt="محتوى إضافي" class="content-image" />`;
+    });
+
+    return content;
+  };
 
   useEffect(() => {
-    const fetchContent = async () => {
+    const fetchEleganceArticles = async () => {
       try {
-        setLoading(true);
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error("فشل الاتصال");
-        const data = await res.json();
-        setPosts(data.posts || []);
-      } catch (err) {
-        setError("حدث خطأ أثناء تحميل المحتوى.");
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setArticles(data);
+        }
+      } catch (error) {
+        console.error("خطأ في جلب مقالات الأناقة:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchContent();
+    fetchEleganceArticles();
   }, []);
 
-  // وظيفة ذكية لاستخراج الفيديو أو عرض الصورة
-  const renderMedia = (post) => {
-    const content = post.content;
-    
-    // 1. البحث عن رابط يوتيوب
-    const youtubeMatch = content.match(/youtube\.com\/embed\/([^"\s?]+)/) || 
-                         content.match(/youtu\.be\/([^"\s?]+)/);
-    
-    if (youtubeMatch) {
-      const videoId = youtubeMatch[1].split(/[?&]/)[0];
-      return (
-        <MediaWrapper>
-          <Badge><PlayCircle size={14}/> فيديو يوتيوب</Badge>
-          <iframe 
-            src={`https://www.youtube.com/embed/${videoId}`}
-            title="YouTube video"
-            allowFullScreen
-          />
-        </MediaWrapper>
-      );
-    }
-
-    // 2. البحث عن فيديو مباشر (MP4)
-    const videoTagMatch = content.match(/<video[^>]*src="([^"]+)"/);
-    if (videoTagMatch) {
-      return (
-        <MediaWrapper>
-          <Badge><Film size={14}/> فيديو مباشر</Badge>
-          <video src={videoTagMatch[1]} controls />
-        </MediaWrapper>
-      );
-    }
-
-    // 3. عرض الصورة البارزة إذا لم يوجد فيديو
+  if (loading) {
     return (
-      <MediaWrapper>
-        <Badge><ImageIcon size={14}/> مقال مصور</Badge>
-        <img 
-          src={post.featured_image || "https://via.placeholder.com/600x400?text=Raqqa+Store"} 
-          alt={post.title} 
-        />
-      </MediaWrapper>
+      <div className="flex justify-center items-center h-screen text-pink-500 font-bold">
+        <div className="animate-pulse text-xl">نجهز لكِ أرقى النصائح...</div>
+      </div>
     );
-  };
-
-  if (loading) return <Container><Loader><RefreshCcw size={48} /><p>نحضر لكِ الأناقة...</p></Loader></Container>;
-  if (error) return <Container><div style={{textAlign:'center', color:'#ff4d4d'}}><AlertCircle size={40}/><p>{error}</p></div></Container>;
+  }
 
   return (
-    <Container>
-      <Header>
-        <span className="site-tag">موقع رقة</span>
-        <h1 className="category-name">المحتوى الجديد</h1>
-      </Header>
+    <div className="p-4 bg-gradient-to-b from-[#fff5f7] to-white min-h-screen font-sans" dir="rtl">
+      
+      {/* أيقونة رقة الصغيرة */}
+      <div className="fixed top-4 right-4 z-50">
+        <div className="bg-pink-500 text-white px-3 py-1 rounded-full shadow-md flex items-center gap-2 border border-white">
+          <span className="text-[10px] font-bold">رقة</span>
+          <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></div>
+        </div>
+      </div>
 
-      <BlogGrid>
-        {posts.map((post) => (
-          <ArticleCard key={post.ID}>
-            {renderMedia(post)}
-            <div style={{ padding: '20px' }}>
-              <h3 
-                style={{ fontSize: '1.1rem', color: '#333', marginBottom: '10px' }}
-                dangerouslySetInnerHTML={{ __html: post.title }} 
-              />
-              <div 
-                style={{ color: '#777', fontSize: '0.85rem', height: '50px', overflow: 'hidden', marginBottom: '15px' }}
-                dangerouslySetInnerHTML={{ __html: post.excerpt }} 
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <a 
-                  href={post.URL} target="_blank" rel="noopener noreferrer"
-                  style={{ color: '#d63384', textDecoration: 'none', fontWeight: 'bold', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}
-                >
-                  مشاهدة التفاصيل <ExternalLink size={14} />
-                </a>
-                <span style={{ fontSize: '0.7rem', color: '#bbb' }}>
-                  {new Date(post.date).toLocaleDateString('ar-EG')}
-                </span>
+      <div className="max-w-4xl mx-auto space-y-8 pt-6">
+        {articles.length > 0 ? (
+          articles.map((post) => (
+            <article 
+              key={post.id} 
+              className="bg-white rounded-[2.5rem] shadow-sm border border-pink-50 overflow-hidden"
+            >
+              {/* الصورة البارزة (Featured Image) */}
+              {post._embedded?.['wp:featuredmedia'] && (
+                <div className="w-full h-64 overflow-hidden">
+                  <img 
+                    src={post._embedded['wp:featuredmedia'][0].source_url} 
+                    alt={post.title.rendered}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+
+              <div className="p-6">
+                <h2 
+                  className="text-xl font-bold text-gray-800 mb-4 leading-tight"
+                  dangerouslySetInnerHTML={{ __html: post.title.rendered }}
+                />
+
+                <div className="prose prose-pink max-w-none text-right">
+                  <div 
+                    className="wordpress-content"
+                    dangerouslySetInnerHTML={{ __html: parseContent(post.content.rendered) }} 
+                  />
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-50 flex justify-between items-center text-[10px] text-gray-400">
+                  <span>{new Date(post.date).toLocaleDateString('ar-EG')}</span>
+                  <span className="text-pink-300">#قسم_الأناقة_والجمال</span>
+                </div>
               </div>
-            </div>
-          </ArticleCard>
-        ))}
-      </BlogGrid>
-    </Container>
+            </article>
+          ))
+        ) : (
+          <div className="text-center text-gray-500 py-20">لا توجد مقالات منشورة في هذا القسم حالياً.</div>
+        )}
+      </div>
+
+      {/* التصميم الخاص (CSS) */}
+      <style jsx global>{`
+        .wordpress-content {
+          line-height: 1.8;
+          color: #4a4a4a;
+          font-size: 1.05rem;
+        }
+        .video-container {
+          position: relative;
+          padding-bottom: 56.25%;
+          height: 0;
+          overflow: hidden;
+          margin: 20px 0;
+          border-radius: 20px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .video-container iframe {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+        }
+        .content-image {
+          max-width: 100%;
+          height: auto;
+          border-radius: 20px;
+          margin: 20px 0;
+          display: block;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .wordpress-content p {
+          margin-bottom: 1.2rem;
+        }
+      `}</style>
+    </div>
   );
 };
 
-export default RaqqaBlog;
+export default EleganceSection;
