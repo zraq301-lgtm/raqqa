@@ -39,7 +39,8 @@
     "unsplash-js": "^7.0.19",
     "styled-components": "^6.1.8",
     "@capacitor/preferences": "^6.0.0",
-    "@capacitor-community/fcm": "^6.0.0"
+    "@alpha-community/fcm": "^6.0.0",
+    "fast-xml-parser": "^4.3.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",
