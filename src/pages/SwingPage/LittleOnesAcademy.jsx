@@ -1,99 +1,103 @@
-import React from 'react';
-import { ShoppingCart, Star, ShieldCheck, Truck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
-const RaqqaProductPage = () => {
-  // رابط الأفلييت الخاص بك الذي زودتني به
-  const AFFILIATE_LINK = "https://rzekl.com/g/1e8d1144944131b5064a16525dc3e8/";
+const RaqqaFullStore = () => {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // بيانات تجريبية للمنتج (يمكنك تغييرها حسب المنتج الفعلي)
-  const product = {
-    name: "خاتم الزركون الملكي - تشكيلة رقة للأناقة",
-    description: "قطعة فنية مصممة خصيصاً لتبرز جمال يديكِ. مصنوع من مواد عالية الجودة ومطلي بطبقة مقاومة للصدأ مع فصوص الزركون السويسرية اللامعة.",
-    price: "85.00",
-    oldPrice: "120.00",
-    currency: "AED",
-    rating: 4.9,
-    reviews: 128,
-    image: "https://ae01.alicdn.com/kf/S7b...jpg" // ضع هنا رابط صورة المنتج الحقيقية
-  };
+  // الرابط الخاص بك الذي يحتوي على كل المنتجات
+  const FEED_URL = "https://export.admitad.com/en/webmaster/websites/2928026/products/export_adv_products/?user=raqqa_zazo500b4&code=myhnewkq0i&template=78213&currency=AED&feed_id=15830&last_import=";
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        // استخدام AllOrigins مع إضافة timestamp لضمان جلب أحدث بيانات من Admitad
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(FEED_URL)}&_=${Date.now()}`);
+        const data = await response.json();
+        
+        if (!data.contents) throw new Error("لا توجد استجابة من الخادم");
+
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(data.contents, "text/xml");
+        
+        // جلب العناصر سواء كانت باسم item أو entry (لدعم كل صيغ Admitad)
+        let items = xml.getElementsByTagName("item");
+        if (items.length === 0) items = xml.getElementsByTagName("entry");
+
+        const parsedData = Array.from(items).map((item, index) => {
+          // دالة بحث ذكية تبحث عن الحقل بكل مسمياته المحتملة (عربي وإنجليزي)
+          const getVal = (possibleTags) => {
+            for (let tag of possibleTags) {
+              const el = item.getElementsByTagName(tag)[0];
+              if (el && el.textContent) return el.textContent.trim();
+            }
+            return "";
+          };
+
+          return {
+            id: index,
+            // يبحث عن العنوان في: title أو عنوان أو name
+            name: getVal(["title", "عنوان", "name"]),
+            // يبحث عن السعر في: price أو سعر أو amount
+            price: getVal(["price", "سعر", "amount"]),
+            // يبحث عن الصورة في: image أو صورة أو picture
+            picture: getVal(["image", "صورة", "picture"]),
+            // يبحث عن الرابط في: url أو عنوان_URL أو link
+            url: getVal(["url", "عنوان_URL", "link"]),
+            currency: "AED"
+          };
+        }).filter(p => p.name && p.url); // تصفية المنتجات غير المكتملة
+
+        setProducts(parsedData);
+        setLoading(false);
+      } catch (err) {
+        setError("تأكد من حفظ القالب في Admitad واختيار (title, price, image)");
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) return <div className="p-20 text-center text-rose-500 animate-pulse font-bold">جاري تحميل المتجر الكامل...</div>;
 
   return (
-    <div className="min-h-screen bg-[#fffafa] pb-20 font-sans text-right" dir="rtl">
-      {/* Header */}
-      <div className="p-6 flex justify-between items-center bg-white/50 backdrop-blur-md sticky top-0 z-50">
-        <h1 className="text-xl font-black text-rose-500">رقة Store</h1>
-        <button className="p-2 bg-rose-50 rounded-full text-rose-500">
-          <ShoppingCart size={20} />
-        </button>
-      </div>
-
-      <div className="max-w-md mx-auto">
-        {/* Product Image Section */}
-        <div className="relative aspect-square bg-white shadow-inner overflow-hidden rounded-b-[3rem]">
-          <img 
-            src={product.image} 
-            alt={product.name}
-            className="w-full h-full object-contain p-8"
-            onError={(e) => e.target.src='https://via.placeholder.com/500x500?text=Raqqa+Jewelry'}
-          />
-          <div className="absolute top-4 right-4 bg-rose-500 text-white px-4 py-1 rounded-full text-xs font-bold shadow-lg">
-            خصم 30%
-          </div>
-        </div>
-
-        {/* Product Details */}
-        <div className="p-8 -mt-8 bg-white rounded-t-[3rem] shadow-2xl relative z-10">
-          <div className="flex justify-between items-start mb-4">
-            <h2 className="text-2xl font-black text-gray-800 leading-tight flex-1">
+    <div className="min-h-screen bg-[#fffafa] p-4 text-right" dir="rtl">
+      <h1 className="text-2xl font-black text-rose-500 text-center mb-8 italic">مجموعة رقة المختارة ✨</h1>
+      
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {products.map((product) => (
+          <div key={product.id} className="bg-white p-3 rounded-[2.5rem] shadow-sm border border-rose-50 flex flex-col h-full hover:shadow-lg transition-all">
+            <div className="aspect-square mb-3 overflow-hidden rounded-[2rem] bg-gray-50 border border-rose-50/20">
+              <img 
+                src={product.picture} 
+                className="w-full h-full object-contain" 
+                alt=""
+                onError={(e) => e.target.src='https://via.placeholder.com/150?text=Raqqa'}
+              />
+            </div>
+            <h3 className="text-[11px] font-bold h-9 overflow-hidden mb-2 text-gray-700 leading-tight">
               {product.name}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-2 mb-6">
-            <div className="flex text-amber-400">
-              {[...Array(5)].map((_, i) => <Star key={i} size={16} fill="currentColor" />)}
-            </div>
-            <span className="text-sm text-gray-400">({product.reviews} مراجعة)</span>
-          </div>
-
-          <div className="flex items-baseline gap-3 mb-8">
-            <span className="text-3xl font-black text-rose-500">{product.price} {product.currency}</span>
-            <span className="text-lg text-gray-300 line-through">{product.oldPrice}</span>
-          </div>
-
-          <p className="text-gray-500 leading-relaxed mb-8 text-sm">
-            {product.description}
-          </p>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-2 gap-4 mb-10">
-            <div className="bg-rose-50/50 p-4 rounded-2xl flex flex-col items-center text-center">
-              <Truck className="text-rose-400 mb-2" size={24} />
-              <span className="text-[10px] font-bold text-gray-600">شحن سريع وآمن</span>
-            </div>
-            <div className="bg-rose-50/50 p-4 rounded-2xl flex flex-col items-center text-center">
-              <ShieldCheck className="text-rose-400 mb-2" size={24} />
-              <span className="text-[10px] font-bold text-gray-600">ضمان جودة رقة</span>
+            </h3>
+            <div className="mt-auto">
+              <p className="text-rose-600 font-black text-sm mb-3">
+                {product.price} <span className="text-[9px]">AED</span>
+              </p>
+              <a 
+                href={product.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block w-full bg-rose-500 text-white text-center py-2.5 rounded-2xl text-[10px] font-bold shadow-md active:scale-95 transition-transform"
+              >
+                تسوقي الآن
+              </a>
             </div>
           </div>
-
-          {/* Call to Action Button */}
-          <a 
-            href={AFFILIATE_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full bg-gradient-to-r from-rose-400 to-rose-600 text-white text-center py-5 rounded-[2rem] font-bold text-lg shadow-xl shadow-rose-200 hover:scale-[1.02] transition-transform active:scale-95"
-          >
-            اشترِ الآن من علي إكسبريس
-          </a>
-          
-          <p className="text-center text-[10px] text-gray-400 mt-4">
-            سيتم توجيهك بأمان إلى صفحة المنتج لإتمام الشراء
-          </p>
-        </div>
+        ))}
       </div>
     </div>
   );
 };
 
-export default RaqqaProductPage;
+export default RaqqaFullStore;
