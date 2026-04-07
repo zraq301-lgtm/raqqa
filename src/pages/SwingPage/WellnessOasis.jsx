@@ -1,144 +1,65 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import './Blog.css'; // تأكد من إنشاء هذا الملف
 
-const EducationalAwareness = () => {
-  // المحاور الخمسة المحددة
-  const educationAxios = [
-    {
-      id: 1,
-      title: "السلوك",
-      description: "تحليل وتوجيه الأفعال الظاهرة للطفل وكيفية تعديلها بأساليب تربوية حديثة بعيداً عن الانفعال.",
-      icon: "🤝",
-      color: "#FCE4EC" // وردي ناعم
-    },
-    {
-      id: 2,
-      title: "القناعات",
-      description: "غرس القيم والمبادئ الجوهرية التي تشكل هوية الطفل وتبني ثقته بنفسه وبالعالم من حوله.",
-      icon: "💎",
-      color: "#E8F5E9" // أخضر هادئ
-    },
-    {
-      id: 3,
-      title: "الانتقادات",
-      description: "كيفية التعامل مع النقد الخارجي أو نقد الذات، وتحويله إلى أداة للبناء وليس للهدم في نفسية الطفل.",
-      icon: "📢",
-      color: "#FFF3E0" // برتقالي خافت
-    },
-    {
-      id: 4,
-      title: "التصورات",
-      description: "فهم كيف يرى الطفل نفسه ويرى والديه، وتصحيح الصور الذهنية المغلوطة التي قد تتكون لديه.",
-      icon: "🧠",
-      color: "#F3E5F5" // لافندر
-    },
-    {
-      id: 5,
-      title: "المفاهيم",
-      description: "تفكيك وشرح المصطلحات التربوية الكبرى وتبسيطها لتصبح ممارسات يومية سهلة التطبيق.",
-      icon: "📚",
-      color: "#E1F5FE" // أزرق سماوي
-    }
-  ];
+const WordPressFeed = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const styles = {
-    wrapper: {
-      direction: 'rtl',
-      fontFamily: "'Segoe UI', Tahoma, sans-serif",
-      backgroundColor: '#f8f9fa',
-      minHeight: '100vh',
-      padding: '40px 5%',
-      color: '#333'
-    },
-    header: {
-      textAlign: 'center',
-      marginBottom: '50px'
-    },
-    mainTitle: {
-      fontSize: '2.2rem',
-      color: '#5D4037',
-      marginBottom: '10px'
-    },
-    line: {
-      width: '60px',
-      height: '3px',
-      backgroundColor: '#D81B60',
-      margin: '0 auto 20px'
-    },
-    // تصميم الشبكة للأقسام الخمسة
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '20px',
-      maxWidth: '1200px',
-      margin: '0 auto'
-    },
-    card: (bgColor) => ({
-      backgroundColor: '#fff',
-      borderRadius: '15px',
-      padding: '30px',
-      borderRight: `8px solid ${bgColor}`, // تمييز جانبي باللون
-      boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px'
-    }),
-    iconArea: {
-      fontSize: '2.5rem',
-    },
-    title: {
-      fontSize: '1.5rem',
-      color: '#444',
-      margin: 0
-    },
-    desc: {
-      fontSize: '1rem',
-      color: '#666',
-      lineHeight: '1.8',
-      margin: 0
-    },
-    footer: {
-      marginTop: '60px',
-      textAlign: 'center',
-      color: '#999',
-      fontSize: '0.9rem'
-    }
-  };
+  const CATEGORY_ID = '10783713';
+  const API_URL = `https://public-api.wordpress.com/rest/v1.1/sites/raqqastor3.wordpress.com/posts/?category=${CATEGORY_ID}`;
+
+  useEffect(() => {
+    fetch(API_URL)
+      .then((response) => {
+        if (!response.ok) throw new Error('فشل في جلب البيانات');
+        return response.json();
+      })
+      .then((data) => {
+        setPosts(data.posts);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="loader">جاري تحميل المقالات...</div>;
+  if (error) return <div className="error-msg">حدث خطأ: {error}</div>;
 
   return (
-    <div style={styles.wrapper}>
-      <header style={styles.header}>
-        <h1 style={styles.mainTitle}>منهج الوعي التربوي</h1>
-        <div style={styles.line}></div>
-        <p>خمسة ركائز أساسية لبناء علاقة تربوية واعية ومستدامة</p>
+    <div className="blog-container">
+      <header className="blog-header">
+        <h1>مقالات الفئة المختارة</h1>
+        <p>استكشف أحدث المنشورات والصور من مدونتنا</p>
       </header>
 
-      <main style={styles.grid}>
-        {educationAxios.map((item) => (
-          <div 
-            key={item.id} 
-            style={styles.card(item.color)}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.03)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.05)';
-            }}
-          >
-            <div style={styles.iconArea}>{item.icon}</div>
-            <h2 style={styles.title}>{item.title}</h2>
-            <p style={styles.desc}>{item.description}</p>
-          </div>
+      <div className="posts-grid">
+        {posts.map((post) => (
+          <article key={post.ID} className="post-card">
+            <div className="post-image">
+              <img 
+                src={post.featured_image || 'https://via.placeholder.com/400x250?text=No+Image'} 
+                alt={post.title} 
+              />
+            </div>
+            <div className="post-content">
+              <span className="post-date">{new Date(post.date).toLocaleDateString('ar-EG')}</span>
+              <h2 dangerouslySetInnerHTML={{ __html: post.title }} />
+              <div 
+                className="post-excerpt" 
+                dangerouslySetInnerHTML={{ __html: post.excerpt.substring(0, 120) + '...' }} 
+              />
+              <a href={post.URL} target="_blank" rel="noopener noreferrer" className="read-more">
+                اقرأ المزيد
+              </a>
+            </div>
+          </article>
         ))}
-      </main>
-
-      <footer style={styles.footer}>
-        <p>جميع الحقوق محفوظة © 2026 | منصة التربية الفكرية</p>
-      </footer>
+      </div>
     </div>
   );
 };
 
-export default EducationalAwareness;
+export default WordPressFeed;
