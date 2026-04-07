@@ -1,71 +1,80 @@
 import React, { useState, useEffect } from 'react';
-import { XMLParser } from 'fast-xml-parser';
 
-const ProductsPage = () => {
+const ProductList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const FEED_URL = "https://export.admitad.com/en/webmaster/websites/2928026/products/export_adv_products/?user=raqqa_zazo500b4&code=myhnewkq0i&template=78213&currency=AED&feed_id=15830&last_import=";
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchLocalFile = async () => {
       try {
-        const response = await fetch(FEED_URL);
-        if (!response.ok) throw new Error('فشل في جلب البيانات');
+        // ضع رابط الملف هنا (سواء كان محلي أو مرفوع)
+        const response = await fetch('/path_to_your_file/Aliexpress.csv'); 
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder('utf-8');
+        let { value: chunk, done: readerDone } = await reader.read();
         
-        const xmlText = await response.text();
-        
-        // تحويل XML/YML إلى JSON
-        const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "" });
-        const jsonObj = parser.parse(xmlText);
-        
-        // الوصول لمصفوفة المنتجات (تأكد من هيكلة الملف، غالباً تكون داخل offer أو product)
-        const items = jsonObj.yml_catalog?.shop?.offers?.offer || [];
-        setProducts(Array.isArray(items) ? items : [items]);
+        // تحويل النص المعالج إلى أسطر
+        let text = decoder.decode(chunk);
+        const lines = text.split('\n').slice(1); // تجاهل السطر الأول (العناوين)
+
+        const parsedProducts = lines.slice(0, 100).map(line => {
+          const columns = line.split(';');
+          if (columns.length < 9) return null;
+          
+          return {
+            id: columns[0],
+            name: columns[1],
+            url: columns[2],
+            category: columns[3],
+            currency: columns[4],
+            image: columns[6],
+            oldPrice: columns[7],
+            price: columns[8]
+          };
+        }).filter(p => p !== null);
+
+        setProducts(parsedProducts);
         setLoading(false);
-      } catch (err) {
-        setError(err.message);
+      } catch (error) {
+        console.error("Error parsing CSV:", error);
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchLocalFile();
   }, []);
 
-  if (loading) return <div className="loader">جاري تحميل المنتجات...</div>;
-  if (error) return <div className="error-msg">حدث خطأ: {error}</div>;
+  if (loading) return <div className="text-center p-10">جاري تحميل المنتجات...</div>;
 
   return (
-    <div className="container">
-      <header className="header">
-        <h1>متجر المنتجات المختارة</h1>
-        <p>استكشف أفضل العروض المتاحة الآن</p>
-      </header>
-
-      <div className="product-grid">
-        {products.map((product, index) => (
-          <div key={product.id || index} className="product-card">
-            <div className="image-container">
-              <img src={product.picture} alt={product.name} />
-              {product.discount && <span className="badge">خصم</span>}
-            </div>
-            <div className="product-info">
-              <h3 className="product-name">{product.name}</h3>
-              <p className="category">{product.categoryId}</p>
-              <div className="price-tag">
-                <span className="price">{product.price} {product.currencyId}</span>
-                {product.oldprice && <span className="old-price">{product.oldprice}</span>}
-              </div>
-              <a href={product.url} target="_blank" rel="noopener noreferrer" className="buy-button">
-                تسوق الآن
-              </a>
-            </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
+      {products.map((product) => (
+        <div key={product.id} className="glass-morphism p-3 rounded-xl shadow-sm border border-pink-100">
+          <img 
+            src={product.image} 
+            alt={product.name} 
+            className="w-full h-40 object-cover rounded-lg"
+            loading="lazy" 
+          />
+          <h3 className="text-sm font-bold mt-2 h-10 overflow-hidden text-right">{product.name}</h3>
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-pink-600 font-bold">{product.price} {product.currency}</span>
+            {product.oldPrice && (
+              <span className="text-gray-400 text-xs line-through">{product.oldPrice}</span>
+            )}
           </div>
-        ))}
-      </div>
+          <a 
+            href={product.url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block text-center bg-pink-500 text-white text-xs py-2 mt-3 rounded-full hover:bg-pink-600 transition"
+          >
+            تسوقي الآن
+          </a>
+        </div>
+      ))}
     </div>
   );
 };
 
-export default ProductsPage;
+export default ProductList;
