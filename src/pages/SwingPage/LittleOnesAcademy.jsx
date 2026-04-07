@@ -1,84 +1,99 @@
 import React, { useState, useEffect } from 'react';
-import Papa from 'papaparse'; // المكتبة السحرية لحل مشكلتك
 
-const RoqaStore = () => {
+const RoqaAliexpressStore = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // الرابط الخاص بك
   const rawUrl = "https://export.admitad.com/en/webmaster/websites/2928026/products/export_adv_products/?user=raqqa_zazo500b4&code=myhnewkq0i&template=78213&currency=AED&feed_id=15830&last_import=";
+  
+  // البروكسي لتخطي الـ CORS
   const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rawUrl)}`;
 
   useEffect(() => {
-    const loadData = async () => {
+    const fetchProducts = async () => {
       try {
         const response = await fetch(proxyUrl);
-        const csvText = await response.text();
+        const data = await response.text();
+        
+        const lines = data.split('\n');
+        // السطر الأول يحتوي على العناوين: id;name;url;category;currencyId;param;picture;oldprice;price
+        
+        const result = lines.slice(1).map(line => {
+          // استخدام RegExp لتقسيم السطر مع مراعاة النصوص التي تحتوي على ";" داخل علامات الاقتباس
+          const pattern = /([^;"]+|"[^"]*")+/g;
+          const cols = line.match(pattern) || [];
 
-        // استخدام PapaParse لمعالجة الملف المعقد
-        Papa.parse(csvText, {
-          delimiter: ";", // تحديد الفاصلة المنقوطة
-          header: true,   // قراءة أول سطر كعناوين للأعمدة
-          skipEmptyLines: true,
-          complete: (results) => {
-            // تحويل البيانات لتناسب واجهة "رقة"
-            const formatted = results.data.map(item => ({
-              name: item.name,
-              image: item.picture,
-              price: item.price,
-              oldPrice: item.oldprice,
-              url: item.url,
-              currency: item.currencyId || 'USD'
-            })).filter(p => p.image && p.name); // عرض المنتجات التي لها صورة واسم فقط
+          if (cols.length < 9) return null;
 
-            setProducts(formatted);
-            setLoading(false);
-          },
-          error: (err) => {
-            console.error("خطأ في التحليل:", err);
-            setLoading(false);
-          }
-        });
+          // تنظيف القيم من علامات الاقتباس الزائدة
+          const clean = (val) => val ? val.replace(/^"|"$/g, '').trim() : '';
 
+          return {
+            id: clean(cols[0]),
+            name: clean(cols[1]),
+            url: clean(cols[2]),
+            currency: clean(cols[4]),
+            image: clean(cols[6]), // الصورة في العمود السابع
+            oldPrice: clean(cols[7]),
+            price: clean(cols[8])
+          };
+        }).filter(item => item && item.image && item.image.startsWith('http'));
+
+        setProducts(result);
+        setLoading(false);
       } catch (error) {
-        console.error("فشل الجلب:", error);
+        console.error("Fetch Error:", error);
         setLoading(false);
       }
     };
 
-    loadData();
+    fetchProducts();
   }, []);
 
-  if (loading) return <div className="p-20 text-center text-rose-500 animate-pulse">جاري تنسيق المنتجات الأنيقة...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-[400px]">
+      <div className="animate-bounce text-rose-500 font-bold">جاري تحميل عروض رقة...</div>
+    </div>
+  );
 
   return (
-    <div className="bg-[#fff9fb] min-h-screen p-4" style={{ direction: 'rtl' }}>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {products.map((item, index) => (
-          <div key={index} className="bg-white rounded-[25px] p-3 shadow-sm border border-rose-50 flex flex-col">
-            <div className="h-32 w-full mb-2 bg-gray-50 rounded-2xl overflow-hidden">
+    <div className="p-4 bg-rose-50/30 min-h-screen" style={{ direction: 'rtl' }}>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {products.map((p, idx) => (
+          <div key={idx} className="bg-white rounded-3xl p-3 shadow-sm border border-rose-100 flex flex-col">
+            <div className="h-32 w-full rounded-2xl overflow-hidden bg-gray-50 mb-2">
               <img 
-                src={item.image} 
-                alt={item.name} 
-                className="w-full h-full object-contain"
-                onError={(e) => { e.target.src = 'https://via.placeholder.com/150?text=Roqa'; }}
+                src={p.image} 
+                className="w-full h-full object-contain" 
+                alt=""
+                onError={(e) => e.target.src = 'https://via.placeholder.com/150?text=Roqa'}
               />
             </div>
             
-            <h3 className="text-[11px] font-medium text-gray-700 line-clamp-2 h-8 mb-2 leading-tight">
-              {item.name}
+            <h3 className="text-[10px] text-gray-700 font-bold line-clamp-2 h-8 leading-tight mb-2">
+              {p.name}
             </h3>
             
-            <div className="mt-auto">
-              <div className="flex items-center gap-2">
-                <span className="text-rose-600 font-bold text-sm">{item.price} {item.currency}</span>
-                {item.oldPrice && (
-                  <span className="text-[9px] text-gray-400 line-through">{item.oldPrice}</span>
+            <div className="mt-auto flex justify-between items-end">
+              <div className="flex flex-col">
+                {p.oldPrice && (
+                  <span className="text-[8px] text-gray-400 line-through leading-none">
+                    {p.oldPrice}
+                  </span>
                 )}
+                <span className="text-rose-600 font-black text-xs leading-none">
+                  {p.price} <small className="text-[8px]">{p.currency}</small>
+                </span>
               </div>
               
-              <a href={item.url} target="_blank" rel="noopener noreferrer" 
-                 className="mt-2 block w-full bg-rose-400 text-white text-[10px] py-2 rounded-xl text-center font-bold">
-                تسوقي الآن
+              <a 
+                href={p.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-rose-500 text-white text-[9px] px-3 py-2 rounded-xl font-bold shadow-sm shadow-rose-200"
+              >
+                شراء
               </a>
             </div>
           </div>
@@ -88,4 +103,4 @@ const RoqaStore = () => {
   );
 };
 
-export default RoqaStore;
+export default RoqaAliexpressStore;
