@@ -1,79 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import './Blog.css'; // تأكد من وجود الملف في نفس المجلد
+import React, { useState } from 'react';
 
-const WordPressFeed = () => {
-  const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export default function FoodApp() {
+  // بيانات الأصناف
+  const menu = [
+    { id: 1, name: "شاورما دجاج", price: 50 },
+    { id: 2, name: "بطاطس مقلية", price: 20 },
+    { id: 3, name: "عصير برتقال", price: 15 }
+  ];
 
-  const CATEGORY_ID = '10783713';
-  const API_URL = `https://public-api.wordpress.com/rest/v1.1/sites/raqqastor3.wordpress.com/posts/?category=${CATEGORY_ID}`;
+  // حالة السلة
+  const [cart, setCart] = useState([]);
 
-  useEffect(() => {
-    fetch(API_URL)
-      .then((response) => {
-        if (!response.ok) throw new Error('فشل في جلب البيانات من الخادم');
-        return response.json();
-      })
-      .then((data) => {
-        // تأكد أن البيانات تحتوي على المصفوفة المطلوبة
-        setPosts(data.posts || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [API_URL]); // إضافة API_URL كمُعامل متغير لضمان الاستقرار
+  const addToCart = (item) => {
+    setCart([...cart, item]);
+  };
 
-  if (loading) return <div className="loader">جاري تحميل المقالات...</div>;
-  if (error) return <div className="error-msg">حدث خطأ: {error}</div>;
+  // تنسيق سريع (Internal CSS)
+  const styles = {
+    container: { padding: '20px', fontFamily: 'Arial', textAlign: 'right', direction: 'rtl' },
+    card: { border: '1px solid #ddd', padding: '15px', margin: '10px 0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between' },
+    button: { backgroundColor: '#28a745', color: 'white', border: 'none', padding: '5px 15px', cursor: 'pointer', borderRadius: '4px' },
+    cartBox: { marginTop: '30px', padding: '20px', backgroundColor: '#f9f9f9', borderTop: '2px solid #333' }
+  };
 
   return (
-    <div className="blog-container">
-      <header className="blog-header">
-        <h1>مقالات الفئة المختارة</h1>
-        <p>استكشف أحدث المنشورات والصور من مدونتنا</p>
-      </header>
+    <div style={styles.container}>
+      <h1>🍴 منيو الأكيل</h1>
+      
+      <div>
+        {menu.map(item => (
+          <div key={item.id} style={styles.card}>
+            <div>
+              <strong>{item.name}</strong> - {item.price} جنيه
+            </div>
+            <button style={styles.button} onClick={() => addToCart(item)}>
+              إضافة +
+            </button>
+          </div>
+        ))}
+      </div>
 
-      <div className="posts-grid">
-        {posts.length > 0 ? (
-          posts.map((post) => (
-            <article key={post.ID} className="post-card">
-              <div className="post-image">
-                <img 
-                  src={post.featured_image || 'https://via.placeholder.com/400x250?text=No+Image'} 
-                  alt={post.title} 
-                />
-              </div>
-              <div className="post-content">
-                <span className="post-date">
-                  {new Date(post.date).toLocaleDateString('ar-EG')}
-                </span>
-                <h2 dangerouslySetInnerHTML={{ __html: post.title }} />
-                <div 
-                  className="post-excerpt" 
-                  dangerouslySetInnerHTML={{ 
-                    __html: post.excerpt ? post.excerpt.substring(0, 120) + '...' : '' 
-                  }} 
-                />
-                <a 
-                  href={post.URL} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="read-more"
-                >
-                  اقرأ المزيد
-                </a>
-              </div>
-            </article>
-          ))
-        ) : (
-          <p>لا توجد مقالات متاحة حالياً.</p>
-        )}
+      <div style={styles.cartBox}>
+        <h2>🛒 السلة ({cart.length})</h2>
+        {cart.length === 0 ? <p>السلة فارغة</p> : 
+          <ul>
+            {cart.map((i, index) => <li key={index}>{i.name} - {i.price} جنيه</li>)}
+          </ul>
+        }
+        <hr />
+        <strong>الإجمالي: {cart.reduce((total, item) => total + item.price, 0)} جنيه</strong>
       </div>
     </div>
   );
-};
-
-export default WordPressFeed;
+}
