@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapacitorHttp } from '@capacitor/core'; 
 
-// استدعاء الصفحات
+// استدعاء الصفحات بناءً على القائمة الموجودة في الصورة (بدون productsData)
 import Home from '../pages/SwingPage/Home';
-import MotherhoodHaven from '../pages/SwingPage/MotherhoodHaven';
-import LittleOnesAcademy from '../pages/SwingPage/LittleOnesAcademy'; // يمثل متجر رقة
-import WellnessOasis from '../pages/SwingPage/WellnessOasis';
-import EleganceIcon from '../pages/SwingPage/EleganceIcon'; // يمثل أيقونة العناية
 import CulinaryArts from '../pages/SwingPage/CulinaryArts';
+import EleganceIcon from '../pages/SwingPage/EleganceIcon';
 import EmpowermentPaths from '../pages/SwingPage/EmpowermentPaths';
 import HomeCorners from '../pages/SwingPage/HomeCorners';
+import LittleOnesAcademy from '../pages/SwingPage/LittleOnesAcademy';
+import MotherhoodHaven from '../pages/SwingPage/MotherhoodHaven';
 import PassionsCrafts from '../pages/SwingPage/PassionsCrafts';
 import SoulsLounge from '../pages/SwingPage/SoulsLounge';
+import WellnessOasis from '../pages/SwingPage/WellnessOasis';
 
 const SwingForum = () => {
   const [activeTab, setActiveTab] = useState('Home');
   const [isUpdating, setIsUpdating] = useState(false); 
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1.0.2';
 
-  // ترتيب الأيقونات الجديد والمسميات المطلوبة
+  // ترتيب الأيقونات والمسميات المتوافقة مع الملفات المستدعاة
   const sections = [
     { id: 'Home', label: 'الرئيسية', icon: '🏠' },
     { id: 'LittleOnesAcademy', label: 'متجر رقة', icon: '🛍️' },
@@ -59,11 +59,9 @@ const SwingForum = () => {
         }
         .app-container { display: flex; flex-direction: column; height: 100vh; width: 100vw; background-color: var(--soft-bg); direction: rtl; font-family: 'Tajawal', sans-serif; position: relative; overflow: hidden; }
         
-        /* الهيدر العلوي */
         .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: white; border-bottom: 1px solid var(--female-pink-light); z-index: 100; }
         .back-btn { background: var(--female-pink); color: white; border: none; padding: 7px 18px; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(255, 77, 125, 0.2); }
         
-        /* شريط التنقل الزجاجي */
         .glass-header-nav { display: flex; overflow-x: auto; padding: 12px 10px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 10px; scrollbar-width: none; }
         .glass-header-nav::-webkit-scrollbar { display: none; }
 
@@ -74,10 +72,8 @@ const SwingForum = () => {
         .s-icon { font-size: 1.3rem; margin-bottom: 2px; }
         .s-label { font-size: 0.7rem; font-weight: bold; color: var(--female-pink); }
         
-        /* منطقة العرض */
         .main-display-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
 
-        /* الزر العائم لمتجر رقة */
         .floating-store-btn {
           position: fixed;
           bottom: 80px;
@@ -101,7 +97,6 @@ const SwingForum = () => {
         .floating-store-btn .f-icon { font-size: 1.5rem; }
         .floating-store-btn .f-text { font-size: 9px; font-weight: bold; margin-top: -2px; }
         
-        /* الوميض الجاذب للزر */
         .pulse-effect {
           position: absolute;
           width: 100%;
@@ -147,7 +142,7 @@ const SwingForum = () => {
         {renderCurrentPage()}
       </div>
 
-      {/* الزر العائم - يظهر في كل "صفحات الأرجوحة" */}
+      {/* الزر العائم */}
       <div 
         className="floating-store-btn" 
         onClick={() => setActiveTab('LittleOnesAcademy')}
