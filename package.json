@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "preinstall": "npm config set legacy-peer-deps true",
     "build": "vite build --outDir dist_web",
     "preview": "vite preview"
   },
@@ -24,7 +23,7 @@
     "@capacitor/share": "^6.0.0",
     "@capacitor/camera": "^6.0.0",
     "@capacitor/filesystem": "^6.0.0",
-    "capacitor-voice-recorder": "5.0.0",
+    "capacitor-voice-recorder": "^5.0.0",
     "@vercel/blob": "^0.23.4",
     "@vercel/postgres": "^0.9.0",
     "pg": "^8.11.0",
@@ -39,7 +38,7 @@
     "unsplash-js": "^7.0.19",
     "styled-components": "^6.1.8",
     "@capacitor/preferences": "^6.0.0",
-    "@alpha-community/fcm": "^6.0.0",
+    "@capacitor-community/fcm": "^6.0.0",
     "fast-xml-parser": "^4.3.5"
   },
   "devDependencies": {
