@@ -1,144 +1,145 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const EducationalAwareness = () => {
-  // المحاور الخمسة المحددة
-  const educationAxios = [
-    {
-      id: 1,
-      title: "السلوك",
-      description: "تحليل وتوجيه الأفعال الظاهرة للطفل وكيفية تعديلها بأساليب تربوية حديثة بعيداً عن الانفعال.",
-      icon: "🤝",
-      color: "#FCE4EC" // وردي ناعم
-    },
-    {
-      id: 2,
-      title: "القناعات",
-      description: "غرس القيم والمبادئ الجوهرية التي تشكل هوية الطفل وتبني ثقته بنفسه وبالعالم من حوله.",
-      icon: "💎",
-      color: "#E8F5E9" // أخضر هادئ
-    },
-    {
-      id: 3,
-      title: "الانتقادات",
-      description: "كيفية التعامل مع النقد الخارجي أو نقد الذات، وتحويله إلى أداة للبناء وليس للهدم في نفسية الطفل.",
-      icon: "📢",
-      color: "#FFF3E0" // برتقالي خافت
-    },
-    {
-      id: 4,
-      title: "التصورات",
-      description: "فهم كيف يرى الطفل نفسه ويرى والديه، وتصحيح الصور الذهنية المغلوطة التي قد تتكون لديه.",
-      icon: "🧠",
-      color: "#F3E5F5" // لافندر
-    },
-    {
-      id: 5,
-      title: "المفاهيم",
-      description: "تفكيك وشرح المصطلحات التربوية الكبرى وتبسيطها لتصبح ممارسات يومية سهلة التطبيق.",
-      icon: "📚",
-      color: "#E1F5FE" // أزرق سماوي
-    }
-  ];
+const SoulsLounge = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const CATEGORY_ID = '10783713';
+  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed`;
 
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        setPosts(data);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching WordPress posts:", error);
+        setLoading(false);
+      }
+    };
+    fetchPosts();
+  }, []);
+
+  // التنسيقات المدمجة (Internal Styles)
   const styles = {
-    wrapper: {
+    container: {
+      padding: '20px',
       direction: 'rtl',
-      fontFamily: "'Segoe UI', Tahoma, sans-serif",
-      backgroundColor: '#f8f9fa',
+      fontFamily: "'Tajawal', sans-serif",
+      backgroundColor: '#fff5f7',
       minHeight: '100vh',
-      padding: '40px 5%',
-      color: '#333'
-    },
-    header: {
-      textAlign: 'center',
-      marginBottom: '50px'
-    },
-    mainTitle: {
-      fontSize: '2.2rem',
-      color: '#5D4037',
-      marginBottom: '10px'
-    },
-    line: {
-      width: '60px',
-      height: '3px',
-      backgroundColor: '#D81B60',
-      margin: '0 auto 20px'
-    },
-    // تصميم الشبكة للأقسام الخمسة
-    grid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '20px',
-      maxWidth: '1200px',
-      margin: '0 auto'
-    },
-    card: (bgColor) => ({
-      backgroundColor: '#fff',
-      borderRadius: '15px',
-      padding: '30px',
-      borderRight: `8px solid ${bgColor}`, // تمييز جانبي باللون
-      boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px'
-    }),
-    iconArea: {
-      fontSize: '2.5rem',
     },
     title: {
-      fontSize: '1.5rem',
-      color: '#444',
-      margin: 0
-    },
-    desc: {
-      fontSize: '1rem',
-      color: '#666',
-      lineHeight: '1.8',
-      margin: 0
-    },
-    footer: {
-      marginTop: '60px',
+      color: '#ff4d7d',
       textAlign: 'center',
-      color: '#999',
-      fontSize: '0.9rem'
+      fontSize: '1.8rem',
+      marginBottom: '30px',
+      fontWeight: '900',
+    },
+    card: {
+      background: 'rgba(255, 255, 255, 0.9)',
+      borderRadius: '20px',
+      padding: '15px',
+      marginBottom: '25px',
+      boxShadow: '0 8px 32px rgba(255, 77, 125, 0.1)',
+      border: '1px solid rgba(255, 77, 125, 0.2)',
+      backdropFilter: 'blur(10px)',
+    },
+    postImage: {
+      width: '100%',
+      height: '200px',
+      objectFit: 'cover',
+      borderRadius: '15px',
+      marginBottom: '15px',
+    },
+    postTitle: {
+      color: '#333',
+      fontSize: '1.3rem',
+      marginBottom: '10px',
+      lineHeight: '1.4',
+    },
+    postContent: {
+      color: '#666',
+      fontSize: '0.95rem',
+      lineHeight: '1.6',
+      marginBottom: '15px',
+    },
+    videoContainer: {
+      position: 'relative',
+      paddingBottom: '56.25%', // 16:9 ratio
+      height: 0,
+      overflow: 'hidden',
+      borderRadius: '15px',
+      marginTop: '15px',
+      backgroundColor: '#000',
+    },
+    iframe: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      height: '100%',
+      border: 0,
+    },
+    loadingText: {
+      textAlign: 'center',
+      color: '#ff4d7d',
+      marginTop: '50px',
+      fontSize: '1.2rem',
     }
   };
 
+  // دالة لاستخراج رابط الفيديو من محتوى المقال (إذا كان موجوداً كـ iframe)
+  const extractVideoUrl = (content) => {
+    const div = document.createElement('div');
+    div.innerHTML = content;
+    const iframe = div.querySelector('iframe');
+    return iframe ? iframe.src : null;
+  };
+
+  if (loading) return <div style={styles.loadingText}>جاري تحميل السكينة للأرواح... ✨</div>;
+
   return (
-    <div style={styles.wrapper}>
-      <header style={styles.header}>
-        <h1 style={styles.mainTitle}>منهج الوعي التربوي</h1>
-        <div style={styles.line}></div>
-        <p>خمسة ركائز أساسية لبناء علاقة تربوية واعية ومستدامة</p>
-      </header>
+    <div style={styles.container}>
+      <h1 style={styles.title}>رواق الأرواح</h1>
+      
+      {posts.map((post) => {
+        const videoUrl = extractVideoUrl(post.content.rendered);
+        const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
-      <main style={styles.grid}>
-        {educationAxios.map((item) => (
-          <div 
-            key={item.id} 
-            style={styles.card(item.color)}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'scale(1.03)';
-              e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.1)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'scale(1)';
-              e.currentTarget.style.boxShadow = '0 5px 15px rgba(0,0,0,0.05)';
-            }}
-          >
-            <div style={styles.iconArea}>{item.icon}</div>
-            <h2 style={styles.title}>{item.title}</h2>
-            <p style={styles.desc}>{item.description}</p>
-          </div>
-        ))}
-      </main>
+        return (
+          <article key={post.id} style={styles.card}>
+            {/* عرض الصورة البارزة */}
+            {featuredImage && (
+              <img src={featuredImage} alt={post.title.rendered} style={styles.postImage} />
+            )}
 
-      <footer style={styles.footer}>
-        <p>جميع الحقوق محفوظة © 2026 | منصة التربية الفكرية</p>
-      </footer>
+            {/* عنوان المقال */}
+            <h2 style={styles.postTitle} dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+
+            {/* نص المقال (مختصر) */}
+            <div 
+              style={styles.postContent} 
+              dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} 
+            />
+
+            {/* عرض الفيديو إذا وجد داخل المقال */}
+            {videoUrl && (
+              <div style={styles.videoContainer}>
+                <iframe 
+                  src={videoUrl} 
+                  title="Video content" 
+                  style={styles.iframe} 
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 };
 
-export default EducationalAwareness;
+export default SoulsLounge;
