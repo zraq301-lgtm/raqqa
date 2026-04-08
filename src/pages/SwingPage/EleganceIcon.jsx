@@ -11,20 +11,22 @@ const EleganceSection = () => {
   const parseContent = (htmlContent) => {
     let content = htmlContent;
 
-    // 1. تنظيف النصوص البرمجية الزائدة
-    content = content.replace(/class="lightbox-trigger"|type="button"|aria-haspopup="dialog"|data-wp-bind--aria-label=".*?"|data-wp-on--click=".*?"/g, '');
+    // 1. تنظيف شامل للأكواد البرمجية والسمات المكسورة التي تظهر في الصورة
+    // هذه الإضافة ستمسح كلمات مثل alt, class, sizes, srcset التي تظهر ككلام نصي
+    content = content.replace(/alt=".*?"|class=".*?"|sizes=".*?"|srcset=".*?"|data-orig-size=".*?"|data-image-title=".*?"/g, '');
     
     // 2. تحويل روابط اليوتيوب إلى مشغل فيديو متجاوب
     const youtubeRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*))/g;
     content = content.replace(youtubeRegex, (match, url, videoId) => {
-      return `<div class="video-card-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+      return `<div class="video-card-container"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
     });
 
-    // 3. تحسين عرض الصور داخل المقال
-    const imageRegex = /<img[^>]+src="([^">]+)"/g;
-    content = content.replace(imageRegex, (match, src) => {
-      return `<img src="${src}" alt="محتوى الأناقة" class="article-inner-image" />`;
-    });
+    // 3. تحسين عرض الصور داخل المقال والتخلص من النصوص العالقة حولها
+    // نستخدم RegExp بفلترة أقوى لضمان عدم بقاء نصوص srcset
+    const imageRegex = /https?:\/\/[^\s<>"]+?\.(?:jpg|jpeg|gif|png|webp)(?:\?[^\s<>"]+)?/gi;
+    
+    // ملاحظة: نقوم بتنظيف المحتوى من أي نصوص srcset يدوية قد تكون ووردبريس أرسلها خارج التاج
+    content = content.replace(/\d+w,[\s\S]*?px\)/g, ''); // يمسح نصوص srcset مثل "196w, ... 196px)"
 
     return content;
   };
@@ -38,7 +40,7 @@ const EleganceSection = () => {
           setArticles(data);
         }
       } catch (error) {
-        console.error("خطأ في جلب مقالات الأناقة:", error);
+        console.error("Error fetching articles:", error);
       } finally {
         setLoading(false);
       }
@@ -50,144 +52,124 @@ const EleganceSection = () => {
     return (
       <div className="flex justify-center items-center h-screen bg-[#FFF9FA]">
         <div className="text-center">
-          <div className="w-14 h-14 border-4 border-pink-100 border-t-pink-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-pink-600 font-bold animate-pulse">جاري تحميل عالمكِ الخاص...</p>
+          <div className="w-12 h-12 border-4 border-rose-100 border-t-rose-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-rose-500 font-medium italic">لحظات من الأناقة...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFF9FA] pb-20" dir="rtl">
+    <div className="min-h-screen bg-[#FFF9FA] pb-24" dir="rtl">
       {/* Header */}
-      <header className="bg-white/90 backdrop-blur-lg sticky top-0 z-50 px-6 py-5 border-b border-pink-100/50 shadow-sm flex justify-between items-center">
-        <h1 className="text-2xl font-black bg-gradient-to-r from-pink-600 to-rose-400 bg-clip-text text-transparent">
-          عالم الأناقة
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4 border-b border-rose-50 shadow-sm flex justify-between items-center">
+        <h1 className="text-xl font-black text-gray-800">
+          مجلة <span className="text-rose-500">رقة</span>
         </h1>
-        <div className="bg-pink-50 p-2 rounded-full shadow-inner">
-          <span className="text-xl">✨</span>
+        <div className="w-9 h-9 rounded-full bg-rose-50 flex items-center justify-center">
+          <span className="animate-pulse">🌸</span>
         </div>
       </header>
 
-      {/* Articles Container */}
-      <div className="max-w-xl mx-auto px-4 mt-8 space-y-10">
+      {/* Articles Grid */}
+      <div className="max-w-md mx-auto px-4 mt-8 space-y-12">
         {articles.length > 0 ? (
           articles.map((post) => (
             <article 
               key={post.id} 
-              className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_-20px_rgba(255,182,193,0.3)] overflow-hidden border border-white transition-all hover:shadow-pink-200/50"
+              className="elegant-card bg-white rounded-[2rem] overflow-hidden border border-rose-50/50"
             >
               {/* Featured Image */}
               {post._embedded?.['wp:featuredmedia'] && (
-                <div className="relative h-64 sm:h-80 w-full overflow-hidden">
+                <div className="relative h-60 w-full overflow-hidden">
                   <img 
                     src={post._embedded['wp:featuredmedia'][0].source_url} 
-                    alt={post.title.rendered}
-                    className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+                    alt="تصميم رقة"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white to-transparent"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
                 </div>
               )}
 
-              <div className="px-6 pb-8 pt-2">
+              <div className="p-6">
+                {/* Date Badge */}
+                <div className="inline-block bg-rose-50 text-rose-500 text-[10px] font-bold px-3 py-1 rounded-full mb-4">
+                  {new Date(post.date).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' })}
+                </div>
+
                 {/* Title */}
                 <h2 
-                  className="text-2xl font-black text-gray-800 mb-6 leading-[1.4] hover:text-pink-600 transition-colors"
+                  className="text-xl font-bold text-gray-800 mb-5 leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: post.title.rendered }}
                 />
 
-                {/* Main Content (Article + Media) */}
-                <div className="article-body-content">
+                {/* Content Area */}
+                <div className="article-inner-body">
                   <div 
-                    className="wordpress-rendered-content"
+                    className="wp-content-clean"
                     dangerouslySetInnerHTML={{ __html: parseContent(post.content.rendered) }} 
                   />
                 </div>
 
-                {/* Footer of Card */}
-                <div className="mt-10 pt-6 border-t border-pink-50 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-100 to-rose-50 flex items-center justify-center text-pink-400 text-xs font-bold">
-                       {new Date(post.date).getDate()}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">تاريخ النشر</span>
-                      <span className="text-xs text-gray-600 font-bold">
-                        {new Date(post.date).toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' })}
-                      </span>
-                    </div>
-                  </div>
-                  <button className="bg-gray-900 text-white px-6 py-2.5 rounded-2xl text-xs font-bold shadow-lg shadow-gray-200 hover:bg-pink-600 transition-all active:scale-95">
-                    مشاركة المقال
-                  </button>
-                </div>
+                {/* Card Action */}
+                <button className="w-full mt-6 py-3 bg-gray-50 text-gray-400 text-sm font-bold rounded-2xl border border-dashed border-gray-200">
+                  انتهى المقال ✨
+                </button>
               </div>
             </article>
           ))
         ) : (
-          <div className="text-center py-20 text-gray-400 italic">لا توجد مقالات في هذا القسم حالياً.</div>
+          <div className="text-center py-20 text-gray-300">لا توجد مواضيع حالياً</div>
         )}
       </div>
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap');
         
-        .wordpress-rendered-content {
-          font-family: 'Cairo', sans-serif;
-          color: #4a4a4a;
-          line-height: 2;
-          font-size: 1.05rem;
+        body { font-family: 'Cairo', sans-serif; }
+
+        .elegant-card {
+          box-shadow: 0 25px 50px -12px rgba(255, 182, 193, 0.25);
         }
 
-        .wordpress-rendered-content p {
-          margin-bottom: 1.8rem;
-          text-align: justify;
+        .wp-content-clean {
+          color: #555;
+          line-height: 1.8;
+          font-size: 1rem;
         }
 
-        .article-inner-image {
-          width: 100%;
-          height: auto;
-          border-radius: 2rem;
-          margin: 1.5rem 0;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-          display: block;
+        .wp-content-clean p {
+          margin-bottom: 1.2rem;
         }
 
+        /* تنسيق الفيديو داخل الكارت */
         .video-card-container {
           position: relative;
-          padding-bottom: 56.25%; /* 16:9 ratio */
+          padding-bottom: 56.25%;
           height: 0;
-          margin: 2rem 0;
-          border-radius: 1.8rem;
+          margin: 1.5rem 0;
+          border-radius: 1.5rem;
           overflow: hidden;
-          box-shadow: 0 15px 35px rgba(251, 113, 133, 0.2);
-          border: 4px solid #fff;
+          background: #000;
         }
 
         .video-card-container iframe {
           position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          top: 0; left: 0; width: 100%; height: 100%;
         }
 
-        /* تنظيف إضافي لمخلفات ووردبريس */
-        .wordpress-rendered-content figure {
-          margin: 0;
-          width: 100% !important;
-        }
-        
-        .wordpress-rendered-content ul {
-          list-style: none;
-          padding-right: 1rem;
-          border-right: 3px solid #fce7f3;
-          margin: 1.5rem 0;
+        /* منع ظهور أي نصوص srcset أو سمات عالقة */
+        .wp-content-clean img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 1.2rem;
+          margin: 1rem auto;
+          display: block;
         }
 
-        .wordpress-rendered-content li {
-          margin-bottom: 0.8rem;
-          position: relative;
+        /* إخفاء أي نصوص غريبة قد تتسرب من ووردبريس */
+        .wp-content-clean {
+          word-break: break-word;
         }
       `}</style>
     </div>
