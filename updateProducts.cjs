@@ -1,57 +1,60 @@
 const fs = require('fs');
+const path = require('path');
 
 async function updateProducts() {
   const base64Credentials = process.env.ADMITAD_BASE64;
   
+  if (!base64Credentials) {
+    console.error('❌ خطأ: لم يتم العثور على ADMITAD_BASE64 في GitHub Secrets');
+    process.exit(1);
+  }
+
   try {
-    console.log('--- جاري الاتصال بـ Admitad API ---');
-    
-    // 1. الحصول على Access Token
+    console.log('1️⃣ جاري طلب التوكن من Admitad...');
     const authResponse = await fetch('https://api.admitad.com/token/', {
       method: 'POST',
       headers: { 
         'Authorization': `Basic ${base64Credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded' 
       },
-      body: 'grant_type=client_credentials&scope=public_data products'
+      body: 'grant_type=client_credentials&scope=public_data products advcampaigns'
     });
     
     const authData = await authResponse.json();
-    
     if (!authData.access_token) {
-      throw new Error('فشل في الحصول على التوكن: ' + JSON.stringify(authData));
+      console.error('❌ فشل التحقق:', authData);
+      process.exit(1);
     }
 
-    const token = authData.access_token;
-    console.log('✅ تم الحصول على التوكن');
+    console.log('2️⃣ تم الحصول على التوكن، جاري جلب العروض...');
 
-    // 2. جلب المنتجات
-    const productsResponse = await fetch('https://api.admitad.com/product_feeds/details/', {
-      headers: { 'Authorization': `Bearer ${token}` }
+    // سنستخدم رابط الـ Offers لجلب المنتجات إذا كان الـ Feed لا يعمل
+    const response = await fetch('https://api.admitad.com/advcampaigns/?limit=20&connection_status=active', {
+      headers: { 'Authorization': `Bearer ${authData.access_token}` }
     });
-    const productsData = await productsResponse.json();
+    const data = await response.json();
 
-    // 3. تنسيق البيانات لتناسب تطبيق "رقة"
-    const rawProducts = productsData.results || [];
-    const formattedProducts = rawProducts.slice(0, 20).map(p => ({
-      id: p.id || Math.random().toString(36).substr(2, 9),
-      name: p.name || 'منتج رقة المميز',
-      url: p.url || '#',
-      image: p.image || '',
-      price: p.price || '0.00',
-      oldPrice: p.old_price || '',
-      discount: p.discount || "خصم مميز"
+    // تنسيق البيانات (تعديل الحقول لتناسب ما يرسله Admitad)
+    const formattedProducts = (data.results || []).map(item => ({
+      id: item.id || Math.random().toString(36).substring(7),
+      name: item.name || 'عرض جديد من رقة',
+      url: item.site_url || item.goto_link || '#',
+      image: item.logo || 'https://placehold.co/400x400?text=Roqa+Product',
+      price: "عرض خاص", // API الحملات أحياناً لا يعطي سعراً ثابتاً
+      oldPrice: "",
+      discount: "تخفيض"
     }));
 
-    // 4. كتابة الملف في مساره الصحيح
     const fileContent = `export const allProducts = ${JSON.stringify(formattedProducts, null, 2)};`;
     
-    // تأكد أن المجلد src موجود في مستودعك
-    fs.writeFileSync('./src/productsData.js', fileContent);
-    
-    console.log(`✅ تم تحديث ${formattedProducts.length} منتج بنجاح!`);
+    const dir = './src';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+    fs.writeFileSync(path.join(dir, 'productsData.js'), fileContent);
+    console.log(`✅ نجاح! تم تحديث ${formattedProducts.length} منتج.`);
+
   } catch (error) {
-    console.error('❌ خطأ:', error.message);
+    console.error('❌ خطأ غير متوقع:', error.message);
     process.exit(1);
   }
 }
