@@ -1,34 +1,37 @@
-// updateProducts.cjs
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function updateAdmitadToNeon() {
-  // القيمة التي زودتني بها مباشرة
-  const base64Credentials = "V25abktiYmlmOTdYYXhjcWFKTVROdXBYb1BNY3RLOkU5MlhrUkJzR2xHR1JwdEtnV3hZNUdCNkpmUkRQNA==";
+  // القيم المستخرجة من الكود الخاص بك لضمان الدقة
+  const clientId = "WnZbtkibif97XaxcqaJMTNupXoPMctK";
+  const clientSecret = "E92XkRBsGlGGRptKgWxY5GB6JfRDP4";
+  
+  // تشفير القيم برمجياً لضمان عدم وجود أخطاء في الـ Base64 اليدوي
+  const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   try {
     console.log('🔄 جاري بدء الاتصال بـ Admitad API...');
 
-    // 1. طلب توكن الوصول (Access Token)
     const authResponse = await fetch('https://api.admitad.com/token/', {
       method: 'POST',
       headers: { 
-        'Authorization': `Basic ${base64Credentials}`,
+        'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded' 
       },
-      body: 'grant_type=client_credentials&scope=public_data products advcampaigns'
+      // أضفنا الـ client_id في الجسم (body) كخطوة احتياطية لضمان التعرف عليه
+      body: `grant_type=client_credentials&scope=public_data products advcampaigns&client_id=${clientId}`
     });
     
     const authData = await authResponse.json();
     
     if (!authData.access_token) {
-      console.error('❌ فشل الحصول على التوكن. الرد من السيرفر:', authData);
+      console.error('❌ الرد من السيرفر:', authData);
       process.exit(1);
     }
 
-    console.log('✅ تم الحصول على التوكن بنجاح. جاري جلب العروض...');
+    console.log('✅ تم الحصول على التوكن! جاري جلب العروض...');
 
-    // 2. جلب العروض النشطة (Active Campaigns)
+    // جلب العروض
     const productsResponse = await fetch('https://api.admitad.com/advcampaigns/?limit=20&connection_status=active', {
       headers: { 'Authorization': `Bearer ${authData.access_token}` }
     });
@@ -36,16 +39,12 @@ async function updateAdmitadToNeon() {
     const productsData = await productsResponse.json();
     const offers = productsData.results || [];
 
-    console.log(`📦 تم العثور على ${offers.length} عرض/منتج.`);
+    console.log(`📦 جلب ${offers.length} عرض.`);
 
-    // 3. تحديث قاعدة بيانات Neon عبر Prisma
-    console.log('⏳ جاري تحديث قاعدة البيانات...');
-
+    // التحديث في نيون
     for (const item of offers) {
       await prisma.product.upsert({
-        where: { 
-          admitadId: item.id.toString() 
-        },
+        where: { admitadId: item.id.toString() },
         update: {
           name: item.name,
           url: item.goto_link,
@@ -62,16 +61,14 @@ async function updateAdmitadToNeon() {
       });
     }
 
-    console.log('✨ نجاح! تم تحديث جميع البيانات في نيون بنجاح.');
+    console.log('✨ نجاح! تم تحديث نيون.');
 
   } catch (error) {
-    console.error('❌ خطأ غير متوقع:', error.message);
+    console.error('❌ خطأ:', error.message);
     process.exit(1);
   } finally {
-    // إغلاق الاتصال لضمان عدم تعليق السكربت
     await prisma.$disconnect();
   }
 }
 
-// تشغيل السكربت
 updateAdmitadToNeon();
