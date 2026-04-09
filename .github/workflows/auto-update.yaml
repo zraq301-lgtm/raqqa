@@ -2,14 +2,15 @@ name: Auto Update Products
 on:
   schedule:
     - cron: '0 0 * * *' # يعمل تلقائياً كل يوم الساعة 12 منتصف الليل
-  workflow_dispatch: # يسمح لك بتشغيله يدوياً بضغطة زر
+  workflow_dispatch: # يسمح لك بتشغيله يدوياً لتجربته الآن
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
@@ -18,12 +19,12 @@ jobs:
       - name: Update Products Data
         env:
           ADMITAD_BASE64: ${{ secrets.ADMITAD_BASE64 }}
-        run: node updateProducts.js
+        run: node updateProducts.cjs # تأكد أن الاسم يطابق ملفك تماماً
 
       - name: Commit and Push changes
         run: |
-          git config --global user.name 'Roqa Auto-Bot'
+          git config --global user.name 'Roqa-Bot'
           git config --global user.email 'bot@roqa-app.com'
           git add src/productsData.js
-          git commit -m "Auto update products from Admitad API" || echo "No changes to commit"
+          git commit -m "تحديث تلقائي للمنتجات من Admitad API" || echo "لا توجد تغييرات جديدة"
           git push
