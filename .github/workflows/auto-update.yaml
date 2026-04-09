@@ -1,8 +1,9 @@
 name: Auto Update Products to Neon
+
 on:
   schedule:
     - cron: '0 0 * * *' # يعمل تلقائياً كل يوم الساعة 12 منتصف الليل
-  workflow_dispatch: # للتشغيل اليدوي
+  workflow_dispatch: # يسمح لك بتشغيله يدوياً الآن لتجربته
 
 jobs:
   sync:
@@ -16,14 +17,12 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Generate Prisma Client
-        run: npx prisma generate
+      - name: Install Database Driver
+        # قمنا باستبدال npm install الكاملة بتثبيت المكتبة المطلوبة فقط لتسريع العمل وتجنب أخطاء البناء
+        run: npm install postgres
 
       - name: Sync Data to Neon
         env:
-          # نحتاج فقط لرابط نيون هنا لأن كود Admitad أصبح داخل السكربت
+          # تأكد أن هذا الرابط موجود في GitHub Secrets بنفس الاسم
           POSTGRES_PRISMA_URL: ${{ secrets.POSTGRES_PRISMA_URL }}
         run: node updateProducts.cjs
