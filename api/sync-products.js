@@ -1,7 +1,8 @@
+// تأكد أن هذا هو أول سطر ولا يوجد أي استيراد لـ 'postgres'
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال بنفس الطريقة التي أرسلتها
+// إعداد الاتصال
 const dbUrl = new URL(process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL);
 const pool = new Pool({
   host: dbUrl.hostname,
@@ -20,9 +21,7 @@ export default async function handler(req, res) {
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   try {
-    console.log('🔄 جاري بدء مزامنة المنتجات...');
-
-    // 1. الحصول على التوكن من Admitad
+    // 1. جلب التوكن
     const authRes = await fetch('https://api.admitad.com/token/', {
       method: 'POST',
       headers: { 
@@ -32,47 +31,31 @@ export default async function handler(req, res) {
       body: 'grant_type=client_credentials&scope=public_data products advcampaigns'
     });
     const authData = await authRes.json();
-    if (!authData.access_token) throw new Error('فشل الحصول على توكن Admitad');
+    if (!authData.access_token) throw new Error('Admitad Auth Failed');
 
-    // 2. جلب العروض النشطة
+    // 2. جلب المنتجات
     const prodRes = await fetch('https://api.admitad.com/advcampaigns/?limit=20&connection_status=active', {
       headers: { 'Authorization': `Bearer ${authData.access_token}` }
     });
     const data = await prodRes.json();
     const offers = data.results || [];
 
-    // 3. التحديث في نيون باستخدام Pool.query (نفس أسلوب كودك)
+    // 3. التحديث في نيون (Neon) باستخدام Pool
     for (const item of offers) {
-      const query = `
+      await pool.query(`
         INSERT INTO "Product" ("admitadId", "name", "url", "image", "price", "updatedAt")
         VALUES ($1, $2, $3, $4, $5, NOW())
-        ON CONFLICT ("admitadId") 
-        DO UPDATE SET 
-          "name" = EXCLUDED."name",
-          "url" = EXCLUDED."url",
-          "image" = EXCLUDED."image",
+        ON CONFLICT ("admitadId") DO UPDATE SET 
+          "name" = EXCLUDED."name", 
+          "url" = EXCLUDED."url", 
+          "image" = EXCLUDED."image", 
           "updatedAt" = NOW()
-      `;
-
-      const values = [
-        item.id.toString(),
-        item.name,
-        item.goto_link,
-        item.logo,
-        'عرض خاص'
-      ];
-
-      await pool.query(query, values);
+      `, [item.id.toString(), item.name, item.goto_link, item.logo, 'عرض خاص']);
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      count: offers.length,
-      message: "تمت المزامنة بنجاح باستخدام نفس إعدادات قاعدة البيانات الشغالة ✅" 
-    });
+    return res.status(200).json({ success: true, count: offers.length });
 
   } catch (error) {
-    console.error('❌ Sync Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
