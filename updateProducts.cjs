@@ -1,62 +1,57 @@
-const fs = require('fs');
-const path = require('path');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-async function updateProducts() {
+async function updateAdmitadToNeon() {
   const base64Credentials = process.env.ADMITAD_BASE64;
-  
-  if (!base64Credentials) {
-    console.error('❌ خطأ: لم يتم العثور على ADMITAD_BASE64 في GitHub Secrets');
-    process.exit(1);
-  }
+  // ملاحظة: Prisma ستقرأ POSTGRES_PRISMA_URL تلقائياً من البيئة
 
   try {
-    console.log('1️⃣ جاري طلب التوكن من Admitad...');
+    console.log('1️⃣ جاري جلب التوكن من Admitad...');
     const authResponse = await fetch('https://api.admitad.com/token/', {
       method: 'POST',
       headers: { 
         'Authorization': `Basic ${base64Credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded' 
       },
-      body: 'grant_type=client_credentials&scope=public_data products advcampaigns'
+      body: 'grant_type=client_credentials&scope=public_data products'
     });
-    
     const authData = await authResponse.json();
-    if (!authData.access_token) {
-      console.error('❌ فشل التحقق:', authData);
-      process.exit(1);
-    }
+    if (!authData.access_token) throw new Error('فشل الحصول على التوكن');
 
-    console.log('2️⃣ تم الحصول على التوكن، جاري جلب العروض...');
-
-    // سنستخدم رابط الـ Offers لجلب المنتجات إذا كان الـ Feed لا يعمل
+    console.log('2️⃣ جاري جلب المنتجات من AliExpress...');
     const response = await fetch('https://api.admitad.com/advcampaigns/?limit=20&connection_status=active', {
       headers: { 'Authorization': `Bearer ${authData.access_token}` }
     });
     const data = await response.json();
 
-    // تنسيق البيانات (تعديل الحقول لتناسب ما يرسله Admitad)
-    const formattedProducts = (data.results || []).map(item => ({
-      id: item.id || Math.random().toString(36).substring(7),
-      name: item.name || 'عرض جديد من رقة',
-      url: item.site_url || item.goto_link || '#',
-      image: item.logo || 'https://placehold.co/400x400?text=Roqa+Product',
-      price: "عرض خاص", // API الحملات أحياناً لا يعطي سعراً ثابتاً
-      oldPrice: "",
-      discount: "تخفيض"
-    }));
-
-    const fileContent = `export const allProducts = ${JSON.stringify(formattedProducts, null, 2)};`;
+    console.log('3️⃣ تحديث قاعدة بيانات نيون عبر Prisma...');
     
-    const dir = './src';
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+    // استخدام Prisma لعمل Upsert (إضافة إذا لم يوجد، وتحديث إذا وجد)
+    for (const item of data.results) {
+      await prisma.product.upsert({
+        where: { admitadId: item.id.toString() },
+        update: {
+          name: item.name,
+          url: item.goto_link,
+          image: item.logo,
+        },
+        create: {
+          admitadId: item.id.toString(),
+          name: item.name,
+          url: item.goto_link,
+          image: item.logo,
+          price: "عرض خاص",
+        },
+      });
+    }
 
-    fs.writeFileSync(path.join(dir, 'productsData.js'), fileContent);
-    console.log(`✅ نجاح! تم تحديث ${formattedProducts.length} منتج.`);
-
+    console.log('✅ تم تحديث المنتجات في نيون بنجاح!');
   } catch (error) {
-    console.error('❌ خطأ غير متوقع:', error.message);
+    console.error('❌ خطأ:', error.message);
     process.exit(1);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
-updateProducts();
+updateAdmitadToNeon();
