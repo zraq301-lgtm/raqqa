@@ -1,8 +1,8 @@
 name: Auto Update Products to Neon
 on:
   schedule:
-    - cron: '0 0 * * *' # يعمل تلقائياً كل يوم الساعة 12 منتصف الليل
-  workflow_dispatch: # يسمح لك بتشغيله يدوياً الآن
+    - cron: '0 0 * * *' # يومياً منتصف الليل
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -20,9 +20,9 @@ jobs:
         run: npm install
 
       - name: Generate Prisma Client
-        run: npx prisma generate
+        run: npx prisma generate # سيقرأ الملف من مجلد prisma تلقائياً
 
-      - name: Update Products Data to Neon
+      - name: Sync Data
         env:
           ADMITAD_BASE64: ${{ secrets.ADMITAD_BASE64 }}
           POSTGRES_PRISMA_URL: ${{ secrets.POSTGRES_PRISMA_URL }}
