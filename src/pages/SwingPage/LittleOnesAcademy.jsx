@@ -1,9 +1,28 @@
-import React from 'react';
-import { ShoppingBag, ExternalLink, Sparkles, Tag, Percent } from 'lucide-react';
-import { allProducts } from './productsData';
+import React, { useState, useEffect } from 'react';
+import { ShoppingBag, ExternalLink, Sparkles, Tag, Percent, Loader2 } from 'lucide-react';
 
 const RoqaStore = () => {
-  // تنسيقات مدمجة لضمان ثبات الشكل
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // جلب البيانات من وردبريس عند تحميل الصفحة
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        // نطلب الرابط الذي أنشأناه في وردبريس لفئة المنتجات
+        const response = await fetch('https://raqqastor3.wordpress.com/wp-json/raqqa/v1/products');
+        const data = await response.json();
+        setProducts(data);
+      } catch (error) {
+        console.error("خطأ في جلب المنتجات:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const styles = {
     container: {
       backgroundColor: '#fff9fb',
@@ -14,7 +33,7 @@ const RoqaStore = () => {
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', // ضبط تلقائي للأعمدة
+      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
       gap: '15px',
       maxWidth: '1200px',
       margin: '0 auto'
@@ -32,7 +51,7 @@ const RoqaStore = () => {
     imageWrapper: {
       position: 'relative',
       width: '100%',
-      paddingBottom: '100%', // لجعل الصورة مربعة تماماً
+      paddingBottom: '100%',
       overflow: 'hidden',
       backgroundColor: '#f8f8f8'
     },
@@ -42,8 +61,8 @@ const RoqaStore = () => {
       left: 0,
       width: '100%',
       height: '100%',
-      objectFit: 'contain', // يضمن ظهور المنتج كاملاً دون قص
-      padding: '10px' // مساحة بيضاء حول المنتج لجمالية أكثر
+      objectFit: 'contain',
+      padding: '10px'
     },
     content: {
       padding: '12px',
@@ -110,8 +129,27 @@ const RoqaStore = () => {
       display: 'flex',
       alignItems: 'center',
       gap: '3px'
+    },
+    loader: {
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '50vh',
+      color: '#fb7185'
     }
   };
+
+  if (loading) {
+    return (
+      <div style={styles.container}>
+        <div style={styles.loader}>
+          <Loader2 className="animate-spin" size={40} />
+          <p style={{marginTop: '10px'}}>جاري تحميل منتجات رقة...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
@@ -138,9 +176,8 @@ const RoqaStore = () => {
 
       {/* Grid */}
       <div style={styles.grid}>
-        {allProducts.map((product) => (
-          <div key={product.id} style={styles.card} className="product-card">
-            {/* Image Container */}
+        {products.map((product) => (
+          <div key={product.id} style={styles.card}>
             <div style={styles.imageWrapper}>
               {product.discount && (
                 <div style={styles.badge}>
@@ -155,7 +192,6 @@ const RoqaStore = () => {
               />
             </div>
 
-            {/* Product Details */}
             <div style={styles.content}>
               <h2 style={styles.title}>{product.name}</h2>
               
