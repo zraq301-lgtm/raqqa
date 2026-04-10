@@ -28,28 +28,31 @@ jobs:
         with:
           node-version: '22'
 
-      - name: تنظيف العمليات الفاشلة والمخلفات السابقة
+      - name: 3. تنظيف شامل وعميق للمخلفات السابقة
         run: |
-          echo "Cleaning up previous failed builds and locks..."
-          rm -rf node_modules package-lock.json
-          rm -rf android/.gradle android/app/build
-          npm cache clean --force
-
-      - name: 3. تثبيت المكتبات وبناء المشروع
-        run: |
+          echo "جاري تنظيف كافة العمليات الفاشلة السابقة..."
+          # مسح مجلدات المكتبات والبناء تماماً
+          rm -rf node_modules
+          rm -rf package-lock.json
           rm -rf android
+          # تنظيف الكاش الخاص بـ npm و Gradle
+          npm cache clean --force
+          echo "تم التنظيف بنجاح."
+
+      - name: 4. تثبيت المكتبات من جديد
+        run: |
           npm install --legacy-peer-deps
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm install @capacitor/assets --save-dev
           npm run build --if-present
 
-      - name: 4. إضافة منصة أندرويد ومزامنتها
+      - name: 5. إضافة منصة أندرويد ومزامنتها
         run: |
           npx cap config set webDir dist_web
           npx cap add android
           npx cap sync android
 
-      - name: 5. ضبط اسم التطبيق (رقة) وتوليد الأيقونات
+      - name: 6. ضبط اسم التطبيق (رقة) وتوليد الأيقونات
         run: |
           STRINGS_FILE="android/app/src/main/res/values/strings.xml"
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS_FILE
@@ -62,7 +65,7 @@ jobs:
           
           npx capacitor-assets generate --android
 
-      - name: 6. حقن ملف google-services.json
+      - name: 7. حقن ملف google-services.json
         shell: bash
         run: |
           cat <<EOF > android/app/google-services.json
@@ -96,36 +99,36 @@ jobs:
           }
           EOF
 
-      - name: 7. تهيئة OneSignal وتعديل المانيفست (تشغيل دائم)
+      - name: 8. تعديل المانيفست (التشغيل عند الإغلاق) وضبط الحزمة
         run: |
           MANIFEST=$(find android -name "AndroidManifest.xml" | grep "main" | head -n 1)
           APP_BUILD_GRADLE="android/app/build.gradle"
           
-          # إضافة المكتبات
+          # إضافة مكتبات الإشعارات
           sed -i '/dependencies {/a \    implementation "com.onesignal:OneSignal:[4.0.0, 4.99.99]"' $APP_BUILD_GRADLE
           sed -i '/dependencies {/a \    implementation "com.google.firebase:firebase-messaging:23.4.0"' $APP_BUILD_GRADLE
           
-          # تعديل الحزمة
+          # توحيد اسم الحزمة
           sed -i 's/namespace "com.roqa.app"/namespace "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/applicationId "com.roqa.app"/applicationId "com.raqqa.app"/' $APP_BUILD_GRADLE
           sed -i 's/package="com.roqa.app"/package="com.raqqa.app"/' $MANIFEST
           
-          # إضافة الأذونات المطلوبة للبقاء قيد التشغيل
+          # إضافة الأذونات المطلوبة للبقاء قيد العمل
           sed -i '/<application/i \    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.WAKE_LOCK" />' $MANIFEST
           sed -i '/<application/i \    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />' $MANIFEST
           
-          # السماح بمرور البيانات وتعديل التطبيق ليعمل في الخلفية
+          # السماح للتطبيق بالعمل في الخلفية وعدم التوقف عند الإغلاق
           sed -i 's/<application/<application android:usesCleartextTraffic="true" android:stopWithTask="false"/' $MANIFEST
 
-      - name: 8. بناء ملفات APK و AAB
+      - name: 9. بناء ملفات APK و AAB (Assemble & Bundle)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew clean assembleRelease
           ./gradlew bundleRelease
 
-      - name: 9. التوقيع الرقمي (Keystore)
+      - name: 10. التوقيع الرقمي (Keystore)
         run: |
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
@@ -139,7 +142,7 @@ jobs:
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_RAW" roqa_alias
           cp "$AAB_RAW" Roqa-Final-Signed.aab
 
-      - name: 10. رفع الملفات إلى الإصدارات (GitHub Release)
+      - name: 11. رفع الملفات إلى الإصدارات (GitHub Release)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
@@ -151,16 +154,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: تقرير الأخطاء عند الفشل
+      - name: 12. تنظيف وتحديد الخطأ عند الفشل
         if: failure()
         run: |
-          echo "========================================"
-          echo "❌ حدث خطأ في عملية البناء!"
-          echo "تحليل مكان الخطأ:"
-          if [ -d "android" ]; then
-            echo "خطأ محتمل في ملفات الأندرويد أو Gradle."
-            cd android && ./gradlew --stacktrace
-          else
-            echo "الخطأ حدث قبل الوصول لمرحلة الأندرويد (غالباً في npm install أو build)."
+          echo "------------------------------------------------"
+          echo "⚠️ البناء فشل. جاري فحص مكان المشكلة بالضبط..."
+          if [ ! -d "node_modules" ]; then echo "❌ الخطأ في تثبيت المكتبات npm install"; fi
+          if [ -d "android" ]; then 
+            echo "🔎 الخطأ في قسم الأندرويد. إليك التفاصيل:"
+            cd android && ./gradlew assembleRelease --stacktrace || echo "فشل في استخراج Stacktrace"
           fi
-          echo "========================================"
+          echo "------------------------------------------------"
