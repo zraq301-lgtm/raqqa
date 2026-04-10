@@ -1,9 +1,7 @@
-// تأكد أن هذا هو أول سطر ولا يوجد أي استيراد لـ 'postgres'
 import pkg from 'pg';
 const { Pool } = pkg;
 
-// إعداد الاتصال
-const dbUrl = new URL(process.env.DATABASE_URL || process.env.POSTGRES_PRISMA_URL);
+const dbUrl = new URL(process.env.DATABASE_URL);
 const pool = new Pool({
   host: dbUrl.hostname,
   port: dbUrl.port,
@@ -15,41 +13,51 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  // بيانات Admitad
+  // --- تأكد من صحة هذه البيانات من حسابك في Admitad ---
   const clientId = "WnZbtkibif97XaxcqaJMTNupXoPMctK";
   const clientSecret = "E92XkRBsGlGGRptKgWxY5GB6JfRDP4";
   const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
   try {
-    // 1. جلب التوكن
+    // تعديل طريقة طلب التوكن لضمان القبول
     const authRes = await fetch('https://api.admitad.com/token/', {
       method: 'POST',
       headers: { 
         'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded' 
       },
-      body: 'grant_type=client_credentials&scope=public_data products advcampaigns'
+      // أحياناً تتطلب Admitad تحديد النطاق بدقة
+      body: new URLSearchParams({
+        'grant_type': 'client_credentials',
+        'scope': 'public_data products advcampaigns'
+      })
     });
+    
     const authData = await authRes.json();
-    if (!authData.access_token) throw new Error('Admitad Auth Failed');
 
-    // 2. جلب المنتجات
+    // إذا فشل الحصول على التوكن، سنطبع السبب الحقيقي القادم من Admitad
+    if (!authData.access_token) {
+      return res.status(401).json({ 
+        success: false, 
+        error: "فشل المصادقة مع Admitad", 
+        details: authData.error_description || authData.error || "تأكد من الـ Client ID و Secret"
+      });
+    }
+
+    // جلب العروض
     const prodRes = await fetch('https://api.admitad.com/advcampaigns/?limit=20&connection_status=active', {
       headers: { 'Authorization': `Bearer ${authData.access_token}` }
     });
     const data = await prodRes.json();
     const offers = data.results || [];
 
-    // 3. التحديث في نيون (Neon) باستخدام Pool
+    // التحديث في نيون
     for (const item of offers) {
       await pool.query(`
         INSERT INTO "Product" ("admitadId", "name", "url", "image", "price", "updatedAt")
         VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT ("admitadId") DO UPDATE SET 
-          "name" = EXCLUDED."name", 
-          "url" = EXCLUDED."url", 
-          "image" = EXCLUDED."image", 
-          "updatedAt" = NOW()
+          "name" = EXCLUDED."name", "url" = EXCLUDED."url", "image" = EXCLUDED."image", "updatedAt" = NOW()
       `, [item.id.toString(), item.name, item.goto_link, item.logo, 'عرض خاص']);
     }
 
