@@ -1,18 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, ExternalLink, Sparkles, Tag, Percent, Loader2 } from 'lucide-react';
 
+// ملاحظة: تم حذف import { allProducts } لحل مشكلة فشل البناء في GitHub
+// الاعتماد الآن كلياً على الجلب من وردبريس
+
 const RoqaStore = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // جلب البيانات من وردبريس عند تحميل الصفحة
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // نطلب الرابط الذي أنشأناه في وردبريس لفئة المنتجات
+        // جلب البيانات من رابط الـ API الخاص بوردبريس
         const response = await fetch('https://raqqastor3.wordpress.com/wp-json/raqqa/v1/products');
+        if (!response.ok) throw new Error('Network response was not ok');
         const data = await response.json();
-        setProducts(data);
+        setProducts(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("خطأ في جلب المنتجات:", error);
       } finally {
@@ -33,8 +36,8 @@ const RoqaStore = () => {
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-      gap: '15px',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+      gap: '12px',
       maxWidth: '1200px',
       margin: '0 auto'
     },
@@ -43,17 +46,15 @@ const RoqaStore = () => {
       borderRadius: '16px',
       overflow: 'hidden',
       border: '1px solid #ffe4e9',
-      boxShadow: '0 4px 12px rgba(255, 182, 193, 0.15)',
+      boxShadow: '0 4px 10px rgba(255, 182, 193, 0.1)',
       display: 'flex',
-      flexDirection: 'column',
-      transition: 'transform 0.2s',
+      flexDirection: 'column'
     },
     imageWrapper: {
       position: 'relative',
       width: '100%',
       paddingBottom: '100%',
-      overflow: 'hidden',
-      backgroundColor: '#f8f8f8'
+      backgroundColor: '#fdfdfd'
     },
     image: {
       position: 'absolute',
@@ -62,21 +63,20 @@ const RoqaStore = () => {
       width: '100%',
       height: '100%',
       objectFit: 'contain',
-      padding: '10px'
+      padding: '8px'
     },
     content: {
-      padding: '12px',
+      padding: '10px',
       display: 'flex',
       flexDirection: 'column',
       flexGrow: 1
     },
     title: {
-      fontSize: '13px',
+      fontSize: '12px',
       fontWeight: '600',
-      color: '#333',
-      marginBottom: '8px',
-      lineHeight: '1.4',
-      height: '36px',
+      color: '#374151',
+      marginBottom: '6px',
+      height: '34px',
       overflow: 'hidden',
       display: '-webkit-box',
       WebkitLineClamp: 2,
@@ -87,55 +87,32 @@ const RoqaStore = () => {
       alignItems: 'center',
       backgroundColor: '#fff1f2',
       color: '#e11d48',
-      padding: '4px 8px',
-      borderRadius: '8px',
-      fontWeight: '800',
-      fontSize: '14px',
-      gap: '4px'
-    },
-    oldPrice: {
-      fontSize: '11px',
-      color: '#9ca3af',
-      textDecoration: 'line-through',
-      marginRight: '8px'
+      padding: '3px 6px',
+      borderRadius: '6px',
+      fontWeight: 'bold',
+      fontSize: '13px',
+      gap: '3px'
     },
     button: {
-      marginTop: '12px',
+      marginTop: '10px',
       backgroundColor: '#1f2937',
       color: 'white',
       textDecoration: 'none',
       textAlign: 'center',
-      padding: '10px',
-      borderRadius: '10px',
-      fontSize: '12px',
-      fontWeight: 'bold',
+      padding: '8px',
+      borderRadius: '8px',
+      fontSize: '11px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: '6px',
-      transition: 'background 0.3s'
-    },
-    badge: {
-      position: 'absolute',
-      top: '8px',
-      right: '8px',
-      backgroundColor: '#fb7185',
-      color: 'white',
-      padding: '2px 8px',
-      borderRadius: '6px',
-      fontSize: '10px',
-      fontWeight: 'bold',
-      zIndex: 10,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '3px'
+      gap: '5px'
     },
     loader: {
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      height: '50vh',
+      height: '60vh',
       color: '#fb7185'
     }
   };
@@ -144,8 +121,8 @@ const RoqaStore = () => {
     return (
       <div style={styles.container}>
         <div style={styles.loader}>
-          <Loader2 className="animate-spin" size={40} />
-          <p style={{marginTop: '10px'}}>جاري تحميل منتجات رقة...</p>
+          <Loader2 className="animate-spin" size={32} />
+          <p style={{marginTop: '12px', fontSize: '14px'}}>تحميل منتجات رقة...</p>
         </div>
       </div>
     );
@@ -153,68 +130,31 @@ const RoqaStore = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <header style={{ textAlign: 'center', marginBottom: '30px' }}>
-        <div style={{
-          display: 'inline-block',
-          backgroundColor: 'white',
-          padding: '12px',
-          borderRadius: '50%',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-          marginBottom: '10px'
-        }}>
-          <ShoppingBag style={{ color: '#fb7185', width: '24px', height: '24px' }} />
-        </div>
-        <h1 style={{ fontSize: '24px', fontWeight: '900', color: '#1f2937', margin: 0 }}>
+      <header style={{ textAlign: 'center', marginBottom: '25px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827' }}>
           مختارات <span style={{ color: '#fb7185' }}>رقة</span>
         </h1>
-        <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-          <Sparkles style={{ width: '14px', height: '14px', color: '#fbbf24' }} />
-          أجمل المنتجات المختارة لكِ بعناية
+        <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+          <Sparkles style={{ width: '12px', height: '12px', color: '#fbbf24', display: 'inline', marginLeft: '4px' }} />
+          منتجات عصرية بجودة عالية
         </p>
       </header>
 
-      {/* Grid */}
       <div style={styles.grid}>
         {products.map((product) => (
           <div key={product.id} style={styles.card}>
             <div style={styles.imageWrapper}>
-              {product.discount && (
-                <div style={styles.badge}>
-                  <Percent size={10} />
-                  {product.discount}
-                </div>
-              )}
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                style={styles.image} 
-              />
+              <img src={product.image} alt={product.name} style={styles.image} />
             </div>
-
             <div style={styles.content}>
               <h2 style={styles.title}>{product.name}</h2>
-              
-              <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                <div style={styles.priceTag}>
-                  <Tag size={12} />
-                  {product.price}
-                </div>
-                {product.oldPrice && (
-                  <span style={styles.oldPrice}>{product.oldPrice}</span>
-                )}
+              <div style={styles.priceTag}>
+                <Tag size={10} />
+                {product.price}
               </div>
-
-              <a 
-                href={product.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={styles.button}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fb7185'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1f2937'}
-              >
+              <a href={product.url} target="_blank" rel="noopener noreferrer" style={styles.button}>
                 تسوّقي الآن
-                <ExternalLink size={14} />
+                <ExternalLink size={12} />
               </a>
             </div>
           </div>
