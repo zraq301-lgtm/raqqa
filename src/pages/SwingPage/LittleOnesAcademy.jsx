@@ -1,128 +1,113 @@
 import React, { useState, useEffect } from 'react';
 
-const RoqaStore = () => {
-  const [products, setProducts] = useState([]);
+const RoqaIntegratedStore = () => {
+  const [data, setData] = useState({ description: "", products: [] });
   const [loading, setLoading] = useState(true);
 
-  // استخدام الرابط الذي أكدت أنت أنه يعمل ويظهر البيانات
-  const API_URL = "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=5460884";
+  // الرابط باستخدام الـ ID الجديد للفئة
+  const API_URL = "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=788594722";
 
   useEffect(() => {
-    const getProducts = async () => {
+    const fetchData = async () => {
       try {
         const response = await fetch(API_URL);
         const posts = await response.json();
         
-        let allItems = [];
+        let allProducts = [];
+        let pageDescription = "";
 
-        posts.forEach(post => {
-          // جلب النص الخام من محتوى المقال
-          const rawHTML = post.content.rendered;
+        if (posts.length > 0) {
+          // نأخذ نص المقال الأول ليكون وصفاً للمتجر
+          const firstPost = posts[0];
           
-          // تنظيف شامل للنص من وسوم ووردبريس ورموز HTML
-          const cleanText = rawHTML
-            .replace(/<\/?[^>]+(>|$)/g, "") // إزالة <p> و <div> و <script>
-            .replace(/&quot;/g, '"')         // تحويل رموز الكوتيشن
-            .replace(/&#8221;/g, '"')
-            .replace(/&#8220;/g, '"')
-            .replace(/&nbsp;/g, '')         // إزالة المسافات الفارغة البرمجية
-            .trim();
+          posts.forEach(post => {
+            const htmlContent = post.content.rendered;
 
-          try {
-            // البحث عن أول [ وآخر ] لاستخراج مصفوفة الـ JSON فقط
-            const start = cleanText.indexOf('[');
-            const end = cleanText.lastIndexOf(']');
+            // 1. استخراج المنتجات (البحث عن مصفوفة JSON داخل المحتوى)
+            const jsonRegex = /\[\s*{[\s\S]*}\s*\]/;
+            const match = htmlContent.match(jsonRegex);
             
-            if (start !== -1 && end !== -1) {
-              const jsonStr = cleanText.substring(start, end + 1);
-              const parsed = JSON.parse(jsonStr);
-              
-              // التأكد من أن البيانات مصفوفة وإضافتها
-              if (Array.isArray(parsed)) {
-                allItems = [...allItems, ...parsed];
-              } else {
-                allItems.push(parsed);
-              }
+            if (match) {
+              try {
+                const cleanJson = match[0].replace(/&quot;/g, '"').replace(/&#8221;/g, '"').replace(/&#8220;/g, '"');
+                const parsed = JSON.parse(cleanJson);
+                allProducts = [...allProducts, ...(Array.isArray(parsed) ? parsed : [parsed])];
+              } catch (e) { console.error("خطأ في JSON"); }
             }
-          } catch (e) {
-            console.warn("فشل فك تشفير JSON في أحد المقالات");
-          }
-        });
 
-        setProducts(allItems);
+            // 2. استخراج الكلام المكتوب (المقال) مع استبعاد كود الـ JSON منه
+            if (!pageDescription) {
+              pageDescription = htmlContent
+                .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "") // حذف السكريبتات
+                .replace(/\[[\s\S]*?\]/g, "") // حذف مصفوفة الـ JSON من النص المعروض
+                .replace(/<\/?[^>]+(>|$)/g, " ") // تنظيف الـ HTML ليبقى النص فقط
+                .trim();
+            }
+          });
+        }
+
+        setData({ description: pageDescription, products: allProducts });
       } catch (error) {
-        console.error("خطأ في جلب البيانات:", error);
+        console.error("فشل الجلب:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    getProducts();
+    fetchData();
   }, []);
 
-  if (loading) return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px', color: '#d81b60', fontWeight: 'bold' }}>
-      جاري جلب منتجات رقة... ✨
-    </div>
-  );
+  if (loading) return <div style={{textAlign:'center', padding:'50px', color:'#d81b60'}}>جاري تحميل عالم رقة... ✨</div>;
 
   return (
-    <div style={{ direction: 'rtl', padding: '10px', background: '#fffcfd' }}>
-      {products.length > 0 ? (
+    <div style={{ direction: 'rtl', padding: '15px', background: '#fffcfd', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+      
+      {/* عرض مقال وردبريس (الكلام المكتوب) */}
+      {data.description && (
         <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(145px, 1fr))', 
-          gap: '12px' 
+          background: 'rgba(255, 255, 255, 0.8)', 
+          padding: '20px', 
+          borderRadius: '20px', 
+          marginBottom: '25px',
+          borderRight: '5px solid #d81b60',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+          color: '#4a148c',
+          lineHeight: '1.6'
         }}>
-          {products.map((item, index) => (
-            <div key={index} style={{
-              background: '#fff',
-              borderRadius: '16px',
-              padding: '10px',
-              boxShadow: '0 4px 12px rgba(216, 27, 96, 0.08)',
-              border: '1px solid #fce4ec',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
-              <img 
-                src={item.image || 'https://via.placeholder.com/150'} 
-                alt={item.name} 
-                style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '12px' }} 
-              />
-              <h3 style={{ fontSize: '0.85rem', color: '#4a148c', margin: '10px 0', height: '34px', overflow: 'hidden', lineHeight: '1.2' }}>
-                {item.name}
-              </h3>
-              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#d81b60', marginBottom: '8px' }}>
-                {item.price} <span style={{ fontSize: '0.7rem' }}>{item.currency}</span>
-              </div>
-              <a 
-                href={item.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                style={{
-                  background: 'linear-gradient(45deg, #d81b60, #ad1457)',
-                  color: '#fff',
-                  textDecoration: 'none',
-                  textAlign: 'center',
-                  padding: '8px',
-                  borderRadius: '10px',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                تسوقي الآن
-              </a>
+          <h2 style={{ fontSize: '1.2rem', marginBottom: '10px' }}>مرحباً بكِ في رقة 🌸</h2>
+          <p style={{ fontSize: '1rem' }}>{data.description}</p>
+        </div>
+      )}
+
+      {/* عرض المنتجات */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '15px' }}>
+        {data.products.map((item, index) => (
+          <div key={index} style={{
+            background: '#fff', 
+            borderRadius: '18px', 
+            padding: '12px', 
+            border: '1px solid #fce4ec',
+            textAlign: 'center',
+            boxShadow: '0 5px 15px rgba(216, 27, 96, 0.05)'
+          }}>
+            <img src={item.image} alt="" style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '14px' }} />
+            <h3 style={{ fontSize: '0.9rem', color: '#4a148c', margin: '10px 0', height: '38px', overflow: 'hidden' }}>{item.name}</h3>
+            <div style={{ color: '#d81b60', fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '10px' }}>
+              {item.price} <small>{item.currency}</small>
             </div>
-          ))}
-        </div>
-      ) : (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#888' }}>
-          لا توجد منتجات حالياً في هذا القسم.
-        </div>
+            <a href={item.url} target="_blank" rel="noopener noreferrer" style={{
+              display: 'block', background: 'linear-gradient(45deg, #d81b60, #ad1457)', color: '#fff',
+              padding: '10px', borderRadius: '12px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 'bold'
+            }}>تسوقي الآن</a>
+          </div>
+        ))}
+      </div>
+
+      {!data.description && data.products.length === 0 && (
+        <p style={{textAlign:'center', color:'#888'}}>لا يوجد محتوى حالياً في هذه الفئة.</p>
       )}
     </div>
   );
 };
 
-export default RoqaStore;
+export default RoqaIntegratedStore;
