@@ -5,22 +5,21 @@ const MotherhoodSection = () => {
   const [loading, setLoading] = useState(true);
 
   const CATEGORY_ID = "768006428";
-  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed`;
+  // تم إضافة _embed لجلب بيانات الميديا والمؤلف
+  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed=true`;
 
-  // وظيفة معالجة المحتوى لتحويل الروابط لميديا وتنظيف النصوص الغريبة
   const parseContent = (htmlContent) => {
     let content = htmlContent;
 
-    // 1. معالجة الفيديوهات: تحويل روابط يوتيوب إلى مشغل أنيق
+    // 1. معالجة الفيديوهات
     const youtubeRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*))/g;
     content = content.replace(youtubeRegex, (match, url, videoId) => {
       return `<div class="media-wrapper video-wrapper"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
     });
 
-    // 2. معالجة الصور: تحويل الروابط المباشرة لصور بجودة عالية وإخفاء الرابط النصي
+    // 2. معالجة الصور
     const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp)(?:\?.*)?)/g;
     content = content.replace(imageRegex, (match) => {
-      // إذا كان الرابط مستخدماً بالفعل في وسم img، لا نكرره
       if (content.includes(`src="${match}"`)) return ""; 
       return `<div class="media-wrapper"><img src="${match}" alt="محتوى بصري" class="premium-img" /></div>`;
     });
@@ -34,6 +33,15 @@ const MotherhoodSection = () => {
         const response = await fetch(API_URL);
         const data = await response.json();
         setArticles(data);
+        
+        // تحميل اسكريبتات وردبريس الضرورية لعرض الإعجابات والمشاركة (Jetpack)
+        if (!document.getElementById('wp-jetpack-loader')) {
+          const script = document.createElement('script');
+          script.id = 'wp-jetpack-loader';
+          script.src = 'https://stats.wp.com/w.js?67';
+          script.async = true;
+          document.body.appendChild(script);
+        }
       } catch (error) {
         console.error("خطأ في جلب مقالات الأمومة:", error);
       } finally {
@@ -71,7 +79,7 @@ const MotherhoodSection = () => {
             key={post.id} 
             className="bg-white rounded-[2rem] shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] border border-pink-50/50 overflow-hidden transition-transform duration-500 hover:scale-[1.01]"
           >
-            {/* الصورة الرئيسية للمقال بجودة عالية */}
+            {/* الصورة الرئيسية */}
             {post._embedded?.['wp:featuredmedia'] && (
               <div className="relative h-72 w-full overflow-hidden">
                 <img 
@@ -96,12 +104,37 @@ const MotherhoodSection = () => {
                 />
               </div>
 
-              <div className="mt-8 pt-6 border-t border-gray-50 flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                   <span className="text-xs bg-pink-50 text-pink-500 px-3 py-1 rounded-full font-bold">
-                    #قسم_التربية
-                   </span>
+              {/* قسم أدوات وردبريس (المشاركة والإعجاب) */}
+              <div className="wp-tools-container mt-8 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                <div className="text-xs text-gray-400 mb-4 font-bold">تفاعل مع المقال:</div>
+                
+                {/* هذه الكلاسات مخصصة لتستهدف أكواد وردبريس القادمة في الـ HTML */}
+                <div className="sharedaddy sd-sharing-enabled">
+                  <div className="robots-nocontent sd-block sd-social sd-social-icon sd-sharing">
+                    {/* وردبريس سيقوم بحقن الأزرار هنا إذا كانت مفعلة في لوحة التحكم */}
+                  </div>
                 </div>
+
+                {/* زر الإعجاب (Jetpack) */}
+                <div className="jetpack-likes-widget-wrapper text-center">
+                   {/* سيظهر الزر هنا تلقائياً عبر سكريبت وردبريس */}
+                </div>
+              </div>
+
+              {/* زر الانتقال للتعليقات أو عرض رابط التعليقات */}
+              <div className="mt-6 flex items-center justify-between">
+                <a 
+                  href={post.link + "#comments"} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-sm font-bold text-pink-500 hover:text-pink-700 flex items-center gap-2"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+                  </svg>
+                  أضيفي تعليقكِ الآن
+                </a>
+                
                 <span className="text-[11px] text-gray-400 font-medium">
                   {new Date(post.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </span>
@@ -116,19 +149,34 @@ const MotherhoodSection = () => {
         
         body { font-family: 'Tajawal', sans-serif; }
 
+        /* تنسيق أزرار وردبريس الافتراضية */
+        .sd-sharing .sd-content ul {
+          display: flex !important;
+          gap: 10px !important;
+          list-style: none !important;
+          padding: 0 !important;
+        }
+
+        .sd-social-icon .sd-content ul li a {
+          background: #fdf2f8 !important;
+          border-radius: 50% !important;
+          width: 40px !important;
+          height: 40px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          color: #db2777 !important;
+          border: 1px solid #fbcfe8 !important;
+        }
+
         .article-content {
           line-height: 1.9;
           color: #3f3f46;
           font-size: 1.05rem;
         }
 
-        .article-content p {
-          margin-bottom: 1.5rem;
-        }
-
-        /* حاوية الميديا الموحدة داخل الكارت */
         .media-wrapper {
-          margin: 2rem -2rem; /* تمتد قليلاً لخارج حواف النص لجمالية أكثر */
+          margin: 2rem -2rem;
           position: relative;
           background: #fdfdfd;
         }
@@ -137,18 +185,14 @@ const MotherhoodSection = () => {
           .media-wrapper { margin: 1.5rem -1rem; }
         }
 
-        /* تنسيق الصور بجودة عالية ومنع ظهور الروابط أسفلها */
         .premium-img {
           width: 100%;
           height: auto;
           display: block;
           object-fit: cover;
           box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-          border-top: 1px solid #fff0f3;
-          border-bottom: 1px solid #fff0f3;
         }
 
-        /* تنسيق الفيديو ليكون متناسق مع الكارت */
         .video-wrapper {
           padding-bottom: 56.25%;
           height: 0;
@@ -162,13 +206,6 @@ const MotherhoodSection = () => {
           width: 100%;
           height: 100%;
           border: 0;
-        }
-
-        /* إخفاء أي روابط نصية قد تظهر بالخطأ في المحتوى */
-        .article-content a[href$=".jpg"], 
-        .article-content a[href$=".png"], 
-        .article-content a[href$=".jpeg"] {
-          display: none !important;
         }
       `}</style>
     </div>
