@@ -1,145 +1,252 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
-const WordPressPost = () => {
-  const [post, setPost] = useState(null);
+const EleganceSection = () => {
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [likes, setLikes] = useState({}); 
+  const [comments, setComments] = useState({}); 
+  const [newComment, setNewComment] = useState("");
+  const [activeCommentId, setActiveCommentId] = useState(null);
 
-  // إعدادات الروابط
-  const CATEGORY_ID = '788485478';
-  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed&per_page=1`;
+  const CATEGORY_ID = "788485478";
+  const SITE_DOMAIN = "raqqastor3.wordpress.com";
+  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}/posts?categories=${CATEGORY_ID}&_embed`;
+  const APP_LINK = "https://raqa-1zhm.vercel.app/";
 
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        if (response.data.length > 0) {
-          setPost(response.data[0]);
-        } else {
-          setError("لا توجد مقالات في هذه الفئة.");
-        }
-      } catch (err) {
-        setError("حدث خطأ أثناء جلب البيانات.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPost();
+    const savedLikes = JSON.parse(localStorage.getItem('raqa_likes') || '{}');
+    const savedComments = JSON.parse(localStorage.getItem('raqa_comments') || '{}');
+    setLikes(savedLikes);
+    setComments(savedComments);
+    fetchArticles();
   }, []);
 
-  if (loading) return <div style={styles.loader}>جاري التحميل...</div>;
-  if (error) return <div style={styles.error}>{error}</div>;
-  if (!post) return null;
+  const fetchArticles = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      if (Array.isArray(data)) setArticles(data);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // استخراج الصورة البارزة (Featured Image)
-  const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+  const cleanPostContent = (html) => {
+    let clean = html;
+    clean = clean.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>/gi, "");
+    clean = clean.replace(/\/\*[\s\S]*?\*\//g, "");
+    return clean;
+  };
 
-  // محاولة استخراج رابط فيديو من المحتوى (Youtube مثلاً)
-  const videoMatch = post.content.rendered.match(/https?:\/\/(www\.)?(youtube\.com|youtu\.be)\/[^\s"<]+/);
-  const videoUrl = videoMatch ? videoMatch[0] : null;
+  const handleLike = (postId) => {
+    const updated = { ...likes, [postId]: (likes[postId] || 0) + 1 };
+    setLikes(updated);
+    localStorage.setItem('raqa_likes', JSON.stringify(updated));
+  };
+
+  const handleAddComment = (postId) => {
+    if (!newComment.trim()) return;
+    const updated = { 
+      ...comments, 
+      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }] 
+    };
+    setComments(updated);
+    localStorage.setItem('raqa_comments', JSON.stringify(updated));
+    setNewComment("");
+  };
+
+  const handleShare = (title) => {
+    if (navigator.share) {
+      navigator.share({ title: title, url: APP_LINK });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+    }
+  };
+
+  if (loading) return <div className="loading-screen">لحظات من الأناقة...</div>;
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        {/* عرض الصورة */}
-        {featuredImage && (
-          <img src={featuredImage} alt={post.title.rendered} style={styles.image} />
-        )}
-
-        <div style={styles.content}>
-          <h2 style={styles.title} dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-          
-          <div 
-            style={styles.excerpt} 
-            dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} 
-          />
-
-          {/* عرض رابط الفيديو إذا وجد */}
-          {videoUrl && (
-            <div style={styles.videoSection}>
-              <p style={styles.videoLabel}>🎥 فيديو ذو صلة:</p>
-              <a href={videoUrl} target="_blank" rel="noopener noreferrer" style={styles.videoLink}>
-                مشاهدة الفيديو على يوتيوب
-              </a>
-            </div>
-          )}
-
-          <a href={post.link} target="_blank" rel="noopener noreferrer" style={styles.readMore}>
-            قراءة المقال كاملاً
-          </a>
-        </div>
+    <div className="main-wrapper" dir="rtl">
+      
+      {/* الترحيب الثابت */}
+      <div className="fixed-welcome">
+        ✨ هنا نمنح شغفكِ صبغة الاحتراف.. لتتحول مهارة يديكِ إلى جسرٍ نحو الاستقلال والتمكين. ✨
       </div>
+
+      <div className="container">
+        {articles.map((post) => {
+          const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+
+          return (
+            <div key={post.id} className="article-container">
+              <div className="card">
+                
+                {/* العنوان */}
+                <div className="card-header-title">
+                  <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                </div>
+
+                {/* الصورة البارزة (إذا وجدت) - تم توسيعها */}
+                {featuredImage && (
+                  <div className="main-featured-image">
+                    <img src={featuredImage} alt="Elegance" />
+                  </div>
+                )}
+                
+                <div className="content">
+                  {/* محتوى وردبريس - تم ضبط الصور داخله لتظهر كاملة */}
+                  <div 
+                    className="wp-html-content"
+                    dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
+                  />
+                  
+                  <div className="app-download-box">
+                    <a href={APP_LINK} target="_blank" rel="noreferrer">
+                      ✨ حملي التطبيق الآن من هنا ✨
+                    </a>
+                  </div>
+                </div>
+
+                {/* أزرار التفاعل */}
+                <div className="interaction-buttons">
+                  <button onClick={() => handleLike(post.id)} className="btn-like">
+                    ❤️ <span>{likes[post.id] || 0}</span>
+                  </button>
+                  <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
+                    💬 تعليق
+                  </button>
+                  <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
+                    🔗 مشاركة
+                  </button>
+                </div>
+
+                {activeCommentId === post.id && (
+                  <div className="comments-area">
+                    <div className="comment-input-wrap">
+                      <input 
+                        type="text" 
+                        placeholder="أضيفي لمستكِ..." 
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                      />
+                      <button onClick={() => handleAddComment(post.id)}>نشر</button>
+                    </div>
+                    <div className="comments-list">
+                      {(comments[post.id] || []).map((c, i) => (
+                        <div key={i} className="single-comment">{c.text}</div>
+                      )).reverse()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap');
+
+        body {
+          font-family: 'Tajawal', sans-serif;
+          background-color: #fdf8f5;
+          margin: 0; padding: 0;
+        }
+
+        .fixed-welcome {
+          position: fixed; top: 0; left: 0; right: 0;
+          background: #b08968; color: white;
+          text-align: center; padding: 12px 15px;
+          font-size: 0.95rem; font-weight: 700;
+          z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          line-height: 1.5;
+        }
+
+        .container {
+          display: flex; flex-direction: column; align-items: center;
+          padding: 90px 10px 100px; /* تم زيادة الهامش العلوي ليتناسب مع طول النص الجديد */
+        }
+
+        .card {
+          background: #ffffff;
+          max-width: 500px; 
+          width: 95%;
+          border-radius: 20px; 
+          overflow: hidden;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+          margin-bottom: 30px; 
+          border: 1px solid #f0e6e0;
+        }
+
+        .card-header-title {
+          padding: 20px 15px;
+          text-align: center;
+          background-color: #fff;
+        }
+        .card-header-title h2 {
+          color: #8d6e63;
+          margin: 0;
+          font-size: 1.4rem;
+        }
+
+        .main-featured-image {
+          width: 100%;
+        }
+        .main-featured-image img {
+          width: 100%;
+          display: block;
+          height: auto;
+        }
+
+        .content { 
+          padding: 20px; 
+          text-align: center; 
+        }
+
+        .wp-html-content { 
+          text-align: right; 
+          color: #4a3f35; 
+          font-size: 1.1rem; 
+        }
+        
+        .wp-html-content img {
+          max-width: 100% !important;
+          height: auto !important;
+          border-radius: 10px;
+          margin: 10px 0;
+          display: block;
+        }
+
+        .wp-html-content p { line-height: 1.8; margin-bottom: 15px; }
+
+        .app-download-box {
+          margin-top: 25px; padding: 15px;
+          background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px;
+        }
+        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 1rem; }
+
+        .interaction-buttons {
+          display: flex; justify-content: space-around;
+          padding: 15px; border-top: 1px solid #fcf6f2; background: #fffcfb;
+        }
+        .interaction-buttons button {
+          background: none; border: none; cursor: pointer;
+          font-family: 'Tajawal'; font-size: 1rem; color: #8d6e63; font-weight: 500;
+        }
+
+        .comments-area { padding: 15px; background: #fff; border-top: 1px solid #eee; }
+        .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+        .comment-input-wrap input { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        .single-comment { background: #fdf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.9rem; border-right: 4px solid #b08968; text-align: right; }
+
+        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; font-size: 1.2rem; }
+      `}</style>
     </div>
   );
 };
 
-// التنسيقات المدمجة (CSS-in-JS)
-const styles = {
-  container: {
-    display: 'flex',
-    justifyContent: 'center',
-    padding: '20px',
-    fontFamily: 'Arial, sans-serif',
-    direction: 'rtl',
-    backgroundColor: '#f4f7f6',
-    minHeight: '100vh',
-  },
-  card: {
-    maxWidth: '600px',
-    backgroundColor: '#fff',
-    borderRadius: '15px',
-    overflow: 'hidden',
-    boxShadow: '0 10px 20px rgba(0,0,0,0.1)',
-  },
-  image: {
-    width: '100%',
-    height: '300px',
-    objectFit: 'cover',
-  },
-  content: {
-    padding: '20px',
-  },
-  title: {
-    fontSize: '24px',
-    color: '#333',
-    marginBottom: '15px',
-  },
-  excerpt: {
-    fontSize: '16px',
-    color: '#666',
-    lineHeight: '1.6',
-    marginBottom: '20px',
-  },
-  videoSection: {
-    backgroundColor: '#fff3cd',
-    padding: '15px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    border: '1px solid #ffeeba',
-  },
-  videoLabel: {
-    margin: '0 0 5px 0',
-    fontWeight: 'bold',
-    color: '#856404',
-  },
-  videoLink: {
-    color: '#007bff',
-    textDecoration: 'none',
-    fontWeight: '500',
-  },
-  readMore: {
-    display: 'inline-block',
-    padding: '10px 20px',
-    backgroundColor: '#007bff',
-    color: '#fff',
-    borderRadius: '5px',
-    textDecoration: 'none',
-    transition: '0.3s',
-  },
-  loader: { textAlign: 'center', marginTop: '50px', fontSize: '20px' },
-  error: { color: 'red', textAlign: 'center', marginTop: '50px' },
-};
-
-export default WordPressPost;
+export default EleganceSection;
