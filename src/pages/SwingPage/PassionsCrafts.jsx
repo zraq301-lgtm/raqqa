@@ -1,105 +1,269 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 
-const PassionAndCraft = () => {
-  const [posts, setPosts] = useState([]);
+const EleganceSection = () => {
+  const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [likes, setLikes] = useState({}); 
+  const [comments, setComments] = useState({}); 
+  const [newComment, setNewComment] = useState("");
+  const [activeCommentId, setActiveCommentId] = useState(null);
 
-  // البيانات الخاصة بموقعك والقسم المطلوب بناءً على الـ ID المستخرج
-  const SITE_URL = "raqqastor3.wordpress.com";
-  const CATEGORY_ID = 788402012; 
+  // تم تحديث الـ ID هنا
+  const CATEGORY_ID = "788402012";
+  const SITE_DOMAIN = "raqqastor3.wordpress.com";
+  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}/posts?categories=${CATEGORY_ID}&_embed`;
+  const APP_LINK = "https://raqa-1zhm.vercel.app/";
 
   useEffect(() => {
-    const fetchAllPosts = async () => {
-      try {
-        const response = await axios.get(
-          `https://public-api.wordpress.com/wp/v2/sites/${SITE_URL}/posts`,
-          {
-            params: {
-              categories: CATEGORY_ID, // جلب المقالات التابعة لهذا الـ ID فقط
-              per_page: 20,
-              _embed: true 
-            }
-          }
-        );
-        setPosts(response.data);
-      } catch (error) {
-        console.error("Error fetching posts:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAllPosts();
+    const savedLikes = JSON.parse(localStorage.getItem('raqa_likes') || '{}');
+    const savedComments = JSON.parse(localStorage.getItem('raqa_comments') || '{}');
+    setLikes(savedLikes);
+    setComments(savedComments);
+    fetchArticles();
   }, []);
 
-  // دالة معالجة روابط يوتيوب
-  const formatContent = (content) => {
-    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/g;
-    const embedHtml = '<div class="video-wrapper"><iframe src="https://www.youtube.com/embed/$1" frameborder="0" allowfullscreen></iframe></div>';
-    return content.replace(youtubeRegex, embedHtml);
+  const fetchArticles = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      if (Array.isArray(data)) setArticles(data);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div className="loader">جاري تحميل المحتوى...</div>;
+  const cleanPostContent = (html) => {
+    let clean = html;
+    clean = clean.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>/gi, "");
+    clean = clean.replace(/\/\*[\s\S]*?\*\//g, "");
+    return clean;
+  };
+
+  const handleLike = (postId) => {
+    const updated = { ...likes, [postId]: (likes[postId] || 0) + 1 };
+    setLikes(updated);
+    localStorage.setItem('raqa_likes', JSON.stringify(updated));
+  };
+
+  const handleAddComment = (postId) => {
+    if (!newComment.trim()) return;
+    const updated = { 
+      ...comments, 
+      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }] 
+    };
+    setComments(updated);
+    localStorage.setItem('raqa_comments', JSON.stringify(updated));
+    setNewComment("");
+  };
+
+  const handleShare = (title) => {
+    if (navigator.share) {
+      navigator.share({ title: title, url: APP_LINK });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+    }
+  };
+
+  if (loading) return <div className="loading-screen">لحظات من الأناقة...</div>;
 
   return (
-    <div className="passion-container">
-      <header className="page-header">
-        <h1>شغف وحرف</h1>
-        <div className="accent-line"></div>
-      </header>
-
-      <div className="posts-grid">
-        {posts.length > 0 ? (
-          posts.map((post) => (
-            <article key={post.id} className="modern-card">
-              {post._embedded?.['wp:featuredmedia'] && (
-                <div className="card-image">
-                  <img src={post._embedded['wp:featuredmedia'][0].source_url} alt={post.title.rendered} />
-                  <div className="category-badge">مقال مختار</div>
-                </div>
-              )}
-
-              <div className="card-body">
-                <h2 className="card-title" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-                <div 
-                  className="card-text" 
-                  dangerouslySetInnerHTML={{ __html: formatContent(post.content.rendered) }} 
-                />
-                <div className="card-footer">
-                  <span>{new Date(post.date).toLocaleDateString('ar-EG')}</span>
-                  <button className="share-btn">❤️ اعجاب</button>
-                </div>
-              </div>
-            </article>
-          ))
-        ) : (
-          <p style={{textAlign: 'center', gridColumn: '1/-1'}}>لا توجد مقالات في هذا القسم حالياً.</p>
-        )}
+    <div className="main-wrapper" dir="rtl">
+      
+      {/* الترحيب الثابت بإطار أنيق - تم تحديث النص هنا */}
+      <div className="fixed-welcome">
+        <div className="welcome-border">
+          ✨ مرحباً بكِ في عالم الحِرف.. حيث نُحوّل شغف يديكِ إلى بصمةِ إتقان لا تشبه أحداً. ✨
+        </div>
       </div>
 
-      <style>{`
-        .passion-container { min-height: 100vh; background: #fff5f8; padding: 30px 15px; direction: rtl; font-family: 'Cairo', sans-serif; }
-        .page-header { text-align: center; margin-bottom: 40px; }
-        .page-header h1 { color: #880e4f; font-size: 2.2rem; }
-        .accent-line { height: 4px; width: 80px; background: linear-gradient(to right, #ec4899, #8b5cf6); margin: 10px auto; border-radius: 10px; }
-        .posts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; max-width: 1200px; margin: 0 auto; }
-        .modern-card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; display: flex; flex-direction: column; }
-        .modern-card:hover { transform: translateY(-5px); }
-        .card-image { position: relative; height: 200px; }
-        .card-image img { width: 100%; height: 100%; object-fit: cover; }
-        .category-badge { position: absolute; top: 10px; right: 10px; background: #db2777; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; }
-        .card-body { padding: 20px; flex-grow: 1; }
-        .card-title { color: #4c1d95; font-size: 1.25rem; margin-bottom: 10px; }
-        .card-text { color: #4b5563; font-size: 0.95rem; line-height: 1.6; }
-        .video-wrapper { position: relative; padding-bottom: 56.25%; height: 0; margin: 15px 0; border-radius: 12px; overflow: hidden; }
-        .video-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        .card-footer { margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .share-btn { background: #fdf2f8; border: none; color: #db2777; padding: 5px 15px; border-radius: 15px; cursor: pointer; }
-        .loader { height: 200px; display: flex; justify-content: center; align-items: center; color: #db2777; }
-        @media (max-width: 480px) { .posts-grid { grid-template-columns: 1fr; } }
+      <div className="container">
+        {articles.map((post) => {
+          const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+
+          return (
+            <div key={post.id} className="article-container">
+              <div className="card">
+                
+                {/* العنوان */}
+                <div className="card-header-title">
+                  <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                </div>
+
+                {/* الصورة البارزة (إذا وجدت) */}
+                {featuredImage && (
+                  <div className="main-featured-image">
+                    <img src={featuredImage} alt="Elegance" />
+                  </div>
+                )}
+                
+                <div className="content">
+                  <div 
+                    className="wp-html-content"
+                    dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
+                  />
+                  
+                  <div className="app-download-box">
+                    <a href={APP_LINK} target="_blank" rel="noreferrer">
+                      ✨ حملي التطبيق الآن من هنا ✨
+                    </a>
+                  </div>
+                </div>
+
+                {/* أزرار التفاعل */}
+                <div className="interaction-buttons">
+                  <button onClick={() => handleLike(post.id)} className="btn-like">
+                    ❤️ <span>{likes[post.id] || 0}</span>
+                  </button>
+                  <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
+                    💬 تعليق
+                  </button>
+                  <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
+                    🔗 مشاركة
+                  </button>
+                </div>
+
+                {activeCommentId === post.id && (
+                  <div className="comments-area">
+                    <div className="comment-input-wrap">
+                      <input 
+                        type="text" 
+                        placeholder="أضيفي لمستكِ..." 
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                      />
+                      <button onClick={() => handleAddComment(post.id)}>نشر</button>
+                    </div>
+                    <div className="comments-list">
+                      {(comments[post.id] || []).map((c, i) => (
+                        <div key={i} className="single-comment">{c.text}</div>
+                      )).reverse()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap');
+
+        body {
+          font-family: 'Tajawal', sans-serif;
+          background-color: #fdf8f5;
+          margin: 0; padding: 0;
+        }
+
+        .fixed-welcome {
+          position: fixed; top: 0; left: 0; right: 0;
+          background: #b08968; 
+          padding: 10px;
+          z-index: 1000; 
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .welcome-border {
+          border: 2px solid rgba(255, 255, 255, 0.6);
+          border-radius: 12px;
+          padding: 8px 15px;
+          color: white;
+          text-align: center;
+          font-size: 0.95rem;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          line-height: 1.4;
+        }
+
+        .container {
+          display: flex; flex-direction: column; align-items: center;
+          padding: 110px 10px 100px; 
+        }
+
+        .card {
+          background: #ffffff;
+          max-width: 500px; 
+          width: 95%;
+          border-radius: 20px; 
+          overflow: hidden;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+          margin-bottom: 30px; 
+          border: 1px solid #f0e6e0;
+        }
+
+        .card-header-title {
+          padding: 20px 15px;
+          text-align: center;
+          background-color: #fff;
+        }
+
+        .card-header-title h2 {
+          color: #8d6e63;
+          margin: 0;
+          font-size: 1.4rem;
+        }
+
+        .main-featured-image {
+          width: 100%;
+        }
+
+        .main-featured-image img {
+          width: 100%;
+          display: block;
+          height: auto;
+        }
+
+        .content { 
+          padding: 20px; 
+          text-align: center; 
+        }
+
+        .wp-html-content { 
+          text-align: right; 
+          color: #4a3f35; 
+          font-size: 1.1rem; 
+        }
+        
+        .wp-html-content img {
+          max-width: 100% !important;
+          height: auto !important;
+          border-radius: 10px;
+          margin: 10px 0;
+          display: block;
+        }
+
+        .wp-html-content p { line-height: 1.8; margin-bottom: 15px; }
+
+        .app-download-box {
+          margin-top: 25px; padding: 15px;
+          background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px;
+        }
+
+        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 1rem; }
+
+        .interaction-buttons {
+          display: flex; justify-content: space-around;
+          padding: 15px; border-top: 1px solid #fcf6f2; background: #fffcfb;
+        }
+
+        .interaction-buttons button {
+          background: none; border: none; cursor: pointer;
+          font-family: 'Tajawal'; font-size: 1rem; color: #8d6e63; font-weight: 500;
+        }
+
+        .comments-area { padding: 15px; background: #fff; border-top: 1px solid #eee; }
+        .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+        .comment-input-wrap input { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        .single-comment { background: #fdf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.9rem; border-right: 4px solid #b08968; text-align: right; }
+
+        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; font-size: 1.2rem; }
       `}</style>
     </div>
   );
 };
 
-export default PassionAndCraft;
+export default EleganceSection;
