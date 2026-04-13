@@ -84,19 +84,20 @@ const EleganceSection = () => {
             <div key={post.id} className="article-container">
               <div className="card">
                 
-                {/* عرض العنوان في أعلى الكارت بوضوح */}
+                {/* العنوان */}
                 <div className="card-header-title">
                   <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                 </div>
 
-                {/* عرض الصورة فقط إذا كانت موجودة، لمنع الفراغ الكبير */}
+                {/* الصورة البارزة (إذا وجدت) - تم توسيعها */}
                 {featuredImage && (
-                  <div className="image-container">
-                    <img src={featuredImage} alt="Elegance Post" />
+                  <div className="main-featured-image">
+                    <img src={featuredImage} alt="Elegance" />
                   </div>
                 )}
                 
                 <div className="content">
+                  {/* محتوى وردبريس - تم ضبط الصور داخله لتظهر كاملة */}
                   <div 
                     className="wp-html-content"
                     dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
@@ -158,61 +159,75 @@ const EleganceSection = () => {
         .fixed-welcome {
           position: fixed; top: 0; left: 0; right: 0;
           background: #b08968; color: white;
-          text-align: center; padding: 10px 0;
-          font-size: 0.95rem; font-weight: 700;
+          text-align: center; padding: 12px 0;
+          font-size: 1rem; font-weight: 700;
           z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .container {
           display: flex; flex-direction: column; align-items: center;
-          padding: 60px 10px 20px;
+          padding: 70px 10px 100px; /* زيادة الهامش السفلي لعدم تداخل القائمة */
         }
 
         .card {
           background: #ffffff;
-          max-width: 450px; width: 100%;
-          border-radius: 25px; overflow: hidden;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-          margin-bottom: 25px; border: 1px solid #f0e6e0;
+          max-width: 500px; /* زيادة عرض الكارت قليلاً */
+          width: 95%;
+          border-radius: 20px; 
+          overflow: hidden;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+          margin-bottom: 30px; 
+          border: 1px solid #f0e6e0;
         }
 
-        /* تنسيق العنوان الجديد */
         .card-header-title {
-          padding: 20px 20px 10px;
+          padding: 20px 15px;
           text-align: center;
+          background-color: #fff;
         }
         .card-header-title h2 {
           color: #8d6e63;
           margin: 0;
-          font-size: 1.3rem;
-          font-weight: 700;
+          font-size: 1.4rem;
         }
 
-        .image-container {
+        /* تنسيق الصورة لتأخذ العرض كاملاً بدون قص */
+        .main-featured-image {
           width: 100%;
-          background-color: #fdfaf8;
-          display: flex; justify-content: center;
-          padding: 10px 0;
+        }
+        .main-featured-image img {
+          width: 100%;
+          display: block;
+          height: auto; /* يجعل الصورة تأخذ طولها الطبيعي */
         }
 
-        .card img {
-          width: 90%; border-radius: 15px;
-          max-height: 250px; object-fit: cover;
+        .content { 
+          padding: 20px; 
+          text-align: center; 
         }
 
-        .content { padding: 15px 25px 25px; text-align: center; }
-
-        .wp-html-content { text-align: right; color: #4a3f35; font-size: 1.05rem; }
-        .wp-html-content p { line-height: 1.8; margin-bottom: 15px; }
+        /* تنسيق الصور والمحتوى القادم من وردبريس */
+        .wp-html-content { 
+          text-align: right; 
+          color: #4a3f35; 
+          font-size: 1.1rem; 
+        }
         
-        /* منع ظهور أي أكواد CSS مسربة */
-        .wp-html-content style { display: none !important; }
+        .wp-html-content img {
+          max-width: 100% !important; /* إجبار الصورة على عدم تجاوز الكارت */
+          height: auto !important;
+          border-radius: 10px;
+          margin: 10px 0;
+          display: block;
+        }
+
+        .wp-html-content p { line-height: 1.8; margin-bottom: 15px; }
 
         .app-download-box {
-          margin-top: 20px; padding: 12px;
-          background: #fff9f5; border: 1px dashed #b08968; border-radius: 15px;
+          margin-top: 25px; padding: 15px;
+          background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px;
         }
-        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 0.9rem; }
+        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 1rem; }
 
         .interaction-buttons {
           display: flex; justify-content: space-around;
@@ -220,16 +235,16 @@ const EleganceSection = () => {
         }
         .interaction-buttons button {
           background: none; border: none; cursor: pointer;
-          font-family: 'Tajawal'; font-size: 0.95rem; color: #8d6e63;
+          font-family: 'Tajawal'; font-size: 1rem; color: #8d6e63; font-weight: 500;
         }
 
         .comments-area { padding: 15px; background: #fff; border-top: 1px solid #eee; }
         .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
-        .comment-input-wrap input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
-        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 5px 15px; border-radius: 20px; }
-        .single-comment { background: #fdf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.85rem; border-right: 4px solid #b08968; text-align: right; }
+        .comment-input-wrap input { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        .single-comment { background: #fdf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.9rem; border-right: 4px solid #b08968; text-align: right; }
 
-        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; }
+        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; font-size: 1.2rem; }
       `}</style>
     </div>
   );
