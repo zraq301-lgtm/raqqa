@@ -1,215 +1,253 @@
 import React, { useState, useEffect } from 'react';
 
-const MotherhoodSection = () => {
+const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [likes, setLikes] = useState({}); 
+  const [comments, setComments] = useState({}); 
+  const [newComment, setNewComment] = useState("");
+  const [activeCommentId, setActiveCommentId] = useState(null);
 
   const CATEGORY_ID = "768006428";
-  // تم إضافة _embed لجلب بيانات الميديا والمؤلف
-  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com/posts?categories=${CATEGORY_ID}&_embed=true`;
-
-  const parseContent = (htmlContent) => {
-    let content = htmlContent;
-
-    // 1. معالجة الفيديوهات
-    const youtubeRegex = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)(?:[^\s<]*))/g;
-    content = content.replace(youtubeRegex, (match, url, videoId) => {
-      return `<div class="media-wrapper video-wrapper"><iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe></div>`;
-    });
-
-    // 2. معالجة الصور
-    const imageRegex = /(https?:\/\/.*\.(?:png|jpg|jpeg|gif|webp)(?:\?.*)?)/g;
-    content = content.replace(imageRegex, (match) => {
-      if (content.includes(`src="${match}"`)) return ""; 
-      return `<div class="media-wrapper"><img src="${match}" alt="محتوى بصري" class="premium-img" /></div>`;
-    });
-
-    return content;
-  };
+  const SITE_DOMAIN = "raqqastor3.wordpress.com";
+  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}/posts?categories=${CATEGORY_ID}&_embed`;
+  const APP_LINK = "https://raqa-1zhm.vercel.app/";
 
   useEffect(() => {
-    const fetchMotherhoodArticles = async () => {
-      try {
-        const response = await fetch(API_URL);
-        const data = await response.json();
-        setArticles(data);
-        
-        // تحميل اسكريبتات وردبريس الضرورية لعرض الإعجابات والمشاركة (Jetpack)
-        if (!document.getElementById('wp-jetpack-loader')) {
-          const script = document.createElement('script');
-          script.id = 'wp-jetpack-loader';
-          script.src = 'https://stats.wp.com/w.js?67';
-          script.async = true;
-          document.body.appendChild(script);
-        }
-      } catch (error) {
-        console.error("خطأ في جلب مقالات الأمومة:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchMotherhoodArticles();
+    const savedLikes = JSON.parse(localStorage.getItem('raqa_likes') || '{}');
+    const savedComments = JSON.parse(localStorage.getItem('raqa_comments') || '{}');
+    setLikes(savedLikes);
+    setComments(savedComments);
+    fetchArticles();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-[#fffafa]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin"></div>
-          <div className="text-pink-600 font-medium animate-pulse">جاري تحضير عالم رقة...</div>
-        </div>
-      </div>
-    );
-  }
+  const fetchArticles = async () => {
+    try {
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      if (Array.isArray(data)) setArticles(data);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const cleanPostContent = (html) => {
+    let clean = html;
+    clean = clean.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>/gi, "");
+    clean = clean.replace(/\/\*[\s\S]*?\*\//g, "");
+    return clean;
+  };
+
+  const handleLike = (postId) => {
+    const updated = { ...likes, [postId]: (likes[postId] || 0) + 1 };
+    setLikes(updated);
+    localStorage.setItem('raqa_likes', JSON.stringify(updated));
+  };
+
+  const handleAddComment = (postId) => {
+    if (!newComment.trim()) return;
+    const updated = { 
+      ...comments, 
+      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }] 
+    };
+    setComments(updated);
+    localStorage.setItem('raqa_comments', JSON.stringify(updated));
+    setNewComment("");
+  };
+
+  const handleShare = (title) => {
+    if (navigator.share) {
+      navigator.share({ title: title, url: APP_LINK });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+    }
+  };
+
+  if (loading) return <div className="loading-screen">لحظات من الأناقة...</div>;
 
   return (
-    <div className="p-4 bg-[#fcf8f9] min-h-screen font-sans" dir="rtl">
+    <div className="main-wrapper" dir="rtl">
       
-      {/* شارة "رقة" العائمة */}
-      <div className="fixed top-6 left-6 z-50">
-        <div className="bg-white/80 backdrop-blur-md border border-pink-100 text-pink-600 px-4 py-2 rounded-2xl shadow-xl flex items-center gap-2">
-          <span className="text-sm font-bold tracking-widest">رقة</span>
-          <div className="w-2 h-2 bg-pink-500 rounded-full animate-ping"></div>
-        </div>
+      {/* الترحيب الثابت */}
+      <div className="fixed-welcome">
+        ✨ مرحبا بك في عالم الأمومة ✨
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-10 pt-10">
-        {articles.map((post) => (
-          <article 
-            key={post.id} 
-            className="bg-white rounded-[2rem] shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] border border-pink-50/50 overflow-hidden transition-transform duration-500 hover:scale-[1.01]"
-          >
-            {/* الصورة الرئيسية */}
-            {post._embedded?.['wp:featuredmedia'] && (
-              <div className="relative h-72 w-full overflow-hidden">
-                <img 
-                  src={post._embedded['wp:featuredmedia'][0].source_url} 
-                  alt={post.title.rendered}
-                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-              </div>
-            )}
+      <div className="container">
+        {articles.map((post) => {
+          const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
 
-            <div className="p-8">
-              <h2 
-                className="text-2xl font-black text-gray-800 mb-6 leading-tight hover:text-pink-600 transition-colors"
-                dangerouslySetInnerHTML={{ __html: post.title.rendered }}
-              />
-
-              <div className="prose prose-pink max-w-none">
-                <div 
-                  className="article-content"
-                  dangerouslySetInnerHTML={{ __html: parseContent(post.content.rendered) }} 
-                />
-              </div>
-
-              {/* قسم أدوات وردبريس (المشاركة والإعجاب) */}
-              <div className="wp-tools-container mt-8 p-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                <div className="text-xs text-gray-400 mb-4 font-bold">تفاعل مع المقال:</div>
+          return (
+            <div key={post.id} className="article-container">
+              <div className="card">
                 
-                {/* هذه الكلاسات مخصصة لتستهدف أكواد وردبريس القادمة في الـ HTML */}
-                <div className="sharedaddy sd-sharing-enabled">
-                  <div className="robots-nocontent sd-block sd-social sd-social-icon sd-sharing">
-                    {/* وردبريس سيقوم بحقن الأزرار هنا إذا كانت مفعلة في لوحة التحكم */}
+                {/* العنوان */}
+                <div className="card-header-title">
+                  <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                </div>
+
+                {/* الصورة البارزة (إذا وجدت) - تم توسيعها */}
+                {featuredImage && (
+                  <div className="main-featured-image">
+                    <img src={featuredImage} alt="Elegance" />
+                  </div>
+                )}
+                
+                <div className="content">
+                  {/* محتوى وردبريس - تم ضبط الصور داخله لتظهر كاملة */}
+                  <div 
+                    className="wp-html-content"
+                    dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
+                  />
+                  
+                  <div className="app-download-box">
+                    <a href={APP_LINK} target="_blank" rel="noreferrer">
+                      ✨ حملي التطبيق الآن من هنا ✨
+                    </a>
                   </div>
                 </div>
 
-                {/* زر الإعجاب (Jetpack) */}
-                <div className="jetpack-likes-widget-wrapper text-center">
-                   {/* سيظهر الزر هنا تلقائياً عبر سكريبت وردبريس */}
+                {/* أزرار التفاعل */}
+                <div className="interaction-buttons">
+                  <button onClick={() => handleLike(post.id)} className="btn-like">
+                    ❤️ <span>{likes[post.id] || 0}</span>
+                  </button>
+                  <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
+                    💬 تعليق
+                  </button>
+                  <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
+                    🔗 مشاركة
+                  </button>
                 </div>
-              </div>
 
-              {/* زر الانتقال للتعليقات أو عرض رابط التعليقات */}
-              <div className="mt-6 flex items-center justify-between">
-                <a 
-                  href={post.link + "#comments"} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-sm font-bold text-pink-500 hover:text-pink-700 flex items-center gap-2"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-                  </svg>
-                  أضيفي تعليقكِ الآن
-                </a>
-                
-                <span className="text-[11px] text-gray-400 font-medium">
-                  {new Date(post.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
+                {activeCommentId === post.id && (
+                  <div className="comments-area">
+                    <div className="comment-input-wrap">
+                      <input 
+                        type="text" 
+                        placeholder="أضيفي لمستكِ..." 
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                      />
+                      <button onClick={() => handleAddComment(post.id)}>نشر</button>
+                    </div>
+                    <div className="comments-list">
+                      {(comments[post.id] || []).map((c, i) => (
+                        <div key={i} className="single-comment">{c.text}</div>
+                      )).reverse()}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </article>
-        ))}
+          );
+        })}
       </div>
 
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
-        
-        body { font-family: 'Tajawal', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap');
 
-        /* تنسيق أزرار وردبريس الافتراضية */
-        .sd-sharing .sd-content ul {
-          display: flex !important;
-          gap: 10px !important;
-          list-style: none !important;
-          padding: 0 !important;
+        body {
+          font-family: 'Tajawal', sans-serif;
+          background-color: #fdf8f5;
+          margin: 0; padding: 0;
         }
 
-        .sd-social-icon .sd-content ul li a {
-          background: #fdf2f8 !important;
-          border-radius: 50% !important;
-          width: 40px !important;
-          height: 40px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          color: #db2777 !important;
-          border: 1px solid #fbcfe8 !important;
+        .fixed-welcome {
+          position: fixed; top: 0; left: 0; right: 0;
+          background: #b08968; color: white;
+          text-align: center; padding: 12px 0;
+          font-size: 1rem; font-weight: 700;
+          z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
-        .article-content {
-          line-height: 1.9;
-          color: #3f3f46;
-          font-size: 1.05rem;
+        .container {
+          display: flex; flex-direction: column; align-items: center;
+          padding: 70px 10px 100px; /* زيادة الهامش السفلي لعدم تداخل القائمة */
         }
 
-        .media-wrapper {
-          margin: 2rem -2rem;
-          position: relative;
-          background: #fdfdfd;
-        }
-
-        @media (max-width: 640px) {
-          .media-wrapper { margin: 1.5rem -1rem; }
-        }
-
-        .premium-img {
-          width: 100%;
-          height: auto;
-          display: block;
-          object-fit: cover;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.03);
-        }
-
-        .video-wrapper {
-          padding-bottom: 56.25%;
-          height: 0;
+        .card {
+          background: #ffffff;
+          max-width: 500px; /* زيادة عرض الكارت قليلاً */
+          width: 95%;
+          border-radius: 20px; 
           overflow: hidden;
+          box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+          margin-bottom: 30px; 
+          border: 1px solid #f0e6e0;
         }
 
-        .video-wrapper iframe {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          border: 0;
+        .card-header-title {
+          padding: 20px 15px;
+          text-align: center;
+          background-color: #fff;
         }
+        .card-header-title h2 {
+          color: #8d6e63;
+          margin: 0;
+          font-size: 1.4rem;
+        }
+
+        /* تنسيق الصورة لتأخذ العرض كاملاً بدون قص */
+        .main-featured-image {
+          width: 100%;
+        }
+        .main-featured-image img {
+          width: 100%;
+          display: block;
+          height: auto; /* يجعل الصورة تأخذ طولها الطبيعي */
+        }
+
+        .content { 
+          padding: 20px; 
+          text-align: center; 
+        }
+
+        /* تنسيق الصور والمحتوى القادم من وردبريس */
+        .wp-html-content { 
+          text-align: right; 
+          color: #4a3f35; 
+          font-size: 1.1rem; 
+        }
+        
+        .wp-html-content img {
+          max-width: 100% !important; /* إجبار الصورة على عدم تجاوز الكارت */
+          height: auto !important;
+          border-radius: 10px;
+          margin: 10px 0;
+          display: block;
+        }
+
+        .wp-html-content p { line-height: 1.8; margin-bottom: 15px; }
+
+        .app-download-box {
+          margin-top: 25px; padding: 15px;
+          background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px;
+        }
+        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 1rem; }
+
+        .interaction-buttons {
+          display: flex; justify-content: space-around;
+          padding: 15px; border-top: 1px solid #fcf6f2; background: #fffcfb;
+        }
+        .interaction-buttons button {
+          background: none; border: none; cursor: pointer;
+          font-family: 'Tajawal'; font-size: 1rem; color: #8d6e63; font-weight: 500;
+        }
+
+        .comments-area { padding: 15px; background: #fff; border-top: 1px solid #eee; }
+        .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+        .comment-input-wrap input { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; }
+        .single-comment { background: #fdf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.9rem; border-right: 4px solid #b08968; text-align: right; }
+
+        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; font-size: 1.2rem; }
       `}</style>
     </div>
   );
 };
 
-export default MotherhoodSection;
+export default EleganceSection;
