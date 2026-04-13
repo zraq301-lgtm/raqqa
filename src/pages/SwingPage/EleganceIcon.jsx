@@ -33,11 +33,15 @@ const EleganceSection = () => {
     }
   };
 
-  // وظيفة لتنظيف المحتوى من وسوم html/body الزائدة وعرض المقال فقط
+  // وظيفة سحرية لتنظيف المحتوى: تمنع ظهور أكواد الـ CSS أو الـ HTML البرمجية وتعرض المقال فقط
   const cleanPostContent = (html) => {
     let clean = html;
-    // إزالة وسوم head, body, html إذا وجدت داخل المقال
-    clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>|<title[^>]*>|<\/title>/gi, "");
+    // 1. إزالة أي كود محصور بين وسوم <style>
+    clean = clean.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+    // 2. إزالة وسوم الهيكل التنظيمي التي قد تسبب فراغات أو مشاكل
+    clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>/gi, "");
+    // 3. إزالة التعليقات البرمجية التي ظهرت في صورتك
+    clean = clean.replace(/\/\*[\s\S]*?\*\//g, "");
     return clean;
   };
 
@@ -67,24 +71,21 @@ const EleganceSection = () => {
   };
 
   if (loading) {
-    return <div className="loading-screen">تحميل الأناقة...</div>;
+    return <div className="loading-screen">لحظات من الأناقة...</div>;
   }
 
   return (
     <div className="main-wrapper" dir="rtl">
-      {/* الرسالة الترحيبية الثابتة */}
-      <div className="welcome-bar">
+      
+      {/* 1. الكلمة الترحيبية الثابتة في أول الشاشة */}
+      <div className="fixed-welcome">
         ✨ أهلاً بكِ في عالم الأناقة والشياكة ✨
       </div>
-
-      <header className="app-header">
-        <h1>مجلة <span className="highlight-text">رقة</span></h1>
-        <div className="icon-flower">🌸</div>
-      </header>
 
       <div className="container">
         {articles.map((post) => (
           <div key={post.id} className="article-container">
+            
             <div className="card">
               <div className="image-container">
                 <img 
@@ -94,12 +95,13 @@ const EleganceSection = () => {
               </div>
               
               <div className="content">
-                {/* عرض المحتوى المنظف فقط بدون أكواد HTML لغوية */}
+                {/* 2. عرض المقال فقط بعد التنظيف من الأكواد الغريبة */}
                 <div 
                   className="wp-html-content"
                   dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
                 />
                 
+                {/* رابط التحميل */}
                 <div className="app-download-box">
                   <a href={APP_LINK} target="_blank" rel="noreferrer">
                     ✨ حملي التطبيق الآن من هنا ✨
@@ -107,6 +109,7 @@ const EleganceSection = () => {
                 </div>
               </div>
 
+              {/* أزرار التفاعل */}
               <div className="interaction-buttons">
                 <button onClick={() => handleLike(post.id)} className="btn-like">
                   ❤️ <span>{likes[post.id] || 0}</span>
@@ -119,6 +122,7 @@ const EleganceSection = () => {
                 </button>
               </div>
 
+              {/* قسم التعليقات */}
               {activeCommentId === post.id && (
                 <div className="comments-area">
                   <div className="comment-input-wrap">
@@ -152,39 +156,27 @@ const EleganceSection = () => {
           padding: 0;
         }
 
-        /* شريط الترحيب الثابت */
-        .welcome-bar {
+        /* تنسيق الرسالة الترحيبية الثابتة */
+        .fixed-welcome {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
           background: #b08968;
           color: white;
           text-align: center;
-          padding: 8px 0;
-          font-size: 0.9rem;
-          font-weight: 500;
-          position: sticky;
-          top: 0;
-          z-index: 101;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          padding: 10px 0;
+          font-size: 0.95rem;
+          font-weight: 700;
+          z-index: 1000;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-
-        .app-header {
-          background: white;
-          padding: 10px 25px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          position: sticky;
-          top: 35px; /* يظهر تحت شريط الترحيب */
-          z-index: 100;
-          border-bottom: 1px solid #f0e6e0;
-        }
-
-        .highlight-text { color: #b08968; }
 
         .container {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 15px 10px;
+          padding: 60px 10px 20px; /* الـ 60px لترك مساحة تحت شريط الترحيب */
         }
 
         .card {
@@ -195,6 +187,7 @@ const EleganceSection = () => {
           overflow: hidden;
           box-shadow: 0 10px 30px rgba(0,0,0,0.05);
           margin-bottom: 25px;
+          border: 1px solid #f0e6e0;
         }
 
         .image-container {
@@ -207,47 +200,52 @@ const EleganceSection = () => {
 
         .card img {
           width: 90%;
-          border-radius: 20px 20px 0 0;
+          border-radius: 20px;
           height: 220px;
           object-fit: cover;
+          margin-bottom: -10px;
         }
 
-        .content { padding: 20px; text-align: center; }
+        .content { padding: 25px; text-align: center; }
 
-        /* تجميل المحتوى ومنع تداخل الأكواد */
+        /* تنسيق نص المقال الصافي */
         .wp-html-content {
           text-align: right;
           color: #4a3f35;
+          font-size: 1.05rem;
         }
-        .wp-html-content p { line-height: 1.7; margin-bottom: 12px; }
-        .wp-html-content img { max-width: 100%; border-radius: 10px; }
+        .wp-html-content p { line-height: 1.8; margin-bottom: 15px; }
+        .wp-html-content h1 { color: #8d6e63; font-size: 1.4rem; margin-bottom: 10px; text-align: center; }
+        
+        /* إخفاء أي بقايا أكواد قد تهرب من التنظيف */
+        .wp-html-content style, .wp-html-content script { display: none !important; }
 
         .app-download-box {
-          margin-top: 15px;
-          padding: 10px;
+          margin-top: 20px;
+          padding: 12px;
           background: #fff9f5;
           border: 1px dashed #b08968;
-          border-radius: 12px;
+          border-radius: 15px;
         }
-        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 0.85rem; }
+        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 0.9rem; }
 
         .interaction-buttons {
           display: flex;
           justify-content: space-around;
-          padding: 12px;
+          padding: 15px;
           border-top: 1px solid #fcf6f2;
           background: #fffcfb;
         }
         .interaction-buttons button {
           background: none; border: none; cursor: pointer;
-          font-family: 'Tajawal'; font-size: 0.9rem; color: #8d6e63;
+          font-family: 'Tajawal'; font-size: 0.95rem; color: #8d6e63; font-weight: 500;
         }
 
         .comments-area { padding: 15px; background: #fff; border-top: 1px solid #eee; }
         .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
-        .comment-input-wrap input { flex: 1; padding: 6px 15px; border-radius: 20px; border: 1px solid #ddd; font-family: 'Tajawal'; outline: none; }
-        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 5px 12px; border-radius: 20px; }
-        .single-comment { background: #fdf8f5; padding: 8px 12px; border-radius: 12px; margin-bottom: 6px; font-size: 0.8rem; border-right: 3px solid #b08968; }
+        .comment-input-wrap input { flex: 1; padding: 8px 15px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 5px 15px; border-radius: 20px; cursor: pointer; }
+        .single-comment { background: #fdf8f5; padding: 10px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 0.85rem; border-right: 4px solid #b08968; text-align: right; }
 
         .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; }
       `}</style>
