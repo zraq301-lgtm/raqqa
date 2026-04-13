@@ -73,7 +73,7 @@ const EleganceSection = () => {
       
       {/* الترحيب الثابت */}
       <div className="fixed-welcome">
-        ✨ أهلاً بكِ في عالم الأناقة والشياكة ✨
+        ✨ مرحباً بك في واحة العافية حيث تلتقي الصحة بالحياة ✨
       </div>
 
       <div className="container">
