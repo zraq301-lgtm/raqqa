@@ -3,8 +3,6 @@ import React, { useState, useEffect } from 'react';
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // حالات التفاعل (حفظ محلي)
   const [likes, setLikes] = useState({}); 
   const [comments, setComments] = useState({}); 
   const [newComment, setNewComment] = useState("");
@@ -33,6 +31,14 @@ const EleganceSection = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // وظيفة لتنظيف المحتوى من وسوم html/body الزائدة وعرض المقال فقط
+  const cleanPostContent = (html) => {
+    let clean = html;
+    // إزالة وسوم head, body, html إذا وجدت داخل المقال
+    clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>|<title[^>]*>|<\/title>/gi, "");
+    return clean;
   };
 
   const handleLike = (postId) => {
@@ -66,7 +72,11 @@ const EleganceSection = () => {
 
   return (
     <div className="main-wrapper" dir="rtl">
-      {/* Header */}
+      {/* الرسالة الترحيبية الثابتة */}
+      <div className="welcome-bar">
+        ✨ أهلاً بكِ في عالم الأناقة والشياكة ✨
+      </div>
+
       <header className="app-header">
         <h1>مجلة <span className="highlight-text">رقة</span></h1>
         <div className="icon-flower">🌸</div>
@@ -75,11 +85,8 @@ const EleganceSection = () => {
       <div className="container">
         {articles.map((post) => (
           <div key={post.id} className="article-container">
-            
-            {/* الكارت الذي يعرض محتوى الـ HTML من وردبريس */}
             <div className="card">
               <div className="image-container">
-                {/* استخدام الصورة البارزة من وردبريس كصورة للكارت */}
                 <img 
                    src={post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'fitness (1).png'} 
                    alt="Elegance" 
@@ -87,13 +94,12 @@ const EleganceSection = () => {
               </div>
               
               <div className="content">
-                {/* حقن محتوى الـ HTML القادم من وردبريس مباشرة */}
+                {/* عرض المحتوى المنظف فقط بدون أكواد HTML لغوية */}
                 <div 
                   className="wp-html-content"
-                  dangerouslySetInnerHTML={{ __html: post.content.rendered }} 
+                  dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
                 />
                 
-                {/* رابط تحميل التطبيق المدمج داخل الكارت */}
                 <div className="app-download-box">
                   <a href={APP_LINK} target="_blank" rel="noreferrer">
                     ✨ حملي التطبيق الآن من هنا ✨
@@ -101,28 +107,24 @@ const EleganceSection = () => {
                 </div>
               </div>
 
-              {/* أزرار التفاعل أسفل الكارت */}
               <div className="interaction-buttons">
                 <button onClick={() => handleLike(post.id)} className="btn-like">
-                  ❤️ <span>{likes[post.id] || 0}</span> إعجاب
+                  ❤️ <span>{likes[post.id] || 0}</span>
                 </button>
-                
                 <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
                   💬 تعليق
                 </button>
-
                 <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
                   🔗 مشاركة
                 </button>
               </div>
 
-              {/* قسم التعليقات المنسدل */}
               {activeCommentId === post.id && (
                 <div className="comments-area">
                   <div className="comment-input-wrap">
                     <input 
                       type="text" 
-                      placeholder="أضيفي لمستكِ بتعليق..." 
+                      placeholder="أضيفي لمستكِ..." 
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                     />
@@ -130,9 +132,7 @@ const EleganceSection = () => {
                   </div>
                   <div className="comments-list">
                     {(comments[post.id] || []).map((c, i) => (
-                      <div key={i} className="single-comment">
-                        {c.text}
-                      </div>
+                      <div key={i} className="single-comment">{c.text}</div>
                     )).reverse()}
                   </div>
                 </div>
@@ -149,19 +149,33 @@ const EleganceSection = () => {
           font-family: 'Tajawal', sans-serif;
           background-color: #fdf8f5;
           margin: 0;
-          color: #4a3f35;
+          padding: 0;
+        }
+
+        /* شريط الترحيب الثابت */
+        .welcome-bar {
+          background: #b08968;
+          color: white;
+          text-align: center;
+          padding: 8px 0;
+          font-size: 0.9rem;
+          font-weight: 500;
+          position: sticky;
+          top: 0;
+          z-index: 101;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .app-header {
           background: white;
-          padding: 15px 25px;
+          padding: 10px 25px;
           display: flex;
           justify-content: space-between;
           align-items: center;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
           position: sticky;
-          top: 0;
+          top: 35px; /* يظهر تحت شريط الترحيب */
           z-index: 100;
+          border-bottom: 1px solid #f0e6e0;
         }
 
         .highlight-text { color: #b08968; }
@@ -170,18 +184,17 @@ const EleganceSection = () => {
           display: flex;
           flex-direction: column;
           align-items: center;
-          padding: 20px 10px;
+          padding: 15px 10px;
         }
 
-        /* تنسيق الكارت كما في طلبك */
         .card {
           background: #ffffff;
           max-width: 450px;
           width: 100%;
           border-radius: 25px;
           overflow: hidden;
-          box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-          margin-bottom: 30px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+          margin-bottom: 25px;
         }
 
         .image-container {
@@ -189,99 +202,54 @@ const EleganceSection = () => {
           background-color: #ebe0d8;
           display: flex;
           justify-content: center;
-          padding-top: 20px;
+          padding-top: 15px;
         }
 
         .card img {
           width: 90%;
           border-radius: 20px 20px 0 0;
-          display: block;
-          height: 250px;
+          height: 220px;
           object-fit: cover;
         }
 
-        .content { padding: 25px; text-align: center; }
+        .content { padding: 20px; text-align: center; }
 
-        /* تنسيق محتوى وردبريس ليطابق ذوقك */
-        .wp-html-content h1, .wp-html-content h2 { color: #8d6e63; font-size: 1.4rem; }
-        .wp-html-content p { line-height: 1.8; font-size: 1rem; margin-bottom: 15px; }
-        .wp-html-content .highlight { color: #b08968; font-weight: bold; }
+        /* تجميل المحتوى ومنع تداخل الأكواد */
+        .wp-html-content {
+          text-align: right;
+          color: #4a3f35;
+        }
+        .wp-html-content p { line-height: 1.7; margin-bottom: 12px; }
+        .wp-html-content img { max-width: 100%; border-radius: 10px; }
 
         .app-download-box {
-          margin-top: 20px;
-          padding: 12px;
-          background: #fdf8f5;
+          margin-top: 15px;
+          padding: 10px;
+          background: #fff9f5;
           border: 1px dashed #b08968;
-          border-radius: 15px;
+          border-radius: 12px;
         }
-        .app-download-box a {
-          color: #8d6e63;
-          text-decoration: none;
-          font-weight: bold;
-          font-size: 0.9rem;
-        }
+        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 0.85rem; }
 
-        /* أزرار التفاعل */
         .interaction-buttons {
           display: flex;
           justify-content: space-around;
-          padding: 15px;
-          border-top: 1px solid #f5f5f5;
-          background: #fafafa;
+          padding: 12px;
+          border-top: 1px solid #fcf6f2;
+          background: #fffcfb;
         }
         .interaction-buttons button {
-          background: none;
-          border: none;
-          cursor: pointer;
-          font-family: 'Tajawal';
-          font-weight: 500;
-          font-size: 0.9rem;
-          color: #777;
-        }
-        .btn-like { color: #e63946 !important; }
-
-        /* قسم التعليقات */
-        .comments-area {
-          padding: 15px;
-          background: #fff;
-          border-top: 1px solid #eee;
-        }
-        .comment-input-wrap {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 15px;
-        }
-        .comment-input-wrap input {
-          flex: 1;
-          padding: 8px 15px;
-          border-radius: 20px;
-          border: 1px solid #ddd;
-          outline: none;
-        }
-        .comment-input-wrap button {
-          background: #b08968;
-          color: white;
-          border: none;
-          padding: 5px 15px;
-          border-radius: 20px;
-        }
-        .single-comment {
-          background: #fdf8f5;
-          padding: 10px 15px;
-          border-radius: 15px;
-          margin-bottom: 8px;
-          font-size: 0.85rem;
-          border-right: 3px solid #b08968;
+          background: none; border: none; cursor: pointer;
+          font-family: 'Tajawal'; font-size: 0.9rem; color: #8d6e63;
         }
 
-        .loading-screen {
-          height: 100vh;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          color: #b08968;
-          font-weight: bold;
-        }
+        .comments-area { padding: 15px; background: #fff; border-top: 1px solid #eee; }
+        .comment-input-wrap { display: flex; gap: 8px; margin-bottom: 12px; }
+        .comment-input-wrap input { flex: 1; padding: 6px 15px; border-radius: 20px; border: 1px solid #ddd; font-family: 'Tajawal'; outline: none; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 5px 12px; border-radius: 20px; }
+        .single-comment { background: #fdf8f5; padding: 8px 12px; border-radius: 12px; margin-bottom: 6px; font-size: 0.8rem; border-right: 3px solid #b08968; }
+
+        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; }
       `}</style>
     </div>
   );
