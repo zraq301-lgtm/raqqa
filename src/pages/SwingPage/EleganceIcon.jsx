@@ -4,9 +4,9 @@ const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // نظام التفاعل المحلي (LocalStorage)
-  const [likes, setLikes] = useState({});
-  const [comments, setComments] = useState({});
+  // حالات التفاعل (حفظ محلي)
+  const [likes, setLikes] = useState({}); 
+  const [comments, setComments] = useState({}); 
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
@@ -20,16 +20,16 @@ const EleganceSection = () => {
     const savedComments = JSON.parse(localStorage.getItem('raqa_comments') || '{}');
     setLikes(savedLikes);
     setComments(savedComments);
-    fetchEleganceArticles();
+    fetchArticles();
   }, []);
 
-  const fetchEleganceArticles = async () => {
+  const fetchArticles = async () => {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
       if (Array.isArray(data)) setArticles(data);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Fetch Error:", error);
     } finally {
       setLoading(false);
     }
@@ -52,120 +52,236 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  // دالة معالجة الـ HTML ليكون مرآة حقيقية للمقال
-  const renderStyledContent = (html) => {
-    // تنظيف السمات المزعجة وإضافة رابط التحميل
-    let cleanHtml = html.replace(/srcset=".*?"|sizes=".*?"/g, '');
-    const downloadAppHtml = `
-      <div class="app-promo-card">
-        <p>استمتعي بتجربة أفضل على تطبيقنا</p>
-        <a href="${APP_LINK}" class="download-btn">حملي التطبيق الآن</a>
-      </div>
-    `;
-    return cleanHtml + downloadAppHtml;
+  const handleShare = (title) => {
+    if (navigator.share) {
+      navigator.share({ title: title, url: APP_LINK });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+    }
   };
 
-  if (loading) return <div className="loader">جاري تحضير الأناقة...</div>;
+  if (loading) {
+    return <div className="loading-screen">تحميل الأناقة...</div>;
+  }
 
   return (
-    <div className="app-container" dir="rtl">
-      <header className="main-header">
-        <h1>مجلة <span className="brand">رقة</span></h1>
-        <div className="icon">🌸</div>
+    <div className="main-wrapper" dir="rtl">
+      {/* Header */}
+      <header className="app-header">
+        <h1>مجلة <span className="highlight-text">رقة</span></h1>
+        <div className="icon-flower">🌸</div>
       </header>
 
-      <div className="articles-grid">
+      <div className="container">
         {articles.map((post) => (
-          <article key={post.id} className="mirror-card">
-            {/* عرض الصورة البارزة */}
-            {post._embedded?.['wp:featuredmedia'] && (
-              <div className="card-image-wrap">
-                <img src={post._embedded['wp:featuredmedia'][0].source_url} alt="" />
+          <div key={post.id} className="article-container">
+            
+            {/* الكارت الذي يعرض محتوى الـ HTML من وردبريس */}
+            <div className="card">
+              <div className="image-container">
+                {/* استخدام الصورة البارزة من وردبريس كصورة للكارت */}
+                <img 
+                   src={post._embedded?.['wp:featuredmedia']?.[0]?.source_url || 'fitness (1).png'} 
+                   alt="Elegance" 
+                />
               </div>
-            )}
-
-            <div className="card-content">
-              <h2 className="post-title" dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
               
-              {/* عرض الـ HTML الخاص بالمقال كمرآة */}
-              <div 
-                className="html-mirror-body" 
-                dangerouslySetInnerHTML={{ __html: renderStyledContent(post.content.rendered) }} 
-              />
+              <div className="content">
+                {/* حقن محتوى الـ HTML القادم من وردبريس مباشرة */}
+                <div 
+                  className="wp-html-content"
+                  dangerouslySetInnerHTML={{ __html: post.content.rendered }} 
+                />
+                
+                {/* رابط تحميل التطبيق المدمج داخل الكارت */}
+                <div className="app-download-box">
+                  <a href={APP_LINK} target="_blank" rel="noreferrer">
+                    ✨ حملي التطبيق الآن من هنا ✨
+                  </a>
+                </div>
+              </div>
 
-              {/* أزرار التفاعل */}
-              <div className="interaction-bar">
+              {/* أزرار التفاعل أسفل الكارت */}
+              <div className="interaction-buttons">
                 <button onClick={() => handleLike(post.id)} className="btn-like">
-                  ❤️ {likes[post.id] || 0}
+                  ❤️ <span>{likes[post.id] || 0}</span> إعجاب
                 </button>
-                <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comm">
-                  💬 {(comments[post.id] || []).length}
+                
+                <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
+                  💬 تعليق
                 </button>
-                <button onClick={() => window.open(`https://wa.me/?text=${APP_LINK}`)} className="btn-share">
+
+                <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
                   🔗 مشاركة
                 </button>
               </div>
 
-              {/* قسم التعليقات المتتالي */}
+              {/* قسم التعليقات المنسدل */}
               {activeCommentId === post.id && (
-                <div className="comments-section">
-                  <div className="input-group">
+                <div className="comments-area">
+                  <div className="comment-input-wrap">
                     <input 
                       type="text" 
-                      value={newComment} 
+                      placeholder="أضيفي لمستكِ بتعليق..." 
+                      value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      placeholder="اكتبي تعليقكِ..." 
                     />
                     <button onClick={() => handleAddComment(post.id)}>نشر</button>
                   </div>
                   <div className="comments-list">
                     {(comments[post.id] || []).map((c, i) => (
-                      <div key={i} className="comment-bubble">{c.text}</div>
+                      <div key={i} className="single-comment">
+                        {c.text}
+                      </div>
                     )).reverse()}
                   </div>
                 </div>
               )}
             </div>
-          </article>
+          </div>
         ))}
       </div>
 
-      <style jsx>{`
-        .app-container { background: #FFF9FA; min-height: 100vh; font-family: 'Cairo', sans-serif; padding-bottom: 50px; }
-        .main-header { background: white; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ffe4e6; sticky; top: 0; z-index: 10; }
-        .brand { color: #f43f5e; }
-        
-        .articles-grid { max-width: 500px; margin: 20px auto; padding: 0 15px; }
-        
-        /* تصميم الكارت المرآة */
-        .mirror-card { background: white; border-radius: 30px; overflow: hidden; box-shadow: 0 15px 35px rgba(244, 63, 94, 0.1); margin-bottom: 30px; border: 1px solid #fff1f2; }
-        .card-image-wrap img { width: 100%; height: 250px; object-fit: cover; }
-        .card-content { padding: 20px; }
-        .post-title { font-size: 1.4rem; color: #1f2937; margin-bottom: 15px; font-weight: 900; }
+      <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap');
 
-        /* تنسيق محتوى الـ HTML القادم من وردبريس */
-        .html-mirror-body { color: #4b5563; line-height: 1.7; font-size: 1.05rem; }
-        .html-mirror-body img { width: 100%; border-radius: 15px; margin: 10px 0; }
-        
-        /* صندوق حملي التطبيق */
-        :global(.app-promo-card) { background: #fff1f2; padding: 20px; border-radius: 20px; text-align: center; margin-top: 20px; border: 2px dashed #fda4af; }
-        :global(.download-btn) { display: inline-block; margin-top: 10px; background: #f43f5e; color: white; padding: 8px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; }
+        body {
+          font-family: 'Tajawal', sans-serif;
+          background-color: #fdf8f5;
+          margin: 0;
+          color: #4a3f35;
+        }
 
-        /* شريط التفاعل */
-        .interaction-bar { display: flex; justify-content: space-around; border-top: 1px solid #f9fafb; padding-top: 15px; margin-top: 15px; }
-        .interaction-bar button { background: none; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .btn-like { color: #f43f5e; }
-        .btn-comm { color: #3b82f6; }
-        .btn-share { color: #10b981; }
+        .app-header {
+          background: white;
+          padding: 15px 25px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+        }
 
-        /* التعليقات */
-        .comments-section { margin-top: 15px; background: #fafafa; padding: 15px; border-radius: 20px; }
-        .input-group { display: flex; gap: 8px; margin-bottom: 15px; }
-        .input-group input { flex: 1; border: 1px solid #eee; padding: 8px 15px; border-radius: 12px; font-family: 'Cairo'; }
-        .input-group button { background: #f43f5e; color: white; border: none; padding: 8px 15px; border-radius: 12px; }
-        .comment-bubble { background: white; padding: 10px 15px; border-radius: 15px; margin-bottom: 8px; font-size: 0.9rem; border-right: 4px solid #f43f5e; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        
-        .loader { text-align: center; padding: 50px; color: #f43f5e; font-weight: bold; }
+        .highlight-text { color: #b08968; }
+
+        .container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 20px 10px;
+        }
+
+        /* تنسيق الكارت كما في طلبك */
+        .card {
+          background: #ffffff;
+          max-width: 450px;
+          width: 100%;
+          border-radius: 25px;
+          overflow: hidden;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+          margin-bottom: 30px;
+        }
+
+        .image-container {
+          width: 100%;
+          background-color: #ebe0d8;
+          display: flex;
+          justify-content: center;
+          padding-top: 20px;
+        }
+
+        .card img {
+          width: 90%;
+          border-radius: 20px 20px 0 0;
+          display: block;
+          height: 250px;
+          object-fit: cover;
+        }
+
+        .content { padding: 25px; text-align: center; }
+
+        /* تنسيق محتوى وردبريس ليطابق ذوقك */
+        .wp-html-content h1, .wp-html-content h2 { color: #8d6e63; font-size: 1.4rem; }
+        .wp-html-content p { line-height: 1.8; font-size: 1rem; margin-bottom: 15px; }
+        .wp-html-content .highlight { color: #b08968; font-weight: bold; }
+
+        .app-download-box {
+          margin-top: 20px;
+          padding: 12px;
+          background: #fdf8f5;
+          border: 1px dashed #b08968;
+          border-radius: 15px;
+        }
+        .app-download-box a {
+          color: #8d6e63;
+          text-decoration: none;
+          font-weight: bold;
+          font-size: 0.9rem;
+        }
+
+        /* أزرار التفاعل */
+        .interaction-buttons {
+          display: flex;
+          justify-content: space-around;
+          padding: 15px;
+          border-top: 1px solid #f5f5f5;
+          background: #fafafa;
+        }
+        .interaction-buttons button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-family: 'Tajawal';
+          font-weight: 500;
+          font-size: 0.9rem;
+          color: #777;
+        }
+        .btn-like { color: #e63946 !important; }
+
+        /* قسم التعليقات */
+        .comments-area {
+          padding: 15px;
+          background: #fff;
+          border-top: 1px solid #eee;
+        }
+        .comment-input-wrap {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 15px;
+        }
+        .comment-input-wrap input {
+          flex: 1;
+          padding: 8px 15px;
+          border-radius: 20px;
+          border: 1px solid #ddd;
+          outline: none;
+        }
+        .comment-input-wrap button {
+          background: #b08968;
+          color: white;
+          border: none;
+          padding: 5px 15px;
+          border-radius: 20px;
+        }
+        .single-comment {
+          background: #fdf8f5;
+          padding: 10px 15px;
+          border-radius: 15px;
+          margin-bottom: 8px;
+          font-size: 0.85rem;
+          border-right: 3px solid #b08968;
+        }
+
+        .loading-screen {
+          height: 100vh;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          color: #b08968;
+          font-weight: bold;
+        }
       `}</style>
     </div>
   );
