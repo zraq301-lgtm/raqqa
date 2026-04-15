@@ -58,11 +58,25 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  const handleShare = (title) => {
+  const handleShare = async (title) => {
+    // تنظيف العنوان من وسوم HTML إذا وجدت
+    const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, "");
+    const shareText = `${cleanTitle}\n${APP_LINK}`;
+
     if (navigator.share) {
-      navigator.share({ title: title, url: APP_LINK });
+      try {
+        await navigator.share({
+          title: cleanTitle,
+          text: "اكتشفي المزيد من الجمال والأناقة",
+          url: APP_LINK,
+        });
+      } catch (err) {
+        // إذا تم إلغاء المشاركة أو حدث خطأ في التطبيق
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+      }
     } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+      // الخيار البديل للمتصفحات القديمة
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
     }
   };
 
@@ -167,7 +181,7 @@ const EleganceSection = () => {
 
         .container {
           display: flex; flex-direction: column; align-items: center;
-          padding: 90px 10px 100px; /* تم زيادة الهامش العلوي ليتناسب مع طول النص الجديد */
+          padding: 90px 10px 100px;
         }
 
         .card {
