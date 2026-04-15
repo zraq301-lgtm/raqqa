@@ -58,34 +58,34 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  // --- تحديث وظيفة المشاركة لحل مشكلة الأندرويد والـ APK ---
+  // --- الوظيفة المحدثة والمضمونة للعمل داخل الـ APK ---
   const handleShare = async (title) => {
-    // تنظيف العنوان من أي رموز HTML
+    // 1. تنظيف العنوان من أي HTML
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = title;
     const cleanTitle = tempDiv.textContent || tempDiv.innerText || "";
+    
+    const message = `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle}`;
+    const fullUrl = `${message} \n ${APP_LINK}`;
 
-    const shareData = {
-      title: cleanTitle,
-      text: `إليكِ هذا الموضوع المميز: ${cleanTitle}`,
-      url: APP_LINK,
-    };
-
-    try {
-      // محاولة استخدام مشاركة النظام الأصلية
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        // البديل في حال عدم الدعم (مثل بعض متصفحات WebView في APK)
-        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`;
-        window.open(whatsappUrl, '_blank');
-      }
-    } catch (error) {
-      if (error.name !== 'AbortError') {
-        // إذا فشل النظام تماماً، نفتح الواتساب كخيار أخير
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`, '_blank');
+    // 2. محاولة استخدام Share API (تعمل في المتصفح العادي)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: cleanTitle,
+          text: message,
+          url: APP_LINK,
+        });
+        return; // إذا نجح نخرج من الدالة
+      } catch (err) {
+        console.log("System share failed, falling back to WhatsApp");
       }
     }
+
+    // 3. الحل البديل المضمون للأندرويد APK (التحويل المباشر للواتساب)
+    // استخدمنا window.location.href لأن window.open غالباً ما يتم حظره في الـ WebView
+    const whatsappLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullUrl)}`;
+    window.location.href = whatsappLink;
   };
 
   if (loading) return <div className="loading-screen">لحظات من الأناقة...</div>;
@@ -175,17 +175,16 @@ const EleganceSection = () => {
         .app-download-box { margin-top: 25px; padding: 15px; background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px; text-align: center; }
         .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; }
         .interaction-buttons { display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #fcf6f2; }
-        .interaction-buttons button { background: none; border: none; cursor: pointer; font-family: 'Tajawal'; color: #8d6e63; }
+        .interaction-buttons button { background: none; border: none; cursor: pointer; font-family: 'Tajawal'; color: #8d6e63; font-size: 1rem; }
         .comments-area { padding: 15px; border-top: 1px solid #eee; }
         .comment-input-wrap { display: flex; gap: 8px; }
-        .comment-input-wrap input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
-        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 15px; border-radius: 20px; }
-        .single-comment { background: #fdf8f5; padding: 10px; border-radius: 12px; margin-bottom: 8px; border-right: 4px solid #b08968; }
-        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; }
+        .comment-input-wrap input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
+        .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
+        .single-comment { background: #fdf8f5; padding: 10px; border-radius: 12px; margin-bottom: 8px; border-right: 4px solid #b08968; text-align: right; }
+        .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; }
       `}</style>
     </div>
   );
 };
 
-// --- السطر الأهم لحل مشكلة Vercel ---
 export default EleganceSection;
