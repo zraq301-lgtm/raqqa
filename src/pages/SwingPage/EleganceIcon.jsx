@@ -58,11 +58,23 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  const handleShare = (title) => {
-    if (navigator.share) {
-      navigator.share({ title: title, url: APP_LINK });
+  const handleShare = async (title) => {
+    const shareData = {
+      title: title.replace(/<\/?[^>]+(>|$)/g, ""), // تنظيف العنوان من الـ HTML
+      text: "شاهدي هذا الموضوع المميز في عالم الأناقة",
+      url: APP_LINK
+    };
+
+    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // إذا حدث خطأ أو ألغى المستخدم، نفتح الواتساب كخيار احتياطي
+        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.title + " " + APP_LINK)}`, '_blank');
+      }
     } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+      // للمتصفحات التي لا تدعم navigator.share
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.title + " " + APP_LINK)}`, '_blank');
     }
   };
 
@@ -166,12 +178,12 @@ const EleganceSection = () => {
 
         .container {
           display: flex; flex-direction: column; align-items: center;
-          padding: 70px 10px 100px; /* زيادة الهامش السفلي لعدم تداخل القائمة */
+          padding: 70px 10px 100px;
         }
 
         .card {
           background: #ffffff;
-          max-width: 500px; /* زيادة عرض الكارت قليلاً */
+          max-width: 500px;
           width: 95%;
           border-radius: 20px; 
           overflow: hidden;
@@ -191,14 +203,13 @@ const EleganceSection = () => {
           font-size: 1.4rem;
         }
 
-        /* تنسيق الصورة لتأخذ العرض كاملاً بدون قص */
         .main-featured-image {
           width: 100%;
         }
         .main-featured-image img {
           width: 100%;
           display: block;
-          height: auto; /* يجعل الصورة تأخذ طولها الطبيعي */
+          height: auto;
         }
 
         .content { 
@@ -206,7 +217,6 @@ const EleganceSection = () => {
           text-align: center; 
         }
 
-        /* تنسيق الصور والمحتوى القادم من وردبريس */
         .wp-html-content { 
           text-align: right; 
           color: #4a3f35; 
@@ -214,7 +224,7 @@ const EleganceSection = () => {
         }
         
         .wp-html-content img {
-          max-width: 100% !important; /* إجبار الصورة على عدم تجاوز الكارت */
+          max-width: 100% !important;
           height: auto !important;
           border-radius: 10px;
           margin: 10px 0;
