@@ -58,34 +58,48 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  // --- الوظيفة المحدثة والمضمونة للعمل داخل الـ APK ---
+  /**
+   * الحل النهائي لبيئة Capacitor/WebView
+   * نستخدم بروتوكول "whatsapp://send" للمشاركة المباشرة 
+   * لأنه يفتح التطبيق فوراً داخل الأندرويد دون الحاجة لمتصفح وسيط
+   */
   const handleShare = async (title) => {
-    // 1. تنظيف العنوان من أي HTML
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = title;
     const cleanTitle = tempDiv.textContent || tempDiv.innerText || "";
     
-    const message = `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle}`;
-    const fullUrl = `${message} \n ${APP_LINK}`;
+    const shareMessage = `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle} \n ${APP_LINK}`;
+    const encodedMessage = encodeURIComponent(shareMessage);
 
-    // 2. محاولة استخدام Share API (تعمل في المتصفح العادي)
+    // 1. محاولة استخدام الـ Share API أولاً
     if (navigator.share) {
       try {
         await navigator.share({
           title: cleanTitle,
-          text: message,
+          text: shareMessage,
           url: APP_LINK,
         });
-        return; // إذا نجح نخرج من الدالة
+        return;
       } catch (err) {
-        console.log("System share failed, falling back to WhatsApp");
+        // إذا حدث خطأ (مستخدم في APK غالباً)، ننتقل للحل اليدوي
       }
     }
 
-    // 3. الحل البديل المضمون للأندرويد APK (التحويل المباشر للواتساب)
-    // استخدمنا window.location.href لأن window.open غالباً ما يتم حظره في الـ WebView
-    const whatsappLink = `https://api.whatsapp.com/send?text=${encodeURIComponent(fullUrl)}`;
-    window.location.href = whatsappLink;
+    // 2. الحل الأقوى لـ Capacitor (الرابط العبق Deep Link)
+    // هذا الرابط يفتح تطبيق الواتساب مباشرة إذا كان مثبتاً على الأندرويد
+    const whatsappDeepLink = `whatsapp://send?text=${encodedMessage}`;
+    const whatsappWebFallback = `https://api.whatsapp.com/send?text=${encodedMessage}`;
+
+    // نحاول فتح الرابط العميق، وإذا فشل نستخدم الرابط العادي
+    const link = document.createElement('a');
+    link.href = whatsappDeepLink;
+    
+    // نختبر إذا كان النظام يستجيب للرابط العميق
+    try {
+        window.location.assign(whatsappDeepLink);
+    } catch (e) {
+        window.location.href = whatsappWebFallback;
+    }
   };
 
   if (loading) return <div className="loading-screen">لحظات من الأناقة...</div>;
