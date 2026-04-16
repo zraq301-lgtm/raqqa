@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Share } from '@capacitor/share'; // استيراد المكتبة المطلوبة
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -58,11 +59,19 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  const handleShare = (title) => {
-    if (navigator.share) {
-      navigator.share({ title: title, url: APP_LINK });
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+  // تعديل وظيفة المشاركة لاستخدام Capacitor
+  const handleShare = async (title) => {
+    const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, ""); // تنظيف العنوان من الـ HTML
+    try {
+      await Share.share({
+        title: cleanTitle,
+        text: 'مرحبا بك في عالم الأمومة',
+        url: APP_LINK,
+        dialogTitle: 'مشاركة الموضوع',
+      });
+    } catch (error) {
+      // خيار بديل في حال لم يتم دعم المكتبة في المتصفح أو تم إلغاء المشاركة
+      window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
     }
   };
 
