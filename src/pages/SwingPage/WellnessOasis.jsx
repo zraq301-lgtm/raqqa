@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// استيراد مكتبة Capacitor Share
+import { Share } from '@capacitor/share';
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -58,11 +60,23 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  const handleShare = (title) => {
-    if (navigator.share) {
-      navigator.share({ title: title, url: APP_LINK });
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+  // تعديل وظيفة المشاركة لاستخدام Capacitor
+  const handleShare = async (title, text) => {
+    try {
+      // محاولة استخدام ميزة المشاركة الخاصة بالنظام (Capacitor)
+      await Share.share({
+        title: title,
+        text: `اقرئي هذا المقال المميز: ${title}`,
+        url: APP_LINK,
+        dialogTitle: 'مشاركة الأناقة',
+      });
+    } catch (error) {
+      // في حال فشل Capacitor (مثلاً المتصفح)، نستخدم Fallback
+      if (navigator.share) {
+        navigator.share({ title: title, url: APP_LINK });
+      } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+      }
     }
   };
 
@@ -79,6 +93,7 @@ const EleganceSection = () => {
       <div className="container">
         {articles.map((post) => {
           const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+          const postTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, ""); // تنظيف العنوان من الـ HTML للمشاركة
 
           return (
             <div key={post.id} className="article-container">
@@ -89,7 +104,7 @@ const EleganceSection = () => {
                   <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                 </div>
 
-                {/* الصورة البارزة (إذا وجدت) - تم توسيعها */}
+                {/* الصورة البارزة */}
                 {featuredImage && (
                   <div className="main-featured-image">
                     <img src={featuredImage} alt="Elegance" />
@@ -97,7 +112,6 @@ const EleganceSection = () => {
                 )}
                 
                 <div className="content">
-                  {/* محتوى وردبريس - تم ضبط الصور داخله لتظهر كاملة */}
                   <div 
                     className="wp-html-content"
                     dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
@@ -118,7 +132,7 @@ const EleganceSection = () => {
                   <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
                     💬 تعليق
                   </button>
-                  <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
+                  <button onClick={() => handleShare(postTitle)} className="btn-share">
                     🔗 مشاركة
                   </button>
                 </div>
@@ -166,12 +180,12 @@ const EleganceSection = () => {
 
         .container {
           display: flex; flex-direction: column; align-items: center;
-          padding: 70px 10px 100px; /* زيادة الهامش السفلي لعدم تداخل القائمة */
+          padding: 70px 10px 100px;
         }
 
         .card {
           background: #ffffff;
-          max-width: 500px; /* زيادة عرض الكارت قليلاً */
+          max-width: 500px;
           width: 95%;
           border-radius: 20px; 
           overflow: hidden;
@@ -183,7 +197,6 @@ const EleganceSection = () => {
         .card-header-title {
           padding: 20px 15px;
           text-align: center;
-          background-color: #fff;
         }
         .card-header-title h2 {
           color: #8d6e63;
@@ -191,14 +204,10 @@ const EleganceSection = () => {
           font-size: 1.4rem;
         }
 
-        /* تنسيق الصورة لتأخذ العرض كاملاً بدون قص */
-        .main-featured-image {
-          width: 100%;
-        }
         .main-featured-image img {
           width: 100%;
           display: block;
-          height: auto; /* يجعل الصورة تأخذ طولها الطبيعي */
+          height: auto;
         }
 
         .content { 
@@ -206,7 +215,6 @@ const EleganceSection = () => {
           text-align: center; 
         }
 
-        /* تنسيق الصور والمحتوى القادم من وردبريس */
         .wp-html-content { 
           text-align: right; 
           color: #4a3f35; 
@@ -214,7 +222,7 @@ const EleganceSection = () => {
         }
         
         .wp-html-content img {
-          max-width: 100% !important; /* إجبار الصورة على عدم تجاوز الكارت */
+          max-width: 100% !important;
           height: auto !important;
           border-radius: 10px;
           margin: 10px 0;
