@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Share } from '@capacitor/share'; // استيراد مكتبة كاباسيتور
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -61,21 +62,18 @@ const EleganceSection = () => {
   const handleShare = async (title) => {
     // تنظيف العنوان من وسوم HTML إذا وجدت
     const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, "");
-    const shareText = `${cleanTitle}\n${APP_LINK}`;
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: cleanTitle,
-          text: "اكتشفي المزيد من الجمال والأناقة",
-          url: APP_LINK,
-        });
-      } catch (err) {
-        // إذا تم إلغاء المشاركة أو حدث خطأ في التطبيق
-        window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
-      }
-    } else {
-      // الخيار البديل للمتصفحات القديمة
+    try {
+      // استخدام Capacitor Share
+      await Share.share({
+        title: cleanTitle,
+        text: "اكتشفي المزيد من الجمال والأناقة عبر تطبيقنا",
+        url: APP_LINK,
+        dialogTitle: 'مشاركة مع الأصدقاء',
+      });
+    } catch (err) {
+      // في حال حدوث خطأ أو المتصفح لا يدعم، نستخدم رابط واتساب كبديل يدوي
+      const shareText = `${cleanTitle}\n${APP_LINK}`;
       window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
     }
   };
