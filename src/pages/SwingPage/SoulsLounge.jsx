@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Share } from '@capacitor/share'; // استيراد المكتبة المطلوبة
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -58,11 +59,21 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  const handleShare = (title) => {
-    if (navigator.share) {
-      navigator.share({ title: title, url: APP_LINK });
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+  // تفعيل زر المشاركة باستخدام Capacitor Share
+  const handleShare = async (title) => {
+    try {
+      await Share.share({
+        title: title,
+        text: `ألقي نظرة على هذا الموضوع: ${title}`,
+        url: APP_LINK,
+        dialogTitle: 'مشاركة عبر',
+      });
+    } catch (error) {
+      console.error("Share Error:", error);
+      // Fallback في حال فشل المكتبة
+      if (navigator.share) {
+        navigator.share({ title: title, url: APP_LINK });
+      }
     }
   };
 
