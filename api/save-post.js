@@ -8,12 +8,13 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
-    const { prompt } = req.body;
+    // إضافة استلام name و age من الواجهة الأمامية
+    const { prompt, name, age } = req.body;
     
     // سحب مفاتيح البيئة من إعدادات Vercel الخاصة بكِ
     const groqKey = process.env.GROQ_API_KEY; 
     const mxbKey = process.env.MXBAI_API_KEY; 
-    const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826"; //
+    const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826"; 
 
     try {
         // 2. معالجة الروابط وتنظيف النص
@@ -42,13 +43,15 @@ export default async function handler(req, res) {
             }
         }
 
-        // 4. بناء طلب Groq الموحد (استخدام الإصدارات الحديثة والمستقرة)
+        // 4. بناء طلب Groq الموحد
         const messageContent = [];
         
-        // إضافة هوية "رقة" والسياق المستخرج
+        // تخصيص هوية "رقة" باستخدام البيانات القادمة من الواجهة (الاسم والعمر)
+        const userPersona = `تتحدثين مع ${name || 'صديقتكِ'}، عمرها ${age || 'غير محدد'}.`;
+
         messageContent.push({ 
             type: "text", 
-            text: `أنتِ 'رقة'... مساعدة ذكية ولباقة. السياق المتخصص: ${context}\n\nطلب المستخدم: ${cleanText || 'حللي محتوى الصورة.'}` 
+            text: `أنتِ 'رقة'... مساعدة ذكية ولباقة. ${userPersona} السياق المتخصص: ${context}\n\nطلب المستخدم: ${cleanText || 'حللي محتوى الصورة.'}` 
         });
 
         if (imageUrl) {
@@ -58,7 +61,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // 5. استدعاء موديلات Groq (تحديث الإصدارات هنا لضمان العمل)
+        // 5. استدعاء موديلات Groq
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 
@@ -66,7 +69,6 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json' 
             },
             body: JSON.stringify({
-                // تم تحديث الموديل إلى الإصدار 90b لضمان أعلى دقة في الرؤية البصرية
                 model: imageUrl ? "llama-3.2-90b-vision-preview" : "llama-3.3-70b-versatile",
                 messages: [{ role: "user", content: messageContent }],
                 temperature: 0.6,
