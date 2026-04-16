@@ -1,71 +1,134 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 
-const ProfileSetup = ({ onComplete }) => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
-
+const UserProfile = () => {
   const [formData, setFormData] = useState({
-    name: '', age: '', social_status: 'متزوجة', health_status: 'عزباء',
-    education_level: 'جامعي', hobbies: '', life_mission: '', weight: '',
-    children_count: 0, chronic_diseases: 'لا يوجد', last_period: '',
+    name: '',
+    age: '',
+    maritalStatus: 'single'
   });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+
+  // تحميل البيانات المحفوظة محلياً عند فتح الصفحة
+  useEffect(() => {
+    const savedAge = localStorage.getItem('user_age');
+    const savedStatus = localStorage.getItem('user_marital_status');
+    if (savedAge || savedStatus) {
+      setFormData(prev => ({
+        ...prev,
+        age: savedAge || '',
+        maritalStatus: savedStatus || 'single'
+      }));
+    }
+  }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleFinalSubmit = async (e) => {
-    if (e) e.preventDefault();
+  const handleSave = async () => {
     setLoading(true);
-
-    const finalData = {
-      user_id: 'user-' + Math.random().toString(36).substr(2, 9),
-      ...formData,
-      created_at: new Date().toISOString()
-    };
+    setMessage('');
 
     try {
-      // 1. الحفظ في قاعدة البيانات
-      await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/save-notifications',
+      // 1. حفظ الاسم/اللقب في الجدول الخارجي (Vercel API)
+      const options = {
+        url: 'https://raqqa-ruddy.vercel.app/api/save-post',
         headers: { 'Content-Type': 'application/json' },
-        data: finalData 
-      });
-    } catch (err) {
-      console.warn("Database error, saving locally only.");
+        data: { name: formData.name },
+      };
+
+      const response = await CapacitorHttp.post(options);
+
+      if (response.status === 200 || response.status === 201) {
+        // 2. حفظ باقي البيانات محلياً داخل التطبيق
+        localStorage.setItem('user_age', formData.age);
+        localStorage.setItem('user_marital_status', formData.maritalStatus);
+        
+        setMessage('تم حفظ البيانات بنجاح!');
+      } else {
+        setMessage('حدث خطأ أثناء حفظ الاسم في السيرفر.');
+      }
+    } catch (error) {
+      console.error('Save Error:', error);
+      setMessage('فشل الاتصال بالسيرفر، تأكد من إعدادات Capacitor.');
     } finally {
       setLoading(false);
-      // 2. تفعيل التبديل إلى App.jsx
-      if (onComplete) onComplete(); 
-      // 3. التوجيه لصفحة الصحة داخل App.jsx
-      navigate('/health'); 
+    }
+  };
+
+  // تنسيق بسيط وعصري
+  const styles = {
+    container: { padding: '20px', fontFamily: 'Arial, sans-serif', direction: 'rtl' },
+    field: { marginBottom: '15px' },
+    label: { display: 'block', marginBottom: '5px', fontWeight: 'bold' },
+    input: { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' },
+    button: { 
+      width: '100%', 
+      padding: '12px', 
+      backgroundColor: '#ff85a2', 
+      color: 'white', 
+      border: 'none', 
+      borderRadius: '25px', 
+      fontSize: '16px',
+      cursor: 'pointer' 
     }
   };
 
   return (
-    <div style={{ direction: 'rtl', textAlign: 'center', padding: '50px 20px', background: '#fff5f7', minHeight: '100vh' }}>
-       <div style={{ background: 'white', padding: '30px', borderRadius: '25px', maxWidth: '400px', margin: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}>
-          <h2 style={{ color: '#ff4d7d' }}>إعداد ملفكِ الشخصي</h2>
-          {step === 1 ? (
-            <div>
-              <input style={{width:'100%', padding:'12px', margin:'10px 0', borderRadius:'10px', border:'1px solid #eee'}} type="text" name="name" placeholder="الاسم" onChange={handleChange} />
-              <button style={{width:'100%', padding:'12px', background:'#ff4d7d', color:'white', border:'none', borderRadius:'10px', fontWeight:'bold'}} onClick={() => setStep(2)}>التالي</button>
-            </div>
-          ) : (
-            <div>
-              <p>اضغطي حفظ للدخول إلى عالم رقة</p>
-              <button style={{width:'100%', padding:'12px', background:'#ff4d7d', color:'white', border:'none', borderRadius:'10px', fontWeight:'bold'}} onClick={handleFinalSubmit} disabled={loading}>
-                {loading ? 'جاري الحفظ...' : 'حفظ والدخول'}
-              </button>
-            </div>
-          )}
-       </div>
+    <div style={styles.container}>
+      <h2 style={{ textAlign: 'center' }}>الملف الشخصي</h2>
+      
+      <div style={styles.field}>
+        <label style={styles.label}>الاسم أو اللقب:</label>
+        <input 
+          style={styles.input}
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="أدخل اسمك"
+        />
+      </div>
+
+      <div style={styles.field}>
+        <label style={styles.label}>العمر:</label>
+        <input 
+          style={styles.input}
+          type="number"
+          name="age"
+          value={formData.age}
+          onChange={handleChange}
+          placeholder="أدخل عمرك"
+        />
+      </div>
+
+      <div style={styles.field}>
+        <label style={styles.label}>الحالة الاجتماعية:</label>
+        <select 
+          style={styles.input}
+          name="maritalStatus"
+          value={formData.maritalStatus}
+          onChange={handleChange}
+        >
+          <option value="single">عزباء</option>
+          <option value="married">متزوجة</option>
+          <option value="divorced">مطلقة</option>
+          <option value="widowed">أرملة</option>
+        </select>
+      </div>
+
+      <button 
+        style={styles.button} 
+        onClick={handleSave} 
+        disabled={loading}
+      >
+        {loading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+      </button>
+
+      {message && <p style={{ textAlign: 'center', marginTop: '10px', color: '#d81b60' }}>{message}</p>}
     </div>
   );
 };
 
-export default ProfileSetup;
+export default UserProfile;
