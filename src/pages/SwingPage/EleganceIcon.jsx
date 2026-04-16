@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// استيراد مكتبة المشاركة الخاصة بكاباسيتور لضمان فتح قائمة النظام الشاملة
+import { Share } from '@capacitor/share';
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -58,47 +60,35 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  /**
-   * الحل النهائي لبيئة Capacitor/WebView
-   * نستخدم بروتوكول "whatsapp://send" للمشاركة المباشرة 
-   * لأنه يفتح التطبيق فوراً داخل الأندرويد دون الحاجة لمتصفح وسيط
-   */
+  // --- وظيفة المشاركة المتوافقة مع Capacitor ---
   const handleShare = async (title) => {
+    // تنظيف العنوان من وسوم HTML
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = title;
     const cleanTitle = tempDiv.textContent || tempDiv.innerText || "";
-    
-    const shareMessage = `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle} \n ${APP_LINK}`;
-    const encodedMessage = encodeURIComponent(shareMessage);
 
-    // 1. محاولة استخدام الـ Share API أولاً
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: cleanTitle,
-          text: shareMessage,
-          url: APP_LINK,
-        });
-        return;
-      } catch (err) {
-        // إذا حدث خطأ (مستخدم في APK غالباً)، ننتقل للحل اليدوي
-      }
-    }
-
-    // 2. الحل الأقوى لـ Capacitor (الرابط العبق Deep Link)
-    // هذا الرابط يفتح تطبيق الواتساب مباشرة إذا كان مثبتاً على الأندرويد
-    const whatsappDeepLink = `whatsapp://send?text=${encodedMessage}`;
-    const whatsappWebFallback = `https://api.whatsapp.com/send?text=${encodedMessage}`;
-
-    // نحاول فتح الرابط العميق، وإذا فشل نستخدم الرابط العادي
-    const link = document.createElement('a');
-    link.href = whatsappDeepLink;
-    
-    // نختبر إذا كان النظام يستجيب للرابط العميق
     try {
-        window.location.assign(whatsappDeepLink);
-    } catch (e) {
-        window.location.href = whatsappWebFallback;
+      // محاولة استدعاء قائمة المشاركة الأصلية للنظام (Android/iOS)
+      await Share.share({
+        title: cleanTitle,
+        text: `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle}`,
+        url: APP_LINK,
+        dialogTitle: 'مشاركة عبر تطبيقاتك',
+      });
+    } catch (error) {
+      // في حالة الفشل (مثلاً عند التشغيل في متصفح ويب عادي)
+      if (navigator.share) {
+        navigator.share({
+          title: cleanTitle,
+          text: `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle}`,
+          url: APP_LINK,
+        }).catch(() => {
+          window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
+        });
+      } else {
+        // الحل الأخير إذا لم يدعم المتصفح أي خيار مشاركة
+        window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
+      }
     }
   };
 
@@ -107,18 +97,17 @@ const EleganceSection = () => {
   return (
     <div className="main-wrapper" dir="rtl">
       <div className="fixed-welcome">✨ مرحبا بك في عالم الأمومة ✨</div>
-
+      
       <div className="container">
         {articles.map((post) => {
           const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
-
           return (
             <div key={post.id} className="article-container">
               <div className="card">
                 <div className="card-header-title">
                   <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                 </div>
-
+                
                 {featuredImage && (
                   <div className="main-featured-image">
                     <img src={featuredImage} alt="Elegance" />
@@ -126,18 +115,12 @@ const EleganceSection = () => {
                 )}
                 
                 <div className="content">
-                  <div 
-                    className="wp-html-content"
-                    dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
-                  />
-                  
+                  <div className="wp-html-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
                   <div className="app-download-box">
-                    <a href={APP_LINK} target="_blank" rel="noreferrer">
-                      ✨ حملي التطبيق الآن من هنا ✨
-                    </a>
+                    <a href={APP_LINK} target="_blank" rel="noreferrer">✨ حملي التطبيق الآن من هنا ✨</a>
                   </div>
                 </div>
-
+                
                 <div className="interaction-buttons">
                   <button onClick={() => handleLike(post.id)} className="btn-like">
                     ❤️ <span>{likes[post.id] || 0}</span>
@@ -156,8 +139,8 @@ const EleganceSection = () => {
                       <input 
                         type="text" 
                         placeholder="أضيفي لمستكِ..." 
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
+                        value={newComment} 
+                        onChange={(e) => setNewComment(e.target.value)} 
                       />
                       <button onClick={() => handleAddComment(post.id)}>نشر</button>
                     </div>
@@ -177,7 +160,7 @@ const EleganceSection = () => {
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700&display=swap');
         body { font-family: 'Tajawal', sans-serif; background-color: #fdf8f5; margin: 0; padding: 0; }
-        .fixed-welcome { position: fixed; top: 0; left: 0; right: 0; background: #b08968; color: white; text-align: center; padding: 12px 0; font-size: 1rem; font-weight: 700; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .fixed-welcome { position: fixed; top: 0; left: 0; right: 0; background: #b08968; color: white; text-align: center; padding: 12px 0; font-size: 1rem; font-weight: 700; z-index: 1000; }
         .container { display: flex; flex-direction: column; align-items: center; padding: 70px 10px 100px; }
         .card { background: #ffffff; max-width: 500px; width: 95%; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 30px; border: 1px solid #f0e6e0; }
         .card-header-title { padding: 20px 15px; text-align: center; }
