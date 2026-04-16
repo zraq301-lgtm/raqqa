@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Share } from '@capacitor/share'; // استيراد المكتبة المطلوبة
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -59,11 +60,21 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  const handleShare = (title) => {
-    if (navigator.share) {
-      navigator.share({ title: title, url: APP_LINK });
-    } else {
-      window.open(`https://wa.me/?text=${encodeURIComponent(title + " " + APP_LINK)}`);
+  // تحديث وظيفة المشاركة باستخدام Capacitor Share
+  const handleShare = async (title) => {
+    try {
+      await Share.share({
+        title: title,
+        text: `شاركي هذه المقالة من تطبيق رقة: ${title}`,
+        url: APP_LINK,
+        dialogTitle: 'مشاركة المقالة',
+      });
+    } catch (error) {
+      console.error("Share Error:", error);
+      // fallback في حال فشل المكتبة لأي سبب
+      if (navigator.share) {
+        navigator.share({ title: title, url: APP_LINK });
+      }
     }
   };
 
