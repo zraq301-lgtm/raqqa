@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // أضفنا useState للتحكم في التبديل
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import AppSwitcher from './AppSwitcher'; 
+import SplashScreen from './SplashScreen'; // استدعاء شاشة البداية من المسار src/SplashScreen.jsx
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
-import { FCM } from '@capacitor-community/fcm'; // إضافة مكتبة الـ FCM للتعامل مع الـ Topics
+import { FCM } from '@capacitor-community/fcm'; 
 
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
@@ -22,6 +23,8 @@ if (!getApps().length) {
 }
 
 const Main = () => {
+  // حالة للتحكم في عرض شاشة البداية أولاً
+  const [showSplash, setShowSplash] = useState(true);
   
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
@@ -38,11 +41,9 @@ const Main = () => {
     if (Capacitor.isNativePlatform()) {
       const setupPush = async () => {
         try {
-          // 1. إضافة المستمعين
           await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
             
-            // --- التعديل المطلوب: الاشتراك في موضوع "جميع المستخدمين" ---
             try {
               await FCM.subscribeTo({ topic: 'all_users' });
               console.log("✅ Subscribed to all_users topic");
@@ -55,12 +56,10 @@ const Main = () => {
             console.log("📩 إشعار جديد:", notification.title);
           });
 
-          // 2. إضافة مستمع لفتح الإشعار
           await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
             console.log("🖱️ تم النقر على الإشعار:", notification.actionId);
           });
 
-          // 3. طلب الصلاحيات والتسجيل
           let permStatus = await PushNotifications.checkPermissions();
           if (permStatus.receive === 'prompt') {
             permStatus = await PushNotifications.requestPermissions();
@@ -80,7 +79,13 @@ const Main = () => {
 
   return (
     <BrowserRouter>
-      <AppSwitcher />
+      {showSplash ? (
+        /* يبدأ التطبيق هنا بملف SplashScreen */
+        <SplashScreen onFinished={() => setShowSplash(false)} />
+      ) : (
+        /* ينتقل هنا إلى AppSwitcher بعد انتهاء الفيديو */
+        <AppSwitcher />
+      )}
     </BrowserRouter>
   );
 };
