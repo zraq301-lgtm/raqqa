@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-    // 1. إعدادات CORS لضمان الاتصال السلس
+    // 1. إعدادات CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -8,21 +8,32 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
-    // إضافة استلام name و age من الواجهة الأمامية
+    // --- الحل الجوهري: التأكد من أن req.body معرف ---
+    if (!req.body) {
+        return res.status(400).json({ message: "خطأ: لم يتم إرسال بيانات في الطلب (Body is missing)" });
+    }
+
     const { prompt, name, age } = req.body;
-    
-    // سحب مفاتيح البيئة من إعدادات Vercel الخاصة بكِ
+
+    // التأكد من وجود النص الأساسي
+    if (!prompt) {
+        return res.status(400).json({ message: "الرجاء كتابة رسالة أو سؤال لرقة." });
+    }
+
+    // سحب مفاتيح البيئة
     const groqKey = process.env.GROQ_API_KEY; 
     const mxbKey = process.env.MXBAI_API_KEY; 
     const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826"; 
 
     try {
-        // 2. معالجة الروابط وتنظيف النص
+        // 2. معالجة الروابط وتنظيف النص (بشكل آمن)
         const urlRegex = /https?:\/\/[^\s]+(?:png|jpg|jpeg|webp)/gi;
-        const imageUrl = (prompt.match(urlRegex) || [])[0];
-        const cleanText = prompt.replace(urlRegex, '').replace(/\(تم إرسال وسائط للمعالجة\.\.\.\)/g, '').trim();
+        const imageUrl = (typeof prompt === 'string' ? (prompt.match(urlRegex) || [])[0] : null);
+        const cleanText = typeof prompt === 'string' 
+            ? prompt.replace(urlRegex, '').replace(/\(تم إرسال وسائط للمعالجة\.\.\.\)/g, '').trim() 
+            : "";
 
-        // 3. جلب السياق المتخصص من Mixedbread (Mix)
+        // 3. جلب السياق من Mixedbread
         let context = "";
         if (cleanText || imageUrl) {
             try {
@@ -39,16 +50,14 @@ export default async function handler(req, res) {
                     }
                 }
             } catch (e) { 
-                console.error("Mixedbread connectivity check"); 
+                console.error("Mixedbread Error:", e.message); 
             }
         }
 
-        // 4. بناء طلب Groq الموحد
+        // 4. بناء طلب Groq
+        const userPersona = `تتحدثين مع ${name || 'صديقتكِ'}، عمرها ${age || 'غير محدد'}.`;
         const messageContent = [];
         
-        // تخصيص هوية "رقة" باستخدام البيانات القادمة من الواجهة (الاسم والعمر)
-        const userPersona = `تتحدثين مع ${name || 'صديقتكِ'}، عمرها ${age || 'غير محدد'}.`;
-
         messageContent.push({ 
             type: "text", 
             text: `أنتِ 'رقة'... مساعدة ذكية ولباقة. ${userPersona} السياق المتخصص: ${context}\n\nطلب المستخدم: ${cleanText || 'حللي محتوى الصورة.'}` 
@@ -61,7 +70,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // 5. استدعاء موديلات Groq
+        // 5. استدعاء Groq
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: { 
@@ -78,14 +87,15 @@ export default async function handler(req, res) {
 
         const data = await groqRes.json();
         
-        // 6. الرد النهائي
         if (data.choices && data.choices[0]) {
-            res.status(200).json({ message: data.choices[0].message.content });
+            return res.status(200).json({ message: data.choices[0].message.content });
         } else {
-            res.status(200).json({ message: "أهلاً بكِ رقيقة، رقة تقوم بتحديث أنظمتها حالياً، جربي مجدداً بعد لحظات." });
+            console.error("Groq Empty Response:", data);
+            return res.status(200).json({ message: "أهلاً بكِ رقيقة، رقة تقوم بتحديث أنظمتها حالياً، جربي مجدداً بعد لحظات." });
         }
 
     } catch (error) {
-        res.status(500).json({ message: "خطأ في الاتصال بالسيرفر، رقة ستعود قريباً." });
+        console.error("Critical API Error:", error);
+        return res.status(500).json({ message: "خطأ في الاتصال بالسيرفر، رقة ستعود قريباً." });
     }
 }
