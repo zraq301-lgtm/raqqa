@@ -1,15 +1,14 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { createApi } from 'unsplash-js';
 import styled, { keyframes } from 'styled-components';
 import { Share2, Download, RefreshCcw, X, Heart, Send } from 'lucide-react';
-import html2canvas from 'html2canvas';
 
-// استيراد Capacitor Share للعمل على الأندرويد
+// استخدام المكتبة الموجودة في مشروعك بدلاً من html2canvas المتعطلة
 import { Share } from '@capacitor/share';
 
 // --- 1. إعداد الـ API ---
 const unsplash = createApi({
-  accessKey: process.env.REACT_APP_UNSPLASH_KEY || '5oEHaoc0omGE8-t2y_tSQo2X0wzKwh3xjOrorB89ltY',
+  accessKey: process.env.REACT_APP_UNSPLASH_KEY || '5oEHaoc0omGE8-t2_tSQo2X0wzKwh3xjOrorB89ltY',
 });
 
 // --- 2. الأنيميشن ---
@@ -147,7 +146,6 @@ const RaqqaLuxuryGallery = () => {
   const [photos, setPhotos] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
-  const cardRefs = useRef({});
   
   const [likes, setLikes] = useState(() => JSON.parse(localStorage.getItem('raqqa_likes') || '{}'));
   const [comments, setComments] = useState(() => JSON.parse(localStorage.getItem('raqqa_comments') || '{}'));
@@ -178,40 +176,17 @@ const RaqqaLuxuryGallery = () => {
     fetchPhotos();
   }, [fetchPhotos]);
 
-  // --- وظيفة المشاركة المتوافقة مع Capacitor والأندرويد ---
-  const handleCaptureShare = async (id) => {
-    const element = cardRefs.current[id];
-    if (!element) return;
-
+  // دالة المشاركة المتوافقة مع Android APK عبر Capacitor
+  const handleShare = async (photo) => {
     try {
-      // 1. التقاط محتوى الكارت كصورة
-      const canvas = await html2canvas(element, { 
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        scale: 2 // جودة أفضل
-      });
-      
-      const dataUrl = canvas.toDataURL("image/png");
-
-      // 2. استخدام Capacitor Share للمشاركة على الأندرويد
       await Share.share({
-        title: 'تصميم من رقة للديكور',
-        text: 'شاهد هذا التصميم المذهل!',
-        url: dataUrl, // في الأندرويد Capacitor يتعامل مع Base64 للمشاركة
-        dialogTitle: 'مشاركة التصميم عبر',
+        title: 'تصميم من رقة',
+        text: 'شاهد هذا التصميم الرائع!',
+        url: photo.urls.regular,
+        dialogTitle: 'مشاركة التصميم',
       });
-
     } catch (err) {
-      console.error("Android Share failed", err);
-      // Fallback للمتصفحات العادية
-      if (navigator.share) {
-         try {
-           const canvas = await html2canvas(element, { useCORS: true });
-           const blob = await (await fetch(canvas.toDataURL())).blob();
-           const file = new File([blob], 'raqqa-design.png', { type: 'image/png' });
-           await navigator.share({ files: [file] });
-         } catch (e) { console.log(e); }
-      }
+      console.log("Share canceled");
     }
   };
 
@@ -245,17 +220,12 @@ const RaqqaLuxuryGallery = () => {
 
       <GalleryGrid>
         {photos.map((photo, index) => (
-          <ImageCard 
-            key={photo.id} 
-            delay={index * 0.1} 
-            ref={el => cardRefs.current[photo.id] = el}
-          >
+          <ImageCard key={photo.id} delay={index * 0.1}>
             <img 
               src={photo.urls.small} 
               alt="Decoration" 
               style={{width: '100%', cursor: 'zoom-in', display: 'block'}} 
               onClick={() => setSelectedPhoto(photo.urls.regular)}
-              crossOrigin="anonymous" 
             />
             
             <ActionButtons>
@@ -267,14 +237,14 @@ const RaqqaLuxuryGallery = () => {
                 <Download size={16} /> حفظ
               </IconButton>
               
-              <IconButton onClick={() => handleCaptureShare(photo.id)}>
-                <Share2 size={16} /> مشاركة كابتشور
+              <IconButton onClick={() => handleShare(photo)}>
+                <Share2 size={16} /> مشاركة
               </IconButton>
             </ActionButtons>
 
             <CommentSection>
                {comments[photo.id] && comments[photo.id].map((c, i) => (
-                 <p key={i} style={{fontSize: '0.75rem', margin: '3px 0', color: '#555', borderBottom: '1px solid #f9f9f9'}}>• {c}</p>
+                 <p key={i} style={{fontSize: '0.75rem', margin: '3px 0', color: '#555'}}>• {c}</p>
                ))}
                <CommentInputWrapper>
                   <CommentInput 
