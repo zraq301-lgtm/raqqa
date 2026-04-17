@@ -38,7 +38,7 @@ export default async function handler(request, response) {
             });
         }
 
-        // 3. تنفيذ الحفظ في جدول "posts" مع انتظار التأكيد (Await)
+        // 3. تنفيذ الحفظ في جدول "posts"
         const results = [];
         for (const entry of validEntries) {
             const content = entry.content || entry.text || entry.body || '';
@@ -50,7 +50,7 @@ export default async function handler(request, response) {
             const age = parseInt(entry.age || body.age || 0);
             const name = entry.name || body.name || null;
 
-            // تنفيذ الحفظ المباشر لضمان وصول البيانات
+            // تنفيذ الحفظ مع انتظار النتيجة
             const res = await sql`
                 INSERT INTO posts (
                     content, 
@@ -80,15 +80,15 @@ export default async function handler(request, response) {
         return response.status(200).json({ 
             success: true, 
             message: `تم حفظ ${results.length} منشور بنجاح في جدول posts`,
-            processedCount: results.length 
+            processedCount: results.length,
+            ids: results.map(r => r[0].id)
         });
 
     } catch (error) {
         console.error('Neon Database Error:', error);
         return response.status(500).json({ 
             error: 'خطأ في قاعدة البيانات', 
-            details: error.message,
-            hint: 'تأكد من مطابقة أسماء الأعمدة في الجدول'
+            details: error.message 
         });
     }
 }
