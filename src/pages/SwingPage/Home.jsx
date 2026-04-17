@@ -93,15 +93,30 @@ const Home = () => {
     if (!newContent.trim() && !mediaUrl) return;
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('content', newContent);
-      formData.append('section', selectedSection);
-      formData.append('type', mediaUrl ? "رابط" : "نصي");
-      formData.append('external_link', mediaUrl);
+      // إرسال البيانات بصيغة JSON بدلاً من FormData لضمان الحفظ
+      const payload = {
+        content: newContent,
+        section: selectedSection,
+        type: mediaUrl ? "رابط" : "نصي",
+        external_link: mediaUrl
+      };
 
-      const response = await fetch(API_SAVE, { method: 'POST', body: formData });
-      if (response.ok) { setNewContent(""); setMediaUrl(""); fetchPosts(); }
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+      const response = await fetch(API_SAVE, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload) 
+      });
+
+      if (response.ok) { 
+        setNewContent(""); 
+        setMediaUrl(""); 
+        fetchPosts(); 
+      }
+    } catch (err) { 
+      console.error(err); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   // تحديث دالة المشاركة لتستخدم Capacitor Share الأصلي ليعمل على APK
