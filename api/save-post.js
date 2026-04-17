@@ -1,53 +1,43 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(request, response) {
-    // إعدادات CORS للسماح بالوصول من أي مكان
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     if (request.method === 'OPTIONS') return response.status(200).end();
-    if (request.method !== 'POST') return response.status(405).json({ error: 'Method Not Allowed' });
 
     try {
         const sql = neon(process.env.DATABASE_URL);
-        const body = request.body || {};
-
-        // تحويل البيانات القادمة لمصفوفة للتعامل معها بمرونة
-        let entries = [];
-        if (Array.isArray(body)) entries = body;
-        else if (body.posts && Array.isArray(body.posts)) entries = body.posts;
-        else if (typeof body === 'object' && Object.keys(body).length > 0) entries = [body];
-
-        // فلترة البيانات لضمان عدم حفظ منشور فارغ تماماً
-        const validEntries = entries.filter(e => e.content || e.media_url || e.text || e.url);
-
-        if (validEntries.length === 0) {
-            return response.status(200).json({ success: false, message: 'لا توجد بيانات صالحة للحفظ' });
-        }
+        
+        // جلب الـ body مهما كان شكله
+        const body = request.body;
+        
+        // تحويل كل شيء لمصفوفة حتى لو أرسلت كائن واحد
+        let dataToSave = Array.isArray(body) ? body : (body.posts || body.data || [body]);
 
         const results = [];
 
-        // استخدام الـ Loop لضمان حفظ كل عنصر بشكل مؤكد
-        for (const entry of validEntries) {
-            // استخراج القيم مع مراعاة المسميات المختلفة
-            const content = entry.content || entry.text || '';
-            const media_url = entry.media_url || entry.url || entry.link || '';
-            const section = entry.section || body.section || 'bouh-display';
-            const post_type = entry.type || (media_url ? 'رابط' : 'نصي');
-            const likes = parseInt(entry.likes_count || entry.likes || 0);
-            const comments = parseInt(entry.comments_count || entry.comments || 0);
-            const age = parseInt(entry.age || body.age || 0);
-            const name = entry.name || body.name || null;
+        for (const item of dataToSave) {
+            // إجبار استخراج البيانات: سيبحث في كل الاحتمالات الممكنة
+            const content = item.content || item.text || item.body || item.message || JSON.stringify(item); 
+            const media_url = item.media_url || item.url || item.image || item.link || '';
+            const section = item.section || body.section || 'bouh-display';
+            const age = parseInt(item.age || body.age || 0);
+            const name = item.name || body.name || 'User';
+            const p_type = item.type || (media_url ? 'رابط' : 'نصي');
 
-            // تنفيذ الإدخال الفعلي في الجدول
+            // تنفيذ الإدخال (بدون فلترة - سيحفظ مهما حدث)
             const res = await sql`
                 INSERT INTO posts (
-                    content, media_url, section, type, 
-                    likes_count, comments_count, age, name
+                    content, media_url, section, type, age, name
                 ) VALUES (
-                    ${content}, ${media_url}, ${section}, ${post_type}, 
-                    ${likes}, ${comments}, ${age}, ${name}
+                    ${String(content)}, 
+                    ${String(media_url)}, 
+                    ${String(section)}, 
+                    ${String(p_type)}, 
+                    ${age}, 
+                    ${String(name)}
                 ) RETURNING id;
             `;
             results.push(res[0].id);
@@ -55,15 +45,18 @@ export default async function handler(request, response) {
 
         return response.status(200).json({ 
             success: true, 
-            message: `تم حفظ ${results.length} منشور بنجاح`,
-            ids: results 
+            message: "تم الإجبار على الحفظ",
+            inserted_ids: results,
+            // هذا السطر سيكشف لك في الـ Response ماذا استلم السيرفر فعلياً
+            raw_data_received: body 
         });
 
     } catch (error) {
-        console.error('Neon Error:', error);
+        console.error('CRITICAL DATABASE ERROR:', error);
         return response.status(500).json({ 
-            error: 'Database Error', 
-            details: error.message 
+            success: false, 
+            error: error.message,
+            stack: error.stack
         });
     }
 }
