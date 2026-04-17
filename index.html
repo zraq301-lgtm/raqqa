@@ -13,15 +13,28 @@
         (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
       };
 
-      // أمر تشغيل تلقائي للإعلانات بمجرد تحميل الصفحة
+      // 1. مراقبة استلام الإعلان بنجاح
+      window.startAppTag('onReceiveAd', function() {
+        console.log("Ad Received Successfully");
+        // alert("✅ تم استلام الإعلان بنجاح!"); 
+      });
+
+      // 2. مراقبة فشل استلام الإعلان ومعرفة السبب
+      window.startAppTag('onFailedToReceiveAd', function() {
+        console.warn("Failed to Receive Ad");
+        alert("❌ فشل طلب الإعلان: غالباً بسبب بطء الإنترنت (3G) أو عدم توفر إعلانات حالياً لمنطقتك.");
+      });
+
+      // 3. محاولة تشغيل الإعلان تلقائياً
       window.onload = function() {
         setTimeout(function() {
           if (window.startAppTag) {
-            // طلب إظهار إعلان بيني (Interstitial) تلقائياً عند الفتح
             window.startAppTag('showAd');
-            console.log("Ad Requested for Raqqa App");
+            console.log("Requesting Ad for Raqqa...");
+          } else {
+            alert("⚠️ مكتبة الإعلانات لم تحمل! تأكد من سرعة الإنترنت.");
           }
-        }, 5000); // انتظر 5 ثوانٍ لضمان تحميل المكتبة بالكامل
+        }, 10000); // انتظر 10 ثوانٍ كاملة لمراعاة سرعة الـ 3G
       };
     </script>
     <script async src="https://www.start.io/js/sdk.js?publisherId=127253367&appId=203477356"></script>
