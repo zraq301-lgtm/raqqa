@@ -13,42 +13,60 @@ export default async function handler(request, response) {
         const sql = neon(process.env.DATABASE_URL);
         const body = request.body || {};
 
-        // 1. استخراج البيانات بشكل ذكي
+        // 1. استخراج البيانات (المصفوفة الذكية)
         let entries = [];
+        if (Array.isArray(body)) entries = body;
+        else if (body.posts && Array.isArray(body.posts)) entries = body.posts;
+        else if (body.data && Array.isArray(body.data)) entries = body.data;
+        else if (typeof body === 'object' && Object.keys(body).length > 0) entries = [body];
 
-        if (Array.isArray(body)) {
-            // إذا كانت البيانات المرسلة مصفوفة مباشرة [{}, {}]
-            entries = body;
-        } else if (body.posts && Array.isArray(body.posts)) {
-            // إذا كانت داخل خاصية posts
-            entries = body.posts;
-        } else if (body.data && Array.isArray(body.data)) {
-            // إذا كانت داخل خاصية data
-            entries = body.data;
-        } else if (typeof body === 'object' && Object.keys(body).length > 0) {
-            // إذا تم إرسال كائن واحد فقط {content: '...'}، نحوله لمصفوفة
-            entries = [body];
-        }
-
-        // 2. التحقق النهائي: إذا لم نجد أي بيانات صالحة
         if (entries.length === 0) {
-            return response.status(200).json({ 
-                message: 'No data processed', 
-                received: body 
-            }); // نرسل 200 لتجنب كسر الواجهة الأمامية مع رسالة توضيحية
+            return response.status(200).json({ message: 'No data to process' });
         }
 
-        const age = body.age || 0;
-
-        // 3. تنفيذ الحفظ باستخدام Transaction أو وعود متوازية لتحسين الأداء
+        // 2. معالجة البيانات وحفظها بناءً على أعمدة الجدول في الصور
         const insertPromises = entries.map(entry => {
-            // استخراج القيم بمرونة (البحث عن مسميات مختلفة لنفس الحقل)
+            // محتوى المنشور
             const content = entry.content || entry.text || entry.body || '';
-            const mediaUrl = entry.url || entry.media_url || entry.image || entry.link || '';
+            
+            // الرابط (media_url)
+            const mediaUrl = entry.media_url || entry.url || entry.link || entry.image || '';
+            
+            // القسم (section) - مثل bouh-display
+            const section = entry.section || body.section || 'default';
+            
+            // النوع (type) - مثل نصي أو رابط
+            const type = entry.type || (mediaUrl ? 'رابط' : 'نصي');
+            
+            // التفاعلات (likes & comments)
+            const likes = parseInt(entry.likes_count || entry.likes || 0);
+            const comments = parseInt(entry.comments_count || entry.comments || 0);
+            
+            // البيانات الشخصية (age & name)
+            const age = parseInt(entry.age || body.age || 0);
+            const name = entry.name || body.name || null;
 
             return sql`
-                INSERT INTO posts (content, media_url, age) 
-                VALUES (${content}, ${mediaUrl}, ${age})
+                INSERT INTO posts (
+                    content, 
+                    media_url, 
+                    section, 
+                    type, 
+                    likes_count, 
+                    comments_count, 
+                    age, 
+                    name
+                ) 
+                VALUES (
+                    ${content}, 
+                    ${mediaUrl}, 
+                    ${section}, 
+                    ${type}, 
+                    ${likes}, 
+                    ${comments}, 
+                    ${age}, 
+                    ${name}
+                )
             `;
         });
 
@@ -56,15 +74,12 @@ export default async function handler(request, response) {
 
         return response.status(200).json({ 
             success: true, 
-            message: 'Data processed successfully',
-            processedCount: entries.length 
+            count: entries.length,
+            message: 'تم حفظ البيانات بنجاح طبقاً لتنسيق الجدول' 
         });
 
     } catch (error) {
-        console.error('Smart API Error:', error);
-        return response.status(500).json({ 
-            error: 'Internal Server Error', 
-            details: error.message 
-        });
+        console.error('Database Error:', error);
+        return response.status(500).json({ error: 'Database Error', details: error.message });
     }
 }
