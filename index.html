@@ -8,57 +8,42 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
     
-    <script>
-      window.startAppTag = function() {
-        (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
-      };
-
-      // 1. مراقبة استلام الإعلان بنجاح
-      window.startAppTag('onReceiveAd', function() {
-        console.log("Ad Received Successfully");
-        // alert("✅ تم استلام الإعلان بنجاح!"); 
-      });
-
-      // 2. مراقبة فشل استلام الإعلان ومعرفة السبب
-      window.startAppTag('onFailedToReceiveAd', function() {
-        console.warn("Failed to Receive Ad");
-        alert("❌ فشل طلب الإعلان: غالباً بسبب بطء الإنترنت (3G) أو عدم توفر إعلانات حالياً لمنطقتك.");
-      });
-
-      // 3. محاولة تشغيل الإعلان تلقائياً
-      window.onload = function() {
-        setTimeout(function() {
-          if (window.startAppTag) {
-            window.startAppTag('showAd');
-            console.log("Requesting Ad for Raqqa...");
-          } else {
-            alert("⚠️ مكتبة الإعلانات لم تحمل! تأكد من سرعة الإنترنت.");
-          }
-        }, 10000); // انتظر 10 ثوانٍ كاملة لمراعاة سرعة الـ 3G
-      };
-    </script>
-    <script async src="https://www.start.io/js/sdk.js?publisherId=127253367&appId=203477356"></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #fcfcfc;
-            font-family: 'Tajawal', sans-serif;
-            overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
-        }
-        #root {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+        body { margin: 0; padding: 0; background-color: #fcfcfc; font-family: 'Tajawal', sans-serif; }
+        #root { min-height: 100vh; display: flex; flex-direction: column; }
     </style>
 </head>
 <body>
 
     <div id="root"></div>
 
-    <script type="module" src="./src/main.jsx"></script>
+    <script>
+      // تنبيه فوري للتأكد أن الملف تم تحديثه
+      alert("جاري تشغيل نظام الإعلانات... انتظر 10 ثوانٍ");
 
+      window.startAppTag = function() {
+        (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
+      };
+
+      window.startAppTag('onReceiveAd', function() {
+        alert("✅ مبروك: الإعلان جاهز للعرض!");
+      });
+
+      window.startAppTag('onFailedToReceiveAd', function() {
+        alert("❌ فشل الطلب: المنصة لم ترسل إعلاناً حالياً.");
+      });
+
+      // طلب الإعلان بعد 10 ثوانٍ
+      window.onload = function() {
+        setTimeout(function() {
+          if (window.startAppTag) {
+            window.startAppTag('showAd');
+          }
+        }, 10000);
+      };
+    </script>
+    <script async src="https://www.start.io/js/sdk.js?publisherId=127253367&appId=203477356"></script>
+
+    <script type="module" src="./src/main.jsx"></script>
 </body>
 </html>
