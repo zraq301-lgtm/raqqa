@@ -23,41 +23,27 @@ const ProfileSetup = ({ onComplete }) => {
 
     setLoading(true);
     try {
-      const options = {
-        url: 'https://raqqa-ruddy.vercel.app/api/save-post',
-        headers: { 'Content-Type': 'application/json' },
-        data: { 
-          prompt: `تسجيل مستخدم: ${formData.name}`,
-          name: formData.name,
-          age: formData.age 
-        },
-      };
+      // تم إلغاء طلب الـ API الخارجي والاكتفاء بالحفظ المحلي مباشرة
+      
+      // 1. تخزين البيانات بالأسماء التي يتوقعها ملف AppSwitcher
+      localStorage.setItem('user_name', formData.name);
+      localStorage.setItem('user_age', formData.age);
+      localStorage.setItem('user_status', formData.maritalStatus);
+      
+      // أهم خطوة: حفظ العلامة التي يفحصها AppSwitcher
+      localStorage.setItem('isProfileComplete', 'true'); 
 
-      const response = await CapacitorHttp.post(options);
+      setMessage('تم الحفظ بنجاح! جاري فتح التطبيق...');
 
-      if (response.status >= 200 && response.status < 300) {
-        // 1. تخزين البيانات بالأسماء التي يتوقعها ملف AppSwitcher
-        localStorage.setItem('user_name', formData.name);
-        localStorage.setItem('user_age', formData.age);
-        localStorage.setItem('user_status', formData.maritalStatus);
-        
-        // أهم خطوة: حفظ العلامة التي يفحصها AppSwitcher
-        localStorage.setItem('isProfileComplete', 'true'); 
+      // 2. إبلاغ الـ AppSwitcher بأن عملية التسجيل تمت بنجاح
+      setTimeout(() => {
+        if (onComplete) {
+          onComplete(); // هذه الدالة ستحول الواجهة إلى <App /> فوراً
+        }
+      }, 800);
 
-        setMessage('تم التسجيل! جاري فتح التطبيق...');
-
-        // 2. إبلاغ الـ AppSwitcher بأن عملية التسجيل تمت بنجاح
-        setTimeout(() => {
-          if (onComplete) {
-            onComplete(); // هذه الدالة ستحول الواجهة إلى <App /> فوراً
-          }
-        }, 800);
-
-      } else {
-        setMessage('السيرفر سجل خطأ، حاولي مجدداً.');
-      }
     } catch (error) {
-      setMessage('فشل الاتصال، تأكدي من الإنترنت.');
+      setMessage('حدث خطأ أثناء حفظ البيانات محلياً.');
     } finally {
       setLoading(false);
     }
