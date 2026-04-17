@@ -1,60 +1,49 @@
-const express = require('express');
-const { Pool } = require('pg');
+import { neon } from '@neondatabase/serverless';
 
-const app = express();
-app.use(express.json());
+export default async function handler(request, response) {
+    // إعدادات CORS للسماح بالوصول من الواجهة الأمامية
+    response.setHeader('Access-Control-Allow-Origin', '*');
+    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-// تأكد من وضع المتغير في ملف .env أو إعدادات Vercel
-const pool = new Pool({
-  connectionString: process.env.POSTGRES_PRISMA_URL,
-  ssl: { rejectUnauthorized: false }
-});
+    // التعامل مع طلب preflight الخاص بـ CORS
+    if (request.method === 'OPTIONS') return response.status(200).end();
 
-app.post('/api/posts', async (req, res) => {
-  console.log("--- طلب جديد وصل ---");
-  console.log("البيانات القادمة:", JSON.stringify(req.body));
-
-  const { posts, age } = req.body;
-
-  // 1. التحقق من وجود البيانات
-  if (!posts || !Array.isArray(posts)) {
-    console.error("خطأ: مصفوفة المنشورات مفقودة أو غير صحيحة");
-    return res.status(400).json({ error: 'بيانات posts غير صالحة' });
-  }
-
-  let client;
-  try {
-    client = await pool.connect();
-    console.log("تم الاتصال بـ Neon بنجاح");
-
-    await client.query('BEGIN');
-
-    for (const post of posts) {
-      const query = 'INSERT INTO posts_table (content, link, user_age) VALUES ($1, $2, $3)';
-      // تأكد أن الأسماء (content و url) تطابق ما ترسله من الواجهة
-      await client.query(query, [post.content, post.url, age]);
+    // السماح فقط بطريقة POST
+    if (request.method !== 'POST') {
+        return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
-    await client.query('COMMIT');
-    console.log("تم الحفظ في القاعدة بنجاح");
-    res.status(200).json({ success: true, message: 'Saved successfully' });
+    try {
+        // استخدام المتغير الذي حددته
+        const sql = neon(process.env.post_POSTGRES_URL);
+        
+        // استلام البيانات من الواجهة
+        const { posts, age } = request.body;
 
-  } catch (error) {
-    if (client) await client.query('ROLLBACK');
-    console.error("خطأ كارثي في السيرفر:", error.message);
-    res.status(500).json({ 
-      error: 'Internal Server Error', 
-      details: error.message 
-    });
-  } finally {
-    if (client) client.release();
-  }
-});
+        if (!posts || !Array.isArray(posts)) {
+            return response.status(400).json({ error: 'Missing or invalid posts array' });
+        }
 
-// لمعالجة أي مسار غير موجود
-app.use((req, res) => {
-  res.status(404).json({ error: "المسار غير موجود (404)" });
-});
+        // إدخال البيانات في الجدول (حسب الأسماء الموجودة في كود الجلب الخاص بك)
+        // سنفترض أن الأعمدة هي content و media_url و سنضيف age إذا كان موجوداً في جدولك
+        for (const post of posts) {
+            await sql`
+                INSERT INTO posts (content, media_url, age) 
+                VALUES (${post.content}, ${post.url || post.media_url}, ${age})
+            `;
+        }
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server ready on port ${PORT}`));
+        return response.status(200).json({ 
+            success: true, 
+            message: `تم حفظ ${posts.length} منشورات بنجاح` 
+        });
+
+    } catch (error) {
+        console.error('Database Save Error:', error);
+        return response.status(500).json({ 
+            error: 'Database Error', 
+            details: error.message 
+        });
+    }
+}
