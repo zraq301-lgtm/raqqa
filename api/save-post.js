@@ -1,6 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(request, response) {
+    // إعدادات CORS
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -10,36 +11,60 @@ export default async function handler(request, response) {
 
     try {
         const sql = neon(process.env.DATABASE_URL);
-        
-        // جلب البيانات مع وضع قيم افتراضية لمنع الانهيار
-        const data = request.body || {};
-        const posts = data.posts;
-        const age = data.age || 0;
+        const body = request.body || {};
 
-        // فحص دقيق للمصفوفة
-        if (!posts || !Array.isArray(posts)) {
-            return response.status(400).json({ 
-                error: 'خطأ في استقبال البيانات', 
-                received: data // سنرسل لك ما استلمه السيرفر لتعرف المشكلة
-            });
+        // 1. استخراج البيانات بشكل ذكي
+        let entries = [];
+
+        if (Array.isArray(body)) {
+            // إذا كانت البيانات المرسلة مصفوفة مباشرة [{}, {}]
+            entries = body;
+        } else if (body.posts && Array.isArray(body.posts)) {
+            // إذا كانت داخل خاصية posts
+            entries = body.posts;
+        } else if (body.data && Array.isArray(body.data)) {
+            // إذا كانت داخل خاصية data
+            entries = body.data;
+        } else if (typeof body === 'object' && Object.keys(body).length > 0) {
+            // إذا تم إرسال كائن واحد فقط {content: '...'}، نحوله لمصفوفة
+            entries = [body];
         }
 
-        // تنفيذ الحفظ
-        for (const post of posts) {
-            await sql`
+        // 2. التحقق النهائي: إذا لم نجد أي بيانات صالحة
+        if (entries.length === 0) {
+            return response.status(200).json({ 
+                message: 'No data processed', 
+                received: body 
+            }); // نرسل 200 لتجنب كسر الواجهة الأمامية مع رسالة توضيحية
+        }
+
+        const age = body.age || 0;
+
+        // 3. تنفيذ الحفظ باستخدام Transaction أو وعود متوازية لتحسين الأداء
+        const insertPromises = entries.map(entry => {
+            // استخراج القيم بمرونة (البحث عن مسميات مختلفة لنفس الحقل)
+            const content = entry.content || entry.text || entry.body || '';
+            const mediaUrl = entry.url || entry.media_url || entry.image || entry.link || '';
+
+            return sql`
                 INSERT INTO posts (content, media_url, age) 
-                VALUES (
-                    ${post.content || ''}, 
-                    ${post.url || post.media_url || ''}, 
-                    ${age}
-                )
+                VALUES (${content}, ${mediaUrl}, ${age})
             `;
-        }
+        });
 
-        return response.status(200).json({ success: true, count: posts.length });
+        await Promise.all(insertPromises);
+
+        return response.status(200).json({ 
+            success: true, 
+            message: 'Data processed successfully',
+            processedCount: entries.length 
+        });
 
     } catch (error) {
-        console.error('Database Save Error:', error);
-        return response.status(500).json({ error: 'Database Error', details: error.message });
+        console.error('Smart API Error:', error);
+        return response.status(500).json({ 
+            error: 'Internal Server Error', 
+            details: error.message 
+        });
     }
 }
