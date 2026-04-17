@@ -1,38 +1,33 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(request, response) {
-    // 1. إعدادات CORS الشاملة
+    // 1. إعدادات CORS
     response.setHeader('Access-Control-Allow-Origin', '*');
-    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (request.method === 'OPTIONS') {
-        return response.status(200).end();
-    }
+    if (request.method === 'OPTIONS') return response.status(200).end();
 
-    // 2. التحقق من طريقة الطلب
     if (request.method !== 'POST') {
-        return response.status(405).json({ error: 'يرجى استخدام POST لإرسال البيانات' });
+        return response.status(405).json({ error: 'Method Not Allowed' });
     }
 
     try {
-        // التحقق من وجود رابط القاعدة
-        const connectionString = process.env.post_POSTGRES_URL;
+        // التعديل هنا: استخدام الاسم الصحيح للمتغير
+        const connectionString = process.env.DATABASE_URL;
+        
         if (!connectionString) {
-            throw new Error('متغير البيئة post_POSTGRES_URL غير موجود');
+            throw new Error('متغير البيئة DATABASE_URL غير موجود في إعدادات Vercel');
         }
 
         const sql = neon(connectionString);
         const { posts, age } = request.body;
 
-        // 3. فحص البيانات القادمة
         if (!posts || !Array.isArray(posts)) {
-            return response.status(400).json({ error: 'البيانات المرسلة غير صحيحة، posts يجب أن تكون مصفوفة' });
+            return response.status(400).json({ error: 'البيانات المرسلة غير مكتملة (posts مفقودة)' });
         }
 
-        console.log(`بدء حفظ ${posts.length} منشورات للعمر ${age}`);
-
-        // 4. تنفيذ الحفظ (استخدام Promise.all لضمان التنفيذ السريع والمتوازي)
+        // تنفيذ الحفظ لجميع المنشورات
         const insertPromises = posts.map(post => {
             return sql`
                 INSERT INTO posts (content, media_url, age) 
@@ -42,19 +37,16 @@ export default async function handler(request, response) {
 
         await Promise.all(insertPromises);
 
-        // 5. إرسال رد النجاح
         return response.status(200).json({ 
             success: true, 
-            message: 'تم الحفظ بنجاح في قاعدة بيانات نيون' 
+            message: `تم حفظ ${posts.length} منشورات بنجاح` 
         });
 
     } catch (error) {
-        // 6. التقاط أي خطأ وإرساله فوراً للواجهة
-        console.error('Detailed Error:', error);
+        console.error('Database Error:', error);
         return response.status(500).json({ 
-            error: 'حدث خطأ في السيرفر', 
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            error: 'Database Error', 
+            details: error.message 
         });
     }
 }
