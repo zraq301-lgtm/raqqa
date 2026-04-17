@@ -1,134 +1,98 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { useNavigate } from 'react-router-dom';
 
 const UserProfile = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    age: '',
-    maritalStatus: 'single'
-  });
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ name: '', age: '', maritalStatus: 'single' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-
-  // تحميل البيانات المحفوظة محلياً عند فتح الصفحة
-  useEffect(() => {
-    const savedAge = localStorage.getItem('user_age');
-    const savedStatus = localStorage.getItem('user_marital_status');
-    if (savedAge || savedStatus) {
-      setFormData(prev => ({
-        ...prev,
-        age: savedAge || '',
-        maritalStatus: savedStatus || 'single'
-      }));
-    }
-  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSave = async () => {
+    if (!formData.name || !formData.age) {
+      setMessage('يرجى كتابة الاسم والعمر أولاً رقيقة.');
+      return;
+    }
+
     setLoading(true);
-    setMessage('');
+    setMessage('جاري الاتصال بسيرفر رقة...');
 
     try {
-      // 1. حفظ الاسم/اللقب في الجدول الخارجي (Vercel API)
       const options = {
         url: 'https://raqqa-ruddy.vercel.app/api/save-post',
         headers: { 'Content-Type': 'application/json' },
-        data: { name: formData.name },
+        // إرسال البيانات للسيرفر
+        data: { 
+          prompt: `تسجيل مستخدم جديد: ${formData.name}`, // البرومبت الأساسي
+          name: formData.name, 
+          age: formData.age 
+        },
       };
 
       const response = await CapacitorHttp.post(options);
 
-      if (response.status === 200 || response.status === 201) {
-        // 2. حفظ باقي البيانات محلياً داخل التطبيق
+      // التحقق من النجاح (سواء 200 أو 201)
+      if (response.status >= 200 && response.status < 300) {
+        // حفظ البيانات محلياً في الجهاز لضمان بقائها
+        localStorage.setItem('user_name', formData.name);
         localStorage.setItem('user_age', formData.age);
-        localStorage.setItem('user_marital_status', formData.maritalStatus);
+        localStorage.setItem('user_status', formData.maritalStatus);
         
-        setMessage('تم حفظ البيانات بنجاح!');
+        setMessage('تم التسجيل بنجاح! ننتقل الآن...');
+        
+        setTimeout(() => {
+          navigate('/'); // الانتقال إلى App.jsx
+        }, 1200);
       } else {
-        setMessage('حدث خطأ أثناء حفظ الاسم في السيرفر.');
+        setMessage(`عذراً، السيرفر رد بـ خطأ (${response.status}). حاولي مرة أخرى.`);
       }
     } catch (error) {
-      console.error('Save Error:', error);
-      setMessage('فشل الاتصال بالسيرفر، تأكد من إعدادات Capacitor.');
+      console.error('Registration Error:', error);
+      setMessage('تعذر الاتصال بالسيرفر، تأكد من اتصال الإنترنت.');
     } finally {
       setLoading(false);
     }
   };
 
-  // تنسيق بسيط وعصري
-  const styles = {
-    container: { padding: '20px', fontFamily: 'Arial, sans-serif', direction: 'rtl' },
-    field: { marginBottom: '15px' },
-    label: { display: 'block', marginBottom: '5px', fontWeight: 'bold' },
-    input: { width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' },
-    button: { 
-      width: '100%', 
-      padding: '12px', 
-      backgroundColor: '#ff85a2', 
-      color: 'white', 
-      border: 'none', 
-      borderRadius: '25px', 
-      fontSize: '16px',
-      cursor: 'pointer' 
-    }
-  };
-
   return (
-    <div style={styles.container}>
-      <h2 style={{ textAlign: 'center' }}>الملف الشخصي</h2>
+    <div style={{ padding: '20px', direction: 'rtl', textAlign: 'center' }}>
+      <h2 style={{ color: '#d81b60' }}>انضمي إلى رقة</h2>
+      <input 
+        style={inputStyle} 
+        name="name" 
+        placeholder="الاسم أو اللقب" 
+        onChange={handleChange} 
+      />
+      <input 
+        style={inputStyle} 
+        name="age" 
+        type="number" 
+        placeholder="العمر" 
+        onChange={handleChange} 
+      />
+      <select style={inputStyle} name="maritalStatus" onChange={handleChange}>
+        <option value="single">عزباء</option>
+        <option value="married">متزوجة</option>
+      </select>
       
-      <div style={styles.field}>
-        <label style={styles.label}>الاسم أو اللقب:</label>
-        <input 
-          style={styles.input}
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          placeholder="أدخل اسمك"
-        />
-      </div>
-
-      <div style={styles.field}>
-        <label style={styles.label}>العمر:</label>
-        <input 
-          style={styles.input}
-          type="number"
-          name="age"
-          value={formData.age}
-          onChange={handleChange}
-          placeholder="أدخل عمرك"
-        />
-      </div>
-
-      <div style={styles.field}>
-        <label style={styles.label}>الحالة الاجتماعية:</label>
-        <select 
-          style={styles.input}
-          name="maritalStatus"
-          value={formData.maritalStatus}
-          onChange={handleChange}
-        >
-          <option value="single">عزباء</option>
-          <option value="married">متزوجة</option>
-          <option value="divorced">مطلقة</option>
-          <option value="widowed">أرملة</option>
-        </select>
-      </div>
-
       <button 
-        style={styles.button} 
+        style={buttonStyle} 
         onClick={handleSave} 
         disabled={loading}
       >
-        {loading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+        {loading ? 'انتظري قليلاً...' : 'حفظ البيانات والدخول'}
       </button>
 
-      {message && <p style={{ textAlign: 'center', marginTop: '10px', color: '#d81b60' }}>{message}</p>}
+      {message && <p style={{ marginTop: '15px', color: '#888' }}>{message}</p>}
     </div>
   );
 };
+
+const inputStyle = { width: '100%', padding: '12px', margin: '10px 0', borderRadius: '10px', border: '1px solid #ffc1e3' };
+const buttonStyle = { width: '100%', padding: '14px', backgroundColor: '#ff85a2', color: 'white', border: 'none', borderRadius: '25px', fontSize: '16px' };
 
 export default UserProfile;
