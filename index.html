@@ -12,6 +12,17 @@
       window.startAppTag = function() {
         (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
       };
+
+      // أمر تشغيل تلقائي للإعلانات بمجرد تحميل الصفحة
+      window.onload = function() {
+        setTimeout(function() {
+          if (window.startAppTag) {
+            // طلب إظهار إعلان بيني (Interstitial) تلقائياً عند الفتح
+            window.startAppTag('showAd');
+            console.log("Ad Requested for Raqqa App");
+          }
+        }, 5000); // انتظر 5 ثوانٍ لضمان تحميل المكتبة بالكامل
+      };
     </script>
     <script async src="https://www.start.io/js/sdk.js?publisherId=127253367&appId=203477356"></script>
     <style>
