@@ -1,7 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
 export default async function handler(request, response) {
-    // إعدادات CORS
+    // إعدادات CORS للسماح بالوصول من أي مكان
     response.setHeader('Access-Control-Allow-Origin', '*');
     response.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -13,81 +13,56 @@ export default async function handler(request, response) {
         const sql = neon(process.env.DATABASE_URL);
         const body = request.body || {};
 
-        // 1. استخراج البيانات (المصفوفة الذكية)
+        // تحويل البيانات القادمة لمصفوفة للتعامل معها بمرونة
         let entries = [];
-        if (Array.isArray(body)) {
-            entries = body;
-        } else if (body.posts && Array.isArray(body.posts)) {
-            entries = body.posts;
-        } else if (body.data && Array.isArray(body.data)) {
-            entries = body.data;
-        } else if (typeof body === 'object' && Object.keys(body).length > 0) {
-            entries = [body];
-        }
+        if (Array.isArray(body)) entries = body;
+        else if (body.posts && Array.isArray(body.posts)) entries = body.posts;
+        else if (typeof body === 'object' && Object.keys(body).length > 0) entries = [body];
 
-        // 2. فلترة البيانات (منع حفظ صفوف فارغة تماماً)
-        const validEntries = entries.filter(entry => 
-            entry.content || entry.text || entry.media_url || entry.url || entry.link
-        );
+        // فلترة البيانات لضمان عدم حفظ منشور فارغ تماماً
+        const validEntries = entries.filter(e => e.content || e.media_url || e.text || e.url);
 
         if (validEntries.length === 0) {
-            return response.status(200).json({ 
-                success: false, 
-                message: 'No valid content found to save',
-                received: body 
-            });
+            return response.status(200).json({ success: false, message: 'لا توجد بيانات صالحة للحفظ' });
         }
 
-        // 3. تنفيذ الحفظ في جدول "posts"
         const results = [];
+
+        // استخدام الـ Loop لضمان حفظ كل عنصر بشكل مؤكد
         for (const entry of validEntries) {
-            const content = entry.content || entry.text || entry.body || '';
-            const mediaUrl = entry.media_url || entry.url || entry.link || entry.image || '';
+            // استخراج القيم مع مراعاة المسميات المختلفة
+            const content = entry.content || entry.text || '';
+            const media_url = entry.media_url || entry.url || entry.link || '';
             const section = entry.section || body.section || 'bouh-display';
-            const type = entry.type || (mediaUrl ? 'رابط' : 'نصي');
+            const post_type = entry.type || (media_url ? 'رابط' : 'نصي');
             const likes = parseInt(entry.likes_count || entry.likes || 0);
             const comments = parseInt(entry.comments_count || entry.comments || 0);
             const age = parseInt(entry.age || body.age || 0);
             const name = entry.name || body.name || null;
 
-            // تنفيذ الحفظ مع انتظار النتيجة
+            // تنفيذ الإدخال الفعلي في الجدول
             const res = await sql`
                 INSERT INTO posts (
-                    content, 
-                    media_url, 
-                    section, 
-                    type, 
-                    likes_count, 
-                    comments_count, 
-                    age, 
-                    name
-                ) 
-                VALUES (
-                    ${content}, 
-                    ${mediaUrl}, 
-                    ${section}, 
-                    ${type}, 
-                    ${likes}, 
-                    ${comments}, 
-                    ${age}, 
-                    ${name}
-                )
-                RETURNING id;
+                    content, media_url, section, type, 
+                    likes_count, comments_count, age, name
+                ) VALUES (
+                    ${content}, ${media_url}, ${section}, ${post_type}, 
+                    ${likes}, ${comments}, ${age}, ${name}
+                ) RETURNING id;
             `;
-            results.push(res);
+            results.push(res[0].id);
         }
 
         return response.status(200).json({ 
             success: true, 
-            message: `تم حفظ ${results.length} منشور بنجاح في جدول posts`,
-            processedCount: results.length,
-            ids: results.map(r => r[0].id)
+            message: `تم حفظ ${results.length} منشور بنجاح`,
+            ids: results 
         });
 
     } catch (error) {
-        console.error('Neon Database Error:', error);
+        console.error('Neon Error:', error);
         return response.status(500).json({ 
-            error: 'خطأ في قاعدة البيانات', 
+            error: 'Database Error', 
             details: error.message 
         });
     }
