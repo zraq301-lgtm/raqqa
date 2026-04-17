@@ -1,62 +1,56 @@
-export default async function handler(req, res) {
-    // 1. إعدادات CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+const express = require('express');
+const { Pool } = require('pg');
 
-    if (req.method === 'OPTIONS') return res.status(200).end();
+const app = express();
+app.use(express.json()); // لاستقبال بيانات JSON من الواجهة
 
-    let body = {};
+// إعداد الاتصال باستخدام المتغير POSTGRES_PRISMA_URL
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_PRISMA_URL,
+  ssl: {
+    rejectUnauthorized: false // مطلوب للاتصال بـ Neon
+  }
+});
+
+// المسار (Endpoint) لحفظ البيانات
+app.post('/api/posts', async (req, res) => {
+  const { posts, age } = req.body;
+
+  // التحقق من وصول البيانات
+  if (!posts || !Array.isArray(posts)) {
+    return res.status(400).json({ error: 'يرجى إرسال مصفوفة المنشورات بشكل صحيح' });
+  }
+
+  try {
+    const client = await pool.connect();
+    
     try {
-        // فحص نوع البيانات القادمة من CapacitorHttp
-        body = (typeof req.body === 'string') ? JSON.parse(req.body) : req.body;
-    } catch (e) {
-        console.error("Parse Error");
+      // بدء عملية (Transaction) لضمان حفظ كل البيانات أو فشلها معاً
+      await client.query('BEGIN');
+
+      const queryText = 'INSERT INTO posts_table (content, link, user_age) VALUES ($1, $2, $3)';
+
+      // تكرار على مصفوفة المنشورات وحفظها مع العمر
+      for (const item of posts) {
+        await client.query(queryText, [item.content, item.url, age]);
+      }
+
+      await client.query('COMMIT');
+      res.status(200).json({ message: 'تم حفظ المنشورات والعمر بنجاح' });
+
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
     }
+  } catch (error) {
+    console.error('Database Error:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء الحفظ في قاعدة البيانات' });
+  }
+});
 
-    // استخراج البيانات (دعم prompt و name و age)
-    const { prompt, name, age } = body || {};
-
-    if (!prompt) {
-        return res.status(400).json({ message: "أهلاً بكِ، رقة لم تستلم سؤالكِ بعد." });
-    }
-
-    const groqKey = process.env.GROQ_API_KEY;
-    const mxbKey = process.env.MXBAI_API_KEY;
-    const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826";
-
-    try {
-        // استخراج روابط الصور إن وجدت في النص
-        const urlRegex = /https?:\/\/[^\s]+(?:png|jpg|jpeg|webp|gif)/gi;
-        const imageUrl = (prompt.match(urlRegex) || [])[0];
-        const cleanText = prompt.replace(urlRegex, '').trim();
-
-        // بناء الشخصية (الاسم والعمر)
-        const userIdentity = `تخاطبين ${name || 'صديقتكِ'}، عمرها ${age || 'غير معروف'}.`;
-        
-        // استدعاء Groq
-        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: imageUrl ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile",
-                messages: [{
-                    role: "user",
-                    content: [
-                        { type: "text", text: `أنتِ رقة، مساعدة ذكية. ${userIdentity}\n\nالسؤال: ${cleanText || 'حللي الصورة'}` },
-                        ...(imageUrl ? [{ type: "image_url", image_url: { url: imageUrl } }] : [])
-                    ]
-                }]
-            })
-        });
-
-        const data = await groqRes.json();
-        const aiReply = data.choices?.[0]?.message?.content || "رقة بجانبكِ دائماً، حاولي مجدداً.";
-
-        return res.status(200).json({ message: aiReply });
-
-    } catch (error) {
-        return res.status(500).json({ message: "خطأ في السيرفر" });
-    }
-}
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
