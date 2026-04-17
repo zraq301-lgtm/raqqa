@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { createApi } from 'unsplash-js';
 import styled, { keyframes } from 'styled-components';
-import { Share2, Download, RefreshCcw, X, Heart, Send } from 'lucide-react';
+import { Share2, Download, RefreshCcw, X, Heart, MessageCircle, Send } from 'lucide-react';
 
-// استخدام المكتبة الموجودة في مشروعك بدلاً من html2canvas المتعطلة
+// استيراد Capacitor Share للمشاركة الأصلية على الأندرويد
 import { Share } from '@capacitor/share';
 
 // --- 1. إعداد الـ API ---
 const unsplash = createApi({
-  accessKey: process.env.REACT_APP_UNSPLASH_KEY || '5oEHaoc0omGE8-t2_tSQo2X0wzKwh3xjOrorB89ltY',
+  accessKey: process.env.REACT_APP_UNSPLASH_KEY || '5oEHaoc0omGE8-t2y_tSQo2X0wzKwh3xjOrorB89ltY',
 });
 
 // --- 2. الأنيميشن ---
@@ -61,12 +61,12 @@ const ImageCard = styled.div`
 
 const ActionButtons = styled.div`
   display: flex;
-  flex-wrap: wrap;
   justify-content: space-around;
   padding: 12px;
   background: white;
   border-top: 1px solid #f0f0f0;
-  gap: 5px;
+  flex-wrap: wrap;
+  gap: 8px;
 `;
 
 const IconButton = styled.button`
@@ -86,25 +86,35 @@ const IconButton = styled.button`
   &:active { transform: scale(0.95); }
 `;
 
-const CommentSection = styled.div`
+const InteractionSection = styled.div`
   padding: 10px 15px;
   background: #fff;
-  border-top: 1px solid #eee;
+  border-top: 1px solid #f9f9f9;
 `;
 
-const CommentInputWrapper = styled.div`
+const CommentList = styled.div`
+  max-height: 80px;
+  overflow-y: auto;
+  margin-bottom: 8px;
+  font-size: 0.75rem;
+  color: #666;
+`;
+
+const CommentInputBox = styled.div`
   display: flex;
   gap: 5px;
-  margin-top: 8px;
+  align-items: center;
 `;
 
-const CommentInput = styled.input`
+const StyledInput = styled.input`
   flex: 1;
-  border: 1px solid #ddd;
+  border: 1px solid #eee;
   border-radius: 8px;
-  padding: 5px 10px;
+  padding: 6px 10px;
+  font-size: 0.75rem;
   font-family: 'Cairo';
-  font-size: 0.8rem;
+  outline: none;
+  &:focus { border-color: #4a403a; }
 `;
 
 const FloatingRefresh = styled.button`
@@ -147,6 +157,7 @@ const RaqqaLuxuryGallery = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
   
+  // حفظ الإعجابات والتعليقات محلياً
   const [likes, setLikes] = useState(() => JSON.parse(localStorage.getItem('raqqa_likes') || '{}'));
   const [comments, setComments] = useState(() => JSON.parse(localStorage.getItem('raqqa_comments') || '{}'));
 
@@ -176,17 +187,17 @@ const RaqqaLuxuryGallery = () => {
     fetchPhotos();
   }, [fetchPhotos]);
 
-  // دالة المشاركة المتوافقة مع Android APK عبر Capacitor
+  // تفعيل زرار المشاركة عبر مكتبة Capacitor
   const handleShare = async (photo) => {
     try {
       await Share.share({
-        title: 'تصميم من رقة',
-        text: 'شاهد هذا التصميم الرائع!',
+        title: 'تصميم من تطبيق رقة',
+        text: 'شاهد هذا التصميم الرائع للديكور!',
         url: photo.urls.regular,
-        dialogTitle: 'مشاركة التصميم',
+        dialogTitle: 'مشاركة عبر',
       });
     } catch (err) {
-      console.log("Share canceled");
+      console.log("Share failed or canceled");
     }
   };
 
@@ -203,7 +214,7 @@ const RaqqaLuxuryGallery = () => {
     setLikes(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const addComment = (id, text) => {
+  const submitComment = (id, text) => {
     if (!text.trim()) return;
     setComments(prev => ({
       ...prev,
@@ -224,47 +235,43 @@ const RaqqaLuxuryGallery = () => {
             <img 
               src={photo.urls.small} 
               alt="Decoration" 
-              style={{width: '100%', cursor: 'zoom-in', display: 'block'}} 
+              style={{width: '100%', cursor: 'zoom-in'}} 
               onClick={() => setSelectedPhoto(photo.urls.regular)}
             />
             
             <ActionButtons>
               <IconButton onClick={() => toggleLike(photo.id)} active={likes[photo.id]}>
-                <Heart size={16} fill={likes[photo.id] ? "#e74c3c" : "none"} /> {likes[photo.id] ? 'تم الإعجاب' : 'إعجاب'}
+                <Heart size={16} fill={likes[photo.id] ? "#e74c3c" : "none"} />
+                {likes[photo.id] ? 'أعجبني' : 'إعجاب'}
               </IconButton>
-              
+
               <IconButton onClick={() => handleDownload(photo.urls.full, `Raqqa-${photo.id}.jpg`)}>
                 <Download size={16} /> حفظ
               </IconButton>
-              
+
               <IconButton onClick={() => handleShare(photo)}>
                 <Share2 size={16} /> مشاركة
               </IconButton>
             </ActionButtons>
 
-            <CommentSection>
-               {comments[photo.id] && comments[photo.id].map((c, i) => (
-                 <p key={i} style={{fontSize: '0.75rem', margin: '3px 0', color: '#555'}}>• {c}</p>
-               ))}
-               <CommentInputWrapper>
-                  <CommentInput 
-                    placeholder="أضف تعليقاً..." 
-                    onKeyDown={(e) => {
-                      if(e.key === 'Enter') {
-                        addComment(photo.id, e.target.value);
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                  <IconButton onClick={(e) => {
-                    const input = e.currentTarget.previousSibling;
-                    addComment(photo.id, input.value);
-                    input.value = "";
-                  }}>
-                    <Send size={14} />
-                  </IconButton>
-               </CommentInputWrapper>
-            </CommentSection>
+            <InteractionSection>
+              <CommentList>
+                {comments[photo.id]?.map((c, i) => (
+                  <div key={i} style={{marginBottom: '2px'}}>• {c}</div>
+                ))}
+              </CommentList>
+              <CommentInputBox>
+                <StyledInput 
+                  placeholder="أضف تعليقاً..." 
+                  onKeyDown={(e) => {
+                    if(e.key === 'Enter') {
+                      submitComment(photo.id, e.target.value);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </CommentInputBox>
+            </InteractionSection>
           </ImageCard>
         ))}
       </GalleryGrid>
