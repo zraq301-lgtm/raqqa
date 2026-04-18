@@ -120,6 +120,7 @@ function App() {
           (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
         };
         const script = document.createElement('script');
+        // تم وضع المعرفات هنا: publisherId=127253367 و appId=203477356
         script.src = "https://www.start.io/js/sdk.js?publisherId=127253367&appId=203477356";
         script.async = true;
         document.head.appendChild(script);
