@@ -112,10 +112,11 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- نظام حقن إعلانات Adsterra (التجربة الجديدة) ---
+  // --- تحديث نظام حقن إعلانات Adsterra بالرابط الجديد ---
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = "https://pl29179182.profitablecpmratenetwork.com/a8/23/98/a82398c67801a2ee3802deddad78e688.js";
+    // الرابط الجديد الذي أرسلته
+    script.src = "https://pl29179331.profitablecpmratenetwork.com/42/41/78/424178ee7b8e5b65b4752caf48950fe0.js";
     script.async = true;
     script.type = 'text/javascript';
 
