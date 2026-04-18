@@ -112,6 +112,30 @@ function TipOverlay() {
 }
 
 function App() {
+  // --- نظام حقن مكتبة الإعلانات (Start.io) ---
+  useEffect(() => {
+    const injectAds = () => {
+      if (!window.startAppTag) {
+        window.startAppTag = function() {
+          (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
+        };
+        const script = document.createElement('script');
+        script.src = "https://www.start.io/js/sdk.js?publisherId=127253367&appId=203477356";
+        script.async = true;
+        document.head.appendChild(script);
+
+        script.onload = () => {
+          if (window.startAppTag) {
+            // تفعيل الإعلانات البينية التلقائية لتعمل مع التنقل
+            window.startAppTag('enableAutoInterstitial', true);
+            console.log("Ads Library Injected Successfully");
+          }
+        };
+      }
+    };
+    injectAds();
+  }, []);
+
   // --- نظام جدولة الإشعارات ---
   const syncNotifications = useCallback(async () => {
     try {
