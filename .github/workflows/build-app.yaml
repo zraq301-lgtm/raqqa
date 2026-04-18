@@ -42,7 +42,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 6. Inject Firebase & App Identity
+      - name: 6. Inject Firebase & App Identity & Ads
         shell: bash
         run: |
           # حقن ملف جوجل
@@ -67,17 +67,22 @@ jobs:
           }
           EOF
 
-          # تعديل اسم الحزمة (Package Name) واسم التطبيق
+          # ملفات الإعدادات
           STRINGS="android/app/src/main/res/values/strings.xml"
           APP_GRADLE="android/app/build.gradle"
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           
+          # تعديل اسم الحزمة واسم التطبيق
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS
           sed -i 's/namespace ".*"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId ".*"/applicationId "com.raqqa.app"/' $APP_GRADLE
           
-          # إضافة الأذونات اللازمة (OneSignal + Recording)
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
+          # إضافة الأذونات (بما في ذلك إذن AD_ID الجديد للإعلانات)
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' $MANIFEST
+
+          # حقن معرفات Start.io داخل وسم الـ application
+          # معرف التطبيق: 203477356 | معرف المطور: 127253367
+          sed -i '/<application/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />\n        <meta-data android:name="com.startapp.sdk.DEVELOPER_ID" android:value="127253367" />' $MANIFEST
 
       - name: 7. Generate App Icons & Splash
         run: |
@@ -98,7 +103,7 @@ jobs:
 
       - name: 9. Sign APK & AAB
         run: |
-          # توليد مفتاح توقيع مؤقت (أو استخدم Secret إذا كان لديك واحد)
+          # توليد مفتاح توقيع مؤقت
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
