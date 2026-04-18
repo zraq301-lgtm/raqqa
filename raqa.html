@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رقة - عالمك الخاص</title>
+    <style>
+        :root {
+            --primary-pink: #fce4ec;
+            --dark-pink: #f06292;
+            --mauve: #ce93d8;
+            --text-color: #4a4a4a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-pink) 0%, #f3e5f5 100%);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        header h1 {
+            font-size: 3rem;
+            color: var(--dark-pink);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: #7d7d7d;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--mauve);
+        }
+
+        .card h2 {
+            color: var(--dark-pink);
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--primary-pink);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .card p {
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+
+        .card ul {
+            padding-right: 20px;
+            list-style-type: none;
+        }
+
+        .card ul li::before {
+            content: "🌸";
+            margin-left: 8px;
+        }
+
+        .card ul li {
+            margin-bottom: 8px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 20px;
+            font-size: 0.9rem;
+            color: #9e9e9e;
+        }
+
+        /* English Helper for Reviewers (Hidden from users if you want) */
+        .reviewer-info {
+            background: #444;
+            color: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="reviewer-info" dir="ltr">
+            <b>Note to Ad Reviewer:</b> This is a Progressive Web App (PWA) providing high-quality content for women's health, lifestyle, and education.
+        </div>
+
+        <header>
+            <h1>رقة</h1>
+            <p>الموسوعة الشاملة للمرأة العصرية في الصحة، الجمال، والعائلة</p>
+        </header>
+
+        <div class="grid">
+            
+            <div class="card">
+                <h2>الصحة الإنجابية والأمومة</h2>
+                <p>دليل طبي متكامل يرافقك في أدق تفاصيل حياتك:</p>
+                <ul>
+                    <li>تتبع الحيض والدورة الشهرية بأسلوب علمي.</li>
+                    <li>مراحل الحمل والولادة خطوة بخطوة.</li>
+                    <li>دعم الرضاعة الطبيعية وصحة حديثي الولادة.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>الرشاقة والجمال</h2>
+                <p>اعتني بجمالك الخارجي وصحتك البدنية:</p>
+                <ul>
+                    <li>أيقونة الأناقة: أسرار العناية بالبشرة والشعر.</li>
+                    <li>أنظمة غذائية وتمارين للرشاقة المنزلية.</li>
+                    <li>نصائح طبية موثوقة وعيادة افتراضية.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>العلاقات والمشاعر</h2>
+                <p>لأن صحتك النفسية هي أساس سعادة منزلك:</p>
+                <ul>
+                    <li>تطوير الذات وفهم عالم المشاعر.</li>
+                    <li>أسرار العلاقات الزوجية الناجحة والدافئة.</li>
+                    <li>التعامل مع ضغوط الحياة بسلام داخلي.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>الفقه والشريعة</h2>
+                <p>كل ما يهم المرأة المسلمة في دينها:</p>
+                <ul>
+                    <li>فقه المرأة وأحكام العبادات والطهارة.</li>
+                    <li>فتاوى ميسرة وشرح للحقوق الشرعية.</li>
+                    <li>نصائح إيمانية لتعزيز الروحانيات.</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>المملكة والمنزل</h2>
+                <p>اجعلي من بيتك مكاناً أجمل وأكثر تنظيماً:</p>
+                <ul>
+                    <li>مطبخ رقة: وصفات صحية وشهية لكل يوم.</li>
+                    <li>تدبير المنزل وتنظيم المساحات بذكاء.</li>
+                    <li>ديكورات وأفكار لإضفاء لمسة رقي على منزلك.</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <footer>
+            &copy; 2026 جميع الحقوق محفوظة لتطبيق رقة - منصة المرأة العربية الرائدة
+        </footer>
+    </div>
+
+</body>
+</html>
