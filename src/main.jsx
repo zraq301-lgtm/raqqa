@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react'; // أضفنا useState للتحكم في التبديل
+import React, { useState, useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import AppSwitcher from './AppSwitcher'; 
-import SplashScreen from './SplashScreen'; // استدعاء شاشة البداية من المسار src/SplashScreen.jsx
+import SplashScreen from './SplashScreen'; 
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm'; 
 
+// --- إعدادات Firebase ---
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
   authDomain: "raqqa-43dc8.firebaseapp.com",
@@ -22,8 +23,20 @@ if (!getApps().length) {
   initializeApp(firebaseConfig);
 }
 
+// --- وظيفة حقن إعلانات المنصة الجديدة فقط ---
+const injectNewAdPlatform = () => {
+  // حقن إعلان HilltopAds باستخدام الرابط المستخرج من الكود الخاص بك
+  const hilltop = document.createElement('script');
+  hilltop.src = "//profitable-grocery.com/b/X.VRshdNGtlv0aYsW_cj/Ze/ms9_u/ZhU/lrkhP/TPYR5sN/zcA/4aOjTaMmtcNejNky3/MPDQgo5/NdwV";
+  hilltop.async = true;
+  hilltop.referrerPolicy = 'no-referrer-when-downgrade';
+  document.body.appendChild(hilltop);
+};
+
+// تنفيذ حقن الإعلانات للمنصة الجديدة فور تشغيل الملف
+injectNewAdPlatform();
+
 const Main = () => {
-  // حالة للتحكم في عرض شاشة البداية أولاً
   const [showSplash, setShowSplash] = useState(true);
   
   const handleTokenLocally = (tokenValue) => {
@@ -80,10 +93,8 @@ const Main = () => {
   return (
     <BrowserRouter>
       {showSplash ? (
-        /* يبدأ التطبيق هنا بملف SplashScreen */
         <SplashScreen onFinished={() => setShowSplash(false)} />
       ) : (
-        /* ينتقل هنا إلى AppSwitcher بعد انتهاء الفيديو */
         <AppSwitcher />
       )}
     </BrowserRouter>
