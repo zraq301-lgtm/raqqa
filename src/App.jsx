@@ -112,50 +112,20 @@ function TipOverlay() {
 }
 
 function App() {
-  // --- نظام حقن مكتبة الإعلانات (Start.io) مع نظام التشخيص ---
+  // --- نظام حقن إعلانات Adsterra (التجربة الجديدة) ---
   useEffect(() => {
-    const injectAds = async () => {
-      const appId = "203477356";
-      const publisherId = "127253367";
+    const script = document.createElement('script');
+    script.src = "https://pl29179182.profitablecpmratenetwork.com/a8/23/98/a82398c67801a2ee3802deddad78e688.js";
+    script.async = true;
+    script.type = 'text/javascript';
 
-      if (!window.startAppTag) {
-        try {
-          window.startAppTag = function() {
-            (window.startAppTag.q = window.startAppTag.q || []).push(arguments);
-          };
-          const script = document.createElement('script');
-          script.src = `https://www.start.io/js/sdk.js?publisherId=${publisherId}&appId=${appId}`;
-          script.async = true;
-          document.head.appendChild(script);
+    document.body.appendChild(script);
 
-          script.onload = () => {
-            if (window.startAppTag) {
-              window.startAppTag('enableAutoInterstitial', true);
-              console.log("Ads Library Injected Successfully");
-            }
-          };
-
-          script.onerror = async () => {
-            throw new Error("Failed to load Start.io SDK Script");
-          };
-
-        } catch (err) {
-          // إرسال تقرير الخطأ إلى Vercel
-          await fetch('https://your-vercel-domain.com/api/debug-ads', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              error: err.message,
-              device: navigator.userAgent,
-              appId: appId,
-              network: navigator.onLine ? "Online" : "Offline",
-              location: "App.js Injection Step"
-            })
-          }).catch(e => console.error("Critical: Vercel Debug API unreachable", e));
-        }
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
       }
     };
-    injectAds();
   }, []);
 
   // --- نظام جدولة الإشعارات ---
