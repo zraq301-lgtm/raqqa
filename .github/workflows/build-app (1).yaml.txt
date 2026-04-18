@@ -1,0 +1,126 @@
+name: "Roqa Clean Production Build"
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 4. Deep Clean & Install
+        run: |
+          rm -rf node_modules package-lock.json android ios dist_web
+          npm install --legacy-peer-deps
+          # تثبيت الإضافات الضرورية لضمان وجودها
+          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          npm run build
+
+      - name: 5. Initialize Android (Fresh Start)
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: 6. Inject Firebase & App Identity
+        shell: bash
+        run: |
+          # حقن ملف جوجل
+          cat <<EOF > android/app/google-services.json
+          {
+            "project_info": {
+              "project_number": "162488255991",
+              "project_id": "raqqa-43dc8",
+              "storage_bucket": "raqqa-43dc8.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
+                  "android_client_info": { "package_name": "com.raqqa.app" }
+                },
+                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
+          # تعديل اسم الحزمة (Package Name) واسم التطبيق
+          STRINGS="android/app/src/main/res/values/strings.xml"
+          APP_GRADLE="android/app/build.gradle"
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS
+          sed -i 's/namespace ".*"/namespace "com.raqqa.app"/' $APP_GRADLE
+          sed -i 's/applicationId ".*"/applicationId "com.raqqa.app"/' $APP_GRADLE
+          
+          # إضافة الأذونات اللازمة (OneSignal + Recording)
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
+
+      - name: 7. Generate App Icons & Splash
+        run: |
+          mkdir -p assets
+          # البحث عن الصور ونسخها للأصول
+          find . -name "icon-only.png" -exec cp {} assets/icon-only.png \;
+          find . -name "icon-background.png" -exec cp {} assets/icon-background.png \;
+          find . -name "icon-foreground.png" -exec cp {} assets/icon-foreground.png \;
+          npx capacitor-assets generate --android
+
+      - name: 8. Build Android Binaries
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew clean
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
+
+      - name: 9. Sign APK & AAB
+        run: |
+          # توليد مفتاح توقيع مؤقت (أو استخدم Secret إذا كان لديك واحد)
+          keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
+            -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
+          # توقيع الـ APK
+          APK_PATH=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
+            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_PATH"
+          
+          # توقيع الـ AAB
+          AAB_PATH=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" roqa_alias
+          cp "$AAB_PATH" Roqa-Final-Signed.aab
+
+      - name: 10. Publish Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "Roqa Production Build v${{ github.run_number }}"
+          files: |
+            Roqa-Final-Signed.apk
+            Roqa-Final-Signed.aab
+            roqa_release.jks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
