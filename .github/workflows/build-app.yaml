@@ -33,6 +33,7 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json android ios dist_web
           npm install --legacy-peer-deps
+          # تثبيت الإضافات الضرورية لضمان وجودها
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm run build
 
@@ -41,9 +42,10 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 6. Inject Firebase & App Identity & Ads
+      - name: 6. Inject Firebase & App Identity
         shell: bash
         run: |
+          # حقن ملف جوجل
           cat <<EOF > android/app/google-services.json
           {
             "project_info": {
@@ -65,6 +67,7 @@ jobs:
           }
           EOF
 
+          # تعديل اسم الحزمة (Package Name) واسم التطبيق
           STRINGS="android/app/src/main/res/values/strings.xml"
           APP_GRADLE="android/app/build.gradle"
           MANIFEST="android/app/src/main/AndroidManifest.xml"
@@ -73,12 +76,16 @@ jobs:
           sed -i 's/namespace ".*"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId ".*"/applicationId "com.raqqa.app"/' $APP_GRADLE
           
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' $MANIFEST
+          # إضافة الأذونات اللازمة ومعرف الإعلانات (AD_ID)
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' $MANIFEST
+
+          # إضافة معرفات Start.io داخل وسم application
           sed -i '/<application/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />\n        <meta-data android:name="com.startapp.sdk.DEVELOPER_ID" android:value="127253367" />' $MANIFEST
 
       - name: 7. Generate App Icons & Splash
         run: |
           mkdir -p assets
+          # البحث عن الصور ونسخها للأصول
           find . -name "icon-only.png" -exec cp {} assets/icon-only.png \;
           find . -name "icon-background.png" -exec cp {} assets/icon-background.png \;
           find . -name "icon-foreground.png" -exec cp {} assets/icon-foreground.png \;
@@ -93,19 +100,20 @@ jobs:
 
       - name: 9. Sign APK & AAB
         run: |
+          # توليد مفتاح توقيع مؤقت
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع APK (تحسين مسار البحث)
-          APK_UNSIGNED=$(find android/app/build/outputs/apk/release/ -name "*-unsigned.apk" -o -name "*.apk" | head -n 1)
+          # توقيع الـ APK (البحث عن أي ملف apk ناتج وتوقيعه)
+          APK_PATH=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
-            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_UNSIGNED"
+            --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_PATH"
           
-          # توقيع AAB
-          AAB_UNSIGNED=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_UNSIGNED" roqa_alias
-          cp "$AAB_UNSIGNED" Roqa-Final-Signed.aab
+          # توقيع الـ AAB
+          AAB_PATH=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" roqa_alias
+          cp "$AAB_PATH" Roqa-Final-Signed.aab
 
       - name: 10. Publish Release
         uses: softprops/action-gh-release@v2
@@ -115,5 +123,6 @@ jobs:
           files: |
             Roqa-Final-Signed.apk
             Roqa-Final-Signed.aab
+            roqa_release.jks
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
