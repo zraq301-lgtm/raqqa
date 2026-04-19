@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import AppSwitcher from './AppSwitcher'; 
-import SplashScreen from './SplashScreen'; 
+import App from './App'; // استيراد ملف App.jsx مباشرة بدلاً من AppSwitcher
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -23,9 +22,8 @@ if (!getApps().length) {
   initializeApp(firebaseConfig);
 }
 
-// --- وظيفة حقن إعلانات المنصة الجديدة فقط ---
+// --- وظيفة حقن إعلانات المنصة الجديدة ---
 const injectNewAdPlatform = () => {
-  // حقن إعلان HilltopAds باستخدام الرابط المستخرج من الكود الخاص بك
   const hilltop = document.createElement('script');
   hilltop.src = "//profitable-grocery.com/b/X.VRshdNGtlv0aYsW_cj/Ze/ms9_u/ZhU/lrkhP/TPYR5sN/zcA/4aOjTaMmtcNejNky3/MPDQgo5/NdwV";
   hilltop.async = true;
@@ -33,11 +31,9 @@ const injectNewAdPlatform = () => {
   document.body.appendChild(hilltop);
 };
 
-// تنفيذ حقن الإعلانات للمنصة الجديدة فور تشغيل الملف
 injectNewAdPlatform();
 
 const Main = () => {
-  const [showSplash, setShowSplash] = useState(true);
   
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
@@ -92,11 +88,8 @@ const Main = () => {
 
   return (
     <BrowserRouter>
-      {showSplash ? (
-        <SplashScreen onFinished={() => setShowSplash(false)} />
-      ) : (
-        <AppSwitcher />
-      )}
+      {/* الدخول مباشرة إلى كود App.jsx */}
+      <App />
     </BrowserRouter>
   );
 };
