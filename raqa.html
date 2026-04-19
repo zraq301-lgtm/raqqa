@@ -20,6 +20,18 @@
             color: var(--text-color);
         }
 
+        /* حاوية صفحة الهبوط التي ستغطي التطبيق مؤقتاً */
+        #landing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-pink) 0%, #f3e5f5 100%);
+            z-index: 999999; /* أعلى من أي شيء في React */
+            overflow-y: auto;
+        }
+
         .container {
             max-width: 1000px;
             margin: 0 auto;
@@ -59,11 +71,6 @@
             transition: transform 0.3s ease;
         }
 
-        .card:hover {
-            transform: translateY(-5px);
-            border-color: var(--mauve);
-        }
-
         .card h2 {
             color: var(--dark-pink);
             font-size: 1.4rem;
@@ -91,15 +98,35 @@
             margin-bottom: 8px;
         }
 
+        .enter-btn {
+            display: block;
+            width: fit-content;
+            margin: 40px auto;
+            padding: 15px 45px;
+            background: var(--dark-pink);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(240, 98, 146, 0.4);
+            transition: 0.3s;
+        }
+
+        .enter-btn:hover {
+            transform: scale(1.05);
+            background: #e91e63;
+        }
+
         footer {
             text-align: center;
-            margin-top: 60px;
+            margin-top: 40px;
             padding: 20px;
             font-size: 0.9rem;
             color: #9e9e9e;
         }
 
-        /* English Helper for Reviewers (Hidden from users if you want) */
         .reviewer-info {
             background: #444;
             color: #fff;
@@ -113,75 +140,80 @@
 </head>
 <body>
 
-    <div class="container">
-        
-        <div class="reviewer-info" dir="ltr">
-            <b>Note to Ad Reviewer:</b> This is a Progressive Web App (PWA) providing high-quality content for women's health, lifestyle, and education.
+    <div id="landing-overlay">
+        <div class="container">
+            <div class="reviewer-info" dir="ltr">
+                <b>Note to Ad Reviewer:</b> This platform provides professional content in Women's Health, Lifestyle, and Family Guidance.
+            </div>
+
+            <header>
+                <h1>رقة</h1>
+                <p>الموسوعة الشاملة للمرأة العصرية في الصحة، الجمال، والعائلة</p>
+            </header>
+
+            <div class="grid">
+                <div class="card">
+                    <h2>الصحة الإنجابية والأمومة</h2>
+                    <p>دليل طبي متكامل يرافقك في أدق تفاصيل حياتك:</p>
+                    <ul>
+                        <li>تتبع الحيض والدورة الشهرية بأسلوب علمي.</li>
+                        <li>مراحل الحمل والولادة خطوة بخطوة.</li>
+                        <li>دعم الرضاعة الطبيعية وصحة حديثي الولادة.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>الرشاقة والجمال</h2>
+                    <p>اعتني بجمالك الخارجي وصحتك البدنية:</p>
+                    <ul>
+                        <li>أيقونة الأناقة: أسرار العناية بالبشرة والشعر.</li>
+                        <li>أنظمة غذائية وتمارين للرشاقة المنزلية.</li>
+                        <li>نصائح طبية موثوقة وعيادة افتراضية.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>العلاقات والمشاعر</h2>
+                    <p>لأن صحتك النفسية هي أساس سعادة منزلك:</p>
+                    <ul>
+                        <li>تطوير الذات وفهم عالم المشاعر.</li>
+                        <li>أسرار العلاقات الزوجية الناجحة والدافئة.</li>
+                        <li>التعامل مع ضغوط الحياة بسلام داخلي.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>الفقه والشريعة</h2>
+                    <p>كل ما يهم المرأة المسلمة في دينها:</p>
+                    <ul>
+                        <li>فقه المرأة وأحكام العبادات والطهارة.</li>
+                        <li>فتاوى ميسرة وشرح للحقوق الشرعية.</li>
+                        <li>نصائح إيمانية لتعزيز الروحانيات.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2>المملكة والمنزل</h2>
+                    <p>اجعلي من بيتك مكاناً أجمل وأكثر تنظيماً:</p>
+                    <ul>
+                        <li>مطبخ رقة: وصفات صحية وشهية لكل يوم.</li>
+                        <li>تدبير المنزل وتنظيم المساحات بذكاء.</li>
+                        <li>ديكورات وأفكار لإضفاء لمسة رقي على منزلك.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <button class="enter-btn" onclick="document.getElementById('landing-overlay').style.display='none'">
+                دخول التطبيق | Enter App
+            </button>
+
+            <footer>
+                &copy; 2026 جميع الحقوق محفوظة لتطبيق رقة
+            </footer>
         </div>
-
-        <header>
-            <h1>رقة</h1>
-            <p>الموسوعة الشاملة للمرأة العصرية في الصحة، الجمال، والعائلة</p>
-        </header>
-
-        <div class="grid">
-            
-            <div class="card">
-                <h2>الصحة الإنجابية والأمومة</h2>
-                <p>دليل طبي متكامل يرافقك في أدق تفاصيل حياتك:</p>
-                <ul>
-                    <li>تتبع الحيض والدورة الشهرية بأسلوب علمي.</li>
-                    <li>مراحل الحمل والولادة خطوة بخطوة.</li>
-                    <li>دعم الرضاعة الطبيعية وصحة حديثي الولادة.</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>الرشاقة والجمال</h2>
-                <p>اعتني بجمالك الخارجي وصحتك البدنية:</p>
-                <ul>
-                    <li>أيقونة الأناقة: أسرار العناية بالبشرة والشعر.</li>
-                    <li>أنظمة غذائية وتمارين للرشاقة المنزلية.</li>
-                    <li>نصائح طبية موثوقة وعيادة افتراضية.</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>العلاقات والمشاعر</h2>
-                <p>لأن صحتك النفسية هي أساس سعادة منزلك:</p>
-                <ul>
-                    <li>تطوير الذات وفهم عالم المشاعر.</li>
-                    <li>أسرار العلاقات الزوجية الناجحة والدافئة.</li>
-                    <li>التعامل مع ضغوط الحياة بسلام داخلي.</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>الفقه والشريعة</h2>
-                <p>كل ما يهم المرأة المسلمة في دينها:</p>
-                <ul>
-                    <li>فقه المرأة وأحكام العبادات والطهارة.</li>
-                    <li>فتاوى ميسرة وشرح للحقوق الشرعية.</li>
-                    <li>نصائح إيمانية لتعزيز الروحانيات.</li>
-                </ul>
-            </div>
-
-            <div class="card">
-                <h2>المملكة والمنزل</h2>
-                <p>اجعلي من بيتك مكاناً أجمل وأكثر تنظيماً:</p>
-                <ul>
-                    <li>مطبخ رقة: وصفات صحية وشهية لكل يوم.</li>
-                    <li>تدبير المنزل وتنظيم المساحات بذكاء.</li>
-                    <li>ديكورات وأفكار لإضفاء لمسة رقي على منزلك.</li>
-                </ul>
-            </div>
-
-        </div>
-
-        <footer>
-            &copy; 2026 جميع الحقوق محفوظة لتطبيق رقة - منصة المرأة العربية الرائدة
-        </footer>
     </div>
+
+    <div id="root"></div>
 
 </body>
 </html>
