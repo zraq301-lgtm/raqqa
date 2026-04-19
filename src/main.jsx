@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App'; // استيراد ملف App.jsx مباشرة
+import SplashScreen from './SplashScreen'; // تم التغيير ليفتح على SplashScreen.jsx
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -91,8 +91,8 @@ const Main = () => {
 
   return (
     <BrowserRouter>
-      {/* الدخول مباشرة إلى كود App.jsx */}
-      <App />
+      {/* الدخول مباشرة إلى كود SplashScreen.jsx */}
+      <SplashScreen />
     </BrowserRouter>
   );
 };
