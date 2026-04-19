@@ -15,13 +15,14 @@ const pool = new Pool({
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // استقبال latitude و longitude من req.body
   let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note, next_period_date, latitude, longitude } = req.body;
 
   try {
     let finalDate = null;
     let finalValues;
     
-    // مصفوفة التصنيفات لتوحيد المسميات كما طلبت
+    // مصفوفة التصنيفات لتوحيد المسميات
     const categoryMap = {
       'حيض': 'menstrual',
       'menstrual_report': 'menstrual',
@@ -42,13 +43,15 @@ export default async function handler(req, res) {
 
     let finalCategory = categoryMap[category] || category || 'general';
 
+    // التأكد من صياغة إحداثيات الموقع بصيغة POINT لقواعد البيانات (PostGIS) أو نصية
+    const geoPoint = (latitude && longitude) ? `POINT(${longitude} ${latitude})` : null;
+
     const query = `
       INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent, location)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id
     `;
 
-    const geoPoint = (latitude && longitude) ? `POINT(${longitude} ${latitude})` : null;
     const now = new Date().toISOString();
 
     // --- 1. منطق واجهة الحيض ---
@@ -62,12 +65,9 @@ export default async function handler(req, res) {
       ];
     } 
 
-    // --- 2. منطق الرشاقة (تسجيل اليوم الحالي + يوم مستقبلي) ---
+    // --- 2. منطق الرشاقة ---
     else if (finalCategory === 'fitness') {
-      // تسجيل البيانات لليوم الحالي (يوم الإرسال)
       finalDate = now; 
-      // ملاحظة: إذا كنت تقصد جدولة تنبيه لموعد مستقبلي بجانب التسجيل الحالي، 
-      // فالكود هنا يسجل العملية بتاريخ اللحظة الحالية لضمان الأرشفة اليومية.
       
       finalValues = [
         parseInt(user_id) || 1, fcmToken || null, 'fitness',
@@ -76,9 +76,9 @@ export default async function handler(req, res) {
       ];
     }
 
-    // --- 3. منطق الرضاعة والحمل (تسجيل باليوم الحالي) ---
+    // --- 3. منطق الرضاعة والحمل ---
     else if (finalCategory === 'breastfeeding' || finalCategory === 'pregnancy') {
-      finalDate = now; // التسجيل باليوم الحالي كما طلبت
+      finalDate = now; 
       
       finalValues = [
         parseInt(user_id) || 1, fcmToken || null, finalCategory,
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       ];
     }
 
-    // --- 4. منطق الطبيب والاستشارات (الحفاظ على طرح يومين) ---
+    // --- 4. منطق الطبيب والاستشارات ---
     else if (finalCategory === 'medical' || note !== undefined) {
       if (scheduled_for) {
         const dateObj = new Date(scheduled_for);
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       ];
     }
 
-    // --- 5. المسار الافتراضي (باقي الفئات مع حفظ تواريخها الأصلية) ---
+    // --- 5. المسار الافتراضي ---
     else {
       finalDate = scheduled_for || now;
       finalValues = [
@@ -124,7 +124,7 @@ export default async function handler(req, res) {
       id: result.rows[0].id, 
       category: finalCategory,
       scheduled_at: finalDate,
-      message: "تم حفظ البيانات وتصنيفها بنجاح ✅"
+      message: "تم حفظ البيانات والموقع بنجاح ✅"
     });
 
   } catch (error) {
