@@ -1,4 +1,4 @@
- import pkg from 'pg';
+import pkg from 'pg';
 import admin from 'firebase-admin';
 
 const { Pool } = pkg;
@@ -22,13 +22,13 @@ const pool = new Pool({
   max: 1
 });
 
-// الأقسام والـ IDs الخاصة بوردبريس
+// الأقسام والـ IDs الخاصة بوردبريس (تمت إضافة المعرف الجديد)
 const CATEGORY_MAP = {
   '788594722': 'العناية بالبشرة',
   '788519318': 'الأناقة',
   '768006428': 'الصحة',
   '788485478': 'الأمومة',
-  '10783713': 'عام',
+  '10783713': 'عام', 
   '788402012': 'الرشاقة',
   '347212703': 'وصفات'
 };
@@ -49,7 +49,6 @@ export default async function handler(req, res) {
     let notificationsToSend = [];
 
     // --- الوظيفة (أ): جلب المقالات من وردبريس وحفظها في نيون (Sync) ---
-    // تُستدعى عبر: GET /api/notifications?sync=wordpress
     if (method === 'GET' && req.query.sync === 'wordpress') {
       for (const catId of WP_CATEGORY_IDS) {
         try {
@@ -57,7 +56,6 @@ export default async function handler(req, res) {
           const posts = await wpRes.json();
           if (posts && posts.length > 0) {
             const post = posts[0];
-            // حفظ في جدول notifications مع استخدام post_id كمعيار لعدم التكرار
             await pool.query(`
               INSERT INTO notifications (title, body, category, post_id, is_sent, scheduled_for)
               VALUES ($1, $2, $3, $4, false, NOW())
@@ -66,7 +64,6 @@ export default async function handler(req, res) {
           }
         } catch (e) { console.error(`Error syncing category ${catId}:`, e.message); }
       }
-      // إذا كان الطلب فقط للمزامنة، نتوقف هنا
       if (!req.query.process) return res.status(200).json({ success: true, message: "تمت مزامنة المقالات بنجاح." });
     }
 
@@ -91,7 +88,6 @@ export default async function handler(req, res) {
       const { fcmToken, token, title, body, category, type, postId, image } = req.body;
 
       if (type === "wordpress_article" && postId) {
-        // فحص جدول sent_posts لمنع تكرار الإرسال الجماعي
         const { rows: existing } = await pool.query(`SELECT id FROM sent_posts WHERE post_id = $1 LIMIT 1`, [String(postId)]);
         if (existing.length > 0) {
           return res.status(200).json({ success: true, message: "تم إرسال هذا المقال مسبقاً." });
@@ -115,16 +111,24 @@ export default async function handler(req, res) {
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body || "اكتشفي الجديد في تطبيق رقة";
 
-      // الذكاء الاصطناعي للإشعارات المستخرجة من قاعدة البيانات
-      if (item.id) {
+      // تحسين صياغة الإشعار عبر الذكاء الاصطناعي بناءً على محتوى الجدول
+      if (item.id || item.isWordPress) {
         try {
           const aiRes = await fetch(AI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: `اكتبي إشعاراً جذاباً لـ "${categoryLabel}" بعنوان "${finalTitle}"` })
+            body: JSON.stringify({ 
+              prompt: `بصفتك خبير محتوى، أعد صياغة هذا المقال لإرساله كإشعار Push جذاب وقصير جداً لمتابعات تطبيق رقة. 
+              القسم: ${categoryLabel}
+              العنوان الأصلي: ${finalTitle}
+              المحتوى المختصر: ${finalBody}
+              المطلوب: عنوان مشوق ونص إشعار محفز للنقر مع إيموجي مناسب.`
+            })
           });
           const aiData = await aiRes.json();
-          finalBody = aiData.message || aiData.text || finalBody;
+          // تحديث العنوان والنص إذا توفرا من الذكاء الاصطناعي
+          if (aiData.title) finalTitle = aiData.title;
+          finalBody = aiData.message || aiData.text || aiData.body || finalBody;
         } catch (e) { console.warn("AI Error: Using original text."); }
       }
 
@@ -149,9 +153,7 @@ export default async function handler(req, res) {
       try {
         const messageId = await admin.messaging().send(messagePayload);
         
-        // التحديث بعد الإرسال الناجح
         if (item.id) {
-          // بدلاً من الحذف، نقوم بتحديث الحالة لضمان عدم التكرار
           await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
         
