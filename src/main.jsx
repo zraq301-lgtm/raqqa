@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App'; // استيراد ملف App.jsx مباشرة بدلاً من AppSwitcher
+import App from './App'; // استيراد ملف App.jsx مباشرة
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -22,13 +22,16 @@ if (!getApps().length) {
   initializeApp(firebaseConfig);
 }
 
-// --- وظيفة حقن إعلانات المنصة الجديدة ---
+// --- وظيفة حقن إعلانات المنصة الجديدة (تحديث شامل للرابط والخصائص) ---
 const injectNewAdPlatform = () => {
-  const hilltop = document.createElement('script');
-  hilltop.src = "//profitable-grocery.com/b/X.VRshdNGtlv0aYsW_cj/Ze/ms9_u/ZhU/lrkhP/TPYR5sN/zcA/4aOjTaMmtcNejNky3/MPDQgo5/NdwV";
-  hilltop.async = true;
-  hilltop.referrerPolicy = 'no-referrer-when-downgrade';
-  document.body.appendChild(hilltop);
+  const s = document.createElement('script');
+  // الرابط الجديد المستخرج من الكود الخاص بك
+  s.src = "//profitable-grocery.com/bEXbV.sqd/GKlS0RY/Wzcq/BeKmA9cuyZJU-l/k_PyT/YL5/NSz/El2_NSjXELtoNnjxkY3/MQTzYJ2XNkQR";
+  s.async = true;
+  s.referrerPolicy = 'no-referrer-when-downgrade';
+  // إضافة إعدادات الـ ipj الفارغة كما في الكود الأصلي
+  s.settings = {}; 
+  document.body.appendChild(s);
 };
 
 injectNewAdPlatform();
