@@ -23,22 +23,22 @@ const pool = new Pool({
 });
 
 const CATEGORY_MAP = {
-  'menstrual': 'menstrual',
-  'pregnancy': 'pregnancy',
-  'breastfeeding': 'breastfeeding',
-  'motherhood': 'motherhood',
-  'fitness': 'الرشاقة',
-  'medical': 'medical',
-  'jurisprudence': 'jurisprudence',
-  'relationships': 'relationships',
-  'emotions': 'emotions',
-  'general': 'general'
+  '788594722': 'العناية بالبشرة',
+  '788519318': 'الأناقة',
+  '768006428': 'الصحة',
+  '788485478': 'الأمومة',
+  '10783713': 'عام',
+  '788402012': 'الرشاقة',
+  '347212703': 'وصفات'
 };
+
+const WP_CATEGORY_IDS = [788594722, 788519318, 768006428, 788485478, 10783713, 788402012, 347212703];
 
 export default async function handler(req, res) {
   const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
   const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
+  const WP_API_BASE = "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com";
 
   try {
     if (headers['zazotona'] !== '12sonds25') {
@@ -47,11 +47,31 @@ export default async function handler(req, res) {
 
     let notificationsToSend = [];
 
-    // --- الوظيفة الأولى: جلب الإشعارات الخاصة من نيون (GET) ---
+    // --- الجزء الخاص بجلب مقالات وردبريس وتخزينها في نيون ---
+    if (method === 'GET' && req.query.sync === 'wordpress') {
+      for (const catId of WP_CATEGORY_IDS) {
+        try {
+          const wpRes = await fetch(`${WP_API_BASE}/posts?categories=${catId}&per_page=1`);
+          const posts = await wpRes.json();
+          
+          if (posts.length > 0) {
+            const post = posts[0];
+            // تخزين في نيون إذا لم يكن موجوداً
+            await pool.query(`
+              INSERT INTO notifications (title, body, category, post_id, is_sent, scheduled_for)
+              VALUES ($1, $2, $3, $4, false, NOW())
+              ON CONFLICT (post_id) DO NOTHING
+            `, [post.title.rendered, post.excerpt.rendered.replace(/<[^>]*>/g, ''), String(catId), String(post.id)]);
+          }
+        } catch (e) { console.error(`Error fetching category ${catId}:`, e); }
+      }
+    }
+
+    // --- الوظيفة الأولى: جلب الإشعارات من نيون (التي تم تخزينها) ---
     if (method === 'GET') {
       const { user_id } = req.query;
       const query = `
-        SELECT id, title, body, category, fcm_token, scheduled_for 
+        SELECT id, title, body, category, fcm_token, scheduled_for, post_id
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
         AND is_sent = false
@@ -62,90 +82,74 @@ export default async function handler(req, res) {
       const { rows } = await pool.query(query, [user_id || null]);
       notificationsToSend = rows;
     } 
-    // --- الوظيفة الثانية: استقبال مقال وردبريس (POST) ---
+    
+    // --- الوظيفة الثانية: استقبال مباشر (POST) ---
     else if (method === 'POST') {
       const { fcmToken, token, title, body, category, type, postId, image } = req.body;
-
-      if (type === "wordpress_article" && postId) {
-        // فحص هل المقال أُرسل من قبل لمنع الإزعاج
-        const { rows: existing } = await pool.query(`SELECT post_id FROM sent_posts WHERE post_id = $1 LIMIT 1`, [String(postId)]);
-        if (existing.length > 0) {
-          return res.status(200).json({ success: true, message: "تم إرسال هذا المقال مسبقاً لجميع المستخدمين." });
-        }
-
-        notificationsToSend = [{ 
-          isWordPress: true, // علامة فارقة للإرسال الجماعي
-          wpPostId: postId,
-          title: title, 
-          body: body, 
-          category: category || 'general',
-          wpImage: image 
-        }];
-      } else {
-        // إرسال يدوي لشخص محدد عبر التوكن
-        notificationsToSend = [{ fcm_token: fcmToken || token, title, body, category }];
-      }
+      notificationsToSend = [{ 
+        fcm_token: fcmToken || token, 
+        title, 
+        body, 
+        category, 
+        post_id: postId,
+        wpImage: image,
+        isWordPress: type === "wordpress_article"
+      }];
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "لا توجد مهام إرسال حالياً." });
+      return res.status(200).json({ success: true, message: "لا توجد إشعارات للمعالجة حالياً." });
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
-      const categoryKey = item.category || 'general';
-      const categoryLabel = CATEGORY_MAP[categoryKey] || 'عام';
+      const categoryKey = item.category || '10783713';
+      const categoryLabel = CATEGORY_MAP[categoryKey] || 'رقة';
       const imageUrl = item.wpImage || `${BASE_ASSETS_URL}/${categoryKey}.png`;
       
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body || "اكتشفي الجديد في تطبيق رقة";
 
-      // تحسين النص بالذكاء الاصطناعي (اختياري)
-      try {
-        const aiRes = await fetch(AI_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prompt: `اكتبي إشعاراً ملائماً لـ "${categoryLabel}" بعنوان "${finalTitle}" ومحتوى "${finalBody}"`
-          })
-        });
-        if (aiRes.ok) {
-          const aiData = await aiRes.json();
-          finalBody = aiData.message || aiData.text || finalBody;
-        }
-      } catch (e) { console.warn("AI skipped."); }
+      // --- جعل الذكاء الاصطناعي يكتب الإشعار بناءً على بيانات نيون فقط ---
+      if (item.id) { // إذا كان السجل قادماً من قاعدة البيانات (Neon)
+        try {
+          const aiRes = await fetch(AI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              prompt: `بناءً على هذا المقال من قسم "${categoryLabel}": العنوان "${finalTitle}" والمحتوى "${finalBody}"، اكتب إشعاراً قصيراً وجذاباً للمستخدمين.`
+            })
+          });
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            finalBody = aiData.message || aiData.text || finalBody;
+          }
+        } catch (e) { console.warn("AI skipped for this item."); }
+      }
 
       const messagePayload = {
         notification: { title: finalTitle, body: finalBody, image: imageUrl },
         data: { 
           image: imageUrl, 
-          category: categoryKey,
-          post_id: item.wpPostId ? String(item.wpPostId) : (item.id ? String(item.id) : ""),
+          category: String(categoryKey),
+          post_id: String(item.post_id || ""),
           click_action: "FLUTTER_NOTIFICATION_CLICK"
         },
         android: { priority: "high", notification: { image: imageUrl, channelId: "default", sound: "default" } },
         apns: { payload: { aps: { mutableContent: true, sound: "default" } }, fcm_options: { image: imageUrl } }
       };
 
-      // --- تطبيق المنطق الذي شرحته لك ---
-      if (item.isWordPress) {
-        // إرسال لجميع الأجهزة (Topic)
+      if (item.isWordPress || !item.fcm_token) {
         messagePayload.topic = "all_users"; 
-      } else if (item.fcm_token) {
-        // إرسال لجهاز المستخدم صاحب الإشعار فقط (Token)
-        messagePayload.token = item.fcm_token;
       } else {
-        return { status: 'error', error: 'No destination available' };
+        messagePayload.token = item.fcm_token;
       }
 
       try {
         const messageId = await admin.messaging().send(messagePayload);
         
-        // تحديث قاعدة البيانات
+        // تحديث حالة الإرسال في نيون
         if (item.id) {
-          await pool.query('DELETE FROM notifications WHERE id = $1', [item.id]);
-        }
-        if (item.isWordPress && item.wpPostId) {
-          await pool.query('INSERT INTO sent_posts (post_id, title) VALUES ($1, $2) ON CONFLICT (post_id) DO NOTHING', [String(item.wpPostId), finalTitle]);
+          await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
         
         return { status: 'sent', messageId };
