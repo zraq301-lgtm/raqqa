@@ -23,14 +23,23 @@ if (!getApps().length) {
   initializeApp(firebaseConfig);
 }
 
-// --- وظيفة حقن إعلانات المنصة الجديدة فقط ---
+// --- وظيفة حقن إعلانات المنصة الجديدة ---
 const injectNewAdPlatform = () => {
-  // حقن إعلان HilltopAds باستخدام الرابط المستخرج من الكود الخاص بك
-  const hilltop = document.createElement('script');
-  hilltop.src = "//profitable-grocery.com/b/X.VRshdNGtlv0aYsW_cj/Ze/ms9_u/ZhU/lrkhP/TPYR5sN/zcA/4aOjTaMmtcNejNky3/MPDQgo5/NdwV";
-  hilltop.async = true;
-  hilltop.referrerPolicy = 'no-referrer-when-downgrade';
-  document.body.appendChild(hilltop);
+  // دمج السكربت الخاص بك مباشرة
+  (function(gmfj){
+    var d = document,
+        s = d.createElement('script'),
+        l = d.scripts[d.scripts.length - 1];
+    s.settings = gmfj || {};
+    s.src = "\/\/profitable-grocery.com\/b\/X.VRshdNGtlv0aYsW_cj\/Ze\/ms9_u\/ZhU\/lrkhP\/TPYR5sN\/zcA\/4aOjTaMmtcNejNky3\/MPDQgo5\/NdwV";
+    s.async = true;
+    s.referrerPolicy = 'no-referrer-when-downgrade';
+    if (l && l.parentNode) {
+        l.parentNode.insertBefore(s, l);
+    } else {
+        document.head.appendChild(s);
+    }
+  })({});
 };
 
 // تنفيذ حقن الإعلانات للمنصة الجديدة فور تشغيل الملف
