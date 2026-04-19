@@ -12,14 +12,18 @@ const serviceAccount = {
 };
 
 if (!admin.apps.length) {
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  try {
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+  } catch (e) {
+    console.error("Firebase Admin Init Error:", e);
+  }
 }
 
 // 2. إعداد قاعدة بيانات نيون
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  max: 1
+  max: 1 // مهم جداً في Vercel لمنع تجاوز عدد الاتصالات المسموح به
 });
 
 const CATEGORY_MAP = {
@@ -41,77 +45,68 @@ export default async function handler(req, res) {
   const WP_API_BASE = "https://public-api.wordpress.com/wp/v2/sites/raqqastor3.wordpress.com";
 
   try {
+    // التحقق من التوثيق
     if (headers['zazotona'] !== '12sonds25') {
       return res.status(401).json({ success: false, error: 'Unauthorized Access' });
     }
 
-    let notificationsToSend = [];
-
     // --- الجزء الخاص بجلب مقالات وردبريس وتخزينها في نيون ---
-    // تم تحسين المنطق لعدم تكرار الحفظ
     if (method === 'GET' && req.query.sync === 'wordpress') {
       for (const catId of WP_CATEGORY_IDS) {
         try {
-          const wpRes = await fetch(`${WP_API_BASE}/posts?categories=${catId}&per_page=1`);
-          const posts = await wpRes.json();
+          const wpResponse = await fetch(`${WP_API_BASE}/posts?categories=${catId}&per_page=1`);
+          const posts = await wpResponse.json();
           
-          if (posts && posts.length > 0) {
+          if (Array.isArray(posts) && posts.length > 0) {
             const post = posts[0];
-            const postIdStr = String(post.id);
-
-            // تأكد أولاً أن المقال لم يسبق إرساله في جدول sent_posts (إذا كنت تستخدمه)
-            // أو اعتمد على UNIQUE CONSTRAINT في جدول notifications
             await pool.query(`
               INSERT INTO notifications (title, body, category, post_id, is_sent, scheduled_for)
               VALUES ($1, $2, $3, $4, false, NOW())
               ON CONFLICT (post_id) DO NOTHING
-            `, [post.title.rendered, post.excerpt.rendered.replace(/<[^>]*>/g, ''), String(catId), postIdStr]);
+            `, [
+              post.title.rendered, 
+              post.excerpt.rendered.replace(/<[^>]*>/g, '').substring(0, 200), 
+              String(catId), 
+              String(post.id)
+            ]);
           }
-        } catch (e) { console.error(`Error fetching category ${catId}:`, e); }
+        } catch (e) { console.error(`WP Sync Error for ${catId}:`, e.message); }
       }
     }
 
-    // --- الوظيفة الأولى: جلب الإشعارات من نيون ---
+    let notificationsToSend = [];
+
     if (method === 'GET') {
       const { user_id } = req.query;
-      const query = `
-        SELECT id, title, body, category, fcm_token, scheduled_for, post_id
+      const { rows } = await pool.query(`
+        SELECT id, title, body, category, fcm_token, post_id
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
         AND is_sent = false
-        AND scheduled_for <= NOW() + INTERVAL '1 day'
+        AND scheduled_for <= NOW()
         ORDER BY scheduled_for ASC
-        LIMIT 50
-      `;
-      const { rows } = await pool.query(query, [user_id || null]);
+        LIMIT 10
+      `, [user_id || null]);
       notificationsToSend = rows;
     } 
-    
-    // --- الوظيفة الثانية: استقبال مباشر (POST) ---
     else if (method === 'POST') {
-      const { fcmToken, token, title, body, category, type, postId, image } = req.body;
+      const { fcmToken, title, body, category, type, postId, image } = req.body;
       
-      // منع تكرار الإرسال في حالة الـ POST المباشر أيضاً
       if (postId) {
         const { rows: existing } = await pool.query(`SELECT id FROM notifications WHERE post_id = $1 AND is_sent = true LIMIT 1`, [String(postId)]);
-        if (existing.length > 0) {
-           return res.status(200).json({ success: true, message: "تم إرسال هذا المقال مسبقاً." });
-        }
+        if (existing.length > 0) return res.status(200).json({ success: true, message: "Sent before." });
       }
 
       notificationsToSend = [{ 
-        fcm_token: fcmToken || token, 
-        title, 
-        body, 
-        category, 
-        post_id: postId,
-        wpImage: image,
+        fcm_token: fcmToken, 
+        title, body, category, 
+        post_id: postId, wpImage: image,
         isWordPress: type === "wordpress_article"
       }];
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "لا توجد إشعارات جديدة للمعالجة." });
+      return res.status(200).json({ success: true, message: "No pending tasks." });
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
@@ -122,58 +117,49 @@ export default async function handler(req, res) {
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body || "اكتشفي الجديد في تطبيق رقة";
 
-      // --- استخدام الذكاء الاصطناعي بناءً على بيانات نيون فقط ---
-      if (item.id) { 
+      // تحسين النص بالذكاء الاصطناعي للسجلات القادمة من نيون
+      if (item.id) {
         try {
           const aiRes = await fetch(AI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-              prompt: `بناءً على محتوى من قسم "${categoryLabel}": بعنوان "${finalTitle}"، اكتب إشعاراً جذاباً ومختصراً جداً.`
+              prompt: `بناءً على مقال "${finalTitle}" في قسم "${categoryLabel}"، اكتب إشعاراً قصيراً جداً.` 
             })
           });
-          if (aiRes.ok) {
-            const aiData = await aiRes.json();
-            finalBody = aiData.message || aiData.text || finalBody;
-          }
+          const aiData = await aiRes.json();
+          finalBody = aiData.message || aiData.text || finalBody;
         } catch (e) { console.warn("AI skipped."); }
       }
 
-      const messagePayload = {
+      const message = {
         notification: { title: finalTitle, body: finalBody, image: imageUrl },
-        data: { 
-          image: imageUrl, 
-          category: String(categoryKey),
-          post_id: String(item.post_id || ""),
-          click_action: "FLUTTER_NOTIFICATION_CLICK"
-        },
-        android: { priority: "high", notification: { image: imageUrl, channelId: "default", sound: "default" } },
-        apns: { payload: { aps: { mutableContent: true, sound: "default" } }, fcm_options: { image: imageUrl } }
+        data: { image: imageUrl, category: String(categoryKey), post_id: String(item.post_id || "") },
+        android: { priority: "high", notification: { image: imageUrl, channelId: "default" } },
+        apns: { payload: { aps: { mutableContent: true } }, fcm_options: { image: imageUrl } }
       };
 
       if (item.isWordPress || !item.fcm_token) {
-        messagePayload.topic = "all_users"; 
+        message.topic = "all_users";
       } else {
-        messagePayload.token = item.fcm_token;
+        message.token = item.fcm_token;
       }
 
       try {
-        const messageId = await admin.messaging().send(messagePayload);
-        
-        // تحديث حالة الإرسال فوراً لضمان عدم التكرار
+        await admin.messaging().send(message);
         if (item.id) {
           await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
-        
-        return { status: 'sent', messageId };
-      } catch (err) {
-        return { status: 'error', error: err.message };
+        return { status: 'success', id: item.id || item.post_id };
+      } catch (e) {
+        return { status: 'error', error: e.message };
       }
     }));
 
     return res.status(200).json({ success: true, results });
 
   } catch (error) {
+    console.error("Critical Error:", error);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
