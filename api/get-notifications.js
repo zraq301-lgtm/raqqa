@@ -48,26 +48,30 @@ export default async function handler(req, res) {
     let notificationsToSend = [];
 
     // --- الجزء الخاص بجلب مقالات وردبريس وتخزينها في نيون ---
+    // تم تحسين المنطق لعدم تكرار الحفظ
     if (method === 'GET' && req.query.sync === 'wordpress') {
       for (const catId of WP_CATEGORY_IDS) {
         try {
           const wpRes = await fetch(`${WP_API_BASE}/posts?categories=${catId}&per_page=1`);
           const posts = await wpRes.json();
           
-          if (posts.length > 0) {
+          if (posts && posts.length > 0) {
             const post = posts[0];
-            // تخزين في نيون إذا لم يكن موجوداً
+            const postIdStr = String(post.id);
+
+            // تأكد أولاً أن المقال لم يسبق إرساله في جدول sent_posts (إذا كنت تستخدمه)
+            // أو اعتمد على UNIQUE CONSTRAINT في جدول notifications
             await pool.query(`
               INSERT INTO notifications (title, body, category, post_id, is_sent, scheduled_for)
               VALUES ($1, $2, $3, $4, false, NOW())
               ON CONFLICT (post_id) DO NOTHING
-            `, [post.title.rendered, post.excerpt.rendered.replace(/<[^>]*>/g, ''), String(catId), String(post.id)]);
+            `, [post.title.rendered, post.excerpt.rendered.replace(/<[^>]*>/g, ''), String(catId), postIdStr]);
           }
         } catch (e) { console.error(`Error fetching category ${catId}:`, e); }
       }
     }
 
-    // --- الوظيفة الأولى: جلب الإشعارات من نيون (التي تم تخزينها) ---
+    // --- الوظيفة الأولى: جلب الإشعارات من نيون ---
     if (method === 'GET') {
       const { user_id } = req.query;
       const query = `
@@ -86,6 +90,15 @@ export default async function handler(req, res) {
     // --- الوظيفة الثانية: استقبال مباشر (POST) ---
     else if (method === 'POST') {
       const { fcmToken, token, title, body, category, type, postId, image } = req.body;
+      
+      // منع تكرار الإرسال في حالة الـ POST المباشر أيضاً
+      if (postId) {
+        const { rows: existing } = await pool.query(`SELECT id FROM notifications WHERE post_id = $1 AND is_sent = true LIMIT 1`, [String(postId)]);
+        if (existing.length > 0) {
+           return res.status(200).json({ success: true, message: "تم إرسال هذا المقال مسبقاً." });
+        }
+      }
+
       notificationsToSend = [{ 
         fcm_token: fcmToken || token, 
         title, 
@@ -98,7 +111,7 @@ export default async function handler(req, res) {
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "لا توجد إشعارات للمعالجة حالياً." });
+      return res.status(200).json({ success: true, message: "لا توجد إشعارات جديدة للمعالجة." });
     }
 
     const results = await Promise.all(notificationsToSend.map(async (item) => {
@@ -109,21 +122,21 @@ export default async function handler(req, res) {
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body || "اكتشفي الجديد في تطبيق رقة";
 
-      // --- جعل الذكاء الاصطناعي يكتب الإشعار بناءً على بيانات نيون فقط ---
-      if (item.id) { // إذا كان السجل قادماً من قاعدة البيانات (Neon)
+      // --- استخدام الذكاء الاصطناعي بناءً على بيانات نيون فقط ---
+      if (item.id) { 
         try {
           const aiRes = await fetch(AI_API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-              prompt: `بناءً على هذا المقال من قسم "${categoryLabel}": العنوان "${finalTitle}" والمحتوى "${finalBody}"، اكتب إشعاراً قصيراً وجذاباً للمستخدمين.`
+              prompt: `بناءً على محتوى من قسم "${categoryLabel}": بعنوان "${finalTitle}"، اكتب إشعاراً جذاباً ومختصراً جداً.`
             })
           });
           if (aiRes.ok) {
             const aiData = await aiRes.json();
             finalBody = aiData.message || aiData.text || finalBody;
           }
-        } catch (e) { console.warn("AI skipped for this item."); }
+        } catch (e) { console.warn("AI skipped."); }
       }
 
       const messagePayload = {
@@ -147,7 +160,7 @@ export default async function handler(req, res) {
       try {
         const messageId = await admin.messaging().send(messagePayload);
         
-        // تحديث حالة الإرسال في نيون
+        // تحديث حالة الإرسال فوراً لضمان عدم التكرار
         if (item.id) {
           await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [item.id]);
         }
