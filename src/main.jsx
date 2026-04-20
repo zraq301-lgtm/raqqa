@@ -8,6 +8,9 @@ import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm'; 
+// استيراد إضافة Start.io (تأكد من تثبيتها عبر npm install @capacitor-community/start-io)
+// في حال كنت تستخدم Web SDK للإعلانات داخل المتصفح، يتم استدعاؤها عبر السكريبت
+import { StartIo } from '@capacitor-community/start-io'; 
 
 // --- إعدادات Firebase (مشروع Roqa) ---
 const firebaseConfig = {
@@ -38,6 +41,19 @@ const Main = () => {
   };
 
   useEffect(() => {
+    // --- تهيئة إعلانات Start.io ---
+    const initAds = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await StartIo.initialize({ appId: '203891762' });
+          console.log("✅ Start.io Ads Initialized");
+        } catch (e) {
+          console.error("❌ Start.io Init Error:", e);
+        }
+      }
+    };
+    initAds();
+
     if (Capacitor.isNativePlatform()) {
       const setupPush = async () => {
         try {
