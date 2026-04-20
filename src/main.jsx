@@ -23,20 +23,6 @@ if (!getApps().length) {
   initializeApp(firebaseConfig);
 }
 
-// --- وظيفة حقن رابط الإعلانات الجديد ---
-const injectAdLink = () => {
-  const adUrl = "https://www.profitablecpmratenetwork.com/ameifamuwu?key=a3c5c77138d5d3c884854ee025902b76";
-  
-  // إنشاء سكربت يقوم بفتح الرابط أو معالجته كإعلان
-  const script = document.createElement('script');
-  script.src = adUrl;
-  script.async = true;
-  document.head.appendChild(script);
-};
-
-// تنفيذ الحقن فور تشغيل الملف
-injectAdLink();
-
 const Main = () => {
   const [showSplash, setShowSplash] = useState(true);
   
