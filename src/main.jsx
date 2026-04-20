@@ -9,7 +9,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm'; 
 
-// --- إعدادات Firebase ---
+// --- إعدادات Firebase (مشروع Roqa) ---
 const firebaseConfig = {
   apiKey: "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ",
   authDomain: "raqqa-43dc8.firebaseapp.com",
@@ -23,27 +23,19 @@ if (!getApps().length) {
   initializeApp(firebaseConfig);
 }
 
-// --- وظيفة حقن إعلانات المنصة الجديدة ---
-const injectNewAdPlatform = () => {
-  // دمج السكربت الخاص بك مباشرة
-  (function(gmfj){
-    var d = document,
-        s = d.createElement('script'),
-        l = d.scripts[d.scripts.length - 1];
-    s.settings = gmfj || {};
-    s.src = "\/\/profitable-grocery.com\/b\/X.VRshdNGtlv0aYsW_cj\/Ze\/ms9_u\/ZhU\/lrkhP\/TPYR5sN\/zcA\/4aOjTaMmtcNejNky3\/MPDQgo5\/NdwV";
-    s.async = true;
-    s.referrerPolicy = 'no-referrer-when-downgrade';
-    if (l && l.parentNode) {
-        l.parentNode.insertBefore(s, l);
-    } else {
-        document.head.appendChild(s);
-    }
-  })({});
+// --- وظيفة حقن رابط الإعلانات الجديد ---
+const injectAdLink = () => {
+  const adUrl = "https://www.profitablecpmratenetwork.com/ameifamuwu?key=a3c5c77138d5d3c884854ee025902b76";
+  
+  // إنشاء سكربت يقوم بفتح الرابط أو معالجته كإعلان
+  const script = document.createElement('script');
+  script.src = adUrl;
+  script.async = true;
+  document.head.appendChild(script);
 };
 
-// تنفيذ حقن الإعلانات للمنصة الجديدة فور تشغيل الملف
-injectNewAdPlatform();
+// تنفيذ الحقن فور تشغيل الملف
+injectAdLink();
 
 const Main = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -63,10 +55,12 @@ const Main = () => {
     if (Capacitor.isNativePlatform()) {
       const setupPush = async () => {
         try {
+          // التعامل مع الإشعارات عند التسجيل
           await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
             
             try {
+              // الاشتراك في قناة جميع المستخدمين
               await FCM.subscribeTo({ topic: 'all_users' });
               console.log("✅ Subscribed to all_users topic");
             } catch (err) {
@@ -74,14 +68,17 @@ const Main = () => {
             }
           });
 
+          // عند استلام إشعار والتطبيق مفتوح
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log("📩 إشعار جديد:", notification.title);
           });
 
+          // عند النقر على الإشعار
           await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
             console.log("🖱️ تم النقر على الإشعار:", notification.actionId);
           });
 
+          // طلب الصلاحيات
           let permStatus = await PushNotifications.checkPermissions();
           if (permStatus.receive === 'prompt') {
             permStatus = await PushNotifications.requestPermissions();
