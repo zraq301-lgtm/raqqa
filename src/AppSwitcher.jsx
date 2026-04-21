@@ -31,17 +31,27 @@ function AppSwitcher() {
   useEffect(() => {
     // --- وظيفة فحص التحديثات الجديدة ---
     const checkUpdate = async () => {
-      const CURRENT_VERSION_CODE = 1653; // إصدارك الحالي
+      const CURRENT_VERSION_CODE = 1653; // إصدارك الحالي الثابت
       const JSON_URL = "https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.json";
       
       try {
         const response = await fetch(JSON_URL);
         const data = await response.json();
         
-        if (data.latest_version_code > CURRENT_VERSION_CODE) {
-          const confirmUpdate = window.confirm("يوجد تحديث جديد لتطبيق رقة، هل تريد تحميل النسخة المحدثة الآن؟");
-          if (confirmUpdate) {
-            window.location.href = data.download_url;
+        // لا يظهر التحديث إلا إذا كانت الحالة live والنسخة أحدث من نسخة المستخدم
+        if (data.is_live && data.latest_version_code > CURRENT_VERSION_CODE) {
+          
+          // فحص هل قام المستخدم بتجاهل هذه النسخة المحددة من قبل
+          const lastIgnored = localStorage.getItem('ignored_version');
+          
+          if (lastIgnored !== data.latest_version_code.toString()) {
+            const confirmUpdate = window.confirm("يوجد تحديث جديد لتطبيق رقة، هل تريد تحميل النسخة المحدثة الآن؟");
+            if (confirmUpdate) {
+              window.location.href = data.download_url;
+            } else {
+              // حفظ رقم النسخة التي تم تجاهلها لعدم إظهار الرسالة مرة أخرى
+              localStorage.setItem('ignored_version', data.latest_version_code.toString());
+            }
           }
         }
       } catch (err) {
