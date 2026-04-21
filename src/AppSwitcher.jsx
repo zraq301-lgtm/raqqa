@@ -29,6 +29,26 @@ function AppSwitcher() {
   });
 
   useEffect(() => {
+    // --- وظيفة فحص التحديثات الجديدة ---
+    const checkUpdate = async () => {
+      const CURRENT_VERSION_CODE = 1653; // إصدارك الحالي
+      const JSON_URL = "https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.json";
+      
+      try {
+        const response = await fetch(JSON_URL);
+        const data = await response.json();
+        
+        if (data.latest_version_code > CURRENT_VERSION_CODE) {
+          const confirmUpdate = window.confirm("يوجد تحديث جديد لتطبيق رقة، هل تريد تحميل النسخة المحدثة الآن؟");
+          if (confirmUpdate) {
+            window.location.href = data.download_url;
+          }
+        }
+      } catch (err) {
+        console.warn("فشل فحص التحديثات:", err);
+      }
+    };
+
     // وظيفة إعداد الإشعارات - معزولة لمنع انهيار الواجهة
     const setupWebPush = async () => {
       try {
@@ -93,6 +113,7 @@ function AppSwitcher() {
       }
     };
 
+    checkUpdate(); // تشغيل فحص التحديث
     setupWebPush();
     setupBackButton();
   }, []);
