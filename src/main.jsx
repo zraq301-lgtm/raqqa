@@ -38,29 +38,15 @@ const Main = () => {
   };
 
   useEffect(() => {
-    // --- تهيئة إعلانات Start.io بشكل آمن لـ Vercel ---
-    const initAds = async () => {
-      // نتحقق أولاً أننا على منصة موبايل حقيقية قبل استيراد المكتبة
-      if (Capacitor.isNativePlatform()) {
-        try {
-          // استيراد المكتبة ديناميكياً لتجنب خطأ الـ Build على الويب
-          const { StartIo } = await import('@capacitor-community/start-io');
-          await StartIo.initialize({ appId: '203891762' });
-          console.log("✅ Start.io Ads Initialized on Native");
-        } catch (e) {
-          console.warn("⚠️ Start.io dynamic import failed (Normal on Web):", e);
-        }
-      }
-    };
-    
-    initAds();
-
     if (Capacitor.isNativePlatform()) {
       const setupPush = async () => {
         try {
+          // التعامل مع الإشعارات عند التسجيل
           await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
+            
             try {
+              // الاشتراك في قناة جميع المستخدمين
               await FCM.subscribeTo({ topic: 'all_users' });
               console.log("✅ Subscribed to all_users topic");
             } catch (err) {
@@ -68,14 +54,17 @@ const Main = () => {
             }
           });
 
+          // عند استلام إشعار والتطبيق مفتوح
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log("📩 إشعار جديد:", notification.title);
           });
 
+          // عند النقر على الإشعار
           await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
             console.log("🖱️ تم النقر على الإشعار:", notification.actionId);
           });
 
+          // طلب الصلاحيات
           let permStatus = await PushNotifications.checkPermissions();
           if (permStatus.receive === 'prompt') {
             permStatus = await PushNotifications.requestPermissions();
