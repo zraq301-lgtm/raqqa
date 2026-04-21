@@ -10,7 +10,8 @@ const EleganceSection = () => {
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
-  const CATEGORY_ID = "768006428";
+  // تحديث الـ ID الخاص بالقسم بناءً على طلبك
+  const CATEGORY_ID = "347212703";
   const SITE_DOMAIN = "raqqastor3.wordpress.com";
   const API_URL = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}/posts?categories=${CATEGORY_ID}&_embed`;
   const APP_LINK = "https://raqa-1zhm.vercel.app/";
