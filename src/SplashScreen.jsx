@@ -27,7 +27,7 @@ const SplashScreen = ({ onFinished }) => {
       left: 0,
       width: '100%',
       height: '100vh',
-      backgroundColor: '#000', 
+      backgroundColor: '#000', // الخلفية سوداء لسد أي فراغات تظهر بسبب التناسب
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -43,7 +43,10 @@ const SplashScreen = ({ onFinished }) => {
         style={{
           width: '100%',
           height: '100%',
-          objectFit: 'cover'
+          /* تم التغيير من cover إلى contain 
+             لضمان ظهور محتوى الفيديو كاملاً بدون قص
+          */
+          objectFit: 'contain' 
         }}
       >
         <source src="/splash_video.mp4" type="video/mp4" />
