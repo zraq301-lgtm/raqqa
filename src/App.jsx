@@ -189,6 +189,18 @@ function App() {
       <ScrollToTop />
       <TipOverlay />
       
+      {/* الهيدر الجديد المضاف */}
+      <header className="main-app-header" style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', borderBottom: '1px solid #eee' }}>
+        <a 
+          href="https://www.facebook.com/profile.php?id=61571056531349" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none', color: '#1877F2', fontWeight: 'bold', fontSize: '16px' }}
+        >
+          تواصل معنا
+        </a>
+      </header>
+      
       <header className="top-sticky-menu">
         <div className="top-cards-container">
           <Link to="/videos" className="top-card">
