@@ -1,4 +1,4 @@
-          name: "Raqqa Smart Sync (Neon & WordPress)"
+name: "Raqqa Smart Sync (Neon & WordPress)"
 
 on:
   schedule:
