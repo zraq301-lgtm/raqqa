@@ -1,4 +1,4 @@
-name: "Raqqa Smart Sync (Neon & WordPress)"
+name: "Raqqa Smart Sync (Neon Only)"
 
 on:
   schedule:
@@ -10,7 +10,7 @@ jobs:
   sync_process:
     runs-on: ubuntu-latest
     steps:
-      - name: "Run Raqqa Unified Sync"
+      - name: "Run Raqqa Neon Sync"
         uses: actions/github-script@v7
         with:
           script: |
@@ -21,58 +21,22 @@ jobs:
             };
 
             try {
-              // --- الخطوة 1: جلب إشعارات نيون المجدولة (GET) ---
+              // --- الخطوة الوحيدة: جلب إشعارات نيون المجدولة (GET) ---
               console.log("--- Step 1: Fetching Scheduled Notifications from Neon ---");
+              
               const neonRes = await fetch(vercelUrl, { 
                 method: "GET", 
                 headers 
               });
+
+              if (!neonRes.ok) {
+                throw new Error(`Server responded with status: ${neonRes.status}`);
+              }
+
               const neonData = await neonRes.json();
               console.log("Neon Sync Result:", JSON.stringify(neonData));
 
-              // --- الخطوة 2: فحص وردبريس وإرسال المقالات (POST) ---
-              console.log("--- Step 2: Checking WordPress Categories ---");
-              const categoryIds = ["189211019", "788402012", "768006428"];
-              const siteDomain = "raqqastor3.wordpress.com";
-
-              for (const catId of categoryIds) {
-                console.log(`Checking Category: ${catId}...`);
-                
-                const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
-                const wpResponse = await fetch(wpUrl);
-                const posts = await wpResponse.json();
-
-                if (posts && posts.length > 0) {
-                  const post = posts[0];
-                  
-                  // تنظيف العنوان من وسوم HTML
-                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
-                  
-                  console.log(`Found Post: "${cleanTitle}". Sending to Vercel...`);
-
-                  const payload = {
-                    type: "wordpress_article",
-                    postId: String(post.id),
-                    title: "✨ مقال جديد: " + cleanTitle,
-                    body: "اكتشفي أسرار الأناقة والجمال الجديدة في رقة..",
-                    image: post.jetpack_featured_media_url || "",
-                    category: "general"
-                  };
-
-                  const pushRes = await fetch(vercelUrl, {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify(payload)
-                  });
-
-                  const pushData = await pushRes.json();
-                  console.log(`Push Result for Category ${catId}:`, JSON.stringify(pushData));
-                } else {
-                  console.log(`No new posts found in category ${catId}.`);
-                }
-              }
-
-              console.log("--- All Sync Tasks Completed Successfully ---");
+              console.log("--- Neon Sync Task Completed Successfully ---");
 
             } catch (error) {
               console.error("Critical Sync Error:", error.message);
