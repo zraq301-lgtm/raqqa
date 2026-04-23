@@ -19,23 +19,28 @@ jobs:
               "zazotona": "12sonds25" 
             };
 
+            // وظيفة مساعدة للانتظار لتجنب ضغط السيرفر
+            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
             try {
               console.log("--- Step 1: Fetching Scheduled Notifications & Syncing ---");
+              
               const neonRes = await fetch(`${vercelUrl}?sync=wordpress`, { 
                 method: "GET", 
                 headers 
               });
 
-              // فحص إذا كان الرد ناجحاً قبل تحويله لـ JSON
               const responseText = await neonRes.text();
-              console.log("Raw Response:", responseText);
-
+              
               if (!neonRes.ok) {
-                throw new Error(`Server responded with status ${neonRes.status}: ${responseText}`);
+                console.error(`Vercel Server Error (500): ${responseText}`);
+                console.log("Action will continue to Step 2 despite Step 1 failure...");
+              } else {
+                console.log("Step 1 Success:", responseText);
               }
 
-              const neonData = JSON.parse(responseText);
-              console.log("Neon Sync Result:", JSON.stringify(neonData));
+              // انتظار ثانية واحدة قبل البدء في الخطوة التالية
+              await wait(1000);
 
               // --- الخطوة 2: فحص وردبريس ---
               console.log("--- Step 2: Checking WordPress Categories ---");
@@ -44,37 +49,47 @@ jobs:
 
               for (const catId of categoryIds) {
                 const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
-                const wpResponse = await fetch(wpUrl);
                 
-                if (!wpResponse.ok) {
-                  console.warn(`Skip category ${catId}: WP API Error`);
-                  continue;
-                }
+                try {
+                  const wpResponse = await fetch(wpUrl);
+                  if (!wpResponse.ok) throw new Error(`WP API Error for cat ${catId}`);
 
-                const posts = await wpResponse.json();
-                if (posts && posts.length > 0) {
-                  const post = posts[0];
-                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
+                  const posts = await wpResponse.json();
                   
-                  const payload = {
-                    type: "wordpress_article",
-                    postId: String(post.id),
-                    title: "✨ مقال جديد: " + cleanTitle,
-                    body: "اكتشفي أسرار الأناقة والجمال الجديدة في رقة..",
-                    image: post.jetpack_featured_media_url || "",
-                    category: String(catId)
-                  };
+                  if (posts && posts.length > 0) {
+                    const post = posts[0];
+                    const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
+                    
+                    const payload = {
+                      type: "wordpress_article",
+                      postId: String(post.id),
+                      title: "✨ مقال جديد: " + cleanTitle,
+                      body: "اكتشفي أسرار الأناقة والجمال الجديدة في رقة..",
+                      image: post.jetpack_featured_media_url || "",
+                      category: String(catId)
+                    };
 
-                  await fetch(vercelUrl, {
-                    method: "POST",
-                    headers,
-                    body: JSON.stringify(payload)
-                  });
-                  console.log(`Success: Post ${post.id} sent.`);
+                    const postRes = await fetch(vercelUrl, {
+                      method: "POST",
+                      headers,
+                      body: JSON.stringify(payload)
+                    });
+
+                    if (postRes.ok) {
+                      console.log(`✅ Success: Post ${post.id} from category ${catId} synced.`);
+                    } else {
+                      console.warn(`⚠️ Vercel rejected post ${post.id} with status ${postRes.status}`);
+                    }
+                  }
+                } catch (catError) {
+                  console.error(`Error processing category ${catId}:`, catError.message);
                 }
+                
+                // انتظار بسيط بين الفئات
+                await wait(500);
               }
 
             } catch (error) {
-              console.error("Critical Sync Error:", error.message);
+              console.error("Critical Workflow Error:", error.message);
               core.setFailed(error.message);
             }
