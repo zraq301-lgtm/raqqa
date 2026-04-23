@@ -68,7 +68,6 @@ export default async function handler(req, res) {
     }
 
     // --- الوظيفة (ب): جلب الإشعارات المجدولة من نيون لإرسالها (GET) ---
-    // تم تعديل الشرط هنا ليشمل 24 ساعة ماضية و 24 ساعة مستقبلية
     if (method === 'GET') {
       const { user_id } = req.query;
       const query = `
