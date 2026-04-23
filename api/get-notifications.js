@@ -22,7 +22,7 @@ const pool = new Pool({
   max: 1
 });
 
-// الأقسام والـ IDs الخاصة بوردبريس (تمت إضافة المعرف الجديد)
+// الأقسام والـ IDs الخاصة بوردبريس
 const CATEGORY_MAP = {
   '788594722': 'العناية بالبشرة',
   '788519318': 'الأناقة',
@@ -70,13 +70,14 @@ export default async function handler(req, res) {
     // --- الوظيفة (ب): جلب الإشعارات المجدولة من نيون لإرسالها (GET) ---
     if (method === 'GET') {
       const { user_id } = req.query;
+      // التعديل: جلب أي إشعار قيمته is_sent = false وموعده (scheduled_for) أصغر من أو يساوي "الآن + 24 ساعة"
+      // هذا يضمن جلب كل المتأخر (حتى لو منذ سنة) وكل القادم في الـ 24 ساعة القادمة.
       const query = `
         SELECT id, title, body, category, fcm_token, scheduled_for, post_id
         FROM notifications 
-        WHERE (user_id = $1 OR $1 IS NULL)
-        AND is_sent = false
-        AND scheduled_for >= NOW() - INTERVAL '1 day'
-        AND scheduled_for <= NOW() + INTERVAL '1 day'
+        WHERE is_sent = false
+        AND (user_id = $1 OR $1 IS NULL)
+        AND scheduled_for <= (NOW() + INTERVAL '1 day')
         ORDER BY scheduled_for ASC
         LIMIT 50
       `;
@@ -100,10 +101,10 @@ export default async function handler(req, res) {
     }
 
     if (notificationsToSend.length === 0) {
-      return res.status(200).json({ success: true, message: "لا توجد مهام إرسال حالياً." });
+      return res.status(200).json({ success: true, message: "لا توجد إشعارات مستحقة حالياً." });
     }
 
-    // --- معالجة الإرسال (الذكاء الاصطناعي و Firebase) ---
+    // --- معالجة الإرسال ---
     const results = await Promise.all(notificationsToSend.map(async (item) => {
       const categoryKey = item.category || '10783713';
       const categoryLabel = CATEGORY_MAP[categoryKey] || 'رقة';
@@ -112,7 +113,6 @@ export default async function handler(req, res) {
       let finalTitle = item.title || "رقة 🌸";
       let finalBody = item.body || "اكتشفي الجديد في تطبيق رقة";
 
-      // تحسين صياغة الإشعار عبر الذكاء الاصطناعي بناءً على محتوى الجدول
       if (item.id || item.isWordPress) {
         try {
           const aiRes = await fetch(AI_API_URL, {
@@ -127,7 +127,6 @@ export default async function handler(req, res) {
             })
           });
           const aiData = await aiRes.json();
-          // تحديث العنوان والنص إذا توفرا من الذكاء الاصطناعي
           if (aiData.title) finalTitle = aiData.title;
           finalBody = aiData.message || aiData.text || aiData.body || finalBody;
         } catch (e) { console.warn("AI Error: Using original text."); }
