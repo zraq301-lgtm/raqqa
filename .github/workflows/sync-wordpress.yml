@@ -2,8 +2,9 @@ name: "Raqqa Smart Sync (Neon & WordPress)"
 
 on:
   schedule:
+    # التنفيذ مرتين يومياً (الساعة 6 صباحاً و 6 مساءً بالتوقيت العالمي)
     - cron: "0 6,18 * * *"
-  workflow_dispatch:
+  workflow_dispatch: # يتيح تشغيل الأكشن يدوياً للتجربة
 
 jobs:
   sync_process:
@@ -13,81 +14,79 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const vercelUrl = "https://raqqa-v6cd.vercel.app/api/sync-wordpress";
+            // الروابط الخاصة بالعملية
+            const syncUrl = "https://raqqa-v6cd.vercel.app/api/sync-wordpress";
+            const fcmPushUrl = "https://raqqa-hjl8.vercel.app/api/send-fcm";
+            
             const headers = { 
               "Content-Type": "application/json", 
               "zazotona": "12sonds25" 
             };
 
-            // وظيفة مساعدة للانتظار لتجنب ضغط السيرفر
-            const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+            // خريطة الأقسام المتوفرة
+            const CATEGORY_MAP = {
+              '788594722': 'العناية بالبشرة',
+              '788519318': 'الأناقة',
+              '768006428': 'الصحة',
+              '788485478': 'الأمومة',
+              '10783713': 'عام', 
+              '788402012': 'الرشاقة',
+              '347212703': 'وصفات'
+            };
+
+            const categoryIds = Object.keys(CATEGORY_MAP);
 
             try {
-              console.log("--- Step 1: Fetching Scheduled Notifications & Syncing ---");
-              
-              const neonRes = await fetch(`${vercelUrl}?sync=wordpress`, { 
+              // --- الخطوة 1: مزامنة مقالات وردبريس مع قاعدة البيانات (GET) ---
+              console.log("--- Step 1: Syncing WordPress with Database ---");
+              const syncRes = await fetch(`${syncUrl}?sync=wordpress`, { 
                 method: "GET", 
                 headers 
               });
+              const syncData = await syncRes.json();
+              console.log("Sync Response:", JSON.stringify(syncData));
 
-              const responseText = await neonRes.text();
-              
-              if (!neonRes.ok) {
-                console.error(`Vercel Server Error (500): ${responseText}`);
-                console.log("Action will continue to Step 2 despite Step 1 failure...");
-              } else {
-                console.log("Step 1 Success:", responseText);
-              }
-
-              // انتظار ثانية واحدة قبل البدء في الخطوة التالية
-              await wait(1000);
-
-              // --- الخطوة 2: فحص وردبريس ---
-              console.log("--- Step 2: Checking WordPress Categories ---");
-              const categoryIds = ["189211019", "788402012", "768006428", "347212703"];
+              // --- الخطوة 2: فحص وردبريس وإرسال الإشعارات عبر رابط FCM الجديد (POST) ---
+              console.log("--- Step 2: Processing Categories and Pushing to FCM ---");
               const siteDomain = "raqqastor3.wordpress.com";
 
               for (const catId of categoryIds) {
+                console.log(`Checking Category: ${CATEGORY_MAP[catId]} (${catId})...`);
+                
                 const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
-                
-                try {
-                  const wpResponse = await fetch(wpUrl);
-                  if (!wpResponse.ok) throw new Error(`WP API Error for cat ${catId}`);
+                const wpResponse = await fetch(wpUrl);
+                const posts = await wpResponse.json();
 
-                  const posts = await wpResponse.json();
+                if (posts && posts.length > 0) {
+                  const post = posts[0];
+                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
                   
-                  if (posts && posts.length > 0) {
-                    const post = posts[0];
-                    const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
-                    
-                    const payload = {
-                      type: "wordpress_article",
-                      postId: String(post.id),
-                      title: "✨ مقال جديد: " + cleanTitle,
-                      body: "اكتشفي أسرار الأناقة والجمال الجديدة في رقة..",
-                      image: post.jetpack_featured_media_url || "",
-                      category: String(catId)
-                    };
+                  console.log(`New Post Found: "${cleanTitle}". Sending to FCM API...`);
 
-                    const postRes = await fetch(vercelUrl, {
-                      method: "POST",
-                      headers,
-                      body: JSON.stringify(payload)
-                    });
+                  const payload = {
+                    type: "wordpress_article",
+                    postId: String(post.id),
+                    title: "✨ " + CATEGORY_MAP[catId] + ": " + cleanTitle,
+                    body: "مقال جديد في رقة ينتظرك، اكتشفي التفاصيل الآن..",
+                    image: post.jetpack_featured_media_url || "",
+                    category: String(catId)
+                  };
 
-                    if (postRes.ok) {
-                      console.log(`✅ Success: Post ${post.id} from category ${catId} synced.`);
-                    } else {
-                      console.warn(`⚠️ Vercel rejected post ${post.id} with status ${postRes.status}`);
-                    }
-                  }
-                } catch (catError) {
-                  console.error(`Error processing category ${catId}:`, catError.message);
+                  // إرسال الإشعار عبر رابط الـ FCM المخصص
+                  const pushRes = await fetch(fcmPushUrl, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(payload)
+                  });
+
+                  const pushData = await pushRes.json();
+                  console.log(`FCM Result for ${CATEGORY_MAP[catId]}:`, JSON.stringify(pushData));
+                } else {
+                  console.log(`No new content in ${CATEGORY_MAP[catId]}.`);
                 }
-                
-                // انتظار بسيط بين الفئات
-                await wait(500);
               }
+
+              console.log("--- All Sync & Push Tasks Completed ---");
 
             } catch (error) {
               console.error("Critical Workflow Error:", error.message);
