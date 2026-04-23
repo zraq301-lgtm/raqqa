@@ -1,10 +1,9 @@
-name: "Raqqa Smart Sync (Neon & WordPress)"
+          name: "Raqqa Smart Sync (Neon & WordPress)"
 
 on:
   schedule:
-    # التنفيذ مرتين يومياً (الساعة 6 صباحاً و 6 مساءً بالتوقيت العالمي)
     - cron: "0 6,18 * * *"
-  workflow_dispatch: # يتيح لك تشغيل الأكشن يدوياً للتجربة من تبويب Actions
+  workflow_dispatch:
 
 jobs:
   sync_process:
@@ -14,7 +13,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // الرابط الجديد الذي طلبته
             const vercelUrl = "https://raqqa-v6cd.vercel.app/api/sync-wordpress";
             const headers = { 
               "Content-Type": "application/json", 
@@ -22,35 +20,42 @@ jobs:
             };
 
             try {
-              // --- الخطوة 1: جلب إشعارات نيون المجدولة والمزامنة (GET) ---
               console.log("--- Step 1: Fetching Scheduled Notifications & Syncing ---");
               const neonRes = await fetch(`${vercelUrl}?sync=wordpress`, { 
                 method: "GET", 
                 headers 
               });
-              const neonData = await neonRes.json();
+
+              // فحص إذا كان الرد ناجحاً قبل تحويله لـ JSON
+              const responseText = await neonRes.text();
+              console.log("Raw Response:", responseText);
+
+              if (!neonRes.ok) {
+                throw new Error(`Server responded with status ${neonRes.status}: ${responseText}`);
+              }
+
+              const neonData = JSON.parse(responseText);
               console.log("Neon Sync Result:", JSON.stringify(neonData));
 
-              // --- الخطوة 2: فحص وردبريس وإرسال المقالات مباشرة (POST) ---
+              // --- الخطوة 2: فحص وردبريس ---
               console.log("--- Step 2: Checking WordPress Categories ---");
               const categoryIds = ["189211019", "788402012", "768006428", "347212703"];
               const siteDomain = "raqqastor3.wordpress.com";
 
               for (const catId of categoryIds) {
-                console.log(`Checking Category: ${catId}...`);
-                
                 const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
                 const wpResponse = await fetch(wpUrl);
-                const posts = await wpResponse.json();
+                
+                if (!wpResponse.ok) {
+                  console.warn(`Skip category ${catId}: WP API Error`);
+                  continue;
+                }
 
+                const posts = await wpResponse.json();
                 if (posts && posts.length > 0) {
                   const post = posts[0];
-                  
-                  // تنظيف العنوان من وسوم HTML
                   const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
                   
-                  console.log(`Found Post: "${cleanTitle}". Sending to Vercel API...`);
-
                   const payload = {
                     type: "wordpress_article",
                     postId: String(post.id),
@@ -60,20 +65,14 @@ jobs:
                     category: String(catId)
                   };
 
-                  const pushRes = await fetch(vercelUrl, {
+                  await fetch(vercelUrl, {
                     method: "POST",
                     headers,
                     body: JSON.stringify(payload)
                   });
-
-                  const pushData = await pushRes.json();
-                  console.log(`Push Result for Category ${catId}:`, JSON.stringify(pushData));
-                } else {
-                  console.log(`No new posts found in category ${catId}.`);
+                  console.log(`Success: Post ${post.id} sent.`);
                 }
               }
-
-              console.log("--- All Sync Tasks Completed Successfully ---");
 
             } catch (error) {
               console.error("Critical Sync Error:", error.message);
