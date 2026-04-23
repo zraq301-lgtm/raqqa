@@ -13,122 +13,73 @@ const pool = new Pool({
 });
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-
-  // استقبال latitude و longitude من req.body
-  let { user_id, fcmToken, category, title, body, scheduled_for, extra_data, note, next_period_date, latitude, longitude } = req.body;
+  // نستخدم GET أو POST لجلب البيانات ومعالجتها
+  if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    let finalDate = null;
-    let finalValues;
+    // 1. تحديد النطاق الزمني (يوم ماضي ويوم مستقبلي)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
     
-    // مصفوفة التصنيفات لتوحيد المسميات
-    const categoryMap = {
-      'حيض': 'menstrual',
-      'menstrual_report': 'menstrual',
-      'حمل': 'pregnancy',
-      'pregnancy': 'pregnancy',
-      'رضاعة': 'breastfeeding',
-      'breastfeeding': 'breastfeeding',
-      'أمومة': 'motherhood',
-      'motherhood': 'motherhood',
-      'رشاقة': 'fitness',
-      'fitness': 'fitness',
-      'طبيب': 'medical',
-      'medical': 'medical',
-      'فقه': 'jurisprudence',
-      'علاقات': 'relationships',
-      'مشاعر': 'emotions'
-    };
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    let finalCategory = categoryMap[category] || category || 'general';
-
-    // التأكد من صياغة إحداثيات الموقع بصيغة POINT لقواعد البيانات (PostGIS) أو نصية
-    const geoPoint = (latitude && longitude) ? `POINT(${longitude} ${latitude})` : null;
-
+    // 2. جلب البيانات من قاعدة البيانات
+    // نقوم بجلب التذكيرات التي تقع في هذا النطاق ولم يتم إرسالها بعد
     const query = `
-      INSERT INTO notifications (user_id, fcm_token, category, title, body, scheduled_for, extra_data, is_sent, location)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id
+      SELECT * FROM notifications 
+      WHERE (scheduled_for BETWEEN $1 AND $2) 
+      AND is_sent = false 
+      LIMIT 5
     `;
+    const { rows } = await pool.query(query, [yesterday.toISOString(), tomorrow.toISOString()]);
 
-    const now = new Date().toISOString();
-
-    // --- 1. منطق واجهة الحيض ---
-    if (finalCategory === 'menstrual') {
-      finalDate = next_period_date || scheduled_for || now;
-      
-      finalValues = [
-        parseInt(user_id) || 1, fcmToken || null, 'menstrual',
-        title || 'تقرير الحيض', body || '', finalDate,
-        JSON.stringify(extra_data || {}), false, geoPoint
-      ];
-    } 
-
-    // --- 2. منطق الرشاقة ---
-    else if (finalCategory === 'fitness') {
-      finalDate = now; 
-      
-      finalValues = [
-        parseInt(user_id) || 1, fcmToken || null, 'fitness',
-        title || 'نشاط رشاقة', body || '', scheduled_for || now,
-        JSON.stringify(extra_data || {}), false, geoPoint
-      ];
+    if (rows.length === 0) {
+      return res.status(200).json({ message: "لا توجد بيانات للمعالجة حالياً." });
     }
 
-    // --- 3. منطق الرضاعة والحمل ---
-    else if (finalCategory === 'breastfeeding' || finalCategory === 'pregnancy') {
-      finalDate = now; 
-      
-      finalValues = [
-        parseInt(user_id) || 1, fcmToken || null, finalCategory,
-        title || 'تسجيل جديد', body || '', finalDate,
-        JSON.stringify(extra_data || {}), false, geoPoint
-      ];
+    const results = [];
+
+    for (const record of rows) {
+      // 3. صياغة محتوى للذكاء الاصطناعي بناءً على الفئة (Category)
+      const aiPrompt = `اكتب نص إشعار قصير ومحفز لفئة ${record.category}. العنوان الأصلي: ${record.title}. المحتوى: ${record.body}`;
+
+      // 4. استدعاء رابط الذكاء الاصطناعي (Raqqa AI)
+      const aiResponse = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt })
+      });
+      const aiData = await aiResponse.json();
+      const smartBody = aiData.text || record.body; // استخدام نص الذكاء الاصطناعي أو النص الأصلي كبديل
+
+      // 5. إرسال الإشعار عبر رابط FCM
+      const fcmResponse = await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: record.fcm_token,
+          title: record.title,
+          body: smartBody,
+          data: record.extra_data
+        })
+      });
+      const fcmResult = await fcmResponse.json();
+
+      // 6. تحديث حالة الإشعار في القاعدة بأنه "تم الإرسال"
+      await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [record.id]);
+
+      results.push({ id: record.id, status: 'Sent', ai_text: smartBody });
     }
 
-    // --- 4. منطق الطبيب والاستشارات ---
-    else if (finalCategory === 'medical' || note !== undefined) {
-      if (scheduled_for) {
-        const dateObj = new Date(scheduled_for);
-        if (!isNaN(dateObj.getTime())) {
-          dateObj.setDate(dateObj.getDate() - 2); 
-          finalDate = dateObj.toISOString();
-        }
-      }
-      finalDate = finalDate || now;
-      const mergedExtraData = extra_data || {};
-      if (note) mergedExtraData.note = note;
-
-      finalValues = [
-        parseInt(user_id) || 1, fcmToken || null, finalCategory,
-        title || 'تذكير موعد', body || '', finalDate,
-        JSON.stringify(mergedExtraData), false, geoPoint
-      ];
-    }
-
-    // --- 5. المسار الافتراضي ---
-    else {
-      finalDate = scheduled_for || now;
-      finalValues = [
-        parseInt(user_id) || 1, fcmToken || null, finalCategory,
-        title || 'تذكير', body || '', finalDate,
-        JSON.stringify(extra_data || {}), false, geoPoint
-      ];
-    }
-
-    const result = await pool.query(query, finalValues);
-
-    return res.status(200).json({ 
-      success: true, 
-      id: result.rows[0].id, 
-      category: finalCategory,
-      scheduled_at: finalDate,
-      message: "تم حفظ البيانات والموقع بنجاح ✅"
+    return res.status(200).json({
+      success: true,
+      processed_count: results.length,
+      details: results
     });
 
   } catch (error) {
-    console.error('❌ Database Error:', error.message);
+    console.error('❌ Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
