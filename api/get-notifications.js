@@ -68,6 +68,7 @@ export default async function handler(req, res) {
     }
 
     // --- الوظيفة (ب): جلب الإشعارات المجدولة من نيون لإرسالها (GET) ---
+    // تم تعديل الشرط هنا ليشمل 24 ساعة ماضية و 24 ساعة مستقبلية
     if (method === 'GET') {
       const { user_id } = req.query;
       const query = `
@@ -75,6 +76,7 @@ export default async function handler(req, res) {
         FROM notifications 
         WHERE (user_id = $1 OR $1 IS NULL)
         AND is_sent = false
+        AND scheduled_for >= NOW() - INTERVAL '1 day'
         AND scheduled_for <= NOW() + INTERVAL '1 day'
         ORDER BY scheduled_for ASC
         LIMIT 50
