@@ -2,8 +2,9 @@ name: "Raqqa Full Automated Sync"
 
 on:
   schedule:
-    - cron: "0 6,18 * * *" # مرتين يومياً
-  workflow_dispatch: # للتشغيل اليدوي
+    # التنفيذ مرتين يومياً (كل 12 ساعة)
+    - cron: "0 6,18 * * *" 
+  workflow_dispatch: # يتيح لك تشغيل الأكشن يدوياً من لوحة GitHub Actions
 
 jobs:
   run_sync:
@@ -11,5 +12,5 @@ jobs:
     steps:
       - name: "Trigger Raqqa Backend API"
         run: |
-          curl -X GET "https://raqqa-hjl8.vercel.app/api/send-fcm?sync=wordpress" \
+          curl -X GET "https://raqqa-hjl8.vercel.app/api/sync-wordpress?sync=wordpress" \
           -H "zazotona: 12sonds25"
