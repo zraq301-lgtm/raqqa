@@ -14,7 +14,6 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // الروابط الخاصة بالعملية
             const syncUrl = "https://raqqa-v6cd.vercel.app/api/sync-wordpress";
             const fcmPushUrl = "https://raqqa-hjl8.vercel.app/api/send-fcm";
             
@@ -23,7 +22,6 @@ jobs:
               "zazotona": "12sonds25" 
             };
 
-            // خريطة الأقسام المتوفرة
             const CATEGORY_MAP = {
               '788594722': 'العناية بالبشرة',
               '788519318': 'الأناقة',
@@ -37,16 +35,25 @@ jobs:
             const categoryIds = Object.keys(CATEGORY_MAP);
 
             try {
-              // --- الخطوة 1: مزامنة مقالات وردبريس مع قاعدة البيانات (GET) ---
+              // --- الخطوة 1: مزامنة مقالات وردبريس مع قاعدة البيانات ---
               console.log("--- Step 1: Syncing WordPress with Database ---");
               const syncRes = await fetch(`${syncUrl}?sync=wordpress`, { 
                 method: "GET", 
                 headers 
               });
-              const syncData = await syncRes.json();
-              console.log("Sync Response:", JSON.stringify(syncData));
 
-              // --- الخطوة 2: فحص وردبريس وإرسال الإشعارات عبر رابط FCM الجديد (POST) ---
+              const syncText = await syncRes.text(); // نجلب الاستجابة كنص أولاً لتجنب الخطأ
+              
+              try {
+                const syncData = JSON.parse(syncText);
+                console.log("Sync Response:", JSON.stringify(syncData));
+              } catch (e) {
+                console.error("Failed to parse Sync Response as JSON. Server returned raw text:");
+                console.error(syncText);
+                // لا نوقف العمل هنا، بل ننتقل للخطوة التالية إذا أمكن
+              }
+
+              // --- الخطوة 2: فحص وردبريس وإرسال الإشعارات ---
               console.log("--- Step 2: Processing Categories and Pushing to FCM ---");
               const siteDomain = "raqqastor3.wordpress.com";
 
@@ -55,9 +62,15 @@ jobs:
                 
                 const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
                 const wpResponse = await fetch(wpUrl);
+                
+                if (!wpResponse.ok) {
+                    console.log(`Skip: Could not fetch WP for category ${catId}`);
+                    continue;
+                }
+
                 const posts = await wpResponse.json();
 
-                if (posts && posts.length > 0) {
+                if (posts && Array.isArray(posts) && posts.length > 0) {
                   const post = posts[0];
                   const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
                   
@@ -72,7 +85,6 @@ jobs:
                     category: String(catId)
                   };
 
-                  // إرسال الإشعار عبر رابط الـ FCM المخصص
                   const pushRes = await fetch(fcmPushUrl, {
                     method: "POST",
                     headers,
