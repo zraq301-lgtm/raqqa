@@ -33,91 +33,69 @@ const CATEGORY_MAP = {
 export default async function handler(req, res) {
   const { method, headers } = req;
   const AI_API_URL = "https://raqqa-hjl8.vercel.app/api/raqqa-ai";
-  const BASE_ASSETS_URL = "https://raqqa-hjl8.vercel.app/assets/notifications";
 
   try {
-    if (headers['zazotona'] !== '12sonds25') {
-      return res.status(401).json({ success: false, error: 'Unauthorized Access' });
+    if (headers['zazotona'] !== '12sonds25') return res.status(401).json({ error: 'Unauthorized' });
+    if (method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed' });
+
+    // استلام وتنظيف الـ ID
+    const rawPostId = req.body.postId;
+    const cleanId = String(rawPostId).trim();
+    const { title, category, image, type } = req.body;
+
+    console.log(`Checking Database for Post ID: "${cleanId}"`);
+
+    // 1. الفحص الصارم
+    const checkQuery = `SELECT post_id FROM sent_posts WHERE post_id = $1 OR post_id = $2 LIMIT 1`;
+    // نفحص الرقم كـ نص وكـ رقم احتياطاً
+    const { rows: existing } = await pool.query(checkQuery, [cleanId, cleanId.replace(/\s/g, '')]);
+
+    if (existing.length > 0) {
+      console.log(`[STOP] Post ${cleanId} already exists in Neon. Skipping Firebase.`);
+      return res.status(200).json({ success: true, skipped: true, message: "موجود مسبقاً" });
     }
 
-    if (method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Method Not Allowed' });
-    }
+    // 2. إذا لم يوجد، نبدأ عملية الإرسال
+    console.log(`[PROCEED] Post ${cleanId} is new. Starting AI and Firebase...`);
 
-    // تنظيف البيانات القادمة لضمان عدم وجود مسافات خفية
-    const postIdRaw = req.body.postId;
-    const cleanPostId = String(postIdRaw).trim();
-    const { title, body, category, image, type } = req.body;
+    const categoryLabel = CATEGORY_MAP[category] || 'رقة';
+    let finalTitle = title;
+    let finalBody = "مقال جديد بانتظارك في تطبيق رقة 🌸";
 
-    if (!cleanPostId || cleanPostId === "undefined" || cleanPostId === "null") {
-       return res.status(400).json({ success: false, error: 'Invalid Post ID' });
-    }
-
-    // 1. الفحص الصارم في قاعدة البيانات
-    if (type === "wordpress_article") {
-      const checkQuery = `SELECT id FROM sent_posts WHERE TRIM(CAST(post_id AS TEXT)) = $1 LIMIT 1`;
-      const { rows: existing } = await pool.query(checkQuery, [cleanPostId]);
-
-      if (existing.length > 0) {
-        console.log(`[ALREADY SENT] Skipping Post ID: ${cleanPostId}`);
-        return res.status(200).json({ 
-          success: true, 
-          skipped: true, 
-          message: `المقال ${cleanPostId} موجود مسبقاً في قاعدة البيانات.` 
-        });
-      }
-    }
-
-    // 2. إذا وصلنا هنا يعني المقال جديد فعلاً
-    const categoryKey = category || '10783713';
-    const categoryLabel = CATEGORY_MAP[categoryKey] || 'رقة';
-    const imageUrl = image || `${BASE_ASSETS_URL}/${categoryKey}.png`;
-    
-    let finalTitle = title || "رقة 🌸";
-    let finalBody = body || "اكتشفي الجديد في تطبيق رقة";
-
-    // 3. الذكاء الاصطناعي
+    // طلب الذكاء الاصطناعي
     try {
       const aiRes = await fetch(AI_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          prompt: `بصفتك خبيرة محتوى، صِيغي إشعاراً جذاباً جداً وقصيراً. القسم: ${categoryLabel}. العنوان: ${finalTitle}.`
+          prompt: `صيغي إشعاراً قصيراً جداً لقسم ${categoryLabel} بعنوان: ${finalTitle}. اجعليه جذاباً جداً.`
         })
       });
       const aiData = await aiRes.json();
       finalTitle = aiData.title || finalTitle;
       finalBody = aiData.message || aiData.text || aiData.body || finalBody;
-    } catch (e) { console.warn("AI Error, using original."); }
+    } catch (e) { console.error("AI Error"); }
 
-    // 4. إرسال Firebase
+    // إرسال Firebase
     const messagePayload = {
-      notification: { title: finalTitle, body: finalBody, image: imageUrl },
-      data: { 
-        image: imageUrl, 
-        category: String(categoryKey),
-        post_id: cleanPostId,
-        click_action: "FLUTTER_NOTIFICATION_CLICK"
-      },
+      notification: { title: finalTitle, body: finalBody, image: image },
+      data: { image, category: String(category), post_id: cleanId, click_action: "FLUTTER_NOTIFICATION_CLICK" },
       topic: "all_users"
     };
 
     const messageId = await admin.messaging().send(messagePayload);
 
-    // 5. الحفظ في نيون - الخطوة الأهم
-    // استخدمنا ON CONFLICT لضمان عدم حدوث خطأ إذا حاول الأكشن الإرسال مرتين في نفس اللحظة
+    // 3. التسجيل في قاعدة البيانات (أهم خطوة)
     await pool.query(
-      `INSERT INTO sent_posts (post_id, title, sent_at) 
-       VALUES ($1, $2, NOW()) 
-       ON CONFLICT (post_id) DO NOTHING`, 
-      [cleanPostId, finalTitle]
+      `INSERT INTO sent_posts (post_id, title) VALUES ($1, $2) ON CONFLICT DO NOTHING`, 
+      [cleanId, finalTitle]
     );
 
-    console.log(`[SUCCESS] Notification sent for Post ID: ${cleanPostId}`);
-    return res.status(200).json({ success: true, messageId, status: "sent", postId: cleanPostId });
+    console.log(`[DONE] Post ${cleanId} saved to Neon.`);
+    return res.status(200).json({ success: true, status: "sent", messageId });
 
   } catch (error) {
-    console.error("API Error:", error.message);
+    console.error("Critical Error:", error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
