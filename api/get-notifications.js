@@ -21,6 +21,16 @@ export default async function handler(req, res) {
   }
 
   try {
+    // --- إضافة وظيفة الحذف التلقائي ---
+    // حذف البيانات التي مر عليها يومان أو التي تم إرسالها (is_sent = true)
+    const cleanupQuery = `
+      DELETE FROM notifications 
+      WHERE is_sent = true 
+      OR scheduled_for < NOW() - INTERVAL '2 days'
+    `;
+    await pool.query(cleanupQuery);
+    // --------------------------------
+
     // 1. ضبط توقيت الجلب (يوم ماضي ويوم مستقبلي)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
