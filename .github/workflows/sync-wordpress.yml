@@ -14,7 +14,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const syncUrl = "https://raqqa-v6cd.vercel.app/api/sync-wordpress";
+            // رابط الـ API الموحد الذي يحتوي على نظام الحماية ومنع التكرار
             const fcmPushUrl = "https://raqqa-hjl8.vercel.app/api/send-fcm";
             
             const headers = { 
@@ -33,55 +33,39 @@ jobs:
             };
 
             const categoryIds = Object.keys(CATEGORY_MAP);
+            const siteDomain = "raqqastor3.wordpress.com";
 
             try {
-              // --- الخطوة 1: مزامنة مقالات وردبريس مع قاعدة البيانات ---
-              console.log("--- Step 1: Syncing WordPress with Database ---");
-              const syncRes = await fetch(`${syncUrl}?sync=wordpress`, { 
-                method: "GET", 
-                headers 
-              });
-
-              const syncText = await syncRes.text(); // نجلب الاستجابة كنص أولاً لتجنب الخطأ
-              
-              try {
-                const syncData = JSON.parse(syncText);
-                console.log("Sync Response:", JSON.stringify(syncData));
-              } catch (e) {
-                console.error("Failed to parse Sync Response as JSON. Server returned raw text:");
-                console.error(syncText);
-                // لا نوقف العمل هنا، بل ننتقل للخطوة التالية إذا أمكن
-              }
-
-              // --- الخطوة 2: فحص وردبريس وإرسال الإشعارات ---
-              console.log("--- Step 2: Processing Categories and Pushing to FCM ---");
-              const siteDomain = "raqqastor3.wordpress.com";
+              console.log("--- Starting Smart Sync Process ---");
 
               for (const catId of categoryIds) {
-                console.log(`Checking Category: ${CATEGORY_MAP[catId]} (${catId})...`);
+                console.log(`Checking Category: ${CATEGORY_MAP[catId]}...`);
                 
-                const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1`;
+                // جلب آخر مقال من كل قسم (مع تضمين الصور _embed)
+                const wpUrl = `https://public-api.wordpress.com/wp/v2/sites/${siteDomain}/posts?categories=${catId}&per_page=1&_embed`;
                 const wpResponse = await fetch(wpUrl);
                 
-                if (!wpResponse.ok) {
-                    console.log(`Skip: Could not fetch WP for category ${catId}`);
-                    continue;
-                }
+                if (!wpResponse.ok) continue;
 
                 const posts = await wpResponse.json();
 
                 if (posts && Array.isArray(posts) && posts.length > 0) {
                   const post = posts[0];
-                  const cleanTitle = post.title.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim();
                   
-                  console.log(`New Post Found: "${cleanTitle}". Sending to FCM API...`);
+                  // استخراج الصورة بشكل احترافي
+                  const featuredImage = post.jetpack_featured_media_url || 
+                                       (post._embedded && post._embedded['wp:featuredmedia']?.[0]?.source_url) || "";
 
+                  console.log(`Sending Post ID ${post.id} to API. API will decide if it's new...`);
+
+                  // إرسال البيانات للـ API
+                  // ملاحظة: الـ API سيفحص قاعدة البيانات، إذا وجد الـ ID فلن يرسل تنبيهاً ولن يستهلك AI
                   const payload = {
                     type: "wordpress_article",
                     postId: String(post.id),
-                    title: "✨ " + CATEGORY_MAP[catId] + ": " + cleanTitle,
-                    body: "مقال جديد في رقة ينتظرك، اكتشفي التفاصيل الآن..",
-                    image: post.jetpack_featured_media_url || "",
+                    title: post.title.rendered,
+                    body: post.excerpt.rendered.replace(/<\/?[^>]+(>|$)/g, "").trim(),
+                    image: featuredImage,
                     category: String(catId)
                   };
 
@@ -91,16 +75,19 @@ jobs:
                     body: JSON.stringify(payload)
                   });
 
-                  const pushData = await pushRes.json();
-                  console.log(`FCM Result for ${CATEGORY_MAP[catId]}:`, JSON.stringify(pushData));
-                } else {
-                  console.log(`No new content in ${CATEGORY_MAP[catId]}.`);
+                  const result = await pushRes.json();
+                  
+                  if (result.skipped) {
+                    console.log(`Result: Post already exists in Database. No notification sent.`);
+                  } else {
+                    console.log(`Result: New post sent successfully! MessageID: ${result.messageId}`);
+                  }
                 }
               }
 
-              console.log("--- All Sync & Push Tasks Completed ---");
+              console.log("--- Workflow Finished ---");
 
             } catch (error) {
-              console.error("Critical Workflow Error:", error.message);
+              console.error("Critical Error:", error.message);
               core.setFailed(error.message);
             }
