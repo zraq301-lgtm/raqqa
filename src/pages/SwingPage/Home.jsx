@@ -9,7 +9,6 @@ const Home = () => {
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
   const [likedPosts, setLikedPosts] = useState({});
-  const [activeCommentId, setActiveCommentId] = useState(null);
 
   const API_GET = "https://raqqa-ruddy.vercel.app/api/get-posts";
   const API_SAVE = "https://raqqa-ruddy.vercel.app/api/save-post";
@@ -23,36 +22,56 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // --- دالة ذكية لتحليل البيانات (الحل الأساسي لمشكلتك) ---
+  // --- دالة استخراج البيانات الحقيقية من النص المشوه ---
   const parsePostData = (post) => {
-    let finalContent = post.content;
-    let finalMedia = post.media_url || post.external_link;
+    let content = post.content || "";
+    let media = post.media_url || post.external_link || "";
 
-    // إذا كان المحتوى يبدأ بـ { فهذا يعني أنه JSON مشوه ويجب تحليله
-    if (typeof post.content === 'string' && post.content.trim().startsWith('{')) {
+    // إذا كان النص يحتوي على صيغة JSON (الأقواس {})
+    if (typeof content === 'string' && content.includes('{')) {
       try {
-        const parsed = JSON.parse(post.content);
-        finalContent = parsed.content || "";
-        finalMedia = parsed.external_link || parsed.media_url || finalMedia;
-      } catch (e) {
-        // إذا فشل التحليل، نحاول استخراج الرابط يدوياً بواسطة Regex كحل أخير
-        const linkMatch = post.content.match(/"external_link":"(.*?)"/);
-        if (linkMatch) finalMedia = linkMatch[1];
-      }
+        // محاولة البحث عن الرابط داخل النص باستخدام Regex إذا فشل JSON.parse
+        const urlRegex = /"(?:external_link|media_url)":"(https?:\/\/[^"]+)"/;
+        const match = content.match(urlRegex);
+        if (match) media = match[1];
+
+        // تنظيف المحتوى من الـ JSON ليظهر النص فقط
+        const contentRegex = /"content":"([^"]*)"/;
+        const contentMatch = content.match(contentRegex);
+        if (contentMatch) content = contentMatch[1];
+      } catch (e) { console.error("Parsing error", e); }
     }
-    return { content: finalContent, media: finalMedia };
+    return { cleanContent: content, cleanMedia: media };
   };
 
+  // --- دالة عرض الفيديو (يدعم YouTube و Direct Links) ---
   const renderMedia = (url) => {
     if (!url) return null;
     const cleanUrl = url.trim();
 
-    // تشغيل روابط نيون أو الروابط المباشرة كفيديو
-    const isVideo = cleanUrl.includes('video') || cleanUrl.includes('.mp4') || cleanUrl.includes('neon');
-
-    if (isVideo) {
+    // 1. دعم روابط YouTube
+    if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
+      const videoId = cleanUrl.includes('v=') 
+        ? cleanUrl.split('v=')[1].split('&')[0] 
+        : cleanUrl.split('/').pop().split('?')[0];
+      
       return (
-        <div style={{ width: '100%', background: '#000', borderRadius: '15px', overflow: 'hidden' }}>
+        <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
+          <iframe
+            width="100%" height="100%"
+            src={`https://www.youtube.com/embed/${videoId}`}
+            frameBorder="0"
+            allowFullScreen
+          ></iframe>
+        </div>
+      );
+    }
+
+    // 2. دعم روابط الفيديو المباشرة (Neon, mp4, etc)
+    const isDirectVideo = cleanUrl.match(/\.(mp4|webm|ogg)$/i) || cleanUrl.includes('video') || cleanUrl.includes('neon');
+    if (isDirectVideo) {
+      return (
+        <div style={{ width: '100%', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
           <video controls playsInline style={{ width: '100%', maxHeight: '400px' }}>
             <source src={cleanUrl} type="video/mp4" />
           </video>
@@ -60,8 +79,9 @@ const Home = () => {
       );
     }
 
+    // 3. عرض كصورة إذا لم يكن ما سبق
     return (
-      <img src={cleanUrl} style={{ width: '100%', borderRadius: '15px' }} alt="محتوى رقة" 
+      <img src={cleanUrl} style={{ width: '100%', borderRadius: '15px', display: 'block' }} alt="رقة"
            onError={(e) => e.target.style.display = 'none'} />
     );
   };
@@ -93,43 +113,39 @@ const Home = () => {
     <div style={{ direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: '#fffafb', minHeight: '100vh' }}>
       
       {/* صندوق النشر */}
-      <div style={{ background: '#fff', margin: '15px', padding: '15px', borderRadius: '25px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+      <div style={{ background: '#fff', margin: '15px', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.1)' }}>
         <textarea 
           placeholder="ماذا يدور في خاطركِ؟" 
           value={newContent} 
           onChange={(e) => setNewContent(e.target.value)}
-          style={{ width: '100%', border: 'none', outline: 'none', minHeight: '60px' }}
+          style={{ width: '100%', border: 'none', outline: 'none', minHeight: '60px', fontSize: '1rem' }}
         />
         <input 
-          placeholder="ضع رابط الفيديو (نيون) هنا..." 
+          placeholder="ضعي رابط فيديو (YouTube أو Neon) هنا..." 
           value={mediaUrl} 
           onChange={(e) => setMediaUrl(e.target.value)}
-          style={{ width: '100%', padding: '8px', background: '#f9f9f9', border: '1px solid #eee', borderRadius: '10px', fontSize: '0.8rem' }}
+          style={{ width: '100%', padding: '10px', background: '#fcfcfc', border: '1px solid #eee', borderRadius: '12px', marginTop: '10px' }}
         />
-        <button onClick={handlePublish} disabled={loading} style={{ background: '#ff4d7d', color: '#fff', border: 'none', padding: '10px 25px', borderRadius: '20px', marginTop: '10px', cursor: 'pointer' }}>
+        <button onClick={handlePublish} disabled={loading} style={{ background: '#ff4d7d', color: '#fff', border: 'none', width: '100%', padding: '12px', borderRadius: '15px', fontWeight: 'bold', marginTop: '15px' }}>
           {loading ? "جاري النشر..." : "نشر الآن"}
         </button>
       </div>
 
-      {/* عرض المنشورات */}
+      {/* قائمة المنشورات */}
       <div style={{ paddingBottom: '50px' }}>
         {posts.map(post => {
-          const { content, media } = parsePostData(post); // تحليل البيانات هنا
+          const { cleanContent, cleanMedia } = parsePostData(post);
           return (
-            <div key={post.id} style={{ background: '#fff', margin: '15px', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #ff4d7d11' }}>
-              <div style={{ padding: '15px' }}>
-                <span style={{ fontSize: '0.7rem', color: '#ff4d7d', background: '#fff0f3', padding: '2px 8px', borderRadius: '5px' }}>رقة - الناشر الأصلي</span>
-                <p style={{ marginTop: '10px', color: '#333', fontSize: '0.95rem' }}>{content}</p>
+            <div key={post.id} style={{ background: '#fff', margin: '15px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #ff4d7d11' }}>
+              <div style={{ padding: '20px' }}>
+                <span style={{ fontSize: '0.7rem', color: '#ff4d7d', background: '#fff0f3', padding: '3px 10px', borderRadius: '8px' }}>رقة - الناشر الأصلي</span>
+                {/* عرض النص النظيف فقط */}
+                <p style={{ marginTop: '12px', color: '#333', lineHeight: '1.6' }}>{cleanContent || "منشور رقة"}</p>
               </div>
 
-              <div style={{ padding: '0 10px 10px' }}>
-                {renderMedia(media)}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-around', padding: '10px', borderTop: '1px solid #fcfcfc' }}>
-                <button style={{ background: 'none', border: 'none', color: '#ff4d7d' }}>❤️ {likedPosts[post.id] || 0}</button>
-                <button style={{ background: 'none', border: 'none', color: '#ff4d7d' }}>💬 تعليق</button>
-                <button style={{ background: 'none', border: 'none', color: '#ff4d7d' }}>🔗 مشاركة</button>
+              {/* عرض الميديا (فيديو أو صورة) */}
+              <div style={{ padding: '0 15px 15px' }}>
+                {renderMedia(cleanMedia)}
               </div>
             </div>
           );
