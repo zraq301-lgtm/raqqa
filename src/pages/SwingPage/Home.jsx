@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Share } from '@capacitor/share'; // استيراد مكتبة المشاركة الأصلية
+import { Share } from '@capacitor/share';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
@@ -30,7 +30,6 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // دالة تكبير الفيديو للملء التلقائي عند الضغط
   const toggleFullScreen = (e) => {
     const videoElem = e.target.parentElement.querySelector('video') || e.target.parentElement.querySelector('iframe');
     if (videoElem) {
@@ -40,15 +39,20 @@ const Home = () => {
     }
   };
 
+  // --- الدالة المحسنة لعرض الفيديو من الروابط الخارجية ---
   const renderMediaInApp = (url) => {
-    if (!url) return null;
+    if (!url || typeof url !== 'string') return null;
 
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    // تنظيف الرابط من أي مسافات
+    const cleanUrl = url.trim();
+
+    // 1. فحص روابط يوتيوب
+    if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
       let videoId = "";
-      if (url.includes('v=')) {
-        videoId = url.split('v=')[1].split('&')[0];
+      if (cleanUrl.includes('v=')) {
+        videoId = cleanUrl.split('v=')[1].split('&')[0];
       } else {
-        videoId = url.split('/').pop();
+        videoId = cleanUrl.split('/').pop();
       }
       
       return (
@@ -60,7 +64,6 @@ const Home = () => {
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
           ></iframe>
-          {/* زر تكبير الشاشة المخصص */}
           <button onClick={toggleFullScreen} style={{ position: 'absolute', bottom: '10px', right: '10px', background: 'rgba(255, 77, 125, 0.8)', color: 'white', border: 'none', borderRadius: '5px', padding: '5px 10px', fontSize: '0.7rem', zIndex: 10 }}>
             تكبير ⛶
           </button>
@@ -68,12 +71,15 @@ const Home = () => {
       );
     }
 
-    const isDirectVideo = url.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/) || url.includes('video');
+    // 2. فحص إذا كان الرابط فيديو مباشر (بما في ذلك روابط نيون التي تحتوي على كلمة video)
+    const isDirectVideo = cleanUrl.toLowerCase().match(/\.(mp4|webm|mov|ogg)$/) || cleanUrl.includes('video') || cleanUrl.includes('blob');
+    
     if (isDirectVideo) {
       return (
         <div style={{ width: '100%', background: '#000', position: 'relative' }}>
           <video controls playsInline style={{ width: '100%', maxHeight: '400px' }} preload="metadata">
-            <source src={url} />
+            <source src={cleanUrl} type="video/mp4" />
+            متصفحك لا يدعم تشغيل الفيديو.
           </video>
           <button onClick={toggleFullScreen} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(0, 0, 0, 0.5)', color: 'white', border: 'none', borderRadius: '50%', width: '30px', height: '30px', zIndex: 10 }}>
             ⛶
@@ -82,8 +88,9 @@ const Home = () => {
       );
     }
 
+    // 3. افتراض أنها صورة إذا لم تكن فيديو
     return (
-      <img src={url} style={{ width: '100%', display: 'block' }} alt="رقة - محتوى"
+      <img src={cleanUrl} style={{ width: '100%', display: 'block', maxHeight: '500px', objectFit: 'contain' }} alt="محتوى رقة"
         onError={(e) => e.target.parentElement.style.display = 'none'} 
       />
     );
@@ -93,12 +100,11 @@ const Home = () => {
     if (!newContent.trim() && !mediaUrl) return;
     setLoading(true);
     try {
-      // إرسال البيانات بصيغة JSON بدلاً من FormData لضمان الحفظ
       const payload = {
         content: newContent,
         section: selectedSection,
         type: mediaUrl ? "رابط" : "نصي",
-        external_link: mediaUrl
+        external_link: mediaUrl // التأكد من إرسال الرابط في الحقل الصحيح
       };
 
       const response = await fetch(API_SAVE, { 
@@ -119,13 +125,12 @@ const Home = () => {
     }
   };
 
-  // تحديث دالة المشاركة لتستخدم Capacitor Share الأصلي ليعمل على APK
   const handleShare = async (post) => {
     try {
       await Share.share({
         title: 'رقة - الناشر الأصلي',
         text: post.content,
-        url: post.media_url || 'https://raqqa.app', // ضع رابط موقعك هنا
+        url: post.media_url || post.external_link || 'https://raqqa.app',
         dialogTitle: 'شاركي جمال رقة مع صديقاتكِ',
       });
     } catch (error) {
@@ -144,12 +149,13 @@ const Home = () => {
     rec.start();
   };
 
-  const lastVideo = posts.find(p => p.media_url && (p.media_url.includes('mp4') || p.media_url.includes('video')));
+  // تعديل جلب آخر فيديو للإعلان ليشمل الحقل الجديد إذا لزم الأمر
+  const lastVideo = posts.find(p => (p.media_url || p.external_link) && ((p.media_url || p.external_link).includes('mp4') || (p.media_url || p.external_link).includes('video')));
 
   return (
     <div className="home-main">
       <style>{`
-        .home-main { direction: rtl; font-family: 'Tajawal', sans-serif; background: #fffafb; }
+        .home-main { direction: rtl; font-family: 'Tajawal', sans-serif; background: #fffafb; min-height: 100vh; }
         .publisher-badge { font-size: 0.65rem; color: #ff4d7d; background: #fff0f3; padding: 2px 8px; border-radius: 5px; margin-bottom: 5px; display: inline-block; }
         .ad-banner { background: white; margin: 0 15px 15px; border-radius: 20px; border: 2px solid #ff4d7d; overflow: hidden; height: 110px; display: flex; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .chat-full { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 10000; display: flex; flex-direction: column; }
@@ -162,11 +168,11 @@ const Home = () => {
       {lastVideo && (
         <div className="ad-banner">
           <div style={{ width: '45%', background: '#000' }}>
-            <video src={lastVideo.media_url} muted loop autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <video src={lastVideo.media_url || lastVideo.external_link} muted loop autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div style={{ padding: '12px', flex: 1 }}>
             <div className="publisher-badge">الناشر الأصلي: رقة</div>
-            <p style={{ fontSize: '0.8rem', margin: '2px 0', fontWeight: 'bold', color: '#333' }}>⚠️ تحديث هام جداً</p>
+            <p style={{ fontSize: '0.8rem', margin: '2px 0', fontWeight: 'bold', color: '#333' }}>⚠️ تحديث هام</p>
             <p style={{ fontSize: '0.75rem', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical' }}>{lastVideo.content}</p>
           </div>
         </div>
@@ -182,7 +188,7 @@ const Home = () => {
         </select>
         <textarea placeholder="ماذا يدور في خاطركِ يا رقة؟"
           value={newContent} onChange={(e) => setNewContent(e.target.value)} style={{ width: '100%', border: 'none', outline: 'none', minHeight: '45px', fontSize: '1rem' }} />
-        <input placeholder="رابط فيديو HTML أو صورة..." value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} style={{ width: '100%', padding: '5px', fontSize: '0.8rem', border: 'none', background: '#fcfcfc' }} />
+        <input placeholder="ضعي رابط الفيديو هنا (نيون، يوتيوب...)" value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} style={{ width: '100%', padding: '8px', fontSize: '0.8rem', border: '1px solid #f9f9f9', background: '#fcfcfc', borderRadius: '10px' }} />
         <button onClick={handlePublish} disabled={loading} style={{ float: 'left', background: '#ff4d7d', color: '#fff', border: 'none', padding: '10px 30px', borderRadius: '25px', fontWeight: 'bold', marginTop: '10px' }}>
           {loading ? "جاري..." : "نشر"}
         </button>
@@ -196,42 +202,6 @@ const Home = () => {
         </button>
       </div>
 
-      {/* شاشة الدردشة الكاملة */}
-      {isChatOpen && (
-        <div className="chat-full">
-          <div style={{ background: '#ff4d7d', color: 'white', padding: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <strong>رقة AI - صديقتكِ</strong>
-            <button onClick={() => setIsChatOpen(false)} style={{ color: 'white', background: 'none', border: 'none', fontSize: '1.8rem' }}>×</button>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#fffafb' }}>
-            {chatMessages.map(m => (
-              <div key={m.id} style={{ background: 'white', padding: '12px', borderRadius: '20px', marginBottom: '10px', borderRight: '5px solid #ff4d7d', boxShadow: '0 2px 5px rgba(0,0,0,0.03)' }}>
-                <p style={{ fontSize: '0.9rem', color: '#444' }}><strong>أنتِ:</strong> {m.user}</p>
-                <p style={{ fontSize: '0.9rem', color: '#9b59b6', marginTop: '5px' }}><strong>رقة AI:</strong> {m.ai}</p>
-              </div>
-            ))}
-          </div>
-          <div style={{ padding: '15px', borderTop: '1px solid #eee' }}>
-            <button onClick={startVoice} style={{ width: '100%', marginBottom: '10px', background: 'none', border: 'none', color: isListening ? 'red' : '#ff4d7d', fontWeight: 'bold' }}>
-              {isListening ? "🎙️ رقة تسمعكِ الآن..." : "🎤 تحدثي مع رقة (ميكروفون)"}
-            </button>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اسألي رقة..." style={{ flex: 1, padding: '12px', borderRadius: '25px', border: '1px solid #eee' }} />
-              <button onClick={async () => {
-                if (!userInput) return;
-                setIsAiLoading(true);
-                const res = await CapacitorHttp.post({ url: API_AI, data: { prompt: userInput } });
-                const reply = res.data.reply || res.data.message;
-                const newMsg = { id: Date.now(), user: userInput, ai: reply };
-                setChatMessages([newMsg, ...chatMessages]);
-                localStorage.setItem('saved_ai_chats', JSON.stringify([newMsg, ...chatMessages]));
-                setUserInput(""); setIsAiLoading(false);
-              }} style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '50px', height: '50px' }}>⏎</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* قائمة المنشورات */}
       <div style={{ paddingBottom: '100px' }}>
         {posts.map(post => (
@@ -241,7 +211,8 @@ const Home = () => {
               <p style={{ margin: '8px 0', lineHeight: '1.6', color: '#333', fontSize: '1rem' }}>{post.content}</p>
             </div>
             
-            {renderMediaInApp(post.media_url)}
+            {/* عرض الميديا: نفحص كلا الحقلين media_url و external_link */}
+            {renderMediaInApp(post.media_url || post.external_link)}
 
             <div style={{ display: 'flex', justifyContent: 'space-around', padding: '15px', borderTop: '1px solid #fff5f7' }}>
               <button className="action-btn" onClick={() => setLikedPosts({ ...likedPosts, [post.id]: (likedPosts[post.id] || 0) + 1 })}>
@@ -254,16 +225,42 @@ const Home = () => {
                 🔗 مشاركة
               </button>
             </div>
-
-            {activeCommentId === post.id && (
-              <div style={{ padding: '12px', background: '#fffafb', display: 'flex', gap: '8px' }}>
-                <input placeholder="أضيفي رأيكِ..." style={{ flex: 1, padding: '10px', borderRadius: '15px', border: '1px solid #eee' }} />
-                <button style={{ border: 'none', background: 'none', color: '#ff4d7d', fontWeight: 'bold' }}>إرسال</button>
-              </div>
-            )}
           </div>
         ))}
       </div>
+
+      {/* شاشة الدردشة (موجودة في كودك الأصلي) */}
+      {isChatOpen && (
+        <div className="chat-full">
+           <div style={{ background: '#ff4d7d', color: 'white', padding: '18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+             <strong>رقة AI - صديقتكِ</strong>
+             <button onClick={() => setIsChatOpen(false)} style={{ color: 'white', background: 'none', border: 'none', fontSize: '1.8rem' }}>×</button>
+           </div>
+           <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#fffafb' }}>
+             {chatMessages.map(m => (
+               <div key={m.id} style={{ background: 'white', padding: '12px', borderRadius: '20px', marginBottom: '10px', borderRight: '5px solid #ff4d7d', boxShadow: '0 2px 5px rgba(0,0,0,0.03)' }}>
+                 <p style={{ fontSize: '0.9rem', color: '#444' }}><strong>أنتِ:</strong> {m.user}</p>
+                 <p style={{ fontSize: '0.9rem', color: '#9b59b6', marginTop: '5px' }}><strong>رقة AI:</strong> {m.ai}</p>
+               </div>
+             ))}
+           </div>
+           <div style={{ padding: '15px', borderTop: '1px solid #eee' }}>
+             <div style={{ display: 'flex', gap: '8px' }}>
+               <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اسألي رقة..." style={{ flex: 1, padding: '12px', borderRadius: '25px', border: '1px solid #eee' }} />
+               <button onClick={async () => {
+                 if (!userInput) return;
+                 setIsAiLoading(true);
+                 const res = await CapacitorHttp.post({ url: API_AI, data: { prompt: userInput } });
+                 const reply = res.data.reply || res.data.message;
+                 const newMsg = { id: Date.now(), user: userInput, ai: reply };
+                 setChatMessages([newMsg, ...chatMessages]);
+                 localStorage.setItem('saved_ai_chats', JSON.stringify([newMsg, ...chatMessages]));
+                 setUserInput(""); setIsAiLoading(false);
+               }} style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '50px', height: '50px' }}>⏎</button>
+             </div>
+           </div>
+        </div>
+      )}
     </div>
   );
 };
