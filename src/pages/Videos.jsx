@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// استيراد CapacitorHttp للتعامل مع الطلبات الخارجية في تطبيقات الأندرويد
+import { CapacitorHttp } from '@capacitor/core';
 
 const VideoLibrary = () => {
   const [allVideos, setAllVideos] = useState([]);
@@ -6,6 +8,7 @@ const VideoLibrary = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
 
+  // الأقسام كما هي محددة في مشروعك
   const categories = [
     { id: 'all', label: '🏠 الكل' },
     { id: 'health', label: '🍎 جسدك أمانة' },
@@ -15,18 +18,28 @@ const VideoLibrary = () => {
   ];
 
   useEffect(() => {
-    fetch('/list.json')
-      .then(res => res.json())
-      .then(data => {
-        setAllVideos(data);
-        setFilteredVideos(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Error:", err);
-        setLoading(false);
-      });
+    fetchVideosFromFirebase();
   }, []);
+
+  // دالة جلب البيانات باستخدام CapacitorHttp من رابط فيرسل الخاص بك
+  const fetchVideosFromFirebase = async () => {
+    const options = {
+      url: 'https://raqqa-hjl8.vercel.app/api/get-videos',
+      // ملاحظة: الـ API الخاص بك يعمل بـ GET لجلب البيانات
+    };
+
+    try {
+      const response = await CapacitorHttp.get(options);
+      const data = response.data;
+      
+      setAllVideos(data);
+      setFilteredVideos(data);
+      setLoading(false);
+    } catch (err) {
+      console.error("خطأ في جلب بيانات فيربيس:", err);
+      setLoading(false);
+    }
+  };
 
   const filterVideos = (categoryId) => {
     setActiveTab(categoryId);
@@ -46,11 +59,19 @@ const VideoLibrary = () => {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
-  if (loading) return <div style={{textAlign:'center', marginTop:'50px', color:'#ff4d7d'}}>جاري تهيئة واحتك الخاصة...</div>;
+  if (loading) return (
+    <div style={{
+      textAlign:'center', 
+      marginTop:'50px', 
+      color:'#ff4d7d', 
+      fontFamily:'Tajawal, sans-serif'
+    }}>
+      جاري تهيئة واحتك الخاصة... 🌸
+    </div>
+  );
 
   return (
     <div style={containerStyle}>
-      {/* التنسيقات العامة (CSS-in-JS) */}
       <style>{`
         :root {
           --female-pink: #ff4d7d;
@@ -87,9 +108,8 @@ const VideoLibrary = () => {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* الهيدر العلوي */}
       <header style={headerStyle}>
-        <h2 style={{ textAlign: 'center', color: '#ff4d7d', marginBottom: '15px' }}>مكتبة فِكر تاني</h2>
+        <h2 style={{ textAlign: 'center', color: '#ff4d7d', marginBottom: '15px' }}>مكتبة رقة 🌸</h2>
         <div style={tabsContainerStyle}>
           {categories.map(cat => (
             <button
@@ -103,11 +123,10 @@ const VideoLibrary = () => {
         </div>
       </header>
 
-      {/* محتوى الفيديوهات */}
       <main style={mainContentStyle}>
         <div style={videoGridStyle}>
           {filteredVideos.map((video, index) => (
-            <div key={index} className="video-card-elegant">
+            <div key={video.id || index} className="video-card-elegant">
               <div style={videoFrameWrapper}>
                 <iframe
                   src={formatEmbedUrl(video.url)}
@@ -128,13 +147,12 @@ const VideoLibrary = () => {
         </div>
       </main>
 
-      {/* المنيو السفلي المدمج */}
       <nav style={bottomNavStyle}>
         <div style={navGridStyle}>
           <div style={navItemStyle}><span>🏠</span><span style={labelStyle}>الرئيسية</span></div>
           <div style={centerActionStyle}>
             <div style={centerCircleStyle}>🌸</div>
-            <span style={{fontSize:'0.8rem', fontWeight:'bold', color:'#ff4d7d'}}>صحتك</span>
+            <span style={{fontSize:'0.8rem', fontWeight:'bold', color:'#ff4d7d'}}>رقة</span>
           </div>
           <div style={navItemStyle}><span>🔔</span><span style={labelStyle}>تنبيهات</span></div>
         </div>
@@ -143,7 +161,7 @@ const VideoLibrary = () => {
   );
 };
 
-/* --- كائنات التنسيق (Styles) --- */
+/* --- كائنات التنسيق (Styles) تبقى كما هي لضمان التصميم البصري --- */
 const containerStyle = {
   direction: 'rtl',
   backgroundColor: '#fff5f7',
@@ -208,7 +226,8 @@ const videoTitleStyle = {
   fontSize: '0.95rem',
   marginTop: '10px',
   color: '#555',
-  lineHeight: '1.4'
+  lineHeight: '1.4',
+  textAlign: 'right'
 };
 
 const bottomNavStyle = {
