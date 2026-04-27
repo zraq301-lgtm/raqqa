@@ -1,49 +1,52 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getAnalytics } from "firebase/analytics"; 
+import { getFirestore } from "firebase/firestore";
 
-// إعدادات مشروعك المستخرجة
+// الإعدادات شاملة الـ Measurement ID لتفعيل الإعلانات
 const firebaseConfig = {
   apiKey: "AIzaSyCT2wRZgzPv1Xg3M41ZhN7-_RGze_HrZkk",
   authDomain: "raqqa-43dc8.firebaseapp.com",
   projectId: "raqqa-43dc8",
   storageBucket: "raqqa-43dc8.firebasestorage.app",
   messagingSenderId: "162488255991",
-  appId: "1:162488255991:web:74fe1680fc6cb5bbc61af2"
+  appId: "1:162488255991:web:74fe1680fc6cb5bbc61af2",
+  measurementId: "G-QLKV71T66E" 
 };
 
-// تهيئة Firebase
+// تهيئة Firebase مرة واحدة فقط لكل الخدمات
 const app = initializeApp(firebaseConfig);
+
+// 1. تفعيل قاعدة البيانات (Firestore) لجلب الفيديوهات
+export const db = getFirestore(app); 
+
+// 2. تفعيل التحليلات (Analytics) لربط إعلانات جوجل
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null; 
+
+// 3. تفعيل الإشعارات (Messaging)
 const messaging = getMessaging(app);
 
-/**
- * دالة طلب الإذن وجلب التوكن
- * هذا التوكن هو "العنوان" الذي سيستخدمه Make لإرسال الإشعارات
- */
+// دالة طلب التوكن للإشعارات (كما هي لديك)
 export const requestForToken = async () => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
       const currentToken = await getToken(messaging, { 
-        // المفتاح الذي زودتني به
         vapidKey: "USA0sr7ibILdXx1IdNyUIZGNAZxosK9trp5z96f45Nk" 
       });
       
       if (currentToken) {
         console.log("تم توليد التوكن بنجاح:", currentToken);
         return currentToken;
-      } else {
-        console.log("لم يتم الحصول على توكن، تأكد من إعدادات الـ Browser.");
       }
-    } else {
-      console.log("المستخدم رفض إعطاء إذن للإشعارات.");
     }
   } catch (err) {
-    console.error("خطأ أثناء جلب التوكن:", err);
+    console.error("خطأ في جلب التوكن:", err);
   }
   return null;
 };
 
-// الاستماع للإشعارات في حال كان التطبيق مفتوحاً (Foreground)
+// الاستماع للإشعارات
 export const onMessageListener = () =>
   new Promise((resolve) => {
     onMessage(messaging, (payload) => {
@@ -51,3 +54,5 @@ export const onMessageListener = () =>
       resolve(payload);
     });
   });
+
+export default app;
