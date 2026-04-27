@@ -96,7 +96,7 @@ const VideoLibrary = () => {
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* الهيدر */}
+      {/* الهيدر ثابت في الأعلى */}
       <header style={headerStyle}>
         <h2 style={{ textAlign: 'center', color: '#ff4d7d', marginBottom: '15px' }}>مكتبة رقة 🌸</h2>
         <div style={tabsContainerStyle}>
@@ -136,38 +136,25 @@ const VideoLibrary = () => {
           ))}
         </div>
       </main>
-
-      {/* المنيو السفلي */}
-      <nav style={bottomNavStyle}>
-        <div style={navGridStyle}>
-          <div style={navItemStyle}><span>🏠</span><span style={labelStyle}>الرئيسية</span></div>
-          <div style={centerActionStyle}>
-            <div style={centerCircleStyle}>🌸</div>
-            <span style={{fontSize:'0.8rem', fontWeight:'bold', color:'#ff4d7d'}}>رقة</span>
-          </div>
-          <div style={navItemStyle}><span>🔔</span><span style={labelStyle}>تنبيهات</span></div>
-        </div>
-      </nav>
     </div>
   );
 };
 
-/* --- التنسيقات المعدلة للظهور بكامل الشاشة --- */
+/* --- التنسيقات المعدلة --- */
 
 const fullScreenContainerStyle = {
-  position: 'fixed', // تثبيت الحاوية فوق كل شيء
+  position: 'fixed',
   top: 0,
   left: 0,
   right: 0,
-  bottom: 0,
-  width: '100vw',
-  height: '100vh',
+  bottom: '70px', // تقصير مسافة الصفحة من الأسفل لترك مجال لأيقونات التطبيق الأساسية
   backgroundColor: '#fff5f7',
-  zIndex: 99999, // أولوية قصوى لتغطية أي أيقونات أو منيو خارجي
+  zIndex: 9999, 
   direction: 'rtl',
   fontFamily: 'Tajawal, sans-serif',
   display: 'flex',
-  flexDirection: 'column'
+  flexDirection: 'column',
+  overflow: 'hidden'
 };
 
 const fullScreenLoaderStyle = {
@@ -181,7 +168,7 @@ const fullScreenLoaderStyle = {
   justifyContent: 'center',
   alignItems: 'center',
   color: '#ff4d7d',
-  zIndex: 100000,
+  zIndex: 10000,
   fontFamily: 'Tajawal, sans-serif'
 };
 
@@ -190,29 +177,60 @@ const headerStyle = {
   backdropFilter: 'blur(10px)',
   padding: '15px 10px',
   borderBottom: '2px solid rgba(255, 77, 125, 0.15)',
-  paddingTop: '40px' // مساحة إضافية للكاميرا/النوتش في الهواتف
+  paddingTop: '35px' 
 };
 
 const scrollContentStyle = {
-  flex: 1, // يأخذ باقي مساحة الشاشة بين الهيدر والمنيو
-  overflowY: 'auto', // تمرير داخلي فقط
-  padding: '20px',
-  paddingBottom: '100px' // مساحة للمنيو السفلي
+  flex: 1,
+  overflowY: 'auto',
+  padding: '15px',
+  WebkitOverflowScrolling: 'touch' // لتحسين سلاسة التمرير على الموبايل
 };
 
-/* --- باقي التنسيقات المستقرة --- */
-const tabsContainerStyle = { display: 'flex', overflowX: 'auto', padding: '5px' };
-const videoGridStyle = { display: 'grid', gridTemplateColumns: '1fr', gap: '10px' };
-const videoFrameWrapper = { position: 'relative', paddingBottom: '56.25%', height: 0 };
-const iframeStyle = { position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' };
+const tabsContainerStyle = { 
+  display: 'flex', 
+  overflowX: 'auto', 
+  padding: '5px',
+  gap: '5px'
+};
+
+const videoGridStyle = { 
+  display: 'grid', 
+  gridTemplateColumns: '1fr', 
+  gap: '15px' 
+};
+
+const videoFrameWrapper = { 
+  position: 'relative', 
+  paddingBottom: '56.25%', 
+  height: 0 
+};
+
+const iframeStyle = { 
+  position: 'absolute', 
+  top: 0, 
+  left: 0, 
+  width: '100%', 
+  height: '100%' 
+};
+
 const videoInfoStyle = { padding: '15px' };
-const badgeStyle = { backgroundColor: 'rgba(255, 77, 125, 0.1)', color: '#ff4d7d', padding: '2px 10px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' };
-const videoTitleStyle = { fontSize: '0.95rem', marginTop: '10px', color: '#555', textAlign: 'right' };
-const bottomNavStyle = { position: 'absolute', bottom: 0, width: '100%', height: '80px', backgroundColor: 'white', boxShadow: '0 -4px 15px rgba(0,0,0,0.05)', borderRadius: '25px 25px 0 0' };
-const navGridStyle = { display: 'flex', justifyContent: 'space-around', alignItems: 'center', height: '100%' };
-const navItemStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center' };
-const labelStyle = { fontSize: '0.75rem', marginTop: '4px', color: '#777' };
-const centerActionStyle = { display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '-30px' };
-const centerCircleStyle = { width: '60px', height: '60px', backgroundColor: 'white', borderRadius: '50%', border: '3px solid #ff4d7d', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.8rem' };
+
+const badgeStyle = { 
+  backgroundColor: 'rgba(255, 77, 125, 0.1)', 
+  color: '#ff4d7d', 
+  padding: '4px 12px', 
+  borderRadius: '12px', 
+  fontSize: '0.8rem', 
+  fontWeight: 'bold' 
+};
+
+const videoTitleStyle = { 
+  fontSize: '0.95rem', 
+  marginTop: '10px', 
+  color: '#444', 
+  textAlign: 'right',
+  fontWeight: '500'
+};
 
 export default VideoLibrary;
