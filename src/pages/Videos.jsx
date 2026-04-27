@@ -84,21 +84,22 @@ const VideoLibrary = () => {
           display: flex;
           align-items: center;
           background: white;
-          padding: 8px 16px;
+          padding: 6px 12px;
           border-radius: 30px;
           border: 1px solid var(--female-pink-light);
           cursor: pointer;
           white-space: nowrap;
           font-weight: bold;
           color: var(--female-pink);
-          margin-left: 10px;
+          margin-left: 8px;
+          font-size: 0.9rem;
         }
         ::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* الهيدر ثابت في الأعلى */}
+      {/* الهيدر ثابت في الأعلى مع تقليل المسافات */}
       <header style={headerStyle}>
-        <h2 style={{ textAlign: 'center', color: '#ff4d7d', marginBottom: '15px' }}>مكتبة رقة 🌸</h2>
+        <h2 style={titleStyle}>مكتبة رقة 🌸</h2>
         <div style={tabsContainerStyle}>
           {categories.map(cat => (
             <button
@@ -140,14 +141,14 @@ const VideoLibrary = () => {
   );
 };
 
-/* --- التنسيقات المعدلة --- */
+/* --- التنسيقات المعدلة للظهور المثالي حسب الصورة --- */
 
 const fullScreenContainerStyle = {
   position: 'fixed',
   top: 0,
   left: 0,
   right: 0,
-  bottom: '70px', // تقصير مسافة الصفحة من الأسفل لترك مجال لأيقونات التطبيق الأساسية
+  bottom: '50px', // تقليل المسافة من الأسفل لتظهر الأيقونات الأساسية كاملة
   backgroundColor: '#fff5f7',
   zIndex: 9999, 
   direction: 'rtl',
@@ -175,23 +176,30 @@ const fullScreenLoaderStyle = {
 const headerStyle = {
   backgroundColor: 'rgba(255, 255, 255, 0.95)',
   backdropFilter: 'blur(10px)',
-  padding: '15px 10px',
+  padding: '10px 5px',
   borderBottom: '2px solid rgba(255, 77, 125, 0.15)',
-  paddingTop: '35px' 
+  paddingTop: '25px' // رفع الهيدر للأعلى لزيادة مساحة الفيديوهات
+};
+
+const titleStyle = { 
+  textAlign: 'center', 
+  color: '#ff4d7d', 
+  marginBottom: '10px', 
+  fontSize: '1.4rem' 
 };
 
 const scrollContentStyle = {
   flex: 1,
   overflowY: 'auto',
-  padding: '15px',
-  WebkitOverflowScrolling: 'touch' // لتحسين سلاسة التمرير على الموبايل
+  padding: '10px 15px',
+  WebkitOverflowScrolling: 'touch'
 };
 
 const tabsContainerStyle = { 
   display: 'flex', 
   overflowX: 'auto', 
-  padding: '5px',
-  gap: '5px'
+  padding: '5px 0',
+  gap: '0px'
 };
 
 const videoGridStyle = { 
@@ -214,23 +222,24 @@ const iframeStyle = {
   height: '100%' 
 };
 
-const videoInfoStyle = { padding: '15px' };
+const videoInfoStyle = { padding: '12px' };
 
 const badgeStyle = { 
   backgroundColor: 'rgba(255, 77, 125, 0.1)', 
   color: '#ff4d7d', 
-  padding: '4px 12px', 
-  borderRadius: '12px', 
-  fontSize: '0.8rem', 
+  padding: '3px 10px', 
+  borderRadius: '10px', 
+  fontSize: '0.75rem', 
   fontWeight: 'bold' 
 };
 
 const videoTitleStyle = { 
-  fontSize: '0.95rem', 
-  marginTop: '10px', 
+  fontSize: '0.9rem', 
+  marginTop: '8px', 
   color: '#444', 
   textAlign: 'right',
-  fontWeight: '500'
+  fontWeight: '500',
+  lineHeight: '1.4'
 };
 
 export default VideoLibrary;
