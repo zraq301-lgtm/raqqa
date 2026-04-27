@@ -1,35 +1,50 @@
-import pkg from 'pg';
-const { Pool } = pkg;
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 
-// استخدام WHATWG URL API بشكل صحيح لتجنب تحذير DEP0169
-const dbUrl = new URL(process.env.DATABASE_URL);
+// 1. إعداد الاتصال بفيربيس باستخدام المفاتيح المنفصلة
+const serviceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  // معالجة مفتاح الخصوصية لضمان قراءة الأسطر الجديدة بشكل صحيح في فيرسل
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+};
 
-const pool = new Pool({
-  host: dbUrl.hostname,
-  port: dbUrl.port,
-  user: dbUrl.username,
-  password: dbUrl.password,
-  database: dbUrl.pathname.split('/')[1],
-  ssl: { rejectUnauthorized: false },
-  max: 1
-});
+if (!getApps().length) {
+  initializeApp({
+    credential: cert(serviceAccount)
+  });
+}
+
+const db = getFirestore();
 
 export default async function handler(req, res) {
-  // السماح بـ GET و POST للجلب والمعالجة
+  // السماح بـ GET و POST كما في منطقك السابق
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // --- إضافة وظيفة الحذف التلقائي ---
-    // حذف البيانات التي مر عليها يومان أو التي تم إرسالها (is_sent = true)
-    const cleanupQuery = `
-      DELETE FROM notifications 
-      WHERE is_sent = true 
-      OR scheduled_for < NOW() - INTERVAL '2 days'
-    `;
-    await pool.query(cleanupQuery);
-    // --------------------------------
+    const notificationsRef = db.collection('notifications');
+
+    // --- وظيفة الحذف التلقائي (Cleanup) ---
+    // حذف الإشعارات المرسلة أو التي مر عليها أكثر من يومين
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() - 2);
+
+    const oldDocs = await notificationsRef
+      .where('is_sent', '==', true)
+      .get();
+    
+    const expiredDocs = await notificationsRef
+      .where('scheduled_for', '<', Timestamp.fromDate(expirationDate))
+      .get();
+
+    // تنفيذ الحذف (Batch Delete)
+    const batch = db.batch();
+    oldDocs.forEach(doc => batch.delete(doc.ref));
+    expiredDocs.forEach(doc => batch.delete(doc.ref));
+    await batch.commit();
+    // --------------------------------------
 
     // 1. ضبط توقيت الجلب (يوم ماضي ويوم مستقبلي)
     const yesterday = new Date();
@@ -38,26 +53,26 @@ export default async function handler(req, res) {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // 2. جلب الإشعارات المجدولة في هذا النطاق ولم تُرسل بعد
-    const fetchQuery = `
-      SELECT * FROM notifications 
-      WHERE (scheduled_for BETWEEN $1 AND $2) 
-      AND is_sent = false 
-      LIMIT 10
-    `;
-    const { rows } = await pool.query(fetchQuery, [yesterday.toISOString(), tomorrow.toISOString()]);
+    // 2. جلب الإشعارات المجدولة (نفس المنطق الأصلي)
+    const snapshot = await notificationsRef
+      .where('scheduled_for', '>=', Timestamp.fromDate(yesterday))
+      .where('scheduled_for', '<=', Timestamp.fromDate(tomorrow))
+      .where('is_sent', '==', false)
+      .limit(10)
+      .get();
 
-    if (rows.length === 0) {
+    if (snapshot.empty) {
       return res.status(200).json({ success: true, message: "لا توجد بيانات بانتظار المعالجة." });
     }
 
     const processedResults = [];
 
-    for (const record of rows) {
-      // 3. صياغة طلب للذكاء الاصطناعي لتحسين المحتوى
+    for (const doc of snapshot.docs) {
+      const record = { id: doc.id, ...doc.data() };
+
+      // 3. صياغة طلب للذكاء الاصطناعي (Raqqa AI)
       const aiPrompt = `بصفتك مساعداً ذكياً، حسن هذا الإشعار لفئة ${record.category}. العنوان: ${record.title}. النص: ${record.body}`;
 
-      // استدعاء API الذكاء الاصطناعي
       let smartBody = record.body;
       try {
         const aiResponse = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
@@ -71,8 +86,8 @@ export default async function handler(req, res) {
         console.error("AI API Error, using original body.");
       }
 
-      // 4. إرسال الإشعار عبر خدمة FCM الخاصة بك
-      const fcmResponse = await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
+      // 4. إرسال الإشعار عبر خدمة FCM
+      await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -83,8 +98,11 @@ export default async function handler(req, res) {
         })
       });
 
-      // 5. تحديث حالة الصف في قاعدة البيانات لعدم تكرار الإرسال
-      await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [record.id]);
+      // 5. تحديث حالة الوثيقة في فيربيس (UPDATE)
+      await notificationsRef.doc(record.id).update({
+        is_sent: true,
+        sent_at: Timestamp.now()
+      });
 
       processedResults.push({ id: record.id, status: 'Sent', updated_content: smartBody });
     }
@@ -96,7 +114,7 @@ export default async function handler(req, res) {
     });
 
   } catch (error) {
-    console.error('❌ Server Error:', error.message);
+    console.error('❌ Firestore/Server Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
