@@ -1,61 +1,85 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import admin from 'firebase-admin';
 
-// دالة التهيئة (نفس التي تعمل معك في كود الإرسال)
-const getFirebaseAdmin = () => {
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-  };
+// 1. معالجة المفتاح الخاص بنفس طريقتك الناجحة لضمان عمله على Vercel
+const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+const formattedKey = rawKey 
+  ? rawKey.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1').trim() 
+  : undefined;
 
-  if (!serviceAccount.projectId) throw new Error('FIREBASE_PROJECT_ID is missing');
-
-  if (getApps().length === 0) {
-    return initializeApp({ credential: cert(serviceAccount) });
-  }
-  return getApps()[0];
+// استخدام نفس البيانات التي نجحت معك في كود FCM
+const serviceAccount = {
+  "type": "service_account",
+  "project_id": "raqqa-43dc8", // القيمة ثابتة كما في كودك الناجح
+  "client_email": "firebase-adminsdk-fbsvc@raqqa-43dc8.iam.gserviceaccount.com", // القيمة ثابتة كما في كودك الناجح
+  "private_key": formattedKey,
 };
 
-export default async function handler(req, res) {
-  // الحفظ يتطلب دائماً POST لاستقبال البيانات
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  } catch (initError) {
+    console.error('❌ Firebase Init Error:', initError.message);
   }
+}
+
+const db = admin.firestore();
+
+export default async function handler(req, res) {
+  // الحفظ يتطلب POST من الواجهة
+  if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  let { 
+    fcmToken, 
+    token,
+    title, 
+    body, 
+    category,
+    scheduled_for, // التاريخ المرسل من الواجهة (مثلاً: 2026-04-28T10:00:00Z)
+    extra_data 
+  } = req.body;
+
+  const targetToken = fcmToken || token;
 
   try {
-    getFirebaseAdmin();
-    const db = getFirestore();
-
-    // 1. استلام البيانات من واجهة تطبيق "رقة"
-    const { title, body, category, fcm_token, scheduled_for, extra_data } = req.body;
-
-    // فحص البيانات الأساسية قبل الحفظ
-    if (!title || !fcm_token) {
-      return res.status(400).json({ error: 'العنوان ورمز الجهاز (Token) مطلوبان.' });
+    if (!targetToken) {
+      return res.status(400).json({ error: "Missing Device Token" });
     }
 
-    // 2. الحفظ في مجموعة "notifications"
-    const docRef = await db.collection('notifications').add({
-      title,
-      body: body || '',
-      category: category || 'General',
-      fcm_token,
-      extra_data: extra_data || {},
-      is_sent: false, // الحالة الافتراضية عند الحفظ
-      // تحويل التاريخ القادم من الواجهة إلى صيغة Timestamp
-      scheduled_for: scheduled_for ? Timestamp.fromDate(new Date(scheduled_for)) : Timestamp.now(),
-      created_at: Timestamp.now()
-    });
+    if (!formattedKey) {
+      throw new Error("FIREBASE_PRIVATE_KEY is missing in environment variables.");
+    }
 
-    return res.status(200).json({
-      success: true,
-      message: "تم جدولة الإشعار بنجاح في فيربيس",
-      id: docRef.id
+    // تجهيز البيانات للحفظ في Firestore
+    const notificationData = {
+      title: title || "تنبيه من رقة 🌸",
+      body: body || "لديكِ تحديث جديد في التطبيق.",
+      category: category || "general",
+      fcm_token: targetToken,
+      is_sent: false, // لم يتم الإرسال بعد
+      extra_data: extra_data || {},
+      // معالجة التاريخ: إذا لم يرسل تاريخ، نضع توقيت "الآن" كافتراضي
+      scheduled_for: scheduled_for 
+        ? admin.firestore.Timestamp.fromDate(new Date(scheduled_for)) 
+        : admin.firestore.Timestamp.now(),
+      created_at: admin.firestore.Timestamp.now()
+    };
+
+    // حفظ البيانات في مجموعة "notifications"
+    const docRef = await db.collection('notifications').add(notificationData);
+
+    return res.status(200).json({ 
+      success: true, 
+      message: "تم حفظ الإشعار وجدولته بنجاح",
+      doc_id: docRef.id 
     });
 
   } catch (error) {
-    console.error('❌ Save Error:', error.message);
-    return res.status(500).json({ success: false, error: error.message });
+    console.error('❌ Firestore Save Error:', error.message);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 }
