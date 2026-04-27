@@ -1,60 +1,63 @@
 import pkg from 'pg';
 const { Pool } = pkg;
 
+// تحسين: التعامل مع الاتصال بشكل أكثر استقراراً في Serverless
 const dbUrl = new URL(process.env.DATABASE_URL);
-const pool = new Pool({
+const poolConfig = {
   host: dbUrl.hostname,
   port: dbUrl.port,
   user: dbUrl.username,
   password: dbUrl.password,
   database: dbUrl.pathname.split('/')[1],
   ssl: { rejectUnauthorized: false },
-  max: 1
-});
+  max: 1,
+  idleTimeoutMillis: 30000, // مهلة للاتصالات الخاملة
+  connectionTimeoutMillis: 2000,
+};
 
 export default async function handler(req, res) {
-  // نستخدم GET أو POST لجلب البيانات ومعالجتها
   if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
+  // إنشاء Pool داخل الدالة أو استخدام واحد خارجي بحذر
+  const pool = new Pool(poolConfig);
+
   try {
-    // 1. تحديد النطاق الزمني (يوم ماضي ويوم مستقبلي)
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // 2. جلب البيانات من قاعدة البيانات
-    // نقوم بجلب التذكيرات التي تقع في هذا النطاق ولم يتم إرسالها بعد
+    // 1. جلب البيانات
     const query = `
-      SELECT * FROM notifications 
-      WHERE (scheduled_for BETWEEN $1 AND $2) 
-      AND is_sent = false 
+      SELECT * FROM notifications  
+      WHERE (scheduled_for BETWEEN $1 AND $2)  
+      AND is_sent = false  
       LIMIT 5
     `;
     const { rows } = await pool.query(query, [yesterday.toISOString(), tomorrow.toISOString()]);
 
     if (rows.length === 0) {
+      await pool.end(); // إغلاق الاتصال قبل الخروج
       return res.status(200).json({ message: "لا توجد بيانات للمعالجة حالياً." });
     }
 
     const results = [];
 
     for (const record of rows) {
-      // 3. صياغة محتوى للذكاء الاصطناعي بناءً على الفئة (Category)
       const aiPrompt = `اكتب نص إشعار قصير ومحفز لفئة ${record.category}. العنوان الأصلي: ${record.title}. المحتوى: ${record.body}`;
 
-      // 4. استدعاء رابط الذكاء الاصطناعي (Raqqa AI)
+      // 2. استدعاء الذكاء الاصطناعي
       const aiResponse = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: aiPrompt })
       });
       const aiData = await aiResponse.json();
-      const smartBody = aiData.text || record.body; // استخدام نص الذكاء الاصطناعي أو النص الأصلي كبديل
+      const smartBody = aiData.text || record.body;
 
-      // 5. إرسال الإشعار عبر رابط FCM
-      const fcmResponse = await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
+      // 3. إرسال FCM
+      await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,13 +67,16 @@ export default async function handler(req, res) {
           data: record.extra_data
         })
       });
-      const fcmResult = await fcmResponse.json();
 
-      // 6. تحديث حالة الإشعار في القاعدة بأنه "تم الإرسال"
+      // 4. التحديث في نيون (أهم خطوة)
+      // أضفنا await لضمان أن الاستعلام ينتهي قبل الانتقال للإشعار التالي
       await pool.query('UPDATE notifications SET is_sent = true WHERE id = $1', [record.id]);
 
       results.push({ id: record.id, status: 'Sent', ai_text: smartBody });
     }
+
+    // ضروري جداً في Serverless: إغلاق الـ Pool لضمان تنفيذ كل الـ Queries المعلقة
+    await pool.end();
 
     return res.status(200).json({
       success: true,
@@ -80,6 +86,8 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ Error:', error.message);
+    // إغلاق الـ Pool حتى في حالة الخطأ
+    try { await pool.end(); } catch (e) {}
     return res.status(500).json({ success: false, error: error.message });
   }
 }
