@@ -4,6 +4,9 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
+// استيراد مكتبة AdMob
+import { AdMob, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
+
 // استيراد خاصية فيربيس الجديدة
 import { applyRemoteSettings } from "./firebase-config";
 
@@ -115,12 +118,53 @@ function TipOverlay() {
 }
 
 function App() {
+  const location = useLocation();
+
+  // --- نظام تشغيل إعلانات AdMob (وضع الاختبار) ---
+  useEffect(() => {
+    const initAds = async () => {
+      try {
+        await AdMob.initialize();
+
+        // إظهار البنر في الأسفل (وضع الاختبار مفعل)
+        await AdMob.showBanner({
+          adId: 'ca-app-pub-8025494804759906/6335462769',
+          position: BannerAdPosition.BOTTOM_CENTER,
+          size: BannerAdSize.ADAPTIVE_BANNER,
+          margin: 60,
+          isTesting: true // تم التغيير لـ true للاختبار
+        });
+      } catch (e) {
+        console.error("AdMob Init Error", e);
+      }
+    };
+    initAds();
+  }, []);
+
+  // إظهار إعلان بيني عند تغيير الصفحات (وضع الاختبار مفعل)
+  useEffect(() => {
+    const showInterstitial = async () => {
+      if (location.pathname === '/health' || location.pathname === '/virtual-world') {
+        try {
+          await AdMob.prepareInterstitial({
+            adId: 'ca-app-pub-8025494804759906/4391825704',
+            isTesting: true // تم التغيير لـ true للاختبار
+          });
+          await AdMob.showInterstitial();
+        } catch (e) {
+          console.error("Interstitial Error", e);
+        }
+      }
+    };
+    showInterstitial();
+  }, [location]);
+
   // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
   useEffect(() => {
     applyRemoteSettings();
   }, []);
 
-  // --- تحديث نظام حقن إعلانات Adsterra بالرابط الجديد ---
+  // --- نظام حقن إعلانات Adsterra ---
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://pl29179331.profitablecpmratenetwork.com/42/41/78/424178ee7b8e5b65b4752caf48950fe0.js";
