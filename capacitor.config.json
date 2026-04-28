@@ -2,7 +2,6 @@
   "appId": "com.raqqa.app",
   "appName": "رقة",
   "webDir": "dist_web",
-  "bundledWebRuntime": false,
   "server": {
     "androidScheme": "https",
     "cleartext": true
@@ -12,21 +11,20 @@
       "presentationOptions": ["badge", "sound", "alert"]
     },
     "LocalNotifications": {
-      "smallIcon": "ic_stat_icon_config_sample",
-      "iconColor": "#445271"
+      "smallIcon": "ic_stat_name",
+      "iconColor": "#FFC0CB"
     },
     "CapacitorHttp": {
       "enabled": true
     },
-    "Camera": {
-      "presentationStyle": "fullscreen"
+    "AdMob": {
+      "initializeOnStartup": true
     }
   },
   "android": {
     "allowMixedContent": true,
-    "captureInput": true,
     "buildOptions": {
-      "releaseType": "AAB"
+      "releaseType": "APK"
     }
   }
 }
