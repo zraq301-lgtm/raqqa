@@ -38,7 +38,8 @@ const Home = () => {
 
     if (typeof content === 'string' && content.includes('{')) {
       try {
-        const urlRegex = /"(?:external_link|media_url)":"(https?:\/\/[^"]+)"/;
+        // تعديل الـ Regex ليشمل روابط الـ http وأيضاً بيانات الـ data:image (الصور المرفوعة)
+        const urlRegex = /"(?:external_link|media_url)":"((?:https?:\/\/|data:image)[^"]+)"/;
         const match = content.match(urlRegex);
         if (match) media = match[1];
 
@@ -67,22 +68,18 @@ const Home = () => {
       );
     }
 
-    // 2. التحقق مما إذا كان الرابط صورة (رابط مباشر أو Base64)
+    // 2. عرض الصور (سواء روابط مباشره أو Base64 مرفوع من الجهاز)
+    // نعتبرها صورة إذا بدأت بـ data:image أو انتهت بصيغة صورة معروفة أو احتوت على ibb
     const isImageData = cleanUrl.startsWith('data:image');
-    const isImageLink = cleanUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
-    const isIbbLink = cleanUrl.includes('ibb.co'); // دعم خاص لموقع ibb
+    const isImageLink = cleanUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i) || cleanUrl.includes('ibb.co');
 
-    if (isImageData || isImageLink || isIbbLink) {
-      // ملاحظة: روابط ibb تحتاج عادة لمعالجة لتصبح روابط مباشرة، سنحاول عرضها كصورة
+    if (isImageData || isImageLink) {
       return (
         <img 
           src={cleanUrl} 
           style={{ width: '100%', borderRadius: '15px', display: 'block', maxHeight: '500px', objectFit: 'cover' }} 
           alt="مرفق"
-          onError={(e) => {
-            // إذا فشل العرض كصورة (لأنه رابط صفحة وليس صورة مباشرة)
-            e.target.style.display = 'none';
-          }} 
+          onError={(e) => { e.target.style.display = 'none'; }} 
         />
       );
     }
@@ -155,8 +152,6 @@ const Home = () => {
           <div style={{ marginTop: '10px', position: 'relative', border: '1px solid #eee', borderRadius: '15px', padding: '5px' }}>
              <button onClick={() => setMediaUrl("")} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255, 77, 125, 0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '25px', height: '25px', zIndex: 10 }}>×</button>
              {renderMedia(mediaUrl)}
-             {/* عرض الرابط نصياً في المعاينة للتأكد */}
-             <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mediaUrl.substring(0, 50)}...</div>
           </div>
         )}
 
@@ -169,7 +164,6 @@ const Home = () => {
       <div style={{ paddingBottom: '50px' }}>
         {posts.map(post => {
           const { cleanContent, cleanMedia } = parsePostData(post);
-          const isDirectMedia = cleanMedia.match(/\.(jpeg|jpg|gif|png|webp|mp4|webm)$/i) || cleanMedia.startsWith('data:');
 
           return (
             <div key={post.id} style={{ background: '#fff', margin: '15px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #ff4d7d11' }}>
@@ -180,16 +174,6 @@ const Home = () => {
 
               <div style={{ padding: '0 15px 15px' }}>
                 {renderMedia(cleanMedia)}
-                
-                {/* إذا كان الرابط ليس صورة مباشرة أو فشل عرضها، نظهر الرابط كزر جميل */}
-                {cleanMedia && !isDirectMedia && !cleanMedia.includes('youtube') && (
-                  <div style={{ marginTop: '10px' }}>
-                    <a href={cleanMedia} target="_blank" rel="noopener noreferrer" 
-                       style={{ display: 'block', padding: '12px', background: '#f8f9fa', borderRadius: '12px', color: '#ff4d7d', textDecoration: 'none', textAlign: 'center', fontSize: '0.85rem', border: '1px dashed #ff4d7d' }}>
-                      🔗 عرض الرابط الخارجي
-                    </a>
-                  </div>
-                )}
               </div>
             </div>
           );
