@@ -8,7 +8,6 @@ const Home = () => {
   const [mediaUrl, setMediaUrl] = useState("");
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
-  const [likedPosts, setLikedPosts] = useState({});
 
   const API_GET = "https://raqqa-ruddy.vercel.app/api/get-posts";
   const API_SAVE = "https://raqqa-ruddy.vercel.app/api/save-post";
@@ -22,13 +21,12 @@ const Home = () => {
     } catch (error) { console.error("Fetch Error:", error); }
   };
 
-  // دالة معالجة رفع صورة من الجهاز وتحويلها لـ Base64
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMediaUrl(reader.result); // تخزين الصورة كـ string طويل (Base64)
+        setMediaUrl(reader.result); 
       };
       reader.readAsDataURL(file);
     }
@@ -64,18 +62,33 @@ const Home = () => {
       
       return (
         <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
-          <iframe
-            width="100%" height="100%"
-            src={`https://www.youtube.com/embed/${videoId}`}
-            frameBorder="0"
-            allowFullScreen
-          ></iframe>
+          <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen></iframe>
         </div>
       );
     }
 
-    // 2. دعم روابط الفيديو المباشرة أو المرفوعة
-    const isDirectVideo = cleanUrl.match(/\.(mp4|webm|ogg)$/i) || cleanUrl.startsWith('data:video') || cleanUrl.includes('video');
+    // 2. التحقق مما إذا كان الرابط صورة (رابط مباشر أو Base64)
+    const isImageData = cleanUrl.startsWith('data:image');
+    const isImageLink = cleanUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i);
+    const isIbbLink = cleanUrl.includes('ibb.co'); // دعم خاص لموقع ibb
+
+    if (isImageData || isImageLink || isIbbLink) {
+      // ملاحظة: روابط ibb تحتاج عادة لمعالجة لتصبح روابط مباشرة، سنحاول عرضها كصورة
+      return (
+        <img 
+          src={cleanUrl} 
+          style={{ width: '100%', borderRadius: '15px', display: 'block', maxHeight: '500px', objectFit: 'cover' }} 
+          alt="مرفق"
+          onError={(e) => {
+            // إذا فشل العرض كصورة (لأنه رابط صفحة وليس صورة مباشرة)
+            e.target.style.display = 'none';
+          }} 
+        />
+      );
+    }
+
+    // 3. دعم روابط الفيديو المباشرة
+    const isDirectVideo = cleanUrl.match(/\.(mp4|webm|ogg)$/i) || cleanUrl.startsWith('data:video');
     if (isDirectVideo) {
       return (
         <div style={{ width: '100%', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
@@ -86,14 +99,7 @@ const Home = () => {
       );
     }
 
-    // 3. عرض كصورة (روابط خارجية أو Base64 مرفوع)
-    return (
-      <img src={cleanUrl} style={{ width: '100%', borderRadius: '15px', display: 'block' }} alt="مرفق"
-           onError={(e) => {
-             // إذا فشل كصورة، قد يكون رابطاً خارجياً لموقع (Link Preview بسيط)
-             e.target.style.display = 'none';
-           }} />
-    );
+    return null;
   };
 
   const handlePublish = async () => {
@@ -140,15 +146,17 @@ const Home = () => {
           />
           
           <label style={{ display: 'block', padding: '10px', background: '#f0f0f0', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#666' }}>
-            📁 رفع صورة من الجهاز
+            📁 رفع ميديا من الجهاز
             <input type="file" accept="image/*,video/*" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
         </div>
 
         {mediaUrl && (
-          <div style={{ marginTop: '10px', position: 'relative' }}>
-             <button onClick={() => setMediaUrl("")} style={{ position: 'absolute', top: '5px', right: '5px', background: 'rgba(0,0,0,0.5)', color: '#fff', border: 'none', borderRadius: '50%', width: '25px', height: '25px' }}>×</button>
+          <div style={{ marginTop: '10px', position: 'relative', border: '1px solid #eee', borderRadius: '15px', padding: '5px' }}>
+             <button onClick={() => setMediaUrl("")} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255, 77, 125, 0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '25px', height: '25px', zIndex: 10 }}>×</button>
              {renderMedia(mediaUrl)}
+             {/* عرض الرابط نصياً في المعاينة للتأكد */}
+             <div style={{ fontSize: '0.7rem', color: '#999', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mediaUrl.substring(0, 50)}...</div>
           </div>
         )}
 
@@ -161,6 +169,8 @@ const Home = () => {
       <div style={{ paddingBottom: '50px' }}>
         {posts.map(post => {
           const { cleanContent, cleanMedia } = parsePostData(post);
+          const isDirectMedia = cleanMedia.match(/\.(jpeg|jpg|gif|png|webp|mp4|webm)$/i) || cleanMedia.startsWith('data:');
+
           return (
             <div key={post.id} style={{ background: '#fff', margin: '15px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #ff4d7d11' }}>
               <div style={{ padding: '20px' }}>
@@ -168,14 +178,17 @@ const Home = () => {
                 <p style={{ marginTop: '12px', color: '#333', lineHeight: '1.6' }}>{cleanContent || "منشور رقة"}</p>
               </div>
 
-              {/* عرض الميديا */}
               <div style={{ padding: '0 15px 15px' }}>
                 {renderMedia(cleanMedia)}
-                {/* إذا كان الرابط خارجي وليس ميديا مباشرة، نعرضه كرابط قابل للضغط */}
-                {!cleanMedia.match(/\.(jpeg|jpg|gif|png|mp4|webm)$/i) && cleanMedia.startsWith('http') && !cleanMedia.includes('youtube') && (
-                  <a href={cleanMedia} target="_blank" rel="noopener noreferrer" style={{ color: '#ff4d7d', fontSize: '0.8rem', wordBreak: 'break-all' }}>
-                    {cleanMedia}
-                  </a>
+                
+                {/* إذا كان الرابط ليس صورة مباشرة أو فشل عرضها، نظهر الرابط كزر جميل */}
+                {cleanMedia && !isDirectMedia && !cleanMedia.includes('youtube') && (
+                  <div style={{ marginTop: '10px' }}>
+                    <a href={cleanMedia} target="_blank" rel="noopener noreferrer" 
+                       style={{ display: 'block', padding: '12px', background: '#f8f9fa', borderRadius: '12px', color: '#ff4d7d', textDecoration: 'none', textAlign: 'center', fontSize: '0.85rem', border: '1px dashed #ff4d7d' }}>
+                      🔗 عرض الرابط الخارجي
+                    </a>
+                  </div>
                 )}
               </div>
             </div>
