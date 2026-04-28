@@ -1,44 +1,50 @@
-name: "Raqqa Smart Sync (Neon Only)"
+name: "Raqqa Firebase Notification Dispatcher"
 
 on:
   schedule:
-    # التنفيذ مرتين يومياً (الساعة 6 صباحاً و 6 مساءً بالتوقيت العالمي)
-    - cron: "0 6,18 * * *"
-  workflow_dispatch: # يتيح لك تشغيل الأكشن يدوياً للتجربة من تبويب Actions
+    # سيتم التنفيذ كل ساعة (على رأس كل ساعة) لضمان معالجة الإشعارات المجدولة أولاً بأول
+    - cron: "0 * * * *"
+  workflow_dispatch: # يتيح لك تشغيل الأكشن يدوياً في أي وقت للتجربة
 
 jobs:
-  sync_process:
+  process_notifications:
     runs-on: ubuntu-latest
     steps:
-      - name: "Run Raqqa Neon Sync"
+      - name: "Call Raqqa Process API"
         uses: actions/github-script@v7
         with:
           script: |
+            // رابط ملف جلب ومعالجة الإشعارات الجديد الخاص بك
             const vercelUrl = "https://raqqa-hjl8.vercel.app/api/get-notifications";
+            
             const headers = { 
-              "Content-Type": "application/json", 
-              "zazotona": "12sonds25" 
+              "Content-Type": "application/json"
+              // إذا كنت تستخدم مفتاح أمان (Header) أضفه هنا، وإلا اتركها هكذا
             };
 
             try {
-              // --- الخطوة الوحيدة: جلب إشعارات نيون المجدولة (GET) ---
-              console.log("--- Step 1: Fetching Scheduled Notifications from Neon ---");
+              console.log("--- Starting Firebase Notification Fetch & AI Process ---");
               
-              const neonRes = await fetch(vercelUrl, { 
+              const response = await fetch(vercelUrl, { 
                 method: "GET", 
                 headers 
               });
 
-              if (!neonRes.ok) {
-                throw new Error(`Server responded with status: ${neonRes.status}`);
+              const data = await response.json();
+
+              if (!response.ok) {
+                throw new Error(`Server Error: ${response.status} - ${JSON.stringify(data)}`);
               }
 
-              const neonData = await neonRes.json();
-              console.log("Neon Sync Result:", JSON.stringify(neonData));
-
-              console.log("--- Neon Sync Task Completed Successfully ---");
+              console.log("Success Result:", JSON.stringify(data));
+              
+              if (data.processed_count > 0) {
+                console.log(`✅ Successfully processed ${data.processed_count} notifications.`);
+              } else {
+                console.log("ℹ️ No pending notifications to process at this time.");
+              }
 
             } catch (error) {
-              console.error("Critical Sync Error:", error.message);
+              console.error("❌ Action Failed:", error.message);
               core.setFailed(error.message);
             }
