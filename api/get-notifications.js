@@ -1,24 +1,34 @@
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, Timestamp } from 'firebase-admin/firestore';
+import admin from 'firebase-admin';
 
-// 1. إعداد الاتصال بفيربيس باستخدام المفاتيح المنفصلة
+// 1. معالجة المفتاح الخاص بنفس الطريقة الناجحة تماماً
+const rawKey = process.env.FIREBASE_PRIVATE_KEY;
+const formattedKey = rawKey 
+  ? rawKey.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1').trim() 
+  : undefined;
+
+// استخدام نفس البيانات التي ضمنت نجاح كود الحفظ والدفع
 const serviceAccount = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  // معالجة مفتاح الخصوصية لضمان قراءة الأسطر الجديدة بشكل صحيح في فيرسل
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  "type": "service_account",
+  "project_id": "raqqa-43dc8",
+  "client_email": "firebase-adminsdk-fbsvc@raqqa-43dc8.iam.gserviceaccount.com",
+  "private_key": formattedKey,
 };
 
-if (!getApps().length) {
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
+// تهيئة Firebase Admin مرة واحدة فقط
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+  } catch (initError) {
+    console.error('❌ Firebase Init Error:', initError.message);
+  }
 }
 
-const db = getFirestore();
+const db = admin.firestore();
 
 export default async function handler(req, res) {
-  // السماح بـ GET و POST كما في منطقك السابق
+  // السماح بـ GET و POST (مناسب للـ Cron Jobs)
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -26,43 +36,34 @@ export default async function handler(req, res) {
   try {
     const notificationsRef = db.collection('notifications');
 
-    // --- وظيفة الحذف التلقائي (Cleanup) ---
-    // حذف الإشعارات المرسلة أو التي مر عليها أكثر من يومين
+    // --- وظيفة الحذف التلقائي (Cleanup) لضمان عدم تراكم البيانات ---
     const expirationDate = new Date();
     expirationDate.setDate(expirationDate.getDate() - 2);
 
-    const oldDocs = await notificationsRef
-      .where('is_sent', '==', true)
-      .get();
-    
-    const expiredDocs = await notificationsRef
-      .where('scheduled_for', '<', Timestamp.fromDate(expirationDate))
-      .get();
+    const oldDocs = await notificationsRef.where('is_sent', '==', true).get();
+    const expiredDocs = await notificationsRef.where('scheduled_for', '<', admin.firestore.Timestamp.fromDate(expirationDate)).get();
 
-    // تنفيذ الحذف (Batch Delete)
     const batch = db.batch();
     oldDocs.forEach(doc => batch.delete(doc.ref));
     expiredDocs.forEach(doc => batch.delete(doc.ref));
     await batch.commit();
-    // --------------------------------------
 
-    // 1. ضبط توقيت الجلب (يوم ماضي ويوم مستقبلي)
+    // --- 1. ضبط توقيت الجلب (نفس المنطق الأصلي) ---
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // 2. جلب الإشعارات المجدولة (نفس المنطق الأصلي)
+    // --- 2. جلب الإشعارات التي لم تُرسل بعد في هذا النطاق ---
     const snapshot = await notificationsRef
-      .where('scheduled_for', '>=', Timestamp.fromDate(yesterday))
-      .where('scheduled_for', '<=', Timestamp.fromDate(tomorrow))
+      .where('scheduled_for', '>=', admin.firestore.Timestamp.fromDate(yesterday))
+      .where('scheduled_for', '<=', admin.firestore.Timestamp.fromDate(tomorrow))
       .where('is_sent', '==', false)
-      .limit(10)
+      .limit(5) // معالجة 5 في كل مرة لتجنب انتهاء وقت دالة Vercel
       .get();
 
     if (snapshot.empty) {
-      return res.status(200).json({ success: true, message: "لا توجد بيانات بانتظار المعالجة." });
+      return res.status(200).json({ success: true, message: "لا توجد إشعارات بانتظار المعالجة حالياً." });
     }
 
     const processedResults = [];
@@ -70,15 +71,15 @@ export default async function handler(req, res) {
     for (const doc of snapshot.docs) {
       const record = { id: doc.id, ...doc.data() };
 
-      // 3. صياغة طلب للذكاء الاصطناعي (Raqqa AI)
-      const aiPrompt = `بصفتك مساعداً ذكياً، حسن هذا الإشعار لفئة ${record.category}. العنوان: ${record.title}. النص: ${record.body}`;
-
+      // --- 3. استدعاء الذكاء الاصطناعي (Raqqa AI) لتحسين النص ---
       let smartBody = record.body;
       try {
         const aiResponse = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: aiPrompt })
+          body: JSON.stringify({ 
+            prompt: `بصفتك مساعداً ذكياً، حسن هذا الإشعار لفئة ${record.category}. العنوان: ${record.title}. النص: ${record.body}` 
+          })
         });
         const aiData = await aiResponse.json();
         if (aiData.text) smartBody = aiData.text;
@@ -86,7 +87,7 @@ export default async function handler(req, res) {
         console.error("AI API Error, using original body.");
       }
 
-      // 4. إرسال الإشعار عبر خدمة FCM
+      // --- 4. إرسال الإشعار الفعلي عبر خدمة FCM ---
       await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,27 +95,28 @@ export default async function handler(req, res) {
           token: record.fcm_token,
           title: record.title,
           body: smartBody,
-          data: record.extra_data
+          category: record.category,
+          extra_data: record.extra_data
         })
       });
 
-      // 5. تحديث حالة الوثيقة في فيربيس (UPDATE)
+      // --- 5. تحديث حالة الوثيقة في فيربيس لعدم تكرارها ---
       await notificationsRef.doc(record.id).update({
         is_sent: true,
-        sent_at: Timestamp.now()
+        sent_at: admin.firestore.Timestamp.now()
       });
 
-      processedResults.push({ id: record.id, status: 'Sent', updated_content: smartBody });
+      processedResults.push({ id: record.id, status: 'Sent', ai_text: smartBody });
     }
 
     return res.status(200).json({
       success: true,
-      count: processedResults.length,
+      processed_count: processedResults.length,
       data: processedResults
     });
 
   } catch (error) {
-    console.error('❌ Firestore/Server Error:', error.message);
+    console.error('❌ Fetch/Process Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
