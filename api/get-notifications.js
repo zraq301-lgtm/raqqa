@@ -1,12 +1,11 @@
 import admin from 'firebase-admin';
 
-// 1. معالجة المفتاح الخاص بنفس الطريقة الناجحة تماماً
+// 1. إعدادات المفتاح والبيانات (نفس طريقتك الناجحة)
 const rawKey = process.env.FIREBASE_PRIVATE_KEY;
 const formattedKey = rawKey 
   ? rawKey.replace(/\\n/g, '\n').replace(/^"(.*)"$/, '$1').trim() 
   : undefined;
 
-// استخدام نفس البيانات التي ضمنت نجاح كود الحفظ والدفع
 const serviceAccount = {
   "type": "service_account",
   "project_id": "raqqa-43dc8",
@@ -14,12 +13,9 @@ const serviceAccount = {
   "private_key": formattedKey,
 };
 
-// تهيئة Firebase Admin مرة واحدة فقط
 if (!admin.apps.length) {
   try {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
   } catch (initError) {
     console.error('❌ Firebase Init Error:', initError.message);
   }
@@ -28,95 +24,75 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export default async function handler(req, res) {
-  // السماح بـ GET و POST (مناسب للـ Cron Jobs)
-  if (req.method !== 'POST' && req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST' && req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const notificationsRef = db.collection('notifications');
 
-    // --- وظيفة الحذف التلقائي (Cleanup) لضمان عدم تراكم البيانات ---
-    const expirationDate = new Date();
-    expirationDate.setDate(expirationDate.getDate() - 2);
-
-    const oldDocs = await notificationsRef.where('is_sent', '==', true).get();
-    const expiredDocs = await notificationsRef.where('scheduled_for', '<', admin.firestore.Timestamp.fromDate(expirationDate)).get();
-
-    const batch = db.batch();
-    oldDocs.forEach(doc => batch.delete(doc.ref));
-    expiredDocs.forEach(doc => batch.delete(doc.ref));
-    await batch.commit();
-
-    // --- 1. ضبط توقيت الجلب (نفس المنطق الأصلي) ---
+    // --- 2. جلب الإشعارات غير المرسلة ---
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // --- 2. جلب الإشعارات التي لم تُرسل بعد في هذا النطاق ---
     const snapshot = await notificationsRef
       .where('scheduled_for', '>=', admin.firestore.Timestamp.fromDate(yesterday))
       .where('scheduled_for', '<=', admin.firestore.Timestamp.fromDate(tomorrow))
       .where('is_sent', '==', false)
-      .limit(5) // معالجة 5 في كل مرة لتجنب انتهاء وقت دالة Vercel
+      .limit(5) 
       .get();
 
-    if (snapshot.empty) {
-      return res.status(200).json({ success: true, message: "لا توجد إشعارات بانتظار المعالجة حالياً." });
-    }
+    if (snapshot.empty) return res.status(200).json({ success: true, message: "لا توجد إشعارات حالياً" });
 
-    const processedResults = [];
+    const results = [];
 
     for (const doc of snapshot.docs) {
       const record = { id: doc.id, ...doc.data() };
 
-      // --- 3. استدعاء الذكاء الاصطناعي (Raqqa AI) لتحسين النص ---
-      let smartBody = record.body;
+      // --- 3. استدعاء API الذكاء الاصطناعي الخاص بك لتوليد النص ---
+      let aiText = record.body;
       try {
         const aiResponse = await fetch('https://raqqa-v6cd.vercel.app/api/raqqa-ai', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
-            prompt: `بصفتك مساعداً ذكياً، حسن هذا الإشعار لفئة ${record.category}. العنوان: ${record.title}. النص: ${record.body}` 
+            prompt: `اكتب إشعاراً قصيراً ومحفزاً جداً باللغة العربية بأسلوب رقيق. الفئة: ${record.category}. العنوان: ${record.title}. النص الأصلي: ${record.body}` 
           })
         });
         const aiData = await aiResponse.json();
-        if (aiData.text) smartBody = aiData.text;
-      } catch (aiErr) {
-        console.error("AI API Error, using original body.");
-      }
+        if (aiData.text) aiText = aiData.text;
+      } catch (e) { console.error("AI Error, using default body"); }
 
-      // --- 4. إرسال الإشعار الفعلي عبر خدمة FCM ---
+      // --- 4. اختيار صورة مخصصة بناءً على الفئة ---
+      // نفترض أن الصور مرفوعة في مجلد assets بتطبيقك بنفس اسم الفئة
+      const imageUrl = `https://raqqa-hjl8.vercel.app/assets/notifications/${record.category || 'general'}.png`;
+
+      // --- 5. إرسال الإشعار النهائي عبر FCM ---
       await fetch('https://raqqa-hjl8.vercel.app/api/send-fcm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           token: record.fcm_token,
           title: record.title,
-          body: smartBody,
-          category: record.category,
-          extra_data: record.extra_data
+          body: aiText,
+          image: imageUrl, // الصورة المخصصة
+          data: { ...record.extra_data, category: record.category }
         })
       });
 
-      // --- 5. تحديث حالة الوثيقة في فيربيس لعدم تكرارها ---
+      // --- 6. تحديث الحالة لعدم التكرار ---
       await notificationsRef.doc(record.id).update({
         is_sent: true,
-        sent_at: admin.firestore.Timestamp.now()
+        sent_at: admin.firestore.Timestamp.now(),
+        final_ai_text: aiText // حفظ النص الذي كتبه الذكاء للاطلاع عليه لاحقاً
       });
 
-      processedResults.push({ id: record.id, status: 'Sent', ai_text: smartBody });
+      results.push({ id: record.id, status: 'Sent' });
     }
 
-    return res.status(200).json({
-      success: true,
-      processed_count: processedResults.length,
-      data: processedResults
-    });
+    return res.status(200).json({ success: true, processed: results.length });
 
   } catch (error) {
-    console.error('❌ Fetch/Process Error:', error.message);
     return res.status(500).json({ success: false, error: error.message });
   }
 }
