@@ -164,21 +164,7 @@ function App() {
     applyRemoteSettings();
   }, []);
 
-  // --- نظام حقن إعلانات Adsterra ---
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = "https://pl29179331.profitablecpmratenetwork.com/42/41/78/424178ee7b8e5b65b4752caf48950fe0.js";
-    script.async = true;
-    script.type = 'text/javascript';
-
-    document.body.appendChild(script);
-
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, []);
+  // تم إزالة نظام إعلانات Adsterra من هنا بناءً على طلبك
 
   // --- نظام جدولة الإشعارات ---
   const syncNotifications = useCallback(async () => {
