@@ -6,6 +6,9 @@
   --text-gray: #555;
   --glass-white: rgba(255, 255, 255, 0.9);
   --accent-purple: #9b59b6; /* لون بنفسجي مكمل للأنوثة */
+
+  /* --- خاصية فيربيس الجديدة لتغيير الألوان --- */
+  --main-theme-color: #ffffff; /* اللون الافتراضي */
 }
 
 body {
@@ -16,12 +19,14 @@ body {
   direction: rtl;
 }
 
-/* حاوية التطبيق الرئيسية */
+/* حاوية التطبيق الرئيسية - تم ربطها بخاصية فيربيس */
 .app-container {
   display: flex;
   flex-direction: column;
   height: 100vh;
   overflow: hidden;
+  background-color: var(--main-theme-color); /* اللون الذي سيتم تغييره من فيربيس */
+  transition: background-color 0.5s ease; /* لجعل التغيير ناعماً */
 }
 
 /* --- التنسيق المعدل: الحفاظ على حجم الأيقونات وتقليل حجم الحاويات --- */
@@ -158,6 +163,13 @@ body {
   overflow-y: auto;
   padding: 20px;
   padding-bottom: 90px; /* تقليل مسافة الأمان لتناسب المنيو الأصغر */
+}
+
+/* ستايل الزجاج (Glassmorphism) المرتبط بفيربيس */
+.glass-card {
+  background: rgba(255, 255, 255, 0.2); 
+  border: 1px solid var(--main-theme-color); /* التحديد يتغير لونه من فيربيس */
+  backdrop-filter: blur(10px);
 }
 
 /* تفاعلات عند الضغط */
