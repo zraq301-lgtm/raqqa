@@ -4,6 +4,9 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
+// استيراد خاصية فيربيس الجديدة
+import { applyRemoteSettings } from "./firebase-config";
+
 // استيراد الأصول (Assets)
 import healthImg from './assets/health.jpg';
 import feelingsImg from './assets/feelings.jpg';
@@ -112,10 +115,14 @@ function TipOverlay() {
 }
 
 function App() {
+  // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
+  useEffect(() => {
+    applyRemoteSettings();
+  }, []);
+
   // --- تحديث نظام حقن إعلانات Adsterra بالرابط الجديد ---
   useEffect(() => {
     const script = document.createElement('script');
-    // الرابط الجديد الذي أرسلته
     script.src = "https://pl29179331.profitablecpmratenetwork.com/42/41/78/424178ee7b8e5b65b4752caf48950fe0.js";
     script.async = true;
     script.type = 'text/javascript';
@@ -189,7 +196,6 @@ function App() {
       <ScrollToTop />
       <TipOverlay />
       
-      {/* الهيدر الجديد المضاف */}
       <header className="main-app-header" style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', borderBottom: '1px solid #eee' }}>
         <a 
           href="https://www.facebook.com/profile.php?id=61571056531349" 
