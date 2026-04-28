@@ -29,6 +29,10 @@
         android:hardwareAccelerated="true">
 
         <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-8025494804759906~1095489234" />
+
+        <meta-data
             android:name="com.startapp.sdk.APPLICATION_ID"
             android:value="203477356" />
 
