@@ -2,7 +2,6 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics"; 
 import { getFirestore } from "firebase/firestore";
-// --- إضافة استيراد Remote Config ---
 import { getRemoteConfig, fetchAndActivate, getString } from "firebase/remote-config";
 
 const firebaseConfig = {
@@ -15,40 +14,55 @@ const firebaseConfig = {
   measurementId: "G-QLKV71T66E" 
 };
 
+// تهيئة تطبيق فيربيس
 const app = initializeApp(firebaseConfig);
 
+// التصدير للاستخدام في المشروع
 export const db = getFirestore(app); 
 export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null; 
 
-// --- تفعيل Remote Config ---
+// --- إعداد Remote Config ---
 export const remoteConfig = typeof window !== "undefined" ? getRemoteConfig(app) : null;
 
 if (remoteConfig) {
-  // ضبط وقت التحديث (ساعة واحدة) أو اجعلها 0 أثناء التجربة لرؤية النتائج فوراً
-  remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
+  // تم ضبط القيمة على 0 لرؤية النتائج فوراً عند تغييرها من لوحة التحكم
+  remoteConfig.settings.minimumFetchIntervalMillis = 0;
+  
+  // وضع قيم افتراضية للتطبيق في حال لم يتوفر إنترنت
+  remoteConfig.defaultConfig = {
+    "app_name": "رقة",
+    "theme_color": "#FFC0CB"
+  };
 }
 
-// دالة لجلب القيم وتطبيقها (يمكنك استدعاؤها في App.jsx)
+// دالة جلب الإعدادات عن بعد وتطبيقها على واجهة التطبيق
 export const applyRemoteSettings = async () => {
   if (!remoteConfig) return;
   try {
+    // جلب القيم من السحابة وتفعيلها
     await fetchAndActivate(remoteConfig);
+    
     const appName = getString(remoteConfig, "app_name");
     const themeColor = getString(remoteConfig, "theme_color");
 
+    // تغيير عنوان التبويب في المتصفح تلقائياً
     if (appName) document.title = appName;
+
+    // تطبيق اللون المختار على متغير CSS ليتغير شكل التطبيق بالكامل
     if (themeColor) {
-      // تطبيق اللون على المتغيرات التي تستخدمها في ستايل الـ Glassmorphism
       document.documentElement.style.setProperty('--main-theme-color', themeColor);
+      console.log("تم تحديث لون الثيم إلى:", themeColor);
     }
   } catch (err) {
-    console.error("Remote Config Error:", err);
+    console.error("خطأ في جلب إعدادات Remote Config:", err);
   }
 };
 
-const messaging = getMessaging(app);
+// --- إعدادات الإشعارات (Firebase Messaging) ---
+const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
 
 export const requestForToken = async () => {
+  if (!messaging) return null;
   try {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
@@ -62,13 +76,15 @@ export const requestForToken = async () => {
       }
     }
   } catch (err) {
-    console.error("خطأ في جلب التوكن:", err);
+    console.error("خطأ في جلب توكن الإشعارات:", err);
   }
   return null;
 };
 
+// الاستماع للإشعارات أثناء فتح التطبيق
 export const onMessageListener = () =>
   new Promise((resolve) => {
+    if (!messaging) return;
     onMessage(messaging, (payload) => {
       console.log("وصل إشعار جديد:", payload);
       resolve(payload);
