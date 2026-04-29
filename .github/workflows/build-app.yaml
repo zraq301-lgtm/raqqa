@@ -42,7 +42,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 6. Inject Firebase, App Identity & AdMob (Clean Config)
+      - name: 6. Inject Firebase, App Identity & AdMob (Clean Manifest Overwrite)
         shell: bash
         run: |
           # حقن ملف جوجل
@@ -72,16 +72,46 @@ jobs:
           APP_GRADLE="android/app/build.gradle"
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           
-          # تعديل اسم التطبيق والحزمة
+          # تعديل اسم التطبيق والحزمة في الملفات الأساسية
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS
           sed -i 's/namespace ".*"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId ".*"/applicationId "com.raqqa.app"/' $APP_GRADLE
           
-          # إضافة الأذونات اللازمة وتصريح AD_ID الخاص بجوجل لضمان عمل AdMob بدون كراش
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' $MANIFEST
+          # إعادة كتابة المانيفست بالكامل لضمان عدم وجود أخطاء في التنسيق أو تكرار
+          cat <<EOF > $MANIFEST
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+              <uses-permission android:name="android.permission.RECORD_AUDIO" />
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 
-          # إضافة معرف AdMob APPLICATION ID (فقط) داخل وسم <application>
-          sed -i '/<application[^>]*>/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${{ secrets.ADMOB_APP_ID }}" />' $MANIFEST
+              <application
+                  android:allowBackup="true"
+                  android:icon="@mipmap/ic_launcher"
+                  android:label="@string/app_name"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:supportsRtl="true"
+                  android:theme="@style/AppTheme">
+
+                  <meta-data
+                      android:name="com.google.android.gms.ads.APPLICATION_ID"
+                      android:value="${{ secrets.ADMOB_APP_ID }}"/>
+
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true"
+                      android:theme="@style/AppTheme.NoActionBarLauncher"
+                      android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
 
       - name: 7. Generate App Icons & Splash
         run: |
