@@ -33,7 +33,7 @@ jobs:
         run: |
           rm -rf node_modules package-lock.json android ios dist_web
           npm install --legacy-peer-deps
-          # تثبيت الإضافات الضرورية لضمان وجودها في نظام البناء
+          # تثبيت الإضافات الضرورية لضمان وجودها
           npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
           npm run build
 
@@ -42,10 +42,10 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 6. Full Android System Construction (Firebase & AdMob Clean Build)
+      - name: 6. Inject Firebase, App Identity & AdMob (Clean Manifest Overwrite)
         shell: bash
         run: |
-          # أ- إنشاء ملف Google Services الفني
+          # حقن ملف جوجل
           cat <<EOF > android/app/google-services.json
           {
             "project_info": {
@@ -67,17 +67,17 @@ jobs:
           }
           EOF
 
-          # ب- تعريف مسارات الملفات الأساسية التي أنشأها Capacitor
+          # ملفات الإعدادات
           STRINGS="android/app/src/main/res/values/strings.xml"
           APP_GRADLE="android/app/build.gradle"
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           
-          # ج- ضبط هوية التطبيق (Namespace & Package) واسم التطبيق بالعربي
+          # تعديل اسم التطبيق والحزمة في الملفات الأساسية
           sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة<\/string>/' $STRINGS
           sed -i 's/namespace ".*"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId ".*"/applicationId "com.raqqa.app"/' $APP_GRADLE
           
-          # د- إعادة بناء المانيفست بالكامل (خارج الصندوق) لمنع أي تعارض مسبب للانهيار
+          # إعادة كتابة المانيفست بالكامل لضمان عدم وجود أخطاء في التنسيق أو تكرار
           cat <<EOF > $MANIFEST
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -116,7 +116,7 @@ jobs:
       - name: 7. Generate App Icons & Splash
         run: |
           mkdir -p assets
-          # جلب الصور من المشروع ووضعها في مجلد الأصول للإنتاج
+          # البحث عن الصور ونسخها للأصول
           find . -name "icon-only.png" -exec cp {} assets/icon-only.png \;
           find . -name "icon-background.png" -exec cp {} assets/icon-background.png \;
           find . -name "icon-foreground.png" -exec cp {} assets/icon-foreground.png \;
@@ -132,17 +132,17 @@ jobs:
 
       - name: 9. Sign APK & AAB
         run: |
-          # إنشاء مفتاح التوقيع الخاص بالتطبيق
+          # توليد مفتاح توقيع مؤقت
           keytool -genkey -v -keystore roqa_release.jks -alias roqa_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaApp, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع نسخة APK
+          # توقيع الـ APK
           APK_PATH=$(find android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks roqa_release.jks \
             --ks-pass pass:"roqa_pass_2026" --out Roqa-Final-Signed.apk "$APK_PATH"
           
-          # توقيع نسخة AAB (للمتجر)
+          # توقيع الـ AAB
           AAB_PATH=$(find android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore roqa_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" roqa_alias
           cp "$AAB_PATH" Roqa-Final-Signed.aab
