@@ -120,51 +120,12 @@ function TipOverlay() {
 function App() {
   const location = useLocation();
 
-  // --- نظام تشغيل إعلانات AdMob (وضع الاختبار) ---
-  useEffect(() => {
-    const initAds = async () => {
-      try {
-        await AdMob.initialize();
-
-        // إظهار البنر في الأسفل (وضع الاختبار مفعل)
-        await AdMob.showBanner({
-          adId: 'ca-app-pub-8025494804759906/6335462769',
-          position: BannerAdPosition.BOTTOM_CENTER,
-          size: BannerAdSize.ADAPTIVE_BANNER,
-          margin: 60,
-          isTesting: true // تم التغيير لـ true للاختبار
-        });
-      } catch (e) {
-        console.error("AdMob Init Error", e);
-      }
-    };
-    initAds();
-  }, []);
-
-  // إظهار إعلان بيني عند تغيير الصفحات (وضع الاختبار مفعل)
-  useEffect(() => {
-    const showInterstitial = async () => {
-      if (location.pathname === '/health' || location.pathname === '/virtual-world') {
-        try {
-          await AdMob.prepareInterstitial({
-            adId: 'ca-app-pub-8025494804759906/4391825704',
-            isTesting: true // تم التغيير لـ true للاختبار
-          });
-          await AdMob.showInterstitial();
-        } catch (e) {
-          console.error("Interstitial Error", e);
-        }
-      }
-    };
-    showInterstitial();
-  }, [location]);
+  // تم إزالة نظام إعلانات AdMob بناءً على طلبك لمنع الانهيار
 
   // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
   useEffect(() => {
     applyRemoteSettings();
   }, []);
-
-  // تم إزالة نظام إعلانات Adsterra من هنا بناءً على طلبك
 
   // --- نظام جدولة الإشعارات ---
   const syncNotifications = useCallback(async () => {
