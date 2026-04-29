@@ -42,7 +42,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 6. Inject Firebase, App Identity, AdMob & Start.io
+      - name: 6. Inject Firebase, App Identity & AdMob (Clean Config)
         shell: bash
         run: |
           # حقن ملف جوجل
@@ -77,15 +77,11 @@ jobs:
           sed -i 's/namespace ".*"/namespace "com.raqqa.app"/' $APP_GRADLE
           sed -i 's/applicationId ".*"/applicationId "com.raqqa.app"/' $APP_GRADLE
           
-          # إضافة الأذونات اللازمة (الإنترنت، الإشعارات، التسجيل)
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
+          # إضافة الأذونات اللازمة وتصريح AD_ID الخاص بجوجل لضمان عمل AdMob بدون كراش
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />' $MANIFEST
 
-          # إضافة معرف AdMob APPLICATION ID (حقن من الـ Secrets)
-          # يتم الحقن هنا لمنع الانهيار عند تشغيل مكتبة AdMob
+          # إضافة معرف AdMob APPLICATION ID (فقط) داخل وسم <application>
           sed -i '/<application[^>]*>/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${{ secrets.ADMOB_APP_ID }}" />' $MANIFEST
-
-          # إضافة معرفات Start.io داخل وسم <application> في المانيفست
-          sed -i '/<application[^>]*>/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />' $MANIFEST
 
       - name: 7. Generate App Icons & Splash
         run: |
