@@ -1,10 +1,11 @@
 import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react'; 
 import { App as CapApp } from '@capacitor/app'; 
-import { CapacitorHttp } from '@capacitor/core'; 
+import { CapacitorHttp, Capacitor } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// تم حذف استيراد مكتبة AdMob من هنا
+// استيراد مكتبة AdMob
+import { AdMob, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
 
 // استيراد خاصية فيربيس الجديدة
 import { applyRemoteSettings } from "./firebase-config";
@@ -119,9 +120,32 @@ function TipOverlay() {
 function App() {
   const location = useLocation();
 
-  // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
+  // --- إعداد وتشغيل الإعلانات عبر Firebase Remote Config ---
   useEffect(() => {
-    applyRemoteSettings();
+    const initializeAds = async () => {
+      // 1. جلب الإعدادات من فيربيس (بما فيها مفتاح الإعلانات والمعرفات)
+      const settings = await applyRemoteSettings();
+      
+      // 2. التحقق من الضوء الأخضر من السيرفر ومن أننا على منصة موبايل
+      if (settings?.enableAds && Capacitor.isNativePlatform()) {
+        try {
+          await AdMob.initialize();
+          
+          const bannerOptions = {
+            adId: settings.bannerId,
+            adSize: BannerAdSize.BANNER,
+            position: BannerAdPosition.BOTTOM_CENTER,
+            margin: 0
+          };
+          
+          await AdMob.showBanner(bannerOptions);
+        } catch (error) {
+          console.error("AdMob initialization failed:", error);
+        }
+      }
+    };
+
+    initializeAds();
   }, []);
 
   // --- نظام جدولة الإشعارات ---
