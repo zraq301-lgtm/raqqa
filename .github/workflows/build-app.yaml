@@ -42,7 +42,7 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: 6. Inject Firebase, App Identity & Ad Network (Start.io)
+      - name: 6. Inject Firebase, App Identity, AdMob & Start.io
         shell: bash
         run: |
           # حقن ملف جوجل
@@ -80,8 +80,11 @@ jobs:
           # إضافة الأذونات اللازمة (الإنترنت، الإشعارات، التسجيل)
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
 
+          # إضافة معرف AdMob APPLICATION ID (حقن من الـ Secrets)
+          # يتم الحقن هنا لمنع الانهيار عند تشغيل مكتبة AdMob
+          sed -i '/<application[^>]*>/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="${{ secrets.ADMOB_APP_ID }}" />' $MANIFEST
+
           # إضافة معرفات Start.io داخل وسم <application> في المانيفست
-          # تم إضافة App ID: 203477356
           sed -i '/<application[^>]*>/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />' $MANIFEST
 
       - name: 7. Generate App Icons & Splash
