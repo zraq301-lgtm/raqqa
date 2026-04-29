@@ -1,0 +1,60 @@
+{
+  "name": "raqqa-react-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build --outDir dist_web",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0",
+    "firebase": "^10.13.2",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/motion": "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0",
+    "@capacitor/share": "^6.0.0",
+    "@capacitor/camera": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "capacitor-voice-recorder": "^5.0.0",
+    "@vercel/blob": "^0.23.4",
+    "axios": "^1.6.7",
+    "framer-motion": "^11.0.8",
+    "lucide-react": "^0.344.0",
+    "sweetalert2": "^11.10.5",
+    "clsx": "^2.1.0",
+    "tailwind-merge": "^2.2.1",
+    "adhan": "^4.1.4",
+    "luxon": "^3.4.4",
+    "unsplash-js": "^7.0.19",
+    "styled-components": "^6.1.8",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor-community/fcm": "^6.0.0",
+    "fast-xml-parser": "^4.3.5"
+  },
+  "devDependencies": {
+    "firebase-admin": "^12.0.0",
+    "@vercel/postgres": "^0.9.0",
+    "pg": "^8.11.0",
+    "postgres": "^3.4.4",
+    "@vitejs/plugin-react": "^4.2.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/assets": "^3.0.5",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "vite": "^5.0.0",
+    "terser": "^5.27.0"
+  },
+  "overrides": {
+    "capacitor-voice-recorder": {
+      "@capacitor/core": "$@capacitor/core"
+    }
+  }
+}
