@@ -4,8 +4,7 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// استيراد مكتبة AdMob
-import { AdMob, BannerAdPosition, BannerAdSize } from '@capacitor-community/admob';
+// تم حذف استيراد مكتبة AdMob من هنا
 
 // استيراد خاصية فيربيس الجديدة
 import { applyRemoteSettings } from "./firebase-config";
@@ -119,8 +118,6 @@ function TipOverlay() {
 
 function App() {
   const location = useLocation();
-
-  // تم إزالة نظام إعلانات AdMob بناءً على طلبك لمنع الانهيار
 
   // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
   useEffect(() => {
