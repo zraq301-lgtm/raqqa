@@ -4,9 +4,10 @@ import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core'; 
 import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// تم حذف استيراد مكتبة AdMob من هنا
+// استيراد مكون الإعلان الجديد
+import AdBanner from './components/AdBanner';
 
-// استيراد خاصية فيربيس الجديدة
+// استيراد خاصية فيربيس
 import { applyRemoteSettings } from "./firebase-config";
 
 // استيراد الأصول (Assets)
@@ -220,6 +221,11 @@ function App() {
           <Route path="/virtual-world" element={<VirtualWorld />} />
         </Routes>
       </main>
+
+      {/* منطقة الإعلان - تظهر فوق القائمة السفلية مباشرة */}
+      <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '5px 0', backgroundColor: 'transparent' }}>
+         <AdBanner />
+      </div>
 
       <nav className="bottom-sticky-menu">
         <div className="nav-grid">
