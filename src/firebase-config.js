@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics"; 
 import { getFirestore } from "firebase/firestore";
-import { getRemoteConfig, fetchAndActivate, getString } from "firebase/remote-config";
+import { getRemoteConfig, fetchAndActivate, getString, getBoolean } from "firebase/remote-config";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCT2wRZgzPv1Xg3M41ZhN7-_RGze_HrZkk",
@@ -31,19 +31,27 @@ if (remoteConfig) {
   // وضع قيم افتراضية للتطبيق في حال لم يتوفر إنترنت
   remoteConfig.defaultConfig = {
     "app_name": "رقة",
-    "theme_color": "#FFC0CB"
+    "theme_color": "#FFC0CB",
+    "enable_ads": false, // مفتاح الأمان للإعلانات
+    "admob_banner_id": "ca-app-pub-8025494804759906/6335462769",
+    "admob_interstitial_id": "ca-app-pub-8025494804759906/4391825704"
   };
 }
 
 // دالة جلب الإعدادات عن بعد وتطبيقها على واجهة التطبيق
 export const applyRemoteSettings = async () => {
-  if (!remoteConfig) return;
+  if (!remoteConfig) return { enableAds: false };
   try {
     // جلب القيم من السحابة وتفعيلها
     await fetchAndActivate(remoteConfig);
     
     const appName = getString(remoteConfig, "app_name");
     const themeColor = getString(remoteConfig, "theme_color");
+    
+    // جلب قيم الإعلانات الجديدة
+    const enableAds = getBoolean(remoteConfig, "enable_ads");
+    const bannerId = getString(remoteConfig, "admob_banner_id");
+    const interstitialId = getString(remoteConfig, "admob_interstitial_id");
 
     // تغيير عنوان التبويب في المتصفح تلقائياً
     if (appName) document.title = appName;
@@ -53,8 +61,13 @@ export const applyRemoteSettings = async () => {
       document.documentElement.style.setProperty('--main-theme-color', themeColor);
       console.log("تم تحديث لون الثيم إلى:", themeColor);
     }
+
+    // إرجاع قيم الإعلانات لاستخدامها في App.jsx
+    return { enableAds, bannerId, interstitialId };
+
   } catch (err) {
     console.error("خطأ في جلب إعدادات Remote Config:", err);
+    return { enableAds: false };
   }
 };
 
