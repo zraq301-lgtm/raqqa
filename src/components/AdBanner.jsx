@@ -2,61 +2,68 @@ import React, { useEffect, useState } from 'react';
 import { remoteConfig } from '../firebase-config'; 
 import { getValue, fetchAndActivate } from "firebase/remote-config";
 
-const AdBanner = () => {
-  const [adSettings, setAdSettings] = useState({ show: true, unitId: 'ca-app-pub-3940256099942544/6300978111' }); // وضعنا كود تجريبي وقيمة true مبدئياً للاختبار
+/**
+ * مكون الإعلانات الديناميكي
+ * @param {string} slotId - معرف فريد للحاوية (يجب أن يكون مختلفاً لكل إعلان في نفس الصفحة)
+ * @param {string} configName - اسم المتغير في فيربيس الذي يحتوي على كود الإعلان
+ * @param {string} showConfigName - اسم المتغير في فيربيس المسؤول عن إظهار/إخفاء الإعلان
+ */
+const AdBanner = ({ 
+  slotId = 'div-gpt-ad-main', 
+  configName = 'ad_unit_id', 
+  showConfigName = 'show_ads' 
+}) => {
+  const [adSettings, setAdSettings] = useState({ show: false, unitId: '' });
 
   useEffect(() => {
     const initAd = async () => {
       try {
-        // 1. محاولة جلب الإعدادات من فيربيس
+        // 1. جلب الإعدادات من فيربيس
         await fetchAndActivate(remoteConfig);
-        const firebaseShow = getValue(remoteConfig, "show_ads").asBoolean();
-        const firebaseUnitId = getValue(remoteConfig, "ad_unit_id").asString();
+        const firebaseShow = getValue(remoteConfig, showConfigName).asBoolean();
+        const firebaseUnitId = getValue(remoteConfig, configName).asString();
         
-        // تحديث الإعدادات بالقيم القادمة من فيربيس
-        if (firebaseUnitId) {
-            setAdSettings({ show: firebaseShow, unitId: firebaseUnitId });
-        }
+        setAdSettings({ show: firebaseShow, unitId: firebaseUnitId });
 
-        // 2. تشغيل إعلانات جوجل
-        if (window.googletag) {
+        // 2. تشغيل إعلانات جوجل إذا كان مفعلًا
+        if (firebaseShow && firebaseUnitId && window.googletag) {
           window.googletag.cmd.push(function() {
-            // تنظيف الحاوية
-            const container = document.getElementById('div-gpt-ad');
+            const container = document.getElementById(slotId);
             if (container) container.innerHTML = '';
 
-            window.googletag.defineSlot(firebaseUnitId || 'ca-app-pub-3940256099942544/6300978111', [320, 50], 'div-gpt-ad')
+            // تعريف المساحة الإعلانية (يدعم الحجم القياسي للموبايل 320x50)
+            window.googletag.defineSlot(firebaseUnitId, [320, 50], slotId)
                      .addService(window.googletag.pubads());
+            
             window.googletag.enableServices();
-            window.googletag.display('div-gpt-ad');
+            window.googletag.display(slotId);
           });
         }
       } catch (e) {
-        console.error("Firebase/AdMob Error:", e);
+        console.error(`AdMob Error (${configName}):`, e);
       }
     };
 
     initAd();
-  }, []);
+  }, [slotId, configName, showConfigName]);
 
   if (!adSettings.show) return null;
 
   return (
-    <div className="ad-container" style={{ 
+    <div className="global-ad-wrapper" style={{ 
       display: 'flex', 
       justifyContent: 'center', 
       margin: '10px 0', 
       width: '100%',
       minHeight: '50px'
     }}>
-      {/* أضفت خلفية رمادية خفيفة عشان نحدد مكان الإعلان وقت الفحص */}
-      <div id="div-gpt-ad" style={{ 
+      <div id={slotId} style={{ 
         width: '320px', 
         height: '50px', 
-        backgroundColor: '#f0f0f0', 
-        border: '1px dashed #ccc' 
+        backgroundColor: 'transparent', 
+        border: 'none' 
       }}>
-        <small style={{color: '#ccc', fontSize: '10px'}}>جاري تحميل الإعلان...</small>
+        {/* ملاحظة: سيتم رسم الإعلان هنا بواسطة مكتبة جوجل */}
       </div>
     </div>
   );
