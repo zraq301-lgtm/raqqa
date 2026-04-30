@@ -195,6 +195,11 @@ function App() {
           تواصل معنا
         </a>
       </header>
+
+      {/* منطقة الإعلان - تم نقلها للأعلى هنا لضمان الظهور */}
+      <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+          <AdBanner />
+      </div>
       
       <header className="top-sticky-menu">
         <div className="top-cards-container">
@@ -221,11 +226,6 @@ function App() {
           <Route path="/virtual-world" element={<VirtualWorld />} />
         </Routes>
       </main>
-
-      {/* منطقة الإعلان - تظهر فوق القائمة السفلية مباشرة */}
-      <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '5px 0', backgroundColor: 'transparent' }}>
-         <AdBanner />
-      </div>
 
       <nav className="bottom-sticky-menu">
         <div className="nav-grid">
