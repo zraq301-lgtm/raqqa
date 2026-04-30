@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapacitorHttp } from '@capacitor/core'; 
 
+// استدعاء مكون الإعلان
+import AdBanner from '../components/AdBanner';
+
 // استدعاء الصفحات بناءً على القائمة الموجودة
 import Home from '../pages/SwingPage/Home';
 import CulinaryArts from '../pages/SwingPage/CulinaryArts';
@@ -18,7 +21,7 @@ const SwingForum = () => {
   const [isUpdating, setIsUpdating] = useState(false); 
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1.0.2';
 
-  // ترتيب الأيقونات والمسميات بعد حذف المتجر وتعديل مسمى الأناقة
+  // ترتيب الأيقونات والمسميات
   const sections = [
     { id: 'Home', label: 'الرئيسية', icon: '🏠' },
     { id: 'EleganceIcon', label: 'أيقونة الأناقة', icon: '✨' },
@@ -55,7 +58,6 @@ const SwingForum = () => {
           --soft-bg: #fff5f7;
           --glass-white: rgba(255, 255, 255, 0.95);
         }
-        /* ضبط الحاوية لتملأ الشاشة بالكامل */
         .app-container { 
           display: flex; 
           flex-direction: column; 
@@ -73,7 +75,7 @@ const SwingForum = () => {
         .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: white; border-bottom: 1px solid var(--female-pink-light); z-index: 100; }
         .back-btn { background: var(--female-pink); color: white; border: none; padding: 7px 18px; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(255, 77, 125, 0.2); }
         
-        .glass-header-nav { display: flex; overflow-x: auto; padding: 12px 10px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 10px; scrollbar-width: none; }
+        .glass-header-nav { display: flex; overflow-x: auto; padding: 12px 10px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 10px; scrollbar-width: none; flex-shrink: 0; }
         .glass-header-nav::-webkit-scrollbar { display: none; }
 
         .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 8px 16px; background: white; border-radius: 16px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; min-width: 85px; }
@@ -85,7 +87,18 @@ const SwingForum = () => {
         
         .main-display-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
 
-        .update-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: white; border-top: 1px solid #eee; font-size: 10px; color: #888; }
+        /* تنسيق حاوية الإعلان البيئي */
+        .ad-wrapper {
+          width: 100%;
+          background: white;
+          padding: 5px 0;
+          border-top: 1px solid var(--female-pink-light);
+          display: flex;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .update-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: white; border-top: 1px solid #eee; font-size: 10px; color: #888; flex-shrink: 0; }
       `}</style>
 
       {/* شريط علوي */}
@@ -111,10 +124,17 @@ const SwingForum = () => {
         ))}
       </nav>
 
+      {/* منطقة العرض الرئيسية */}
       <div className="main-display-area">
         {renderCurrentPage()}
       </div>
 
+      {/* مساحة إعلانية بالأسفل (إعلان بيئي) */}
+      <div className="ad-wrapper">
+        <AdBanner />
+      </div>
+
+      {/* الفوتر */}
       <footer className="update-footer">
         <span>نسخة رقة: {currentBuildVersion}</span>
         <span>صنع بكل حب لـ رقة ✨</span>
