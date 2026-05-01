@@ -1,146 +1,271 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
+import { useEffect, useState, useCallback } from 'react'; 
+import { App as CapApp } from '@capacitor/app'; 
 import { CapacitorHttp } from '@capacitor/core'; 
+import { LocalNotifications } from '@capacitor/local-notifications'; 
 
-// استدعاء مكون الإعلان
-import AdBanner from '../components/AdBanner';
+// استيراد مكون الإعلان الجديد
+import AdBanner from './components/AdBanner';
 
-// استدعاء الصفحات بناءً على القائمة الموجودة
-import Home from '../pages/SwingPage/Home';
-import CulinaryArts from '../pages/SwingPage/CulinaryArts';
-import EleganceIcon from '../pages/SwingPage/EleganceIcon';
-import EmpowermentPaths from '../pages/SwingPage/EmpowermentPaths';
-import HomeCorners from '../pages/SwingPage/HomeCorners';
-import LittleOnesAcademy from '../pages/SwingPage/LittleOnesAcademy';
-import MotherhoodHaven from '../pages/SwingPage/MotherhoodHaven';
-import PassionsCrafts from '../pages/SwingPage/PassionsCrafts';
-import SoulsLounge from '../pages/SwingPage/SoulsLounge';
-import WellnessOasis from '../pages/SwingPage/WellnessOasis';
+// استيراد خاصية فيربيس
+import { applyRemoteSettings } from "./firebase-config";
 
-const SwingForum = () => {
-  const [activeTab, setActiveTab] = useState('Home');
-  const [isUpdating, setIsUpdating] = useState(false); 
-  const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1.0.2';
+// استيراد الأصول (Assets)
+import healthImg from './assets/health.jpg';
+import feelingsImg from './assets/feelings.jpg';
+import intimacyImg from './assets/intimacy.jpg';
+import swingImg from './assets/swing.jpg';
+import insightImg from './assets/insight.jpg';
+import videosImg from './assets/videos.jpg';
+import virtualImg from './assets/virtual.jpg';
 
-  // ترتيب الأيقونات والمسميات
-  const sections = [
-    { id: 'Home', label: 'الرئيسية', icon: '🏠' },
-    { id: 'EleganceIcon', label: 'أيقونة الأناقة', icon: '✨' },
-    { id: 'PassionsCrafts', label: 'شغف وحرف', icon: '🎨' },
-    { id: 'MotherhoodHaven', label: 'ملاذ الأمومة', icon: '🍼' },
-    { id: 'WellnessOasis', label: 'واحة العافية', icon: '🌿' },
-    { id: 'CulinaryArts', label: 'فنون الطهي', icon: '🍳' },
-    { id: 'EmpowermentPaths', label: 'دروب التمكين', icon: '🚀' },
-    { id: 'HomeCorners', label: 'زوايا المنزل', icon: '🏡' },
-    { id: 'SoulsLounge', label: 'رواق الأرواح', icon: '🌙' },
-  ];
+// استيراد الصفحات
+import Health from './pages/Health';
+import Feelings from './pages/Feelings';
+import Intimacy from './pages/Intimacy';
+import Swing from './pages/Swing';
+import Insight from './pages/Insight';
+import Videos from './pages/Videos';
+import VirtualWorld from './pages/VirtualWorld';
 
-  const renderCurrentPage = () => {
-    switch (activeTab) {
-      case 'Home': return <Home />;
-      case 'EleganceIcon': return <EleganceIcon />;
-      case 'PassionsCrafts': return <PassionsCrafts />;
-      case 'MotherhoodHaven': return <MotherhoodHaven />;
-      case 'WellnessOasis': return <WellnessOasis />;
-      case 'CulinaryArts': return <CulinaryArts />;
-      case 'EmpowermentPaths': return <EmpowermentPaths />;
-      case 'HomeCorners': return <HomeCorners />;
-      case 'SoulsLounge': return <SoulsLounge />;
-      default: return <Home />;
+import './App.css';
+
+/**
+ * وظيفة لضمان صعود التمرير للأعلى عند تغيير الصفحة
+ */
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { 
+    window.scrollTo(0, 0); 
+  }, [pathname]);
+  return null;
+}
+
+/**
+ * مكون النصيحة الذكية (TipOverlay)
+ */
+function TipOverlay() {
+  const [tip, setTip] = useState(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const checkAndShowTip = async () => {
+      const today = new Date().toLocaleDateString();
+      const tipData = JSON.parse(localStorage.getItem('raqqa_tip_tracker') || '{"date":"","count":0}');
+      
+      if (tipData.date !== today) {
+        tipData.date = today;
+        tipData.count = 0;
+      }
+
+      if (tipData.count < 2) {
+        try {
+          const response = await fetch('https://raqqa-ruddy.vercel.app/api/tips');
+          const data = await response.json();
+          if (data.content) {
+            setTip(data.content);
+            setIsVisible(true);
+            tipData.count += 1;
+            localStorage.setItem('raqqa_tip_tracker', JSON.stringify(tipData));
+            setTimeout(() => setIsVisible(false), 20000);
+          }
+        } catch (err) {
+          console.error("Tip Fetch Error:", err);
+        }
+      }
+    };
+    checkAndShowTip();
+  }, [pathname]);
+
+  if (!isVisible || !tip) return null;
+
+  const renderContent = () => {
+    const content = tip.trim();
+    if (content.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+      return <img src={content} alt="رقة نصيحة" className="tip-media-content" />;
     }
+    if (content.includes('youtube.com') || content.includes('youtu.be')) {
+      let videoId = content.split('v=')[1] || content.split('/').pop();
+      if (videoId.includes('&')) videoId = videoId.split('&')[0];
+      return (
+        <div className="tip-video-wrapper">
+          <iframe 
+            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
+            title="فيديو رقة"
+            frameBorder="0"
+            allow="autoplay; encrypted-media"
+            allowFullScreen
+          ></iframe>
+        </div>
+      );
+    }
+    return <p className="tip-text-content">{tip}</p>;
   };
 
   return (
-    <div className="app-container">
-      <style>{`
-        :root {
-          --female-pink: #ff4d7d;
-          --female-pink-light: rgba(255, 77, 125, 0.15);
-          --soft-bg: #fff5f7;
-          --glass-white: rgba(255, 255, 255, 0.95);
-        }
-        .app-container { 
-          display: flex; 
-          flex-direction: column; 
-          height: 100vh; 
-          width: 100vw; 
-          background-color: var(--soft-bg); 
-          direction: rtl; 
-          font-family: 'Tajawal', sans-serif; 
-          position: fixed; 
-          top: 0; 
-          left: 0; 
-          overflow: hidden; 
-        }
-        
-        .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: white; border-bottom: 1px solid var(--female-pink-light); z-index: 100; }
-        .back-btn { background: var(--female-pink); color: white; border: none; padding: 7px 18px; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(255, 77, 125, 0.2); }
-        
-        .glass-header-nav { display: flex; overflow-x: auto; padding: 12px 10px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 10px; scrollbar-width: none; flex-shrink: 0; }
-        .glass-header-nav::-webkit-scrollbar { display: none; }
-
-        .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 8px 16px; background: white; border-radius: 16px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; min-width: 85px; }
-        .section-item.active { background: var(--female-pink); transform: scale(1.05); }
-        .section-item.active .s-label, .section-item.active .s-icon { color: white; }
-        
-        .s-icon { font-size: 1.3rem; margin-bottom: 2px; }
-        .s-label { font-size: 0.7rem; font-weight: bold; color: var(--female-pink); }
-        
-        .main-display-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
-
-        /* تنسيق حاوية الإعلان البيئي */
-        .ad-wrapper {
-          width: 100%;
-          background: white;
-          padding: 5px 0;
-          border-top: 1px solid var(--female-pink-light);
-          display: flex;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-
-        .update-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: white; border-top: 1px solid #eee; font-size: 10px; color: #888; flex-shrink: 0; }
-      `}</style>
-
-      {/* شريط علوي */}
-      <header className="top-bar">
-        <button className="back-btn" onClick={() => window.location.href = "/"}>
-          <span>🔙</span> خروج
-        </button>
-        <span style={{ fontWeight: '900', color: '#ff4d7d', fontSize: '1.2rem' }}>رقة</span>
-        <div style={{ width: '40px' }}></div>
-      </header>
-
-      {/* التنقل العلوي */}
-      <nav className="glass-header-nav">
-        {sections.map((sec) => (
-          <div 
-            key={sec.id} 
-            className={`section-item ${activeTab === sec.id ? 'active' : ''}`} 
-            onClick={() => setActiveTab(sec.id)}
-          >
-            <span className="s-icon">{sec.icon}</span>
-            <span className="s-label">{sec.label}</span>
-          </div>
-        ))}
-      </nav>
-
-      {/* منطقة العرض الرئيسية */}
-      <div className="main-display-area">
-        {renderCurrentPage()}
+    <div className="tip-card-overlay" onClick={() => setIsVisible(false)}>
+      <div className="tip-card-content" onClick={(e) => e.stopPropagation()}>
+        <div className="tip-header">
+          <span className="tip-icon">💡 إشراقة رقة</span>
+          <button className="tip-close-btn" onClick={() => setIsVisible(false)}>×</button>
+        </div>
+        <div className="tip-body">{renderContent()}</div>
+        <div className="tip-timer-bar"></div>
       </div>
-
-      {/* مساحة إعلانية بالأسفل (إعلان بيئي) */}
-      <div className="ad-wrapper">
-        <AdBanner />
-      </div>
-
-      {/* الفوتر */}
-      <footer className="update-footer">
-        <span>نسخة رقة: {currentBuildVersion}</span>
-        <span>صنع بكل حب لـ رقة ✨</span>
-      </footer>
     </div>
   );
-};
+}
 
-export default SwingForum;
+function App() {
+  const location = useLocation();
+
+  // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
+  useEffect(() => {
+    applyRemoteSettings();
+  }, []);
+
+  // --- نظام جدولة الإشعارات ---
+  const syncNotifications = useCallback(async () => {
+    try {
+      const response = await CapacitorHttp.get({
+        url: 'https://raqqa-hjl8.vercel.app/api/get-notifications',
+        params: { user_id: "1" }
+      });
+
+      if (response.data && response.data.rows) {
+        const reminders = response.data.rows;
+        const perms = await LocalNotifications.checkPermissions();
+        if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
+
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.length > 0) {
+          await LocalNotifications.cancel({ notifications: pending.notifications });
+        }
+
+        const notificationsToSchedule = reminders
+          .filter(rem => new Date(rem.scheduled_for) > new Date())
+          .map(rem => ({
+            id: parseInt(rem.id),
+            title: rem.title,
+            body: rem.body,
+            schedule: { at: new Date(rem.scheduled_for) },
+            extra: { url: rem.image_url },
+            smallIcon: 'ic_stat_name',
+            sound: 'default'
+          }));
+
+        if (notificationsToSchedule.length > 0) {
+          await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+        }
+      }
+    } catch (err) {
+      console.error("Notification Sync Error:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    syncNotifications();
+
+    const setupBackButton = async () => {
+      return await CapApp.addListener('backButton', ({ canGoBack }) => {
+        if (!canGoBack) { 
+          CapApp.exitApp(); 
+        } else { 
+          window.history.back(); 
+        }
+      });
+    };
+    const listener = setupBackButton();
+    return () => { listener.then(l => l.remove()); };
+  }, [syncNotifications]);
+
+  return (
+    <div className="app-container" style={{ paddingTop: '70px' }}> {/* إضافة padding علوي لترك مساحة للإعلان المثبت */}
+      <ScrollToTop />
+      <TipOverlay />
+      
+      {/* منطقة الإعلان - محجوزة في أعلى الشاشة تماماً لضمان الظهور */}
+      <div className="global-ad-container" style={{ 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        width: '100%', 
+        zIndex: 9999, 
+        display: 'flex', 
+        justifyContent: 'center', 
+        backgroundColor: '#fff', 
+        boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+        minHeight: '60px' 
+      }}>
+          <AdBanner />
+      </div>
+
+      <header className="main-app-header" style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', borderBottom: '1px solid #eee' }}>
+        <a 
+          href="https://www.facebook.com/profile.php?id=61571056531349" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none', color: '#1877F2', fontWeight: 'bold', fontSize: '16px' }}
+        >
+          تواصل معنا
+        </a>
+      </header>
+      
+      <header className="top-sticky-menu">
+        <div className="top-cards-container">
+          <Link to="/videos" className="top-card">
+            <img src={videosImg} alt="المكتبة" className="custom-img-icon" />
+            <div className="card-text"><span className="card-label">المكتبة</span></div>
+          </Link>
+          <Link to="/virtual-world" className="top-card">
+            <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
+            <div className="card-text"><span className="card-label">عالم رقة</span></div>
+          </Link>
+        </div>
+      </header>
+      
+      <main className="main-content">
+        <Routes>
+          <Route path="/" element={<Navigate to="/health" />} />
+          <Route path="/health" element={<Health />} />
+          <Route path="/feelings" element={<Feelings />} />
+          <Route path="/intimacy" element={<Intimacy />} />
+          <Route path="/swing-forum" element={<Swing />} />
+          <Route path="/insight" element={<Insight />} />
+          <Route path="/videos" element={<Videos />} />
+          <Route path="/virtual-world" element={<VirtualWorld />} />
+        </Routes>
+      </main>
+
+      <nav className="bottom-sticky-menu">
+        <div className="nav-grid">
+          <Link to="/feelings" className="nav-item">
+            <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
+            <span className="nav-label">المشاعر</span>
+          </Link>
+          <Link to="/intimacy" className="nav-item">
+            <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
+            <span className="nav-label">الحميمية</span>
+          </Link>
+          <Link to="/health" className="nav-item center-action">
+            <div className="center-circle">
+              <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
+            </div>
+            <span className="nav-label bold">صحتك</span>
+          </Link>
+          <Link to="/swing-forum" className="nav-item">
+            <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
+            <span className="nav-label">الأرجوحة</span>
+          </Link>
+          <Link to="/insight" className="nav-item">
+            <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
+            <span className="nav-label">القفقة</span>
+          </Link>
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+export default App;
