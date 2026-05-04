@@ -120,47 +120,50 @@ function TipOverlay() {
 function App() {
   const location = useLocation();
 
-  // --- إضافة خاصية Remote Config عند تشغيل التطبيق ---
   useEffect(() => {
     applyRemoteSettings();
   }, []);
 
-  // --- نظام جدولة الإشعارات ---
+  // --- نظام المزامنة والجدولة المحلية (بدون إنترنت) ---
   const syncNotifications = useCallback(async () => {
     try {
-      const response = await CapacitorHttp.get({
-        url: 'https://raqqa-hjl8.vercel.app/api/get-notifications',
-        params: { user_id: "1" }
-      });
+      // 1. سحب البيانات من التخزين المحلي (localStorage) التي تخزنها الأقسام
+      const localData = localStorage.getItem('raqqa_local_reminders');
+      if (!localData) return;
 
-      if (response.data && response.data.rows) {
-        const reminders = response.data.rows;
-        const perms = await LocalNotifications.checkPermissions();
-        if (perms.display !== 'granted') await LocalNotifications.requestPermissions();
+      const reminders = JSON.parse(localData);
 
-        const pending = await LocalNotifications.getPending();
-        if (pending.notifications.length > 0) {
-          await LocalNotifications.cancel({ notifications: pending.notifications });
-        }
+      // 2. التحقق من أذونات الأندرويد
+      const perms = await LocalNotifications.checkPermissions();
+      if (perms.display !== 'granted') {
+        await LocalNotifications.requestPermissions();
+      }
 
-        const notificationsToSchedule = reminders
-          .filter(rem => new Date(rem.scheduled_for) > new Date())
-          .map(rem => ({
-            id: parseInt(rem.id),
-            title: rem.title,
-            body: rem.body,
-            schedule: { at: new Date(rem.scheduled_for) },
-            extra: { url: rem.image_url },
-            smallIcon: 'ic_stat_name',
-            sound: 'default'
-          }));
+      // 3. تنظيف الجدولة القديمة لتجنب التكرار
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length > 0) {
+        await LocalNotifications.cancel({ notifications: pending.notifications });
+      }
 
-        if (notificationsToSchedule.length > 0) {
-          await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-        }
+      // 4. جدولة البيانات الجديدة على الجهاز فوراً
+      const notificationsToSchedule = reminders
+        .filter(rem => new Date(rem.scheduled_for) > new Date())
+        .map(rem => ({
+          id: Math.floor(Math.random() * 10000), // معرف فريد لكل إشعار
+          title: rem.title,
+          body: rem.body,
+          schedule: { at: new Date(rem.scheduled_for) },
+          extra: { url: rem.image_url },
+          smallIcon: 'ic_stat_name',
+          sound: 'default'
+        }));
+
+      if (notificationsToSchedule.length > 0) {
+        await LocalNotifications.schedule({ notifications: notificationsToSchedule });
+        console.log("✅ تمت جدولة الإشعارات محلياً بنجاح");
       }
     } catch (err) {
-      console.error("Notification Sync Error:", err);
+      console.error("Local Notification Sync Error:", err);
     }
   }, []);
 
@@ -178,7 +181,7 @@ function App() {
     };
     const listener = setupBackButton();
     return () => { listener.then(l => l.remove()); };
-  }, [syncNotifications]);
+  }, [syncNotifications, location.pathname]); // يتم التحديث عند تغيير الصفحة لضمان المزامنة
 
   return (
     <div className="app-container">
@@ -196,7 +199,6 @@ function App() {
         </a>
       </header>
 
-      {/* منطقة الإعلان - تم نقلها للأعلى هنا لضمان الظهور */}
       <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
           <AdBanner />
       </div>
