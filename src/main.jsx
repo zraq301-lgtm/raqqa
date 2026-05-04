@@ -6,6 +6,7 @@ import SplashScreen from './SplashScreen';
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm'; 
 
@@ -39,14 +40,13 @@ const Main = () => {
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      const setupPush = async () => {
+      const setupNotifications = async () => {
         try {
-          // التعامل مع الإشعارات عند التسجيل
+          // 1. إعداد مستمعات إشعارات فيربيس (Push)
           await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
             
             try {
-              // الاشتراك في قناة جميع المستخدمين
               await FCM.subscribeTo({ topic: 'all_users' });
               console.log("✅ Subscribed to all_users topic");
             } catch (err) {
@@ -54,31 +54,46 @@ const Main = () => {
             }
           });
 
-          // عند استلام إشعار والتطبيق مفتوح
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-            console.log("📩 إشعار جديد:", notification.title);
+            console.log("📩 إشعار Push جديد:", notification.title);
           });
 
-          // عند النقر على الإشعار
           await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-            console.log("🖱️ تم النقر على الإشعار:", notification.actionId);
+            console.log("🖱️ تم النقر على إشعار Push:", notification.actionId);
           });
 
-          // طلب الصلاحيات
-          let permStatus = await PushNotifications.checkPermissions();
-          if (permStatus.receive === 'prompt') {
-            permStatus = await PushNotifications.requestPermissions();
+          // 2. إعداد مستمعات الإشعارات المحلية (Local)
+          await LocalNotifications.addListener('localNotificationReceived', (notification) => {
+            console.log("🔔 إشعار محلي مستلم:", notification.title);
+          });
+
+          await LocalNotifications.addListener('localNotificationActionPerformed', (notification) => {
+            console.log("🖱️ تم النقر على الإشعار المحلي:", notification.actionId);
+          });
+
+          // 3. طلب الأذونات للاثنين معاً في خطوة واحدة
+          // نطلب إذن Push وإذن Local Notifications
+          let pushPerm = await PushNotifications.checkPermissions();
+          let localPerm = await LocalNotifications.checkPermissions();
+
+          if (pushPerm.receive === 'prompt' || localPerm.display === 'prompt') {
+            // طلب الأذونات بشكل متزامن
+            await PushNotifications.requestPermissions();
+            await LocalNotifications.requestPermissions();
           }
 
-          if (permStatus.receive === 'granted') {
+          // تفعيل التسجيل في فيربيس إذا تم قبول الإذن
+          const finalPushPerm = await PushNotifications.checkPermissions();
+          if (finalPushPerm.receive === 'granted') {
             await PushNotifications.register();
           }
+
         } catch (error) {
-          console.error("Push Init Error:", error);
+          console.error("Notifications Init Error:", error);
         }
       };
 
-      setupPush();
+      setupNotifications();
     }
   }, []); 
 
