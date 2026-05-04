@@ -13,6 +13,7 @@ const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
 const Health = () => {
   const [activeTab, setActiveTab] = useState(null);
 
+  // تم تحديث أسماء الصور لتطابق أسماء صور الإشعارات في المجلد العام (public)
   const sections = [
     { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, pos: { gridColumn: '1', gridRow: '1' } },
     { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '2', gridRow: '1' } },
@@ -98,6 +99,10 @@ const Health = () => {
     <div style={styles.container}>
       {sections.map((sec) => {
         const Icon = iconMap[sec.icon] || iconMap.insight;
+        
+        // استخدام المسار النسبي للأصول لضمان عمل الصور داخل واجهة التطبيق
+        const imageSource = new URL(`../assets/health/${sec.img}`, import.meta.url).href;
+
         return (
           <div 
             key={sec.id} 
@@ -105,7 +110,7 @@ const Health = () => {
             onClick={() => setActiveTab(sec.id)}
           >
             <img 
-              src={new URL(`../assets/health/${sec.img}`, import.meta.url).href} 
+              src={imageSource} 
               alt={sec.title} 
               style={styles.image} 
             />
