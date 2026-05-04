@@ -120,8 +120,26 @@ function TipOverlay() {
 function App() {
   const location = useLocation();
 
+  // --- إنشاء قناة الإشعارات للصوت والأولوية القصوى ---
   useEffect(() => {
-    applyRemoteSettings();
+    const initNotifications = async () => {
+      applyRemoteSettings();
+      try {
+        await LocalNotifications.createChannel({
+          id: 'raqqa_main_channel',
+          name: 'إشعارات رقة الذكية',
+          description: 'تنبيهات الصحة، المشاعر، والمواعيد الخاصة بكِ',
+          importance: 5, // أقصى أهمية للصوت والظهور المنبثق
+          visibility: 1,
+          sound: 'default', // تفعيل الصوت الافتراضي
+          vibration: true,
+        });
+        console.log("✅ تم إنشاء قناة إشعارات رقة بنجاح");
+      } catch (e) {
+        console.error("Channel creation error", e);
+      }
+    };
+    initNotifications();
   }, []);
 
   // --- نظام المزامنة والجدولة المحلية المتطور ---
@@ -144,21 +162,40 @@ function App() {
 
       const notificationsToSchedule = reminders
         .filter(rem => new Date(rem.scheduled_for) > new Date())
-        .map(rem => ({
-          id: Math.floor(Math.random() * 1000000),
-          title: rem.title,
-          body: rem.body, // هنا يتم تمرير التقارير الطويلة
-          schedule: { at: new Date(rem.scheduled_for) },
-          sound: 'default', // تفعيل التنبيه الصوتي الافتراضي للأندرويد
-          attachments: rem.image_url ? [{ id: 'res', url: rem.image_url }] : [],
-          extra: { report: rem.body },
-          smallIcon: 'ic_stat_name',
-          actionTypeId: ''
-        }));
+        .map(rem => {
+          // --- منطق تحديد الصورة المتخصصة لكل قسم ---
+          let sectionIcon = 'ic_stat_name'; // الافتراضي (أيقونة التطبيق)
+          const title = rem.title || "";
+          
+          if (title.includes('صحة') || title.includes('دورة') || title.includes('تحليل')) {
+            sectionIcon = 'health_notify'; // ابحث عن health_notify.png في drawable
+          } else if (title.includes('مشاعر') || title.includes('قلق') || title.includes('مزاج')) {
+            sectionIcon = 'feelings_notify';
+          } else if (title.includes('حميمية')) {
+            sectionIcon = 'intimacy_notify';
+          } else if (title.includes('أرجوحة') || title.includes('منتدى')) {
+            sectionIcon = 'swing_notify';
+          } else if (title.includes('إشراقة') || title.includes('نصيحة')) {
+            sectionIcon = 'insight_notify';
+          }
+
+          return {
+            id: Math.floor(Math.random() * 1000000),
+            title: rem.title,
+            body: rem.body,
+            schedule: { at: new Date(rem.scheduled_for) },
+            channelId: 'raqqa_main_channel', // ربط القناة لتفعيل الصوت
+            sound: 'default',
+            smallIcon: 'ic_stat_name', // الأيقونة الصغيرة العلوية (يجب أن تكون بيضاء شفافة)
+            largeIcon: sectionIcon,    // أيقونة القسم الجانبية
+            attachments: [{ id: 'res', url: sectionIcon }], // عرض الصورة بشكل كبير أسفل الإشعار
+            extra: { report: rem.body }
+          };
+        });
 
       if (notificationsToSchedule.length > 0) {
         await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-        console.log("✅ تمت جدولة التقارير الذكية مع الصوت بنجاح");
+        console.log("✅ تمت جدولة التقارير المتخصصة بالصور والصوت");
       }
     } catch (err) {
       console.error("Local Notification Sync Error:", err);
@@ -168,7 +205,6 @@ function App() {
   useEffect(() => {
     syncNotifications();
 
-    // الاستماع لحدث الحفظ الفوري من الأقسام
     const handleTrigger = () => {
       console.log("🔔 استقبال طلب مزامنة فوري للتقرير...");
       syncNotifications();
