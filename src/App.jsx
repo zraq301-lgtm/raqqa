@@ -124,43 +124,41 @@ function App() {
     applyRemoteSettings();
   }, []);
 
-  // --- نظام المزامنة والجدولة المحلية (بدون إنترنت) ---
+  // --- نظام المزامنة والجدولة المحلية المتطور ---
   const syncNotifications = useCallback(async () => {
     try {
-      // 1. سحب البيانات من التخزين المحلي (localStorage) التي تخزنها الأقسام
       const localData = localStorage.getItem('raqqa_local_reminders');
       if (!localData) return;
 
       const reminders = JSON.parse(localData);
 
-      // 2. التحقق من أذونات الأندرويد
       const perms = await LocalNotifications.checkPermissions();
       if (perms.display !== 'granted') {
         await LocalNotifications.requestPermissions();
       }
 
-      // 3. تنظيف الجدولة القديمة لتجنب التكرار
       const pending = await LocalNotifications.getPending();
       if (pending.notifications.length > 0) {
         await LocalNotifications.cancel({ notifications: pending.notifications });
       }
 
-      // 4. جدولة البيانات الجديدة على الجهاز فوراً
       const notificationsToSchedule = reminders
         .filter(rem => new Date(rem.scheduled_for) > new Date())
         .map(rem => ({
-          id: Math.floor(Math.random() * 10000), // معرف فريد لكل إشعار
+          id: Math.floor(Math.random() * 1000000),
           title: rem.title,
-          body: rem.body,
+          body: rem.body, // هنا يتم تمرير التقارير الطويلة
           schedule: { at: new Date(rem.scheduled_for) },
-          extra: { url: rem.image_url },
+          sound: 'default', // تفعيل التنبيه الصوتي الافتراضي للأندرويد
+          attachments: rem.image_url ? [{ id: 'res', url: rem.image_url }] : [],
+          extra: { report: rem.body },
           smallIcon: 'ic_stat_name',
-          sound: 'default'
+          actionTypeId: ''
         }));
 
       if (notificationsToSchedule.length > 0) {
         await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-        console.log("✅ تمت جدولة الإشعارات محلياً بنجاح");
+        console.log("✅ تمت جدولة التقارير الذكية مع الصوت بنجاح");
       }
     } catch (err) {
       console.error("Local Notification Sync Error:", err);
@@ -169,6 +167,13 @@ function App() {
 
   useEffect(() => {
     syncNotifications();
+
+    // الاستماع لحدث الحفظ الفوري من الأقسام
+    const handleTrigger = () => {
+      console.log("🔔 استقبال طلب مزامنة فوري للتقرير...");
+      syncNotifications();
+    };
+    window.addEventListener('trigger_sync_notifications', handleTrigger);
 
     const setupBackButton = async () => {
       return await CapApp.addListener('backButton', ({ canGoBack }) => {
@@ -180,8 +185,12 @@ function App() {
       });
     };
     const listener = setupBackButton();
-    return () => { listener.then(l => l.remove()); };
-  }, [syncNotifications, location.pathname]); // يتم التحديث عند تغيير الصفحة لضمان المزامنة
+    
+    return () => { 
+      window.removeEventListener('trigger_sync_notifications', handleTrigger);
+      listener.then(l => l.remove()); 
+    };
+  }, [syncNotifications, location.pathname]);
 
   return (
     <div className="app-container">
