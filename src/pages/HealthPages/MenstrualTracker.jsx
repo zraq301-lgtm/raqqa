@@ -90,51 +90,33 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
-  const saveAndNotify = async (categoryTitle, currentAnalysis, currentPrediction) => {
-    const fcmToken = localStorage.getItem('fcm_token');
-    
-    const summaryReport = currentAnalysis.split(' ').slice(0, 5).join(' ') + '...';
-    
-    const nextDateRaw = currentPrediction?.nextDateRaw; 
-    const nextDateDisplay = currentPrediction?.nextDate;
-
-    const postData = {
-      user_id: 1,
-      category: 'menstrual_report',
-      title: 'تاريخ الحيض المتوقع',
-      body: summaryReport,
-      fcmToken: fcmToken,
-      next_period_date: nextDateRaw,
-      extra_data: {
-        next_period_date: nextDateRaw,
-        full_analysis: currentAnalysis,
-        start_date: data['سجل التواريخ_تاريخ البدء'],
-        end_date: data['سجل التواريخ_تاريخ الانتهاء']
-      }
-    };
-
+  // --- دالة الحفظ المحلي والتحليل الذكي الجديدة ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: postData
-      });
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(),
+      };
 
-      if (fcmToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: fcmToken,
-            title: 'تحديث موعد الدورة 🔔',
-            body: `تم تحديث توقعات موعدكِ القادم: ${nextDateDisplay}`,
-            data: { type: 'menstrual_report' }
-          }
-        });
-      }
-      console.log("تم تحديث تاريخ الدورة بنجاح ✅");
-    } catch (err) {
-      console.error("خطأ في عملية المزامنة:", err);
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport,
+        scheduled_for: scheduledTime,
+        extra: { report: aiGeneratedReport }
+      };
+
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
+      
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
   };
 
@@ -155,7 +137,8 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
       
-      await saveAndNotify("استشارة فورية", responseText, prediction);
+      // حفظ الاستشارة محلياً كإشعار فوري
+      await handleSaveAndAnalysis(responseText, new Date(Date.now() + 2000).toISOString());
 
     } catch (err) {
       console.error("AI Error", err);
@@ -211,7 +194,8 @@ const MenstrualTracker = () => {
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
-      await saveAndNotify("تحليل الدورة الشهرية", responseText, calc);
+      // استخدام الدالة المحلية بدلاً من saveAndNotify الفيربيس
+      await handleSaveAndAnalysis(responseText, new Date(calc.nextDateRaw).toISOString());
 
     } catch (e) { console.error(e); }
 
