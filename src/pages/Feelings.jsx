@@ -19,50 +19,42 @@ const RaqqaFeelingsApp = () => {
   const [chatInput, setChatInput] = useState("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
 
-  // --- دالة حفظ البيانات والتوكن في نيون وإرسال إشعار FCM ---
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    // 1. جلب التوكن من التخزين المحلي
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    // 2. إعداد تاريخ الجدولة (72 ساعة من الآن)
-    const scheduledDate = new Date();
-    scheduledDate.setHours(scheduledDate.getHours() + 72); 
-
+  // --- الدالة الجديدة لجدولة الإشعارات المحلية بدلاً من فيربيس ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, categoryTitle) => {
     try {
-      // --- أولاً: حفظ البيانات والتوكن في قاعدة بيانات نيون ---
-      const saveToNeonOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined, // المفتاح الصحيح للحفظ هو fcmToken
-          user_id: 1,                        // معرف المستخدم الثابت
-          category: 'medical_report',        // التصنيف
-          title: `تقرير جديد: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...", // ملخص النص
-          scheduled_for: scheduledDate.toISOString(),
-          note: `تحليل آلي لـ ${categoryTitle}`
-        }
-      };
-      await CapacitorHttp.post(saveToNeonOptions);
+      // إعداد وقت الموعد (مثلاً بعد 72 ساعة كما كان في الكود السابق)
+      const scheduledTime = new Date();
+      scheduledTime.setHours(scheduledTime.getHours() + 72);
 
-      // --- ثانياً: إرسال إشعار دفع فوري للهاتف عبر FCM ---
-      if (savedToken) {
-        const fcmOptions = {
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تنبيه طبي جديد 🔔',
-            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`,
-            data: { type: 'medical_report' }
-          }
-        };
-        await CapacitorHttp.post(fcmOptions);
-      }
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: `لقد تم تحليل مشاعرك بخصوص ${categoryTitle} وحفظ التقرير، سنقوم بتذكيرك لاحقاً.`,
+        scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
+      };
+
+      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: `✨ تقرير رقة الذكي: ${categoryTitle}`,
+        body: aiGeneratedReport.substring(0, 150) + "...", // نص تقرير الذكاء الاصطناعي
+        scheduled_for: scheduledTime.toISOString(),
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة (raqqa_local_reminders)
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      console.log("🚀 تم الحفظ محلياً وإرسال إشارة الجدولة");
       
-      console.log("تم الحفظ والإرسال بنجاح ✅");
-    } catch (err) {
-      console.error("خطأ في عملية المزامنة:", err);
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة المحلية:", error);
     }
   };
 
@@ -103,7 +95,7 @@ const RaqqaFeelingsApp = () => {
     setLoading(true);
     setShowChat(true);
 
-    const isFromInputs = !customPrompt; // إذا لم يكن هناك customPrompt فهذا يعني أنه جاء من تحليل المدخلات
+    const isFromInputs = !customPrompt;
 
     const summary = Object.entries(inputs)
       .filter(([k, v]) => v)
@@ -134,9 +126,9 @@ const RaqqaFeelingsApp = () => {
       setHistory(prev => [responseText, ...prev]);
       setUploadedImageUrl(null);
 
-      // --- استدعاء دالة الحفظ والإشعار فقط إذا كان المصدر هو مدخلات البيانات ---
+      // --- تم استبدال saveAndNotify بالدالة المحلية الجديدة ---
       if (isFromInputs) {
-        await saveAndNotify(currentCategory, responseText);
+        await handleSaveAndAnalysis(responseText, currentCategory);
       }
 
     } catch (err) {
