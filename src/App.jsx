@@ -163,39 +163,42 @@ function App() {
       const notificationsToSchedule = reminders
         .filter(rem => new Date(rem.scheduled_for) > new Date())
         .map(rem => {
-          // --- منطق تحديد الصورة المتخصصة لكل قسم ---
-          let sectionIcon = 'ic_stat_name'; // الافتراضي (أيقونة التطبيق)
+          // --- استخدام المسار الداخلي من مجلد public لضمان العمل بدون نت ---
+          // تأكد من وجود الصور في: public/notifications/
+          let iconName = 'default.png';
           const title = rem.title || "";
           
           if (title.includes('صحة') || title.includes('دورة') || title.includes('تحليل')) {
-            sectionIcon = 'health_notify'; // ابحث عن health_notify.png في drawable
+            iconName = 'health.png'; 
           } else if (title.includes('مشاعر') || title.includes('قلق') || title.includes('مزاج')) {
-            sectionIcon = 'feelings_notify';
+            iconName = 'feelings.png';
           } else if (title.includes('حميمية')) {
-            sectionIcon = 'intimacy_notify';
+            iconName = 'intimacy.png';
           } else if (title.includes('أرجوحة') || title.includes('منتدى')) {
-            sectionIcon = 'swing_notify';
+            iconName = 'swing.png';
           } else if (title.includes('إشراقة') || title.includes('نصيحة')) {
-            sectionIcon = 'insight_notify';
+            iconName = 'insight.png';
           }
+
+          const finalPath = `res://public/notifications/${iconName}`;
 
           return {
             id: Math.floor(Math.random() * 1000000),
             title: rem.title,
             body: rem.body,
             schedule: { at: new Date(rem.scheduled_for) },
-            channelId: 'raqqa_main_channel', // ربط القناة لتفعيل الصوت
+            channelId: 'raqqa_main_channel', 
             sound: 'default',
-            smallIcon: 'ic_stat_name', // الأيقونة الصغيرة العلوية (يجب أن تكون بيضاء شفافة)
-            largeIcon: sectionIcon,    // أيقونة القسم الجانبية
-            attachments: [{ id: 'res', url: sectionIcon }], // عرض الصورة بشكل كبير أسفل الإشعار
+            smallIcon: 'ic_stat_name', 
+            largeIcon: finalPath,
+            attachments: [{ id: 'res', url: finalPath }],
             extra: { report: rem.body }
           };
         });
 
       if (notificationsToSchedule.length > 0) {
         await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-        console.log("✅ تمت جدولة التقارير المتخصصة بالصور والصوت");
+        console.log("✅ تمت جدولة التقارير المحلية من مجلد Public");
       }
     } catch (err) {
       console.error("Local Notification Sync Error:", err);
