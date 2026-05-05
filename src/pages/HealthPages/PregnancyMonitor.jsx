@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Heart, Activity, ClipboardList, Pill, ShoppingBag, Calendar, 
-  Send, Trash2, Camera, Mic, ChevronRight, MessageSquare, 
-  Sparkles, X, Bookmark, Stethoscope, Plus, Bell, Clock, Image as ImageIcon
+  Send, Trash2, Camera, ChevronRight, MessageSquare, 
+  Sparkles, Stethoscope
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 
-// استيراد الخدمات (تأكد من صحة المسارات في مشروعك)
+// استيراد الخدمات
 import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
 import babyIcon from '../../assets/baby.png'; 
 
@@ -19,10 +19,9 @@ const PregnancyApp = () => {
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('preg_ai_v3')) || []);
   const [promptInput, setPromptInput] = useState('');
   
-  // تحميل شهر الحمل من التخزين المحلي عند البداية
   const [pregnancyMonth, setPregnancyMonth] = useState(localStorage.getItem('saved_preg_month') || '');
   const [deliveryDate, setDeliveryDate] = useState(''); 
-  const [rawDeliveryDate, setRawDeliveryDate] = useState(null); // لحفظ التاريخ بصيغة ISO للقاعدة
+  const [rawDeliveryDate, setRawDeliveryDate] = useState(null);
 
   const categories = [
     { id: 'weeks', title: 'تطور الأسابيع', icon: <Calendar />, fields: ['الأسبوع الحالي', 'أعراض الأسبوع', 'ملاحظات الطبيب', 'المراجعة القادمة', 'تاريخ الولادة', 'تغيرات الوزن', 'حجم الجنين', 'نصيحة الأسبوع', 'تطور الأعضاء', 'مهام الأسبوع'] },
@@ -39,18 +38,14 @@ const PregnancyApp = () => {
     return state;
   });
 
-  // حساب تاريخ الولادة المتوقع (نظام شمسي طبي)
   useEffect(() => {
     if (pregnancyMonth) {
       localStorage.setItem('saved_preg_month', pregnancyMonth);
       const currentMonthNum = parseInt(pregnancyMonth);
-      
       if (currentMonthNum >= 1 && currentMonthNum <= 9) {
         const today = new Date();
         const monthsRemaining = 9 - currentMonthNum;
-        // إضافة الشهور المتبقية + 7 أيام كمعيار طبي عالمي
         const projected = new Date(today.getFullYear(), today.getMonth() + monthsRemaining, today.getDate() + 7);
-        
         setRawDeliveryDate(projected.toISOString());
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         setDeliveryDate(projected.toLocaleDateString('ar-SA', options));
@@ -62,49 +57,51 @@ const PregnancyApp = () => {
     setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
   };
 
-  // دالة الحفظ والمزامنة - ترسل التاريخ للعمود scheduled_for كما في الصورة
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    // استخدام تاريخ الولادة المتوقع ليكون هو تاريخ الجدولة في قاعدة البيانات
-    let targetSchedule = rawDeliveryDate || new Date().toISOString(); 
-
+  // --- الدالة المستبدلة المطلوبة ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      const saveToNeonOptions = {
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(),
+      };
+
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport,
+        scheduled_for: scheduledTime,
+        extra: { report: aiGeneratedReport }
+      };
+
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
+    }
+  };
+
+  // دالة مساعدة لحفظ البيانات في قاعدة البيانات (اختياري كنسخة احتياطية)
+  const saveToCloud = async (categoryTitle, currentAnalysis) => {
+    try {
+      await CapacitorHttp.post({
         url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
         headers: { 'Content-Type': 'application/json' },
         data: {
-          fcmToken: savedToken || undefined,
           user_id: 1,
           category: 'pregnancy_followup',
-          title: `تحديث طبي: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          // هنا يتم الربط مع العمود المطلوب في الصورة (scheduled_for)
-          scheduled_for: targetSchedule, 
-          all_data: JSON.stringify(inputs),
-          pregnancy_month: pregnancyMonth,
-          expected_delivery_date: deliveryDate,
-          note: `توقع الولادة مُجدول في العمود المحدد بالصورة`
+          title: `تحديث طبي: ${categoryTitle}`,
+          body: currentAnalysis.substring(0, 100),
+          scheduled_for: rawDeliveryDate || new Date().toISOString(),
+          all_data: JSON.stringify(inputs)
         }
-      };
-      
-      await CapacitorHttp.post(saveToNeonOptions);
-
-      if (savedToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تقرير حمل جديد 🤰',
-            body: `طبيب راقي قام بتحليل ${categoryTitle}، وحفظ موعد الولادة المتوقع.`,
-            data: { type: 'medical_report' }
-          }
-        });
-      }
-    } catch (err) {
-      console.error("خطأ المزامنة:", err);
-    }
+      });
+    } catch (e) { console.error("Cloud Save Error:", e); }
   };
 
   const handleMediaAction = async (sourceType) => {
@@ -113,8 +110,7 @@ const PregnancyApp = () => {
       if (!base64Data) return;
       setIsProcessing(true);
       setShowChat(true);
-      const userMsgId = Date.now();
-      const fileName = `preg_img_${userMsgId}.png`;
+      const fileName = `preg_img_${Date.now()}.png`;
       const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
       
       const response = await CapacitorHttp.post({
@@ -126,7 +122,7 @@ const PregnancyApp = () => {
       if (response.status === 200) {
         const aiReply = response.data.reply || "تم التحليل بنجاح.";
         setChatHistory(prev => [{ id: Date.now(), query: "تحليل صورة", reply: aiReply, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
-        await saveAndNotify("تحليل وسائط", aiReply);
+        await handleSaveAndAnalysis(aiReply, rawDeliveryDate || new Date().toISOString());
       }
     } catch (error) { console.error(error); } finally { setIsProcessing(false); }
   };
@@ -168,7 +164,12 @@ const PregnancyApp = () => {
       });
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
-      await saveAndNotify(category.title, reply);
+      
+      // تنفيذ عملية الحفظ والجدولة المحلية الجديدة
+      await handleSaveAndAnalysis(reply, rawDeliveryDate || new Date().toISOString());
+      // اختياري: المزامنة مع السحاب
+      await saveToCloud(category.title, reply);
+      
     } catch (err) { console.error("فشل التحليل:", err); }
     setLoading(false);
   };
@@ -179,7 +180,6 @@ const PregnancyApp = () => {
         .app-container { background-color: #FDF2F8; min-height: 100vh; padding: 20px; font-family: 'Segoe UI', Tahoma, sans-serif; overflow-y: auto; }
         .header { display: flex; justify-content: space-between; margin-bottom: 25px; align-items: center; }
         .ai-btn { background: #E9D5FF; color: #7C3AED; padding: 12px 20px; border-radius: 20px; border: none; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 10px rgba(124, 58, 237, 0.1); }
-        
         .pregnancy-clock-section { display: flex; flex-direction: column; align-items: center; margin-bottom: 30px; }
         .clock-outer {
           width: 260px; height: 260px; border-radius: 50%; background: white;
@@ -196,7 +196,6 @@ const PregnancyApp = () => {
           top: -15px; left: calc(50% - 32.5px); object-fit: cover;
         }
         .center-display { text-align: center; z-index: 5; }
-        
         .quick-chat-bar { background: white; padding: 12px; border-radius: 20px; display: flex; gap: 10px; margin-bottom: 25px; border: 1.5px solid #FBCFE8; align-items: center; }
         .quick-input { flex: 1; border: none; outline: none; font-size: 14px; background: transparent; }
         .category-item { background: white; border-radius: 25px; margin-bottom: 15px; border: 1px solid #FCE7F3; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
@@ -204,7 +203,6 @@ const PregnancyApp = () => {
         .inputs-container { padding: 0 15px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .custom-input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; font-size: 13px; background: #F8FAFC; }
         .analyze-full-btn { grid-column: span 2; background: #7C3AED; color: white; border: none; padding: 14px; border-radius: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
-        
         .chat-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; }
         .chat-header { background: #7C3AED; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
         .chat-body { flex: 1; overflow-y: auto; padding: 20px; background: #FDF2F8; }
@@ -247,21 +245,14 @@ const PregnancyApp = () => {
           </div>
         </div>
         
-        {/* تاريخ الولادة يظهر هنا أسفل الساعة مباشرة */}
         {deliveryDate && (
           <motion.div 
             initial={{ opacity: 0, y: 10 }} 
             animate={{ opacity: 1, y: 0 }} 
             style={{
-              marginTop: 25, 
-              color: '#7C3AED', 
-              fontWeight: 'bold', 
-              fontSize: '15px', 
-              background: 'white', 
-              padding: '10px 25px', 
-              borderRadius: '25px', 
-              border: '2px solid #FBCFE8',
-              boxShadow: '0 4px 12px rgba(219, 39, 119, 0.1)'
+              marginTop: 25, color: '#7C3AED', fontWeight: 'bold', fontSize: '15px', 
+              background: 'white', padding: '10px 25px', borderRadius: '25px', 
+              border: '2px solid #FBCFE8', boxShadow: '0 4px 12px rgba(219, 39, 119, 0.1)'
             }}
           >
             <Calendar size={16} style={{display:'inline', marginLeft: 8, verticalAlign:'middle'}}/>
