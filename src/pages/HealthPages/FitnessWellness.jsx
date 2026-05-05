@@ -94,41 +94,39 @@ const PregnancyMonitor = () => {
     return () => clearInterval(checkAlarms);
   }, [alarms]);
 
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    // إعداد تاريخ اليوم ويوم مستقبلي (بعد 24 ساعة)
-    const today = new Date();
-    const futureDate = new Date();
-    futureDate.setDate(today.getDate() + 1); // إضافة يوم واحد
-
+  // --- دالة الحفظ والتحليل الجديدة المستبدلة ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'الرشاقة', // تم التعديل هنا لتكون القيمة "الرشاقة"
-          title: `تقرير جديد: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          // إرسال تاريخ اليوم + تاريخ اليوم المستقبلي كنص توضيحي أو استخدام التاريخ المستقبلي كقيمة أساسية
-          scheduled_for: `Today: ${today.toISOString()} | Future: ${futureDate.toISOString()}`, 
-          note: `تحليل آلي لـ ${categoryTitle}`
-        }
-      });
-      if (savedToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تنبيه طبي جديد 🔔',
-            body: `تم تحديث ملفك الطبي بخصوص ${categoryTitle}.`
-          }
-        });
-      }
-    } catch (err) { console.error(err); }
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
+      };
+
+      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport, // نص تقرير الذكاء الاصطناعي الذي سيظهر للمستخدم
+        scheduled_for: scheduledTime, // التاريخ والوقت المخصص
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة (raqqa_local_reminders)
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
+      
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
+    }
   };
 
   const updateData = useCallback((field, value) => {
@@ -150,7 +148,14 @@ const PregnancyMonitor = () => {
       });
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ type: 'ai', text: `(تحليل تلقائي لـ ${section.title}): ${reply}` }, ...prev]);
-      await saveAndNotify(section.title, reply);
+      
+      // إعداد وقت مجدول (مثلاً بعد 24 ساعة من الآن بشكل افتراضي)
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 1);
+      
+      // استدعاء الدالة الجديدة هنا
+      await handleSaveAndAnalysis(reply, futureDate.toISOString());
+      
       setIsChatOpen(true);
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
@@ -270,7 +275,7 @@ const PregnancyMonitor = () => {
                   </div>
                 ))}
                 <button style={mergedStyles.saveSectionBtn} onClick={() => handleSectionAction(sec)} disabled={isLoading}>
-                   {isLoading ? "جاري التحليل..." : "حفظ وتحليل البيانات 💾"}
+                    {isLoading ? "جاري التحليل..." : "حفظ وتحليل البيانات 💾"}
                 </button>
               </div>
             )}
