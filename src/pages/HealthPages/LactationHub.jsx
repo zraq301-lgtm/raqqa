@@ -23,7 +23,6 @@ const LactationHub = () => {
 
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
     const savedToken = localStorage.getItem('fcm_token');
-    // تعديل: استخدام تاريخ اليوم الحالي للحفظ
     const scheduledDate = new Date();
 
     try {
@@ -33,7 +32,6 @@ const LactationHub = () => {
         data: {
           fcmToken: savedToken || undefined,
           user_id: 1,
-          // تعديل: الحفظ باسم القيمة breastfeeding
           category: 'breastfeeding',
           title: `تقرير طبي متخصص: ${categoryTitle} 🩺`,
           body: "تم إصدار تحليل شامل لحالة الرضاعة بناءً على المعايير الدولية.", 
@@ -84,6 +82,7 @@ const LactationHub = () => {
     { title: "الحالة النفسية", emoji: "🫂", fields: ["دعم الزوج", "ساعات الراحة", "القلق", "الاكتئاب", "التواصل", "الخروج للمشي", "هوايات", "الاسترخاء", "ملاحظات", "درجة الرضا"] }
   ];
 
+  // الدالة المستبدلة والمطورة لتدعم الحفظ في الأندرويد
   const handleSaveAndAnalyze = async (customQuery = null, imageUrl = null) => {
     setLoading(true);
     setShowChat(true);
@@ -110,16 +109,54 @@ const LactationHub = () => {
         data: { prompt: strictPrompt }
       });
 
-      const result = response.data.reply || response.data.message || "عذراً، لم أتمكن من استلام التحليل الطبي حالياً.";
-      setAiResponse(result);
-      if (!customQuery) await saveAndNotify("تحليل الرضاعة الشامل", result);
+      const aiGeneratedReport = response.data.reply || response.data.message || "عذراً، لم أتمكن من استلام التحليل الطبي حالياً.";
+      setAiResponse(aiGeneratedReport);
 
-      const newEntry = { id: Date.now(), text: result, date: new Date().toLocaleString() };
+      // --- منطق الحفظ والجدولة الجديد للأندرويد ---
+      const scheduledTime = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // جدولة بعد ساعة كمثال
+
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(),
+      };
+
+      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport,
+        scheduled_for: scheduledTime,
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل الفوري للأندرويد
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      // الحفظ في التاريخ (History)
+      const newEntry = { id: Date.now(), text: aiGeneratedReport, date: new Date().toLocaleString() };
       const updatedHistory = [newEntry, ...history];
       setHistory(updatedHistory);
       localStorage.setItem('lactation_history', JSON.stringify(updatedHistory));
+      
+      if (!customQuery) await saveAndNotify("تحليل الرضاعة الشامل", aiGeneratedReport);
+      
       setUserQuery('');
-    } catch (error) { setAiResponse("حدث خطأ في الاتصال بالخبير الطبي."); } finally { setLoading(false); }
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري للأندرويد");
+
+    } catch (error) { 
+      setAiResponse("حدث خطأ في الاتصال بالخبير الطبي."); 
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const deleteResponse = (id) => {
