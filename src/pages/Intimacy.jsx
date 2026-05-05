@@ -28,49 +28,38 @@ const MarriageApp = () => {
     if (showChat) scrollToBottom();
   }, [messages, loading, showChat]);
 
-  // --- دالة الحفظ والإشعار المعدلة (48 ساعة + FCM) ---
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    // إعداد تاريخ الجدولة ليكون بعد 48 ساعة بالضبط
-    const scheduledDate = new Date();
-    scheduledDate.setHours(scheduledDate.getHours() + 48); 
-
+  // --- دالة الحفظ والجدولة المحلية الجديدة ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      // 1. حفظ البيانات في نيون
-      const saveToNeonOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'marriage_consultancy',
-          title: `تحليل رقة: ${categoryTitle} ✨`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: scheduledDate.toISOString(), // هنا التاريخ المستقبلي 48 ساعة
-          note: `استشارة متخصصة لـ ${categoryTitle}`
-        }
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
       };
-      await CapacitorHttp.post(saveToNeonOptions);
 
-      // 2. إرسال إشعار FCM الفوري
-      if (savedToken) {
-        const fcmOptions = {
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'رد جديد من مستشارة رقة 💖',
-            body: `مستشارتكِ جاهزة بخصوص ${categoryTitle}. اضغطي للقراءة.`,
-            data: { type: 'marriage_report' }
-          }
-        };
-        await CapacitorHttp.post(fcmOptions);
-      }
+      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport, // نص تقرير الذكاء الاصطناعي الذي سيظهر للمستخدم
+        scheduled_for: scheduledTime, // التاريخ والوقت المخصص
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة (raqqa_local_reminders)
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
       
-      console.log("تم الحفظ بجدولة 48 ساعة وإرسال الإشعار بنجاح ✅");
-    } catch (err) {
-      console.error("خطأ في عملية المزامنة:", err);
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
   };
 
@@ -112,9 +101,11 @@ const MarriageApp = () => {
       const aiResponse = await CapacitorHttp.post(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "أنا هنا معكِ يا رفيقتي، اسألي ما تشائين في خصوصيتنا.";
 
-      // الحفظ والإشعار يتم فقط إذا كان الطلب من القوائم (المدخلات)
+      // إذا كان الطلب يتطلب حفظ (من القوائم)، نقوم بجدولة الإشعار بعد 48 ساعة
       if (shouldSave) {
-        await saveAndNotify(pageTitle, responseText);
+        const scheduledDate = new Date();
+        scheduledDate.setHours(scheduledDate.getHours() + 48); 
+        await handleSaveAndAnalysis(responseText, scheduledDate.toISOString());
       }
 
       return responseText;
@@ -129,7 +120,6 @@ const MarriageApp = () => {
     if (selected.length === 0) return;
     setShowChat(true);
     setLoading(true);
-    // نرسل true هنا لأنها مدخلات بيانات
     const result = await handleProcess({ [cat.title]: selected }, cat.title, null, true);
     setMessages(prev => [
       ...prev, 
@@ -145,7 +135,6 @@ const MarriageApp = () => {
     setMessages(prev => [...prev, { role: 'user', text: text }]);
     setLoading(true);
     setUserInput("");
-    // نترك shouldSave كـ false تلقائياً للدردشة اليدوية
     const result = await handleProcess({ "سؤال": text }, "دردشة خاصة", null, false);
     setMessages(prev => [...prev, { role: 'ai', text: result }]);
     setLoading(false);
@@ -159,7 +148,6 @@ const MarriageApp = () => {
       const uploadedUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
       
       setMessages(prev => [...prev, { role: 'user', text: "📸 تم إرسال صورة للتحليل..." }]);
-      // نترك shouldSave كـ false تلقائياً للصور
       const result = await handleProcess({ "مرفق": "صورة" }, "تحليل بصري", uploadedUrl, false);
       setMessages(prev => [...prev, { role: 'ai', text: result }]);
     } catch (error) {
