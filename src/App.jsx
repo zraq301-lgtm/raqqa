@@ -149,6 +149,11 @@ function App() {
       if (!localData) return;
 
       const reminders = JSON.parse(localData);
+      const now = new Date();
+
+      // 1. تنظيف تلقائي: الاحتفاظ فقط بالإشعارات المستقبلية في الـ localStorage وحذف القديمة
+      const activeReminders = reminders.filter(rem => new Date(rem.scheduled_for) > now);
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(activeReminders));
 
       const perms = await LocalNotifications.checkPermissions();
       if (perms.display !== 'granted') {
@@ -160,45 +165,44 @@ function App() {
         await LocalNotifications.cancel({ notifications: pending.notifications });
       }
 
-      const notificationsToSchedule = reminders
-        .filter(rem => new Date(rem.scheduled_for) > new Date())
-        .map(rem => {
-          // --- استخدام المسار الداخلي من مجلد public لضمان العمل بدون نت ---
-          // تأكد من وجود الصور في: public/notifications/
-          let iconName = 'default.png';
-          const title = rem.title || "";
-          
-          if (title.includes('صحة') || title.includes('دورة') || title.includes('تحليل')) {
-            iconName = 'health.png'; 
-          } else if (title.includes('مشاعر') || title.includes('قلق') || title.includes('مزاج')) {
-            iconName = 'feelings.png';
-          } else if (title.includes('حميمية')) {
-            iconName = 'intimacy.png';
-          } else if (title.includes('أرجوحة') || title.includes('منتدى')) {
-            iconName = 'swing.png';
-          } else if (title.includes('إشراقة') || title.includes('نصيحة')) {
-            iconName = 'insight.png';
-          }
+      // 2. جدولة الإشعارات النشطة والمستقبلية فقط في نظام الأندرويد
+      const notificationsToSchedule = activeReminders.map(rem => {
+        // --- استخدام المسار الداخلي من مجلد public لضمان العمل بدون نت ---
+        // تأكد من وجود الصور في: public/notifications/
+        let iconName = 'default.png';
+        const title = rem.title || "";
+        
+        if (title.includes('صحة') || title.includes('دورة') || title.includes('تحليل')) {
+          iconName = 'health.png'; 
+        } else if (title.includes('مشاعر') || title.includes('قلق') || title.includes('مزاج')) {
+          iconName = 'feelings.png';
+        } else if (title.includes('حميمية')) {
+          iconName = 'intimacy.png';
+        } else if (title.includes('أرجوحة') || title.includes('منتدى')) {
+          iconName = 'swing.png';
+        } else if (title.includes('إشراقة') || title.includes('نصيحة')) {
+          iconName = 'insight.png';
+        }
 
-          const finalPath = `res://public/notifications/${iconName}`;
+        const finalPath = `res://public/notifications/${iconName}`;
 
-          return {
-            id: Math.floor(Math.random() * 1000000),
-            title: rem.title,
-            body: rem.body,
-            schedule: { at: new Date(rem.scheduled_for) },
-            channelId: 'raqqa_main_channel', 
-            sound: 'default',
-            smallIcon: 'ic_stat_name', 
-            largeIcon: finalPath,
-            attachments: [{ id: 'res', url: finalPath }],
-            extra: { report: rem.body }
-          };
-        });
+        return {
+          id: Math.floor(Math.random() * 1000000),
+          title: rem.title,
+          body: rem.body,
+          schedule: { at: new Date(rem.scheduled_for) },
+          channelId: 'raqqa_main_channel', 
+          sound: 'default',
+          smallIcon: 'ic_stat_name', 
+          largeIcon: finalPath,
+          attachments: [{ id: 'res', url: finalPath }],
+          extra: { report: rem.body }
+        };
+      });
 
       if (notificationsToSchedule.length > 0) {
         await LocalNotifications.schedule({ notifications: notificationsToSchedule });
-        console.log("✅ تمت جدولة التقارير المحلية من مجلد Public");
+        console.log("✅ تمت جدولة التقارير المحلية النشطة بنجاح وحذف المنتهية.");
       }
     } catch (err) {
       console.error("Local Notification Sync Error:", err);
