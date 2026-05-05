@@ -19,10 +19,10 @@ const RaqqaFeelingsApp = () => {
   const [chatInput, setChatInput] = useState("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
 
-  // --- الدالة الجديدة لجدولة الإشعارات المحلية بدلاً من فيربيس ---
+  // --- الدالة المحدثة لجدولة الإشعارات المحلية مع دعم الصور ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, categoryTitle) => {
     try {
-      // إعداد وقت الموعد (مثلاً بعد 72 ساعة كما كان في الكود السابق)
+      // إعداد وقت الموعد (بعد 72 ساعة)
       const scheduledTime = new Date();
       scheduledTime.setHours(scheduledTime.getHours() + 72);
 
@@ -31,15 +31,20 @@ const RaqqaFeelingsApp = () => {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
         body: `لقد تم تحليل مشاعرك بخصوص ${categoryTitle} وحفظ التقرير، سنقوم بتذكيرك لاحقاً.`,
-        scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
+        scheduled_for: new Date(Date.now() + 500).toISOString(),
       };
 
-      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      // 2. إعداد إشعار الموعد المخصص (تمت إضافة خصائص الصورة هنا)
       const aiReportNotification = {
         id: Math.floor(Math.random() * 10000),
         title: `✨ تقرير رقة الذكي: ${categoryTitle}`,
-        body: aiGeneratedReport.substring(0, 150) + "...", // نص تقرير الذكاء الاصطناعي
+        body: aiGeneratedReport.substring(0, 150) + "...", 
         scheduled_for: scheduledTime.toISOString(),
+        
+        // --- خصائص ظهور الصورة في أندرويد ---
+        smallIcon: "ic_stat_name", // اسم الأيقونة في نظام أندرويد
+        largeIcon: "res://public/notifications/feelings.png", // مسار الصورة الكبيرة
+        
         extra: { report: aiGeneratedReport }
       };
 
@@ -48,10 +53,10 @@ const RaqqaFeelingsApp = () => {
       const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
 
-      // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
+      // 4. إطلاق إشارة التفعيل لملف App.jsx
       window.dispatchEvent(new Event('trigger_sync_notifications'));
 
-      console.log("🚀 تم الحفظ محلياً وإرسال إشارة الجدولة");
+      console.log("🚀 تم الحفظ محلياً مع إعدادات الصورة");
       
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة المحلية:", error);
@@ -126,7 +131,6 @@ const RaqqaFeelingsApp = () => {
       setHistory(prev => [responseText, ...prev]);
       setUploadedImageUrl(null);
 
-      // --- تم استبدال saveAndNotify بالدالة المحلية الجديدة ---
       if (isFromInputs) {
         await handleSaveAndAnalysis(responseText, currentCategory);
       }
