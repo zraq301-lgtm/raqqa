@@ -32,49 +32,38 @@ const DoctorClinical = () => {
 
   const fields = ["التاريخ", "اسم الطبيب", "التشخيص", "الدواء", "الموعد القادم", "الملاحظات", "النتيجة"];
 
-  // --- وظيفة الحفظ والمزامنة مع الـ API ---
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    const userScheduledDate = data[`${categoryTitle}_الموعد القادم`];
-    
-    let finalDate;
-    if (userScheduledDate) {
-        const parsedDate = new Date(userScheduledDate);
-        finalDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
-    } else {
-        finalDate = new Date().toISOString();
-    }
-
+  // --- وظيفة الحفظ وجدولة الإشعارات المحلية الجديدة ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'medical_report',
-          title: `موعد متابعة: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: finalDate,
-          note: `تحليل آلي لـ ${categoryTitle}`
-        }
-      });
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
+      };
 
-      if (savedToken) {
-        await CapacitorHttp.post({
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تنبيه طبي جديد 🔔',
-            body: `تم حفظ تقرير ${categoryTitle} وجدولة موعد المتابعة بتاريخ ${userScheduledDate || 'اليوم'}.`,
-            data: { type: 'medical_report' }
-          }
-        });
-      }
-      console.log("تمت المزامنة والحفظ بنجاح ✅");
-    } catch (err) {
-      console.error("خطأ في المزامنة:", err);
+      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport, // نص تقرير الذكاء الاصطناعي الذي سيظهر للمستخدم
+        scheduled_for: scheduledTime, // التاريخ والوقت المخصص
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة (raqqa_local_reminders)
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
+      
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
   };
 
@@ -123,7 +112,18 @@ const DoctorClinical = () => {
       setUserPrompt('');
 
       if (catName !== "سؤال مباشر") {
-          await saveAndNotify(catName, responseText);
+          // استخراج التاريخ المجدول من البيانات
+          const userScheduledDate = data[`${catName}_الموعد القادم`];
+          let finalDate;
+          if (userScheduledDate) {
+              const parsedDate = new Date(userScheduledDate);
+              finalDate = isNaN(parsedDate.getTime()) ? new Date().toISOString() : parsedDate.toISOString();
+          } else {
+              finalDate = new Date().toISOString();
+          }
+
+          // استدعاء الدالة الجديدة بدلاً من saveAndNotify
+          await handleSaveAndAnalysis(responseText, finalDate);
 
           setSavedReports(prev => [{ 
             id: Date.now(), 
@@ -177,7 +177,6 @@ const DoctorClinical = () => {
       <div style={styles.gridContainer}>
         {categories.map((cat, i) => (
           <React.Fragment key={i}>
-            {/* كارت القسم في الشبكة */}
             <div 
               style={{
                 ...styles.categoryCard,
@@ -190,7 +189,6 @@ const DoctorClinical = () => {
               <span style={styles.categoryName}>{cat.name}</span>
             </div>
 
-            {/* عرض التفاصيل تحت الكارت المفتوح مباشرة (يأخذ عرض الصف كاملاً) */}
             {openIdx === i && (
               <div style={styles.fullWidthCard}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #eee', paddingBottom: '10px' }}>
@@ -220,7 +218,6 @@ const DoctorClinical = () => {
         ))}
       </div>
 
-      {/* مودال الشات - كما هو بالظبط */}
       {isChatOpen && (
         <div style={styles.chatOverlay}>
           <div style={styles.chatContent}>
