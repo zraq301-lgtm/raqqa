@@ -27,45 +27,38 @@ const Motherhood = () => {
     { title: "الإبداع والخيال", icon: "fa-palette", items: ["القصص الخيالية", "اللعب الحر", "الرسم والتلوين", "الأشغال اليدوية", "تمثيل الأدوار", "تأليف قصص", "البناء بالمكعبات", "جمع كنوز الطبيعة", "الاستماع للفنون", "الفوضى الإبداعية"] }
   ];
 
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    const scheduledDate = new Date();
-    scheduledDate.setDate(scheduledDate.getDate() + 7); 
-
+  // --- الدالة المستبدلة ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      const saveToNeonOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'medical_report',
-          title: `تذكير أسبوعي: ${categoryTitle} 🩺`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: scheduledDate.toISOString(),
-          note: `تحليل آلي لـ ${categoryTitle}`
-        }
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
       };
-      await CapacitorHttp.post(saveToNeonOptions);
 
-      if (savedToken) {
-        const fcmOptions = {
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تنبيه تربوي جديد 🔔',
-            body: `تم تحديث تحليلك بخصوص ${categoryTitle}.`,
-            data: { type: 'medical_report' }
-          }
-        };
-        await CapacitorHttp.post(fcmOptions);
-      }
+      // 2. إعداد إشعار الموعد المخصص الذي يحتوي على تقرير الذكاء الاصطناعي
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✨ تقرير رقة الذكي",
+        body: aiGeneratedReport, // نص تقرير الذكاء الاصطناعي الذي سيظهر للمستخدم
+        scheduled_for: scheduledTime, // التاريخ والوقت المخصص
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة (raqqa_local_reminders)
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
       
-      console.log("تم الحفظ في نيون وإرسال الإشعار بنجاح ✅");
-    } catch (err) {
-      console.error("خطأ في عملية المزامنة:", err);
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
   };
 
@@ -106,9 +99,10 @@ const Motherhood = () => {
       
       setMessages(prev => [...prev, { id: Date.now(), text: responseText, sender: 'ai', timestamp: new Date().toLocaleTimeString() }]);
 
-      // التعديل هنا: يتم الحفظ والإشعار فقط إذا لم يكن هناك سؤال يدوي (أي ناتج عن ضغط زر التحليل للأقسام)
       if (!customPrompt) {
-        await saveAndNotify(currentList.title, responseText);
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        await handleSaveAndAnalysis(responseText, nextWeek.toISOString());
       }
 
     } catch (err) {
