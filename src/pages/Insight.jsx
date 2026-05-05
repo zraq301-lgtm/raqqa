@@ -89,48 +89,47 @@ const RaqqaApp = () => {
     ]},
   ];
 
-  // --- دالة حفظ التوكن والبيانات المحدثة ---
-  const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
-    
-    // إعداد تاريخ مستقبلي بـ 72 ساعة
-    const scheduledDate = new Date();
-    scheduledDate.setHours(scheduledDate.getHours() + 72); 
-
+  // --- دالة حفظ التقرير وجدولة الإشعارات المحلية مع دعم الصور ---
+  const handleSaveAndAnalysis = async (aiGeneratedReport, categoryTitle) => {
     try {
-      // 1. حفظ البيانات في نيون
-      const saveToNeonOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'spiritual_report',
-          title: `تحليل جديد: ${categoryTitle} ✨`,
-          body: currentAnalysis.substring(0, 100) + "...",
-          scheduled_for: scheduledDate.toISOString(), // التاريخ المستقبلي المطلوب
-          note: `تحليل رقة لـ ${categoryTitle}`
-        }
-      };
-      await CapacitorHttp.post(saveToNeonOptions);
+      // إعداد وقت الموعد (بعد 72 ساعة من الآن)
+      const scheduledTime = new Date();
+      scheduledTime.setHours(scheduledTime.getHours() + 72);
 
-      // 2. إرسال إشعار FCM
-      if (savedToken) {
-        const fcmOptions = {
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'رسالة من رقة 🔔',
-            body: `رفيقتي، تم إعداد تحليلك الروحاني بخصوص ${categoryTitle}.`,
-            data: { type: 'spiritual_report' }
-          }
-        };
-        await CapacitorHttp.post(fcmOptions);
-      }
-      console.log("تم الحفظ والإرسال بنجاح ✅");
-    } catch (err) {
-      console.error("خطأ في عملية المزامنة:", err);
+      // 1. إعداد نص الإشعار الفوري للتأكيد
+      const instantConfirm = {
+        id: Math.floor(Math.random() * 10000),
+        title: "✅ تم حفظ بياناتك بشكل آمن",
+        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        scheduled_for: new Date(Date.now() + 500).toISOString(), 
+      };
+
+      // 2. إعداد إشعار الموعد المخصص مع خصائص الصورة للأندرويد
+      const aiReportNotification = {
+        id: Math.floor(Math.random() * 10000),
+        title: `✨ تقرير رقة الذكي: ${categoryTitle}`,
+        body: aiGeneratedReport.substring(0, 100) + "...", 
+        scheduled_for: scheduledTime.toISOString(),
+        
+        // ضبط عرض الصورة في الإشعار
+        smallIcon: "ic_stat_name", // يجب أن يكون موجوداً في ملفات أندرويد
+        largeIcon: "res://public/notifications/spiritual_report.png", 
+        
+        extra: { report: aiGeneratedReport }
+      };
+
+      // 3. الحفظ المحلي في المصفوفة الموحدة (raqqa_local_reminders)
+      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
+      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+
+      // 4. إطلاق إشارة التفعيل لملف App.jsx
+      window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+      console.log("🚀 تم الحفظ محلياً وإرسال إشارة المزامنة");
+      
+    } catch (error) {
+      console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
   };
 
@@ -152,9 +151,9 @@ const RaqqaApp = () => {
       setAiResponse(responseText);
       setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
       
-      // استدعاء دالة الحفظ والإشعار بعد استلام رد الذكاء الاصطناعي
+      // استدعاء دالة الجدولة المحلية الجديدة بدلاً من FCM
       if (activeCategory) {
-        await saveAndNotify(activeCategory.title, responseText);
+        await handleSaveAndAnalysis(responseText, activeCategory.title);
       }
 
       if (!directMsg) setShowAnalysisModal(true);
