@@ -10,7 +10,7 @@ const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
 const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
 
-const Health = () => {
+const Health = ({ onSyncReminders }) => {
   const [activeTab, setActiveTab] = useState(null);
 
   // تم تحديث أسماء الصور لتطابق أسماء صور الإشعارات في المجلد العام (public)
@@ -23,6 +23,19 @@ const Health = () => {
     { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '3' } },
     { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub, pos: { gridColumn: '1', gridRow: '3' } },
   ];
+
+  // دالة المحرك لاستلام تأكيد الحفظ وجدولة الإشعارات وتوصيلها لـ App.jsx
+  const handleTriggerSync = () => {
+    console.log("📥 [محرك Health] تم استقبال إشارة حفظ البيانات من الصفحة الفرعية، جاري تمريرها إلى App.jsx...");
+    
+    // 1. إرسال الحدث العام ليتلقاه App.jsx في نظام الأندرويد
+    window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+    // 2. إذا تم تمرير دالة callback مباشرة من App.jsx نقوم بتنفيذها إضافياً لضمان الفاعلية
+    if (typeof onSyncReminders === 'function') {
+      onSyncReminders();
+    }
+  };
 
   const styles = {
     container: {
@@ -89,7 +102,12 @@ const Health = () => {
       <div style={styles.fullScreenComponent}>
         <button style={styles.backButton} onClick={() => setActiveTab(null)}>عودة</button>
         <Suspense fallback={<p style={{textAlign: 'center', marginTop: '50px'}}>جاري التحميل...</p>}>
-          {activeSection && activeSection.component ? <activeSection.component /> : <div style={{padding: '20px', textAlign: 'center'}}>قريباً...</div>}
+          {activeSection && activeSection.component ? (
+            /* نقوم هنا بتمرير دالة التفعيل والوساطة للصفحة المفتوحة كـ prop لضمان إمكانية التخاطب المباشر */
+            <activeSection.component onNotificationSync={handleTriggerSync} />
+          ) : (
+            <div style={{padding: '20px', textAlign: 'center'}}>قريباً...</div>
+          )}
         </Suspense>
       </div>
     );
