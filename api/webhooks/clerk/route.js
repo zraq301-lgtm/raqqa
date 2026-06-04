@@ -2,7 +2,6 @@ import { Client } from 'pg';
 import { Webhook } from 'svix';
 
 export default async function handler(req, res) {
-  // التأكد من أن الطلب POST فقط
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -16,7 +15,6 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Server configuration missing" });
     }
 
-    // جلب الـ Headers في Node.js القياسي
     const svix_id = req.headers["svix-id"];
     const svix_timestamp = req.headers["svix-timestamp"];
     const svix_signature = req.headers["svix-signature"];
@@ -25,10 +23,8 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Missing svix headers" });
     }
 
-    // في بيئة Vercel Node.js، يأتي الـ body جاهزاً ومحللاً إذا تم إعداده، 
-    // ولكن Svix يحتاج الـ string الخام، لذا نقوم بتحويله إذا كان كائناً
+    // تجهيز النص الخام للتحقق الرقمي من Svix
     const body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    
     const wh = new Webhook(WEBHOOK_SECRET);
     let payload;
     
@@ -39,7 +35,7 @@ export default async function handler(req, res) {
         "svix-signature": svix_signature,
       });
     } catch (err) {
-      console.error("❌ فشل التحقق من توقيع الـ Webhook:", err.message);
+      console.error("❌ فشل التحقق من توقيع الـ Webhook لـ Clerk:", err.message);
       return res.status(400).json({ error: "Invalid webhook signature" });
     }
 
@@ -52,7 +48,7 @@ export default async function handler(req, res) {
       }
 
       if (!process.env.DATABASE_URL) {
-        return res.status(500).json({ error: "Database URL missing on Vercel" });
+        return res.status(500).json({ error: "DATABASE_URL missing on Vercel" });
       }
 
       client = new Client({
@@ -70,11 +66,11 @@ export default async function handler(req, res) {
       `;
       const result = await client.query(queryText, [clerkId, email]);
       
-      console.log(`[Clerk Webhook] 🚀 تم تسجيل هوية مستخدم جديد: ${result.rows[0].clerk_id}`);
-      return res.status(200).json({ success: true, message: "User identity synchronized." });
+      console.log(`[Clerk Webhook] 🚀 تم تخزين مستخدم سريع: ${result.rows[0].clerk_id}`);
+      return res.status(200).json({ success: true, message: "User registered quickly." });
     }
 
-    return res.status(200).json({ message: "Webhook received but no action needed." });
+    return res.status(200).json({ message: "Webhook processed." });
 
   } catch (error) {
     console.error("🔥 Internal Error in Clerk Webhook Route:", error);
