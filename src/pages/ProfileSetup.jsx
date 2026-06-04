@@ -26,12 +26,11 @@ export default function ProfileSetup() {
       let responseStatus;
       let responseData;
 
-      // فحص البيئة واستخدام fetch القياسي الذي يدعمه كاباسيتور أيضاً بكفاءة
-      // إذا كنت تواجه CORS على الموبايل، نستخدم جلب كاباسيتور الأصلي
+      // استخدام المسار الجديد المنفصل لبناء الغرف مع إضافة كلمة route
+      const TARGET_API_URL = "https://raqqa-hjl8.vercel.app/api/user/setup-rooms/route";
+
       if (Capacitor.isNativePlatform()) {
-        // لتجنب مشاكل الـ Dynamic Import، نستخدم fetch المتصفح القياسي لأن Capacitor 
-        // يقوم بعمل Proxy للـ requests تلقائياً ويحل مشكلة CORS في أغلب الأحيان.
-        const response = await fetch("https://raqqa-hjl8.vercel.app/api/webhooks/clerk", {
+        const response = await fetch(TARGET_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -39,8 +38,7 @@ export default function ProfileSetup() {
         responseStatus = response.status;
         responseData = await response.json();
       } else {
-        // البيئة العادية (المتصفح)
-        const response = await fetch("https://raqqa-hjl8.vercel.app/api/webhooks/clerk", {
+        const response = await fetch(TARGET_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
@@ -75,7 +73,6 @@ export default function ProfileSetup() {
     <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 text-slate-800 flex flex-col items-center justify-center p-6 font-sans" dir="rtl">
       <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-xl shadow-pink-100 border border-white/50 text-center relative overflow-hidden">
         
-        {/* زخرفة خلفية علوية ناعمة */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-rose-300 via-pink-400 to-purple-400"></div>
 
         <h1 className="text-4xl font-extrabold mb-2 bg-gradient-to-r from-rose-500 to-purple-600 bg-clip-text text-transparent tracking-wide">
