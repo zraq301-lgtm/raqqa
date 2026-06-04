@@ -2,7 +2,7 @@ import { SignInButton, SignOutButton, useUser } from "@clerk/clerk-react";
 import { useState } from "react";
 import { CapacitorHttp } from "@capacitor/core";
 
-export default function LoginPage() {
+export default function ProfileSetup() {
   const { isSignedIn, user } = useUser();
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -76,7 +76,7 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center justify-center space-x-4 space-x-reverse bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl border border-rose-100/50 mb-6">
               {user?.imageUrl && (
-                <img src={user.imageUrl} alt="Profile" className="w-14 w-14 rounded-full border-2 border-pink-300 p-0.5 shadow-sm" />
+                <img src={user.imageUrl} alt="Profile" className="w-14 h-14 rounded-full border-2 border-pink-300 p-0.5 shadow-sm" />
               )}
               <div className="text-right">
                 <p className="font-bold text-slate-700 text-md">{user?.fullName || "مرحباً بكِ"}</p>
