@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react';
 import App from './App';
 import ProfileSetup from './pages/ProfileSetup';
 
+// استيراد الـ Router وهو السر وراء تشغيل أزرار الدخول ومنع تعليقها
+import { BrowserRouter } from 'react-router-dom'; 
+
 // استيراد Firebase Messaging بطريقة آمنة
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
-// استيراد ClerkProvider لضمان عدم حدوث شاشة بيضاء بسبب useUser()
+// استيراد ClerkProvider لضمان عدم حدوث شاشة بيضاء
 import { ClerkProvider } from "@clerk/clerk-react";
 
-// مفتاح Clerk العام الخاص بتطبيقك (تأكد من مطابقتك له أو استبداله بمفتاحك الخاص)
+// مفتاح Clerk العام الخاص بتطبيقك
 const CLERK_PUBLISHABLE_KEY = "pk_test_Y2xlcmstcmVxLWFwcC0xMi5jbGVyay5hY2NvdW50cy5kZXYk"; 
 
 // 1. إعدادات Firebase الخاصة بمشروعك
@@ -37,17 +40,14 @@ function AppSwitcher() {
   useEffect(() => {
     // --- وظيفة فحص التحديثات الجديدة ---
     const checkUpdate = async () => {
-      const CURRENT_VERSION_CODE = 1653; // إصدارك الحالي الثابت
+      const CURRENT_VERSION_CODE = 1653; 
       const JSON_URL = "https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.json";
       
       try {
         const response = await fetch(JSON_URL);
         const data = await response.json();
         
-        // لا يظهر التحديث إلا إذا كانت الحالة live والنسخة أحدث من نسخة المستخدم
         if (data.is_live && data.latest_version_code > CURRENT_VERSION_CODE) {
-          
-          // فحص هل قام المستخدم بتجاهل هذه النسخة المحددة من قبل
           const lastIgnored = localStorage.getItem('ignored_version');
           
           if (lastIgnored !== data.latest_version_code.toString()) {
@@ -55,7 +55,6 @@ function AppSwitcher() {
             if (confirmUpdate) {
               window.location.href = data.download_url;
             } else {
-              // حفظ رقم النسخة التي تم تجاهلها لعدم إظهار الرسالة مرة أخرى
               localStorage.setItem('ignored_version', data.latest_version_code.toString());
             }
           }
@@ -65,18 +64,15 @@ function AppSwitcher() {
       }
     };
 
-    // وظيفة إعداد الإشعارات - معزولة لمنع انهيار الواجهة
+    // وظيفة إعداد الإشعارات
     const setupWebPush = async () => {
       try {
-        // التحقق من دعم المتصفح قبل فعل أي شيء
         if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("Notification" in window)) {
           console.warn("إشعارات الويب غير مدعومة في هذه البيئة.");
           return;
         }
 
         const messaging = getMessaging(firebaseApp);
-        
-        // طلب الإذن
         const permission = await Notification.requestPermission();
         
         if (permission === 'granted') {
@@ -86,8 +82,6 @@ function AppSwitcher() {
 
           if (currentToken) {
             console.log('FCM Token Ready:', currentToken);
-            
-            // تحديث التوكن في نيون
             const userId = localStorage.getItem('userId');
             if (userId) {
               await fetch('/api/update-fcm-token', { 
@@ -99,7 +93,6 @@ function AppSwitcher() {
           }
         }
 
-        // الاستماع للإشعارات والتطبيق مفتوح
         onMessage(messaging, (payload) => {
           console.log('إشعار جديد أثناء التشغيل:', payload);
         });
@@ -111,10 +104,8 @@ function AppSwitcher() {
 
     // إعداد زر الرجوع في الأندرويد بشكل ديناميكي آمن
     const setupBackButton = async () => {
-      // التحقق من وجود Capacitor في النافذة ومن أنه هاتف أندرويد/آيفون
       if (window && window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
-          // استيراد الموديول برمجياً فقط عند الحاجة
           const { App: CapApp } = await import('@capacitor/app');
           CapApp.addListener('backButton', ({ canGoBack }) => {
             if (!canGoBack) {
@@ -129,7 +120,7 @@ function AppSwitcher() {
       }
     };
 
-    checkUpdate(); // تشغيل فحص التحديث
+    checkUpdate();
     setupWebPush();
     setupBackButton();
   }, []);
@@ -146,11 +137,13 @@ function AppSwitcher() {
   );
 }
 
-// تصدير الكومبوننت مغلفاً بـ ClerkProvider لمنع انهيار الشاشة البيضاء نهائياً عند استدعاء useUser
+// التعديل الجوهري: تغليف الـ Clerk بالـ BrowserRouter يفك الحظر عن الأزرار فوراً
 export default function RootApp() {
   return (
-    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-      <AppSwitcher />
-    </ClerkProvider>
+    <BrowserRouter>
+      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+        <AppSwitcher />
+      </ClerkProvider>
+    </BrowserRouter>
   );
 }
