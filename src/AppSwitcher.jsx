@@ -6,6 +6,12 @@ import ProfileSetup from './pages/ProfileSetup';
 import { initializeApp, getApps } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
+// استيراد ClerkProvider لضمان عدم حدوث شاشة بيضاء بسبب useUser()
+import { ClerkProvider } from "@clerk/clerk-react";
+
+// مفتاح Clerk العام الخاص بتطبيقك (تأكد من مطابقتك له أو استبداله بمفتاحك الخاص)
+const CLERK_PUBLISHABLE_KEY = "pk_test_Y2xlcmstcmVxLWFwcC0xMi5jbGVyay5hY2NvdW50cy5kZXYk"; 
+
 // 1. إعدادات Firebase الخاصة بمشروعك
 const firebaseConfig = {
   apiKey: "AIzaSyCT2wRZgzPv1Xg3M41ZhN7-_RGze_HrZkk",
@@ -140,4 +146,11 @@ function AppSwitcher() {
   );
 }
 
-export default AppSwitcher;
+// تصدير الكومبوننت مغلفاً بـ ClerkProvider لمنع انهيار الشاشة البيضاء نهائياً عند استدعاء useUser
+export default function RootApp() {
+  return (
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <AppSwitcher />
+    </ClerkProvider>
+  );
+}
