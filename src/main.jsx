@@ -9,9 +9,9 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm'; 
-import { ClerkProvider } from '@clerk/clerk-react'; // إضافة مكتبة كليرك
+import { ClerkProvider } from '@clerk/clerk-react'; // تم إضافة الاستيراد هنا فقط
 
-// --- إعدادات مفتاح كليرك المضافة بأمان ---
+// --- إعدادات مفتاح كليرك المضافة ---
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!PUBLISHABLE_KEY) {
@@ -80,10 +80,12 @@ const Main = () => {
           });
 
           // 3. طلب الأذونات للاثنين معاً في خطوة واحدة
+          // نطلب إذن Push وإذن Local Notifications
           let pushPerm = await PushNotifications.checkPermissions();
           let localPerm = await LocalNotifications.checkPermissions();
 
           if (pushPerm.receive === 'prompt' || localPerm.display === 'prompt') {
+            // طلب الأذونات بشكل متزامن
             await PushNotifications.requestPermissions();
             await LocalNotifications.requestPermissions();
           }
