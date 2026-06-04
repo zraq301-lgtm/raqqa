@@ -3,56 +3,61 @@ import { Client } from 'pg';
 import { Webhook } from 'svix'; // مكتبة التحقق من أمان طلبات Clerk
 
 export async function POST(req) {
-  // تعريف متغير العميل خارج الـ try لتأمين إغلاقه في الـ finally
   let client = null;
 
   try {
-    // 1. التحقق من أمان الـ Webhook لمنع أي طلبات خبيثة خارجية
-    const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
-    
-    if (!WEBHOOK_SECRET) {
-      console.error("خطأ: يرجى إضافة CLERK_WEBHOOK_SECRET في إعدادات فيرسل");
-      return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
-    }
-
-    // جلب الـ Headers المطلوبة للتحقق من التشفير
     const headerPayload = req.headers;
     const svix_id = headerPayload.get("svix-id");
     const svix_timestamp = headerPayload.get("svix-timestamp");
     const svix_signature = headerPayload.get("svix-signature");
 
-    if (!svix_id || !svix_timestamp || !svix_signature) {
-      return NextResponse.json({ error: "Missing svix headers" }, { status: 400 });
-    }
+    let payload;
 
-    // جلب نص الطلب الخام للتحقق من التوقيع الرقمي
-    const body = await req.text();
-    const wh = new Webhook(WEBHOOK_SECRET);
-    
-    let evt;
-    try {
-      evt = wh.verify(body, {
-        "svix-id": svix_id,
-        "svix-timestamp": svix_timestamp,
-        "svix-signature": svix_signature,
-      });
-    } catch (err) {
-      console.error("فشل التحقق من توقيع الـ Webhook القادم:", err.message);
-      return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
-    }
-
-    // 2. معالجة الحدث بعد التأكد من أمانه 
-    const payload = evt; // البيانات الموثوقة الآن
-
-    if (payload.type === 'user.created') {
-      const clerkId = payload.data.id;
-      const email = payload.data.email_addresses[0]?.email_address;
-
-      if (!email) {
-        return NextResponse.json({ error: "Missing email from Clerk" }, { status: 400 });
+    // 1. فحص هل الطلب قادم من Clerk (يحتوي على هيدرز Svix) أم طلب يدوي من الواجهة
+    if (svix_id && svix_timestamp && svix_signature) {
+      // الطلب قادم من Clerk -> نطبق الحقق الصارم لحماية الـ Webhook
+      const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
+      if (!WEBHOOK_SECRET) {
+        console.error("خطأ: يرجى إضافة CLERK_WEBHOOK_SECRET في إعدادات فيرسل");
+        return NextResponse.json({ error: "Server configuration missing" }, { status: 500 });
       }
 
-      // 3. الاتصال بـ نيون باستخدام DATABASE_URL الممرر عبر فيرسل
+      const body = await req.text();
+      const wh = new Webhook(WEBHOOK_SECRET);
+      
+      try {
+        payload = wh.verify(body, {
+          "svix-id": svix_id,
+          "svix-timestamp": svix_timestamp,
+          "svix-signature": svix_signature,
+        });
+      } catch (err) {
+        console.error("فشل التحقق من توقيع الـ Webhook القادم من Clerk:", err.message);
+        return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
+      }
+    } else {
+      // الطلب يدوي وقادم مباشرة من واجهة التطبيق الخاص بك (Manual Trigger)
+      // نقرأ البيانات مباشرة كـ JSON
+      payload = await req.json();
+      console.log("[API] تم استقبال طلب تهيئة يدوي مباشرة من واجهة التطبيق.");
+    }
+
+    // 2. معالجة البيانات بعد استخراج الـ payload بنجاح من أي من المصدرين
+    if (payload && payload.type === 'user.created') {
+      const clerkId = payload.data.id;
+      // جلب الإيميل بشكل مرن يدعم صيغة Clerk وصيغة الطلب اليدوي الخاص بك
+      const email = payload.data.email_addresses?.[0]?.email_address || payload.data.email;
+
+      if (!clerkId || !email) {
+        return NextResponse.json({ error: "Missing clerkId or email in data payload" }, { status: 400 });
+      }
+
+      // 3. الاتصال بقاعدة بيانات نيون (Neon)
+      if (!process.env.DATABASE_URL) {
+        console.error("خطأ: متغير DATABASE_URL غير معرف في فيرسل");
+        return NextResponse.json({ error: "Database configuration missing" }, { status: 500 });
+      }
+
       client = new Client({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false }, 
@@ -60,15 +65,14 @@ export async function POST(req) {
 
       await client.connect();
 
-      // 4. استدعاء الوظيفة الذكية المنشأة في نيون لبناء السكيما والـ 9 جداول
+      // 4. استدعاء وظيفة بناء الجداول الـ 9 داخل نيون
       const result = await client.query(
         'SELECT public.init_user_schema($1, $2) as schema_name;', 
         [clerkId, email]
       );
       
       const createdSchema = result.rows[0].schema_name;
-
-      console.log(`[Vercel & Neon] تم إنشاء السكيما والجداول الـ 9 بنجاح للمستخدمة: ${createdSchema}`);
+      console.log(`[Vercel & Neon] تم بناء السكيما بنجاح للمستخدم: ${createdSchema}`);
       
       return NextResponse.json({ 
         success: true, 
@@ -76,14 +80,13 @@ export async function POST(req) {
       }, { status: 200 });
     }
 
-    return NextResponse.json({ message: "Event received but no action needed." }, { status: 200 });
+    return NextResponse.json({ message: "Event received but no action taken." }, { status: 200 });
 
   } catch (error) {
-    console.error("Internal Error in Clerk Webhook:", error);
+    console.error("Internal Error in Clerk Webhook Route:", error);
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   } finally {
-    // الضمان الهندسي الأهم لسيرفرات Vercel Serverless:
-    // إغلاق الاتصال دائماً وأبداً سواء نجح الطلب أو فشل لمنع استهلاك اتصالات نيون
+    // إغلاق الاتصال دائماً لحماية خادم نيون وسيرفرليس فيرسل
     if (client) {
       await client.end();
     }
