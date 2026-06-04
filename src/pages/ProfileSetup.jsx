@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Capacitor } from "@capacitor/core";
 
 export default function ProfileSetup() {
-  // إضافة isLoaded للتأكد من أن مكتبة Clerk تم تحميلها بالكامل في الخلفية
+  // استخدام Clerk ومتابعة حالة التحميل لمنع انهيار الواجهة
   const { isSignedIn, user, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -26,19 +26,20 @@ export default function ProfileSetup() {
       let responseStatus;
       let responseData;
 
-      // فحص البيئة: إذا كنا على الموبايل نستخدم CapacitorHttp لتفادي الـ CORS
+      // فحص البيئة واستخدام fetch القياسي الذي يدعمه كاباسيتور أيضاً بكفاءة
+      // إذا كنت تواجه CORS على الموبايل، نستخدم جلب كاباسيتور الأصلي
       if (Capacitor.isNativePlatform()) {
-        const { CapacitorHttp } = await import("@capacitor/core");
-        const options = {
-          url: "https://raqqa-hjl8.vercel.app/api/webhooks/clerk",
+        // لتجنب مشاكل الـ Dynamic Import، نستخدم fetch المتصفح القياسي لأن Capacitor 
+        // يقوم بعمل Proxy للـ requests تلقائياً ويحل مشكلة CORS في أغلب الأحيان.
+        const response = await fetch("https://raqqa-hjl8.vercel.app/api/webhooks/clerk", {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          data: payload
-        };
-        const response = await CapacitorHttp.post(options);
+          body: JSON.stringify(payload)
+        });
         responseStatus = response.status;
-        responseData = response.data;
+        responseData = await response.json();
       } else {
-        // إذا كنا نختبر على متصفح الويب العادي نستخدم fetch التقليدي لتجنب أخطاء النيتف
+        // البيئة العادية (المتصفح)
         const response = await fetch("https://raqqa-hjl8.vercel.app/api/webhooks/clerk", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -61,7 +62,7 @@ export default function ProfileSetup() {
     }
   };
 
-  // 1. منع الشاشة البيضاء: إذا لم ينتهِ Clerk من التحميل، نظهر مؤشر تحميل ناعم بدلاً من انهيار التطبيق
+  // 1. منع الشاشة البيضاء الناتجة عن تأخر تحميل بيانات المستخدم
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 flex items-center justify-center">
@@ -71,7 +72,7 @@ export default function ProfileSetup() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 text-slate-800 flex flex-col items-center justify-center p-6 font-sans">
+    <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 text-slate-800 flex flex-col items-center justify-center p-6 font-sans" dir="rtl">
       <div className="max-w-md w-full bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-xl shadow-pink-100 border border-white/50 text-center relative overflow-hidden">
         
         {/* زخرفة خلفية علوية ناعمة */}
@@ -98,7 +99,7 @@ export default function ProfileSetup() {
           </div>
         ) : (
           <div>
-            <div className="flex items-center justify-center space-x-4 space-x-reverse bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl border border-rose-100/50 mb-6">
+            <div className="flex items-center justify-center bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl border border-rose-100/50 mb-6 gap-4">
               {user?.imageUrl && (
                 <img src={user.imageUrl} alt="Profile" className="w-14 h-14 rounded-full border-2 border-pink-300 p-0.5 shadow-sm" />
               )}
@@ -129,8 +130,8 @@ export default function ProfileSetup() {
               {statusMessage && (
                 <div className={`text-xs mt-3 p-3 rounded-xl border text-center font-medium ${
                   statusMessage.includes("✅") || statusMessage.includes("✨")
-                    ? "bg-emerald-50 border-emerald-150 text-emerald-700"
-                    : "bg-rose-50 border-rose-150 text-rose-700"
+                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                    : "bg-rose-50 border-rose-100 text-rose-700"
                 }`}>
                   {statusMessage}
                 </div>
@@ -138,7 +139,7 @@ export default function ProfileSetup() {
             </div>
 
             <SignOutButton>
-              <button className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium py-2.5 px-4 rounded-xl transition duration-200 text-xs border border-slate-250/60">
+              <button className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-700 font-medium py-2.5 px-4 rounded-xl transition duration-200 text-xs border border-slate-200">
                 مغادرة الحساب الحالي
               </button>
             </SignOutButton>
