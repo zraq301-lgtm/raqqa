@@ -1,43 +1,47 @@
 import { SignInButton, SignOutButton, useUser } from "@clerk/clerk-react";
 import { useState } from "react";
-import { Capacitor } from "@capacitor/core";
+// استيراد النواة الرسمية وكائن CapacitorHttp الصواب تماماً لمشروعك
+import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
 export default function ProfileSetup() {
-  // استخدام Clerk ومتابعة حالة التحميل لمنع انهيار الواجهة
   const { isSignedIn, user, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
-  // دالة طلب تنظيف وتهيئة الجداول
   const handleResetDatabase = async () => {
     setLoading(true);
     setStatusMessage("");
-    try {
-      const payload = {
-        type: "user.created",
-        data: {
-          id: user?.id || "test_user_123",
-          email_addresses: [
-            { email_address: user?.primaryEmailAddress?.emailAddress || "test@example.com" }
-          ]
-        }
-      };
 
+    const TARGET_API_URL = "https://raqqa-hjl8.vercel.app/api/user/setup-rooms/route";
+    
+    const payload = {
+      type: "user.created",
+      data: {
+        id: user?.id || "test_user_123",
+        email_addresses: [
+          { email: user?.primaryEmailAddress?.emailAddress || "test@example.com" }
+        ]
+      }
+    };
+
+    try {
       let responseStatus;
       let responseData;
 
-      // استخدام المسار الجديد المنفصل لبناء الغرف مع إضافة كلمة route
-      const TARGET_API_URL = "https://raqqa-hjl8.vercel.app/api/user/setup-rooms/route";
-
       if (Capacitor.isNativePlatform()) {
-        const response = await fetch(TARGET_API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
+        // --- استخدام الطريقة الصواب: CapacitorHttp للموبايل (تخطي CORS نهائياً) ---
+        const options = {
+          url: TARGET_API_URL,
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          data: payload, // CapacitorHttp يستقبل البيانات في كائن data وليس body
+        };
+
+        const response = await CapacitorHttp.post(options);
         responseStatus = response.status;
-        responseData = await response.json();
+        responseData = response.data;
       } else {
+        // --- استخدام fetch القياسي للمتصفح (Web) ---
         const response = await fetch(TARGET_API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -50,17 +54,16 @@ export default function ProfileSetup() {
       if (responseStatus === 200 || responseStatus === 201) {
         setStatusMessage("✨ تم تهيئة السكيما وبناء غرفكِ الـ 9 بنجاح في رقة!");
       } else {
-        setStatusMessage(`❌ تواصل مع السيرفر فشل: ${responseData?.error || "خطأ غير معروف"}`);
+        setStatusMessage(`❌ فشل الاتصال: ${responseData?.error || "خطأ في السيرفر"}`);
       }
     } catch (error) {
-      setStatusMessage("❌ حدث خطأ أثناء الاتصال بالنظام الخارجي");
-      console.error(error);
+      setStatusMessage("❌ حدث خطأ في الشبكة أو النظام الخارجي");
+      console.error("CapacitorHttp/Fetch Error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 1. منع الشاشة البيضاء الناتجة عن تأخر تحميل بيانات المستخدم
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 flex items-center justify-center">
