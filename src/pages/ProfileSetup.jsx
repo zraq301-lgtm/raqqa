@@ -1,40 +1,57 @@
 import { SignInButton, SignOutButton, useUser } from "@clerk/clerk-react";
 import { useState } from "react";
-import { CapacitorHttp } from "@capacitor/core";
+import { Capacitor } from "@capacitor/core";
 
 export default function ProfileSetup() {
-  const { isSignedIn, user } = useUser();
+  // إضافة isLoaded للتأكد من أن مكتبة Clerk تم تحميلها بالكامل في الخلفية
+  const { isSignedIn, user, isLoaded } = useUser();
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
-  // دالة طلب تنظيف وتهيئة الجداول باستخدام CapacitorHttp بدلاً من fetch التقليدي
+  // دالة طلب تنظيف وتهيئة الجداول
   const handleResetDatabase = async () => {
     setLoading(true);
     setStatusMessage("");
     try {
-      const options = {
-        url: "https://raqqa-hjl8.vercel.app/api/webhooks/clerk",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const payload = {
+        type: "user.created",
         data: {
-          type: "user.created",
-          data: {
-            id: user?.id || "test_user_123",
-            email_addresses: [
-              { email_address: user?.primaryEmailAddress?.emailAddress || "test@example.com" }
-            ]
-          }
+          id: user?.id || "test_user_123",
+          email_addresses: [
+            { email_address: user?.primaryEmailAddress?.emailAddress || "test@example.com" }
+          ]
         }
       };
 
-      // إرسال الطلب عبر الجسر النيتف لـ Capacitor لمنع أخطاء CORS على الهواتف
-      const response = await CapacitorHttp.post(options);
+      let responseStatus;
+      let responseData;
 
-      if (response.status === 200 || response.status === 201) {
+      // فحص البيئة: إذا كنا على الموبايل نستخدم CapacitorHttp لتفادي الـ CORS
+      if (Capacitor.isNativePlatform()) {
+        const { CapacitorHttp } = await import("@capacitor/core");
+        const options = {
+          url: "https://raqqa-hjl8.vercel.app/api/webhooks/clerk",
+          headers: { "Content-Type": "application/json" },
+          data: payload
+        };
+        const response = await CapacitorHttp.post(options);
+        responseStatus = response.status;
+        responseData = response.data;
+      } else {
+        // إذا كنا نختبر على متصفح الويب العادي نستخدم fetch التقليدي لتجنب أخطاء النيتف
+        const response = await fetch("https://raqqa-hjl8.vercel.app/api/webhooks/clerk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        responseStatus = response.status;
+        responseData = await response.json();
+      }
+
+      if (responseStatus === 200 || responseStatus === 201) {
         setStatusMessage("✨ تم تهيئة السكيما وبناء غرفكِ الـ 9 بنجاح في رقة!");
       } else {
-        setStatusMessage(`❌ تواصل مع السيرفر فشل: ${response.data?.error || "خطأ غير معروف"}`);
+        setStatusMessage(`❌ تواصل مع السيرفر فشل: ${responseData?.error || "خطأ غير معروف"}`);
       }
     } catch (error) {
       setStatusMessage("❌ حدث خطأ أثناء الاتصال بالنظام الخارجي");
@@ -43,6 +60,15 @@ export default function ProfileSetup() {
       setLoading(false);
     }
   };
+
+  // 1. منع الشاشة البيضاء: إذا لم ينتهِ Clerk من التحميل، نظهر مؤشر تحميل ناعم بدلاً من انهيار التطبيق
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-rose-500 font-medium text-sm animate-pulse">جاري تحضير عالمكِ الرقيق...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-rose-50 via-purple-50 to-pink-100 text-slate-800 flex flex-col items-center justify-center p-6 font-sans">
@@ -59,7 +85,6 @@ export default function ProfileSetup() {
         </p>
 
         {!isSignedIn ? (
-          // واجهة المستخدم إذا لم تكن مسجلة دخول
           <div className="space-y-6">
             <div className="p-4 bg-rose-50/60 rounded-2xl border border-rose-100 text-rose-700 text-sm leading-relaxed">
               أهلاً بكِ في عالمكِ الخاص.. يرجى تسجيل الدخول للوصول إلى دليلكِ الصحي وجداولكِ الآمنة.
@@ -72,7 +97,6 @@ export default function ProfileSetup() {
             </SignInButton>
           </div>
         ) : (
-          // واجهة المستخدم بعد تسجيل الدخول بنجاح
           <div>
             <div className="flex items-center justify-center space-x-4 space-x-reverse bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl border border-rose-100/50 mb-6">
               {user?.imageUrl && (
@@ -84,11 +108,10 @@ export default function ProfileSetup() {
               </div>
             </div>
 
-            {/* قسم إدارة المطور لفرش الجداول */}
             <div className="mt-4 p-5 bg-purple-50/40 rounded-2xl border border-purple-100 mb-6 text-right">
               <h3 className="text-xs font-bold text-purple-700 mb-1">لوحة التحكم الفنية</h3>
               <p className="text-xs text-slate-500 mb-4 leading-relaxed">
-                اضغطي أدناه لتحديث الجداول وإرسال الطلب الآمن عبر جسر CapacitorHttp إلى قاعدة البيانات.
+                اضغطي أدناه لتحديث الجداول وإرسال الطلب الآمن عبر قاعدة البيانات.
               </p>
               
               <button
