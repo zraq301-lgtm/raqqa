@@ -9,20 +9,19 @@ export default function ProfileSetup({ onComplete }) {
   const [statusMessage, setStatusMessage] = useState("");
   const [forceShow, setForceShow] = useState(false);
 
-  // حرس أمان محصن: يضمن ظهور الصفحة فوراً بعد 800 مللي ثانية كحد أقصى حتى لو علق سيرفر Clerk
+  // حارس يمنع الشاشة البيضاء في الواجهة في حال تأخر استجابة المكتبة
   useEffect(() => {
     if (isLoaded) {
       setForceShow(true);
     } else {
-      const timer = setTimeout(() => setForceShow(true), 800);
+      const timer = setTimeout(() => setForceShow(true), 1000);
       return () => clearTimeout(timer);
     }
   }, [isLoaded]);
 
-  // دالة الدخول المباشرة للمنصات (جوجل وفيسبوك)
   const handleSocialSignIn = async (provider) => {
     if (!signIn) {
-      setStatusMessage("❌ نظام Clerk جاري تحضيره، انتظر لحظة وأعد الضغط...");
+      setStatusMessage("❌ نظام Clerk جاري تهيئته، يرجى الانتظار ثانية واحدة...");
       return;
     }
     try {
@@ -33,11 +32,10 @@ export default function ProfileSetup({ onComplete }) {
       });
     } catch (err) {
       console.error(err);
-      setStatusMessage(`❌ خطأ أثناء التوجيه: ${err.message || err}`);
+      setStatusMessage(`❌ خطأ أثناء توجيه الدخول: ${err.message || err}`);
     }
   };
 
-  // دالة تهيئة غرف البيانات الـ 9 في السيرفر
   const handleResetDatabase = async () => {
     setLoading(true);
     setStatusMessage("");
@@ -75,7 +73,7 @@ export default function ProfileSetup({ onComplete }) {
 
       if (responseStatus === 200 || responseStatus === 201) {
         setStatusMessage("✨ ممتاز! تم بناء وتجهيز غرفكِ الـ 9 بنجاح داخل رقة.");
-        if (onComplete) onComplete(); // إعلام الكومبوننت الأب باكتمال العملية لفتح التطبيق الرئيسي
+        if (onComplete) onComplete(); 
       } else {
         setStatusMessage(`❌ رفض السيرفر: ${responseData?.error || "خطأ غير معروف"}`);
       }
@@ -86,7 +84,6 @@ export default function ProfileSetup({ onComplete }) {
     }
   };
 
-  // شاشة التحميل الخفيفة والسريعة جداً
   if (!forceShow) {
     return (
       <div className="min-h-screen bg-rose-50 flex items-center justify-center">
@@ -109,52 +106,34 @@ export default function ProfileSetup({ onComplete }) {
         </p>
 
         {!isSignedIn ? (
-          /* 1️⃣ واجهة تسجيل الدخول بالأيقونات الضخمة والمضيئة باستمرار */
           <div className="space-y-8 animate-fade-in">
             <div className="p-4 bg-rose-50/80 rounded-2xl border border-rose-100/60 text-rose-700 text-sm font-medium leading-relaxed shadow-inner">
               مرحباً بكِ في عالمكِ الخاص الفخم.. يرجى النقر على أيقونة الدخول المفضلة لكِ:
             </div>
             
             <div className="flex justify-center items-center gap-8 py-4">
-              
-              {/* أيقونة جميل (جوجل) - عملاقة ومضيئة بالنبض المستمر */}
               <button 
                 onClick={() => handleSocialSignIn("google")}
                 className="group relative flex flex-col items-center justify-center w-24 h-24 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/60 transition-all duration-300 active:scale-95"
               >
-                {/* تأثير إضاءة خلفي نابض مستمر وبشكل دائم ليعطي اللمعان المطلق */}
                 <span className="absolute inset-0 bg-rose-400/20 rounded-3xl blur-xl opacity-100 animate-pulse"></span>
-                
-                <img 
-                  src="https://www.svgrepo.com/show/475656/google-color.svg" 
-                  className="w-12 h-12 relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" 
-                  alt="Google" 
-                />
-                <span className="text-[11px] font-bold text-slate-500 mt-2 relative z-10 group-hover:text-rose-500 transition-colors">Gmail</span>
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-12 h-12 relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" alt="Google" />
+                <span className="text-[11px] font-bold text-slate-500 mt-2 relative z-10">Gmail</span>
               </button>
 
-              {/* أيقونة فيسبوك - عملاقة ومضيئة باللون الأزرق الفخم */}
               <button 
                 onClick={() => handleSocialSignIn("facebook")}
                 className="group relative flex flex-col items-center justify-center w-24 h-24 bg-[#1877F2] rounded-3xl shadow-xl shadow-blue-400/40 transition-all duration-300 active:scale-95"
               >
-                {/* تأثير إضاءة خلفي أزرق نابض مستمر ولامع للغاية */}
                 <span className="absolute inset-0 bg-blue-500/40 rounded-3xl blur-xl opacity-100 animate-pulse"></span>
-                
-                <img 
-                  src="https://www.svgrepo.com/show/475647/facebook-color.svg" 
-                  className="w-12 h-12 relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" 
-                  alt="Facebook" 
-                />
-                <span className="text-[11px] font-bold text-white mt-2 relative z-10 transition-colors">Facebook</span>
+                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="w-12 h-12 relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" alt="Facebook" />
+                <span className="text-[11px] font-bold text-white mt-2 relative z-10">Facebook</span>
               </button>
-
             </div>
 
             <p className="text-[11px] text-slate-400 font-medium">تسجيل دخول آمن ومشفر بواسطة نظام Clerk الحركي 🔒</p>
           </div>
         ) : (
-          /* 2️⃣ واجهة التحكم بعد الدخول بنجاح */
           <div className="space-y-6">
             <div className="flex items-center justify-center bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl gap-4 border border-rose-100/50 shadow-sm">
               {user?.imageUrl && (
