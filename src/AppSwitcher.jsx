@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import App from './App';
-import ProfileSetup from './pages/ProfileSetup';
-
-// استيراد الـ Router لضمان تشغيل أزرار الدخول ومنع تعليقها
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter } from 'react-router-dom'; 
-
-// استيراد ClerkProvider لضمان عدم حدوث شاشة بيضاء
 import { ClerkProvider } from "@clerk/clerk-react";
 
-// مفتاح Clerk العام الخاص بتطبيقك
+// 🛠️ الطريقة الاحترافية: استيراد المكونات بشكل كسول (Lazy Loading) لمنع انهيار الشاشة البيضاء
+const App = lazy(() => import('./App'));
+const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
+
 const CLERK_PUBLISHABLE_KEY = "pk_test_Y2xlcmstcmVxLWFwcC0xMi5jbGVyay5hY2NvdW50cy5kZXYk"; 
+
+// واجهة تحميل مؤقتة فخمة وسريعة تظهر أثناء تبديل المكاتب خلف الكواليس
+const SkeletonLoader = () => (
+  <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center font-sans" dir="rtl">
+    <div className="text-center space-y-4">
+      <div className="text-3xl font-black text-rose-500 animate-pulse">رقة ✨</div>
+      <div className="text-xs text-slate-400">جاري تهيئة المساحة الآمنة...</div>
+    </div>
+  </div>
+);
 
 function AppSwitcher({ onComplete }) {
   const [isRegistered, setIsRegistered] = useState(() => {
@@ -47,7 +54,7 @@ function AppSwitcher({ onComplete }) {
       }
     };
 
-    // إعداد زر الرجوع في الأندرويد بشكل ديناميكي آمن عبر Capacitor
+    // إعداد زر الرجوع في الأندرويد بشكل ديناميكي آمن
     const setupBackButton = async () => {
       if (window && window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
@@ -77,7 +84,10 @@ function AppSwitcher({ onComplete }) {
 
   return (
     <div className="switcher-wrapper" style={{ minHeight: '100vh', backgroundColor: '#fff' }}>
-      {isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />}
+      {/* غلاف الـ Suspense يمنع الشاشة البيضاء ويظهر الـ Loader لحين جاهزية المكون تماماً */}
+      <Suspense fallback={<SkeletonLoader />}>
+        {isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />}
+      </Suspense>
     </div>
   );
 }
