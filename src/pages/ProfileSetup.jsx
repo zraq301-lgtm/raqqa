@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// إضافة الامتداد .js صراحة لضمان معالجة المسار بشكل صحيح داخل Vite ودون انهيار الـ Bundler
+// التصحيح الحاسم: استخدام المسار المطلق لضمان عثور Vite على الملف أثناء البناء (Build)
 import { supabase } from '/src/supabaseClient.js';
 
 const ProfileSetup = ({ onComplete }) => {
@@ -9,15 +9,15 @@ const ProfileSetup = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // فحص أولي آمن للتأكد من أن حزمة Supabase تم استيرادها بنجاح ولا تسبب تعليقاً بالواجهة
+  // فحص استقرار الاتصال عند تحميل الصفحة
   useEffect(() => {
     if (!supabase) {
-      console.error("💥 خطأ حرج: عميل سوبابيز غير مستقر أو المسار غير صحيح.");
-      setMessage({ type: 'error', text: 'هناك مشكلة في الاتصال بالسيرفر حالياً، جاري فحص النظام.' });
+      console.error("💥 خطأ: فشل استيراد عميل سوبابيز.");
+      setMessage({ type: 'error', text: 'عذراً يا جميلة، هناك عطل فني في الاتصال بالسيرفر.' });
     }
   }, []);
 
-  // 1. التسجيل اليدوي (إيميل وباسورد)
+  // 1. التسجيل اليدوي
   const handleManualRegister = async (e) => {
     e.preventDefault();
     if (!email || !password || !fullName) {
@@ -29,7 +29,7 @@ const ProfileSetup = ({ onComplete }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      if (!supabase) throw new Error("اتصال قاعدة البيانات غير جاهز بعد.");
+      if (!supabase) throw new Error("اتصال قاعدة البيانات غير جاهز.");
 
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -45,14 +45,14 @@ const ProfileSetup = ({ onComplete }) => {
 
       setMessage({ 
         type: 'success', 
-        text: 'تم إنشاء حسابك بنجاح! تفحصي بريدك الإلكتروني لتأكيده ولبدء رحلتك الدافئة معنا ✨' 
+        text: 'تم إنشاء حسابك بنجاح! تفحصي بريدك الإلكتروني لتأكيده ✨' 
       });
 
-      // حفظ تفعيل الحساب المبدئي محلياً لمنع الارتداد للشاشة البيضاء
+      // حفظ بريد المستخدم محلياً كمرجع
       try {
         localStorage.setItem('user_email', email);
       } catch (ex) {
-        console.warn("LocalStorage space is restricted", ex);
+        console.warn("LocalStorage space error", ex);
       }
 
       if (onComplete && data?.user) {
@@ -60,21 +60,19 @@ const ProfileSetup = ({ onComplete }) => {
       }
 
     } catch (error) {
-      console.error("Registration Error Log:", error);
-      setMessage({ type: 'error', text: error.message || 'حدث خطأ ما، أعيدي المحاولة يا جميلة.' });
+      console.error("Registration Log:", error);
+      setMessage({ type: 'error', text: error.message || 'حدث خطأ ما، أعيدي المحاولة.' });
     } finally {
       setLoading(false);
     }
   };
 
-  // 2. التسجيل السريع عبر فيسبوك
+  // 2. تسجيل الفيسبوك
   const handleFacebookLogin = async () => {
     setLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
-      if (!supabase) throw new Error("اتصال قاعدة البيانات غير جاهز بعد.");
-
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
@@ -84,8 +82,8 @@ const ProfileSetup = ({ onComplete }) => {
 
       if (error) throw error;
     } catch (error) {
-      console.error("OAuth Error Log:", error);
-      setMessage({ type: 'error', text: 'تعذر الاتصال بفيسبوك، حاولي مرة أخرى.' });
+      console.error("Facebook Error:", error);
+      setMessage({ type: 'error', text: 'تعذر الاتصال بفيسبوك حالياً.' });
     } finally {
       setLoading(false);
     }
@@ -94,10 +92,8 @@ const ProfileSetup = ({ onComplete }) => {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#FFF0F5] via-[#F3E5F5] to-[#E8F5E9] flex flex-col justify-center items-center p-6 font-sans" dir="rtl">
       
-      {/* بطاقة التسجيل الأنيقة بحواف دائرية فخمة */}
       <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-[0_8px_30px_rgb(244,143,177,0.15)] border border-pink-100/50 flex flex-col">
         
-        {/* الهيدر وشعار التطبيق اللطيف */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-300 to-purple-400 rounded-full text-white text-3xl shadow-md mb-3 animate-pulse">
             🌸
@@ -110,7 +106,6 @@ const ProfileSetup = ({ onComplete }) => {
           </p>
         </div>
 
-        {/* تنبيهات النجاح أو الأخطاء بلمسة رقيقة */}
         {message.text && (
           <div className={`mb-5 p-4 rounded-2xl text-sm font-medium text-center border transition-all duration-200 ${
             message.type === 'success' 
@@ -121,7 +116,6 @@ const ProfileSetup = ({ onComplete }) => {
           </div>
         )}
 
-        {/* نموذج إدخال البيانات */}
         <form onSubmit={handleManualRegister} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1 text-right">الاسم الكامل</label>
@@ -130,7 +124,7 @@ const ProfileSetup = ({ onComplete }) => {
               placeholder="جميلتي، ما هو اسمكِ؟"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-5 py-3.5 bg-pink-50/30 border border-pink-100/70 rounded-2xl text-gray-700 placeholder-gray-400/80 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:bg-white transition-all duration-200 text-right"
+              className="w-full px-5 py-3.5 bg-pink-50/30 border border-pink-100/70 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:bg-white transition-all text-right"
             />
           </div>
 
@@ -141,7 +135,7 @@ const ProfileSetup = ({ onComplete }) => {
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-5 py-3.5 bg-pink-50/30 border border-pink-100/70 rounded-2xl text-gray-700 placeholder-gray-400/80 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:bg-white transition-all duration-200 text-left"
+              className="w-full px-5 py-3.5 bg-pink-50/30 border border-pink-100/70 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:bg-white transition-all text-left"
             />
           </div>
 
@@ -152,33 +146,30 @@ const ProfileSetup = ({ onComplete }) => {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-5 py-3.5 bg-pink-50/30 border border-pink-100/70 rounded-2xl text-gray-700 placeholder-gray-400/80 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:bg-white transition-all duration-200 text-left"
+              className="w-full px-5 py-3.5 bg-pink-50/30 border border-pink-100/70 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:bg-white transition-all text-left"
             />
           </div>
 
-          {/* زر التقديم اليدوي بتأثير تدرج ناعم */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-pink-400 to-purple-400 text-white font-semibold rounded-2xl shadow-lg hover:from-pink-500 hover:to-purple-500 active:scale-[0.98] transition-all duration-200 mt-6 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-4 bg-gradient-to-r from-pink-400 to-purple-400 text-white font-semibold rounded-2xl shadow-lg hover:from-pink-500 hover:to-purple-500 active:scale-[0.98] transition-all mt-6 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? 'جاري تهيئة مساحتكِ...' : 'ابدئي رحلتكِ الجميلة الآن ✨'}
           </button>
         </form>
 
-        {/* فاصل بصري هادئ */}
         <div className="relative flex py-5 items-center my-2">
           <div className="flex-grow border-t border-pink-100/60"></div>
           <span className="flex-shrink mx-4 text-xs text-gray-400 font-normal">أو من خلال</span>
           <div className="flex-grow border-t border-pink-100/60"></div>
         </div>
 
-        {/* زر الفيسبوك */}
         <button
           type="button"
           onClick={handleFacebookLogin}
           disabled={loading}
-          className="w-full py-3.5 px-4 bg-[#1877F2] text-white font-medium rounded-2xl shadow-md hover:bg-[#166FE5] active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full py-3.5 px-4 bg-[#1877F2] text-white font-medium rounded-2xl shadow-md hover:bg-[#166FE5] active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
         >
           <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -186,11 +177,9 @@ const ProfileSetup = ({ onComplete }) => {
           <span className="text-sm">التسجيل السريع باستخدام فيسبوك</span>
         </button>
 
-        {/* فوتر البطاقة */}
         <p className="text-center text-xs text-gray-400 mt-8">
           لديكِ حساب بالفعل؟ <span className="text-pink-500 font-medium cursor-pointer hover:underline">تسجيل الدخول</span>
         </p>
-
       </div>
     </div>
   );
