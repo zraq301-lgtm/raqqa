@@ -14,6 +14,7 @@
     "react-router-dom": "^6.22.0",
     "firebase": "^10.13.2",
     "@clerk/clerk-react": "^5.0.0",
+    "@supabase/supabase-js": "^2.43.4",
     "@capacitor/core": "^6.0.0",
     "@capacitor/android": "^6.0.0",
     "@capacitor/app": "^6.0.0",
