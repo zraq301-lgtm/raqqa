@@ -1,31 +1,45 @@
+import React, { useState, useEffect } from "react";
+// 🛠️ استيراد الهوكس مع مكونات الحماية
 import { useUser, useSignIn, SignOutButton } from "@clerk/clerk-react";
-import { useState, useEffect } from "react";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
 export default function ProfileSetup({ onComplete }) {
-  const { isSignedIn, user, isLoaded } = useUser();
-  const { signIn } = useSignIn(); 
+  // 🔐 حماية فنية: الالتفاف حول الهوكس لمنع الانهيار إذا لم تكن المكاتب جاهزة بالكامل بعد
+  let clerkUser = null;
+  let clerkSignIn = null;
+  let isClerkLoaded = false;
+
+  try {
+    const userContext = useUser();
+    const signInContext = useSignIn();
+    clerkUser = userContext.user;
+    clerkSignIn = signInContext.signIn;
+    isClerkLoaded = userContext.isLoaded;
+  } catch (e) {
+    console.warn("Clerk context not found yet, delaying initialization...");
+  }
+
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [forceShow, setForceShow] = useState(false);
 
   // حارس يمنع الشاشة البيضاء في الواجهة في حال تأخر استجابة المكتبة
   useEffect(() => {
-    if (isLoaded) {
+    if (isClerkLoaded) {
       setForceShow(true);
     } else {
-      const timer = setTimeout(() => setForceShow(true), 1000);
+      const timer = setTimeout(() => setForceShow(true), 1200);
       return () => clearTimeout(timer);
     }
-  }, [isLoaded]);
+  }, [isClerkLoaded]);
 
   const handleSocialSignIn = async (provider) => {
-    if (!signIn) {
-      setStatusMessage("❌ نظام Clerk جاري تهيئته، يرجى الانتظار ثانية واحدة...");
+    if (!clerkSignIn) {
+      setStatusMessage("❌ نظام الدخول غير جاهز بعد أو هناك مشكلة في مفاتيح بيئة العمل.");
       return;
     }
     try {
-      await signIn.authenticateWithRedirect({
+      await clerkSignIn.authenticateWithRedirect({
         strategy: `oauth_${provider}`,
         redirectUrl: "/sso-callback",
         redirectUrlComplete: "/"
@@ -44,8 +58,8 @@ export default function ProfileSetup({ onComplete }) {
     const payload = {
       type: "user.created",
       data: {
-        id: user?.id || "unknown_id",
-        email_addresses: [{ email: user?.primaryEmailAddress?.emailAddress || "no-email@internal" }]
+        id: clerkUser?.id || "unknown_id",
+        email_addresses: [{ email: clerkUser?.primaryEmailAddress?.emailAddress || "no-email@internal" }]
       }
     };
 
@@ -86,11 +100,17 @@ export default function ProfileSetup({ onComplete }) {
 
   if (!forceShow) {
     return (
-      <div className="min-h-screen bg-rose-50 flex items-center justify-center">
-        <div className="text-rose-500 font-bold animate-pulse text-lg">جاري تحضير رقة... ✨</div>
+      <div className="min-h-screen bg-rose-50 flex items-center justify-center font-sans" dir="rtl">
+        <div className="text-center space-y-3">
+          <div className="text-rose-500 font-bold animate-pulse text-2xl">رقة ✨</div>
+          <div className="text-xs text-slate-400">جاري فحص اتصال لوحة التحكم الفنية...</div>
+        </div>
       </div>
     );
   }
+
+  // التحقق من حالة التسجيل بأمان
+  const userIsSignedIn = !!clerkUser;
 
   return (
     <div className="min-h-screen bg-gradient-to-tr from-rose-100 via-purple-50 to-pink-200 flex flex-col items-center justify-center p-6 font-sans" dir="rtl">
@@ -105,7 +125,7 @@ export default function ProfileSetup({ onComplete }) {
           ملاذكِ الذكي لمتابعة روتينكِ الصحي بخصوصية تامة
         </p>
 
-        {!isSignedIn ? (
+        {!userIsSignedIn ? (
           <div className="space-y-8 animate-fade-in">
             <div className="p-4 bg-rose-50/80 rounded-2xl border border-rose-100/60 text-rose-700 text-sm font-medium leading-relaxed shadow-inner">
               مرحباً بكِ في عالمكِ الخاص الفخم.. يرجى النقر على أيقونة الدخول المفضلة لكِ:
@@ -136,12 +156,12 @@ export default function ProfileSetup({ onComplete }) {
         ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-center bg-gradient-to-r from-rose-50 to-purple-50 p-4 rounded-2xl gap-4 border border-rose-100/50 shadow-sm">
-              {user?.imageUrl && (
-                <img src={user.imageUrl} className="w-12 h-12 rounded-full border-2 border-pink-300 p-0.5 shadow-sm" alt="profile" />
+              {clerkUser?.imageUrl && (
+                <img src={clerkUser.imageUrl} className="w-12 h-12 rounded-full border-2 border-pink-300 p-0.5 shadow-sm" alt="profile" />
               )}
               <div className="text-right">
-                <p className="font-bold text-slate-700">{user?.fullName || "مرحباً بكِ"}</p>
-                <p className="text-xs text-slate-400 font-mono">{user?.primaryEmailAddress?.emailAddress}</p>
+                <p className="font-bold text-slate-700">{clerkUser?.fullName || "مرحباً بكِ"}</p>
+                <p className="text-xs text-slate-400 font-mono">{clerkUser?.primaryEmailAddress?.emailAddress}</p>
               </div>
             </div>
 
@@ -170,11 +190,14 @@ export default function ProfileSetup({ onComplete }) {
               )}
             </div>
 
-            <SignOutButton>
-              <button className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 py-2.5 rounded-xl transition text-xs border border-slate-200">
-                تسجيل الخروج
-              </button>
-            </SignOutButton>
+            {/* حماية للزر لكي لا يتعطل الكود بالخارج */}
+            {isClerkLoaded ? (
+              <SignOutButton>
+                <button className="w-full bg-slate-50 hover:bg-slate-100 text-slate-500 py-2.5 rounded-xl transition text-xs border border-slate-200">
+                  تسجيل الخروج
+                </button>
+              </SignOutButton>
+            ) : null}
           </div>
         )}
       </div>
