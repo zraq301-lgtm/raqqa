@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-with-rc'; // أو المكتبة القياسية المعتمدة لديك
+import { createClient } from '@supabase/supabase-js';
 
 // قراءة متغيرات البيئة التي أضفناها في فيرسل
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
