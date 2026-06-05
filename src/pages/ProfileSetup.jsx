@@ -2,18 +2,21 @@ import { useUser, useSignIn, SignOutButton } from "@clerk/clerk-react";
 import { useState, useEffect } from "react";
 import { Capacitor, CapacitorHttp } from "@capacitor/core";
 
-export default function ProfileSetup() {
+export default function ProfileSetup({ onComplete }) {
   const { isSignedIn, user, isLoaded } = useUser();
   const { signIn } = useSignIn(); 
   const [loading, setLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [forceShow, setForceShow] = useState(false);
 
-  // حرس أمان: إذا تأخر Clerk لأي سبب في الموبايل، اظهر الواجهة فوراً ولا تعلّق الشاشة
+  // حرس أمان محصن: يضمن ظهور الصفحة فوراً بعد 800 مللي ثانية كحد أقصى حتى لو علق سيرفر Clerk
   useEffect(() => {
-    const timer = setTimeout(() => setForceShow(true), 1500);
-    if (isLoaded) setForceShow(true);
-    return () => clearTimeout(timer);
+    if (isLoaded) {
+      setForceShow(true);
+    } else {
+      const timer = setTimeout(() => setForceShow(true), 800);
+      return () => clearTimeout(timer);
+    }
   }, [isLoaded]);
 
   // دالة الدخول المباشرة للمنصات (جوجل وفيسبوك)
@@ -34,11 +37,10 @@ export default function ProfileSetup() {
     }
   };
 
-  // دالة تهيئة غرف البيانات الـ 9 في السيرفر (باستخدام المسار الجديد)
+  // دالة تهيئة غرف البيانات الـ 9 في السيرفر
   const handleResetDatabase = async () => {
     setLoading(true);
     setStatusMessage("");
-    // تعديل الرابط إلى المسار الجديد والمباشر الذي حددته
     const TARGET_API_URL = "https://raqqa-hjl8.vercel.app/api/user-route";
     
     const payload = {
@@ -73,6 +75,7 @@ export default function ProfileSetup() {
 
       if (responseStatus === 200 || responseStatus === 201) {
         setStatusMessage("✨ ممتاز! تم بناء وتجهيز غرفكِ الـ 9 بنجاح داخل رقة.");
+        if (onComplete) onComplete(); // إعلام الكومبوننت الأب باكتمال العملية لفتح التطبيق الرئيسي
       } else {
         setStatusMessage(`❌ رفض السيرفر: ${responseData?.error || "خطأ غير معروف"}`);
       }
@@ -83,6 +86,7 @@ export default function ProfileSetup() {
     }
   };
 
+  // شاشة التحميل الخفيفة والسريعة جداً
   if (!forceShow) {
     return (
       <div className="min-h-screen bg-rose-50 flex items-center justify-center">
@@ -105,7 +109,7 @@ export default function ProfileSetup() {
         </p>
 
         {!isSignedIn ? (
-          /* 1️⃣ واجهة تسجيل الدخول بالأيقونات العملاقة واللامعة للغاية */
+          /* 1️⃣ واجهة تسجيل الدخول بالأيقونات الضخمة والمضيئة باستمرار */
           <div className="space-y-8 animate-fade-in">
             <div className="p-4 bg-rose-50/80 rounded-2xl border border-rose-100/60 text-rose-700 text-sm font-medium leading-relaxed shadow-inner">
               مرحباً بكِ في عالمكِ الخاص الفخم.. يرجى النقر على أيقونة الدخول المفضلة لكِ:
@@ -113,15 +117,14 @@ export default function ProfileSetup() {
             
             <div className="flex justify-center items-center gap-8 py-4">
               
-              {/* أيقونة جميل (جوجل) - عملاقة ولامعة جداً */}
+              {/* أيقونة جميل (جوجل) - عملاقة ومضيئة بالنبض المستمر */}
               <button 
                 onClick={() => handleSocialSignIn("google")}
-                className="group relative flex flex-col items-center justify-center w-24 h-24 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/60 hover:shadow-rose-200/80 transition-all duration-300 active:scale-90"
+                className="group relative flex flex-col items-center justify-center w-24 h-24 bg-white rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/60 transition-all duration-300 active:scale-95"
               >
-                {/* تأثير الإضاءة الخلفية النضّاحة */}
-                <span className="absolute inset-0 bg-rose-400/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></span>
+                {/* تأثير إضاءة خلفي نابض مستمر وبشكل دائم ليعطي اللمعان المطلق */}
+                <span className="absolute inset-0 bg-rose-400/20 rounded-3xl blur-xl opacity-100 animate-pulse"></span>
                 
-                {/* الأيقونة العملاقة */}
                 <img 
                   src="https://www.svgrepo.com/show/475656/google-color.svg" 
                   className="w-12 h-12 relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" 
@@ -130,21 +133,20 @@ export default function ProfileSetup() {
                 <span className="text-[11px] font-bold text-slate-500 mt-2 relative z-10 group-hover:text-rose-500 transition-colors">Gmail</span>
               </button>
 
-              {/* أيقونة فيسبوك - عملاقة ولامعة جداً */}
+              {/* أيقونة فيسبوك - عملاقة ومضيئة باللون الأزرق الفخم */}
               <button 
                 onClick={() => handleSocialSignIn("facebook")}
-                className="group relative flex flex-col items-center justify-center w-24 h-24 bg-[#1877F2] rounded-3xl shadow-xl shadow-blue-300/50 hover:shadow-blue-400/80 transition-all duration-300 active:scale-90"
+                className="group relative flex flex-col items-center justify-center w-24 h-24 bg-[#1877F2] rounded-3xl shadow-xl shadow-blue-400/40 transition-all duration-300 active:scale-95"
               >
-                {/* تأثير الإضاءة الخلفية النضّاحة الأزرق */}
-                <span className="absolute inset-0 bg-blue-500/40 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></span>
+                {/* تأثير إضاءة خلفي أزرق نابض مستمر ولامع للغاية */}
+                <span className="absolute inset-0 bg-blue-500/40 rounded-3xl blur-xl opacity-100 animate-pulse"></span>
                 
-                {/* الأيقونة العملاقة */}
                 <img 
                   src="https://www.svgrepo.com/show/475647/facebook-color.svg" 
-                  className="w-12 h-12 brightness-200 invert-[1] relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" 
+                  className="w-12 h-12 relative z-10 transition-transform duration-300 group-hover:scale-110 drop-shadow-md" 
                   alt="Facebook" 
                 />
-                <span className="text-[11px] font-bold text-white/90 mt-2 relative z-10 group-hover:text-white transition-colors">Facebook</span>
+                <span className="text-[11px] font-bold text-white mt-2 relative z-10 transition-colors">Facebook</span>
               </button>
 
             </div>
