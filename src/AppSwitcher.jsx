@@ -2,52 +2,15 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter } from 'react-router-dom'; 
 import { ClerkProvider } from "@clerk/clerk-react";
 
-// استيراد المكونات بشكل كسول
 const App = lazy(() => import('./App'));
 const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
 
-const CLERK_PUBLISHABLE_KEY = "pk_test_Y2xlcmstcmVxLWFwcC0xMi5jbGVyay5hY2NvdW50cy5kZXYk"; 
+// 🔐 الحل السحري: نجعل Vite يقرأ مفتاح Clerk التلقائي القادم من الـ Integration مباشرة
+const CLERK_PUBLISHABLE_KEY = 
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 
+  import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || // 👈 هذا هو المتغير الذي حقنه Clerk تلقائياً
+  window._env_?.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// --- مصيدة الأخطاء العالمية (لتظهر لك سبب الشاشة البيضاء على الهاتف) ---
-function ErrorVisualizer({ children }) {
-  const [hasError, setHasError] = useState(false);
-  const [errorDetails, setErrorDetails] = useState("");
-
-  useEffect(() => {
-    // دالة لالتقاط أي خطأ يحدث في الجافاسكريبت فجأة
-    const handleGlobalError = (event) => {
-      setHasError(true);
-      setErrorDetails(event.message + " في ملف: " + (event.filename || "").split('/').pop() + " سطر: " + event.lineno);
-    };
-
-    window.addEventListener("error", handleGlobalError);
-    return () => window.removeEventListener("error", handleGlobalError);
-  }, []);
-
-  if (hasError) {
-    return (
-      <div className="min-h-screen bg-slate-900 text-white flex flex-col items-center justify-center p-6 font-mono" dir="rtl">
-        <div className="w-full max-w-md bg-red-950/80 border-2 border-red-500 rounded-3xl p-6 shadow-2xl text-center">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">🚨 تم اصطياد الخطأ القاتل!</h1>
-          <p className="text-sm text-slate-300 mb-6 font-sans">هذا السطر أدناه هو السبب الحقيقي وراء الشاشة البيضاء في Vercel:</p>
-          <div className="bg-black/60 p-4 rounded-xl text-right text-xs text-red-300 border border-red-900/50 break-all select-all overflow-x-auto">
-            {errorDetails || "خطأ صامت في الـ Rendering"}
-          </div>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-xl text-sm transition"
-          >
-            تحديث الصفحة 🔄
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return children;
-}
-
-// واجهة تحميل مؤقتة فخمة
 const SkeletonLoader = () => (
   <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center font-sans" dir="rtl">
     <div className="text-center space-y-4">
@@ -120,13 +83,28 @@ function AppSwitcher({ onComplete }) {
 }
 
 export default function RootApp() {
+  // شاشة حماية مخصصة تخبرك فوراً إذا كان المتصفح عاجزاً عن قراءة المتغير
+  if (!CLERK_PUBLISHABLE_KEY) {
+    return (
+      <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center font-sans" dir="rtl">
+        <div className="p-6 bg-white rounded-2xl shadow-xl max-w-sm border border-rose-100">
+          <p className="text-rose-600 font-bold mb-2">⚠️ جاري الربط التلقائي بـ Clerk...</p>
+          <p className="text-xs text-slate-500 mb-4">
+            إذا استمرت هذه الشاشة، ادخل إعدادات مشروعك في فيرسل (Environment Variables) وقم بنسخ نفس قيمة المتغير وضعه باسم جديد وهو:
+          </p>
+          <div className="bg-slate-100 p-2 rounded font-mono text-xs text-rose-700 select-all mb-2">
+            VITE_CLERK_PUBLISHABLE_KEY
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <ErrorVisualizer> {/* 👈 يراقب ويصطاد أي انهيار ويظهره على الشاشة فوراً */}
-      <BrowserRouter>
-        <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-          <AppSwitcher />
-        </ClerkProvider>
-      </BrowserRouter>
-    </ErrorVisualizer>
+    <BrowserRouter>
+      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+        <AppSwitcher />
+      </ClerkProvider>
+    </BrowserRouter>
   );
 }
