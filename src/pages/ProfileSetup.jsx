@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
-const RegisterPage = () => {
+// تأكدنا أن الاسم ProfileSetup ليتوافق مع الـ AppSwitcher
+const ProfileSetup = ({ onComplete }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,10 +33,18 @@ const RegisterPage = () => {
 
       if (error) throw error;
 
+      // نجاح التسجيل
       setMessage({ 
         type: 'success', 
-        text: 'تم إنشاء حسابك بنجاح! تفحصي بريدك الإلكتروني لتأكيده ولبدء رحلتك الدافئة معنا ✨' 
+        text: 'تم إنشاء حسابك بنجاح! تفحصي بريدك الإلكتروني لتأكيده ✨' 
       });
+
+      // إبلاغ التطبيق الرئيسي بنجاح الخطوة (اختياري حسب منطق الـ Redirect عندك)
+      if (onComplete) {
+         // تأخير بسيط لكي ترى المستخدمة رسالة النجاح
+         setTimeout(() => onComplete(data.user), 2000);
+      }
+
     } catch (error) {
       setMessage({ type: 'error', text: error.message || 'حدث خطأ ما، أعيدي المحاولة يا جميلة.' });
     } finally {
@@ -65,12 +74,10 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#FFF0F5] via-[#F3E5F5] to-[#E8F5E9] flex flex-col justify-center items-center p-6 font-sans">
+    <div className="min-h-screen bg-gradient-to-tr from-[#FFF0F5] via-[#F3E5F5] to-[#E8F5E9] flex flex-col justify-center items-center p-6 font-sans" dir="rtl">
       
-      {/* بطاقة التسجيل الأنيقة بحواف دائرية فخمة */}
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-[0_8px_30px_rgb(244,143,177,0.15)] border border-pink-100/50 flex flex-col transform transition-all duration-300">
+      <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-[0_8px_30px_rgb(244,143,177,0.15)] border border-pink-100/50 flex flex-col">
         
-        {/* الهيدر وشعار التطبيق اللطيف */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-300 to-purple-400 rounded-full text-white text-3xl shadow-md mb-3 animate-pulse">
             🌸
@@ -83,7 +90,6 @@ const RegisterPage = () => {
           </p>
         </div>
 
-        {/* تنبيهات النجاح أو الأخطاء بلمسة رقيقة */}
         {message.text && (
           <div className={`mb-5 p-4 rounded-2xl text-sm font-medium text-center border transition-all duration-200 ${
             message.type === 'success' 
@@ -94,10 +100,9 @@ const RegisterPage = () => {
           </div>
         )}
 
-        {/* نموذج إدخال البيانات */}
         <form onSubmit={handleManualRegister} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1">الاسم الكامل</label>
+            <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1 text-right">الاسم الكامل</label>
             <input
               type="text"
               placeholder="جميلتي، ما هو اسمكِ؟"
@@ -108,7 +113,7 @@ const RegisterPage = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1">البريد الإلكتروني</label>
+            <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1 text-right">البريد الإلكتروني</label>
             <input
               type="email"
               placeholder="name@example.com"
@@ -119,7 +124,7 @@ const RegisterPage = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1">كلمة المرور</label>
+            <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1 text-right">كلمة المرور</label>
             <input
               type="password"
               placeholder="••••••••"
@@ -129,7 +134,6 @@ const RegisterPage = () => {
             />
           </div>
 
-          {/* زر التقديم اليدوي بتأثير تدرج ناعم */}
           <button
             type="submit"
             disabled={loading}
@@ -139,14 +143,12 @@ const RegisterPage = () => {
           </button>
         </form>
 
-        {/* فاصل بصري هادئ */}
         <div className="relative flex py-5 items-center my-2">
           <div className="flex-grow border-t border-pink-100/60"></div>
           <span className="flex-shrink mx-4 text-xs text-gray-400 font-normal">أو من خلال</span>
           <div className="flex-grow border-t border-pink-100/60"></div>
         </div>
 
-        {/* زر الفيسبوك بلونه القياسي مصبوب داخل قالب دائرية متناسق */}
         <button
           type="button"
           onClick={handleFacebookLogin}
@@ -159,7 +161,6 @@ const RegisterPage = () => {
           <span className="text-sm">التسجيل السريع باستخدام فيسبوك</span>
         </button>
 
-        {/* فوتر البطاقة */}
         <p className="text-center text-xs text-gray-400 mt-8">
           لديكِ حساب بالفعل؟ <span className="text-pink-500 font-medium cursor-pointer hover:underline">تسجيل الدخول</span>
         </p>
@@ -169,4 +170,5 @@ const RegisterPage = () => {
   );
 };
 
-export default RegisterPage;
+// التصدير الافتراضي باسم المكون الصحيح
+export default ProfileSetup;
