@@ -1,11 +1,16 @@
-import { createClient } from '@supabase/supabase-browser'; // أو @supabase/supabase-js حسب الحزمة المستعملة
+import { createClient } from '@supabase/supabase-with-rc'; // أو المكتبة القياسية المعتمدة لديك
 
-// قراءة المتغيرات التي تبدأ بـ VITE_ طبقاً لإعدادات Vite و Vercel يدوياً
+// قراءة متغيرات البيئة التي أضفناها في فيرسل
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error("برجاء التأكد من إضافة VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY في إعدادات Environment Variables");
+  console.error("تنبيه: متغيرات البيئة الخاصة بـ Supabase غير مكتملة!");
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true, // للحفاظ على تسجيل دخول المستخدم حتى لو أغلق التطبيق
+    autoRefreshToken: true,
+  }
+});
