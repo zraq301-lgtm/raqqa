@@ -2,14 +2,12 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter } from 'react-router-dom'; 
 import { ClerkProvider } from "@clerk/clerk-react";
 
+// استيراد الصفحات بشكل كسول (Lazy Loading) لمنع الشاشة البيضاء كلياً
 const App = lazy(() => import('./App'));
 const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
 
-// 🔐 الحل السحري: نجعل Vite يقرأ مفتاح Clerk التلقائي القادم من الـ Integration مباشرة
-const CLERK_PUBLISHABLE_KEY = 
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 
-  import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || // 👈 هذا هو المتغير الذي حقنه Clerk تلقائياً
-  window._env_?.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+// 🔐 جلب المتغير الآمن الخاص بـ Vite الذي أضفته في Vercel
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY; 
 
 const SkeletonLoader = () => (
   <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center font-sans" dir="rtl">
@@ -83,18 +81,15 @@ function AppSwitcher({ onComplete }) {
 }
 
 export default function RootApp() {
-  // شاشة حماية مخصصة تخبرك فوراً إذا كان المتصفح عاجزاً عن قراءة المتغير
+  // حائط صد أمني: إذا كان الفيرسل لم يقرأ المتغير بعد، تظهر رسالة إرشادية بدلاً من الشاشة البيضاء
   if (!CLERK_PUBLISHABLE_KEY) {
     return (
       <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center font-sans" dir="rtl">
         <div className="p-6 bg-white rounded-2xl shadow-xl max-w-sm border border-rose-100">
-          <p className="text-rose-600 font-bold mb-2">⚠️ جاري الربط التلقائي بـ Clerk...</p>
-          <p className="text-xs text-slate-500 mb-4">
-            إذا استمرت هذه الشاشة، ادخل إعدادات مشروعك في فيرسل (Environment Variables) وقم بنسخ نفس قيمة المتغير وضعه باسم جديد وهو:
+          <p className="text-rose-600 font-bold mb-2">⚠️ نظام الربط بـ Clerk معلق</p>
+          <p className="text-xs text-slate-500">
+            تأكد من إضافة المتغير <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-700 font-mono text-[11px]">VITE_CLERK_PUBLISHABLE_KEY</code> في إعدادات العرض (Environment Variables) في Vercel ثم أعد بناء المشروع (Redeploy).
           </p>
-          <div className="bg-slate-100 p-2 rounded font-mono text-xs text-rose-700 select-all mb-2">
-            VITE_CLERK_PUBLISHABLE_KEY
-          </div>
         </div>
       </div>
     );
