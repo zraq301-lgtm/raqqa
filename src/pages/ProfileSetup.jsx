@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // إضافة الامتداد .js صراحة لضمان معالجة المسار بشكل صحيح داخل Vite ودون انهيار الـ Bundler
-import { supabase } from '../supabaseClient.js';
+import { supabase } from '/src/supabaseClient.js';
 
 const ProfileSetup = ({ onComplete }) => {
   const [fullName, setFullName] = useState('');
