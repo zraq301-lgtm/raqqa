@@ -2,11 +2,13 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter } from 'react-router-dom'; 
 import { ClerkProvider } from "@clerk/clerk-react";
 
-// استيراد الصفحات بشكل كسول (Lazy Loading) لمنع الشاشة البيضاء كلياً
-const App = lazy(() => import('./App'));
-const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
+// 📦 استيراد ثابت لصفحة الإعداد لمنع ثغرات الـ Lazy Loading في شاشة الدخول الأولى
+import ProfileSetup from './pages/ProfileSetup';
 
-// 🔐 جلب المتغير الآمن الخاص بـ Vite الذي أضفته في Vercel
+// ⏳ استيراد كسول للتطبيق الرئيسي لأنه يحتوي على مسارات وأقسام متعددة
+const App = lazy(() => import('./App'));
+
+// 🔐 جلب المتغير الآمن الخاص بـ Vite
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY; 
 
 const SkeletonLoader = () => (
@@ -28,6 +30,7 @@ function AppSwitcher({ onComplete }) {
   });
 
   useEffect(() => {
+    // 🌐 فحص التحديثات بأمان
     const checkUpdate = async () => {
       const CURRENT_VERSION_CODE = 1653; 
       const JSON_URL = "https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.json";
@@ -47,16 +50,22 @@ function AppSwitcher({ onComplete }) {
       }
     };
 
-    const setupBackButton = async () => {
-      if (window && window.Capacitor && window.Capacitor.isNativePlatform()) {
+    // 📱 إعداد زر الرجوع الخاص بـ Capacitor بشكل آمن تماماً لا يكسر الويب
+    const setupBackButton = () => {
+      if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
         try {
-          const { App: CapApp } = await import('@capacitor/app');
-          CapApp.addListener('backButton', ({ canGoBack }) => {
-            if (!canGoBack) CapApp.exitApp();
-            else window.history.back();
-          });
+          const CapApp = window.Capacitor.Plugins.App;
+          if (CapApp) {
+            CapApp.addListener('backButton', ({ canGoBack }) => {
+              if (!canGoBack) {
+                CapApp.exitApp();
+              } else {
+                window.history.back();
+              }
+            });
+          }
         } catch (e) {
-          console.error("Capacitor App module not found:", e);
+          console.error("Capacitor App plugin not found:", e);
         }
       }
     };
@@ -81,7 +90,7 @@ function AppSwitcher({ onComplete }) {
 }
 
 export default function RootApp() {
-  // حائط صد أمني: إذا كان الفيرسل لم يقرأ المتغير بعد، تظهر رسالة إرشادية بدلاً من الشاشة البيضاء
+  // 🛡️ حائط صد أمني مفاتيح Clerk
   if (!CLERK_PUBLISHABLE_KEY) {
     return (
       <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center font-sans" dir="rtl">
