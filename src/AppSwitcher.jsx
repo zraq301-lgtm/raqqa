@@ -1,6 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter } from 'react-router-dom'; 
-import { ClerkProvider } from "@clerk/clerk-react";
 
 // استيراد ثابت ومباشر لصفحة الإعداد لضمان عدم حدوث مشاكل مسارات
 import ProfileSetup from './pages/ProfileSetup';
@@ -8,8 +7,9 @@ import ProfileSetup from './pages/ProfileSetup';
 // استيراد كسول للتطبيق الرئيسي
 const App = lazy(() => import('./App'));
 
-// جلب مفتاح Clerk الآمن
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY; 
+// جلب مفاتيح Supabase الآمنة كحائط صد بديل لـ Clerk
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL; 
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY; 
 
 const SkeletonLoader = () => (
   <div className="min-h-screen bg-rose-50 flex flex-col items-center justify-center font-sans" dir="rtl">
@@ -63,6 +63,7 @@ function AppSwitcher() {
   return (
     <div className="switcher-wrapper" style={{ minHeight: '100vh', backgroundColor: '#fff' }}>
       <Suspense fallback={<SkeletonLoader />}>
+        {/* بمجرد اكتمال التسجيل يتم توجيه الفتاة تلقائياً للـ App الرئيسي */}
         {isRegistered ? <App /> : <ProfileSetup onComplete={handleComplete} />}
       </Suspense>
     </div>
@@ -70,14 +71,14 @@ function AppSwitcher() {
 }
 
 export default function RootApp() {
-  // حائط صد أمني: إذا لم يجد المفتاح، يعرض واجهة إرشادية واضحة بدلاً من الانهيار الأبيض
-  if (!CLERK_PUBLISHABLE_KEY) {
+  // حائط صد أمني ذكي: إذا لم يجد مفاتيح Supabase، يعرض واجهة إرشادية بدلاً من الانهيار الأبيض
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return (
       <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center font-sans" dir="rtl">
         <div className="p-6 bg-white rounded-2xl shadow-xl max-w-sm border border-rose-100">
-          <p className="text-rose-600 font-bold mb-2">⚠️ نظام الربط بـ Clerk معلق</p>
+          <p className="text-rose-600 font-bold mb-2">⚠️ نظام الربط بـ Supabase معلق</p>
           <p className="text-xs text-slate-500">
-            تأكد من إضافة المتغير <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-700 font-mono text-[11px]">VITE_CLERK_PUBLISHABLE_KEY</code> في إعدادات العرض (Environment Variables) في Vercel ثم أعد بناء المشروع (Redeploy).
+            تأكد من إضافة المتغيرات <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-700 font-mono text-[11px]">VITE_SUPABASE_URL</code> و <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-700 font-mono text-[11px]">VITE_SUPABASE_ANON_KEY</code> في إعدادات البيئة بـ Vercel ثم أعد البناء (Redeploy).
           </p>
         </div>
       </div>
@@ -86,9 +87,7 @@ export default function RootApp() {
 
   return (
     <BrowserRouter>
-      <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-        <AppSwitcher />
-      </ClerkProvider>
+      <AppSwitcher />
     </BrowserRouter>
   );
 }
