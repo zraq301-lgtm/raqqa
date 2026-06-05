@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState, useEffect } from 'react';
+// إضافة الامتداد .js صراحة لضمان معالجة المسار بشكل صحيح داخل Vite ودون انهيار الـ Bundler
+import { supabase } from '../supabaseClient.js';
 
-// تأكدنا أن الاسم ProfileSetup ليتوافق مع الـ AppSwitcher
 const ProfileSetup = ({ onComplete }) => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+
+  // فحص أولي آمن للتأكد من أن حزمة Supabase تم استيرادها بنجاح ولا تسبب تعليقاً بالواجهة
+  useEffect(() => {
+    if (!supabase) {
+      console.error("💥 خطأ حرج: عميل سوبابيز غير مستقر أو المسار غير صحيح.");
+      setMessage({ type: 'error', text: 'هناك مشكلة في الاتصال بالسيرفر حالياً، جاري فحص النظام.' });
+    }
+  }, []);
 
   // 1. التسجيل اليدوي (إيميل وباسورد)
   const handleManualRegister = async (e) => {
@@ -21,6 +29,8 @@ const ProfileSetup = ({ onComplete }) => {
     setMessage({ type: '', text: '' });
 
     try {
+      if (!supabase) throw new Error("اتصال قاعدة البيانات غير جاهز بعد.");
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -33,19 +43,24 @@ const ProfileSetup = ({ onComplete }) => {
 
       if (error) throw error;
 
-      // نجاح التسجيل
       setMessage({ 
         type: 'success', 
-        text: 'تم إنشاء حسابك بنجاح! تفحصي بريدك الإلكتروني لتأكيده ✨' 
+        text: 'تم إنشاء حسابك بنجاح! تفحصي بريدك الإلكتروني لتأكيده ولبدء رحلتك الدافئة معنا ✨' 
       });
 
-      // إبلاغ التطبيق الرئيسي بنجاح الخطوة (اختياري حسب منطق الـ Redirect عندك)
-      if (onComplete) {
-         // تأخير بسيط لكي ترى المستخدمة رسالة النجاح
-         setTimeout(() => onComplete(data.user), 2000);
+      // حفظ تفعيل الحساب المبدئي محلياً لمنع الارتداد للشاشة البيضاء
+      try {
+        localStorage.setItem('user_email', email);
+      } catch (ex) {
+        console.warn("LocalStorage space is restricted", ex);
+      }
+
+      if (onComplete && data?.user) {
+         setTimeout(() => onComplete(data.user), 2500);
       }
 
     } catch (error) {
+      console.error("Registration Error Log:", error);
       setMessage({ type: 'error', text: error.message || 'حدث خطأ ما، أعيدي المحاولة يا جميلة.' });
     } finally {
       setLoading(false);
@@ -58,6 +73,8 @@ const ProfileSetup = ({ onComplete }) => {
     setMessage({ type: '', text: '' });
 
     try {
+      if (!supabase) throw new Error("اتصال قاعدة البيانات غير جاهز بعد.");
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
@@ -67,6 +84,7 @@ const ProfileSetup = ({ onComplete }) => {
 
       if (error) throw error;
     } catch (error) {
+      console.error("OAuth Error Log:", error);
       setMessage({ type: 'error', text: 'تعذر الاتصال بفيسبوك، حاولي مرة أخرى.' });
     } finally {
       setLoading(false);
@@ -76,8 +94,10 @@ const ProfileSetup = ({ onComplete }) => {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#FFF0F5] via-[#F3E5F5] to-[#E8F5E9] flex flex-col justify-center items-center p-6 font-sans" dir="rtl">
       
+      {/* بطاقة التسجيل الأنيقة بحواف دائرية فخمة */}
       <div className="w-full max-w-md bg-white/80 backdrop-blur-md rounded-3xl p-8 shadow-[0_8px_30px_rgb(244,143,177,0.15)] border border-pink-100/50 flex flex-col">
         
+        {/* الهيدر وشعار التطبيق اللطيف */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-300 to-purple-400 rounded-full text-white text-3xl shadow-md mb-3 animate-pulse">
             🌸
@@ -90,6 +110,7 @@ const ProfileSetup = ({ onComplete }) => {
           </p>
         </div>
 
+        {/* تنبيهات النجاح أو الأخطاء بلمسة رقيقة */}
         {message.text && (
           <div className={`mb-5 p-4 rounded-2xl text-sm font-medium text-center border transition-all duration-200 ${
             message.type === 'success' 
@@ -100,6 +121,7 @@ const ProfileSetup = ({ onComplete }) => {
           </div>
         )}
 
+        {/* نموذج إدخال البيانات */}
         <form onSubmit={handleManualRegister} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-gray-500 mr-2 mb-1 text-right">الاسم الكامل</label>
@@ -134,6 +156,7 @@ const ProfileSetup = ({ onComplete }) => {
             />
           </div>
 
+          {/* زر التقديم اليدوي بتأثير تدرج ناعم */}
           <button
             type="submit"
             disabled={loading}
@@ -143,12 +166,14 @@ const ProfileSetup = ({ onComplete }) => {
           </button>
         </form>
 
+        {/* فاصل بصري هادئ */}
         <div className="relative flex py-5 items-center my-2">
           <div className="flex-grow border-t border-pink-100/60"></div>
           <span className="flex-shrink mx-4 text-xs text-gray-400 font-normal">أو من خلال</span>
           <div className="flex-grow border-t border-pink-100/60"></div>
         </div>
 
+        {/* زر الفيسبوك */}
         <button
           type="button"
           onClick={handleFacebookLogin}
@@ -161,6 +186,7 @@ const ProfileSetup = ({ onComplete }) => {
           <span className="text-sm">التسجيل السريع باستخدام فيسبوك</span>
         </button>
 
+        {/* فوتر البطاقة */}
         <p className="text-center text-xs text-gray-400 mt-8">
           لديكِ حساب بالفعل؟ <span className="text-pink-500 font-medium cursor-pointer hover:underline">تسجيل الدخول</span>
         </p>
@@ -170,5 +196,4 @@ const ProfileSetup = ({ onComplete }) => {
   );
 };
 
-// التصدير الافتراضي باسم المكون الصحيح
 export default ProfileSetup;
