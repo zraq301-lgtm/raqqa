@@ -2,13 +2,13 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter } from 'react-router-dom'; 
 import { ClerkProvider } from "@clerk/clerk-react";
 
-// 📦 استيراد ثابت لصفحة الإعداد لمنع ثغرات الـ Lazy Loading في شاشة الدخول الأولى
+// استيراد ثابت ومباشر لصفحة الإعداد لضمان عدم حدوث مشاكل مسارات
 import ProfileSetup from './pages/ProfileSetup';
 
-// ⏳ استيراد كسول للتطبيق الرئيسي لأنه يحتوي على مسارات وأقسام متعددة
+// استيراد كسول للتطبيق الرئيسي
 const App = lazy(() => import('./App'));
 
-// 🔐 جلب المتغير الآمن الخاص بـ Vite
+// جلب مفتاح Clerk الآمن
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY; 
 
 const SkeletonLoader = () => (
@@ -20,7 +20,7 @@ const SkeletonLoader = () => (
   </div>
 );
 
-function AppSwitcher({ onComplete }) {
+function AppSwitcher() {
   const [isRegistered, setIsRegistered] = useState(() => {
     try {
       return localStorage.getItem('isProfileComplete') === 'true';
@@ -30,54 +30,34 @@ function AppSwitcher({ onComplete }) {
   });
 
   useEffect(() => {
-    // 🌐 فحص التحديثات بأمان
-    const checkUpdate = async () => {
-      const CURRENT_VERSION_CODE = 1653; 
-      const JSON_URL = "https://raw.githubusercontent.com/zraq301-lgtm/raqqa/main/update.json";
-      try {
-        const response = await fetch(JSON_URL);
-        const data = await response.json();
-        if (data.is_live && data.latest_version_code > CURRENT_VERSION_CODE) {
-          const lastIgnored = localStorage.getItem('ignored_version');
-          if (lastIgnored !== data.latest_version_code.toString()) {
-            const confirmUpdate = window.confirm("يوجد تحديث جديد لتطبيق رقة، هل تريد تحميل النسخة المحدثة الآن؟");
-            if (confirmUpdate) window.location.href = data.download_url;
-            else localStorage.setItem('ignored_version', data.latest_version_code.toString());
-          }
-        }
-      } catch (err) {
-        console.warn("فشل فحص التحديثات:", err);
-      }
-    };
-
-    // 📱 إعداد زر الرجوع الخاص بـ Capacitor بشكل آمن تماماً لا يكسر الويب
+    // إعداد زر الرجوع الخاص بـ Capacitor لحماية بيئة الويب بشكل صارم
     const setupBackButton = () => {
-      if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform()) {
-        try {
+      try {
+        if (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
           const CapApp = window.Capacitor.Plugins.App;
-          if (CapApp) {
-            CapApp.addListener('backButton', ({ canGoBack }) => {
-              if (!canGoBack) {
-                CapApp.exitApp();
-              } else {
-                window.history.back();
-              }
-            });
-          }
-        } catch (e) {
-          console.error("Capacitor App plugin not found:", e);
+          CapApp.addListener('backButton', ({ canGoBack }) => {
+            if (!canGoBack) {
+              CapApp.exitApp();
+            } else {
+              window.history.back();
+            }
+          });
         }
+      } catch (e) {
+        console.warn("Capacitor App plugin not available on Web.");
       }
     };
 
-    checkUpdate();
     setupBackButton();
   }, []);
 
   const handleComplete = () => {
-    localStorage.setItem('isProfileComplete', 'true');
-    setIsRegistered(true);
-    if (onComplete) onComplete();
+    try {
+      localStorage.setItem('isProfileComplete', 'true');
+      setIsRegistered(true);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
@@ -90,7 +70,7 @@ function AppSwitcher({ onComplete }) {
 }
 
 export default function RootApp() {
-  // 🛡️ حائط صد أمني مفاتيح Clerk
+  // حائط صد أمني: إذا لم يجد المفتاح، يعرض واجهة إرشادية واضحة بدلاً من الانهيار الأبيض
   if (!CLERK_PUBLISHABLE_KEY) {
     return (
       <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center font-sans" dir="rtl">
