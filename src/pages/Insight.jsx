@@ -9,9 +9,6 @@ import {
   Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus
 } from 'lucide-react';
 
-// استيراد خدمات الميديا
-import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService';
-
 const RaqqaApp = () => {
   const [activeCategory, setActiveCategory] = useState(null);
   const [inputs, setInputs] = useState({});
@@ -92,7 +89,7 @@ const RaqqaApp = () => {
   // --- دالة حفظ التقرير وجدولة الإشعارات المحلية مع دعم الصور ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, categoryTitle) => {
     try {
-      // إعداد وقت الموعد (بعد 72 ساعة من الآن)
+      // إعداد وقت الموعد (بعد 72 ساعت من الآن)
       const scheduledTime = new Date();
       scheduledTime.setHours(scheduledTime.getHours() + 72);
 
