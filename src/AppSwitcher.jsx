@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import { BrowserRouter } from 'react-router-dom'; 
 
 // استيراد الواجهة المراد عرضها فوراً
 import ProfileSetup from './pages/ProfileSetup';
@@ -32,15 +31,14 @@ class ErrorBoundary extends Component {
   }
 }
 
-export default function RootApp() {
-  // الكود هنا يعرض واجهة التسجيل مباشرة وبشكل معزول تماماً عن أي شروط أو ملفات أخرى
+// قمنا بتغيير اسم الدالة ليتوافق تماماً مع الاستدعاء في الملف الرئيسي المتصل بـ SplashScreen
+export default function AppSwitcher() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <div className="w-full min-h-screen bg-white">
-          <ProfileSetup onComplete={() => console.log('التسجيل وهمي تجريبي')} />
-        </div>
-      </BrowserRouter>
+      {/* تم حذف الـ BrowserRouter من هنا لمنع تداخل الراوتر الذي يسبب الشاشة البيضاء */}
+      <div className="w-full min-h-screen bg-white">
+        <ProfileSetup onComplete={() => console.log('التسجيل وهمي تجريبي')} />
+      </div>
     </ErrorBoundary>
   );
 }
