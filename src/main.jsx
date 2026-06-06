@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import AppSwitcher from './AppSwitcher'; 
+import AppSwitcher from './AppSwitcher'; // سيفتح واجهة التسجيل المعزولة مباشرة
 import SplashScreen from './SplashScreen'; 
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
@@ -29,12 +29,16 @@ const Main = () => {
   
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
-    localStorage.setItem('fcm_token', tokenValue);
-    console.log("📍 FCM Token Saved");
+    try {
+      localStorage.setItem('fcm_token', tokenValue);
+      console.log("📍 FCM Token Saved");
 
-    if (!localStorage.getItem('user_id')) {
-      const uId = 'user_' + Math.floor(Math.random() * 1000000);
-      localStorage.setItem('user_id', uId);
+      if (!localStorage.getItem('user_id')) {
+        const uId = 'user_' + Math.floor(Math.random() * 1000000);
+        localStorage.setItem('user_id', uId);
+      }
+    } catch (e) {
+      console.error("LocalStorage error in Main:", e);
     }
   };
 
@@ -72,17 +76,14 @@ const Main = () => {
           });
 
           // 3. طلب الأذونات للاثنين معاً في خطوة واحدة
-          // نطلب إذن Push وإذن Local Notifications
           let pushPerm = await PushNotifications.checkPermissions();
           let localPerm = await LocalNotifications.checkPermissions();
 
           if (pushPerm.receive === 'prompt' || localPerm.display === 'prompt') {
-            // طلب الأذونات بشكل متزامن
             await PushNotifications.requestPermissions();
             await LocalNotifications.requestPermissions();
           }
 
-          // تفعيل التسجيل في فيربيس إذا تم قبول الإذن
           const finalPushPerm = await PushNotifications.checkPermissions();
           if (finalPushPerm.receive === 'granted') {
             await PushNotifications.register();
@@ -98,6 +99,7 @@ const Main = () => {
   }, []); 
 
   return (
+    // التعديل الجوهري: تركنا الـ BrowserRouter هنا فقط، وقمنا بإلغائه من داخل الـ AppSwitcher لمنع تداخل المكونات المسبب للشاشة البيضاء
     <BrowserRouter>
       {showSplash ? (
         <SplashScreen onFinished={() => setShowSplash(false)} />
