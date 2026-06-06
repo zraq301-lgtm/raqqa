@@ -101,23 +101,7 @@ function AppSwitcher() {
 }
 
 export default function RootApp() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL; 
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY; 
-
-  // جدار فحص بيئة العمل لمنع الانهيار المفاجئ في فيرسل
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return (
-      <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center font-sans" dir="rtl">
-        <div className="p-6 bg-white rounded-2xl shadow-xl max-w-sm border border-rose-100">
-          <p className="text-rose-600 font-bold mb-2">⚠️ نظام الربط بـ Supabase معلق</p>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            تأكد من إضافة المتغيرات <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-700 font-mono text-[11px]">VITE_SUPABASE_URL</code> و <code className="bg-slate-100 px-1 py-0.5 rounded text-rose-700 font-mono text-[11px]">VITE_SUPABASE_ANON_KEY</code> في إعدادات البيئة بـ Vercel ثم أعد البناء (Redeploy).
-          </p>
-        </div>
-      </div>
-    );
-  }
-
+  // تم إلغاء جدار الحظر والمنع الصارم هنا لفتح شاشة التسجيل مباشرة دون قيود 🚀
   return (
     <ErrorBoundary>
       <BrowserRouter>
