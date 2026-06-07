@@ -1,33 +1,31 @@
-// استدعاء العميل من الملف الخاص به
 import { supabase } from './supabaseClient';
 
 /**
- * 1. دالة تسجيل الدخول بالحساب الحالي
+ * دالة تسجيل الدخول السريع عبر Facebook OAuth مخصصة للـ APK
  */
-export const loginToSupabase = async (email, password) => {
+export const loginWithFacebook = async () => {
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password,
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        // استخدام المعرّف الخاص بحزمتك كبروتوكول عودة لأندرويد
+        redirectTo: 'com.raqqa.app://login-callback',
+      },
     });
 
     if (error) {
       return { success: false, error: error.message };
     }
 
-    return { 
-      success: true, 
-      user: data.user, 
-      session: data.session 
-    };
+    return { success: true, data };
 
   } catch (err) {
-    return { success: false, error: "حدث خطأ غير متوقع أثناء الاتصال بسيرفر تسجيل الدخول" };
+    return { success: false, error: "تعذر فتح بوابة تسجيل فيسبوك حالياً" };
   }
 };
 
 /**
- * 2. دالة إنشاء حساب جديد (Registration)
+ * دالة إنشاء حساب جديد (مستقرة ولا تسبب كراش)
  */
 export const registerToSupabase = async (email, password, fullName) => {
   try {
@@ -45,36 +43,9 @@ export const registerToSupabase = async (email, password, fullName) => {
       return { success: false, error: error.message };
     }
 
-    return {
-      success: true,
-      user: data.user,
-      session: data.session
-    };
+    return { success: true, user: data.user, session: data.session };
 
   } catch (err) {
     return { success: false, error: "حدث خطأ غير متوقع أثناء محاولة إنشاء الحساب" };
-  }
-};
-
-/**
- * 3. دالة تسجيل الدخول السريع عبر Facebook OAuth
- */
-export const loginWithFacebook = async () => {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-
-  } catch (err) {
-    return { success: false, error: "تعذر فتح بوابة تسجيل فيسبوك حالياً" };
   }
 };
