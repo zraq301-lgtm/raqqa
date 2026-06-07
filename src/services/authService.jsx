@@ -1,31 +1,7 @@
 import { supabase } from './supabaseClient';
 
 /**
- * دالة تسجيل الدخول السريع عبر Facebook OAuth مخصصة للـ APK
- */
-export const loginWithFacebook = async () => {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: {
-        // استخدام المعرّف الخاص بحزمتك كبروتوكول عودة لأندرويد
-        redirectTo: 'com.raqqa.app://login-callback',
-      },
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-
-  } catch (err) {
-    return { success: false, error: "تعذر فتح بوابة تسجيل فيسبوك حالياً" };
-  }
-};
-
-/**
- * دالة إنشاء حساب جديد (مستقرة ولا تسبب كراش)
+ * 1. دالة إنشاء حساب جديد يدوياً (Sign Up API)
  */
 export const registerToSupabase = async (email, password, fullName) => {
   try {
@@ -43,9 +19,40 @@ export const registerToSupabase = async (email, password, fullName) => {
       return { success: false, error: error.message };
     }
 
-    return { success: true, user: data.user, session: data.session };
+    return { 
+      success: true, 
+      user: data.user, 
+      session: data.session 
+    };
 
   } catch (err) {
-    return { success: false, error: "حدث خطأ غير متوقع أثناء محاولة إنشاء الحساب" };
+    console.error("Critical Register Error:", err);
+    return { success: false, error: "فشل الاتصال بالباك إند، يرجى التحقق من الإنترنت." };
+  }
+};
+
+/**
+ * 2. دالة تسجيل الدخول السريع عبر فيسبوك (Facebook Auth API)
+ */
+export const loginWithFacebook = async () => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
+      options: {
+        // توجيه الأندرويد المباشر لحزمتك com.raqqa.app
+        redirectTo: 'com.raqqa.app://login-callback',
+        scopes: 'email,public_profile'
+      },
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+
+  } catch (err) {
+    console.error("Critical Facebook Error:", err);
+    return { success: false, error: "تعذر فتح بوابة فيسبوك في نسخة الـ APK الحالية." };
   }
 };
