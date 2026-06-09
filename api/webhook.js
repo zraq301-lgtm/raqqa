@@ -17,25 +17,44 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized request' });
   }
 
-  // 2. استقبال بيانات المستخدم القادمة من Supabase
+  // 2. استقبال بيانات المستخدم القادمة من Supabase Webhook
   const { record, type } = req.body;
 
   // التأكد من أن العملية هي إنشاء حساب جديد INSERT
   if (type === 'INSERT' && record) {
-    const { id, email } = record;
+    // استخراج المعرف، الإيميل، وتوكن الإشعارات المستلم من ميتاداتا سوبابيز
+    const { id, email, fcm_token } = record;
 
     try {
-      // إدخال الـ ID والـ Email في قاعدة بيانات Neon
-      await sql`
-        INSERT INTO users (id, email)
-        VALUES (${id}, ${email})
-        ON CONFLICT (id) DO NOTHING;
+      console.log(`جاري تهيئة الحساب وإنشاء السكيما للمستخدم: ${email}`);
+
+      /* استدعاء الدالة الذكية المخزنة في نيون:
+        المعامل الأول: id (والذي يمثل الـ clerk_id أو supabase_id في الجدول المرجعي)
+        المعامل الثاني: email
+        المعامل الثالث: fcm_token (لتخزينه في عمود device_token)
+      */
+      const result = await sql`
+        SELECT public.init_user_schema(
+          ${id}, 
+          ${email}, 
+          ${fcm_token || null}
+        ) AS created_schema_name;
       `;
 
-      return res.status(200).json({ success: true, message: 'User synced to Neon successfully' });
+      const schemaName = result[0]?.created_schema_name;
+
+      console.log(`تم إنشاء السكيما بنجاح باسم: ${schemaName}`);
+
+      return res.status(200).json({ 
+        success: true, 
+        message: 'User synced and full isolated schema created successfully',
+        schema: schemaName
+      });
+
     } catch (dbError) {
-      console.error('Neon DB Error:', dbError);
-      return res.status(500).json({ error: 'Database insertion failed' });
+      // طباعة تفاصيل الخطأ الحقيقية في سجلات فيرسل لتسهيل التتبع
+      console.error('Neon DB/Schema Initialization Error:', dbError.message);
+      return res.status(500).json({ error: 'Failed to initialize user schema in Neon', details: dbError.message });
     }
   }
 
