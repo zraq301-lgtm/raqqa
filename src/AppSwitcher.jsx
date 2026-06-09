@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { Component, useState, useEffect } from 'react';
 
 // 1. استيراد واجهة التسجيل (الملف الحالي)
 import ProfileSetup from './pages/ProfileSetup';
@@ -36,12 +36,38 @@ class ErrorBoundary extends Component {
 export default function AppSwitcher() {
   // إضافة State لمعرفة هل تم تسجيل الدخول بنجاح وحفظ بيانات المستخدم
   const [user, setUser] = useState(null);
+  // حالة مؤقتة لمنع وميض الشاشة أثناء قراءة الذاكرة التخزينية للهاتف
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
+  // 🔒 خطوة الأمان: فحص الـ LocalStorage فور فتح التطبيق للتأكد من الجلسة الحية
+  useEffect(() => {
+    const isProfileComplete = localStorage.getItem('isProfileComplete');
+    const savedEmail = localStorage.getItem('user_email');
+    const savedId = localStorage.getItem('user_id');
+
+    if (isProfileComplete === 'true' && savedEmail) {
+      // إذا تم العثور على البيانات، نقوم بتسجيل دخول البنت تلقائياً بدون عرض صفحة الكروت
+      setUser({ email: savedEmail, id: savedId });
+    }
+
+    // إنهاء حالة الفحص فوراً والدخول للتطبيق
+    setLoadingAuth(false);
+  }, []);
 
   // دالة تُستدعى فور نجاح التسجيل في واجهة ProfileSetup
   const handleRegistrationComplete = (userData) => {
     console.log("✨ نجح التسجيل! بيانات المستخدمة جاهزة ونقلناها لـ App:", userData);
     setUser(userData); // حفظ المستخدم في الـ State ليتم الانتقال فوراً لملف App.jsx
   };
+
+  // شاشة انتظار رقيقة جداً لكسر الأجزاء من الثانية أثناء فحص الذاكرة المحفوظة بالهاتف
+  if (loadingAuth) {
+    return (
+      <div className="min-h-screen bg-[#fff9fb] flex items-center justify-center">
+        <div className="w-10 h-10 border-4 border-pink-200 border-t-pink-500 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
