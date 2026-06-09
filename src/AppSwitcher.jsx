@@ -1,14 +1,16 @@
-import React, { Component } from 'react';
+import React, { Component, useState } from 'react';
 
-// استيراد الواجهة المراد عرضها فوراً
+// 1. استيراد واجهة التسجيل (الملف الحالي)
 import ProfileSetup from './pages/ProfileSetup';
 
-// جدار حماية بسيط ومطور لعرض الخطأ الفعلي إن حدث داخل ProfileSetup نفسها
+// 2. استيراد التطبيق الرئيسي الفعلي لـ "رقة" من الـ src
+import App from './App'; 
+
+// جدار حماية بسيط ومطور لعرض الخطأ الفعلي إن حدث
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
   componentDidCatch(error, errorInfo) { 
-    // طباعة الخطأ الفعلي في الكونسول لمعرفة الملف المكسور بدقة
     console.error("💥 الخطأ الحقيقي المسبب للمشكلة هو:", error, errorInfo); 
   }
   render() {
@@ -31,13 +33,28 @@ class ErrorBoundary extends Component {
   }
 }
 
-// قمنا بتغيير اسم الدالة ليتوافق تماماً مع الاستدعاء في الملف الرئيسي المتصل بـ SplashScreen
 export default function AppSwitcher() {
+  // إضافة State لمعرفة هل تم تسجيل الدخول بنجاح وحفظ بيانات المستخدم
+  const [user, setUser] = useState(null);
+
+  // دالة تُستدعى فور نجاح التسجيل في واجهة ProfileSetup
+  const handleRegistrationComplete = (userData) => {
+    console.log("✨ نجح التسجيل! بيانات المستخدمة جاهزة ونقلناها لـ App:", userData);
+    setUser(userData); // حفظ المستخدم في الـ State ليتم الانتقال فوراً لملف App.jsx
+  };
+
   return (
     <ErrorBoundary>
-      {/* تم حذف الـ BrowserRouter من هنا لمنع تداخل الراوتر الذي يسبب الشاشة البيضاء */}
       <div className="w-full min-h-screen bg-white">
-        <ProfileSetup onComplete={() => console.log('التسجيل وهمي تجريبي')} />
+        {/* الشرط الحقيقي والنظيف: إذا وجد المستخدم اعرض الـ App الرئيسي، وإلا اعرض صفحة التسجيل */}
+        {user ? (
+          
+          // هنا نقوم باستدعاء التطبيق الرئيسي الفعلي كاملاً وتمرير بيانات المستخدم له كـ props إذا احتجتها
+          <App user={user} />
+          
+        ) : (
+          <ProfileSetup onComplete={handleRegistrationComplete} />
+        )}
       </div>
     </ErrorBoundary>
   );
