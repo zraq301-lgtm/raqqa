@@ -1,0 +1,133 @@
+name: "Roqa Admin Production Build"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'admin/**' # يعمل الأكشن فقط عند تعديل مجلد الأدمن
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 3. Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 4. Deep Clean & Install (Admin Folder)
+        run: |
+          cd admin
+          rm -rf node_modules package-lock.json android ios dist_web
+          npm install --legacy-peer-deps
+          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          npm run build
+
+      - name: 5. Initialize Android (Fresh Start for Admin)
+        run: |
+          cd admin
+          npx cap add android
+          npx cap sync android
+
+      - name: 6. Inject Firebase & App Identity (Admin Config)
+        shell: bash
+        run: |
+          # حقن ملف جوجل الخاص بالأدمن (باستخدام معرف حزمة الأدمن)
+          cat <<EOF > admin/android/app/google-services.json
+          {
+            "project_info": {
+              "project_number": "162488255991",
+              "project_id": "raqqa-43dc8",
+              "storage_bucket": "raqqa-43dc8.firebasestorage.app"
+            },
+            "client": [
+              {
+                "client_info": {
+                  "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
+                  "android_client_info": { "package_name": "com.raqqa.admin" }
+                },
+                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
+                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+              }
+            ],
+            "configuration_version": "1"
+          }
+          EOF
+
+          STRINGS="admin/android/app/src/main/res/values/strings.xml"
+          APP_GRADLE="admin/android/app/build.gradle"
+          MANIFEST="admin/android/app/src/main/AndroidManifest.xml"
+          
+          # تعديل اسم التطبيق ليصبح "رقة - الإدارة" والحزمة لتكون مستقلة
+          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة - الإدارة<\/string>/' $STRINGS
+          sed -i 's/namespace ".*"/namespace "com.raqqa.admin"/' $APP_GRADLE
+          sed -i 's/applicationId ".*"/applicationId "com.raqqa.admin"/' $APP_GRADLE
+          
+          # إضافة الأذونات اللازمة
+          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
+
+          # إضافة معرف Start.io (اختياري للأدمن، تم تركه كما هو في الأصل)
+          sed -i '/<application[^>]*>/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />' $MANIFEST
+
+      - name: 7. Generate Admin Icons
+        run: |
+          cd admin
+          mkdir -p assets
+          # جلب الأيقونات من المجلد الرئيسي أو مجلد الأدمن
+          find .. -name "icon-only.png" -exec cp {} assets/icon-only.png \;
+          find .. -name "icon-background.png" -exec cp {} assets/icon-background.png \;
+          find .. -name "icon-foreground.png" -exec cp {} assets/icon-foreground.png \;
+          npx capacitor-assets generate --android
+
+      - name: 8. Build Admin Android Binaries
+        run: |
+          cd admin/android
+          chmod +x gradlew
+          ./gradlew clean
+          ./gradlew assembleRelease
+          ./gradlew bundleRelease
+
+      - name: 9. Sign Admin APK & AAB
+        run: |
+          # توليد مفتاح توقيع (نفس بياناتك السابقة)
+          keytool -genkey -v -keystore admin_release.jks -alias admin_alias -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
+            -dname "CN=RoqaAdmin, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          
+          # توقيع الـ APK
+          APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks admin_release.jks \
+            --ks-pass pass:"roqa_pass_2026" --out Roqa-Admin-Final.apk "$APK_PATH"
+          
+          # توقيع الـ AAB
+          AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+          jarsigner -keystore admin_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" admin_alias
+          cp "$AAB_PATH" Roqa-Admin-Final.aab
+
+      - name: 10. Publish Admin Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: admin-v${{ github.run_number }}
+          name: "Roqa Admin Production Build v${{ github.run_number }}"
+          files: |
+            Roqa-Admin-Final.apk
+            Roqa-Admin-Final.aab
+            admin_release.jks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
