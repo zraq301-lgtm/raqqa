@@ -30,7 +30,7 @@ const ProfileSetup = ({ onComplete }) => {
       return;
     }
 
-    loading(true);
+    setLoading(true);
     setMessage({ type: '', text: '' });
 
     try {
@@ -78,19 +78,19 @@ const ProfileSetup = ({ onComplete }) => {
   return (
     <div className="min-h-screen bg-gradient-to-tr from-[#fff5f9] via-[#ffffff] to-[#fef6fb] flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans selection:bg-pink-100 selection:text-pink-600" dir="rtl">
       
-      {Background Glow Effects}
+      {/* Background Glow Effects */}
       <div className="absolute top-[-25%] right-[-15%] w-[600px] h-[600px] bg-gradient-to-br from-pink-300/30 via-rose-200/20 to-transparent rounded-full blur-[130px] opacity-90 animate-pulse duration-[8000ms]"></div>
       <div className="absolute bottom-[-25%] left-[-15%] w-[600px] h-[600px] bg-gradient-to-tr from-purple-300/20 via-pink-100/30 to-transparent rounded-full blur-[130px] opacity-90 animate-pulse duration-[10000ms]"></div>
 
       <div className={`w-full max-w-md transition-all duration-1000 ease-[cubic-bezier(0.16,1,0.3,1)] transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'}`}>
         
-        {The Luxury Ultra-Modern Glass Card}
+        {/* The Luxury Ultra-Modern Glass Card */}
         <div className="bg-white/60 backdrop-blur-3xl rounded-[40px] p-8 md:p-11 shadow-[0_32px_100px_-20px_rgba(244,143,177,0.2)] border border-white/80 relative z-10 overflow-hidden ring-1 ring-black/[0.02]">
           
-          {Top Artistic Ambient Line}
+          {/* Top Artistic Ambient Line */}
           <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-pink-300 via-rose-300 to-purple-300 opacity-80"></div>
 
-          {Icon Header Area}
+          {/* Icon Header Area */}
           <div className="flex justify-center mb-8">
             <div className="relative group cursor-pointer">
               <div className="absolute inset-0 bg-gradient-to-tr from-pink-300 to-purple-300 rounded-full blur-2xl opacity-30 group-hover:opacity-60 group-hover:scale-110 transition-all duration-700"></div>
@@ -101,7 +101,7 @@ const ProfileSetup = ({ onComplete }) => {
             </div>
           </div>
 
-          {Dynamic Titles}
+          {/* Dynamic Titles */}
           <div className="text-center mb-9">
             <h1 className="text-3xl font-black text-gray-800 tracking-tight leading-tight">
               {isLoginMode ? (
@@ -115,7 +115,7 @@ const ProfileSetup = ({ onComplete }) => {
             </p>
           </div>
 
-          {Feedback Alert Container}
+          {/* Feedback Alert Container */}
           {message.text && (
             <div className={`mb-7 p-4 rounded-2xl text-xs font-medium text-center border transition-all duration-500 transform scale-100 ${
               message.type === 'success' 
@@ -126,10 +126,10 @@ const ProfileSetup = ({ onComplete }) => {
             </div>
           )}
 
-          {Unified Form}
+          {/* Unified Form */}
           <form onSubmit={handleAuthAction} className="space-y-6">
             
-            {Full Name Field (Smooth Animated Collapse)}
+            {/* Full Name Field (Smooth Animated Collapse) */}
             <div className={`transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] origin-top overflow-hidden ${
               isLoginMode ? 'max-h-0 opacity-0 scale-95 pointer-events-none mb-0' : 'max-h-[100px] opacity-100 scale-100 mb-2'
             }`}>
@@ -147,7 +147,7 @@ const ProfileSetup = ({ onComplete }) => {
               </div>
             </div>
 
-            {Email Field}
+            {/* Email Field */}
             <div>
               <label className="block text-right mr-2 mb-2 text-[11px] font-bold text-gray-400 tracking-wider uppercase opacity-80">البريد الإلكتروني</label>
               <div className="relative flex items-center group">
@@ -163,7 +163,7 @@ const ProfileSetup = ({ onComplete }) => {
               </div>
             </div>
 
-            {Password Field}
+            {/* Password Field */}
             <div>
               <label className="block text-right mr-2 mb-2 text-[11px] font-bold text-gray-400 tracking-wider uppercase opacity-80">كلمة المرور</label>
               <div className="relative flex items-center group">
@@ -179,7 +179,7 @@ const ProfileSetup = ({ onComplete }) => {
               </div>
             </div>
 
-            {Submit Button}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -193,14 +193,14 @@ const ProfileSetup = ({ onComplete }) => {
             </button>
           </form>
 
-          {Elegant Divider}
+          {/* Elegant Divider */}
           <div className="relative flex py-7 items-center">
             <div className="flex-grow border-t border-gray-100"></div>
             <span className="flex-shrink mx-4 text-[11px] text-gray-400/80 font-medium tracking-wide">أو التبديل إلى</span>
             <div className="flex-grow border-t border-gray-100"></div>
           </div>
 
-          {Mode Toggle Button}
+          {/* Mode Toggle Button */}
           <div className="text-center">
             <button
               type="button"
@@ -214,7 +214,7 @@ const ProfileSetup = ({ onComplete }) => {
 
         </div>
 
-        {Footer Privacy Note}
+        {/* Footer Privacy Note */}
         <p className="mt-8 text-center text-gray-400 text-[11px] font-light tracking-wide leading-relaxed">
           بفتح الحساب، أنتِ توافقين على <span className="text-pink-400 font-semibold cursor-pointer hover:text-pink-500 transition-colors duration-200">خصوصية وسرية رقة</span>
         </p>
