@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 const ProfileSetup = ({ onComplete }) => {
+  // تفعيل التبديل بين وضع "إنشاء حساب الجديد" ووضع "تسجيل الدخول للحساب القديم"
+  const [isLoginMode, setIsLoginMode] = useState(false);
+  
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -8,15 +11,22 @@ const ProfileSetup = ({ onComplete }) => {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [isVisible, setIsVisible] = useState(false);
 
-  // تأثير لظهور العناصر بنعومة وأمان دون التسبب في كراش
   useEffect(() => {
     setIsVisible(true);
   }, []);
 
-  const handleManualRegister = async (e) => {
+  // تفريغ الرسائل عند التبديل بين الكروت
+  const toggleMode = () => {
+    setIsLoginMode(!isLoginMode);
+    setMessage({ type: '', text: '' });
+  };
+
+  const handleAuthAction = async (e) => {
     e.preventDefault();
-    if (!email || !password || !fullName) {
-      setMessage({ type: 'error', text: 'جميلتي، يرجى ملء جميع الحقول أولاً 💕' });
+    
+    // التحقق من الحقول بناءً على الوضع الحالي
+    if (!email || !password || (!isLoginMode && !fullName)) {
+      setMessage({ type: 'error', text: 'جميلتي، يرجى ملء الحقول المطلوبة أولاً 💕' });
       return;
     }
 
@@ -25,21 +35,35 @@ const ProfileSetup = ({ onComplete }) => {
 
     try {
       const fcmToken = localStorage.getItem('fcm_token');
-      const { registerToSupabase } = await import('../services/authService');
+      const { registerToSupabase, loginToSupabase } = await import('../services/authService');
       
-      const result = await registerToSupabase(email, password, fullName, fcmToken);
+      let result;
+      
+      if (isLoginMode) {
+        // 1. منطق تسجيل الدخول للحساب القديم
+        result = await loginToSupabase(email, password, fcmToken);
+      } else {
+        // 2. منطق إنشاء حساب جديد
+        result = await registerToSupabase(email, password, fullName, fcmToken);
+      }
 
       if (result.success) {
-        setMessage({ type: 'success', text: 'تم إنشاء حسابكِ بنجاح! ✨' });
+        setMessage({ 
+          type: 'success', 
+          text: isLoginMode ? 'أهلاً بعودتكِ يا جميلتي! ✨' : 'تم إنشاء حسابكِ بنجاح! ✨' 
+        });
         
+        // حفظ التوكن والحالة محلياً لضمان عدم الخروج نهائياً حتى لو أُغلق التطبيق من الخلفية
         localStorage.setItem('user_email', email.trim());
         localStorage.setItem('isProfileComplete', 'true');
+        if (result.user?.id) {
+          localStorage.setItem('user_id', result.user.id);
+        }
 
-        // النقل الآمن إلى المكون السويتشير الرئيسي
         if (onComplete && result.user) {
           setTimeout(() => {
             onComplete({ ...result.user, fcmToken });
-          }, 1200); // مهلة كافية لعرض رسالة النجاح ثم الانتقال لـ App.jsx
+          }, 1200);
         }
       } else {
         setMessage({ type: 'error', text: result.error || 'حدث خطأ ما، أعيدي المحاولة.' });
@@ -52,114 +76,142 @@ const ProfileSetup = ({ onComplete }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fff9fb] flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans" dir="rtl">
+    <div className="min-h-screen bg-[#fffafd] flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans" dir="rtl">
       
-      {/* دوائر خلفية باستيل جمالية */}
-      <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-pink-100 rounded-full blur-3xl opacity-60 transition-all duration-1000"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-60"></div>
+      {/* شبكة توزيع إضاءة خلفية فائقة النعومة والرقة */}
+      <div className="absolute top-[-20%] right-[-10%] w-[500px] h-[500px] bg-gradient-to-br from-pink-200/40 via-rose-100/30 to-transparent rounded-full blur-3xl opacity-80 mix-blend-multiply"></div>
+      <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-gradient-to-tr from-purple-200/40 via-indigo-50/20 to-transparent rounded-full blur-3xl opacity-80 mix-blend-multiply"></div>
 
-      <div className={`w-full max-w-md transition-all duration-1000 ease-out transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+      <div className={`w-full max-w-md transition-all duration-1000 ease-out transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}`}>
         
-        {/* الكرت الزجاجي الرئيسي المطور */}
-        <div className="bg-white/40 backdrop-blur-2xl rounded-[40px] p-10 shadow-[0_30px_100px_rgba(255,182,193,0.2)] border border-white/80 relative z-10">
+        {/* الكرت الزجاجي الفاخر بـ حواف ثلاثية الأبعاد خفيفة */}
+        <div className="bg-white/50 backdrop-blur-3xl rounded-[48px] p-8 md:p-10 shadow-[0_40px_120px_rgba(255,182,193,0.25)] border border-white/90 relative z-10 overflow-hidden">
           
-          {/* الأيقونة العلوية */}
+          {/* تأثير توهج داخلي علوي ناعم */}
+          <div className="absolute top-0 left-0 right-0 h-[6px] bg-gradient-to-r from-pink-300 via-rose-300 to-purple-300"></div>
+
+          {/* الأيقونة العلوية برقصة دائرية عند الـ Hover */}
           <div className="flex justify-center mb-6">
-            <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-tr from-pink-300 to-rose-200 rounded-full flex items-center justify-center text-5xl shadow-inner transform transition-transform hover:scale-110 duration-300">
+            <div className="relative group cursor-pointer">
+              <div className="absolute inset-0 bg-pink-200 rounded-full blur-xl opacity-40 group-hover:opacity-70 transition-opacity duration-500"></div>
+              <div className="w-24 h-24 bg-gradient-to-tr from-pink-200 via-white to-rose-200 rounded-full flex items-center justify-center text-5xl shadow-[inset_0_4px_12px_rgba(255,182,193,0.2)] transform transition-transform group-hover:rotate-12 duration-500 relative z-10">
                 🌸
               </div>
-              <span className="absolute -bottom-1 -right-1 text-2xl">✨</span>
+              <span className="absolute -bottom-1 -right-1 text-2xl animate-pulse">✨</span>
             </div>
           </div>
 
-          <div className="text-center mb-10">
-            <h1 className="text-4xl font-bold text-gray-800 tracking-tight">أهلاً بكِ في <span className="text-pink-500">رقة</span></h1>
-            <p className="text-gray-500 mt-3 font-light">مساحتكِ الهادئة لتكوني بأفضل حال</p>
+          {/* العناوين التفاعلية حسب الوضع */}
+          <div className="text-center mb-8 transition-all duration-300">
+            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 tracking-tight">
+              {isLoginMode ? <>مرحباً <span className="text-pink-500">بعودتكِ</span></> : <>أهلاً بكِ في <span className="text-pink-500">رقة</span></>}
+            </h1>
+            <p className="text-gray-400 mt-2.5 text-sm font-light">
+              {isLoginMode ? 'سجّلي دخولكِ لمتابعة رحلتكِ الهادئة' : 'مساحتكِ الآمنة لترتيب يومكِ والاعتناء بذاتكِ'}
+            </p>
           </div>
 
+          {/* التنبيهات المهندلة */}
           {message.text && (
-            <div className={`mb-8 p-4 rounded-2xl text-sm font-medium text-center border transition-all duration-300 ${
+            <div className={`mb-6 p-4 rounded-2xl text-xs font-semibold text-center border shadow-inner transition-all duration-500 ${
               message.type === 'success' 
-                ? 'bg-green-50/50 text-green-600 border-green-100' 
-                : 'bg-rose-50/50 text-rose-500 border-rose-100'
+                ? 'bg-green-50/60 text-green-600 border-green-100' 
+                : 'bg-rose-50/60 text-rose-500 border-rose-100'
             }`}>
               {message.text}
             </div>
           )}
 
-          <form onSubmit={handleManualRegister} className="space-y-6">
-            {/* حقل الاسم */}
-            <div className="group">
-              <label className="block text-right mr-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">الاسم الكامل</label>
-              <input
-                type="text"
-                placeholder="جميلتي، ما اسمكِ؟"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-6 py-4 bg-white/50 border-2 border-transparent rounded-3xl text-gray-700 focus:border-pink-200 focus:bg-white outline-none transition-all duration-300 shadow-sm placeholder:text-gray-300"
-              />
+          {/* الفورم الموحد */}
+          <form onSubmit={handleAuthAction} className="space-y-5">
+            
+            {/* حقل الاسم - يختفي وينعم في وضع تسجيل الدخول */}
+            <div className={`transition-all duration-500 origin-top overflow-hidden ${
+              isLoginMode ? 'max-h-0 opacity-0 scale-95 pointer-events-none mb-0' : 'max-h-24 opacity-100 scale-100 mb-5'
+            }`}>
+              <label className="block text-right mr-3 mb-2 text-[11px] font-bold text-gray-400 tracking-widest">الاسم الجميل</label>
+              <div className="relative flex items-center">
+                <span className="absolute right-5 text-gray-300 group-focus-within:text-pink-400 transition-colors pointer-events-none">✨</span>
+                <input
+                  type="text"
+                  placeholder="ما هو اسمكِ يا رقيقة؟"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  disabled={loading}
+                  className="w-full pr-12 pl-5 py-4 bg-white/70 border border-pink-100/50 rounded-2xl text-gray-700 text-sm placeholder:text-gray-300 shadow-sm focus:outline-none focus:ring-4 focus:ring-pink-100/50 focus:border-pink-300 focus:bg-white transition-all duration-300 text-right"
+                />
+              </div>
             </div>
 
-            {/* حقل البريد */}
-            <div className="group">
-              <label className="block text-right mr-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">البريد الإلكتروني</label>
-              <input
-                type="email"
-                placeholder="example@mail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-6 py-4 bg-white/50 border-2 border-transparent rounded-3xl text-gray-700 focus:border-pink-200 focus:bg-white outline-none transition-all duration-300 shadow-sm text-left placeholder:text-gray-300"
-              />
+            {/* حقل البريد الإلكتروني */}
+            <div>
+              <label className="block text-right mr-3 mb-2 text-[11px] font-bold text-gray-400 tracking-widest">البريد الإلكتروني</label>
+              <div className="relative flex items-center">
+                <span className="absolute right-5 text-gray-300 pointer-events-none">✉️</span>
+                <input
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  className="w-full pr-12 pl-5 py-4 bg-white/70 border border-pink-100/50 rounded-2xl text-gray-700 text-sm placeholder:text-gray-300 shadow-sm focus:outline-none focus:ring-4 focus:ring-pink-100/50 focus:border-pink-300 focus:bg-white transition-all duration-300 text-left"
+                />
+              </div>
             </div>
 
             {/* حقل كلمة المرور */}
-            <div className="group">
-              <label className="block text-right mr-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">كلمة المرور</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-6 py-4 bg-white/50 border-2 border-transparent rounded-3xl text-gray-700 focus:border-pink-200 focus:bg-white outline-none transition-all duration-300 shadow-sm text-left placeholder:text-gray-300"
-              />
+            <div>
+              <label className="block text-right mr-3 mb-2 text-[11px] font-bold text-gray-400 tracking-widest">كلمة المرور</label>
+              <div className="relative flex items-center">
+                <span className="absolute right-5 text-gray-300 pointer-events-none">🔒</span>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={loading}
+                  className="w-full pr-12 pl-5 py-4 bg-white/70 border border-pink-100/50 rounded-2xl text-gray-700 text-sm placeholder:text-gray-300 shadow-sm focus:outline-none focus:ring-4 focus:ring-pink-100/50 focus:border-pink-300 focus:bg-white transition-all duration-300 text-left"
+                />
+              </div>
             </div>
 
-            {/* زر البدء السلس */}
+            {/* زر الإرسال المتفاعل */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-5 bg-gradient-to-r from-pink-400 to-rose-400 text-white rounded-3xl font-bold shadow-[0_15px_30px_rgba(244,143,177,0.4)] hover:shadow-[0_20px_40px_rgba(244,143,177,0.5)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50"
+              className="w-full py-4.5 bg-gradient-to-r from-pink-400 via-rose-400 to-purple-400 text-white rounded-2xl font-bold shadow-[0_12px_30px_rgba(244,143,177,0.35)] hover:shadow-[0_18px_45px_rgba(244,143,177,0.45)] hover:-translate-y-0.5 active:scale-[0.97] transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50 mt-6"
             >
               {loading ? (
-                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               ) : (
-                <>ابدئي رحلتكِ الرقيقة ✨</>
+                <span>{isLoginMode ? 'تسجيل الدخول ✨' : 'ابدئي رحلتكِ الجميلة الآن ✨'}</span>
               )}
             </button>
           </form>
 
-          {/* خيارات الوصول البديلة */}
-          <div className="mt-12 text-center">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="h-[1px] flex-grow bg-gray-100"></div>
-              <span className="text-[11px] text-gray-400 font-bold uppercase tracking-tighter">أو عبر</span>
-              <div className="h-[1px] flex-grow bg-gray-100"></div>
-            </div>
+          {/* الفاصل الخطي */}
+          <div className="relative flex py-6 items-center">
+            <div className="flex-grow border-t border-pink-100/40"></div>
+            <span className="flex-shrink mx-4 text-[11px] text-gray-400 font-medium">أو التبديل إلى</span>
+            <div className="flex-grow border-t border-pink-100/40"></div>
+          </div>
 
+          {/* زر السحر والتبديل الجذاب المخصص للتطبيق القديم والجديد */}
+          <div className="text-center">
             <button
               type="button"
-              onClick={() => {}} 
-              className="px-8 py-3 bg-white/80 border border-gray-100 rounded-2xl flex items-center gap-3 mx-auto hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+              onClick={toggleMode}
+              disabled={loading}
+              className="text-xs font-semibold text-purple-500 hover:text-pink-500 underline underline-offset-4 active:scale-95 transition-all"
             >
-              <svg className="w-5 h-5 text-[#1877F2] fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-              <span className="text-sm font-semibold text-gray-600">تسجيل سريع</span>
+              {isLoginMode ? 'إنشاء حساب جديد ومساحة جديدة 🌸' : 'لديكِ حساب قديم بالفعل؟ تسجيل الدخول ✉️'}
             </button>
           </div>
+
         </div>
 
-        <p className="mt-8 text-center text-gray-400 text-xs font-light">
-          بإنشاء حسابكِ، أنتِ توافقين على <span className="text-pink-400 font-medium cursor-pointer underline">خصوصية رقة</span>
+        <p className="mt-8 text-center text-gray-400 text-[11px] font-light">
+          بفتح الحساب، أنتِ توافقين على <span className="text-pink-400 font-medium cursor-pointer hover:underline">خصوصية وسرية رقة</span>
         </p>
       </div>
     </div>
