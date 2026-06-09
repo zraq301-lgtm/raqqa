@@ -33,7 +33,55 @@ export const registerToSupabase = async (email, password, fullName, fcmToken) =>
 };
 
 /**
- * 2. دالة تسجيل الدخول السريع عبر فيسبوك (Facebook Auth API)
+ * 2. دالة تسجيل الدخول للحساب القديم يدوياً (Sign In API) مع تحديث توكن الإشعارات
+ */
+export const loginToSupabase = async (email, password, fcmToken) => {
+  try {
+    // استدعاء سوبابيز للتحقق من البريد وكلمة المرور الفعليين
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password: password,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    // تحديث توكن الإشعارات (FCM Token) في ميتاداتا المستخدم وجدول البروفايل لضمان استمرار وصول الإشعارات
+    if (data.user) {
+      const updatedMetadata = {
+        ...data.user.user_metadata,
+        fcm_token: fcmToken
+      };
+
+      // تحديث الميتاداتا في السوبابيز أوث
+      await supabase.auth.updateUser({
+        data: updatedMetadata
+      });
+
+      // إذا كنت تستخدم جدول بروفايلات خارجي لربطه بنيون، نحدث التوكن هناك أيضاً
+      if (fcmToken) {
+        await supabase
+          .from('profiles') 
+          .update({ fcm_token: fcmToken })
+          .eq('id', data.user.id);
+      }
+    }
+
+    return {
+      success: true,
+      user: data.user,
+      session: data.session
+    };
+
+  } catch (err) {
+    console.error("Critical Login Error:", err);
+    return { success: false, error: "فشل الاتصال بالباك إند، يرجى التحقق من الإنترنت." };
+  }
+};
+
+/**
+ * 3. دالة تسجيل الدخول السريع عبر فيسبوك (Facebook Auth API)
  */
 export const loginWithFacebook = async () => {
   try {
