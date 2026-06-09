@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import AppSwitcher from './AppSwitcher'; 
+import App from './App'; // تم التعديل ليفتح على App مباشرة
 import SplashScreen from './SplashScreen'; 
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
@@ -72,12 +72,10 @@ const Main = () => {
           });
 
           // 3. طلب الأذونات للاثنين معاً في خطوة واحدة
-          // نطلب إذن Push وإذن Local Notifications
           let pushPerm = await PushNotifications.checkPermissions();
           let localPerm = await LocalNotifications.checkPermissions();
 
           if (pushPerm.receive === 'prompt' || localPerm.display === 'prompt') {
-            // طلب الأذونات بشكل متزامن
             await PushNotifications.requestPermissions();
             await LocalNotifications.requestPermissions();
           }
@@ -102,7 +100,7 @@ const Main = () => {
       {showSplash ? (
         <SplashScreen onFinished={() => setShowSplash(false)} />
       ) : (
-        <AppSwitcher />
+        <App /> /* تم التعديل ليفتح ملف App مباشرة */
       )}
     </BrowserRouter>
   );
