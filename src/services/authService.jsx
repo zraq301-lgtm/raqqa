@@ -1,9 +1,9 @@
 import { supabase } from './supabaseClient';
 
 /**
- * 1. دالة إنشاء حساب جديد يدوياً (Sign Up API)
+ * 1. دالة إنشاء حساب جديد يدوياً (Sign Up API) مع تمرير توكن الإشعارات
  */
-export const registerToSupabase = async (email, password, fullName) => {
+export const registerToSupabase = async (email, password, fullName, fcmToken) => {
   try {
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
@@ -11,6 +11,7 @@ export const registerToSupabase = async (email, password, fullName) => {
       options: {
         data: {
           full_name: fullName.trim(),
+          fcm_token: fcmToken // تمرير التوكن المخزن محلياً إلى ميتاداتا المستخدم في سوبابيز
         },
       },
     });
