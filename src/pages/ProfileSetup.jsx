@@ -7,7 +7,7 @@ const ProfileSetup = ({ onComplete }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // 1. معالجة التسجيل اليدوي
+  // 1. معالجة التسجيل اليدوي مع إرسال توكن الإشعارات
   const handleManualRegister = async (e) => {
     e.preventDefault();
     
@@ -20,9 +20,14 @@ const ProfileSetup = ({ onComplete }) => {
     setMessage({ type: '', text: '' });
 
     try {
+      // جلب توكن الإشعارات المخزن محلياً من المتصفح/الجهاز
+      const fcmToken = localStorage.getItem('fcm_token');
+
       // استيراد ديناميكي معزول تماماً لمنع الكراش وقت تحميل الواجهة
       const { registerToSupabase } = await import('../services/authService');
-      const result = await registerToSupabase(email, password, fullName);
+      
+      // تمرير الـ fcmToken كباراميتر رابع للدالة ليرسل لـ Supabase ومنها لـ Neon
+      const result = await registerToSupabase(email, password, fullName, fcmToken);
 
       if (result.success) {
         setMessage({ type: 'success', text: 'تم إنشاء حسابكِ بنجاح! ✨' });
@@ -31,7 +36,11 @@ const ProfileSetup = ({ onComplete }) => {
         localStorage.setItem('isProfileComplete', 'true');
 
         if (onComplete && result.user) {
-          onComplete(result.user);
+          // نمرر بيانات المستخدم مع التوكن للملف الرئيسي App.jsx ليفتح التطبيق فوراً
+          onComplete({
+            ...result.user,
+            fcmToken: fcmToken
+          });
         }
       } else {
         setMessage({ type: 'error', text: result.error || 'حدث خطأ ما، أعيدي المحاولة.' });
