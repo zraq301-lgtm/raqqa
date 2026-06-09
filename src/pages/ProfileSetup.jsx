@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const ProfileSetup = ({ onComplete }) => {
   const [fullName, setFullName] = useState('');
@@ -6,11 +6,15 @@ const ProfileSetup = ({ onComplete }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [isVisible, setIsVisible] = useState(false);
 
-  // 1. معالجة التسجيل اليدوي مع إرسال توكن الإشعارات
+  // تأثير لظهور العناصر بنعومة عند تحميل الصفحة
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   const handleManualRegister = async (e) => {
     e.preventDefault();
-    
     if (!email || !password || !fullName) {
       setMessage({ type: 'error', text: 'جميلتي، يرجى ملء جميع الحقول أولاً 💕' });
       return;
@@ -20,13 +24,9 @@ const ProfileSetup = ({ onComplete }) => {
     setMessage({ type: '', text: '' });
 
     try {
-      // جلب توكن الإشعارات المخزن محلياً من المتصفح/الجهاز
       const fcmToken = localStorage.getItem('fcm_token');
-
-      // استيراد ديناميكي معزول تماماً لمنع الكراش وقت تحميل الواجهة
       const { registerToSupabase } = await import('../services/authService');
       
-      // تمرير الـ fcmToken كباراميتر رابع للدالة ليرسل لـ Supabase ومنها لـ Neon
       const result = await registerToSupabase(email, password, fullName, fcmToken);
 
       if (result.success) {
@@ -35,12 +35,11 @@ const ProfileSetup = ({ onComplete }) => {
         localStorage.setItem('user_email', email.trim());
         localStorage.setItem('isProfileComplete', 'true');
 
+        // الانتقال الفوري لـ App.jsx
         if (onComplete && result.user) {
-          // نمرر بيانات المستخدم مع التوكن للملف الرئيسي App.jsx ليفتح التطبيق فوراً
-          onComplete({
-            ...result.user,
-            fcmToken: fcmToken
-          });
+          setTimeout(() => {
+            onComplete({ ...result.user, fcmToken });
+          }, 1500); // تأخير بسيط لتعيش المستخدمة فرحة النجاح
         }
       } else {
         setMessage({ type: 'error', text: result.error || 'حدث خطأ ما، أعيدي المحاولة.' });
@@ -52,139 +51,134 @@ const ProfileSetup = ({ onComplete }) => {
     }
   };
 
-  // 2. معالجة التسجيل بـ Facebook
-  const handleFacebookLogin = async () => {
-    setLoading(true);
-    setMessage({ type: '', text: '' });
-
-    try {
-      const { loginWithFacebook } = await import('../services/authService');
-      const result = await loginWithFacebook();
-
-      if (!result.success) {
-        setMessage({ type: 'error', text: result.error || 'تعذر الاتصال بفيسبوك حالياً.' });
-      }
-    } catch (err) {
-      setMessage({ type: 'error', text: 'بوابة تسجيل فيسبوك غير متوفرة.' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-tr from-[#FFF0F5] via-[#F3E5F5] to-[#E8F5E9] flex flex-col justify-center items-center p-4 font-sans" dir="rtl">
+    <div className="min-h-screen bg-[#fff9fb] flex flex-col justify-center items-center p-6 relative overflow-hidden font-sans" dir="rtl">
       
-      <div className="w-full max-w-md bg-white/75 backdrop-blur-xl rounded-[32px] p-8 shadow-[0_20px_50px_rgba(244,143,177,0.15)] border border-white/60 flex flex-col transition-all duration-300">
+      {/* دوائر خلفية جمالية لنشر الرقة */}
+      <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-pink-100 rounded-full blur-3xl opacity-60 animate-pulse"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-60"></div>
+
+      <div className={`w-full max-w-md transition-all duration-1000 transform ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
         
-        {/* الهيدر الترحيبي الأنيق */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-tr from-pink-200 via-pink-300 to-purple-300 rounded-full text-4xl shadow-[0_8px_20px_rgba(244,143,177,0.2)] mb-4">
-            🌸
-          </div>
-          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent tracking-wide">
-            أهلاً بكِ في رقة
-          </h1>
-          <p className="text-gray-400 text-xs font-medium mt-2 tracking-normal">
-            مساحتكِ الآمنة لترتيب يومكِ والاعتناء بذاتكِ
-          </p>
-        </div>
-
-        {/* صندوق التنبيهات المهندل */}
-        {message.text && (
-          <div className={`mb-6 p-4 rounded-2xl text-xs font-semibold text-center border shadow-sm transition-all duration-300 ${
-            message.type === 'success' 
-              ? 'bg-emerald-50/80 text-emerald-600 border-emerald-100 backdrop-blur-sm' 
-              : 'bg-rose-50/80 text-rose-500 border-rose-100 backdrop-blur-sm'
-          }`}>
-            {message.text}
-          </div>
-        )}
-
-        {/* استمارة إدخال البيانات الجذابة */}
-        <form onSubmit={handleManualRegister} className="space-y-5">
+        {/* الكرت الزجاجي الرئيسي */}
+        <div className="bg-white/40 backdrop-blur-2xl rounded-[40px] p-10 shadow-[0_30px_100px_rgba(255,182,193,0.2)] border border-white/80 relative z-10">
           
-          {/* حقل الاسم */}
-          <div className="relative flex items-center">
-            <span className="absolute right-4 text-pink-400 text-lg pointer-events-none">✨</span>
-            <input
-              type="text"
-              placeholder="جميلتي، ما هو اسمكِ؟"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              disabled={loading}
-              className="w-full pr-11 pl-5 py-4 bg-white/60 border border-pink-100/80 rounded-2xl text-gray-700 text-sm placeholder-gray-400/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-300/50 focus:border-pink-300 focus:bg-white transition-all text-right font-medium"
-            />
+          {/* الأيقونة العلوية */}
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="w-24 h-24 bg-gradient-to-tr from-pink-300 to-rose-200 rounded-full flex items-center justify-center text-5xl shadow-inner animate-bounce-slow">
+                🌸
+              </div>
+              <span className="absolute -bottom-1 -right-1 text-2xl">✨</span>
+            </div>
           </div>
 
-          {/* حقل البريد الإلكتروني */}
-          <div className="relative flex items-center">
-            <span className="absolute right-4 text-pink-400 text-base pointer-events-none">✉️</span>
-            <input
-              type="email"
-              placeholder="البريد الإلكتروني (name@example.com)"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              className="w-full pr-11 pl-5 py-4 bg-white/60 border border-pink-100/80 rounded-2xl text-gray-700 text-sm placeholder-gray-400/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-300/50 focus:border-pink-300 focus:bg-white transition-all text-left font-medium"
-            />
+          <div className="text-center mb-10">
+            <h1 className="text-4xl font-bold text-gray-800 tracking-tight">أهلاً بكِ في <span className="text-pink-500">رقة</span></h1>
+            <p className="text-gray-500 mt-3 font-light">مساحتكِ الهادئة لتكوني بأفضل حال</p>
           </div>
 
-          {/* حقل كلمة المرور */}
-          <div className="relative flex items-center">
-            <span className="absolute right-4 text-pink-400 text-base pointer-events-none">🔒</span>
-            <input
-              type="password"
-              placeholder="كلمة المرور (••••••••)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+          {message.text && (
+            <div className={`mb-8 p-4 rounded-2xl text-sm font-medium text-center border animate-fade-in ${
+              message.type === 'success' 
+                ? 'bg-green-50/50 text-green-600 border-green-100' 
+                : 'bg-rose-50/50 text-rose-500 border-rose-100'
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <form onSubmit={handleManualRegister} className="space-y-6">
+            {/* حقل الاسم */}
+            <div className="group">
+              <label className="block text-right mr-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">الاسم الكامل</label>
+              <input
+                type="text"
+                placeholder="جميلتي، ما اسمكِ؟"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-6 py-4 bg-white/50 border-2 border-transparent rounded-3xl text-gray-700 focus:border-pink-200 focus:bg-white outline-none transition-all duration-300 shadow-sm placeholder:text-gray-300"
+              />
+            </div>
+
+            {/* حقل البريد */}
+            <div className="group">
+              <label className="block text-right mr-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">البريد الإلكتروني</label>
+              <input
+                type="email"
+                placeholder="example@mail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-6 py-4 bg-white/50 border-2 border-transparent rounded-3xl text-gray-700 focus:border-pink-200 focus:bg-white outline-none transition-all duration-300 shadow-sm text-left placeholder:text-gray-300"
+              />
+            </div>
+
+            {/* حقل كلمة المرور */}
+            <div className="group">
+              <label className="block text-right mr-2 mb-2 text-xs font-bold text-gray-400 uppercase tracking-widest">كلمة المرور</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-6 py-4 bg-white/50 border-2 border-transparent rounded-3xl text-gray-700 focus:border-pink-200 focus:bg-white outline-none transition-all duration-300 shadow-sm text-left placeholder:text-gray-300"
+              />
+            </div>
+
+            {/* زر البدء */}
+            <button
+              type="submit"
               disabled={loading}
-              className="w-full pr-11 pl-5 py-4 bg-white/60 border border-pink-100/80 rounded-2xl text-gray-700 text-sm placeholder-gray-400/80 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-300/50 focus:border-pink-300 focus:bg-white transition-all text-left font-medium"
-            />
+              className="w-full py-5 bg-gradient-to-r from-pink-400 to-rose-400 text-white rounded-3xl font-bold shadow-[0_15px_30px_rgba(244,143,177,0.4)] hover:shadow-[0_20px_40px_rgba(244,143,177,0.5)] hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-50"
+            >
+              {loading ? (
+                <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>ابدئي رحلتكِ الرقيقة ✨</>
+              )}
+            </button>
+          </form>
+
+          {/* الخيارات الأخرى */}
+          <div className="mt-12 text-center">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-[1px] flex-grow bg-gray-100"></div>
+              <span className="text-[11px] text-gray-400 font-bold uppercase tracking-tighter">أو عبر</span>
+              <div className="h-[1px] flex-grow bg-gray-100"></div>
+            </div>
+
+            <button
+              onClick={() => {}} // دالة الفيس بوك
+              className="px-8 py-3 bg-white/80 border border-gray-100 rounded-2xl flex items-center gap-3 mx-auto hover:bg-gray-50 transition-all shadow-sm active:scale-95"
+            >
+              <svg className="w-5 h-5 text-[#1877F2] fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              <span className="text-sm font-semibold text-gray-600">تسجيل سريع</span>
+            </button>
           </div>
-
-          {/* زر الإرسال الرئيسي */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 bg-gradient-to-r from-pink-400 via-pink-500 to-purple-400 text-white text-sm font-bold rounded-2xl shadow-[0_10px_25px_rgba(244,143,177,0.3)] hover:shadow-[0_12px_30px_rgba(244,143,177,0.4)] active:scale-[0.98] transition-all duration-200 mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:pointer-events-none"
-          >
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                جاري تهيئة مساحتكِ...
-              </span>
-            ) : (
-              'ابدئي رحلتكِ الجميلة الآن ✨'
-            )}
-          </button>
-        </form>
-
-        {/* فاصل خطي أنيق جداً */}
-        <div className="relative flex py-6 items-center">
-          <div className="flex-grow border-t border-pink-100/40"></div>
-          <span className="flex-shrink mx-4 text-[11px] text-gray-400 font-medium tracking-wider">أو التسجيل عبر</span>
-          <div className="flex-grow border-t border-pink-100/40"></div>
         </div>
 
-        {/* زر فيسبوك الصغير والدائري الأنيق أسفل الصفحة */}
-        <div className="flex justify-center items-center">
-          <button
-            type="button"
-            onClick={handleFacebookLogin}
-            disabled={loading}
-            title="التسجيل بواسطة فيسبوك"
-            className="w-11 h-11 bg-[#1877F2] text-white rounded-full shadow-md hover:bg-[#166FE5] hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center disabled:opacity-40 disabled:pointer-events-none"
-          >
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-          </button>
-        </div>
-
+        <p className="mt-8 text-center text-gray-400 text-xs font-light">
+          بإنشاء حسابكِ، أنتِ توافقين على <span className="text-pink-400 font-medium cursor-pointer underline">خصوصية رقة</span>
+        </p>
       </div>
+
+      {/* إضافة انيميشن Tailwind مخصص في ملف CSS لاحقاً */}
+      <style jsx>{`
+        @keyframes bounce-slow {
+          0%, 100% { transform: translateY(-5%); }
+          50% { transform: translateY(0); }
+        }
+        .animate-bounce-slow {
+          animation: bounce-slow 4s infinite ease-in-out;
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+      `}</style>
     </div>
   );
 };
