@@ -1,11 +1,22 @@
-// admin/src/pages/SwingManagement.jsx
 import React, { useState } from 'react';
-import { savePageData } from '../services/adminService'; // استيراد المحرك المعزول
+import { savePageData } from '../services/adminService'; 
 
 function SwingManagement() {
-  const PAGE_NAME = 'الأرجوحة';
+  // قائمة الصفحات الرسمية للتطبيق لتحديد وجهة الحفظ السحابي
+  const SECTIONS = [
+    'أيقونة الأناقة',
+    'شغف وحرف',
+    'ملاذ الأمومة',
+    'واحة العافية',
+    'دروب التمكين',
+    'رواق الأرواح',
+    'الأرجوحة'
+  ];
 
-  // حالات الإدخال (Form States)
+  // حالة تحديد الصفحة الحالية (الافتراضية: أيقونة الأناقة)
+  const [currentPage, setCurrentPage] = useState(SECTIONS[0]);
+
+  // حالات الإدخال الحالية للمحتوى (Form States)
   const [videoUrl, setVideoUrl] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [audioUrl, setAudioUrl] = useState('');
@@ -13,22 +24,22 @@ function SwingManagement() {
   // حالة المقال المدمج
   const [articleTitle, setArticleTitle] = useState('');
   const [articleBody, setArticleBody] = useState('');
-  const [articleMediaType, setArticleMediaType] = useState('none'); // none, image, video
+  const [articleMediaType, setArticleMediaType] = useState('none'); 
   const [articleMediaUrl, setArticleMediaUrl] = useState('');
 
-  // حالات الواجهة (UI States)
+  // حالات الواجهة الاستجابية (UI States)
   const [isSaving, setIsSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
 
-  // دالة معالجة الحفظ والنشر لـ GitHub
+  // دالة معالجة الحفظ والنشر التلقائي لـ GitHub
   const handlePublish = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    setStatusMessage({ text: 'جاري رفع البيانات وتحديث مستودع GitHub...', type: 'info' });
+    setStatusMessage({ text: `جاري رفع البيانات وتحديث ملف [${currentPage}] في مستودع GitHub...`, type: 'info' });
 
-    // تجميع البيانات في هيكل كائن منظّم ومتكامل
+    // تجميع مصفوفة البيانات في كائن منظم يطابق تماماً بنية السيرفر والواجهة
     const pagePayload = {
-      pageName: PAGE_NAME,
+      pageName: currentPage,
       lastUpdated: new Date().toISOString(),
       media: {
         videoUrl: videoUrl,
@@ -46,11 +57,12 @@ function SwingManagement() {
     };
 
     try {
-      // استدعاء الدالة المعزولة الممررة من الملف الخارجي
-      await savePageData(PAGE_NAME, pagePayload);
-      setStatusMessage({ text: '🎉 تم حفظ بيانات صفحة الأرجوحة وعمل Commit بنجاح!', type: 'success' });
+      // إرسال البيانات للسيرفر مع تمرير اسم الصفحة المحددة حالياً ديناميكياً
+      await savePageData(currentPage, pagePayload);
+      setStatusMessage({ text: `🎉 تم حفظ وتأمين بيانات صفحة [${currentPage}] وعمل سحب ناجح للمستودع السحابي!`, type: 'success' });
     } catch (error) {
-      setStatusMessage({ text: '❌ فشلت عملية الحفظ. يرجى التحقق من اتصال السيرفر.', type: 'error' });
+      console.error(error);
+      setStatusMessage({ text: '❌ فشلت عملية الحفظ السحابي. يرجى التحقق من متغيرات البيئة أو الاتصال.', type: 'error' });
     } finally {
       setIsSaving(false);
     }
@@ -60,14 +72,33 @@ function SwingManagement() {
     <div className="admin-app">
       <header className="admin-header">
         <h1>لوحة تحكم رقة</h1>
-        <p>إدارة محتوى صفحة: <span className="highlight">[{PAGE_NAME}]</span></p>
+        <p>إدارة محتوى ومصفوفة أقسام التطبيق الذكية</p>
       </header>
+
+      {/* بطاقة التحكم الديناميكي واختيار الأقسام المستهدفة */}
+      <div className="ui-card selection-card">
+        <div className="input-group">
+          <label className="main-select-label">🎯 اختر الصفحة المراد تعديل بياناتها ونشرها سحابياً:</label>
+          <select 
+            className="main-select-dropdown"
+            value={currentPage}
+            onChange={(e) => {
+              setCurrentPage(e.target.value);
+              setStatusMessage({ text: '', type: '' }); // تصفير الرسائل عند تغيير القسم
+            }}
+          >
+            {SECTIONS.map((section) => (
+              <option key={section} value={section}>{section}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <form onSubmit={handlePublish} className="admin-form">
         
-        {/* بطاقة الروابط المباشرة */}
+        {/* بطاقة الروابط المباشرة لوسائط القسم */}
         <div className="ui-card">
-          <h2 className="card-title">🔗 الروابط والمرفقات المباشرة</h2>
+          <h2 className="card-title">🔗 الروابط والمرفقات المباشرة لقسم ({currentPage})</h2>
           
           <div className="input-group">
             <label>رابط الفيديو الاستعراضي (YouTube / Mp4):</label>
@@ -90,7 +121,7 @@ function SwingManagement() {
           </div>
 
           <div className="input-group">
-            <label>رابط الملف الصوتي (صوتيات الأرجوحة):</label>
+            <label>رابط الملف الصوتي الملحق بالقسم:</label>
             <input 
               type="url" 
               placeholder="https://example.com/audio.mp3" 
@@ -102,23 +133,23 @@ function SwingManagement() {
 
         {/* بطاقة المقالات المدمجة وسائطها */}
         <div className="ui-card">
-          <h2 className="card-title">📝 قسم المقال والتدوينات المدمجة</h2>
+          <h2 className="card-title">📝 المقالات والتدوينات الموجهة لمتابعي ({currentPage})</h2>
           
           <div className="input-group">
-            <label>عنوان المقال:</label>
+            <label>عنوان المقال الأساسي:</label>
             <input 
               type="text" 
-              placeholder="اكتب عنواناً جذاباً للمقال..." 
+              placeholder="اكتب عنواناً جذاباً وملائماً لطبيعة القسم..." 
               value={articleTitle}
               onChange={(e) => setArticleTitle(e.target.value)}
             />
           </div>
 
           <div className="input-group">
-            <label>نص ومحتوى المقال كاملاً:</label>
+            <label>محتوى التدوينة بالكامل:</label>
             <textarea 
               rows="6" 
-              placeholder="اكتب تفاصيل ومحتوى المقال هنا..." 
+              placeholder="اكتب تفاصيل ومحتوى المقال التثقيفي هنا..." 
               value={articleBody}
               onChange={(e) => setArticleBody(e.target.value)}
             />
@@ -152,16 +183,16 @@ function SwingManagement() {
           </div>
         </div>
 
-        {/* رسائل التنبيه والاشعارات */}
+        {/* بنر استعراض الحالات الفورية */}
         {statusMessage.text && (
           <div className={`status-banner ${statusMessage.type}`}>
             {statusMessage.text}
           </div>
         )}
 
-        {/* زر النشر والتحديث */}
+        {/* زر النشر والتحديث السحابي */}
         <button type="submit" className="submit-btn" disabled={isSaving}>
-          {isSaving ? 'جاري تحديث المستودع الآن...' : '🚀 نشر وتحديث صفحة الأرجوحة'}
+          {isSaving ? 'جاري مزامنة وتحديث مستندات GitHub الآن...' : `🚀 نشر وتحديث ملف [${currentPage}]`}
         </button>
 
       </form>
