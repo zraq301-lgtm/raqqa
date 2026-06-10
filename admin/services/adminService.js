@@ -1,3 +1,4 @@
+// admin/src/services/adminService.js
 import { CapacitorHttp } from '@capacitor/core';
 
 const SAVE_URL = 'https://nawah-ai-db.vercel.app/api/engine';
