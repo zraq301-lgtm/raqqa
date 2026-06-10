@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Share } from '@capacitor/share'; // استيراد المكتبة المطلوبة
+import { fetchPageData } from '../services/adminService'; // استيراد كود خدمة الجلب الموحد
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -9,9 +10,7 @@ const EleganceSection = () => {
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
-  const CATEGORY_ID = "768006428";
-  const SITE_DOMAIN = "raqqastor3.wordpress.com";
-  const API_URL = `https://public-api.wordpress.com/wp/v2/sites/${SITE_DOMAIN}/posts?categories=${CATEGORY_ID}&_embed`;
+  const PAGE_NAME = "ملاذ الأمومة"; // اسم القسم المستهدف للجلب السحابي
   const APP_LINK = "https://raqa-1zhm.vercel.app/";
 
   useEffect(() => {
@@ -24,9 +23,27 @@ const EleganceSection = () => {
 
   const fetchArticles = async () => {
     try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      if (Array.isArray(data)) setArticles(data);
+      // استدعاء خدمة الجلب الجديدة بدلاً من fetch التقليدي لـ WordPress
+      const data = await fetchPageData(PAGE_NAME);
+      
+      if (data) {
+        // تحويل كائن البيانات السحابية القادم من الهيكلية الموحدة إلى مصفوفة تناسب منطق العرض الحالي دون كسر التصميم
+        const formattedPost = {
+          id: data.pageName || PAGE_NAME,
+          title: { rendered: data.article?.title || PAGE_NAME },
+          featuredImage: data.media?.imageUrl || null,
+          content: { 
+            rendered: `
+              ${data.media?.videoUrl ? `<p><video src="${data.media.videoUrl}" controls style="width:100%; border-radius:10px; margin-bottom:15px;"></video></p>` : ''}
+              <p>${(data.article?.body || '').replace(/\n/g, '<br />')}</p>
+              ${data.article?.embeddedMedia?.type === 'video' && data.article?.embeddedMedia?.url ? `<p><video src="${data.article.embeddedMedia.url}" controls style="width:100%; border-radius:10px;"></video></p>` : ''}
+              ${data.article?.embeddedMedia?.type === 'image' && data.article?.embeddedMedia?.url ? `<p><img src="${data.article.embeddedMedia.url}" alt="Embedded Media" style="width:100%; border-radius:10px;" /></p>` : ''}
+              ${data.media?.audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${data.media.audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
+            `
+          }
+        };
+        setArticles([formattedPost]);
+      }
     } catch (error) {
       console.error("Fetch Error:", error);
     } finally {
@@ -87,7 +104,8 @@ const EleganceSection = () => {
 
       <div className="container">
         {articles.map((post) => {
-          const featuredImage = post._embedded?.['wp:featuredmedia']?.[0]?.source_url;
+          // جلب الصورة البارزة المحددة ديناميكياً من كود الخدمة المطور
+          const featuredImage = post.featuredImage;
 
           return (
             <div key={post.id} className="article-container">
@@ -106,7 +124,7 @@ const EleganceSection = () => {
                 )}
                 
                 <div className="content">
-                  {/* محتوى وردبريس - تم ضبط الصور داخله لتظهر كاملة */}
+                  {/* محتوى الصفحة - تم ضبط الميديا داخله لتظهر كاملة وبتنسيق متوافق مع لوحة تحكم رقة */}
                   <div 
                     className="wp-html-content"
                     dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
