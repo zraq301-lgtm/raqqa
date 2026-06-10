@@ -120,7 +120,16 @@ jobs:
           jarsigner -keystore admin_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" admin_alias
           cp "$AAB_PATH" Roqa-Admin-Final.aab
 
-      - name: 10. Publish Admin Release
+      # --- الخطوة المعدلة والمضمونة لتحميل الـ APK مباشرة من الأكشن العادي ---
+      - name: 10. Upload Admin Artifacts (Direct Download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roqa-Admin-Build-Files
+          path: |
+            Roqa-Admin-Final.apk
+            Roqa-Admin-Final.aab
+
+      - name: 11. Publish Admin Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: admin-v${{ github.run_number }}
