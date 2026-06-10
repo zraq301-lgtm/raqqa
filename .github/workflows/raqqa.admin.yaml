@@ -82,7 +82,7 @@ jobs:
           # إضافة الأذونات اللازمة
           sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
 
-          # إضافة معرف Start.io (اختياري للأدمن، تم تركه كما هو في الأصل)
+          # إضافة معرف Start.io
           sed -i '/<application[^>]*>/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />' $MANIFEST
 
       - name: 7. Generate Admin Icons
@@ -105,38 +105,39 @@ jobs:
 
       - name: 9. Sign Admin APK & AAB
         run: |
-          # توليد مفتاح توقيع (نفس بياناتك السابقة)
+          # توليد مفتاح توقيع
           keytool -genkey -v -keystore admin_release.jks -alias admin_alias -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
             -dname "CN=RoqaAdmin, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
           
-          # توقيع الـ APK
+          # توقيع الـ APK وتسميته باسم حصري للأدمن تمامًا لحل تداخل الإنتاج
           APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks admin_release.jks \
-            --ks-pass pass:"roqa_pass_2026" --out Roqa-Admin-Final.apk "$APK_PATH"
+            --ks-pass pass:"roqa_pass_2026" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
           
-          # توقيع الـ AAB
+          # توقيع الـ AAB وتسميته باسم حصري
           AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore admin_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" admin_alias
-          cp "$AAB_PATH" Roqa-Admin-Final.aab
+          cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
 
-      # --- الخطوة المعدلة والمضمونة لتحميل الـ APK مباشرة من الأكشن العادي ---
+      # --- الرفع المباشر كملف مستقل (Artifact) للأدمن ---
       - name: 10. Upload Admin Artifacts (Direct Download)
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Admin-Build-Files
+          name: Roqa-Admin-Only-Package
           path: |
-            Roqa-Admin-Final.apk
-            Roqa-Admin-Final.aab
+            Roqa-EXCLUSIVE-ADMIN.apk
+            Roqa-EXCLUSIVE-ADMIN.aab
 
+      # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
       - name: 11. Publish Admin Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: admin-v${{ github.run_number }}
-          name: "Roqa Admin Production Build v${{ github.run_number }}"
+          tag_name: admin-only-v${{ github.run_number }}
+          name: "Roqa EXCLUSIVE ADMIN PANEL Build v${{ github.run_number }}"
           files: |
-            Roqa-Admin-Final.apk
-            Roqa-Admin-Final.aab
+            Roqa-EXCLUSIVE-ADMIN.apk
+            Roqa-EXCLUSIVE-ADMIN.aab
             admin_release.jks
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
