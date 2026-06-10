@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Share } from '@capacitor/share'; // استيراد المكتبة المطلوبة
-import { fetchPageData } from '../services/adminService'; // استيراد كود خدمة الجلب الموحد
+import { fetchPageData } from '../../services/adminService'; // تعديل المسار بالخروج خطوتين للأعلى للوصول إلى المجلد الصحيح من جذر src
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
