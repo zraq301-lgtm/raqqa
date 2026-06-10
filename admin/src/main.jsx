@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'; 
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import App from './App'; // تم التعديل ليفتح على App مباشرة
-import SplashScreen from './SplashScreen'; 
+import App from './App'; // يفتح على App مباشرة
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
@@ -25,7 +24,6 @@ if (!getApps().length) {
 }
 
 const Main = () => {
-  const [showSplash, setShowSplash] = useState(true);
   
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
@@ -97,11 +95,8 @@ const Main = () => {
 
   return (
     <BrowserRouter>
-      {showSplash ? (
-        <SplashScreen onFinished={() => setShowSplash(false)} />
-      ) : (
-        <App /> /* تم التعديل ليفتح ملف App مباشرة */
-      )}
+      {/* تم إلغاء الـ SplashScreen تماماً ليفتح التطبيق فوراً على لوحة التحكم */}
+      <App />
     </BrowserRouter>
   );
 };
