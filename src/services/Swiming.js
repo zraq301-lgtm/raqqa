@@ -1,23 +1,36 @@
 import { CapacitorHttp } from '@capacitor/core';
 
-const FETCH_URL = 'https://nawah-ai-db.vercel.app/api/get-engine-data';
+// 🎯 تحديث الرابط ليتطابق تماماً مع اسم ملف الـ API الذي تم بناؤه بالسيرفر (engine-get أو get-engine-data)
+// تأكد من مطابقة اسم الملف في مجلد api لديك مع هذا المسار
+const FETCH_URL = 'https://nawah-ai-db.vercel.app/api/engine-get'; 
 
 /**
- * دالة موحدة لجلب بيانات أي صفحة من السيرفر
- * @param {string} pageName - اسم الصفحة باللغة العربية
+ * دالة موحدة وجاهزة لجلب بيانات أي صفحة من السيرفر السحابي لـ رقة
+ * @param {string} pageName - اسم الصفحة باللغة العربية (مثال: 'أيقونة الأناقة'، 'شغف وحرف')
  */
 export const fetchPageData = async (pageName) => {
+  // 1. تنظيف اسم الصفحة من أي علامات تنصيص قد تأتي بالخطأ من واجهة المستخدم
+  const cleanPageName = pageName.replace(/['"]/g, '').trim();
+
   const options = {
-    // استخدام encodeURIComponent للتعامل الآمن مع الحروف العربية والمسافات في الرابط
-    url: `${FETCH_URL}?page=${encodeURIComponent(pageName)}`,
-    headers: { 'Content-Type': 'application/json' },
+    // 2. استخدام encodeURIComponent للتعامل الآمن مع الحروف العربية والمسافات في الرابط
+    url: `${FETCH_URL}?page=${encodeURIComponent(cleanPageName)}`,
+    headers: { 
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-cache' // منع الكاش على مستوى محرك كاباسيتور لضمان جلب بيانات حية دائماً
+    },
   };
 
   try {
     const response = await CapacitorHttp.get(options);
-    return response.data; // البيانات القادمة من ملف الـ JSON في جيت هاب
+    
+    // 3. معالجة ذكية للاستجابة لضمان استرجاع كائن كود جافا سكريبت حقيقي (Object/Array)
+    const result = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+    
+    console.log(`[Data Service] تم جلب بيانات [${cleanPageName}] بنجاح:`, result);
+    return result; 
   } catch (error) {
-    console.error(`[Data Service] خطأ في جلب صفحة ${pageName}:`, error);
+    console.error(`[Data Service] خطأ في جلب صفحة [${cleanPageName}]:`, error);
     throw error;
   }
 };
