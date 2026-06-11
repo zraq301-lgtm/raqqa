@@ -34,6 +34,9 @@ function SwingManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ text: '', type: '' });
+  
+  // حالة إضافية للتحكم في إعادة تشغيل أنيميشن الكروت عند تبديل الأقسام
+  const [animateTrigger, setAnimateTrigger] = useState(true);
 
   // دالة تحريك الصفحة بسلاسة (Smooth Scroll) تركّز على الرسائل التنبيهية
   const scrollToStatus = () => {
@@ -45,6 +48,7 @@ function SwingManagement() {
   // دالة ذكية لإعادة تهيئة الحقول وتجهيزها للاستقبال الفوري عند تغيير القسم
   const loadSectionLiveContent = async (sectionName) => {
     setIsLoadingData(true);
+    setAnimateTrigger(false); // إيقاف الأنيميشن مؤقتاً لإعادة تشغيلها
     
     // تفريغ المدخلات تلقائياً لتهيئة الواجهة لكتابة محتوى جديد للقسم المختار
     setVideoUrl(''); setImageUrl(''); setAudioUrl('');
@@ -52,6 +56,12 @@ function SwingManagement() {
     
     setStatusMessage({ text: `💡 جاهز لتلقي بيانات قسم [${sectionName}] وتأمين الحفظ السحابي له.`, type: 'info' });
     setIsLoadingData(false);
+    
+    // إعادة تفعيل حركة الكروت بسلاسة بعد تفريغ البيانات
+    setTimeout(() => {
+      setAnimateTrigger(true);
+    }, 50);
+    
     scrollToStatus();
   };
 
@@ -127,7 +137,7 @@ function SwingManagement() {
       <form onSubmit={handlePublish} className="admin-form">
         
         {/* بطاقة الروابط المباشرة لوسائط القسم */}
-        <div className="ui-card animate-card">
+        <div className={`ui-card ${animateTrigger ? 'animate-card' : 'hide-card'}`}>
           <h2 className="card-title">🔗 الروابط والمرفقات المباشرة لقسم <span className="highlight-text">({currentPage})</span></h2>
           <div className="card-divider"></div>
           
@@ -163,7 +173,7 @@ function SwingManagement() {
         </div>
 
         {/* بطاقة المقالات المدمجة وسائطها */}
-        <div className="ui-card animate-card delay-1">
+        <div className={`ui-card ${animateTrigger ? 'animate-card delay-1' : 'hide-card'}`}>
           <h2 className="card-title">📝 المقالات والتدوينات الموجهة لمتابعي <span className="highlight-text">({currentPage})</span></h2>
           <div className="card-divider"></div>
           
@@ -272,6 +282,7 @@ function SwingManagement() {
         .admin-header {
           text-align: center;
           margin-bottom: 40px;
+          animation: fadeIn 0.6s ease-out forwards;
         }
         .header-badge {
           display: inline-block;
@@ -314,6 +325,7 @@ function SwingManagement() {
         .selection-card {
           background: linear-gradient(135deg, #ffffff 0%, #fdfcfb 100%);
           border-right: 5px solid var(--primary-gold);
+          animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
 
         .card-title {
@@ -469,14 +481,22 @@ function SwingManagement() {
           gap: 12px;
         }
 
-        /* تأثيرات التحريك */
+        /* تأثيرات التحريك الاحترافية */
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(8px); }
+          from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
 
-        .animate-card { animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
-        .delay-1 { animation-delay: 0.15s; }
+        .animate-card { 
+          animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; 
+        }
+        
+        .hide-card {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
 
         /* الأنيميشن الدائرية للـ Spinner الخاص بالتحميل */
         .spinner {
