@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { savePageData, fetchPageData } from '../services/adminService'; 
+import { savePageData } from '../services/adminService'; 
 
 function SwingManagement() {
   // قائمة الصفحات الرسمية للتطبيق لتحديد وجهة الحفظ السحابي
@@ -42,36 +42,20 @@ function SwingManagement() {
     }, 100);
   };
 
-  // دالة ذكية لمزامنة وجلب محتوى القسم المختار مباشرة فور تغيير القائمة
+  // دالة ذكية لإعادة تهيئة الحقول وتجهيزها للاستقبال الفوري عند تغيير القسم
   const loadSectionLiveContent = async (sectionName) => {
     setIsLoadingData(true);
-    setStatusMessage({ text: `جاري سحب أحدث بيانات حية لقسم [${sectionName}] من المخزن السحابي...`, type: 'info' });
     
-    try {
-      const data = await fetchPageData(sectionName);
-      if (data) {
-        setVideoUrl(data.media?.videoUrl || '');
-        setImageUrl(data.media?.imageUrl || '');
-        setAudioUrl(data.media?.audioUrl || '');
-        setArticleTitle(data.article?.title || '');
-        setArticleBody(data.article?.body || '');
-        setArticleMediaType(data.article?.embeddedMedia?.type || 'none');
-        setArticleMediaUrl(data.article?.embeddedMedia?.url || '');
-        setStatusMessage({ text: `✨ تم تحديث وعرض بيانات [${sectionName}] الحية بنجاح.`, type: 'success' });
-      }
-    } catch (error) {
-      console.error("Fetch Error:", error);
-      // إرجاع مصفوفة فارغة لتسهيل الكتابة الجديدة في حال عدم وجود ملف قائم مسبقاً
-      setVideoUrl(''); setImageUrl(''); setAudioUrl('');
-      setArticleTitle(''); setArticleBody(''); setArticleMediaType('none'); setArticleMediaUrl('');
-      setStatusMessage({ text: `💡 هذا القسم فارغ حالياً، قم بتعبئته لإنشاء الملف السحابي الأول له.`, type: 'info' });
-    } finally {
-      setIsLoadingData(false);
-      scrollToStatus();
-    }
+    // تفريغ المدخلات تلقائياً لتهيئة الواجهة لكتابة محتوى جديد للقسم المختار
+    setVideoUrl(''); setImageUrl(''); setAudioUrl('');
+    setArticleTitle(''); setArticleBody(''); setArticleMediaType('none'); setArticleMediaUrl('');
+    
+    setStatusMessage({ text: `💡 جاهز لتلقي بيانات قسم [${sectionName}] وتأمين الحفظ السحابي له.`, type: 'info' });
+    setIsLoadingData(false);
+    scrollToStatus();
   };
 
-  // تأثير جلب البيانات المباشر عند بدء التشغيل أو تغيير القسم
+  // تأثير المزامنة عند تغيير القسم المختار
   useEffect(() => {
     loadSectionLiveContent(currentPage);
   }, [currentPage]);
