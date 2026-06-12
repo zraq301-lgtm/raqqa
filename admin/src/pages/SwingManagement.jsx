@@ -269,13 +269,17 @@ function SwingManagement() {
           background-color: var(--bg-main);
           font-family: 'Tajawal', sans-serif;
           color: var(--dark-text);
-          margin: 0; padding: 0;
+          margin: 0; 
+          padding: 0;
+          overflow-y: auto !important; /* يضمن إتاحة التمرير العمودي للصفحة دائماً */
+          min-height: 100vh;
         }
 
         .admin-app {
           max-width: 750px;
           margin: 0 auto;
           padding: 30px 15px 80px;
+          height: auto; /* يسمح للتطبيق بالتمدد لأسفل حسب المحتوى */
         }
 
         /* تنسيق الهيدر والمقدمة علوياً */
