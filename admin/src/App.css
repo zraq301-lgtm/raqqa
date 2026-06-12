@@ -17,14 +17,16 @@ body {
   background-color: var(--soft-bg);
   font-family: 'Tajawal', sans-serif;
   direction: rtl;
+  min-height: 100vh;
+  overflow-y: auto !important; /* يضمن تفعيل سكرول التمرير العمودي للمتصفح بالكامل */
 }
 
-/* حاوية التطبيق الرئيسية - تم ربطها بخاصية فيربيس */
+/* حاوية التطبيق الرئيسية - تم ربطها بخاصية فيربيس وتعديل الأبعاد لفك جمود الشاشة */
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh; /* تم تعديلها من height الثابتة لتسمح بالتمدد الحر لأسفل */
+  overflow-y: visible; /* تم تعديلها من hidden لمنع قص المحتوى الطويل وضمان حركته */
   background-color: var(--main-theme-color); /* اللون الذي سيتم تغييره من فيربيس */
   transition: background-color 0.5s ease; /* لجعل التغيير ناعماً */
 }
@@ -157,12 +159,12 @@ body {
   flex: 1;
 }
 
-/* منطقة المحتوى */
+/* منطقة المحتوى - تم تعزيز تفعيل السكرول وزيادة مسافة الأمان */
 .main-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: auto !important; /* يضمن قبول محتويات الصفحات الداخلية للتمرير بشكل مستقل */
   padding: 20px;
-  padding-bottom: 90px; /* تقليل مسافة الأمان لتناسب المنيو الأصغر */
+  padding-bottom: 120px; /* تم زيادتها قليلاً لكي لا يختفي زر الحفظ خلف المنيو السفلي المرتفع للهواتف */
 }
 
 /* ستايل الزجاج (Glassmorphism) المرتبط بفيربيس */
