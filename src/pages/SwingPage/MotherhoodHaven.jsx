@@ -21,33 +21,64 @@ const EleganceSection = () => {
     fetchArticles();
   }, []);
 
+  // دالة مساعدة لتحويل روابط يوتيوب العادية إلى روابط قابلة للتضمين (Embed)
+  const getYouTubeEmbedUrl = (url) => {
+    if (!url) return null;
+    let videoId = null;
+    
+    // للتعامل مع روابط youtu.be/ID
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1]?.split('?')[0];
+    } 
+    // للتعامل مع روابط youtube.com/watch?v=ID
+    else if (url.includes('v=')) {
+      videoId = url.split('v=')[1]?.split('&')[0];
+    } 
+    // للتعامل مع روابط التضمين الجاهزة أو مسارات الاختصارات الأخرى
+    else if (url.includes('embed/')) {
+      return url;
+    }
+
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  };
+
   const fetchArticles = async () => {
     try {
       const rawData = await fetchPageData(PAGE_NAME);
       
       if (rawData) {
-        // فحص لضمان استخراج الكائن الأساسي سواء رجع مباشرة أو مغلفاً داخل data أو result
         const data = rawData.data ? rawData.data : (rawData.result ? rawData.result : rawData);
 
-        // تنظيف التحقق من الروابط والميديا الأساسية القادمة من السيرفر
         const videoUrl = data.media?.videoUrl && data.media.videoUrl.trim() !== "" ? data.media.videoUrl : null;
         const imageUrl = data.media?.imageUrl && data.media.imageUrl.trim() !== "" ? data.media.imageUrl : null;
         const audioUrl = data.media?.audioUrl && data.media.audioUrl.trim() !== "" ? data.media.audioUrl : null;
         
-        // الميديا والمقالات المدمجة داخلياً
         const embeddedType = data.article?.embeddedMedia?.type;
         const embeddedUrl = data.article?.embeddedMedia?.url && data.article.embeddedMedia.url.trim() !== "" ? data.article.embeddedMedia.url : null;
         const bodyContent = data.article?.body && data.article.body.trim() !== "" ? data.article.body : "";
 
+        // فحص نوع رابط الفيديو لمعرفة هل هو يوتيوب أم رابط مباشر
+        const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
+        const finalVideoUrl = isYouTube ? getYouTubeEmbedUrl(videoUrl) : videoUrl;
+
+        // فحص ميديا المقال الداخلية أيضاً إذا كانت يوتيوب
+        const isEmbeddedYouTube = embeddedType === 'video' && embeddedUrl && (embeddedUrl.includes('youtube.com') || embeddedUrl.includes('youtu.be'));
+        const finalEmbeddedVideoUrl = isEmbeddedYouTube ? getYouTubeEmbedUrl(embeddedUrl) : embeddedUrl;
+
         const formattedPost = {
           id: data.pageName || PAGE_NAME,
           title: { rendered: data.article?.title && data.article.title.trim() !== "" ? data.article.title : PAGE_NAME },
-          featuredImage: imageUrl, // الصورة البارزة الأساسية
-          featuredVideo: videoUrl, // إضافة دعم حقيقي للفيديو البارز الأساسي بالواجهة
+          featuredImage: imageUrl, 
+          featuredVideo: finalVideoUrl, 
+          isVideoYouTube: isYouTube, // تمييز طريقة عرض ميديا الواجهة الأساسية
           content: { 
             rendered: `
               <p>${bodyContent.replace(/\n/g, '<br />')}</p>
-              ${embeddedType === 'video' && embeddedUrl ? `<p><video src="${embeddedUrl}" controls style="width:100%; border-radius:10px; margin-top:10px;"></video></p>` : ''}
+              ${embeddedType === 'video' && finalEmbeddedVideoUrl ? (
+                isEmbeddedYouTube 
+                ? `<p><iframe src="${finalEmbeddedVideoUrl}" width="100%" height="280" frameborder="0" allowfullscreen style="border-radius:10px; margin-top:10px;"></iframe></p>`
+                : `<p><video src="${finalEmbeddedVideoUrl}" controls style="width:100%; border-radius:10px; margin-top:10px;"></video></p>`
+              ) : ''}
               ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:10px; margin-top:10px;" /></p>` : ''}
               ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
             `
@@ -116,6 +147,7 @@ const EleganceSection = () => {
         {articles.map((post) => {
           const featuredImage = post.featuredImage;
           const featuredVideo = post.featuredVideo;
+          const isVideoYouTube = post.isVideoYouTube;
 
           return (
             <div key={post.id} className="article-container">
@@ -126,14 +158,25 @@ const EleganceSection = () => {
                   <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                 </div>
 
-                {/* 🎯 ميديا الواجهة الذكية: عرض الفيديو البارز الأساسي إذا وجد أولاً */}
+                {/* عرض الفيديو البارز الأساسي بحسب نوع الرابط ذكياً */}
                 {featuredVideo && (
                   <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
-                    <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
+                    {isVideoYouTube ? (
+                      <iframe 
+                        src={featuredVideo} 
+                        width="100%" 
+                        height="280" 
+                        frameBorder="0" 
+                        allowFullScreen 
+                        style={{ display: 'block' }}
+                      />
+                    ) : (
+                      <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
+                    )}
                   </div>
                 )}
 
-                {/* عرض الصورة البارزة كخيار بديل إذا لم يكن هناك فيديو ووجدت الصورة */}
+                {/* عرض الصورة البارزة كخيار بديل إذا لم يكن هناك فيديو */}
                 {!featuredVideo && featuredImage && (
                   <div className="main-featured-image">
                     <img src={featuredImage} alt="Elegance" />
@@ -255,9 +298,8 @@ const EleganceSection = () => {
           font-size: 1.1rem; 
         }
         
-        .wp-html-content img, .wp-html-content video {
+        .wp-html-content img, .wp-html-content video, .wp-html-content iframe {
           max-width: 100% !important; 
-          height: auto !important;
           border-radius: 10px;
           margin: 10px 0;
           display: block;
