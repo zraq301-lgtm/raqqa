@@ -26,14 +26,15 @@ const EleganceSection = () => {
       const rawData = await fetchPageData(PAGE_NAME);
       
       if (rawData) {
-        // فحص ذكي: إذا كانت البيانات قادمة بداخل حقل فرعي اسمه data أو result نقوم باستخراجه، وإلا نستخدم الكائن نفسه
+        // فحص لضمان استخراج الكائن الأساسي سواء رجع مباشرة أو مغلفاً داخل data أو result
         const data = rawData.data ? rawData.data : (rawData.result ? rawData.result : rawData);
 
-        // التحقق من أن القيم نصوص حقيقية وليست سلاسل فارغة "" تجنبًا للمشاكل في المتصفح
+        // تنظيف التحقق من الروابط والميديا الأساسية القادمة من السيرفر
         const videoUrl = data.media?.videoUrl && data.media.videoUrl.trim() !== "" ? data.media.videoUrl : null;
         const imageUrl = data.media?.imageUrl && data.media.imageUrl.trim() !== "" ? data.media.imageUrl : null;
         const audioUrl = data.media?.audioUrl && data.media.audioUrl.trim() !== "" ? data.media.audioUrl : null;
         
+        // الميديا والمقالات المدمجة داخلياً
         const embeddedType = data.article?.embeddedMedia?.type;
         const embeddedUrl = data.article?.embeddedMedia?.url && data.article.embeddedMedia.url.trim() !== "" ? data.article.embeddedMedia.url : null;
         const bodyContent = data.article?.body && data.article.body.trim() !== "" ? data.article.body : "";
@@ -41,13 +42,13 @@ const EleganceSection = () => {
         const formattedPost = {
           id: data.pageName || PAGE_NAME,
           title: { rendered: data.article?.title && data.article.title.trim() !== "" ? data.article.title : PAGE_NAME },
-          featuredImage: imageUrl,
+          featuredImage: imageUrl, // الصورة البارزة الأساسية
+          featuredVideo: videoUrl, // إضافة دعم حقيقي للفيديو البارز الأساسي بالواجهة
           content: { 
             rendered: `
-              ${videoUrl ? `<p><video src="${videoUrl}" controls style="width:100%; border-radius:10px; margin-bottom:15px;"></video></p>` : ''}
               <p>${bodyContent.replace(/\n/g, '<br />')}</p>
-              ${embeddedType === 'video' && embeddedUrl ? `<p><video src="${embeddedUrl}" controls style="width:100%; border-radius:10px;"></video></p>` : ''}
-              ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:10px;" /></p>` : ''}
+              ${embeddedType === 'video' && embeddedUrl ? `<p><video src="${embeddedUrl}" controls style="width:100%; border-radius:10px; margin-top:10px;"></video></p>` : ''}
+              ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:10px; margin-top:10px;" /></p>` : ''}
               ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
             `
           }
@@ -114,6 +115,7 @@ const EleganceSection = () => {
       <div className="container">
         {articles.map((post) => {
           const featuredImage = post.featuredImage;
+          const featuredVideo = post.featuredVideo;
 
           return (
             <div key={post.id} className="article-container">
@@ -124,15 +126,22 @@ const EleganceSection = () => {
                   <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                 </div>
 
-                {/* الصورة البارزة (إذا وجدت) */}
-                {featuredImage && (
+                {/* 🎯 ميديا الواجهة الذكية: عرض الفيديو البارز الأساسي إذا وجد أولاً */}
+                {featuredVideo && (
+                  <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
+                    <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
+                  </div>
+                )}
+
+                {/* عرض الصورة البارزة كخيار بديل إذا لم يكن هناك فيديو ووجدت الصورة */}
+                {!featuredVideo && featuredImage && (
                   <div className="main-featured-image">
                     <img src={featuredImage} alt="Elegance" />
                   </div>
                 )}
                 
                 <div className="content">
-                  {/* محتوى الصفحة */}
+                  {/* محتوى الصفحة النصي والميديا المدمجة */}
                   <div 
                     className="wp-html-content"
                     dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
@@ -246,7 +255,7 @@ const EleganceSection = () => {
           font-size: 1.1rem; 
         }
         
-        .wp-html-content img {
+        .wp-html-content img, .wp-html-content video {
           max-width: 100% !important; 
           height: auto !important;
           border-radius: 10px;
