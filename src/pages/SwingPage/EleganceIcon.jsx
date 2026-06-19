@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // استيراد مكتبة المشاركة الخاصة بكاباسيتور لضمان فتح قائمة النظام الشاملة
 import { Share } from '@capacitor/share';
-// استيراد الخدمة المحلية لجلب البيانات من قاعدة البيانات بدلاً من ووردبريس
+// استيراد الخدمة المحلية النظيفة التي تفضلها
 import { fetchPageData } from '../../services/adminService'; 
 
 const EleganceSection = () => {
@@ -12,8 +12,8 @@ const EleganceSection = () => {
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
-  // اسم القسم المسجل بالعربي في قاعدة البيانات ليجلب ما يخصه
-  const PAGE_NAME = "الأناقة والجمال"; 
+  // 🎯 جلب البيانات بناءً على الاسم العربي المرفوع بالصورة تماماً لضمان مطابقة الملف بقاعدة البيانات
+  const PAGE_NAME = "أيقونة الأناقة"; 
   const APP_LINK = "https://raqa-1zhm.vercel.app/";
 
   useEffect(() => {
@@ -24,57 +24,48 @@ const EleganceSection = () => {
     fetchArticles();
   }, []);
 
-  // دالة مساعدة لتحويل روابط يوتيوب العادية إلى روابط قابلة للتضمين (Embed)
+  // دالة مساعدة لتهيئة روابط اليوتيوب
   const getYouTubeEmbedUrl = (url) => {
     if (!url) return null;
     let videoId = null;
-    
     if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    } 
-    else if (url.includes('v=')) {
+    } else if (url.includes('v=')) {
       videoId = url.split('v=')[1]?.split('&')[0];
-    } 
-    else if (url.includes('embed/')) {
+    } else if (url.includes('embed/')) {
       return url;
     }
-
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
   const fetchArticles = async () => {
     try {
-      const rawData = await fetchPageData(PAGE_NAME);
+      // استدعاء الخدمة الموحدة الخاصة بك
+      const result = await fetchPageData(PAGE_NAME);
       
-      if (rawData) {
-        const data = rawData.data ? rawData.data : (rawData.result ? rawData.result : rawData);
-
-        let itemsArray = [];
-        if (Array.isArray(data)) {
-          itemsArray = data;
-        } else if (data && typeof data === 'object') {
-          itemsArray = [data];
+      if (result) {
+        // 🎯 الفلترة والمعالجة الذكية: تحويل البيانات إلى مصفوفة سواء كانت كائن مفرد أو مصفوفة جاهزة
+        let rawItems = [];
+        if (Array.isArray(result)) {
+          rawItems = result;
+        } else if (result && typeof result === 'object') {
+          // إذا كان كود الـ API يعيد كائن مفرد (مثل الصورة الأولى المرفقة) نضعه داخل مصفوفة
+          rawItems = [result];
         }
 
-        const formattedPosts = itemsArray.map((item, index) => {
+        const formattedPosts = rawItems.map((item, index) => {
           const videoUrl = item.media?.videoUrl && item.media.videoUrl.trim() !== "" ? item.media.videoUrl : null;
           const imageUrl = item.media?.imageUrl && item.media.imageUrl.trim() !== "" ? item.media.imageUrl : null;
           const audioUrl = item.media?.audioUrl && item.media.audioUrl.trim() !== "" ? item.media.audioUrl : null;
-          
-          const embeddedType = item.article?.embeddedMedia?.type;
-          const embeddedUrl = item.article?.embeddedMedia?.url && item.article.embeddedMedia.url.trim() !== "" ? item.article.embeddedMedia.url : null;
           const bodyContent = item.article?.body && item.article.body.trim() !== "" ? item.article.body : "";
 
           const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
           const finalVideoUrl = isYouTube ? getYouTubeEmbedUrl(videoUrl) : videoUrl;
 
-          const isEmbeddedYouTube = embeddedType === 'video' && embeddedUrl && (embeddedUrl.includes('youtube.com') || embeddedUrl.includes('youtu.be'));
-          const finalEmbeddedVideoUrl = isEmbeddedYouTube ? getYouTubeEmbedUrl(embeddedUrl) : embeddedUrl;
+          // 🎯 سحب الـ ID الحقيقي من المنشور (استخدام الـ lastUpdated أو الـ ID المخزن لسهولة المطابقة والحذف مستقبلاً)
+          const databaseId = item.id || item.lastUpdated || `post_${index}`;
 
-          // الاحتفاظ بمعرف المنشور الحقيقي القادم من قاعدة البيانات
-          const databaseId = item.id || index;
-
-          // فحص ما إذا كان المنشور عبارة عن ميديا فقط (صورة أو فيديو بدون نص طويل) لتصغير حجم الكارت
+          // قياس حجم الكارت تلقائياً (منشور ميديا فقط أم يحتوي على نص)
           const hasFeaturedMedia = !!(finalVideoUrl || imageUrl);
           const isTextShortOrEmpty = bodyContent.trim().length < 10;
           const isMediaOnly = hasFeaturedMedia && isTextShortOrEmpty;
@@ -88,24 +79,18 @@ const EleganceSection = () => {
             isMediaOnly: isMediaOnly,
             content: { 
               rendered: `
-                ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 18px;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
-                ${embeddedType === 'video' && finalEmbeddedVideoUrl ? (
-                  isEmbeddedYouTube 
-                  ? `<p><iframe src="${finalEmbeddedVideoUrl}" width="100%" height="315" frameborder="0" allowfullscreen style="border-radius:12px; margin-top:12px;"></iframe></p>`
-                  : `<p><video src="${finalEmbeddedVideoUrl}" controls style="width:100%; border-radius:12px; margin-top:12px;"></video></p>`
-                ) : ''}
-                ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:12px; margin-top:12px;" /></p>` : ''}
-                ${audioUrl ? `<p style="text-align:center; margin-top:18px;"><audio src="${audioUrl}" controls style="width:100%; max-width:100%; border-radius:30px;"></audio></p>` : ''}
+                ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 15px; line-height: 1.7;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
+                ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; border-radius:30px;"></audio></p>` : ''}
               `
             }
           };
         });
 
-        // ترتيب المنشورات من الأحدث للأقدم
+        // ترتيب المنشورات لعرض الأحدث في الأعلى
         setArticles(formattedPosts.reverse());
       }
     } catch (error) {
-      console.error("Fetch Error:", error);
+      console.error("Fetch Error in Interface:", error);
     } finally {
       setLoading(false);
     }
@@ -140,7 +125,6 @@ const EleganceSection = () => {
     const tempDiv = document.createElement("div");
     tempDiv.innerHTML = title;
     const cleanTitle = tempDiv.textContent || tempDiv.innerText || "";
-
     try {
       await Share.share({
         title: cleanTitle,
@@ -149,17 +133,7 @@ const EleganceSection = () => {
         dialogTitle: 'مشاركة عبر تطبيقاتك',
       });
     } catch (error) {
-      if (navigator.share) {
-        navigator.share({
-          title: cleanTitle,
-          text: `إليكِ هذا الموضوع المميز من تطبيق رقة: ${cleanTitle}`,
-          url: APP_LINK,
-        }).catch(() => {
-          window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
-        });
-      } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
-      }
+      window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
     }
   };
 
@@ -171,7 +145,7 @@ const EleganceSection = () => {
       
       <div className="container">
         {articles.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#8d6e63', marginTop: '50px', fontFamily: 'Tajawal' }}>لا توجد منشورات حالياً</div>
+          <div style={{ textAlign: 'center', color: '#8d6e63', marginTop: '50px', fontFamily: 'Tajawal' }}>لا توجد منشورات حالياً في هذا القسم</div>
         ) : (
           articles.map((post) => {
             const featuredImage = post.featuredImage;
@@ -180,34 +154,24 @@ const EleganceSection = () => {
 
             return (
               <div key={post.id} className="article-container">
-                {/* إضافة الكلاس الديناميكي للتحكم التلقائي بمقاس الارتفاع */}
                 <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
                   
-                  {/* ترويسة الكارت تحتوي على العنوان وميزة رقم الـ ID لسهولة الحذف من لوحة الإدارة */}
+                  {/* ترويسة تعرض المعرف الرقمي الحقيقي (ID) القادم من السيرفر لسهولة تتبعه وحذفه */}
                   <div className="card-header-title">
                     <span className="post-id-badge">ID: #{post.id}</span>
                     <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                   </div>
                   
-                  {/* عرض الفيديو البارز إن وجد */}
                   {featuredVideo && (
                     <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
                       {isVideoYouTube ? (
-                        <iframe 
-                          src={featuredVideo} 
-                          width="100%" 
-                          height="320" 
-                          frameBorder="0" 
-                          allowFullScreen 
-                          style={{ display: 'block' }}
-                        />
+                        <iframe src={featuredVideo} width="100%" height="280" frameBorder="0" allowFullScreen style={{ display: 'block' }} />
                       ) : (
                         <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
                       )}
                     </div>
                   )}
 
-                  {/* عرض الصورة البارزة كبديل في حال عدم وجود فيديو */}
                   {!featuredVideo && featuredImage && (
                     <div className="main-featured-image">
                       <img src={featuredImage} alt="Elegance" />
@@ -236,12 +200,7 @@ const EleganceSection = () => {
                   {activeCommentId === post.id && (
                     <div className="comments-area">
                       <div className="comment-input-wrap">
-                        <input 
-                          type="text" 
-                          placeholder="أضيفي لمستكِ..." 
-                          value={newComment} 
-                          onChange={(e) => setNewComment(e.target.value)} 
-                        />
+                        <input type="text" placeholder="أضيفي لمستكِ..." value={newComment} onChange={(e) => setNewComment(e.target.value)} />
                         <button onClick={() => handleAddComment(post.id)}>نشر</button>
                       </div>
                       <div className="comments-list">
@@ -270,16 +229,16 @@ const EleganceSection = () => {
         
         .card { background: #ffffff; max-width: 500px; width: 95%; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 30px; border: 1px solid #f0e6e0; position: relative; }
         
-        /* 🎯 كلاس ذكي لتقليص الارتفاع والهوامش تلقائياً لمنشورات الصور والفيديوهات فقط */
+        /* ضبط المقاسات التلقائي لمنشورات الميديا الصرف */
         .card.media-only-card { margin-bottom: 22px; }
         .card.media-only-card .card-header-title { padding: 14px 15px 10px; }
         .card.media-only-card .content { padding: 10px 15px 14px; }
         .card.media-only-card .app-download-box { margin-top: 12px; padding: 10px; }
 
-        .card-header-title { padding: 20px 15px; text-align: center; position: relative; }
-        .card-header-title h2 { color: #8d6e63; margin: 0; font-size: 1.4rem; padding-top: 5px; }
+        .card-header-title { padding: 24px 15px 16px; text-align: center; position: relative; }
+        .card-header-title h2 { color: #8d6e63; margin: 0; font-size: 1.35rem; padding-top: 8px; }
         
-        /* شارة الترقيم الرقمي (ID) لتسهيل الحذف والتحكم */
+        /* تصميم شارة الـ ID بشكل متناسق فوق الكارت */
         .post-id-badge { position: absolute; top: 6px; left: 12px; background: #f2eae4; color: #8d6e63; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; direction: ltr; }
 
         .main-featured-image img { width: 100%; display: block; height: auto; }
