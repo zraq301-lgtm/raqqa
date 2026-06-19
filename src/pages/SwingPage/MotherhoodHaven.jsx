@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Share } from '@capacitor/share'; // استيراد المكتبة المطلوبة
-import { fetchPageData } from '../../services/adminService'; // تعديل المسار بالخروج خطوتين للأعلى للوصول إلى المجلد الصحيح من جذر src
+import { Share } from '@capacitor/share'; 
+import { fetchPageData } from '../../services/adminService'; 
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -10,7 +10,7 @@ const EleganceSection = () => {
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
-  const PAGE_NAME = "ملاذ الأمومة"; // اسم القسم المستهدف للجلب السحابي
+  const PAGE_NAME = "ملاذ الأمومة"; 
   const APP_LINK = "https://raqa-1zhm.vercel.app/";
 
   useEffect(() => {
@@ -23,22 +23,29 @@ const EleganceSection = () => {
 
   const fetchArticles = async () => {
     try {
-      // استدعاء خدمة الجلب الجديدة بدلاً من fetch التقليدي لـ WordPress
       const data = await fetchPageData(PAGE_NAME);
       
       if (data) {
-        // تحويل كائن البيانات السحابية القادم من الهيكلية الموحدة إلى مصفوفة تناسب منطق العرض الحالي دون كسر التصميم
+        // التحقق من أن القيم نصوص حقيقية وليست سلاسل فارغة "" تجنبًا للمشاكل في المتصفح
+        const videoUrl = data.media?.videoUrl && data.media.videoUrl.trim() !== "" ? data.media.videoUrl : null;
+        const imageUrl = data.media?.imageUrl && data.media.imageUrl.trim() !== "" ? data.media.imageUrl : null;
+        const audioUrl = data.media?.audioUrl && data.media.audioUrl.trim() !== "" ? data.media.audioUrl : null;
+        
+        const embeddedType = data.article?.embeddedMedia?.type;
+        const embeddedUrl = data.article?.embeddedMedia?.url && data.article.embeddedMedia.url.trim() !== "" ? data.article.embeddedMedia.url : null;
+        const bodyContent = data.article?.body && data.article.body.trim() !== "" ? data.article.body : "";
+
         const formattedPost = {
           id: data.pageName || PAGE_NAME,
-          title: { rendered: data.article?.title || PAGE_NAME },
-          featuredImage: data.media?.imageUrl || null,
+          title: { rendered: data.article?.title && data.article.title.trim() !== "" ? data.article.title : PAGE_NAME },
+          featuredImage: imageUrl,
           content: { 
             rendered: `
-              ${data.media?.videoUrl ? `<p><video src="${data.media.videoUrl}" controls style="width:100%; border-radius:10px; margin-bottom:15px;"></video></p>` : ''}
-              <p>${(data.article?.body || '').replace(/\n/g, '<br />')}</p>
-              ${data.article?.embeddedMedia?.type === 'video' && data.article?.embeddedMedia?.url ? `<p><video src="${data.article.embeddedMedia.url}" controls style="width:100%; border-radius:10px;"></video></p>` : ''}
-              ${data.article?.embeddedMedia?.type === 'image' && data.article?.embeddedMedia?.url ? `<p><img src="${data.article.embeddedMedia.url}" alt="Embedded Media" style="width:100%; border-radius:10px;" /></p>` : ''}
-              ${data.media?.audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${data.media.audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
+              ${videoUrl ? `<p><video src="${videoUrl}" controls style="width:100%; border-radius:10px; margin-bottom:15px;"></video></p>` : ''}
+              <p>${bodyContent.replace(/\n/g, '<br />')}</p>
+              ${embeddedType === 'video' && embeddedUrl ? `<p><video src="${embeddedUrl}" controls style="width:100%; border-radius:10px;"></video></p>` : ''}
+              ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:10px;" /></p>` : ''}
+              ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
             `
           }
         };
@@ -52,6 +59,7 @@ const EleganceSection = () => {
   };
 
   const cleanPostContent = (html) => {
+    if (!html) return "";
     let clean = html;
     clean = clean.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
     clean = clean.replace(/<html[^>]*>|<body[^>]*>|<\/body>|<\/html>|<head[^>]*>|<\/head>|<meta[^>]*>/gi, "");
@@ -76,9 +84,8 @@ const EleganceSection = () => {
     setNewComment("");
   };
 
-  // تعديل وظيفة المشاركة لاستخدام Capacitor
   const handleShare = async (title) => {
-    const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, ""); // تنظيف العنوان من الـ HTML
+    const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, ""); 
     try {
       await Share.share({
         title: cleanTitle,
@@ -87,7 +94,6 @@ const EleganceSection = () => {
         dialogTitle: 'مشاركة الموضوع',
       });
     } catch (error) {
-      // خيار بديل في حال لم يتم دعم المكتبة في المتصفح أو تم إلغاء المشاركة
       window.open(`https://wa.me/?text=${encodeURIComponent(cleanTitle + " " + APP_LINK)}`);
     }
   };
@@ -104,7 +110,6 @@ const EleganceSection = () => {
 
       <div className="container">
         {articles.map((post) => {
-          // جلب الصورة البارزة المحددة ديناميكياً من كود الخدمة المطور
           const featuredImage = post.featuredImage;
 
           return (
@@ -116,7 +121,7 @@ const EleganceSection = () => {
                   <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                 </div>
 
-                {/* الصورة البارزة (إذا وجدت) - تم توسيعها */}
+                {/* الصورة البارزة (إذا وجدت) */}
                 {featuredImage && (
                   <div className="main-featured-image">
                     <img src={featuredImage} alt="Elegance" />
@@ -124,7 +129,7 @@ const EleganceSection = () => {
                 )}
                 
                 <div className="content">
-                  {/* محتوى الصفحة - تم ضبط الميديا داخله لتظهر كاملة وبتنسيق متوافق مع لوحة تحكم رقة */}
+                  {/* محتوى الصفحة */}
                   <div 
                     className="wp-html-content"
                     dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
@@ -193,12 +198,12 @@ const EleganceSection = () => {
 
         .container {
           display: flex; flex-direction: column; align-items: center;
-          padding: 70px 10px 100px; /* زيادة الهامش السفلي لعدم تداخل القائمة */
+          padding: 70px 10px 100px;
         }
 
         .card {
           background: #ffffff;
-          max-width: 500px; /* زيادة عرض الكارت قليلاً */
+          max-width: 500px; 
           width: 95%;
           border-radius: 20px; 
           overflow: hidden;
@@ -218,14 +223,13 @@ const EleganceSection = () => {
           font-size: 1.4rem;
         }
 
-        /* تنسيق الصورة لتأخذ العرض كاملاً بدون قص */
         .main-featured-image {
           width: 100%;
         }
         .main-featured-image img {
           width: 100%;
           display: block;
-          height: auto; /* يجعل الصورة تأخذ طولها الطبيعي */
+          height: auto; 
         }
 
         .content { 
@@ -233,7 +237,6 @@ const EleganceSection = () => {
           text-align: center; 
         }
 
-        /* تنسيق الصور والمحتوى القادم من وردبريس */
         .wp-html-content { 
           text-align: right; 
           color: #4a3f35; 
@@ -241,7 +244,7 @@ const EleganceSection = () => {
         }
         
         .wp-html-content img {
-          max-width: 100% !important; /* إجبار الصورة على عدم تجاوز الكارت */
+          max-width: 100% !important; 
           height: auto !important;
           border-radius: 10px;
           margin: 10px 0;
