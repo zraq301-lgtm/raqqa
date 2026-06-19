@@ -70,15 +70,21 @@ const EleganceSection = () => {
 
           const uniqueId = item.id || (item.lastUpdated ? `post_${item.lastUpdated}_${index}` : `post_${index}`);
 
+          // 🎯 تحديد ما إذا كان المنشور عبارة عن صورة أو فيديو بارز فقط بدون نص مقال طويل
+          const hasFeaturedMedia = !!(finalVideoUrl || imageUrl);
+          const isTextShortOrEmpty = bodyContent.trim().length < 10;
+          const isMediaOnly = hasFeaturedMedia && isTextShortOrEmpty;
+
           return {
             id: uniqueId,
             title: { rendered: item.article?.title && item.article.title.trim() !== "" ? item.article.title : `${PAGE_NAME}` },
             featuredImage: imageUrl, 
             featuredVideo: finalVideoUrl, 
             isVideoYouTube: isYouTube,
+            isMediaOnly: isMediaOnly, // نمرر هذه القيمة للتحكم في الكلاس الديناميكي
             content: { 
               rendered: `
-                <p style="margin-bottom: 18px;">${bodyContent.replace(/\n/g, '<br />')}</p>
+                ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 18px;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
                 ${embeddedType === 'video' && finalEmbeddedVideoUrl ? (
                   isEmbeddedYouTube 
                   ? `<p><iframe src="${finalEmbeddedVideoUrl}" width="100%" height="315" frameborder="0" allowfullscreen style="border-radius:12px; margin-top:12px;"></iframe></p>`
@@ -162,7 +168,8 @@ const EleganceSection = () => {
 
             return (
               <div key={post.id} className="article-container">
-                <div className="card">
+                {/* 🎯 إضافة الكلاس الديناميكي media-only-card إذا كان الكارت يحتوي على ميديا فقط لتقليل الارتفاع تلقائياً */}
+                <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
                   
                   {/* العنوان منسق ومرتب */}
                   <div className="card-header-title">
@@ -283,7 +290,6 @@ const EleganceSection = () => {
           justify-content: center;
         }
 
-        /* 🎯 تعديل العرض الأقصى ليكون أعرض وأجمل ومطابق لنسق التصفح */
         .card {
           background: #ffffff;
           max-width: 600px; 
@@ -294,6 +300,21 @@ const EleganceSection = () => {
           margin-bottom: 35px; 
           border: 1px solid #f2eae4;
           transition: transform 0.2s ease;
+        }
+
+        /* 🎯 كلاس خاص لتصغير المسافات الرأسية للكروت التي تحتوي على ميديا فقط */
+        .card.media-only-card {
+          margin-bottom: 25px;
+        }
+        .card.media-only-card .card-header-title {
+          padding: 16px 20px;
+        }
+        .card.media-only-card .content {
+          padding: 12px 20px 16px;
+        }
+        .card.media-only-card .app-download-box {
+          margin-top: 15px;
+          padding: 12px;
         }
 
         .card-header-title {
