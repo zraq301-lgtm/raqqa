@@ -26,15 +26,12 @@ const EleganceSection = () => {
     if (!url) return null;
     let videoId = null;
     
-    // للتعامل مع روابط youtu.be/ID
     if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1]?.split('?')[0];
     } 
-    // للتعامل مع روابط youtube.com/watch?v=ID
     else if (url.includes('v=')) {
       videoId = url.split('v=')[1]?.split('&')[0];
     } 
-    // للتعامل مع روابط التضمين الجاهزة أو مسارات الاختصارات الأخرى
     else if (url.includes('embed/')) {
       return url;
     }
@@ -47,44 +44,59 @@ const EleganceSection = () => {
       const rawData = await fetchPageData(PAGE_NAME);
       
       if (rawData) {
+        // استخلاص البيانات سواء كانت مصفوفة أو كائن مفرد
         const data = rawData.data ? rawData.data : (rawData.result ? rawData.result : rawData);
 
-        const videoUrl = data.media?.videoUrl && data.media.videoUrl.trim() !== "" ? data.media.videoUrl : null;
-        const imageUrl = data.media?.imageUrl && data.media.imageUrl.trim() !== "" ? data.media.imageUrl : null;
-        const audioUrl = data.media?.audioUrl && data.media.audioUrl.trim() !== "" ? data.media.audioUrl : null;
-        
-        const embeddedType = data.article?.embeddedMedia?.type;
-        const embeddedUrl = data.article?.embeddedMedia?.url && data.article.embeddedMedia.url.trim() !== "" ? data.article.embeddedMedia.url : null;
-        const bodyContent = data.article?.body && data.article.body.trim() !== "" ? data.article.body : "";
+        // تحويل البيانات تلقائياً إلى مصفوفة للتعامل مع تعدد المنشورات باستقرار
+        let itemsArray = [];
+        if (Array.isArray(data)) {
+          itemsArray = data;
+        } else if (data && typeof data === 'object') {
+          itemsArray = [data];
+        }
 
-        // فحص نوع رابط الفيديو لمعرفة هل هو يوتيوب أم رابط مباشر
-        const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
-        const finalVideoUrl = isYouTube ? getYouTubeEmbedUrl(videoUrl) : videoUrl;
+        // معالجة كل منشور على حدة داخل المصفوفة
+        const formattedPosts = itemsArray.map((item, index) => {
+          const videoUrl = item.media?.videoUrl && item.media.videoUrl.trim() !== "" ? item.media.videoUrl : null;
+          const imageUrl = item.media?.imageUrl && item.media.imageUrl.trim() !== "" ? item.media.imageUrl : null;
+          const audioUrl = item.media?.audioUrl && item.media.audioUrl.trim() !== "" ? item.media.audioUrl : null;
+          
+          const embeddedType = item.article?.embeddedMedia?.type;
+          const embeddedUrl = item.article?.embeddedMedia?.url && item.article.embeddedMedia.url.trim() !== "" ? item.article.embeddedMedia.url : null;
+          const bodyContent = item.article?.body && item.article.body.trim() !== "" ? item.article.body : "";
 
-        // فحص ميديا المقال الداخلية أيضاً إذا كانت يوتيوب
-        const isEmbeddedYouTube = embeddedType === 'video' && embeddedUrl && (embeddedUrl.includes('youtube.com') || embeddedUrl.includes('youtu.be'));
-        const finalEmbeddedVideoUrl = isEmbeddedYouTube ? getYouTubeEmbedUrl(embeddedUrl) : embeddedUrl;
+          const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
+          const finalVideoUrl = isYouTube ? getYouTubeEmbedUrl(videoUrl) : videoUrl;
 
-        const formattedPost = {
-          id: data.pageName || PAGE_NAME,
-          title: { rendered: data.article?.title && data.article.title.trim() !== "" ? data.article.title : PAGE_NAME },
-          featuredImage: imageUrl, 
-          featuredVideo: finalVideoUrl, 
-          isVideoYouTube: isYouTube, // تمييز طريقة عرض ميديا الواجهة الأساسية
-          content: { 
-            rendered: `
-              <p>${bodyContent.replace(/\n/g, '<br />')}</p>
-              ${embeddedType === 'video' && finalEmbeddedVideoUrl ? (
-                isEmbeddedYouTube 
-                ? `<p><iframe src="${finalEmbeddedVideoUrl}" width="100%" height="280" frameborder="0" allowfullscreen style="border-radius:10px; margin-top:10px;"></iframe></p>`
-                : `<p><video src="${finalEmbeddedVideoUrl}" controls style="width:100%; border-radius:10px; margin-top:10px;"></video></p>`
-              ) : ''}
-              ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:10px; margin-top:10px;" /></p>` : ''}
-              ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
-            `
-          }
-        };
-        setArticles([formattedPost]);
+          const isEmbeddedYouTube = embeddedType === 'video' && embeddedUrl && (embeddedUrl.includes('youtube.com') || embeddedUrl.includes('youtu.be'));
+          const finalEmbeddedVideoUrl = isEmbeddedYouTube ? getYouTubeEmbedUrl(embeddedUrl) : embeddedUrl;
+
+          // توليد معرف فريد لكل منشور لعدم تداخل الإعجابات والتعليقات
+          const uniqueId = item.id || (item.lastUpdated ? `post_${item.lastUpdated}_${index}` : `post_${index}`);
+
+          return {
+            id: uniqueId,
+            title: { rendered: item.article?.title && item.article.title.trim() !== "" ? item.article.title : `${PAGE_NAME}` },
+            featuredImage: imageUrl, 
+            featuredVideo: finalVideoUrl, 
+            isVideoYouTube: isYouTube,
+            content: { 
+              rendered: `
+                <p>${bodyContent.replace(/\n/g, '<br />')}</p>
+                ${embeddedType === 'video' && finalEmbeddedVideoUrl ? (
+                  isEmbeddedYouTube 
+                  ? `<p><iframe src="${finalEmbeddedVideoUrl}" width="100%" height="280" frameborder="0" allowfullscreen style="border-radius:10px; margin-top:10px;"></iframe></p>`
+                  : `<p><video src="${finalEmbeddedVideoUrl}" controls style="width:100%; border-radius:10px; margin-top:10px;"></video></p>`
+                ) : ''}
+                ${embeddedType === 'image' && embeddedUrl ? `<p><img src="${embeddedUrl}" alt="Embedded Media" style="width:100%; border-radius:10px; margin-top:10px;" /></p>` : ''}
+                ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; max-width:400px;"></audio></p>` : ''}
+              `
+            }
+          };
+        });
+
+        // عرض المنشورات بحيث يظهر الأحدث في الأعلى دائماً
+        setArticles(formattedPosts.reverse());
       }
     } catch (error) {
       console.error("Fetch Error:", error);
@@ -144,94 +156,98 @@ const EleganceSection = () => {
       </div>
 
       <div className="container">
-        {articles.map((post) => {
-          const featuredImage = post.featuredImage;
-          const featuredVideo = post.featuredVideo;
-          const isVideoYouTube = post.isVideoYouTube;
+        {articles.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#8d6e63', marginTop: '50px' }}>لا توجد منشورات حالياً</div>
+        ) : (
+          articles.map((post) => {
+            const featuredImage = post.featuredImage;
+            const featuredVideo = post.featuredVideo;
+            const isVideoYouTube = post.isVideoYouTube;
 
-          return (
-            <div key={post.id} className="article-container">
-              <div className="card">
-                
-                {/* العنوان */}
-                <div className="card-header-title">
-                  <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
-                </div>
-
-                {/* عرض الفيديو البارز الأساسي بحسب نوع الرابط ذكياً */}
-                {featuredVideo && (
-                  <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
-                    {isVideoYouTube ? (
-                      <iframe 
-                        src={featuredVideo} 
-                        width="100%" 
-                        height="280" 
-                        frameBorder="0" 
-                        allowFullScreen 
-                        style={{ display: 'block' }}
-                      />
-                    ) : (
-                      <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
-                    )}
-                  </div>
-                )}
-
-                {/* عرض الصورة البارزة كخيار بديل إذا لم يكن هناك فيديو */}
-                {!featuredVideo && featuredImage && (
-                  <div className="main-featured-image">
-                    <img src={featuredImage} alt="Elegance" />
-                  </div>
-                )}
-                
-                <div className="content">
-                  {/* محتوى الصفحة النصي والميديا المدمجة */}
-                  <div 
-                    className="wp-html-content"
-                    dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
-                  />
+            return (
+              <div key={post.id} className="article-container">
+                <div className="card">
                   
-                  <div className="app-download-box">
-                    <a href={APP_LINK} target="_blank" rel="noreferrer">
-                      ✨ حملي التطبيق الآن من هنا ✨
-                    </a>
+                  {/* العنوان */}
+                  <div className="card-header-title">
+                    <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                   </div>
-                </div>
 
-                {/* أزرار التفاعل */}
-                <div className="interaction-buttons">
-                  <button onClick={() => handleLike(post.id)} className="btn-like">
-                    ❤️ <span>{likes[post.id] || 0}</span>
-                  </button>
-                  <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
-                    💬 تعليق
-                  </button>
-                  <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
-                    🔗 مشاركة
-                  </button>
-                </div>
-
-                {activeCommentId === post.id && (
-                  <div className="comments-area">
-                    <div className="comment-input-wrap">
-                      <input 
-                        type="text" 
-                        placeholder="أضيفي لمستكِ..." 
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                      />
-                      <button onClick={() => handleAddComment(post.id)}>نشر</button>
+                  {/* عرض الفيديو البارز الأساسي بحسب نوع الرابط ذكياً */}
+                  {featuredVideo && (
+                    <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
+                      {isVideoYouTube ? (
+                        <iframe 
+                          src={featuredVideo} 
+                          width="100%" 
+                          height="280" 
+                          frameBorder="0" 
+                          allowFullScreen 
+                          style={{ display: 'block' }}
+                        />
+                      ) : (
+                        <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
+                      )}
                     </div>
-                    <div className="comments-list">
-                      {(comments[post.id] || []).map((c, i) => (
-                        <div key={i} className="single-comment">{c.text}</div>
-                      )).reverse()}
+                  )}
+
+                  {/* عرض الصورة البارزة كخيار بديل إذا لم يكن هناك فيديو */}
+                  {!featuredVideo && featuredImage && (
+                    <div className="main-featured-image">
+                      <img src={featuredImage} alt="Elegance" />
+                    </div>
+                  )}
+                  
+                  <div className="content">
+                    {/* محتوى الصفحة النصي والميديا المدمجة */}
+                    <div 
+                      className="wp-html-content"
+                      dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
+                    />
+                    
+                    <div className="app-download-box">
+                      <a href={APP_LINK} target="_blank" rel="noreferrer">
+                        ✨ حملي التطبيق الآن من هنا ✨
+                      </a>
                     </div>
                   </div>
-                )}
+
+                  {/* أزرار التفاعل */}
+                  <div className="interaction-buttons">
+                    <button onClick={() => handleLike(post.id)} className="btn-like">
+                      ❤️ <span>{likes[post.id] || 0}</span>
+                    </button>
+                    <button onClick={() => setActiveCommentId(activeCommentId === post.id ? null : post.id)} className="btn-comment">
+                      💬 تعليق
+                    </button>
+                    <button onClick={() => handleShare(post.title.rendered)} className="btn-share">
+                      🔗 مشاركة
+                    </button>
+                  </div>
+
+                  {activeCommentId === post.id && (
+                    <div className="comments-area">
+                      <div className="comment-input-wrap">
+                        <input 
+                          type="text" 
+                          placeholder="أضيفي لمستكِ..." 
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                        />
+                        <button onClick={() => handleAddComment(post.id)}>نشر</button>
+                      </div>
+                      <div className="comments-list">
+                        {(comments[post.id] || []).map((c, i) => (
+                          <div key={i} className="single-comment">{c.text}</div>
+                        )).reverse()}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
       <style jsx global>{`
@@ -254,6 +270,14 @@ const EleganceSection = () => {
         .container {
           display: flex; flex-direction: column; align-items: center;
           padding: 70px 10px 100px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+
+        .article-container {
+          width: 100%;
+          display: flex;
+          justify-content: center;
         }
 
         .card {
