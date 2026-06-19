@@ -23,9 +23,12 @@ const EleganceSection = () => {
 
   const fetchArticles = async () => {
     try {
-      const data = await fetchPageData(PAGE_NAME);
+      const rawData = await fetchPageData(PAGE_NAME);
       
-      if (data) {
+      if (rawData) {
+        // فحص ذكي: إذا كانت البيانات قادمة بداخل حقل فرعي اسمه data أو result نقوم باستخراجه، وإلا نستخدم الكائن نفسه
+        const data = rawData.data ? rawData.data : (rawData.result ? rawData.result : rawData);
+
         // التحقق من أن القيم نصوص حقيقية وليست سلاسل فارغة "" تجنبًا للمشاكل في المتصفح
         const videoUrl = data.media?.videoUrl && data.media.videoUrl.trim() !== "" ? data.media.videoUrl : null;
         const imageUrl = data.media?.imageUrl && data.media.imageUrl.trim() !== "" ? data.media.imageUrl : null;
