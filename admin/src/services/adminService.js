@@ -1,6 +1,7 @@
 import { CapacitorHttp } from '@capacitor/core';
 
 const SAVE_URL = 'https://nawah-ai-db.vercel.app/api/engine';
+const DELETE_URL = 'https://nawah-ai-db.vercel.app/delete-engine-data'; // رابط الحذف الجديد المضاف للخدمة
 
 /**
  * دالة حفظ وتحديث بيانات صفحة معينة في مستودع GitHub للأقسام العربية
