@@ -1,0 +1,52 @@
+name: "Raqqa Notifications Sync"
+
+on:
+  schedule:
+    # التنفيذ كل 12 ساعة (الساعة 6 صباحاً و6 مساءً)
+    - cron: "0 6,18 * * *" 
+  workflow_dispatch: # يتيح لكِ تشغيل الأكشن يدوياً من لوحة GitHub Actions لغرض الفحص
+
+jobs:
+  check_and_notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Checkout Repository"
+        uses: actions/checkout@v4
+
+      - name: "Fetch Current App Content (GitHub)"
+        id: get_current
+        run: |
+          # جلب ملف الـ JSON الحالي المخزن في المستودع (اضبطي المسار لملفك الحقيقي)
+          # إذا كان الملف في المجلد الرئيسي اكتبيه مباشرة، هنا افترضنا مساره المعتاد:
+          CURRENT_COUNT=$(jq '. | length' path/to/virtual_world.json || echo "0")
+          echo "current_count=$CURRENT_COUNT" >> $GITHUB_OUTPUT
+
+      - name: "Fetch Fresh Content From Engine"
+        id: get_fresh
+        run: |
+          # جلب البيانات الجديدة من محرك الرفع وقراءة عدد العناصر
+          FRESH_DATA=$(curl -s "https://nawah-ai-db.vercel.app/api/engine")
+          FRESH_COUNT=$(echo "$FRESH_DATA" | jq '. | length' || echo "0")
+          echo "fresh_count=$FRESH_COUNT" >> $GITHUB_OUTPUT
+
+      - name: "Compare and Trigger Firebase Notification"
+        run: |
+          CURRENT=${{ steps.get_current.outputs.current_count }}
+          FRESH=${{ steps.get_fresh.outputs.fresh_count }}
+          
+          echo "العدد الحالي في التطبيق: $CURRENT"
+          echo "العدد في محرك الرفع الجديد: $FRESH"
+          
+          if [ "$FRESH" -gt "$CURRENT" ]; then
+            echo "🚀 تم رصد محتوى جديد! جاري إرسال الإشعار لـ Firebase..."
+            
+            curl -X POST "https://raqqa-hjl8.vercel.app/send-fcm" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "title": "🌸 تحديث واحة رقة",
+                "body": "تمت إضافة مقاطع ومجالات استرخاء جديدة مخصصة لكِ! افتحيه الآن ✨",
+                "topic": "all_users"
+              }'
+          else
+            echo "💤 لا يوجد محتوى جديد حالياً. لن يتم إرسال أي إشعار."
+          fi
