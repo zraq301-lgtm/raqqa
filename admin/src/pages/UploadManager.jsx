@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-// استيراد خدمة الرفع من المسار المحدد الخاص بـ Admin
-import { uploadPageData } from '../services/adminService'; 
+// ✅ استيراد الدالة الصحيحة والموجودة بالفعل في ملف الخدمات الخاص بكِ
+import { savePageData } from '../services/adminService'; 
 
 const UploadManager = () => {
   const [targetPage, setTargetPage] = useState('مملكة الاسترخاء'); // القسم المستهدف
@@ -40,7 +40,7 @@ const UploadManager = () => {
       },
       media: {
         videoUrl: videoUrl.trim(),
-        imageUrl: "" // يمكنكِ إضافتها لاحقاً إذا احتجتِ لصورة مصغرة
+        imageUrl: "" 
       },
       design: {
         backgroundColor: targetPage === 'مملكة الاسترخاء' ? bgColor : undefined
@@ -49,21 +49,22 @@ const UploadManager = () => {
     };
 
     try {
-      // إرسال البيانات المجهزة إلى كود خدمة الرفع لرفعها عبر وسيط جيت هاب
-      const success = await uploadPageData(targetPage, newContentItem);
+      // ✅ استدعاء الدالة الصحيحة وتمرير البيانات المجهزة لها مباشرة
+      const result = await savePageData(targetPage, newContentItem);
       
-      if (success) {
-        setMessage({ type: 'success', text: ` تم رفع المحتوى بنجاح إلى قسم (${targetPage})!` });
+      // التحقق من نجاح العملية بناءً على استجابة السيرفر المتوقعة
+      if (result) {
+        setMessage({ type: 'success', text: ` تم رفع المحتوى بنجاح إلى قسم (${targetPage})! 🚀` });
         // إعادة تهيئة الحقول بعد الرفع الناجح
         setTitle('');
         setVideoUrl('');
         setDescription('');
       } else {
-        setMessage({ type: 'error', text: 'فشل الرفع، يرجى التحقق من إعدادات السيرفر الوسيط أو جيت هاب.' });
+        setMessage({ type: 'error', text: 'فشل الرفع، يرجى التحقق من استجابة السيرفر الوسيط.' });
       }
     } catch (error) {
       console.error("Upload handler error:", error);
-      setMessage({ type: 'error', text: 'حدث خطأ غير متوقع أثناء عملية الاتصال.' });
+      setMessage({ type: 'error', text: 'حدث خطأ غير متوقع أثناء عملية الاتصال بالخدمة.' });
     } finally {
       setLoading(false);
     }
