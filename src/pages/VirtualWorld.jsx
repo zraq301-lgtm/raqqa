@@ -1,15 +1,80 @@
-import React, { useState } from 'react';
-import { vrCategories } from '../vrData';
+import React, { useState, useEffect } from 'react';
+// استيراد كود الخدمة لجلب الفيديوهات من السيرفر السحابي بدلاً من الملف المحلي
+import { fetchPageData } from '../../services/adminService'; 
 
 const VirtualWorld = () => {
+  const [vrCategories, setVrCategories] = useState([]); // دمج البيانات القادمة من السيرفر هنا
+  const [loading, setLoading] = useState(true); // حالة التحميل أثناء جلب البيانات
   const [activeVideo, setActiveVideo] = useState(null);
   const [isVRMode, setIsVRMode] = useState(true); // وضع الواقع الافتراضي مفعل تلقائياً
+
+  // اسم القسم المطابق في لوحة التحكم والسيرفر الخاص بكِ
+  const PAGE_NAME = "مملكة الاسترخاء"; 
+
+  useEffect(() => {
+    fetchVideosFromServer();
+  }, []);
+
+  const fetchVideosFromServer = async () => {
+    try {
+      // استيراد الفيديوهات عن طريق كود الخدمة الخاص بكِ
+      const result = await fetchPageData(PAGE_NAME);
+      
+      if (result) {
+        let rawItems = [];
+        if (Array.isArray(result)) {
+          rawItems = result;
+        } else if (result && typeof result === 'object') {
+          rawItems = [result];
+        }
+
+        // تحويل وتنسيق البيانات القادمة من السيرفر لتطابق هيكلة الـ Map في الكود الخاص بكِ
+        const formattedCategories = rawItems.map((item, index) => {
+          const videoUrl = item.media?.videoUrl || "";
+          
+          // دالة داخلية ذكية لاستخراج الـ ID فقط من رابط اليوتيوب السحابي
+          let videoId = "";
+          if (videoUrl.includes('youtu.be/')) {
+            videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0];
+          } else if (videoUrl.includes('v=')) {
+            videoId = videoUrl.split('v=')[1]?.split('&')[0];
+          } else if (videoUrl.includes('embed/')) {
+            videoId = videoUrl.split('embed/')[1]?.split('?')[0];
+          } else {
+            videoId = videoUrl; // إذا كان المرفوع هو الـ ID مباشرة
+          }
+
+          return {
+            id: item.id || `cat_${index}`,
+            title: item.article?.title || "جولة افتراضية",
+            description: item.article?.body || "",
+            color: item.design?.backgroundColor || '#F5F5F5', // استخدام لون السيرفر أو لون افتراضي هادئ
+            trips: videoId ? [{ name: item.article?.title || "اضغطي لبدء العرض", id: videoId }] : []
+          };
+        });
+
+        setVrCategories(formattedCategories);
+      }
+    } catch (error) {
+      console.error("Error fetching VR categories:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getYoutubeUrl = (id) => {
     // وضع VR يضيف بارامترات خاصة للحركة، الوضع العادي يعرض الفيديو بشكل طبيعي
     const base = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
     return isVRMode ? `${base}&vr=1` : base;
   };
+
+  if (loading) {
+    return (
+      <div style={{ ...styles.container, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <p style={{ color: '#888', fontSize: '1rem' }}>جاري جلب واحة الاسترخاء... ✨</p>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.container}>
