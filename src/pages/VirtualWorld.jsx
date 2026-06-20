@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// استيراد كود الخدمة لجلب الفيديوهات من السيرفر السحابي بدلاً من الملف المحلي
-import { fetchPageData } from '../../services/adminService'; 
+// ✅ تم تصحيح المسار هنا (الخروج بمستوى واحد فقط للوصول لمجلد src)
+import { fetchPageData } from '../services/adminService'; 
 
 const VirtualWorld = () => {
   const [vrCategories, setVrCategories] = useState([]); // دمج البيانات القادمة من السيرفر هنا
