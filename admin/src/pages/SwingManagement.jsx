@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { savePageData } from '../services/adminService'; 
+// تم الاحتفاظ بالاستدعاء الأصلي وإضافة دالة الحذف المفترضة منه بشكل صحيح
+import { savePageData, deletePageDataById } from '../services/adminService'; 
 
 function SwingManagement() {
   // قائمة الصفحات الرسمية للتطبيق لتحديد وجهة الحفظ السحابي
@@ -30,6 +31,10 @@ function SwingManagement() {
   const [articleMediaType, setArticleMediaType] = useState('none'); 
   const [articleMediaUrl, setArticleMediaUrl] = useState('');
 
+  // خانة التحكم الإضافية الجديدة لاستقبال معرف الحذف (ID)
+  const [deleteId, setDeleteId] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // حالات الواجهة الاستجابية (UI States)
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -53,6 +58,7 @@ function SwingManagement() {
     // تفريغ المدخلات تلقائياً لتهيئة الواجهة لكتابة محتوى جديد للقسم المختار
     setVideoUrl(''); setImageUrl(''); setAudioUrl('');
     setArticleTitle(''); setArticleBody(''); setArticleMediaType('none'); setArticleMediaUrl('');
+    setDeleteId(''); // تفريغ خانة الحذف عند الانتقال بين الأقسام
     
     setStatusMessage({ text: `💡 جاهز لتلقي بيانات قسم [${sectionName}] وتأمين الحفظ السحابي له.`, type: 'info' });
     setIsLoadingData(false);
@@ -107,6 +113,32 @@ function SwingManagement() {
     }
   };
 
+  // دالة معالجة حذف عنصر معين عن طريق الـ ID من الباك إند المباشر للقسم الحالي
+  const handleDeleteById = async (e) => {
+    e.preventDefault();
+    if (!deleteId.trim()) {
+      setStatusMessage({ text: '⚠️ يرجى إدخال معرف (ID) صحيح لإتمام عملية الحذف السحابي.', type: 'error' });
+      return;
+    }
+
+    setIsDeleting(true);
+    setStatusMessage({ text: `جاري إرسال طلب حذف العنصر ذو المعرف [${deleteId}] من قسم [${currentPage}]...`, type: 'info' });
+    scrollToStatus();
+
+    try {
+      // استدعاء دالة الخدمة مع تمرير الصفحة والمعرف المستهدف
+      await deletePageDataById(currentPage, deleteId.trim());
+      setStatusMessage({ text: `🗑️ تم حذف المحتوى الخاص بالمعرف [${deleteId}] بنجاح من قاعدة البيانات!`, type: 'success' });
+      setDeleteId(''); // تفريغ الخانة بعد النجاح
+    } catch (error) {
+      console.error(error);
+      setStatusMessage({ text: '❌ فشلت عملية الحذف. تأكدي من صحة المعرف أو روابط الاتصال بالسيرفر.', type: 'error' });
+    } finally {
+      setIsDeleting(false);
+      scrollToStatus();
+    }
+  };
+
   return (
     <div className="admin-app" dir="rtl">
       <header className="admin-header">
@@ -123,7 +155,7 @@ function SwingManagement() {
             <select 
               className="main-select-dropdown"
               value={currentPage}
-              disabled={isLoadingData || isSaving}
+              disabled={isLoadingData || isSaving || isDeleting}
               onChange={(e) => setCurrentPage(e.target.value)}
             >
               {SECTIONS.map((section) => (
@@ -240,7 +272,7 @@ function SwingManagement() {
         </div>
 
         {/* زر النشر والتحديث السحابي */}
-        <button type="submit" className="submit-btn" disabled={isSaving || isLoadingData}>
+        <button type="submit" className="submit-btn" disabled={isSaving || isLoadingData || isDeleting}>
           {isSaving ? (
             <span className="btn-loading-flex">
               <span className="spinner"></span> جاري تأمين ومزامنة السيرفر السحابي...
@@ -249,6 +281,41 @@ function SwingManagement() {
         </button>
 
       </form>
+
+      {/* 🛠️ الكارت الجديد الفاخر المخصص لإجراء عمليات الحذف عن طريق الـ ID للمحافظة على نظافة الأقسام */}
+      <div className={`ui-card ${animateTrigger ? 'animate-card delay-1' : 'hide-card'}`} style={{ marginTop: '25px', borderColor: '#ffcdcd' }}>
+        <h2 className="card-title" style={{ color: '#5f2120' }}>🗑️ إدارة الحذف السريع والتحكم الفوري</h2>
+        <div className="card-divider" style={{ background: 'linear-gradient(to left, #ffcdcd, transparent)' }}></div>
+        
+        <div className="input-group">
+          <label>أدخل معرف العنصر المراد حذفه من قسم ({currentPage}):</label>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <input 
+              type="text" 
+              placeholder="مثال: item_123ae45" 
+              value={deleteId}
+              disabled={isDeleting || isSaving}
+              onChange={(e) => setDeleteId(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button 
+              type="button" 
+              onClick={handleDeleteById} 
+              disabled={isDeleting || isSaving || !deleteId.trim()}
+              className="submit-btn"
+              style={{ 
+                width: 'auto', 
+                whiteSpace: 'nowrap', 
+                padding: '0 25px',
+                background: 'linear-gradient(135deg, #d32f2f 0%, #5f2120 100%)',
+                boxShadow: '0 8px 25px rgba(211, 47, 47, 0.15)'
+              }}
+            >
+              {isDeleting ? 'جاري الحذف...' : 'حذف الآن ⚠️'}
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* تصفيفات الـ CSS الفاخرة المدمجة لدعم نمط الكروت الحديثة */}
       <style jsx global>{`
