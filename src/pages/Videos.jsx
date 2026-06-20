@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CapacitorHttp } from '@capacitor/core';
+// ✅ استخدام كود الخدمة الموحد وبالمسار الصحيح المكتشف سابقاً لإلغاء الاعتماد على فيربيس المباشر
+import { fetchPageData } from '../services/adminService'; 
 
 const VideoLibrary = () => {
   const [allVideos, setAllVideos] = useState([]);
@@ -7,6 +8,7 @@ const VideoLibrary = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
 
+  // التصنيفات الثابتة المخصصة للعرض داخل الواجهة الخاصة بكِ
   const categories = [
     { id: 'all', label: '🏠 الكل' },
     { id: 'health', label: '🍎 جسدك أمانة' },
@@ -15,23 +17,46 @@ const VideoLibrary = () => {
     { id: 'intimacy', label: '🕯️ أسرار الفراش' }
   ];
 
+  // اسم القسم المطابق في لوحة التحكم المركزية وجيت هاب
+  const PAGE_NAME = "مكتبة رقة"; 
+
   useEffect(() => {
-    fetchVideosFromFirebase();
+    fetchVideosFromServer();
   }, []);
 
-  const fetchVideosFromFirebase = async () => {
-    const options = {
-      url: 'https://raqqa-hjl8.vercel.app/api/get-videos',
-    };
-
+  const fetchVideosFromServer = async () => {
     try {
-      const response = await CapacitorHttp.get(options);
-      const data = response.data;
-      setAllVideos(data);
-      setFilteredVideos(data);
-      setLoading(false);
+      // جلب البيانات من السيرفر السحابي الهادئ الموحد عبر كود الخدمة الخاص بكِ
+      const result = await fetchPageData(PAGE_NAME);
+      
+      if (result) {
+        let rawItems = [];
+        if (Array.isArray(result)) {
+          rawItems = result;
+        } else if (result && typeof result === 'object') {
+          rawItems = [result];
+        }
+
+        // تحويل البيانات القادمة من السيرفر لتطابق بنية ومتطلبات واجهة مكتبة رقة المخصصة
+        const formattedVideos = rawItems.map((item, index) => {
+          return {
+            id: item.id || `vid_${index}`,
+            title: item.article?.title || "فيديو تعليمي",
+            url: item.media?.videoUrl || "",
+            // التأكد من جلب الفئة (category) المخزنة في السيرفر أو وضعها كـ 'all' كخيار افتراضي
+            category: item.article?.category || item.category || 'all'
+          };
+        });
+
+        // ترتيب الفيديوهات لعرض الأحدث دائماً في الأعلى
+        const reversedVideos = formattedVideos.reverse();
+
+        setAllVideos(reversedVideos);
+        setFilteredVideos(reversedVideos);
+      }
     } catch (err) {
-      console.error("خطأ في جلب بيانات فيربيس:", err);
+      console.error("خطأ في جلب بيانات مكتبة الفيديوهات عبر الخدمة:", err);
+    } finally {
       setLoading(false);
     }
   };
