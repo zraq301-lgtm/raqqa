@@ -56,7 +56,7 @@ jobs:
         run: |
           echo "جاري إرسال الإشعار التلقائي تجاه فيربيس..."
           
-          curl -X POST "https://raqqa-hjl8.vercel.app/send-fcm" \
+          curl -X POST "https://raqqa-hjl8.vercel.app/api/send-fcm" \
             -H "Content-Type: application/json" \
             -d '{
               "title": "🌸 تحديث واحة رقة",
