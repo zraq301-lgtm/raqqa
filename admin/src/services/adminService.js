@@ -1,7 +1,7 @@
 import { CapacitorHttp } from '@capacitor/core';
 
 const SAVE_URL = 'https://nawah-ai-db.vercel.app/api/engine';
-const DELETE_URL = 'https://nawah-ai-db.vercel.app/delete-engine-data'; // رابط الحذف الجديد المضاف للخدمة
+const DELETE_URL = 'https://nawah-ai-db.vercel.app/api/delete-engine-data'; // الرابط المثالي المحدث بناءً على اسم ملف الـ API
 
 /**
  * دالة حفظ وتحديث بيانات صفحة معينة في مستودع GitHub للأقسام العربية
@@ -39,6 +39,43 @@ export const savePageData = async (pageName, updatedContent) => {
     return result; 
   } catch (error) {
     console.error(`[Admin Service] خطأ أثناء حفظ صفحة ${cleanPageName}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * دالة حذف عنصر معين من قسم محدد عن طريق الـ ID (مثيلة لدالة الحفظ تماماً)
+ * @param {string} pageName - اسم القسم (مثال: 'مملكة الاسترخاء'، 'مكتبة رقة')
+ * @param {string} itemId - المعرف الفريد للعنصر المراد حذفه
+ */
+export const deletePageDataById = async (pageName, itemId) => {
+  // 1. تنظيف اسم القسم والمعرف من الفراغات وعلامات التنصيص
+  const cleanPageName = pageName.replace(/['"]/g, '').trim();
+  const cleanItemId = itemId.trim();
+
+  // 2. تجهيز الخيارات بنفس هيكلة الطلب السحابي المعتمدة لديكِ
+  const options = {
+    url: DELETE_URL,
+    headers: { 
+      'Content-Type': 'application/json'
+    },
+    data: {
+      page: cleanPageName,  // يرسل اسم القسم المستهدف بالحذف
+      id: cleanItemId       // يرسل الـ ID الفريد للعنصر المراد مسحه
+    },
+  };
+
+  try {
+    // إرسال الطلب عبر CapacitorHttp بوست لمطابقة معايير السيرفر لديكِ
+    const response = await CapacitorHttp.post(options);
+    
+    // فك استجابة السيرفر بشكل مرن وآمن
+    const result = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+    
+    console.log(`[Admin Service] تم معالجة طلب الحذف بنجاح من ${cleanPageName} للعنصر ${cleanItemId}:`, result);
+    return result; 
+  } catch (error) {
+    console.error(`[Admin Service] خطأ أثناء حذف عنصر من صفحة ${cleanPageName}:`, error);
     throw error;
   }
 };
