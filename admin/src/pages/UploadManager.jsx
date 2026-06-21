@@ -12,7 +12,7 @@ const UploadManager = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  // حالات التحكم الخاصة بواجهة الحذف المضافة حديثاً
+  // حالات التحكم الخاصة بواجهة الحذف الذكي المطور (تقبل ID أو رابط ميديا أو بصمة زمنية)
   const [deleteId, setDeleteId] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -71,11 +71,11 @@ const UploadManager = () => {
     }
   };
 
-  // دالة الحذف المضافة حديثاً بناءً على طلبكِ لإزالة العناصر بالـ ID
+  // دالة الحذف المحدثة لتتوافق مع آلية عمل الـ API الذكي (المصفوفات)
   const handleDelete = async (e) => {
     e.preventDefault();
     if (!deleteId.trim()) {
-      setMessage({ type: 'error', text: '⚠️ رجاءً ادخلي معرف (ID) صحيح للحذف!' });
+      setMessage({ type: 'error', text: '⚠️ رجاءً ادخلي (رابط فيديو) أو بصمة (lastUpdated) للحذف!' });
       return;
     }
 
@@ -83,12 +83,18 @@ const UploadManager = () => {
     setMessage({ type: '', text: '' });
 
     try {
-      await deletePageDataById(targetPage, deleteId.trim());
-      setMessage({ type: 'success', text: `🗑️ تم حذف المحتوى ذو المعرف [${deleteId}] بنجاح من قسم (${targetPage})!` });
-      setDeleteId('');
+      const response = await deletePageDataById(targetPage, deleteId.trim());
+      
+      // التحقق من حالة النجاح الفعلية القادمة من معالجة المصفوفة بالسيرفر
+      if (response && response.success) {
+        setMessage({ type: 'success', text: `🗑️ ${response.message || 'تم حذف العنصر وتحديث قاعدة البيانات السحابية بنجاح!'}` });
+        setDeleteId('');
+      } else {
+        setMessage({ type: 'error', text: `⚠️ ${response.message || 'لم يتم العثور على عنصر يطابق هذا الرابط أو المعرف في هذا القسم.'}` });
+      }
     } catch (error) {
       console.error("Delete handler error:", error);
-      setMessage({ type: 'error', text: '❌ فشلت عملية الحذف السحابية، يرجى التحقق من المعرف.' });
+      setMessage({ type: 'error', text: '❌ فشلت عملية الحذف السحابية، يرجى مراجعة اتصال السيرفر.' });
     } finally {
       setDeleteLoading(false);
     }
@@ -212,13 +218,13 @@ const UploadManager = () => {
         <div style={styles.deleteCard}>
           <h3 style={styles.deleteTitle}>🗑️ نظام الحذف الذكي الفوري</h3>
           <p style={styles.deleteSubtitle}>
-            يمكنكِ سحب وإلغاء أي عنصر من قسم <span style={{fontWeight:'bold', color:'#A87C66'}}>({targetPage})</span> مباشرة عن طريق إدخال الـ ID الخاص به.
+            يمكنكِ سحب وإلغاء أي كارت من قسم <span style={{fontWeight:'bold', color:'#A87C66'}}>({targetPage})</span> مباشرة عن طريق لصق <b>رابط اليوتيوب الخاص به</b> أو كود <b>lastUpdated</b>.
           </p>
           
           <div style={styles.deleteFlexContainer}>
             <input 
               type="text"
-              placeholder="مثال: item_171829384"
+              placeholder="لصق رابط الفيديو أو كود lastUpdated هنا..."
               value={deleteId}
               disabled={deleteLoading || loading}
               onChange={(e) => setDeleteId(e.target.value)}
@@ -233,7 +239,7 @@ const UploadManager = () => {
                 background: deleteLoading ? '#E0E0E0' : 'linear-gradient(135deg, #D32F2F 0%, #9A1B1B 100%)'
               }}
             >
-              {deleteLoading ? 'حذف...' : 'إزالة الميديا ⚠️'}
+              {deleteLoading ? 'جاري الحذف...' : 'إزالة الميديا ⚠️'}
             </button>
           </div>
         </div>
