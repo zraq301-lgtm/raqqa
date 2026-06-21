@@ -1,0 +1,56 @@
+import { neon } from '@neondatabase/serverless';
+
+export default async function handler(req, res) {
+  // 1. إعدادات الـ CORS لتأمين اتصال التطبيق بالسيرفر
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'POST only' });
+  }
+
+  const { userId, fcmToken, deviceType } = req.body;
+
+  // التحقق من وجود البيانات الأساسية لضمان عدم حدوث خطأ في قاعدة البيانات
+  if (!userId || !fcmToken) {
+    return res.status(400).json({ error: 'Missing userId or fcmToken' });
+  }
+
+  try {
+    // 2. الاتصال بقاعدة بيانات Neon باستخدام المتغير DATABASE_URL الخاص بك
+    const sql = neon(process.env.DATABASE_URL);
+
+    // 3. تنفيذ استعلام الـ Upsert الذكي
+    // ملاحظة: تأكد أن جدول device_tokens يحتوي على UNIQUE constraint لـ user_id
+    await sql`
+      INSERT INTO device_tokens (
+        user_id, fcm_token, device_type, updated_at
+      ) VALUES (
+        ${String(userId)}, 
+        ${String(fcmToken)}, 
+        ${String(deviceType || 'android')}, 
+        NOW()
+      )
+      ON CONFLICT (user_id) 
+      DO UPDATE SET 
+        fcm_token = EXCLUDED.fcm_token,
+        device_type = EXCLUDED.device_type,
+        updated_at = NOW();
+    `;
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Token saved or updated successfully in Neon Database' 
+    });
+
+  } catch (error) {
+    console.error('DATABASE ERROR ON SAVE TOKEN:', error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+}
