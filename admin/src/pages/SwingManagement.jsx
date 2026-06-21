@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-// تم الاحتفاظ بالاستدعاء الأصلي وإضافة دالة الحذف المفترضة منه بشكل صحيح
+// تم الاحتفاظ بالاستدعاء الأصلي وإضافة دالة الحذف المحدثة بشكل صحيح
 import { savePageData, deletePageDataById } from '../services/adminService'; 
 
 function SwingManagement() {
@@ -31,7 +31,7 @@ function SwingManagement() {
   const [articleMediaType, setArticleMediaType] = useState('none'); 
   const [articleMediaUrl, setArticleMediaUrl] = useState('');
 
-  // خانة التحكم الإضافية الجديدة لاستقبال معرف الحذف (ID)
+  // خانة التحكم الذكية الجديدة لاستقبال رابط الميديا أو بصمة التحديث للحذف
   const [deleteId, setDeleteId] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -80,23 +80,23 @@ function SwingManagement() {
   const handlePublish = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    setStatusMessage({ text: `جاري رفع البيانات وتحديث ملف [${currentPage}] في مستودع GitHub...`, type: 'info' });
+    setStatusMessage({ text: `جاري رفع البيانات وتحديث مصفوفة [${currentPage}] في مستودع GitHub...`, type: 'info' });
     scrollToStatus();
 
     const pagePayload = {
       pageName: currentPage,
       lastUpdated: new Date().toISOString(),
       media: {
-        videoUrl: videoUrl,
-        imageUrl: imageUrl,
-        audioUrl: audioUrl
+        videoUrl: videoUrl.trim(),
+        imageUrl: imageUrl.trim(),
+        audioUrl: audioUrl.trim()
       },
       article: {
-        title: articleTitle,
-        body: articleBody,
+        title: articleTitle.trim(),
+        body: articleBody.trim(),
         embeddedMedia: {
           type: articleMediaType,
-          url: articleMediaUrl
+          url: articleMediaUrl.trim()
         }
       }
     };
@@ -104,6 +104,9 @@ function SwingManagement() {
     try {
       await savePageData(currentPage, pagePayload);
       setStatusMessage({ text: `🎉 تم حفظ وتأمين بيانات صفحة [${currentPage}] بنجاح داخل المستودع السحابي!`, type: 'success' });
+      // تفريغ الحقول بعد الحفظ بنجاح لتسهيل الرفع التالي
+      setVideoUrl(''); setImageUrl(''); setAudioUrl('');
+      setArticleTitle(''); setArticleBody(''); setArticleMediaType('none'); setArticleMediaUrl('');
     } catch (error) {
       console.error(error);
       setStatusMessage({ text: '❌ فشلت عملية الحفظ السحابي. يرجى التحقق من توكن الصلاحيات أو الشبكة.', type: 'error' });
@@ -113,26 +116,32 @@ function SwingManagement() {
     }
   };
 
-  // دالة معالجة حذف عنصر معين عن طريق الـ ID من الباك إند المباشر للقسم الحالي
+  // دالة معالجة حذف عنصر معين من المصفوفة عن طريق الرابط أو بصمة الوقت المتوافقة مع الـ API المحدث
   const handleDeleteById = async (e) => {
     e.preventDefault();
     if (!deleteId.trim()) {
-      setStatusMessage({ text: '⚠️ يرجى إدخال معرف (ID) صحيح لإتمام عملية الحذف السحابي.', type: 'error' });
+      setStatusMessage({ text: '⚠️ يرجى لصق (رابط الفيديو) أو بصمة (lastUpdated) لإتمام الحذف السحابي.', type: 'error' });
       return;
     }
 
     setIsDeleting(true);
-    setStatusMessage({ text: `جاري إرسال طلب حذف العنصر ذو المعرف [${deleteId}] من قسم [${currentPage}]...`, type: 'info' });
+    setStatusMessage({ text: `جاري معالجة طلب حذف العنصر وتحديث مستودع السيرفر لقسم [${currentPage}]...`, type: 'info' });
     scrollToStatus();
 
     try {
-      // استدعاء دالة الخدمة مع تمرير الصفحة والمعرف المستهدف
-      await deletePageDataById(currentPage, deleteId.trim());
-      setStatusMessage({ text: `🗑️ تم حذف المحتوى الخاص بالمعرف [${deleteId}] بنجاح من قاعدة البيانات!`, type: 'success' });
-      setDeleteId(''); // تفريغ الخانة بعد النجاح
+      // استدعاء دالة الخدمة مع تمرير الصفحة والمعرف المستهدف (رابط أو ID أو بصمة زمنية)
+      const response = await deletePageDataById(currentPage, deleteId.trim());
+      
+      // قراءة وفحص استجابة النجاح الفعلية الآتية من السيرفر لمعالجة المصفوفات
+      if (response && response.success) {
+        setStatusMessage({ text: `🗑️ ${response.message || 'تم حذف العنصر وتحديث قاعدة البيانات السحابية فوراً!'}`, type: 'success' });
+        setDeleteId(''); // تفريغ الخانة بعد النجاح
+      } else {
+        setStatusMessage({ text: `⚠️ ${response.message || 'لم يتم العثور على ميديا مطابقة لهذا الرابط أو المعرف في هذا القسم.'}`, type: 'error' });
+      }
     } catch (error) {
       console.error(error);
-      setStatusMessage({ text: '❌ فشلت عملية الحذف. تأكدي من صحة المعرف أو روابط الاتصال بالسيرفر.', type: 'error' });
+      setStatusMessage({ text: '❌ فشلت عملية الحذف السحابية، يرجى مراجعة اتصال الشبكة وصلاحيات الـ API.', type: 'error' });
     } finally {
       setIsDeleting(false);
       scrollToStatus();
@@ -282,17 +291,17 @@ function SwingManagement() {
 
       </form>
 
-      {/* 🛠️ الكارت الجديد الفاخر المخصص لإجراء عمليات الحذف عن طريق الـ ID للمحافظة على نظافة الأقسام */}
+      {/* 🛠️ الكارت الجديد الفاخر والمطور المخصص لإجراء عمليات الحذف الفوري عبر الرابط أو البصمة الزمنية */}
       <div className={`ui-card ${animateTrigger ? 'animate-card delay-1' : 'hide-card'}`} style={{ marginTop: '25px', borderColor: '#ffcdcd' }}>
-        <h2 className="card-title" style={{ color: '#5f2120' }}>🗑️ إدارة الحذف السريع والتحكم الفوري</h2>
+        <h2 className="card-title" style={{ color: '#5f2120' }}>🗑️ نظام الحذف الذكي الفوري للمصفوفات</h2>
         <div className="card-divider" style={{ background: 'linear-gradient(to left, #ffcdcd, transparent)' }}></div>
         
         <div className="input-group">
-          <label>أدخل معرف العنصر المراد حذفه من قسم ({currentPage}):</label>
+          <label>لصق رابط الفيديو المباشر أو كود التحديث (lastUpdated) المراد سحبه وإلغاؤه من قسم ({currentPage}):</label>
           <div style={{ display: 'flex', gap: '12px' }}>
             <input 
               type="text" 
-              placeholder="مثال: item_123ae45" 
+              placeholder="لصق رابط اليوتيوب المباشر أو البصمة الزمنية للعنصر هنا..." 
               value={deleteId}
               disabled={isDeleting || isSaving}
               onChange={(e) => setDeleteId(e.target.value)}
@@ -311,7 +320,7 @@ function SwingManagement() {
                 boxShadow: '0 8px 25px rgba(211, 47, 47, 0.15)'
               }}
             >
-              {isDeleting ? 'جاري الحذف...' : 'حذف الآن ⚠️'}
+              {isDeleting ? 'جاري السحب...' : 'إزالة الميديا ⚠️'}
             </button>
           </div>
         </div>
@@ -338,7 +347,7 @@ function SwingManagement() {
           color: var(--dark-text);
           margin: 0; 
           padding: 0;
-          overflow-y: auto !important; /* يضمن إتاحة التمرير العمودي للصفحة دائماً */
+          overflow-y: auto !important;
           min-height: 100vh;
         }
 
@@ -346,10 +355,9 @@ function SwingManagement() {
           max-width: 750px;
           margin: 0 auto;
           padding: 30px 15px 80px;
-          height: auto; /* يسمح للتطبيق بالتمدد لأسفل حسب المحتوى */
+          height: auto;
         }
 
-        /* تنسيق الهيدر والمقدمة علوياً */
         .admin-header {
           text-align: center;
           margin-bottom: 40px;
@@ -378,7 +386,6 @@ function SwingManagement() {
           margin: 0;
         }
 
-        /* تنسيق الكروت الفاخرة */
         .ui-card {
           background: var(--card-bg);
           border-radius: 24px;
@@ -418,7 +425,6 @@ function SwingManagement() {
           color: var(--primary-gold);
         }
 
-        /* عناصر المدخلات والقوائم */
         .input-group {
           display: flex;
           flex-direction: column;
@@ -482,7 +488,6 @@ function SwingManagement() {
           background-color: #fffdfb;
         }
 
-        /* بنر الحالات الفورية والتحذيرات */
         .status-container {
           min-height: 20px;
           margin-bottom: 25px;
@@ -518,7 +523,6 @@ function SwingManagement() {
           font-size: 1.3rem;
         }
 
-        /* أزرار الحفظ والنشر الدائرية الفخمة */
         .submit-btn {
           width: 100%;
           background: linear-gradient(135deg, var(--primary-gold) 0%, var(--accent-brown) 100%);
@@ -552,7 +556,6 @@ function SwingManagement() {
           gap: 12px;
         }
 
-        /* تأثيرات التحريك الاحترافية */
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
@@ -569,7 +572,6 @@ function SwingManagement() {
         
         .delay-1 { animation-delay: 0.1s; }
 
-        /* الأنيميشن الدائرية للـ Spinner الخاص بالتحميل */
         .spinner {
           width: 20px; height: 20px;
           border: 3px solid rgba(255,255,255,0.3);
