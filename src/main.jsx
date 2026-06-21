@@ -30,7 +30,7 @@ const Main = () => {
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
     localStorage.setItem('fcm_token', tokenValue);
-    console.log("📍 FCM Token Saved");
+    console.log("📍 FCM Token Saved:", tokenValue); // طباعة التوكن للتأكد
 
     if (!localStorage.getItem('user_id')) {
       const uId = 'user_' + Math.floor(Math.random() * 1000000);
@@ -42,7 +42,9 @@ const Main = () => {
     if (Capacitor.isNativePlatform()) {
       const setupNotifications = async () => {
         try {
-          // 1. إعداد مستمعات إشعارات فيربيس (Push)
+          // [1] أولاً: إعداد جميع المستمعات (Listeners) وتجهيزها قبل إطلاق طلب التسجيل
+          
+          // مستمع إشعارات فيربيس (Push) وقنص التوكن
           await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
             
@@ -62,7 +64,7 @@ const Main = () => {
             console.log("🖱️ تم النقر على إشعار Push:", notification.actionId);
           });
 
-          // 2. إعداد مستمعات الإشعارات المحلية (Local)
+          // مستمعات الإشعارات المحلية (Local)
           await LocalNotifications.addListener('localNotificationReceived', (notification) => {
             console.log("🔔 إشعار محلي مستلم:", notification.title);
           });
@@ -71,21 +73,24 @@ const Main = () => {
             console.log("🖱️ تم النقر على الإشعار المحلي:", notification.actionId);
           });
 
-          // 3. طلب الأذونات للاثنين معاً في خطوة واحدة
-          // نطلب إذن Push وإذن Local Notifications
+          // [2] ثانياً: فحص وطلب الأذونات معاً في خطوة متزامنة لطلبها فوراً
           let pushPerm = await PushNotifications.checkPermissions();
           let localPerm = await LocalNotifications.checkPermissions();
 
-          if (pushPerm.receive === 'prompt' || localPerm.display === 'prompt') {
-            // طلب الأذونات بشكل متزامن
-            await PushNotifications.requestPermissions();
-            await LocalNotifications.requestPermissions();
+          // إذا كان أي منهما يحتاج لطلب تصريح (Prompt) نطلبهما فوراً خلف بعضهما
+          if (pushPerm.receive === 'prompt') {
+            pushPerm = await PushNotifications.requestPermissions();
+          }
+          if (localPerm.display === 'prompt') {
+            localPerm = await LocalNotifications.requestPermissions();
           }
 
-          // تفعيل التسجيل في فيربيس إذا تم قبول الإذن
-          const finalPushPerm = await PushNotifications.checkPermissions();
-          if (finalPushPerm.receive === 'granted') {
+          // [3] ثالثاً: تفعيل التسجيل وإطلاق المستمعات بمجرد قبول التصريح
+          if (pushPerm.receive === 'granted') {
             await PushNotifications.register();
+            console.log("🚀 Push Registration Triggered Successfully");
+          } else {
+            console.warn("⚠️ Push permissions were denied by user");
           }
 
         } catch (error) {
