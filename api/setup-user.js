@@ -1,44 +1,111 @@
-import { Client } from 'pg';
+import { neon } from '@neondatabase/serverless';
+import { Client } from 'pg'; // مخصصة لتشغيل الدوال المعقدة التي تحتاج اتصال كامل
 
 export default async function handler(req, res) {
-  // استقبال الطلب من الـ Frontend
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+    // 1. تفعيل ترويسات الـ CORS لتأمين اتصال التطبيق
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-  const { userId, email } = req.body;
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Method Not Allowed. POST only' });
 
-  if (!userId || !email) {
-    return res.status(400).json({ error: "بيانات المستخدم ناقصة" });
-  }
+    const { actionType, email, password, fullName, fcmToken } = req.body;
+    
+    // اتصال سريع للعمليات العادية
+    const sql = neon(process.env.DATABASE_URL);
 
-  // الاتصال بـ نيون باستخدام الرابط الموجود في إعدادات فيرسل
-  const client = new Client({
-    connectionString: process.env.DATABASE_URL, // تأكد أن هذا الرابط هو الخاص بـ Neon
-    ssl: { rejectUnauthorized: false },
-  });
+    try {
+        if (actionType === 'register') {
+            if (!email || !password || !fullName) {
+                return res.status(400).json({ success: false, error: 'يرجى ملء جميع الحقول المطلوبة أولاً 💕' });
+            }
 
-  try {
-    await client.connect();
+            // فحص إذا كان البريد مستخدماً بالفعل لمنع الأخطاء والتكرار
+            const existingUser = await sql`SELECT id FROM users WHERE email = ${email}`;
+            if (existingUser.length > 0) {
+                return res.status(400).json({ success: false, error: 'هذا البريد الإلكتروني مسجل بالفعل يا جميلتي 🌸' });
+            }
 
-    // 1. تنفيذ الدالة داخل نيون لفرش الجداول
-    // ملاحظة: استبدلنا clerk_id بـ userId الآتي من سوبابيز
-    const result = await client.query(
-      'SELECT public.init_user_schema($1, $2) as schema_name;',
-      [userId, email]
-    );
+            // أ) إدخال بيانات المستخدمة الجديدة في جدول المستخدمين الرئيسي
+            const newUser = await sql`
+                INSERT INTO users (full_name, email, password_text) 
+                VALUES (${fullName}, ${email}, ${password}) 
+                RETURNING id, full_name, email;
+            `;
 
-    const schemaName = result.rows[0].schema_name;
+            const userObj = newUser[0];
+            const newUserId = String(userObj.id); // تحويل الـ ID لـ String ليمر للدالة بأمان
 
-    return res.status(200).json({
-      success: true,
-      message: `تم إنشاء مساحة المستخدمة بنجاح: ${schemaName}`,
-    });
+            // ب) تشغيل دالة فرش الجداول للمستخدمة الجديدة عبر الـ Client لقاعدة البيانات
+            const client = new Client({
+                connectionString: process.env.DATABASE_URL,
+                ssl: { rejectUnauthorized: false },
+            });
 
-  } catch (error) {
-    console.error("خطأ في نيون:", error);
-    return res.status(500).json({ error: "فشل إنشاء الجداول في نيون", details: error.message });
-  } finally {
-    await client.end();
-  }
+            let schemaName = '';
+            try {
+                await client.connect();
+                // استدعاء الدالة الفريدة الخاصة بك لتهيئة مساحة العميل
+                const schemaResult = await client.query(
+                    'SELECT public.init_user_schema($1, $2) as schema_name;',
+                    [newUserId, email]
+                );
+                schemaName = schemaResult.rows[0].schema_name;
+            } catch (schemaError) {
+                console.error("⚠️ فشل تشغيل دالة فرش الجداول ولكن الحساب تم إنشاؤه:", schemaError);
+                // تودع رسالة للـ Console لمتابعة الأخطاء إذا فشلت الدالة لسبب ما
+            } finally {
+                await client.end();
+            }
+
+            // ج) حفظ توكن الإشعارات (FCM Token) فوراً إذا أُرسل مع التسجيل
+            if (fcmToken) {
+                await sql`
+                    INSERT INTO device_tokens (user_id, fcm_token, updated_at)
+                    VALUES (${newUserId}, ${fcmToken}, NOW())
+                    ON CONFLICT (user_id) 
+                    DO UPDATE SET fcm_token = EXCLUDED.fcm_token, updated_at = NOW();
+                `;
+            }
+
+            return res.status(200).json({ 
+                success: true, 
+                message: `تم إنشاء حسابكِ بنجاح وفرش مساحتكِ الخاصة: ${schemaName}`,
+                user: userObj 
+            });
+
+        } else if (actionType === 'login') {
+            // نظام تسجيل الدخول والتحقق المباشر من نيون
+            const userRows = await sql`SELECT id, full_name, email, password_text FROM users WHERE email = ${email}`;
+            
+            if (userRows.length === 0 || userRows[0].password_text !== password) {
+                return res.status(400).json({ success: false, error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة ✉️' });
+            }
+
+            const userObj = {
+                id: userRows[0].id,
+                full_name: userRows[0].full_name,
+                email: userRows[0].email
+            };
+
+            // تحديث التوكن للجهاز الحالي أثناء تسجيل الدخول لضمان وصول الإشعارات
+            if (fcmToken) {
+                await sql`
+                    INSERT INTO device_tokens (user_id, fcm_token, updated_at)
+                    VALUES (${String(userObj.id)}, ${fcmToken}, NOW())
+                    ON CONFLICT (user_id) 
+                    DO UPDATE SET fcm_token = EXCLUDED.fcm_token, updated_at = NOW();
+                `;
+            }
+
+            return res.status(200).json({ success: true, user: userObj });
+        }
+
+        return res.status(400).json({ success: false, error: 'نوع العملية غير مدعوم' });
+
+    } catch (error) {
+        console.error("❌ خطأ حرج في نظام الـ Auth المدمج:", error);
+        return res.status(500).json({ success: false, error: 'حدث خطأ في الخادم أثناء معالجة طلبك', details: error.message });
+    }
 }
