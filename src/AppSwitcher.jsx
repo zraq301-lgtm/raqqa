@@ -6,6 +6,9 @@ import ProfileSetup from './pages/ProfileSetup';
 // 2. استيراد التطبيق الرئيسي الفعلي لـ "رقة" من الـ src
 import App from './App'; 
 
+// 3. استيراد خدمة المزامنة المستقلة للـ 9 صفحات لربطها بالأندرويد ونقلها لنيون 📡
+import { initializeSyncListener } from './services/SyncService';
+
 // جدار حماية بسيط ومطور لعرض الخطأ الفعلي إن حدث
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
@@ -39,8 +42,11 @@ export default function AppSwitcher() {
   // حالة مؤقتة لمنع وميض الشاشة أثناء قراءة الذاكرة التخزينية للهاتف
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // 🔒 خطوة الأمان: فحص الـ LocalStorage فور فتح التطبيق للتأكد من الجلسة الحية
+  // 🔒 خطوة الأمان والمزامنة التلقائية الشاملة لبيانات الموبايل
   useEffect(() => {
+    // 🔥 تفعيل مستمع المزامنة المستقل فوراً ليلتقط البيانات والـ 9 جداول من الأندرويد
+    initializeSyncListener();
+
     const isProfileComplete = localStorage.getItem('isProfileComplete');
     const savedEmail = localStorage.getItem('user_email');
     const savedId = localStorage.getItem('user_id');
