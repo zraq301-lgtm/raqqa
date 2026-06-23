@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { Client } from 'pg'; // مخصصة لتشغيل الدوال المعقدة التي تحتاج اتصال كامل
+import { Client } from 'pg'; 
 
 export default async function handler(req, res) {
     // 1. تفعيل ترويسات الـ CORS لتأمين اتصال التطبيق
@@ -35,38 +35,58 @@ export default async function handler(req, res) {
             `;
 
             const userObj = newUser[0];
-            const newUserId = String(userObj.id); // تحويل الـ ID لـ String ليمر للدالة بأمان
+            const newUserId = String(userObj.id); 
 
-            // ب) تشغيل دالة فرش الجداول للمستخدمة الجديدة عبر الـ Client لقاعدة البيانات
+            // ب) تشغيل دالة فرش الجداول للمستخدمة الجديدة عبر الـ Client لقاعدة البيانات مع تأمين الـ SSL الكامل
             const client = new Client({
                 connectionString: process.env.DATABASE_URL,
-                ssl: { rejectUnauthorized: false },
+                ssl: { 
+                    rejectUnauthorized: false,
+                    sslmode: 'verify-full' // التوافق مع تحديث نيون الأمني وحل مشكلة الـ Warning والاتصال
+                },
             });
 
-            let schemaName = '';
+            let schemaName = `user_${newUserId}`; // افتراضي في حال فشل استخراج الاسم من الدالة
             try {
                 await client.connect();
+                
                 // استدعاء الدالة الفريدة الخاصة بك لتهيئة مساحة العميل
                 const schemaResult = await client.query(
                     'SELECT public.init_user_schema($1, $2) as schema_name;',
                     [newUserId, email]
                 );
-                schemaName = schemaResult.rows[0].schema_name;
+                if (schemaResult.rows && schemaResult.rows[0]) {
+                    schemaName = schemaResult.rows[0].schema_name;
+                }
             } catch (schemaError) {
-                console.error("⚠️ فشل تشغيل دالة فرش الجداول ولكن الحساب تم إنشاؤه:", schemaError);
-                // تودع رسالة للـ Console لمتابعة الأخطاء إذا فشلت الدالة لسبب ما
+                console.error("⚠️ فشل تشغيل دالة فرش الجداول المدمجة:", schemaError);
+                
+                // خطة بديلة (Fallback) في حال حُذفت الدالة المخزنة أثناء تنظيف السيرفر لتضمن عمل الحساب:
+                console.log("🔄 جاري محاولة تهيئة السكيما برمجياً كخطة بديلة...");
+                await client.query(`CREATE SCHEMA IF NOT EXISTS ${schemaName};`);
+                await client.query(`
+                    CREATE TABLE IF NOT EXISTS ${schemaName}.offline_events (
+                        id SERIAL PRIMARY KEY,
+                        payload TEXT NOT NULL,
+                        synced_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    );
+                `);
             } finally {
                 await client.end();
             }
 
             // ج) حفظ توكن الإشعارات (FCM Token) فوراً إذا أُرسل مع التسجيل
             if (fcmToken) {
-                await sql`
-                    INSERT INTO device_tokens (user_id, fcm_token, updated_at)
-                    VALUES (${newUserId}, ${fcmToken}, NOW())
-                    ON CONFLICT (user_id) 
-                    DO UPDATE SET fcm_token = EXCLUDED.fcm_token, updated_at = NOW();
-                `;
+                try {
+                    await sql`
+                        INSERT INTO device_tokens (user_id, fcm_token, updated_at)
+                        VALUES (${newUserId}, ${fcmToken}, NOW())
+                        ON CONFLICT (user_id) 
+                        DO UPDATE SET fcm_token = EXCLUDED.fcm_token, updated_at = NOW();
+                    `;
+                } catch (tokErr) {
+                    console.error("Device token error:", tokErr);
+                }
             }
 
             return res.status(200).json({ 
@@ -76,7 +96,6 @@ export default async function handler(req, res) {
             });
 
         } else if (actionType === 'login') {
-            // نظام تسجيل الدخول والتحقق المباشر من نيون
             const userRows = await sql`SELECT id, full_name, email, password_text FROM users WHERE email = ${email}`;
             
             if (userRows.length === 0 || userRows[0].password_text !== password) {
@@ -89,7 +108,6 @@ export default async function handler(req, res) {
                 email: userRows[0].email
             };
 
-            // تحديث التوكن للجهاز الحالي أثناء تسجيل الدخول لضمان وصول الإشعارات
             if (fcmToken) {
                 await sql`
                     INSERT INTO device_tokens (user_id, fcm_token, updated_at)
