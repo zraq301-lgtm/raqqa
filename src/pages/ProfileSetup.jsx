@@ -34,9 +34,10 @@ const ProfileSetup = ({ onComplete }) => {
     setMessage({ type: '', text: '' });
 
     try {
+      // 🚀 جلب التوكن المجهز مسبقاً من كود main.jsx داخل الأندرويد
       const fcmToken = localStorage.getItem('fcm_token');
       
-      // 🚀 الاتصال المباشر عبر الـ API المربوط بـ Neon PostgreSQL
+      // الاتصال المباشر عبر الـ API المربوط بـ Neon PostgreSQL
       const response = await fetch('https://raqqa-hjl8.vercel.app/api/auth', {
         method: 'POST',
         headers: {
@@ -47,7 +48,7 @@ const ProfileSetup = ({ onComplete }) => {
           email: email.trim(),
           password: password,
           fullName: fullName.trim(),
-          fcmToken: fcmToken
+          fcmToken: fcmToken // إرسال التوكن القادم من أندرويد للباك آند
         }),
       });
 
@@ -59,7 +60,7 @@ const ProfileSetup = ({ onComplete }) => {
           text: isLoginMode ? 'أهلاً بعودتكِ يا جميلتي! ✨' : 'تم إنشاء حسابكِ بنجاح! ✨' 
         });
         
-        // حفظ البيانات محلياً لضمان بقاء الجلسة مستمرة
+        // 1️⃣ حفظ البيانات الأساسية محلياً لضمان بقاء الجلسة مستمرة
         localStorage.setItem('user_email', email.trim());
         localStorage.setItem('isProfileComplete', 'true');
         
@@ -67,8 +68,16 @@ const ProfileSetup = ({ onComplete }) => {
           localStorage.setItem('user_id', String(result.user.id));
         }
 
+        // 2️⃣ السحر الجديد: قنص الـ user_token الراجع من الباك آند وحفظه فوراً في الأندرويد
+        // لاستخدامه لاحقاً في كود App.jsx لإتمام مزامنة البيانات اللحظية (سرعة صفر)
+        if (result.user?.user_token) {
+          localStorage.setItem('user_token', result.user.user_token);
+          console.log("☁️ Saved Auth User Token for Syncing:", result.user.user_token);
+        }
+
         if (onComplete && result.user) {
           setTimeout(() => {
+            // نمرر الـ user بالكامل متضمناً الـ fcmToken والـ user_token الجديد للواجهات التالية
             onComplete({ ...result.user, fcmToken });
           }, 1200);
         }
@@ -326,7 +335,7 @@ const ProfileSetup = ({ onComplete }) => {
                   <span style={styles.icon}>✨</span>
                   <input
                     type="text"
-                    placeholder="ما هو اسمكِ يا رقيقة؟"
+                    placeholder="ما هو اسمكِ يا رقيقة?"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={loading}
