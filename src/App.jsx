@@ -155,6 +155,27 @@ function App() {
       const activeReminders = reminders.filter(rem => new Date(rem.scheduled_for) > now);
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(activeReminders));
 
+      // --- إرسال البيانات ومزامنتها مع قاعدة بيانات نيون (Neon DB) عبر الـ API الجديد ---
+      const storedToken = localStorage.getItem('userToken') || localStorage.getItem('raqqa_user_token');
+      const storedEmail = localStorage.getItem('email') || localStorage.getItem('raqqa_user_email');
+
+      if (storedToken && storedEmail && activeReminders.length > 0) {
+        const syncOptions = {
+          url: 'https://raqqa-hjl8.vercel.app/api/sync-data',
+          headers: { 'Content-Type': 'application/json' },
+          data: {
+            userToken: storedToken,
+            email: storedEmail,
+            targetTable: 'offline_events', // أو الجدول المخصص للإشعارات التذكيرية في سكيما المستخدم
+            localData: activeReminders
+          }
+        };
+        
+        CapacitorHttp.post(syncOptions)
+          .then(res => console.log("🌐 تمت مزامنة إشعارات الأندرويد مع الخادم الحتّي ونبون بنجاح:", res.data))
+          .catch(err => console.error("❌ فشل إرسال بيانات المزامنة إلى الخادم:", err));
+      }
+
       const perms = await LocalNotifications.checkPermissions();
       if (perms.display !== 'granted') {
         await LocalNotifications.requestPermissions();
@@ -168,7 +189,6 @@ function App() {
       // 2. جدولة الإشعارات النشطة والمستقبلية فقط في نظام الأندرويد
       const notificationsToSchedule = activeReminders.map(rem => {
         // --- استخدام المسار الداخلي من مجلد public لضمان العمل بدون نت ---
-        // تأكد من وجود الصور في: public/notifications/
         let iconName = 'default.png';
         const title = rem.title || "";
         
