@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     const mxbKey = process.env.MXBAI_API_KEY;
     const storeId = "66de0209-e17d-4e42-81d1-3851d5a0d826";
 
-    // --- [إضافة 1: ميزة الرسم المجانية] ---
+    // --- [ميزة الرسم المجانية] ---
     const imageKeywords = ["ارسم", "تخيل", "صورة لـ", "صورة ل"];
     if (imageKeywords.some(keyword => prompt?.startsWith(keyword))) {
         const imageDescription = prompt.replace(/ارسم|تخيل|صورة لـ|صورة ل/g, "").trim();
@@ -22,11 +22,11 @@ export default async function handler(req, res) {
     }
 
     try {
-        // --- [تعديل 2: فحص وجود رابط صورة للتحليل] ---
+        // --- [فحص وجود رابط صورة للتحليل] ---
         const imageRegex = /https?:\/\/\S+\.(jpg|jpeg|png|webp|gif)/i;
         const foundImageUrl = prompt?.match(imageRegex);
 
-        // 1. البحث أولاً في مكتبة Mixedbread المتخصصة (كما في كودك الأصلي)
+        // 1. البحث أولاً في مكتبة Mixedbread
         let libraryContext = "";
         try {
             const mxbRes = await fetch(`https://api.mixedbread.ai/v1/stores/${storeId}/query`, {
@@ -49,12 +49,12 @@ export default async function handler(req, res) {
             console.error("Mixedbread Error: ", err.message);
         }
 
-        // 2. إعداد الطلب لـ Groq
-        let groqModel = "llama-3.3-70b-versatile"; // النموذج الأصلي
+        // 2. إعداد النموذج والطلب لـ Groq
+        let groqModel = "llama3-70b-8192"; // نموذج نصوص معتمد وشغال رسمياً على Groq
         let messages = [];
 
         if (foundImageUrl) {
-            // إذا وجد رابط صورة، نستخدم نموذج الرؤية
+            // إذا وجد رابط صورة، نستخدم نموذج الرؤية الشغال
             groqModel = "llama-3.2-11b-vision-preview";
             messages = [
                 {
@@ -66,7 +66,7 @@ export default async function handler(req, res) {
                 }
             ];
         } else {
-            // الاستمرار بالوضع الأصلي للنصوص
+            // للأسئلة النصية العادية
             const systemPrompt = libraryContext 
                 ? `أنتِ رقة، مساعدة خبيرة. استخدمي المعلومات التالية من المكتبة للرد بدقة: ${libraryContext}`
                 : "أنتِ رقة، ذكاء اصطناعي لبق وذكي. أجيبي على الأسئلة بوضوح.";
@@ -95,7 +95,6 @@ export default async function handler(req, res) {
         if (data.choices && data.choices[0]) {
             res.status(200).json({ message: data.choices[0].message.content });
         } else {
-            // لتجنب خطأ "فشل رد الذكاء الاصطناعي" عند وجود مشاكل في النموذج
             console.error("Groq Response Error:", data);
             throw new Error(data.error?.message || "فشل رد الذكاء الاصطناعي");
         }
