@@ -7,7 +7,6 @@ export default async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { prompt, message: inputMsg, storeData } = req.body;
-    // دعم قراءة المدخلات من prompt أو message
     const userPrompt = prompt || inputMsg || "";
 
     const groqKey = process.env.GROQ_API_KEY; 
@@ -51,12 +50,15 @@ export default async function handler(req, res) {
             console.error("Mixedbread Error: ", err.message);
         }
 
-        // 2. إعداد نموذج النص المتاح من قائمتك في Groq
-        let groqModel = "openai/gpt-oss-120b"; 
+        // 2. تحديد النماذج المتاحة في حسابك بناءً على الصورة
+        // النموذج الأساسي: openai/gpt-oss-120b، والاحتياطي: openai/gpt-oss-20b
+        const candidateModels = foundImageUrl 
+            ? ["llama-3.2-11b-vision-preview"] 
+            : ["openai/gpt-oss-120b", "openai/gpt-oss-20b"];
+
         let messages = [];
 
         if (foundImageUrl) {
-            groqModel = "llama-3.2-11b-vision-preview";
             messages = [
                 {
                     role: "user",
@@ -67,7 +69,6 @@ export default async function handler(req, res) {
                 }
             ];
         } else {
-            // دمج إحصائيات المتجر إن وجدت في الطلب
             const storeStatsContext = storeData ? `\nبيانات المتجر الإحصائية الحالية:\n${JSON.stringify(storeData, null, 2)}` : "";
             
             const systemPrompt = libraryContext 
@@ -80,27 +81,41 @@ export default async function handler(req, res) {
             ];
         }
 
-        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${groqKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                model: groqModel,
-                messages: messages,
-                temperature: 0.6
-            })
-        });
+        // المحاولة مع النماذج المتاحة بالتتابع
+        let groqRes = null;
+        let lastErrorData = null;
 
-        const data = await groqRes.json();
-        
-        if (data.choices && data.choices[0]) {
-            const replyText = data.choices[0].message.content;
-            res.status(200).json({ reply: replyText, message: replyText });
+        for (const modelName of candidateModels) {
+            const resFetch = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${groqKey}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    model: modelName,
+                    messages: messages,
+                    temperature: 0.6
+                })
+            });
+
+            const resJson = await resFetch.json();
+
+            if (resJson.choices && resJson.choices[0]) {
+                groqRes = resJson;
+                break; // تم الحصول على الرد بنجاح
+            } else {
+                console.warn(`Model ${modelName} failed, trying next fallback...`, resJson);
+                lastErrorData = resJson;
+            }
+        }
+
+        if (groqRes && groqRes.choices && groqRes.choices[0]) {
+            const replyText = groqRes.choices[0].message.content;
+            return res.status(200).json({ reply: replyText, message: replyText });
         } else {
-            console.error("Groq Response Error:", data);
-            throw new Error(data.error?.message || "فشل رد الذكاء الاصطناعي");
+            console.error("Groq Final Response Error:", lastErrorData);
+            throw new Error(lastErrorData?.error?.message || "فشل رد الذكاء الاصطناعي");
         }
 
     } catch (error) {
