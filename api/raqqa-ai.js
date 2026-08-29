@@ -51,8 +51,8 @@ export default async function handler(req, res) {
             console.error("Mixedbread Error: ", err.message);
         }
 
-        // 2. إعداد النموذج المستقر (llama-3.3-70b-versatile)
-        let groqModel = "llama-3.3-70b-versatile"; 
+        // 2. إعداد نموذج النص المتاح من قائمتك في Groq
+        let groqModel = "openai/gpt-oss-120b"; 
         let messages = [];
 
         if (foundImageUrl) {
