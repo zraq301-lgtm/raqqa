@@ -15,6 +15,8 @@ jobs:
       contents: write
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      HAS_FIREBASE_ADMIN: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
+      HAS_ADMIN_SIGNING: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
 
     steps:
       - name: 1. Checkout Code
@@ -46,7 +48,7 @@ jobs:
           npx cap sync android
 
       - name: 6. Inject Firebase & App Identity (Admin Config)
-        if: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
+        if: env.HAS_FIREBASE_ADMIN == 'true'
         env:
           FIREBASE_ADMIN_JSON_BASE64: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 }}
         run: |
@@ -71,7 +73,7 @@ jobs:
           ./gradlew bundleRelease
 
       - name: 9. Sign Admin APK & AAB
-        if: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
+        if: env.HAS_ADMIN_SIGNING == 'true'
         run: |
           # توليد مفتاح توقيع
           echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks
@@ -99,7 +101,7 @@ jobs:
 
       # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
       - name: 11. Publish Admin Release
-        if: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
+        if: env.HAS_ADMIN_SIGNING == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: admin-only-v${{ github.run_number }}

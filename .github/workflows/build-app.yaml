@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      HAS_FIREBASE_ANDROID: ${{ secrets.FIREBASE_ANDROID_JSON_BASE64 != '' }}
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,7 +35,7 @@ jobs:
           npm run build
 
       - name: Restore Firebase Android configuration
-        if: ${{ secrets.FIREBASE_ANDROID_JSON_BASE64 != '' }}
+        if: env.HAS_FIREBASE_ANDROID == 'true'
         env:
           FIREBASE_ANDROID_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_JSON_BASE64 }}
         run: echo "$FIREBASE_ANDROID_JSON_BASE64" | base64 --decode > android/app/google-services.json
@@ -50,13 +53,13 @@ jobs:
           ./gradlew clean assembleRelease bundleRelease --no-daemon
 
       - name: Restore Android signing key
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.HAS_ANDROID_SIGNING == 'true'
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > raqqa-release.jks
 
       - name: Sign Android artifacts
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        if: env.HAS_ANDROID_SIGNING == 'true'
         env:
           STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -76,7 +79,7 @@ jobs:
             android/app/build/outputs/bundle/release/*.aab
 
       - name: Publish release when signing is configured
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.HAS_ANDROID_SIGNING == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: android-v${{ github.run_number }}
