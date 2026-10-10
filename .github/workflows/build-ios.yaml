@@ -13,7 +13,7 @@ on:
 
 jobs:
   ios:
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       HAS_FIREBASE_IOS: ${{ secrets.FIREBASE_IOS_PLIST_BASE64 != '' }}
     steps:
@@ -46,6 +46,7 @@ jobs:
 
       - name: Install CocoaPods and sync Capacitor
         run: |
+          xcodebuild -version
           sudo gem install cocoapods
           npx cap sync ios
           cd ios/App

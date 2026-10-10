@@ -44,8 +44,12 @@ jobs:
             mv "$TMP" android/app/google-services.json
           else
             rm -f "$TMP"
-            printf '%s' "$FIREBASE_ANDROID_JSON_BASE64" > android/app/google-services.json
+            printf '%s' "$FIREBASE_ANDROID_JSON_BASE64" | sed '/^[[:space:]]*```/d' > android/app/google-services.json
           fi
+          python3 -m json.tool android/app/google-services.json >/dev/null || {
+            echo "::error::FIREBASE_ANDROID_JSON_BASE64 ليس google-services.json صالحًا. ضع محتوى الملف نفسه أو Base64 صحيحًا بدون Markdown fences.";
+            exit 1;
+          }
 
       - name: Sync Capacitor native projects
         run: npx cap sync android

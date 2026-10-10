@@ -57,8 +57,12 @@ jobs:
             mv "$TMP" admin/android/app/google-services.json
           else
             rm -f "$TMP"
-            printf '%s' "$FIREBASE_ADMIN_JSON_BASE64" > admin/android/app/google-services.json
+            printf '%s' "$FIREBASE_ADMIN_JSON_BASE64" | sed '/^[[:space:]]*```/d' > admin/android/app/google-services.json
           fi
+          python3 -m json.tool admin/android/app/google-services.json >/dev/null || {
+            echo "::error::FIREBASE_ADMIN_JSON_BASE64 ليس google-services.json صالحًا. ضع محتوى الملف نفسه أو Base64 صحيحًا بدون Markdown fences.";
+            exit 1;
+          }
 
       - name: 7. Generate Admin Icons
         run: |
