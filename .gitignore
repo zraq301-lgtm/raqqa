@@ -1,0 +1,15 @@
+node_modules/
+dist_web/
+android/.gradle/
+android/build/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+android/app/google-services.json
+*.jks
+*.keystore
+ios/App/App/GoogleService-Info.plist
+.DS_Store
+.env
+.env.*
+!.env.example

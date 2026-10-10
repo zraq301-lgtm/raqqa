@@ -46,44 +46,11 @@ jobs:
           npx cap sync android
 
       - name: 6. Inject Firebase & App Identity (Admin Config)
-        shell: bash
+        if: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
+        env:
+          FIREBASE_ADMIN_JSON_BASE64: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 }}
         run: |
-          # حقن ملف جوجل الخاص بالأدمن (باستخدام معرف حزمة الأدمن)
-          cat <<EOF > admin/android/app/google-services.json
-          {
-            "project_info": {
-              "project_number": "162488255991",
-              "project_id": "raqqa-43dc8",
-              "storage_bucket": "raqqa-43dc8.firebasestorage.app"
-            },
-            "client": [
-              {
-                "client_info": {
-                  "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
-                  "android_client_info": { "package_name": "com.raqqa.admin" }
-                },
-                "api_key": [ { "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ" } ],
-                "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
-              }
-            ],
-            "configuration_version": "1"
-          }
-          EOF
-
-          STRINGS="admin/android/app/src/main/res/values/strings.xml"
-          APP_GRADLE="admin/android/app/build.gradle"
-          MANIFEST="admin/android/app/src/main/AndroidManifest.xml"
-          
-          # تعديل اسم التطبيق ليصبح "رقة - الإدارة" والحزمة لتكون مستقلة
-          sed -i 's/<string name="app_name">.*<\/string>/<string name="app_name">رقة - الإدارة<\/string>/' $STRINGS
-          sed -i 's/namespace ".*"/namespace "com.raqqa.admin"/' $APP_GRADLE
-          sed -i 's/applicationId ".*"/applicationId "com.raqqa.admin"/' $APP_GRADLE
-          
-          # إضافة الأذونات اللازمة
-          sed -i '/<application/i \    <uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />' $MANIFEST
-
-          # إضافة معرف Start.io
-          sed -i '/<application[^>]*>/a \        <meta-data android:name="com.startapp.sdk.APPLICATION_ID" android:value="203477356" />' $MANIFEST
+          echo "$FIREBASE_ADMIN_JSON_BASE64" | base64 --decode > admin/android/app/google-services.json
 
       - name: 7. Generate Admin Icons
         run: |
@@ -104,20 +71,21 @@ jobs:
           ./gradlew bundleRelease
 
       - name: 9. Sign Admin APK & AAB
+        if: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
         run: |
           # توليد مفتاح توقيع
-          keytool -genkey -v -keystore admin_release.jks -alias admin_alias -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "roqa_pass_2026" -keypass "roqa_pass_2026" \
-            -dname "CN=RoqaAdmin, OU=Dev, O=Roqa, L=Cairo, S=Egypt, C=EG"
+          echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks
+          keytool -list -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" >/dev/null
           
           # توقيع الـ APK وتسميته باسم حصري للأدمن تمامًا لحل تداخل الإنتاج
           APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks admin_release.jks \
-            --ks-pass pass:"roqa_pass_2026" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
+            --ks-key-alias "${{ secrets.ADMIN_KEY_ALIAS }}" --ks-pass pass:"${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" \
+            --key-pass pass:"${{ secrets.ADMIN_KEY_PASSWORD }}" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
           
           # توقيع الـ AAB وتسميته باسم حصري
           AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore admin_release.jks -storepass "roqa_pass_2026" "$AAB_PATH" admin_alias
+          jarsigner -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" -keypass "${{ secrets.ADMIN_KEY_PASSWORD }}" "$AAB_PATH" "${{ secrets.ADMIN_KEY_ALIAS }}"
           cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
 
       # --- الرفع المباشر كملف مستقل (Artifact) للأدمن ---
@@ -126,11 +94,12 @@ jobs:
         with:
           name: Roqa-Admin-Only-Package
           path: |
-            Roqa-EXCLUSIVE-ADMIN.apk
-            Roqa-EXCLUSIVE-ADMIN.aab
+            admin/android/app/build/outputs/apk/release/*.apk
+            admin/android/app/build/outputs/bundle/release/*.aab
 
       # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
       - name: 11. Publish Admin Release
+        if: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: admin-only-v${{ github.run_number }}

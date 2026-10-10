@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">رقة</string>
+    <string name="title_activity_main">رقة</string>
+    <string name="package_name">com.raqqa.app</string>
+    <string name="custom_url_scheme">com.raqqa.app</string>
+</resources>
