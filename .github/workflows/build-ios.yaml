@@ -35,7 +35,14 @@ jobs:
         if: env.HAS_FIREBASE_IOS == 'true'
         env:
           FIREBASE_IOS_PLIST_BASE64: ${{ secrets.FIREBASE_IOS_PLIST_BASE64 }}
-        run: echo "$FIREBASE_IOS_PLIST_BASE64" | base64 --decode > ios/App/App/GoogleService-Info.plist
+        run: |
+          TMP=$(mktemp)
+          if printf '%s' "$FIREBASE_IOS_PLIST_BASE64" | base64 --decode > "$TMP" 2>/dev/null && grep -q 'plist' "$TMP"; then
+            mv "$TMP" ios/App/App/GoogleService-Info.plist
+          else
+            rm -f "$TMP"
+            printf '%s' "$FIREBASE_IOS_PLIST_BASE64" > ios/App/App/GoogleService-Info.plist
+          fi
 
       - name: Install CocoaPods and sync Capacitor
         run: |

@@ -8,8 +8,8 @@
 
 | Secret | الاستخدام |
 |---|---|
-| `FIREBASE_ANDROID_JSON_BASE64` | محتوى `google-services.json` بعد تحويله إلى Base64؛ يجب أن يحتوي على الحزمة `com.raqqa.app` |
-| `FIREBASE_IOS_PLIST_BASE64` | محتوى `GoogleService-Info.plist` بعد تحويله إلى Base64 |
+| `FIREBASE_ANDROID_JSON_BASE64` | محتوى `google-services.json` بصيغة Base64 أو JSON خام؛ يجب أن يحتوي على الحزمة `com.raqqa.app` |
+| `FIREBASE_IOS_PLIST_BASE64` | محتوى `GoogleService-Info.plist` بصيغة Base64 أو PLIST خام |
 | `ANDROID_KEYSTORE_BASE64` | ملف توقيع Android بصيغة Base64 |
 | `ANDROID_KEYSTORE_PASSWORD` | كلمة مرور ملف التوقيع |
 | `ANDROID_KEY_ALIAS` | اسم المفتاح داخل keystore |
