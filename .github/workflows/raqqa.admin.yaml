@@ -101,7 +101,6 @@ jobs:
       - name: 9. Sign Admin APK & AAB
         id: sign_admin
         if: env.HAS_ADMIN_SIGNING == 'true'
-        continue-on-error: true
         run: |
           set -euo pipefail
           # استخدام مفتاح الأدمن القديم فقط، مع فحصه قبل التوقيع.
