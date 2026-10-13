@@ -83,7 +83,9 @@ jobs:
           ./gradlew bundleRelease
 
       - name: 9. Sign Admin APK & AAB
+        id: sign_admin
         if: env.HAS_ADMIN_SIGNING == 'true'
+        continue-on-error: true
         run: |
           # توليد مفتاح توقيع
           echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks
@@ -144,7 +146,7 @@ jobs:
 
       # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
       - name: 12. Publish Admin Release
-        if: env.HAS_ADMIN_SIGNING == 'true'
+        if: steps.sign_admin.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: admin-only-v${{ github.run_number }}
