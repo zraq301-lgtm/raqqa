@@ -39,8 +39,22 @@ jobs:
         run: |
           cd admin
           rm -rf node_modules package-lock.json android ios dist_web
-          npm install --legacy-peer-deps
-          npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps
+          npm config set fetch-retries 5
+          npm config set fetch-retry-factor 2
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+          for attempt in 1 2 3; do
+            npm install --legacy-peer-deps && break
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            echo "npm install failed; retrying in 15 seconds (attempt $((attempt + 1))/3)"
+            sleep 15
+          done
+          for attempt in 1 2 3; do
+            npm install onesignal-cordova-plugin @capacitor/push-notifications @capacitor/local-notifications --save --legacy-peer-deps && break
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            echo "Capacitor plugin install failed; retrying in 15 seconds (attempt $((attempt + 1))/3)"
+            sleep 15
+          done
           npm run build
 
       - name: 5. Initialize Android (Fresh Start for Admin)
