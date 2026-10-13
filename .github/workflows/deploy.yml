@@ -70,3 +70,14 @@ jobs:
             Native compatibility: 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Mirror OTA assets to production release v2024
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2024
+          overwrite_files: true
+          files: |
+            raqqa-ota.zip
+            raqqa-ota-manifest.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
