@@ -9,8 +9,9 @@ const Home = () => {
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
 
-  const API_GET = "https://raqqa-ruddy.vercel.app/api/get-posts";
-  const API_SAVE = "https://raqqa-ruddy.vercel.app/api/save-post";
+  const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || "https://raqqa-backend.raqqa-api.workers.dev";
+  const API_GET = `${API_BASE}/api/posts?section=${encodeURIComponent(selectedSection)}`;
+  const API_SAVE = `${API_BASE}/api/posts`;
 
   useEffect(() => { fetchPosts(); }, []);
 

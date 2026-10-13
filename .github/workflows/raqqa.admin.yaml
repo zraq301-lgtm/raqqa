@@ -17,6 +17,8 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       HAS_FIREBASE_ADMIN: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
       HAS_ADMIN_SIGNING: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
+      VITE_RAQQA_API_BASE_URL: https://raqqa-backend.raqqa-api.workers.dev
+      VITE_ADMIN_API_TOKEN: ${{ secrets.RAQQA_ADMIN_API_TOKEN }}
 
     steps:
       - name: 1. Checkout Code

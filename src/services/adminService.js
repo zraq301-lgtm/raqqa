@@ -1,8 +1,7 @@
 import { CapacitorHttp } from '@capacitor/core';
 
-// 🎯 تحديث الرابط ليتطابق تماماً مع اسم ملف الـ API الذي تم بناؤه بالسيرفر (engine-get أو get-engine-data)
-// تأكد من مطابقة اسم الملف في مجلد api لديك مع هذا المسار
-const FETCH_URL = 'https://nawah-ai-db.vercel.app/api/engine-get'; 
+const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev';
+const FETCH_URL = `${API_BASE}/api/content`;
 
 /**
  * دالة موحدة وجاهزة لجلب بيانات أي صفحة من السيرفر السحابي لـ رقة
@@ -14,7 +13,7 @@ export const fetchPageData = async (pageName) => {
 
   const options = {
     // 2. استخدام encodeURIComponent للتعامل الآمن مع الحروف العربية والمسافات في الرابط
-    url: `${FETCH_URL}?page=${encodeURIComponent(cleanPageName)}`,
+    url: `${FETCH_URL}?section=${encodeURIComponent(cleanPageName)}`,
     headers: { 
       'Content-Type': 'application/json',
       'Cache-Control': 'no-cache' // منع الكاش على مستوى محرك كاباسيتور لضمان جلب بيانات حية دائماً
