@@ -1,8 +1,5 @@
 import React, { Component, useState, useEffect } from 'react';
 
-// 1. استيراد واجهة التسجيل (الملف الحالي)
-import ProfileSetup from './pages/ProfileSetup';
-
 // 2. استيراد التطبيق الرئيسي الفعلي لـ "رقة" من الـ src
 import App from './App'; 
 
@@ -37,9 +34,8 @@ class ErrorBoundary extends Component {
 }
 
 export default function AppSwitcher() {
-  // إضافة State لمعرفة هل تم تسجيل الدخول بنجاح وحفظ بيانات المستخدم
+  // لا توجد بوابة تسجيل: يُفتح التطبيق مباشرة بمعرف محلي مجهول.
   const [user, setUser] = useState(null);
-  // حالة مؤقتة لمنع وميض الشاشة أثناء قراءة الذاكرة التخزينية للهاتف
   const [loadingAuth, setLoadingAuth] = useState(true);
 
   // 🔒 خطوة الأمان والمزامنة التلقائية الشاملة لبيانات الموبايل
@@ -47,24 +43,16 @@ export default function AppSwitcher() {
     // 🔥 تفعيل مستمع المزامنة المستقل لالتقاط الإشعارات المجدولة (Pending) من نظام الهاتف
     initializeNotificationsSyncListener();
 
-    const isProfileComplete = localStorage.getItem('isProfileComplete');
-    const savedEmail = localStorage.getItem('user_email');
-    const savedId = localStorage.getItem('user_id');
-
-    if (isProfileComplete === 'true' && savedEmail) {
-      // إذا تم العثور على البيانات، نقوم بتسجيل دخول البنت تلقائياً بدون عرض صفحة الكروت
-      setUser({ email: savedEmail, id: savedId });
+    let savedId = localStorage.getItem('user_id');
+    if (!savedId) {
+      savedId = `guest_${crypto.randomUUID?.() || `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
+      localStorage.setItem('user_id', savedId);
     }
+    setUser({ id: savedId, anonymous: true });
 
     // إنهاء حالة الفحص فوراً والدخول للتطبيق
     setLoadingAuth(false);
   }, []);
-
-  // دالة تُستدعى فور نجاح التسجيل في واجهة ProfileSetup
-  const handleRegistrationComplete = (userData) => {
-    console.log("✨ نجح التسجيل! بيانات المستخدمة جاهزة ونقلناها لـ App:", userData);
-    setUser(userData); // حفظ المستخدم في الـ State ليتم الانتقال فوراً لملف App.jsx
-  };
 
   // شاشة انتظار رقيقة جداً لكسر الأجزاء من الثانية أثناء فحص الذاكرة المحفوظة بالهاتف
   if (loadingAuth) {
@@ -78,15 +66,7 @@ export default function AppSwitcher() {
   return (
     <ErrorBoundary>
       <div className="w-full min-h-screen bg-white">
-        {/* الشرط الحقيقي والنظيف: إذا وجد المستخدم اعرض الـ App الرئيسي، وإلا اعرض صفحة التسجيل */}
-        {user ? (
-          
-          // هنا نقوم باستدعاء التطبيق الرئيسي الفعلي كاملاً وتمرير بيانات المستخدم له كـ props إذا احتجتها
-          <App user={user} />
-          
-        ) : (
-          <ProfileSetup onComplete={handleRegistrationComplete} />
-        )}
+        {user && <App user={user} />}
       </div>
     </ErrorBoundary>
   );

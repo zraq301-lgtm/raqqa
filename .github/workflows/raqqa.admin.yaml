@@ -109,13 +109,18 @@ jobs:
 
           # توقيع الـ APK وتسميته باسم حصري للأدمن تمامًا لحل تداخل الإنتاج
           APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
-          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks admin_release.jks \
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          APKSIGNER=$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          test -x "$APKSIGNER"
+          "$APKSIGNER" sign --ks admin_release.jks \
             --ks-key-alias "${{ secrets.ADMIN_KEY_ALIAS }}" --ks-pass pass:"${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.ADMIN_KEY_PASSWORD }}" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
+          "$APKSIGNER" verify --verbose Roqa-EXCLUSIVE-ADMIN.apk
 
           # توقيع الـ AAB وتسميته باسم حصري
           AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" -keypass "${{ secrets.ADMIN_KEY_PASSWORD }}" "$AAB_PATH" "${{ secrets.ADMIN_KEY_ALIAS }}"
+          jarsigner -verify "$AAB_PATH"
           cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
 
       - name: 10. Publish Admin OTA to GitHub Releases
@@ -151,14 +156,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # --- الرفع المباشر كملف مستقل (Artifact) للأدمن ---
-      - name: 11. Upload Admin Artifacts (Direct Download)
+      # --- رفع الملفات الموقعة فقط كملفات قابلة للتثبيت ---
+      - name: 11. Upload Signed Admin Artifacts
+        if: steps.sign_admin.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Admin-Only-Package
           path: |
-            admin/android/app/build/outputs/apk/release/*.apk
-            admin/android/app/build/outputs/bundle/release/*.aab
+            Roqa-EXCLUSIVE-ADMIN.apk
+            Roqa-EXCLUSIVE-ADMIN.aab
 
       # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
       - name: 12. Publish Admin Release
@@ -170,6 +176,5 @@ jobs:
           files: |
             Roqa-EXCLUSIVE-ADMIN.apk
             Roqa-EXCLUSIVE-ADMIN.aab
-            admin_release.jks
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
