@@ -7,6 +7,23 @@ const authHeaders = {
   ...(ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {}),
 };
 
+export const uploadVideo = async (file, pageName) => {
+  if (!file) throw new Error('video_file_required');
+  const form = new FormData();
+  form.append('file', file, file.name || 'raqqa-video.mp4');
+  form.append('page', pageName);
+  const response = await fetch(`${API_BASE}/api/media/upload`, {
+    method: 'POST',
+    headers: ADMIN_TOKEN ? { 'X-Admin-Token': ADMIN_TOKEN } : {},
+    body: form,
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result?.success === false) {
+    throw new Error(result?.error || `Cloudflare upload returned ${response.status}`);
+  }
+  return result;
+};
+
 export const savePageData = async (pageName, updatedContent) => {
   const cleanPageName = pageName.replace(/['"]/g, '').trim();
   const formattedContent = typeof updatedContent === 'object'

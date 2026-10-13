@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 // ✅ استيراد دوال الحفظ والحذف الصحيحة والموجودة بالفعل في ملف الخدمات
-import { savePageData, deletePageDataById } from '../services/adminService'; 
+import { savePageData, deletePageDataById, uploadVideo } from '../services/adminService';
 
 const UploadManager = () => {
   const [targetPage, setTargetPage] = useState('مملكة الاسترخاء'); // القسم المستهدف
   const [title, setTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [videoFile, setVideoFile] = useState(null);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('all'); // خاصة بمكتبة رقة فقط
   const [bgColor, setBgColor] = useState('#F5F5F5'); // خاصة بالـ 360 درجة فقط
@@ -15,6 +16,12 @@ const UploadManager = () => {
   // حالات التحكم الخاصة بواجهة الحذف الذكي المطور (تقبل ID أو رابط ميديا أو بصمة زمنية)
   const [deleteId, setDeleteId] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const targetPages = [
+    'أيقونة الأناقة', 'شغف وحرف', 'ملاذ الأمومة', 'واحة العافية', 'دروب التمكين',
+    'رواق الأرواح', 'الأرجوحة', 'أكاديمية الصغار', 'مملكة الاسترخاء', 'مكتبة رقة',
+    'bouh-display-1', 'bouh-display'
+  ];
 
   const categories = [
     { id: 'all', label: '🏠 الكل / عام' },
@@ -26,8 +33,8 @@ const UploadManager = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !videoUrl.trim()) {
-      setMessage({ type: 'error', text: 'رجاءً املئي خانة العنوان ورابط الفيديو!' });
+    if (!title.trim() || (!videoFile && !videoUrl.trim())) {
+      setMessage({ type: 'error', text: 'رجاءً أدخلي العنوان واختاري فيديو أو ضعي رابطًا خارجيًا!' });
       return;
     }
 
@@ -44,7 +51,7 @@ const UploadManager = () => {
       },
       media: {
         videoUrl: videoUrl.trim(),
-        imageUrl: "" 
+        imageUrl: ""
       },
       design: {
         backgroundColor: targetPage === 'مملكة الاسترخاء' ? bgColor : undefined
@@ -53,12 +60,22 @@ const UploadManager = () => {
     };
 
     try {
+      let cloudflareVideoUrl = videoUrl.trim();
+      if (videoFile) {
+        if (!videoFile.type.startsWith('video/')) throw new Error('الملف المختار ليس فيديو');
+        if (videoFile.size > 500 * 1024 * 1024) throw new Error('حجم الفيديو يتجاوز 500 ميجابايت');
+        setMessage({ type: '', text: 'جاري رفع الفيديو إلى Cloudflare...' });
+        const uploaded = await uploadVideo(videoFile, targetPage);
+        cloudflareVideoUrl = uploaded.url;
+      }
+      newContentItem.media.videoUrl = cloudflareVideoUrl;
       const result = await savePageData(targetPage, newContentItem);
-      
+
       if (result) {
         setMessage({ type: 'success', text: `✨ تم رفع ونشر المحتوى بنجاح إلى قسم (${targetPage})! 🚀` });
         setTitle('');
         setVideoUrl('');
+        setVideoFile(null);
         setDescription('');
       } else {
         setMessage({ type: 'error', text: 'فشل الرفع، يرجى التحقق من استجابة السيرفر الوسيط.' });
@@ -84,7 +101,7 @@ const UploadManager = () => {
 
     try {
       const response = await deletePageDataById(targetPage, deleteId.trim());
-      
+
       // التحقق من حالة النجاح الفعلية القادمة من معالجة المصفوفة بالسيرفر
       if (response && response.success) {
         setMessage({ type: 'success', text: `🗑️ ${response.message || 'تم حذف العنصر وتحديث قاعدة البيانات السحابية بنجاح!'}` });
@@ -103,7 +120,7 @@ const UploadManager = () => {
   return (
     <div style={styles.container} dir="rtl">
       <div style={styles.wrapper}>
-        
+
         {/* بطاقة الإدخال والرفع الأساسية اللطيفة */}
         <div style={styles.card}>
           <div style={styles.headerBadge}>لوحة الإشراف والمزامنة السحابية</div>
@@ -112,7 +129,7 @@ const UploadManager = () => {
 
           {message.text && (
             <div style={{
-              ...styles.alert, 
+              ...styles.alert,
               backgroundColor: message.type === 'success' ? '#E8F5E9' : '#FFEBEE',
               color: message.type === 'success' ? '#2E7D32' : '#C62828',
               border: message.type === 'success' ? '1px solid #C8E6C9' : '1px solid #FFCDCD'
@@ -125,36 +142,43 @@ const UploadManager = () => {
             {/* اختيار القسم المستهدف */}
             <div style={styles.formGroup}>
               <label style={styles.label}>🎯 القسم المستهدف في التطبيق:</label>
-              <select 
-                value={targetPage} 
-                onChange={(e) => setTargetPage(e.target.value)} 
+              <select
+                value={targetPage}
+                onChange={(e) => setTargetPage(e.target.value)}
                 style={styles.select}
               >
-                <option value="مملكة الاسترخاء">مملكة الاسترخاء (فيديوهات 360° VR)</option>
-                <option value="مكتبة رقة">مكتبة رقة النسائية (فيديوهات التبويبات)</option>
+                {targetPages.map((page) => <option key={page} value={page}>{page}</option>)}
               </select>
             </div>
 
             {/* عنوان المادة */}
             <div style={styles.formGroup}>
               <label style={styles.label}>📝 عنوان الفيديو الرئيسي:</label>
-              <input 
-                type="text" 
-                value={title} 
-                onChange={(e) => setTitle(e.target.value)} 
-                placeholder="مثال: جولة استرخاء في طبيعة صامتة" 
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="مثال: جولة استرخاء في طبيعة صامتة"
                 style={styles.input}
               />
             </div>
 
-            {/* رابط الفيديو */}
+            {/* رفع الفيديو إلى Cloudflare أو استخدام رابط خارجي */}
             <div style={styles.formGroup}>
-              <label style={styles.label}>🔗 رابط فيديو يوتيوب المباشر:</label>
-              <input 
-                type="text" 
-                value={videoUrl} 
-                onChange={(e) => setVideoUrl(e.target.value)} 
-                placeholder="https://www.youtube.com/watch?v=..." 
+              <label style={styles.label}>🎬 ملف فيديو عادي (يحفظ كرابط Cloudflare):</label>
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                style={styles.input}
+              />
+              {videoFile && <small style={styles.colorText}>{videoFile.name} — {(videoFile.size / 1024 / 1024).toFixed(1)} MB</small>}
+              <label style={styles.label}>أو رابط فيديو خارجي:</label>
+              <input
+                type="text"
+                value={videoUrl}
+                onChange={(e) => setVideoUrl(e.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
                 style={styles.input}
               />
             </div>
@@ -163,9 +187,9 @@ const UploadManager = () => {
             {targetPage === 'مكتبة رقة' ? (
               <div style={styles.formGroup}>
                 <label style={styles.label}>🗂️ تصنيف مكتبة رقة المخصص:</label>
-                <select 
-                  value={category} 
-                  onChange={(e) => setCategory(e.target.value)} 
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
                   style={styles.select}
                 >
                   {categories.map(cat => (
@@ -177,10 +201,10 @@ const UploadManager = () => {
               <div style={styles.formGroup}>
                 <label style={styles.label}>🎨 لون خلفية القسم (مظهر الكارت العائم):</label>
                 <div style={styles.colorPickerContainer}>
-                  <input 
-                    type="color" 
-                    value={bgColor} 
-                    onChange={(e) => setBgColor(e.target.value)} 
+                  <input
+                    type="color"
+                    value={bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
                     style={styles.colorPicker}
                   />
                   <span style={styles.colorText}>{bgColor}</span>
@@ -191,21 +215,21 @@ const UploadManager = () => {
             {/* الوصف أو النص المصاحب */}
             <div style={styles.formGroup}>
               <label style={styles.label}>📖 وصف أو نص تعريفي مصاحب للمشاهدة:</label>
-              <textarea 
-                rows="4" 
-                value={description} 
-                onChange={(e) => setDescription(e.target.value)} 
-                placeholder="اكتبي تفاصيل أو نصائح تظهر تحت الفيديو للمستخدمات..." 
+              <textarea
+                rows="4"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="اكتبي تفاصيل أو نصائح تظهر تحت الفيديو للمستخدمات..."
                 style={styles.textarea}
               />
             </div>
 
             {/* زر الرفع الحاسم */}
-            <button 
-              type="submit" 
-              disabled={loading || deleteLoading} 
+            <button
+              type="submit"
+              disabled={loading || deleteLoading}
               style={{
-                ...styles.submitBtn, 
+                ...styles.submitBtn,
                 background: loading ? '#D7CCC8' : 'linear-gradient(135deg, #A87C66 0%, #8D5B4C 100%)'
               }}
             >
@@ -220,9 +244,9 @@ const UploadManager = () => {
           <p style={styles.deleteSubtitle}>
             يمكنكِ سحب وإلغاء أي كارت من قسم <span style={{fontWeight:'bold', color:'#A87C66'}}>({targetPage})</span> مباشرة عن طريق لصق <b>رابط اليوتيوب الخاص به</b> أو كود <b>lastUpdated</b>.
           </p>
-          
+
           <div style={styles.deleteFlexContainer}>
-            <input 
+            <input
               type="text"
               placeholder="لصق رابط الفيديو أو كود lastUpdated هنا..."
               value={deleteId}
@@ -230,7 +254,7 @@ const UploadManager = () => {
               onChange={(e) => setDeleteId(e.target.value)}
               style={styles.deleteInput}
             />
-            <button 
+            <button
               type="button"
               onClick={handleDelete}
               disabled={deleteLoading || loading || !deleteId.trim()}
@@ -251,14 +275,14 @@ const UploadManager = () => {
 
 /* --- التنسيقات الاحترافية الفاخرة للوحة التحكم الجمالية تتبع نمط Nude & Rose Premium --- */
 const styles = {
-  container: { 
-    minHeight: '100vh', 
-    background: 'linear-gradient(135deg, #FCF8F5 0%, #F6EFEA 100%)', 
-    padding: '50px 20px', 
-    fontFamily: '"Tajawal", sans-serif', 
-    display: 'flex', 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  container: {
+    minHeight: '100vh',
+    background: 'linear-gradient(135deg, #FCF8F5 0%, #F6EFEA 100%)',
+    padding: '50px 20px',
+    fontFamily: '"Tajawal", sans-serif',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   wrapper: {
     maxWidth: '650px',
@@ -267,11 +291,11 @@ const styles = {
     flexDirection: 'column',
     gap: '30px'
   },
-  card: { 
-    background: '#FFFFFF', 
-    borderRadius: '24px', 
-    padding: '40px 35px', 
-    boxShadow: '0 15px 45px rgba(141, 110, 99, 0.06)', 
+  card: {
+    background: '#FFFFFF',
+    borderRadius: '24px',
+    padding: '40px 35px',
+    boxShadow: '0 15px 45px rgba(141, 110, 99, 0.06)',
     border: '1px solid #F0E5DD',
     transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
   },
@@ -291,34 +315,34 @@ const styles = {
   form: { display: 'flex', flexDirection: 'column', gap: '24px' },
   formGroup: { display: 'flex', flexDirection: 'column', gap: '10px' },
   label: { fontSize: '0.95rem', fontWeight: '700', color: '#4A3F35', paddingRight: '4px' },
-  input: { 
-    padding: '14px 18px', 
-    borderRadius: '14px', 
-    border: '1px solid #EADBCE', 
+  input: {
+    padding: '14px 18px',
+    borderRadius: '14px',
+    border: '1px solid #EADBCE',
     backgroundColor: '#FDFDFD',
-    fontSize: '1rem', 
+    fontSize: '1rem',
     color: '#4A3F35',
-    outline: 'none', 
+    outline: 'none',
     transition: 'all 0.3s ease',
     boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.01)'
   },
-  select: { 
-    padding: '14px 18px', 
-    borderRadius: '14px', 
-    border: '1px solid #EADBCE', 
-    fontSize: '1rem', 
+  select: {
+    padding: '14px 18px',
+    borderRadius: '14px',
+    border: '1px solid #EADBCE',
+    fontSize: '1rem',
     color: '#4A3F35',
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: '#FFFFFF',
     outline: 'none',
     transition: 'all 0.3s ease'
   },
-  textarea: { 
-    padding: '14px 18px', 
-    borderRadius: '14px', 
-    border: '1px solid #EADBCE', 
-    fontSize: '1rem', 
+  textarea: {
+    padding: '14px 18px',
+    borderRadius: '14px',
+    border: '1px solid #EADBCE',
+    fontSize: '1rem',
     color: '#4A3F35',
-    outline: 'none', 
+    outline: 'none',
     resize: 'vertical',
     lineHeight: '1.6',
     transition: 'all 0.3s ease'
@@ -336,18 +360,18 @@ const styles = {
   colorPicker: { border: 'none', width: '45px', height: '35px', padding: '0', cursor: 'pointer', borderRadius: '6px', backgroundColor: 'transparent' },
   colorText: { fontSize: '0.9rem', color: '#7E7265', fontWeight: 'bold' },
   alert: { padding: '16px 20px', borderRadius: '16px', fontSize: '0.95rem', fontWeight: '700', textAlign: 'center', lineHeight: '1.5' },
-  submitBtn: { 
-    color: '#FFFFFF', 
-    border: 'none', 
-    padding: '16px 20px', 
-    borderRadius: '16px', 
-    fontSize: '1.1rem', 
-    fontWeight: '700', 
-    cursor: 'pointer', 
-    transition: 'all 0.3s ease', 
-    boxShadow: '0 8px 25px rgba(168, 124, 102, 0.25)' 
+  submitBtn: {
+    color: '#FFFFFF',
+    border: 'none',
+    padding: '16px 20px',
+    borderRadius: '16px',
+    fontSize: '1.1rem',
+    fontWeight: '700',
+    cursor: 'pointer',
+    transition: 'all 0.3s ease',
+    boxShadow: '0 8px 25px rgba(168, 124, 102, 0.25)'
   },
-  
+
   /* استايلات كارت الحذف الفاخرة الإضافية */
   deleteCard: {
     background: '#FFFFFF',
