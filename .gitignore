@@ -9,6 +9,8 @@ android/app/google-services.json
 *.jks
 *.keystore
 ios/App/App/GoogleService-Info.plist
+admin/android/
+admin/ios/
 .DS_Store
 .env
 .env.*

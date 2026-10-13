@@ -88,20 +88,53 @@ jobs:
           # توليد مفتاح توقيع
           echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks
           keytool -list -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" >/dev/null
-          
+
           # توقيع الـ APK وتسميته باسم حصري للأدمن تمامًا لحل تداخل الإنتاج
           APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks admin_release.jks \
             --ks-key-alias "${{ secrets.ADMIN_KEY_ALIAS }}" --ks-pass pass:"${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" \
             --key-pass pass:"${{ secrets.ADMIN_KEY_PASSWORD }}" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
-          
+
           # توقيع الـ AAB وتسميته باسم حصري
           AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
           jarsigner -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" -keypass "${{ secrets.ADMIN_KEY_PASSWORD }}" "$AAB_PATH" "${{ secrets.ADMIN_KEY_ALIAS }}"
           cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
 
+      - name: 10. Publish Admin OTA to GitHub Releases
+        run: |
+          set -euo pipefail
+          VERSION="ota-${GITHUB_SHA::12}"
+          (cd admin/dist_web && zip -qr "../../raqqa-admin-ota.zip" .)
+          CHECKSUM=$(sha256sum raqqa-admin-ota.zip | awk '{print $1}')
+          cat > raqqa-admin-ota-manifest.json <<EOF
+          {
+            "bundleId": "$VERSION",
+            "nativeCompatibility": "1",
+            "artifactType": "zip",
+            "url": "https://github.com/zraq301-lgtm/raqqa/releases/download/ota-admin/raqqa-admin-ota.zip",
+            "checksum": "$CHECKSUM"
+          }
+          EOF
+
+      - name: Publish Admin OTA Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ota-admin
+          name: Raqqa Admin OTA Web Bundle
+          prerelease: false
+          make_latest: false
+          overwrite_files: true
+          files: |
+            raqqa-admin-ota.zip
+            raqqa-admin-ota-manifest.json
+          body: |
+            Automatically published Admin web-only OTA bundle from commit ${{ github.sha }}.
+            Native compatibility: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       # --- الرفع المباشر كملف مستقل (Artifact) للأدمن ---
-      - name: 10. Upload Admin Artifacts (Direct Download)
+      - name: 11. Upload Admin Artifacts (Direct Download)
         uses: actions/upload-artifact@v4
         with:
           name: Roqa-Admin-Only-Package
@@ -110,7 +143,7 @@ jobs:
             admin/android/app/build/outputs/bundle/release/*.aab
 
       # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
-      - name: 11. Publish Admin Release
+      - name: 12. Publish Admin Release
         if: env.HAS_ADMIN_SIGNING == 'true'
         uses: softprops/action-gh-release@v2
         with:

@@ -18,6 +18,7 @@ dependencies {
     implementation project(':capacitor-preferences')
     implementation project(':capacitor-push-notifications')
     implementation project(':capacitor-share')
+    implementation project(':capawesome-capacitor-live-update')
     implementation project(':capacitor-voice-recorder')
 
 }

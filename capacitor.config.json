@@ -19,6 +19,11 @@
     },
     "AdMob": {
       "initializeOnStartup": true
+    },
+    "LiveUpdate": {
+      "readyTimeout": 10000,
+      "autoDeleteBundles": true,
+      "httpTimeout": 60000
     }
   },
   "android": {

@@ -1,34 +1,72 @@
-name: Capgo Deploy Raqqa 🌸
+name: GitHub OTA Web Bundle - Raqqa
 
 on:
   push:
     branches:
-      - main  # تأكد أن فرعك هو main وليس master
+      - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.*'
+      - 'capacitor.config.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  deploy:
+  publish-ota:
     runs-on: ubuntu-latest
-
     steps:
-      # 1. جلب الكود من GitHub
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. إعداد بيئة Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
 
-      # 3. تثبيت المكتبات (Dependencies)
       - name: Install Dependencies
-        run: npm install
+        run: npm ci --legacy-peer-deps
 
-      # 4. بناء ملفات الويب (Build)
-      - name: Build Project
+      - name: Build Web Bundle
         run: npm run build
 
-      # 5. رفع التحديث إلى Capgo
-      # قمت هنا بإضافة --bundle dist_web لأن هذا هو المجلد الذي ينتجه مشروعك
-      - name: Upload to Capgo
-        run: npx @capgo/cli@latest upload -t ${{ secrets.CAPGO_TOKEN }} --bundle dist_web
+      - name: Package and checksum OTA bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="ota-${GITHUB_SHA::12}"
+          ZIP="raqqa-ota.zip"
+          (cd dist_web && zip -qr "../$ZIP" .)
+          CHECKSUM=$(sha256sum "$ZIP" | awk '{print $1}')
+          cat > raqqa-ota-manifest.json <<EOF
+          {
+            "bundleId": "$VERSION",
+            "nativeCompatibility": "1",
+            "artifactType": "zip",
+            "url": "https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota.zip",
+            "checksum": "$CHECKSUM"
+          }
+          EOF
+
+      - name: Publish OTA bundle to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ota-main
+          name: Raqqa OTA Web Bundle
+          prerelease: false
+          make_latest: false
+          overwrite_files: true
+          files: |
+            raqqa-ota.zip
+            raqqa-ota-manifest.json
+          body: |
+            Automatically published web-only OTA bundle from commit ${{ github.sha }}.
+            Native compatibility: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

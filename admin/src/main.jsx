@@ -8,6 +8,7 @@ import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm'; 
+import { initializeGithubLiveUpdate } from './services/githubLiveUpdate';
 
 // --- إعدادات Firebase (مشروع Roqa) ---
 const firebaseConfig = {
@@ -38,6 +39,7 @@ const Main = () => {
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
+      initializeGithubLiveUpdate();
       const setupNotifications = async () => {
         try {
           // 1. إعداد مستمعات إشعارات فيربيس (Push)
