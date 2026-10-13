@@ -103,9 +103,16 @@ jobs:
         if: env.HAS_ADMIN_SIGNING == 'true'
         continue-on-error: true
         run: |
-          # توليد مفتاح توقيع
-          echo "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks
-          keytool -list -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" >/dev/null
+          set -euo pipefail
+          # استخدام مفتاح الأدمن القديم فقط، مع فحصه قبل التوقيع.
+          if ! printf '%s' "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks; then
+            echo "::error::ADMIN_KEYSTORE_BASE64 ليس Base64 صالحًا."
+            exit 1
+          fi
+          echo "Decoded keystore size: $(wc -c < admin_release.jks) bytes"
+          keytool -list -keystore admin_release.jks \
+            -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.ADMIN_KEY_ALIAS }}" >/dev/null
 
           # توقيع الـ APK وتسميته باسم حصري للأدمن تمامًا لحل تداخل الإنتاج
           APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
