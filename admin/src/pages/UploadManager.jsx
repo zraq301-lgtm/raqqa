@@ -63,8 +63,8 @@ const UploadManager = () => {
       let cloudflareVideoUrl = videoUrl.trim();
       if (videoFile) {
         if (!videoFile.type.startsWith('video/')) throw new Error('الملف المختار ليس فيديو');
-        if (videoFile.size > 500 * 1024 * 1024) throw new Error('حجم الفيديو يتجاوز 500 ميجابايت');
-        setMessage({ type: '', text: 'جاري رفع الفيديو إلى Cloudflare...' });
+        if (videoFile.size > 100 * 1024 * 1024) throw new Error('حجم الفيديو يتجاوز 100 ميجابايت');
+        setMessage({ type: '', text: 'جاري رفع الفيديو إلى التخزين المجاني...' });
         const uploaded = await uploadVideo(videoFile, targetPage);
         cloudflareVideoUrl = uploaded.url;
       }
@@ -165,7 +165,7 @@ const UploadManager = () => {
 
             {/* رفع الفيديو إلى Cloudflare أو استخدام رابط خارجي */}
             <div style={styles.formGroup}>
-              <label style={styles.label}>🎬 ملف فيديو عادي (يحفظ كرابط Cloudflare):</label>
+              <label style={styles.label}>🎬 ملف فيديو عادي (يحفظ كرابط GitHub):</label>
               <input
                 type="file"
                 accept="video/*"
