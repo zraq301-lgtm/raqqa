@@ -79,7 +79,12 @@ jobs:
           APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n 1)
           AAB=$(find android/app/build/outputs/bundle/release -name '*.aab' | head -n 1)
           jarsigner -keystore raqqa-release.jks -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" "$AAB" "$KEY_ALIAS"
-          apksigner sign --ks raqqa-release.jks --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:KEY_PASSWORD "$APK"
+          APKSIGNER="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}/build-tools/34.0.0/apksigner"
+          if [ ! -x "$APKSIGNER" ]; then
+            APKSIGNER=$(find "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}/build-tools" -type f -name apksigner | sort -V | tail -n 1)
+          fi
+          test -x "$APKSIGNER"
+          "$APKSIGNER" sign --ks raqqa-release.jks --ks-key-alias "$KEY_ALIAS" --ks-pass env:STORE_PASSWORD --key-pass env:KEY_PASSWORD "$APK"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
