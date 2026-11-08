@@ -1,12 +1,14 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useMemo } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
+import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
 
 // --- مكون الساعة المطور (بناءً على التقويم القمري 29 يوماً) ---
 const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5 }) => {
   const [rotation, setRotation] = useState(0);
-  
+
   const clockLayout = useMemo(() => {
     const cycle = parseInt(cycleDuration) || 29;
     const period = parseInt(periodDays) || 5;
@@ -37,7 +39,7 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', padding: '20px', background: 'rgba(255,255,255,0.7)', borderRadius: '35px', backdropFilter: 'blur(10px)' }}>
-      
+
       {prediction && (
         <div style={{ width: '100%', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           <div style={{ background: '#FFF0F3', padding: '10px', borderRadius: '15px', border: '1px solid #FFD1DF', textAlign: 'center' }}>
@@ -114,7 +116,7 @@ const MenstrualTracker = () => {
 
       window.dispatchEvent(new Event('trigger_sync_notifications'));
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
-      
+
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
@@ -128,15 +130,15 @@ const MenstrualTracker = () => {
     setLoading(true);
 
     try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة كامل بياناتي الصحية بما فيها العمر والوزن وبيانات الفوط الصحية: ${JSON.stringify(data)}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
-      
+
       // حفظ الاستشارة محلياً كإشعار فوري
       await handleSaveAndAnalysis(responseText, new Date(Date.now() + 2000).toISOString());
 
@@ -165,12 +167,12 @@ const MenstrualTracker = () => {
         return;
     }
     setLoading(true);
-    
+
     const cycleLen = parseInt(data['سجل التواريخ_مدة الدورة']) || 29;
     const start = new Date(startStr);
     const nextDateObj = new Date(start);
     nextDateObj.setDate(start.getDate() + cycleLen);
-    
+
     const ovulation = new Date(nextDateObj);
     ovulation.setDate(nextDateObj.getDate() - 14);
     const fertStart = new Date(ovulation); fertStart.setDate(ovulation.getDate() - 5);
@@ -184,13 +186,13 @@ const MenstrualTracker = () => {
 
     try {
       const summary = JSON.stringify(data);
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `حللي بيانات الدورة الشهرية بدقة مع التركيز الشديد على (العمر: ${data['البيانات الحيوية_العمر']} والوزن: ${data['البيانات الحيوية_الوزن']}) بالإضافة لبيانات الفوط الصحية والأعراض، وقدمي تقرير طبي متخصص يوضح أن هذه البيانات تخص توقع الدورة القادمة: ${summary}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
-      
+
       const aiMsg = { id: Date.now(), role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
 
@@ -207,7 +209,7 @@ const MenstrualTracker = () => {
     try {
       const img = type === 'camera' ? await takePhoto() : await fetchImage();
       if (img) {
-        const url = await uploadToVercel(img);
+        const url = await uploadToCloudflare(img);
         setChatHistory(prev => [...prev, { role: 'user', content: `[تم رفع ملف]: ${url}`, type: 'image', id: Date.now() }]);
       }
     } catch (e) { console.error(e); }
@@ -233,11 +235,11 @@ const MenstrualTracker = () => {
 
   return (
     <div style={styles.container}>
-      <PeriodClock 
-        startDate={data['سجل التواريخ_تاريخ البدء']} 
-        cycleDuration={data['سجل التواريخ_مدة الدورة']} 
-        periodDays={data['سجل التواريخ_مدة الحيض']} 
-        prediction={prediction} 
+      <PeriodClock
+        startDate={data['سجل التواريخ_تاريخ البدء']}
+        cycleDuration={data['سجل التواريخ_مدة الدورة']}
+        periodDays={data['سجل التواريخ_مدة الحيض']}
+        prediction={prediction}
       />
 
       <div style={styles.card}>
@@ -273,7 +275,7 @@ const MenstrualTracker = () => {
               {sec.fields.map(field => (
                 <div key={field}>
                   <label style={{ fontSize: '11px', color: '#999' }}>{field}</label>
-                  <input 
+                  <input
                     type={field.includes('تاريخ') ? 'date' : 'text'}
                     style={styles.input}
                     value={data[`${sec.title}_${field}`] || ''}
@@ -296,10 +298,10 @@ const MenstrualTracker = () => {
                <span onClick={() => handleMedia('gallery')}>🖼️</span>
             </div>
           </div>
-          
+
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
             {chatHistory.map((msg) => (
-              <div key={msg.id} style={{ 
+              <div key={msg.id} style={{
                 alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                 background: msg.role === 'user' ? '#E91E63' : '#fff',
                 color: msg.role === 'user' ? '#fff' : '#333',
@@ -319,9 +321,9 @@ const MenstrualTracker = () => {
           </div>
 
           <div style={styles.chatBar}>
-            <input 
-              style={styles.chatInput} 
-              placeholder="اسألي طبيبة رقة أي شيء..." 
+            <input
+              style={styles.chatInput}
+              placeholder="اسألي طبيبة رقة أي شيء..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}

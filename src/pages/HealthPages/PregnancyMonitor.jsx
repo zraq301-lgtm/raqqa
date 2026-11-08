@@ -1,15 +1,17 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Heart, Activity, ClipboardList, Pill, ShoppingBag, Calendar, 
-  Send, Trash2, Camera, ChevronRight, MessageSquare, 
+import {
+  Heart, Activity, ClipboardList, Pill, ShoppingBag, Calendar,
+  Send, Trash2, Camera, ChevronRight, MessageSquare,
   Sparkles, Stethoscope
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 
 // استيراد الخدمات
-import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
-import babyIcon from '../../assets/baby.png'; 
+import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import babyIcon from '../../assets/baby.png';
 
 const PregnancyApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -18,9 +20,9 @@ const PregnancyApp = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('preg_ai_v3')) || []);
   const [promptInput, setPromptInput] = useState('');
-  
+
   const [pregnancyMonth, setPregnancyMonth] = useState(localStorage.getItem('saved_preg_month') || '');
-  const [deliveryDate, setDeliveryDate] = useState(''); 
+  const [deliveryDate, setDeliveryDate] = useState('');
   const [rawDeliveryDate, setRawDeliveryDate] = useState(null);
 
   const categories = [
@@ -89,8 +91,8 @@ const PregnancyApp = () => {
   // دالة مساعدة لحفظ البيانات في قاعدة البيانات (اختياري كنسخة احتياطية)
   const saveToCloud = async (categoryTitle, currentAnalysis) => {
     try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+      await cloudflarePost({
+        url: apiUrl('api/notifications'),
         headers: { 'Content-Type': 'application/json' },
         data: {
           user_id: 1,
@@ -111,10 +113,10 @@ const PregnancyApp = () => {
       setIsProcessing(true);
       setShowChat(true);
       const fileName = `preg_img_${Date.now()}.png`;
-      const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
-      
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const finalAttachmentUrl = await uploadToCloudflare(base64Data, fileName, 'image/png');
+
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `بصفتك خبير، حلل هذه الصورة الطبية المتعلقة بالحمل: ${finalAttachmentUrl}` }
       });
@@ -134,8 +136,8 @@ const PregnancyApp = () => {
     const userQuery = promptInput;
     setPromptInput('');
     try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: userQuery }
       });
@@ -148,7 +150,7 @@ const PregnancyApp = () => {
   const runAiAnalysis = async (catIdx) => {
     const category = categories[catIdx];
     const dataString = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: ${v}` : '').filter(v => v).join(' | ');
-    
+
     if (!dataString) {
       alert("الرجاء إدخال بعض البيانات أولاً للتحليل");
       return;
@@ -157,19 +159,19 @@ const PregnancyApp = () => {
     setLoading(true);
     setShowChat(true);
     try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `حللي بيانات ${category.title} للحامل في الشهر ${pregnancyMonth}: ${dataString}` }
       });
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ id: Date.now(), query: category.title, reply, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
-      
+
       // تنفيذ عملية الحفظ والجدولة المحلية الجديدة
       await handleSaveAndAnalysis(reply, rawDeliveryDate || new Date().toISOString());
       // اختياري: المزامنة مع السحاب
       await saveToCloud(category.title, reply);
-      
+
     } catch (err) { console.error("فشل التحليل:", err); }
     setLoading(false);
   };
@@ -221,7 +223,7 @@ const PregnancyApp = () => {
       <div className="pregnancy-clock-section">
         <div className="clock-outer">
           {[1,2,3,4,5,6,7,8,9].map((m) => {
-            const angle = (m * 40) - 200; 
+            const angle = (m * 40) - 200;
             return (
               <div key={m} className="month-mark" style={{
                 left: '50%', top: '50%',
@@ -230,7 +232,7 @@ const PregnancyApp = () => {
             );
           })}
 
-          <motion.div 
+          <motion.div
             className="clock-hand-container"
             animate={{ rotate: pregnancyMonth ? (parseInt(pregnancyMonth) * 40 - 200) : -160 }}
             transition={{ type: 'spring', stiffness: 40, damping: 12 }}
@@ -244,14 +246,14 @@ const PregnancyApp = () => {
             <div style={{fontSize: '48px', fontWeight: '900', color: '#7C3AED', lineHeight: 1}}>{pregnancyMonth || '-'}</div>
           </div>
         </div>
-        
+
         {deliveryDate && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             style={{
-              marginTop: 25, color: '#7C3AED', fontWeight: 'bold', fontSize: '15px', 
-              background: 'white', padding: '10px 25px', borderRadius: '25px', 
+              marginTop: 25, color: '#7C3AED', fontWeight: 'bold', fontSize: '15px',
+              background: 'white', padding: '10px 25px', borderRadius: '25px',
               border: '2px solid #FBCFE8', boxShadow: '0 4px 12px rgba(219, 39, 119, 0.1)'
             }}
           >
@@ -274,9 +276,9 @@ const PregnancyApp = () => {
               <div style={{transform: activeTab === index ? 'rotate(180deg)' : 'none', transition: '0.3s', color: '#7C3AED'}}>▼</div>
               <div style={{display:'flex', alignItems:'center', gap:'12px'}}>
                 {cat.id === 'weeks' && (
-                  <select 
+                  <select
                     style={{padding:'4px 8px', borderRadius:'10px', border:'1px solid #7C3AED', color:'#7C3AED', fontWeight:'bold', fontSize:'12px'}}
-                    value={pregnancyMonth} 
+                    value={pregnancyMonth}
                     onChange={(e) => { e.stopPropagation(); setPregnancyMonth(e.target.value); }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -296,8 +298,8 @@ const PregnancyApp = () => {
                     {cat.fields.map((field, idx) => (
                       <input key={idx} className="custom-input" placeholder={field} value={inputs[cat.id][idx]} onChange={(e) => handleUpdateInput(cat.id, idx, e.target.value)} />
                     ))}
-                    <button 
-                      className="analyze-full-btn" 
+                    <button
+                      className="analyze-full-btn"
                       onClick={(e) => {
                         e.stopPropagation();
                         runAiAnalysis(index);

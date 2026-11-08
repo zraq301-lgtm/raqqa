@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 // ✅ استيراد دوال الحفظ والحذف الصحيحة والموجودة بالفعل في ملف الخدمات
-import { savePageData, deletePageDataById, uploadVideo } from '../services/adminService';
+import { savePageData, deletePageDataById, uploadVideo, uploadImage } from '../services/adminService';
 
 const UploadManager = () => {
   const [targetPage, setTargetPage] = useState('مملكة الاسترخاء'); // القسم المستهدف
   const [title, setTitle] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [videoFile, setVideoFile] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('all'); // خاصة بمكتبة رقة فقط
   const [bgColor, setBgColor] = useState('#F5F5F5'); // خاصة بالـ 360 درجة فقط
@@ -66,7 +67,16 @@ const UploadManager = () => {
         if (videoFile.size > 100 * 1024 * 1024) throw new Error('حجم الفيديو يتجاوز 100 ميجابايت');
         setMessage({ type: '', text: 'جاري رفع الفيديو إلى التخزين المجاني...' });
         const uploaded = await uploadVideo(videoFile, targetPage);
-        cloudflareVideoUrl = uploaded.url;
+        cloudflareVideoUrl = uploaded.url || uploaded.publicUrl || uploaded.data?.url;
+        if (!cloudflareVideoUrl) throw new Error('media_url_missing');
+      }
+      if (imageFile) {
+        if (!imageFile.type.startsWith('image/')) throw new Error('الملف المختار ليس صورة');
+        if (imageFile.size > 10 * 1024 * 1024) throw new Error('حجم الصورة يتجاوز 10 ميجابايت');
+        setMessage({ type: '', text: 'جاري رفع الصورة إلى التخزين المجاني...' });
+        const uploadedImage = await uploadImage(imageFile, targetPage);
+        newContentItem.media.imageUrl = uploadedImage.url || uploadedImage.publicUrl || uploadedImage.data?.url || '';
+        if (!newContentItem.media.imageUrl) throw new Error('media_url_missing');
       }
       newContentItem.media.videoUrl = cloudflareVideoUrl;
       const result = await savePageData(targetPage, newContentItem);
@@ -76,13 +86,19 @@ const UploadManager = () => {
         setTitle('');
         setVideoUrl('');
         setVideoFile(null);
+        setImageFile(null);
         setDescription('');
       } else {
         setMessage({ type: 'error', text: 'فشل الرفع، يرجى التحقق من استجابة السيرفر الوسيط.' });
       }
     } catch (error) {
       console.error("Upload handler error:", error);
-      setMessage({ type: 'error', text: 'حدث خطأ غير متوقع أثناء عملية الاتصال بالخدمة.' });
+      const errorText = error.message === 'admin_not_authorized'
+        ? 'هذا الحساب مسجّل الدخول لكنه غير مصرح له بإدارة المحتوى.'
+        : error.message === 'admin_auth_required'
+          ? 'انتهت جلسة الدخول. سجّلي الدخول مجدداً للمتابعة.'
+          : 'حدث خطأ غير متوقع أثناء عملية الاتصال بالخدمة.';
+      setMessage({ type: 'error', text: errorText });
     } finally {
       setLoading(false);
     }
@@ -181,6 +197,17 @@ const UploadManager = () => {
                 placeholder="https://www.youtube.com/watch?v=..."
                 style={styles.input}
               />
+            </div>
+
+            <div style={styles.formGroup}>
+              <label style={styles.label}>🖼️ صورة الغلاف (اختيارية):</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+                style={styles.input}
+              />
+              {imageFile && <small style={styles.colorText}>{imageFile.name} — {(imageFile.size / 1024 / 1024).toFixed(1)} MB</small>}
             </div>
 
             {/* الحقول الديناميكية بناءً على اختيار القسم */}

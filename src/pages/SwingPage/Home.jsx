@@ -27,7 +27,7 @@ const Home = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setMediaUrl(reader.result); 
+        setMediaUrl(reader.result);
       };
       reader.readAsDataURL(file);
     }
@@ -58,10 +58,10 @@ const Home = () => {
 
     // 1. دعم روابط YouTube
     if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
-      const videoId = cleanUrl.includes('v=') 
-        ? cleanUrl.split('v=')[1].split('&')[0] 
+      const videoId = cleanUrl.includes('v=')
+        ? cleanUrl.split('v=')[1].split('&')[0]
         : cleanUrl.split('/').pop().split('?')[0];
-      
+
       return (
         <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
           <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen></iframe>
@@ -76,11 +76,11 @@ const Home = () => {
 
     if (isImageData || isImageLink) {
       return (
-        <img 
-          src={cleanUrl} 
-          style={{ width: '100%', borderRadius: '15px', display: 'block', maxHeight: '500px', objectFit: 'cover' }} 
+        <img
+          src={cleanUrl}
+          style={{ width: '100%', borderRadius: '15px', display: 'block', maxHeight: '500px', objectFit: 'cover' }}
           alt="مرفق"
-          onError={(e) => { e.target.style.display = 'none'; }} 
+          onError={(e) => { e.target.style.display = 'none'; }}
         />
       );
     }
@@ -108,41 +108,41 @@ const Home = () => {
         content: newContent,
         section: selectedSection,
         type: mediaUrl ? "ميديا" : "نصي",
-        external_link: mediaUrl 
+        external_link: mediaUrl
       };
 
-      const response = await fetch(API_SAVE, { 
-        method: 'POST', 
+      const response = await fetch(API_SAVE, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload) 
+        body: JSON.stringify(payload)
       });
 
-      if (response.ok) { 
-        setNewContent(""); setMediaUrl(""); fetchPosts(); 
+      if (response.ok) {
+        setNewContent(""); setMediaUrl(""); fetchPosts();
       }
     } catch (err) { console.error(err); } finally { setLoading(false); }
   };
 
   return (
     <div style={{ direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: '#fffafb', minHeight: '100vh' }}>
-      
+
       {/* صندوق النشر */}
       <div style={{ background: '#fff', margin: '15px', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.1)' }}>
-        <textarea 
-          placeholder="ماذا يدور في خاطركِ؟" 
-          value={newContent} 
+        <textarea
+          placeholder="ماذا يدور في خاطركِ؟"
+          value={newContent}
           onChange={(e) => setNewContent(e.target.value)}
           style={{ width: '100%', border: 'none', outline: 'none', minHeight: '60px', fontSize: '1rem', resize: 'none' }}
         />
-        
+
         <div style={{ marginTop: '10px' }}>
-          <input 
-            placeholder="ضعي رابط (صورة، فيديو، أو يوتيوب)..." 
-            value={mediaUrl} 
+          <input
+            placeholder="ضعي رابط (صورة، فيديو، أو يوتيوب)..."
+            value={mediaUrl}
             onChange={(e) => setMediaUrl(e.target.value)}
             style={{ width: '100%', padding: '10px', background: '#fcfcfc', border: '1px solid #eee', borderRadius: '12px', marginBottom: '10px' }}
           />
-          
+
           <label style={{ display: 'block', padding: '10px', background: '#f0f0f0', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#666' }}>
             📁 رفع ميديا من الجهاز
             <input type="file" accept="image/*,video/*" onChange={handleFileUpload} style={{ display: 'none' }} />

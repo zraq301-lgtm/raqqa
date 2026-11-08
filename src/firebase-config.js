@@ -1,4 +1,6 @@
 import { initializeApp } from "firebase/app";
+import { getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics"; 
 import { getFirestore } from "firebase/firestore";
@@ -15,7 +17,12 @@ const firebaseConfig = {
 };
 
 // تهيئة تطبيق فيربيس
-const app = initializeApp(firebaseConfig);
+// تجنّب تهيئة Firebase مرتين (يحدث ذلك لأن main.jsx يهيئ التطبيق للموبايل).
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+
+// Firebase Web API keys وبيانات المشروع ليست أسراراً؛ لا تضع هنا Admin SDK
+// credentials أو مفاتيح خاصة. التحقق من الـ ID token يتم في الخادم/Cloudflare.
+export const auth = getAuth(app);
 
 // التصدير للاستخدام في المشروع
 export const db = getFirestore(app); 

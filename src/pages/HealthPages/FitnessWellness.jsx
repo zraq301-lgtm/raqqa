@@ -1,10 +1,12 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
 // تم إصلاح المسار هنا ليكون نسبياً (Relative Path) ليعمل الـ Build بنجاح
-import alarmSound from '../../assets/fine-alarm.mp3'; 
+import alarmSound from '../../assets/fine-alarm.mp3';
 
 const AnalogClock = memo(() => {
   const [time, setTime] = useState(new Date());
@@ -70,11 +72,11 @@ const PregnancyMonitor = () => {
     const checkAlarms = setInterval(() => {
       const now = new Date();
       const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      
+
       Object.entries(alarms).forEach(([id, time]) => {
         if (time === currentTime && now.getSeconds() === 0) {
           audioRef.current.play().catch(e => console.log("Audio deferred"));
-          
+
           const section = sections.find(s => s.id === id);
           LocalNotifications.schedule({
             notifications: [
@@ -123,7 +125,7 @@ const PregnancyMonitor = () => {
       window.dispatchEvent(new Event('trigger_sync_notifications'));
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
-      
+
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
@@ -141,21 +143,21 @@ const PregnancyMonitor = () => {
     setIsLoading(true);
     const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
     try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `بصفتك خبيرة، حللي بيانات ${section.title}: ${sectionData}` }
       });
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ type: 'ai', text: `(تحليل تلقائي لـ ${section.title}): ${reply}` }, ...prev]);
-      
+
       // إعداد وقت مجدول (مثلاً بعد 24 ساعة من الآن بشكل افتراضي)
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 1);
-      
+
       // استدعاء الدالة الجديدة هنا
       await handleSaveAndAnalysis(reply, futureDate.toISOString());
-      
+
       setIsChatOpen(true);
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
@@ -164,11 +166,11 @@ const PregnancyMonitor = () => {
   const handleAIQuery = async () => {
     if (!prompt.trim() && !capturedImage) return;
     const userMsg = prompt;
-    setPrompt(""); 
+    setPrompt("");
     setIsLoading(true);
     try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: userMsg, image: capturedImage }
       });
@@ -239,15 +241,15 @@ const PregnancyMonitor = () => {
               )}
               <div style={mergedStyles.chatInputRow}>
                 <button onClick={pickImage} style={mergedStyles.iconBtn}>📷</button>
-                <input 
-                  value={prompt} 
-                  onChange={(e) => setPrompt(e.target.value)} 
-                  placeholder="اسألي طبيبتك عن أي شيء..." 
+                <input
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="اسألي طبيبتك عن أي شيء..."
                   style={mergedStyles.chatInput}
                   onKeyPress={(e) => e.key === 'Enter' && handleAIQuery()}
                 />
                 <button onClick={handleAIQuery} style={mergedStyles.sendBtn} disabled={isLoading}>
-                  {isLoading ? '...' : '➔'} 
+                  {isLoading ? '...' : '➔'}
                 </button>
               </div>
               <div style={mergedStyles.chatActions}>

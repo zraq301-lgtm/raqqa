@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { remoteConfig } from '../firebase-config'; 
+import { remoteConfig } from '../firebase-config';
 import { getValue, fetchAndActivate } from "firebase/remote-config";
 
 /**
@@ -8,10 +8,10 @@ import { getValue, fetchAndActivate } from "firebase/remote-config";
  * @param {string} configName - اسم المتغير في فيربيس الذي يحتوي على كود الإعلان
  * @param {string} showConfigName - اسم المتغير في فيربيس المسؤول عن إظهار/إخفاء الإعلان
  */
-const AdBanner = ({ 
-  slotId = 'div-gpt-ad-main', 
-  configName = 'ad_unit_id', 
-  showConfigName = 'show_ads' 
+const AdBanner = ({
+  slotId = 'div-gpt-ad-main',
+  configName = 'ad_unit_id',
+  showConfigName = 'show_ads'
 }) => {
   const [adSettings, setAdSettings] = useState({ show: false, unitId: '' });
 
@@ -22,7 +22,7 @@ const AdBanner = ({
         await fetchAndActivate(remoteConfig);
         const firebaseShow = getValue(remoteConfig, showConfigName).asBoolean();
         const firebaseUnitId = getValue(remoteConfig, configName).asString();
-        
+
         setAdSettings({ show: firebaseShow, unitId: firebaseUnitId });
 
         // 2. تشغيل إعلانات جوجل إذا كان مفعلًا
@@ -34,7 +34,7 @@ const AdBanner = ({
             // تعريف المساحة الإعلانية (يدعم الحجم القياسي للموبايل 320x50)
             window.googletag.defineSlot(firebaseUnitId, [320, 50], slotId)
                      .addService(window.googletag.pubads());
-            
+
             window.googletag.enableServices();
             window.googletag.display(slotId);
           });
@@ -50,18 +50,18 @@ const AdBanner = ({
   if (!adSettings.show) return null;
 
   return (
-    <div className="global-ad-wrapper" style={{ 
-      display: 'flex', 
-      justifyContent: 'center', 
-      margin: '10px 0', 
+    <div className="global-ad-wrapper" style={{
+      display: 'flex',
+      justifyContent: 'center',
+      margin: '10px 0',
       width: '100%',
       minHeight: '50px'
     }}>
-      <div id={slotId} style={{ 
-        width: '320px', 
-        height: '50px', 
-        backgroundColor: 'transparent', 
-        border: 'none' 
+      <div id={slotId} style={{
+        width: '320px',
+        height: '50px',
+        backgroundColor: 'transparent',
+        border: 'none'
       }}>
         {/* ملاحظة: سيتم رسم الإعلان هنا بواسطة مكتبة جوجل */}
       </div>

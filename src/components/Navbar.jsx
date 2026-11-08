@@ -20,7 +20,7 @@ const Navbar = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              className={({ isActive }) => 
+              className={({ isActive }) =>
                 `flex flex-col items-center justify-center w-full h-full transition-colors ${
                   isActive ? 'text-purple-600' : 'text-gray-400'
                 }`

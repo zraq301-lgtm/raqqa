@@ -1,107 +1,30 @@
-import { supabase } from './supabaseClient';
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut as firebaseSignOut } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
+import { auth } from '../firebase-config';
+import { bootstrapProfile } from './profileApi';
 
-/**
- * 1. دالة إنشاء حساب جديد يدوياً (Sign Up API) مع تمرير توكن الإشعارات
- */
-export const registerToSupabase = async (email, password, fullName, fcmToken) => {
-  try {
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password: password,
-      options: {
-        data: {
-          full_name: fullName.trim(),
-          fcm_token: fcmToken // تمرير التوكن المخزن محلياً إلى ميتاداتا المستخدم في سوبابيز
-        },
-      },
-    });
+export const getFirebaseIdToken = async (forceRefresh = false) => auth.currentUser ? auth.currentUser.getIdToken(forceRefresh) : null;
+export const getCloudflareAuthHeaders = async (headers = {}) => { const token = await getFirebaseIdToken(); return { ...headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) }; };
+export const fetchWithCloudflareAuth = async (input, init = {}) => fetch(input, { ...init, headers: await getCloudflareAuthHeaders(init.headers || {}) });
 
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { 
-      success: true, 
-      user: data.user, 
-      session: data.session 
-    };
-
-  } catch (err) {
-    console.error("Critical Register Error:", err);
-    return { success: false, error: "فشل الاتصال بالباك إند، يرجى التحقق من الإنترنت." };
-  }
+export const bootstrapFirebaseUser = async (user) => {
+  const firebaseToken = await user.getIdToken();
+  const profile = await bootstrapProfile({ firebaseToken, displayName: user.displayName || '', photoURL: user.photoURL || '', email: user.email || '' });
+  return { ...profile, firebaseUser: user, display_name: profile?.display_name || user.displayName || '' };
 };
 
-/**
- * 2. دالة تسجيل الدخول للحساب القديم يدوياً (Sign In API) مع تحديث توكن الإشعارات
- */
-export const loginToSupabase = async (email, password, fcmToken) => {
+export const signInWithGoogle = async () => {
   try {
-    // استدعاء سوبابيز للتحقق من البريد وكلمة المرور الفعليين
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: password,
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
+    const provider = new GoogleAuthProvider(); provider.setCustomParameters({ prompt: 'select_account' });
+    const result = await signInWithPopup(auth, provider);
+    return { success: true, user: result.user, profile: await bootstrapFirebaseUser(result.user) };
+  } catch (error) {
+    if (Capacitor.isNativePlatform() || error?.code === 'auth/popup-blocked') {
+      try { await signInWithRedirect(auth, new GoogleAuthProvider()); return { success: true, redirecting: true }; }
+      catch (fallbackError) { return { success: false, error: fallbackError?.message || 'تعذر فتح تسجيل الدخول بواسطة Google.' }; }
     }
-
-    // تحديث توكن الإشعارات (FCM Token) في ميتاداتا المستخدم وجدول البروفايل لضمان استمرار وصول الإشعارات
-    if (data.user) {
-      const updatedMetadata = {
-        ...data.user.user_metadata,
-        fcm_token: fcmToken
-      };
-
-      // تحديث الميتاداتا في السوبابيز أوث
-      await supabase.auth.updateUser({
-        data: updatedMetadata
-      });
-
-      // إذا كنت تستخدم جدول بروفايلات خارجي لربطه بنيون، نحدث التوكن هناك أيضاً
-      if (fcmToken) {
-        await supabase
-          .from('profiles') 
-          .update({ fcm_token: fcmToken })
-          .eq('id', data.user.id);
-      }
-    }
-
-    return {
-      success: true,
-      user: data.user,
-      session: data.session
-    };
-
-  } catch (err) {
-    console.error("Critical Login Error:", err);
-    return { success: false, error: "فشل الاتصال بالباك إند، يرجى التحقق من الإنترنت." };
+    return { success: false, error: error?.message || 'تعذر تسجيل الدخول بواسطة Google.' };
   }
 };
-
-/**
- * 3. دالة تسجيل الدخول السريع عبر فيسبوك (Facebook Auth API)
- */
-export const loginWithFacebook = async () => {
-  try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'facebook',
-      options: {
-        // توجيه الأندرويد المباشر لحزمتك com.raqqa.app
-        redirectTo: 'com.raqqa.app://login-callback',
-        scopes: 'email,public_profile'
-      },
-    });
-
-    if (error) {
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data };
-
-  } catch (err) {
-    console.error("Critical Facebook Error:", err);
-    return { success: false, error: "تعذر فتح بوابة فيسبوك في نسخة الـ APK الحالية." };
-  }
-};
+export const signOut = () => firebaseSignOut(auth);
+export { onAuthStateChanged };

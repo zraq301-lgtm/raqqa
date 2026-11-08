@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import AppSwitcher from './AppSwitcher'; 
-import SplashScreen from './SplashScreen'; 
+import AppSwitcher from './AppSwitcher';
+import SplashScreen from './SplashScreen';
 import './App.css';
 import { initializeApp, getApps } from "firebase/app";
 import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
-import { FCM } from '@capacitor-community/fcm'; 
+import { FCM } from '@capacitor-community/fcm';
 import { initializeGithubLiveUpdate } from './services/githubLiveUpdate';
 
 // --- إعدادات Firebase (مشروع Roqa) ---
@@ -27,16 +27,11 @@ if (!getApps().length) {
 
 const Main = () => {
   const [showSplash, setShowSplash] = useState(true);
-  
+
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
-    localStorage.setItem('fcm_token', tokenValue);
     console.log("📍 FCM Token Saved:", tokenValue); // طباعة التوكن للتأكد
 
-    if (!localStorage.getItem('user_id')) {
-      const uId = 'user_' + Math.floor(Math.random() * 1000000);
-      localStorage.setItem('user_id', uId);
-    }
   };
 
   useEffect(() => {
@@ -45,11 +40,11 @@ const Main = () => {
       const setupNotifications = async () => {
         try {
           // [1] أولاً: إعداد جميع المستمعات (Listeners) وتجهيزها قبل إطلاق طلب التسجيل
-          
+
           // مستمع إشعارات فيربيس (Push) وقنص التوكن
           await PushNotifications.addListener('registration', async (token) => {
             handleTokenLocally(token.value);
-            
+
             try {
               await FCM.subscribeTo({ topic: 'all_users' });
               console.log("✅ Subscribed to all_users topic");
@@ -102,7 +97,7 @@ const Main = () => {
 
       setupNotifications();
     }
-  }, []); 
+  }, []);
 
   return (
     <BrowserRouter>

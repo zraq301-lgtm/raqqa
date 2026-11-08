@@ -1,6 +1,8 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
+import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
 
 const Motherhood = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -9,7 +11,7 @@ const Motherhood = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
-  const [savedReplies, setSavedReplies] = useState([]); 
+  const [savedReplies, setSavedReplies] = useState([]);
   const [showSavedList, setShowSavedList] = useState(false);
 
   const chatEndRef = useRef(null);
@@ -56,7 +58,7 @@ const Motherhood = () => {
       window.dispatchEvent(new Event('trigger_sync_notifications'));
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
-      
+
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
@@ -64,8 +66,8 @@ const Motherhood = () => {
 
   const saveDataToDB = async (selectedOnes) => {
     try {
-      await CapacitorHttp.post({
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+      await cloudflarePost({
+        url: apiUrl('api/notifications'),
         headers: { 'Content-Type': 'application/json' },
         data: {
           user_id: 1,
@@ -82,21 +84,21 @@ const Motherhood = () => {
     setIsChatOpen(true);
     const currentList = lists[selectedIdx];
     const selectedOnes = currentList.items.filter(item => checkedItems[`${selectedIdx}-${item}`]);
-    
+
     if (!customPrompt) saveDataToDB(selectedOnes);
     const systemExpertise = "أنت طبيب استشاري تربوي متخصص في علم نفس الأطفال. ردك يجب أن يكون مهنياً، توعوياً، ويستند إلى أفضل الممارسات التربوية الحديثة لتوجيه الأم نحو الصواب.";
-    const promptMessage = customPrompt 
+    const promptMessage = customPrompt
       ? `${systemExpertise} سؤال الأم: ${customPrompt}`
       : `${systemExpertise} الأم أنجزت مع طفلها: (${selectedOnes.join(", ")}) في مجال ${currentList.title}. قدم تحليلاً طبياً تربوياً.`;
 
     try {
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }
       });
       const responseText = response.data.reply || response.data.message || "عذراً، المستشار مشغول حالياً.";
-      
+
       setMessages(prev => [...prev, { id: Date.now(), text: responseText, sender: 'ai', timestamp: new Date().toLocaleTimeString() }]);
 
       if (!customPrompt) {
@@ -113,13 +115,13 @@ const Motherhood = () => {
   const handleMediaAction = async (type) => {
     try {
       let base64;
-      if (type === 'camera') { base64 = await takePhoto(); } 
+      if (type === 'camera') { base64 = await takePhoto(); }
       else { base64 = await fetchImage(); }
 
       if (base64) {
         setIsLoading(true);
         const fileName = `child_care_${Date.now()}.png`;
-        const imageUrl = await uploadToVercel(base64, fileName, 'image/png');
+        const imageUrl = await uploadToCloudflare(base64, fileName, 'image/png');
         setMessages(prev => [...prev, {
           id: Date.now(),
           text: `تم رفع صورة استشارية: ${imageUrl}`,
@@ -137,7 +139,7 @@ const Motherhood = () => {
   };
 
   const deleteMessage = (id) => setMessages(prev => prev.filter(m => m.id !== id));
-  
+
   const saveReply = (msg) => {
     if (!savedReplies.find(r => r.id === msg.id)) {
       setSavedReplies(prev => [...prev, msg]);

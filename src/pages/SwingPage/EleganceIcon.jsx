@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 // استيراد مكتبة المشاركة الخاصة بكاباسيتور لضمان فتح قائمة النظام الشاملة
 import { Share } from '@capacitor/share';
 // استيراد الخدمة المحلية النظيفة التي تفضلها
-import { fetchPageData } from '../../services/adminService'; 
+import { fetchPageData } from '../../services/adminService';
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [likes, setLikes] = useState({}); 
-  const [comments, setComments] = useState({}); 
+  const [likes, setLikes] = useState({});
+  const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
   // 🎯 جلب البيانات بناءً على الاسم العربي المرفوع بالصورة تماماً لضمان مطابقة الملف بقاعدة البيانات
-  const PAGE_NAME = "أيقونة الأناقة"; 
-  const APP_LINK = "https://raqa-1zhm.vercel.app/";
+  const PAGE_NAME = "أيقونة الأناقة";
+  const APP_LINK = "window.location.origin + '/'";
 
   useEffect(() => {
     const savedLikes = JSON.parse(localStorage.getItem('raqa_likes') || '{}');
@@ -42,7 +42,7 @@ const EleganceSection = () => {
     try {
       // استدعاء الخدمة الموحدة الخاصة بك
       const result = await fetchPageData(PAGE_NAME);
-      
+
       if (result) {
         // 🎯 الفلترة والمعالجة الذكية: تحويل البيانات إلى مصفوفة سواء كانت كائن مفرد أو مصفوفة جاهزة
         let rawItems = [];
@@ -73,11 +73,11 @@ const EleganceSection = () => {
           return {
             id: databaseId,
             title: { rendered: item.article?.title && item.article.title.trim() !== "" ? item.article.title : `${PAGE_NAME}` },
-            featuredImage: imageUrl, 
-            featuredVideo: finalVideoUrl, 
+            featuredImage: imageUrl,
+            featuredVideo: finalVideoUrl,
             isVideoYouTube: isYouTube,
             isMediaOnly: isMediaOnly,
-            content: { 
+            content: {
               rendered: `
                 ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 15px; line-height: 1.7;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
                 ${audioUrl ? `<p style="text-align:center; margin-top:15px;"><audio src="${audioUrl}" controls style="width:100%; border-radius:30px;"></audio></p>` : ''}
@@ -112,9 +112,9 @@ const EleganceSection = () => {
 
   const handleAddComment = (postId) => {
     if (!newComment.trim()) return;
-    const updated = { 
-      ...comments, 
-      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }] 
+    const updated = {
+      ...comments,
+      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }]
     };
     setComments(updated);
     localStorage.setItem('raqa_comments', JSON.stringify(updated));
@@ -142,7 +142,7 @@ const EleganceSection = () => {
   return (
     <div className="main-wrapper" dir="rtl">
       <div className="fixed-welcome">✨ مرحبا بك في عالم الأمومة ✨</div>
-      
+
       <div className="container">
         {articles.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#8d6e63', marginTop: '50px', fontFamily: 'Tajawal' }}>لا توجد منشورات حالياً في هذا القسم</div>
@@ -155,13 +155,13 @@ const EleganceSection = () => {
             return (
               <div key={post.id} className="article-container">
                 <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
-                  
+
                   {/* ترويسة تعرض المعرف الرقمي الحقيقي (ID) القادم من السيرفر لسهولة تتبعه وحذفه */}
                   <div className="card-header-title">
                     <span className="post-id-badge">ID: #{post.id}</span>
                     <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                   </div>
-                  
+
                   {featuredVideo && (
                     <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
                       {isVideoYouTube ? (
@@ -177,14 +177,14 @@ const EleganceSection = () => {
                       <img src={featuredImage} alt="Elegance" />
                     </div>
                   )}
-                  
+
                   <div className="content">
                     <div className="wp-html-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
                     <div className="app-download-box">
                       <a href={APP_LINK} target="_blank" rel="noreferrer">✨ حملي التطبيق الآن من هنا ✨</a>
                     </div>
                   </div>
-                  
+
                   <div className="interaction-buttons">
                     <button onClick={() => handleLike(post.id)} className="btn-like">
                       ❤️ <span>{likes[post.id] || 0}</span>
@@ -226,9 +226,9 @@ const EleganceSection = () => {
         body { font-family: 'Tajawal', sans-serif; background-color: #fdf8f5; margin: 0; padding: 0; }
         .fixed-welcome { position: fixed; top: 0; left: 0; right: 0; background: #b08968; color: white; text-align: center; padding: 12px 0; font-size: 1rem; font-weight: 700; z-index: 1000; }
         .container { display: flex; flex-direction: column; align-items: center; padding: 70px 10px 100px; }
-        
+
         .card { background: #ffffff; max-width: 500px; width: 95%; border-radius: 20px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.06); margin-bottom: 30px; border: 1px solid #f0e6e0; position: relative; }
-        
+
         /* ضبط المقاسات التلقائي لمنشورات الميديا الصرف */
         .card.media-only-card { margin-bottom: 22px; }
         .card.media-only-card .card-header-title { padding: 14px 15px 10px; }
@@ -237,7 +237,7 @@ const EleganceSection = () => {
 
         .card-header-title { padding: 24px 15px 16px; text-align: center; position: relative; }
         .card-header-title h2 { color: #8d6e63; margin: 0; font-size: 1.35rem; padding-top: 8px; }
-        
+
         /* تصميم شارة الـ ID بشكل متناسق فوق الكارت */
         .post-id-badge { position: absolute; top: 6px; left: 12px; background: #f2eae4; color: #8d6e63; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; font-weight: bold; direction: ltr; }
 
@@ -245,18 +245,18 @@ const EleganceSection = () => {
         .content { padding: 20px; }
         .wp-html-content { text-align: right; color: #4a3f35; font-size: 1.1rem; }
         .wp-html-content img, .wp-html-content video, .wp-html-content iframe { max-width: 100% !important; height: auto !important; border-radius: 10px; margin: 10px 0; display: block; }
-        
+
         .app-download-box { margin-top: 25px; padding: 15px; background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px; text-align: center; }
         .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; }
-        
+
         .interaction-buttons { display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #fcf6f2; }
         .interaction-buttons button { background: none; border: none; cursor: pointer; font-family: 'Tajawal'; color: #8d6e63; font-size: 1rem; }
-        
+
         .comments-area { padding: 15px; border-top: 1px solid #eee; background: #fffbf9; }
         .comment-input-wrap { display: flex; gap: 8px; }
         .comment-input-wrap input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; font-family: 'Tajawal'; }
         .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; }
-        
+
         .single-comment { background: #ffffff; padding: 10px; border-radius: 12px; margin-bottom: 8px; border-right: 4px solid #b08968; text-align: right; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; font-family: 'Tajawal'; background: #fdf8f5; }
       `}</style>

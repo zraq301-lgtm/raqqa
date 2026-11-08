@@ -1,16 +1,18 @@
+import { cloudflarePost } from '../services/apiClient';
+import { apiUrl } from '../config/apiConfig';
 import React, { useState, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { 
-  Sparkles, Heart, Moon, BookOpen, Activity, 
-  ShieldCheck, Users, ShieldAlert, Wind, Gift, 
-  Clock, Brain, Flower2, Coins, Hourglass, 
+import {
+  Sparkles, Heart, Moon, BookOpen, Activity,
+  ShieldCheck, Users, ShieldAlert, Wind, Gift,
+  Clock, Brain, Flower2, Coins, Hourglass,
   Camera, Mic, Image, Trash2, X, MapPin, MessageCircle, Bookmark, List,
-  CheckCircle2, CircleOff, Star, Droplets, Bath, Smile, Sun, Utensils, 
+  CheckCircle2, CircleOff, Star, Droplets, Bath, Smile, Sun, Utensils,
   Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus
 } from 'lucide-react';
 
 // استيراد خدمات الميديا
-import { takePhoto, fetchImage, uploadToVercel } from '../services/MediaService';
+import { takePhoto, fetchImage, uploadToCloudflare } from '../services/MediaService';
 
 const RaqqaApp = () => {
   const [activeCategory, setActiveCategory] = useState(null);
@@ -23,68 +25,68 @@ const RaqqaApp = () => {
   const [showChat, setShowChat] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
-  const [customPrompt, setCustomPrompt] = useState(""); 
+  const [customPrompt, setCustomPrompt] = useState("");
 
   const menuData = [
     { id: 1, title: "فقه الطهارة", icon: <Sparkles />, items: [
-      {n: "سنن الفطرة", i: <Smile size={14}/>}, {n: "صفة الغسل", i: <Bath size={14}/>}, {n: "الوضوء الجمالي", i: <Droplets size={14}/>}, 
+      {n: "سنن الفطرة", i: <Smile size={14}/>}, {n: "صفة الغسل", i: <Bath size={14}/>}, {n: "الوضوء الجمالي", i: <Droplets size={14}/>},
       {n: "طهارة الثوب", i: <Shield size={14}/>}, {n: "طيب الرائحة", i: <Zap size={14}/>}, {n: "أحكام المسح", i: <Minus size={14}/>}
     ]},
     { id: 2, title: "فقه الصلاة", icon: <Heart />, items: [
-      {n: "أوقات الصلاة", i: <Clock size={14}/>}, {n: "السنن الرواتب", i: <Star size={14}/>}, 
-      {n: "سجدة الشكر", i: <Heart size={14}/>}, 
+      {n: "أوقات الصلاة", i: <Clock size={14}/>}, {n: "السنن الرواتب", i: <Star size={14}/>},
+      {n: "سجدة الشكر", i: <Heart size={14}/>},
       {n: "لباس الصلاة", i: <Shield size={14}/>}, {n: "صلاة الوتر", i: <Moon size={14}/>}
     ]},
     { id: 3, title: "فقه الصيام", icon: <Moon />, items: [
-      {n: "صيام التطوع", i: <Sun size={14}/>}, {n: "قضاء ما فات", i: <Check size={14}/>}, {n: "سحور البركة", i: <Coffee size={14}/>}, 
+      {n: "صيام التطوع", i: <Sun size={14}/>}, {n: "قضاء ما فات", i: <Check size={14}/>}, {n: "سحور البركة", i: <Coffee size={14}/>},
       {n: "كف اللسان", i: <ShieldAlert size={14}/>}, {n: "نية الصيام", i: <Heart size={14}/>}
     ]},
     { id: 4, title: "فقه القرآن", icon: <BookOpen />, items: [
-      {n: "تلاوة يومية", i: <BookOpen size={14}/>}, {n: "تدبر آية", i: <Brain size={14}/>}, {n: "حفظ جديد", i: <Sparkles size={14}/>}, 
+      {n: "تلاوة يومية", i: <BookOpen size={14}/>}, {n: "تدبر آية", i: <Brain size={14}/>}, {n: "حفظ جديد", i: <Sparkles size={14}/>},
       {n: "الاستماع بإنصات", i: <Activity size={14}/>}, {n: "مراجعة الورد", i: <Clock size={14}/>}
     ]},
     { id: 5, title: "الذكر الذكي", icon: <Activity />, items: [
-      {n: "أذكار الصباح", i: <Sun size={14}/>}, {n: "أذكار المساء", i: <Moon size={14}/>}, {n: "الاستغفار", i: <Wind size={14}/>}, 
+      {n: "أذكار الصباح", i: <Sun size={14}/>}, {n: "أذكار المساء", i: <Moon size={14}/>}, {n: "الاستغفار", i: <Wind size={14}/>},
       {n: "الصلاة على النبي", i: <Heart size={14}/>}, {n: "التسبيح", i: <Sparkles size={14}/>}
     ]},
     { id: 6, title: "العفة والحجاب", icon: <ShieldCheck />, items: [
-      {n: "حجاب القلب", i: <Heart size={14}/>}, {n: "غض البصر", i: <ShieldCheck size={14}/>}, {n: "الحياء في القول", i: <MessageCircle size={14}/>}, 
+      {n: "حجاب القلب", i: <Heart size={14}/>}, {n: "غض البصر", i: <ShieldCheck size={14}/>}, {n: "الحياء في القول", i: <MessageCircle size={14}/>},
       {n: "سمو الفكر", i: <Brain size={14}/>}, {n: "الستر الأنيق", i: <Shield size={14}/>}
     ]},
     { id: 7, title: "المعاملات والبيوت", icon: <Users />, items: [
-      {n: "بر الوالدين", i: <Heart size={14}/>}, {n: "مودة الزوج", i: <Heart size={14}/>}, {n: "رحمة الأبناء", i: <Baby size={14}/>}, 
+      {n: "بر الوالدين", i: <Heart size={14}/>}, {n: "مودة الزوج", i: <Heart size={14}/>}, {n: "رحمة الأبناء", i: <Baby size={14}/>},
       {n: "صلة الرحم", i: <Users size={14}/>}, {n: "حسن الجوار", i: <MapPin size={14}/>}
     ]},
     { id: 8, title: "تجنب المحرمات", icon: <ShieldAlert />, items: [
-      {n: "محاربة الغيبة", i: <ShieldAlert size={14}/>}, {n: "ترك النميمة", i: <X size={14}/>}, {n: "تجنب الإباحية", i: <Shield size={14}/>}, 
+      {n: "محاربة الغيبة", i: <ShieldAlert size={14}/>}, {n: "ترك النميمة", i: <X size={14}/>}, {n: "تجنب الإباحية", i: <Shield size={14}/>},
       {n: "الصدق", i: <CheckCircle2 size={14}/>}, {n: "ترك الجدال", i: <Minus size={14}/>}
     ]},
     { id: 9, title: "الهدوء النفسي", icon: <Wind />, items: [
-      {n: "تفريغ الانفعالات", i: <Wind size={14}/>}, {n: "الرضا بالقدر", i: <Smile size={14}/>}, {n: "حسن الظن بالله", i: <Sparkles size={14}/>}, 
+      {n: "تفريغ الانفعالات", i: <Wind size={14}/>}, {n: "الرضا بالقدر", i: <Smile size={14}/>}, {n: "حسن الظن بالله", i: <Sparkles size={14}/>},
       {n: "الصبر الجميل", i: <Clock size={14}/>}
     ]},
     { id: 10, title: "أعمال صالحة", icon: <Gift />, items: [
-      {n: "صدقة خفية", i: <Coins size={14}/>}, {n: "إماطة الأذى", i: <Trash2 size={14}/>}, {n: "إفشاء السلام", i: <MessageCircle size={14}/>}, 
+      {n: "صدقة خفية", i: <Coins size={14}/>}, {n: "إماطة الأذى", i: <Trash2 size={14}/>}, {n: "إفشاء السلام", i: <MessageCircle size={14}/>},
       {n: "نفع الناس", i: <Users size={14}/>}, {n: "جبر الخواطر", i: <Gift size={14}/>}
     ]},
     { id: 11, title: "الوقت والإنجاز", icon: <Clock />, items: [
-      {n: "البكور", i: <Sun size={14}/>}, {n: "تنظيم المهام", i: <List size={14}/>}, {n: "ترك ما لا يعني", i: <X size={14}/>}, 
+      {n: "البكور", i: <Sun size={14}/>}, {n: "تنظيم المهام", i: <List size={14}/>}, {n: "ترك ما لا يعني", i: <X size={14}/>},
       {n: "استغلال الفراغ", i: <Hourglass size={14}/>}
     ]},
     { id: 12, title: "الوعي الفقهي", icon: <Brain />, items: [
-      {n: "مقاصد الشريعة", i: <GraduationCap size={14}/>}, {n: "قراءة السيرة", i: <BookOpen size={14}/>}, {n: "فقه الواقع", i: <Brain size={14}/>}, 
+      {n: "مقاصد الشريعة", i: <GraduationCap size={14}/>}, {n: "قراءة السيرة", i: <BookOpen size={14}/>}, {n: "فقه الواقع", i: <Brain size={14}/>},
       {n: "طلب العلم", i: <GraduationCap size={14}/>}
     ]},
     { id: 13, title: "الرعاية الذاتية", icon: <Flower2 />, items: [
-      {n: "النوم على طهارة", i: <Moon size={14}/>}, {n: "رياضة بنية القوة", i: <Activity size={14}/>}, {n: "الأكل الطيب", i: <Utensils size={14}/>}, 
+      {n: "النوم على طهارة", i: <Moon size={14}/>}, {n: "رياضة بنية القوة", i: <Activity size={14}/>}, {n: "الأكل الطيب", i: <Utensils size={14}/>},
       {n: "التزين المشروع", i: <Sparkles size={14}/>}
     ]},
     { id: 14, title: "العطاء والزكاة", icon: <Coins />, items: [
-      {n: "زكاة المال", i: <Coins size={14}/>}, {n: "زكاة العلم", i: <GraduationCap size={14}/>}, {n: "زكاة الجمال", i: <Heart size={14}/>}, 
+      {n: "زكاة المال", i: <Coins size={14}/>}, {n: "زكاة العلم", i: <GraduationCap size={14}/>}, {n: "زكاة الجمال", i: <Heart size={14}/>},
       {n: "الهدية", i: <Gift size={14}/>}
     ]},
     { id: 15, title: "لقاء الله", icon: <Hourglass />, items: [
-      {n: "تجديد التوبة", i: <Wind size={14}/>}, {n: "كتابة الوصية", i: <BookOpen size={14}/>}, {n: "ذكر هادم اللذات", i: <Hourglass size={14}/>}, 
+      {n: "تجديد التوبة", i: <Wind size={14}/>}, {n: "كتابة الوصية", i: <BookOpen size={14}/>}, {n: "ذكر هادم اللذات", i: <Hourglass size={14}/>},
       {n: "حسن الخاتمة", i: <Star size={14}/>}
     ]},
   ];
@@ -101,20 +103,20 @@ const RaqqaApp = () => {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
         body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
-        scheduled_for: new Date(Date.now() + 500).toISOString(), 
+        scheduled_for: new Date(Date.now() + 500).toISOString(),
       };
 
       // 2. إعداد إشعار الموعد المخصص مع خصائص الصورة للأندرويد
       const aiReportNotification = {
         id: Math.floor(Math.random() * 10000),
         title: `✨ تقرير رقة الذكي: ${categoryTitle}`,
-        body: aiGeneratedReport.substring(0, 100) + "...", 
+        body: aiGeneratedReport.substring(0, 100) + "...",
         scheduled_for: scheduledTime.toISOString(),
-        
+
         // ضبط عرض الصورة في الإشعار
         smallIcon: "ic_stat_name", // يجب أن يكون موجوداً في ملفات أندرويد
-        largeIcon: "res://public/notifications/spiritual_report.png", 
-        
+        largeIcon: "res://public/notifications/spiritual_report.png",
+
         extra: { report: aiGeneratedReport }
       };
 
@@ -127,7 +129,7 @@ const RaqqaApp = () => {
       window.dispatchEvent(new Event('trigger_sync_notifications'));
 
       console.log("🚀 تم الحفظ محلياً وإرسال إشارة المزامنة");
-      
+
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
@@ -141,16 +143,16 @@ const RaqqaApp = () => {
 
     try {
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptText }
       };
-      const response = await CapacitorHttp.post(options);
+      const response = await cloudflarePost(options);
       const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
-      
+
       setAiResponse(responseText);
       setHistory(prev => [{ role: 'ai', text: responseText, id: Date.now() }, ...prev]);
-      
+
       // استدعاء دالة الجدولة المحلية الجديدة بدلاً من FCM
       if (activeCategory) {
         await handleSaveAndAnalysis(responseText, activeCategory.title);
@@ -174,7 +176,7 @@ const RaqqaApp = () => {
 
       if (base64) {
         const fileName = `raqqa_${Date.now()}.jpg`;
-        const fileUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
+        const fileUrl = await uploadToCloudflare(base64, fileName, 'image/jpeg');
         const msg = `لقد أرسلت صورة لكِ للمساعدة في التحليل: ${fileUrl}`;
         setHistory(prev => [{ role: 'user', text: "تم رفع صورة 📸" }, ...prev]);
         handleProcess(msg);
@@ -233,8 +235,8 @@ const RaqqaApp = () => {
               <X style={{cursor: 'pointer'}} onClick={() => setActiveCategory(null)} />
             </div>
             <div style={{marginTop: '10px'}}>
-              <input 
-                style={styles.promptInput} 
+              <input
+                style={styles.promptInput}
                 placeholder="أضيفي ملاحظة خاصة للذكاء الاصطناعي (اختياري)..."
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
@@ -248,11 +250,11 @@ const RaqqaApp = () => {
                     <span style={styles.label}>{item.n}</span>
                   </div>
                   <div style={styles.btnGroup}>
-                    <button 
+                    <button
                       onClick={() => setInputs({...inputs, [item.n]: 'yes'})}
                       style={{...styles.toggleBtn, backgroundColor: inputs[item.n] === 'yes' ? '#4caf50' : '#fff', color: inputs[item.n] === 'yes' ? '#fff' : '#888', borderColor: inputs[item.n] === 'yes' ? '#4caf50' : '#ddd'}}
                     >نعم</button>
-                    <button 
+                    <button
                       onClick={() => setInputs({...inputs, [item.n]: 'no'})}
                       style={{...styles.toggleBtn, backgroundColor: inputs[item.n] === 'no' ? '#f06292' : '#fff', color: inputs[item.n] === 'no' ? '#fff' : '#888', borderColor: inputs[item.n] === 'no' ? '#f06292' : '#ddd'}}
                     >لا</button>
@@ -273,7 +275,7 @@ const RaqqaApp = () => {
             <div style={styles.chatHeader}>
               <X onClick={() => setShowAnalysisModal(false)} style={{cursor: 'pointer'}} />
               <span style={{fontWeight: 'bold'}}>تحليل رقة الروحاني</span>
-              <div style={{width: 20}}></div> 
+              <div style={{width: 20}}></div>
             </div>
             <div style={styles.chatHistory}>
                <div style={styles.aiMsg}>

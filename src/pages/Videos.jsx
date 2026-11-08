@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // ✅ استخدام كود الخدمة الموحد وبالمسار الصحيح المكتشف سابقاً لإلغاء الاعتماد على فيربيس المباشر
-import { fetchPageData } from '../services/adminService'; 
+import { fetchPageData } from '../services/adminService';
 
 const VideoLibrary = () => {
   const [allVideos, setAllVideos] = useState([]);
@@ -18,7 +18,7 @@ const VideoLibrary = () => {
   ];
 
   // اسم القسم المطابق في لوحة التحكم المركزية وجيت هاب
-  const PAGE_NAME = "مكتبة رقة"; 
+  const PAGE_NAME = "مكتبة رقة";
 
   useEffect(() => {
     fetchVideosFromServer();
@@ -28,7 +28,7 @@ const VideoLibrary = () => {
     try {
       // جلب البيانات من السيرفر السحابي الهادئ الموحد عبر كود الخدمة الخاص بكِ
       const result = await fetchPageData(PAGE_NAME);
-      
+
       if (result) {
         let rawItems = [];
         if (Array.isArray(result)) {
@@ -101,8 +101,8 @@ const VideoLibrary = () => {
           border: 1px solid var(--female-pink-light);
           margin-bottom: 20px;
         }
-        .active-tab { 
-          background-color: var(--female-pink) !important; 
+        .active-tab {
+          background-color: var(--female-pink) !important;
           color: white !important;
         }
         .top-card {
@@ -175,7 +175,7 @@ const fullScreenContainerStyle = {
   right: 0,
   bottom: '50px', // تقليل المسافة من الأسفل لتظهر الأيقونات الأساسية كاملة
   backgroundColor: '#fff5f7',
-  zIndex: 9999, 
+  zIndex: 9999,
   direction: 'rtl',
   fontFamily: 'Tajawal, sans-serif',
   display: 'flex',
@@ -206,11 +206,11 @@ const headerStyle = {
   paddingTop: '25px' // رفع الهيدر للأعلى لزيادة مساحة الفيديوهات
 };
 
-const titleStyle = { 
-  textAlign: 'center', 
-  color: '#ff4d7d', 
-  marginBottom: '10px', 
-  fontSize: '1.4rem' 
+const titleStyle = {
+  textAlign: 'center',
+  color: '#ff4d7d',
+  marginBottom: '10px',
+  fontSize: '1.4rem'
 };
 
 const scrollContentStyle = {
@@ -220,48 +220,48 @@ const scrollContentStyle = {
   WebkitOverflowScrolling: 'touch'
 };
 
-const tabsContainerStyle = { 
-  display: 'flex', 
-  overflowX: 'auto', 
+const tabsContainerStyle = {
+  display: 'flex',
+  overflowX: 'auto',
   padding: '5px 0',
   gap: '0px'
 };
 
-const videoGridStyle = { 
-  display: 'grid', 
-  gridTemplateColumns: '1fr', 
-  gap: '15px' 
+const videoGridStyle = {
+  display: 'grid',
+  gridTemplateColumns: '1fr',
+  gap: '15px'
 };
 
-const videoFrameWrapper = { 
-  position: 'relative', 
-  paddingBottom: '56.25%', 
-  height: 0 
+const videoFrameWrapper = {
+  position: 'relative',
+  paddingBottom: '56.25%',
+  height: 0
 };
 
-const iframeStyle = { 
-  position: 'absolute', 
-  top: 0, 
-  left: 0, 
-  width: '100%', 
-  height: '100%' 
+const iframeStyle = {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  width: '100%',
+  height: '100%'
 };
 
 const videoInfoStyle = { padding: '12px' };
 
-const badgeStyle = { 
-  backgroundColor: 'rgba(255, 77, 125, 0.1)', 
-  color: '#ff4d7d', 
-  padding: '3px 10px', 
-  borderRadius: '10px', 
-  fontSize: '0.75rem', 
-  fontWeight: 'bold' 
+const badgeStyle = {
+  backgroundColor: 'rgba(255, 77, 125, 0.1)',
+  color: '#ff4d7d',
+  padding: '3px 10px',
+  borderRadius: '10px',
+  fontSize: '0.75rem',
+  fontWeight: 'bold'
 };
 
-const videoTitleStyle = { 
-  fontSize: '0.9rem', 
-  marginTop: '8px', 
-  color: '#444', 
+const videoTitleStyle = {
+  fontSize: '0.9rem',
+  marginTop: '8px',
+  color: '#444',
   textAlign: 'right',
   fontWeight: '500',
   lineHeight: '1.4'

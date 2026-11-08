@@ -156,7 +156,7 @@ const RaqqaLuxuryGallery = () => {
   const [photos, setPhotos] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [loading, setLoading] = useState(true);
-  
+
   // حفظ الإعجابات والتعليقات محلياً
   const [likes, setLikes] = useState(() => JSON.parse(localStorage.getItem('raqqa_likes') || '{}'));
   const [comments, setComments] = useState(() => JSON.parse(localStorage.getItem('raqqa_comments') || '{}'));
@@ -174,7 +174,7 @@ const RaqqaLuxuryGallery = () => {
     unsplash.search.getPhotos({
       query: 'luxury interior 3d render',
       perPage: 15,
-      page: Math.floor(Math.random() * 10) + 1, 
+      page: Math.floor(Math.random() * 10) + 1,
     }).then(result => {
       if (result.response) {
         setPhotos(result.response.results);
@@ -232,13 +232,13 @@ const RaqqaLuxuryGallery = () => {
       <GalleryGrid>
         {photos.map((photo, index) => (
           <ImageCard key={photo.id} delay={index * 0.1}>
-            <img 
-              src={photo.urls.small} 
-              alt="Decoration" 
-              style={{width: '100%', cursor: 'zoom-in'}} 
+            <img
+              src={photo.urls.small}
+              alt="Decoration"
+              style={{width: '100%', cursor: 'zoom-in'}}
               onClick={() => setSelectedPhoto(photo.urls.regular)}
             />
-            
+
             <ActionButtons>
               <IconButton onClick={() => toggleLike(photo.id)} active={likes[photo.id]}>
                 <Heart size={16} fill={likes[photo.id] ? "#e74c3c" : "none"} />
@@ -261,8 +261,8 @@ const RaqqaLuxuryGallery = () => {
                 ))}
               </CommentList>
               <CommentInputBox>
-                <StyledInput 
-                  placeholder="أضف تعليقاً..." 
+                <StyledInput
+                  placeholder="أضف تعليقاً..."
                   onKeyDown={(e) => {
                     if(e.key === 'Enter') {
                       submitComment(photo.id, e.target.value);
@@ -276,8 +276,8 @@ const RaqqaLuxuryGallery = () => {
         ))}
       </GalleryGrid>
 
-      <FloatingRefresh 
-        onClick={fetchPhotos} 
+      <FloatingRefresh
+        onClick={fetchPhotos}
         className={loading ? 'loading' : ''}
         title="تحديث الصور"
       >
@@ -286,15 +286,15 @@ const RaqqaLuxuryGallery = () => {
 
       {selectedPhoto && (
         <LightboxOverlay>
-          <X 
-            size={40} 
-            style={{position: 'absolute', top: '20px', left: '20px', cursor: 'pointer', color: '#4a403a'}} 
-            onClick={() => setSelectedPhoto(null)} 
+          <X
+            size={40}
+            style={{position: 'absolute', top: '20px', left: '20px', cursor: 'pointer', color: '#4a403a'}}
+            onClick={() => setSelectedPhoto(null)}
           />
-          <img 
-            src={selectedPhoto} 
-            alt="Full Preview" 
-            style={{maxWidth: '90%', maxHeight: '80vh', borderRadius: '15px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)'}} 
+          <img
+            src={selectedPhoto}
+            alt="Full Preview"
+            style={{maxWidth: '90%', maxHeight: '80vh', borderRadius: '15px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)'}}
           />
         </LightboxOverlay>
       )}

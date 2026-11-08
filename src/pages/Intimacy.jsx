@@ -1,11 +1,13 @@
+import { cloudflarePost } from '../services/apiClient';
+import { apiUrl } from '../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Heart, MessageCircle, Camera, Mic, Trash2, Save, 
-  Send, Star, ShieldCheck, Flame, 
+import {
+  Heart, MessageCircle, Camera, Mic, Trash2, Save,
+  Send, Star, ShieldCheck, Flame,
   Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip, Image as ImageIcon
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, uploadToVercel } from '../services/MediaService';
+import { takePhoto, uploadToCloudflare } from '../services/MediaService';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -57,7 +59,7 @@ const MarriageApp = () => {
       window.dispatchEvent(new Event('trigger_sync_notifications'));
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
-      
+
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
@@ -83,28 +85,28 @@ const MarriageApp = () => {
       .join(", ");
 
     const MARRIAGE_EXPERT_PROMPT = `
-      أنتِ "رقة"، مستشارة علاقات زوجية خبيرة ومتخصصة جداً. 
+      أنتِ "رقة"، مستشارة علاقات زوجية خبيرة ومتخصصة جداً.
       مهمتكِ: تقديم نصائح دقيقة، علمية، وصريحة حول العلاقات الحميمة والأوضاع الجنسية لتعزيز السعادة الزوجية.
-      القيود: لا تجيبي على أي سؤال خارج نطاق العلاقات الزوجية. 
+      القيود: لا تجيبي على أي سؤال خارج نطاق العلاقات الزوجية.
       الأسلوب: استخدمي لغة دافئة وأنثوية، وكوني مبدعة في اقتراح أوضاع حميمة وحلول لكسر الروتين، مع الاستناد إلى ثقافة المتخصصين في هذا المجال.
     `;
 
     try {
       const aiOptions = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: {
           prompt: `${MARRIAGE_EXPERT_PROMPT} ${systemPrompt}، القسم: ${pageTitle}، التفاصيل: (${summary}). ${imageUrl ? "الصورة المرفقة: " + imageUrl : ""} قدمي استشارة صريحة ومفصلة.`
         }
       };
 
-      const aiResponse = await CapacitorHttp.post(aiOptions);
+      const aiResponse = await cloudflarePost(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "أنا هنا معكِ يا رفيقتي، اسألي ما تشائين في خصوصيتنا.";
 
       // إذا كان الطلب يتطلب حفظ (من القوائم)، نقوم بجدولة الإشعار بعد 48 ساعة
       if (shouldSave) {
         const scheduledDate = new Date();
-        scheduledDate.setHours(scheduledDate.getHours() + 48); 
+        scheduledDate.setHours(scheduledDate.getHours() + 48);
         await handleSaveAndAnalysis(responseText, scheduledDate.toISOString());
       }
 
@@ -122,7 +124,7 @@ const MarriageApp = () => {
     setLoading(true);
     const result = await handleProcess({ [cat.title]: selected }, cat.title, null, true);
     setMessages(prev => [
-      ...prev, 
+      ...prev,
       { role: 'user', text: `تحليل قائمة: ${cat.title}` },
       { role: 'ai', text: result }
     ]);
@@ -145,8 +147,8 @@ const MarriageApp = () => {
       setUploading(true);
       const base64 = await takePhoto();
       const fileName = `raqqa_${Date.now()}.jpg`;
-      const uploadedUrl = await uploadToVercel(base64, fileName, 'image/jpeg');
-      
+      const uploadedUrl = await uploadToCloudflare(base64, fileName, 'image/jpeg');
+
       setMessages(prev => [...prev, { role: 'user', text: "📸 تم إرسال صورة للتحليل..." }]);
       const result = await handleProcess({ "مرفق": "صورة" }, "تحليل بصري", uploadedUrl, false);
       setMessages(prev => [...prev, { role: 'ai', text: result }]);
@@ -203,7 +205,7 @@ const MarriageApp = () => {
             <h2 style={{ color: '#800020', fontSize: '1.1rem', marginBottom: '20px' }}>{activeList.title}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               {activeList.items.map(item => (
-                <button 
+                <button
                   key={item}
                   onClick={() => {
                     const current = selectedItems[activeList.id] || [];
@@ -228,10 +230,10 @@ const MarriageApp = () => {
           </div>
 
           <div style={{ background: '#f0e0e0', padding: '10px' }}>
-            <input 
-              value={systemPrompt} 
-              onChange={(e) => setSystemPrompt(e.target.value)} 
-              placeholder="برومبت توجيه الذكاء (اختياري)..." 
+            <input
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              placeholder="برومبت توجيه الذكاء (اختياري)..."
               style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #ccc', fontSize: '0.8rem' }}
             />
           </div>

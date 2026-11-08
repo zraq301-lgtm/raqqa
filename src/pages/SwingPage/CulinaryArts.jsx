@@ -26,15 +26,15 @@ const RaqqaArabicKitchen = () => {
       case 'search': url = `${API_BASE}/search.php?s=${value}`; break;
       case 'cat': url = `${API_BASE}/filter.php?c=${value}`; break;
       case 'area': url = `${API_BASE}/filter.php?a=${value}`; break;
-      default: url = `${API_BASE}/random.php`; 
+      default: url = `${API_BASE}/random.php`;
     }
 
     try {
       const res = await axios.get(url);
       setMeals(res.data.meals || []);
-    } catch (err) { 
-      console.error(err); 
-      setMeals([]); 
+    } catch (err) {
+      console.error(err);
+      setMeals([]);
     }
     setLoading(false);
   };
@@ -69,20 +69,20 @@ const RaqqaArabicKitchen = () => {
 
       <SearchWrapper>
         <Search size={22} color="#b2bec3" />
-        <StyledInput 
-          placeholder="ابحثي عن وجبة (مثل: Pizza)..." 
+        <StyledInput
+          placeholder="ابحثي عن وجبة (مثل: Pizza)..."
           onKeyDown={(e) => e.key === 'Enter' && fetchData('search', e.target.value)}
         />
       </SearchWrapper>
 
       <FilterBar>
         {['Random', 'Dessert', 'Seafood', 'Beef', 'Italian', 'Breakfast'].map((tab) => (
-          <NavButton 
+          <NavButton
             key={tab}
-            active={activeTab === tab} 
+            active={activeTab === tab}
             onClick={() => {
               const type = tab === 'Random' ? 'random' : (tab === 'Italian' ? 'area' : 'cat');
-              fetchData(type, tab === 'Beef' ? 'Beef' : tab); 
+              fetchData(type, tab === 'Beef' ? 'Beef' : tab);
               setActiveTab(tab);
             }}
           >
@@ -143,11 +143,11 @@ const BrandBadge = styled.div`
   display: flex; align-items: center; gap: 20px; font-size: 2.2rem; font-weight: 900;
   color: #ef5777; box-shadow: 0 15px 35px rgba(239, 87, 119, 0.15);
   margin-bottom: 10px; cursor: default; /* منع شكل اليد عند التأشير لأنه ليس رابطاً */
-  
-  img { 
+
+  img {
     width: 120px; /* تم تكبير الصورة 4 مرات (من 30px إلى 120px) */
-    height: 120px; 
-    object-fit: contain; 
+    height: 120px;
+    object-fit: contain;
   }
 `;
 

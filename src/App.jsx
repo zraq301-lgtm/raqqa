@@ -1,8 +1,9 @@
+import { cloudflarePost } from './services/apiClient';
 import { Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
-import { useEffect, useState, useCallback } from 'react'; 
-import { App as CapApp } from '@capacitor/app'; 
-import { CapacitorHttp } from '@capacitor/core'; 
-import { LocalNotifications } from '@capacitor/local-notifications'; 
+import { useEffect, useState, useCallback } from 'react';
+import { App as CapApp } from '@capacitor/app';
+import { CapacitorHttp } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 // استيراد مكون الإعلان الجديد
 import AdBanner from './components/AdBanner';
@@ -35,8 +36,8 @@ import './App.css';
  */
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { 
-    window.scrollTo(0, 0); 
+  useEffect(() => {
+    window.scrollTo(0, 0);
   }, [pathname]);
   return null;
 }
@@ -53,7 +54,7 @@ function TipOverlay() {
     const checkAndShowTip = async () => {
       const today = new Date().toLocaleDateString();
       const tipData = JSON.parse(localStorage.getItem('raqqa_tip_tracker') || '{"date":"","count":0}');
-      
+
       if (tipData.date !== today) {
         tipData.date = today;
         tipData.count = 0;
@@ -61,7 +62,7 @@ function TipOverlay() {
 
       if (tipData.count < 2) {
         try {
-          const response = await fetch('https://raqqa-ruddy.vercel.app/api/tips');
+          const response = await fetch(apiUrl('api/tips'));
           const data = await response.json();
           if (data.content) {
             setTip(data.content);
@@ -90,7 +91,7 @@ function TipOverlay() {
       if (videoId.includes('&')) videoId = videoId.split('&')[0];
       return (
         <div className="tip-video-wrapper">
-          <iframe 
+          <iframe
             src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1`}
             title="فيديو رقة"
             frameBorder="0"
@@ -117,8 +118,13 @@ function TipOverlay() {
   );
 }
 
-function App() {
+function App({ user }) {
   const location = useLocation();
+  const profileName = user?.display_name || user?.displayName || user?.firebaseUser?.displayName || 'حسابي';
+  const profilePhoto = user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL;
+  useEffect(() => {
+    document.title = profileName && profileName !== 'حسابي' ? `رقة — ${profileName}` : 'رقة';
+  }, [profileName]);
 
   // --- إنشاء قناة الإشعارات للصوت والأولوية القصوى ---
   useEffect(() => {
@@ -156,22 +162,19 @@ function App() {
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(activeReminders));
 
       // --- إرسال البيانات ومزامنتها مع قاعدة بيانات نيون (Neon DB) عبر الـ API الجديد ---
-      const storedToken = localStorage.getItem('userToken') || localStorage.getItem('raqqa_user_token');
-      const storedEmail = localStorage.getItem('email') || localStorage.getItem('raqqa_user_email');
 
-      if (storedToken && storedEmail && activeReminders.length > 0) {
+      if (activeReminders.length > 0) {
         const syncOptions = {
-          url: 'https://raqqa-hjl8.vercel.app/api/sync-data',
+          url: apiUrl('api/sync'),
           headers: { 'Content-Type': 'application/json' },
           data: {
-            userToken: storedToken,
-            email: storedEmail,
+            target: 'notifications',
             targetTable: 'offline_events', // أو الجدول المخصص للإشعارات التذكيرية في سكيما المستخدم
             localData: activeReminders
           }
         };
-        
-        CapacitorHttp.post(syncOptions)
+
+        cloudflarePost(syncOptions)
           .then(res => console.log("🌐 تمت مزامنة إشعارات الأندرويد مع الخادم الحتّي ونبون بنجاح:", res.data))
           .catch(err => console.error("❌ فشل إرسال بيانات المزامنة إلى الخادم:", err));
       }
@@ -191,9 +194,9 @@ function App() {
         // --- استخدام المسار الداخلي من مجلد public لضمان العمل بدون نت ---
         let iconName = 'default.png';
         const title = rem.title || "";
-        
+
         if (title.includes('صحة') || title.includes('دورة') || title.includes('تحليل')) {
-          iconName = 'health.png'; 
+          iconName = 'health.png';
         } else if (title.includes('مشاعر') || title.includes('قلق') || title.includes('مزاج')) {
           iconName = 'feelings.png';
         } else if (title.includes('حميمية')) {
@@ -211,9 +214,9 @@ function App() {
           title: rem.title,
           body: rem.body,
           schedule: { at: new Date(rem.scheduled_for) },
-          channelId: 'raqqa_main_channel', 
+          channelId: 'raqqa_main_channel',
           sound: 'default',
-          smallIcon: 'ic_stat_name', 
+          smallIcon: 'ic_stat_name',
           largeIcon: finalPath,
           attachments: [{ id: 'res', url: finalPath }],
           extra: { report: rem.body }
@@ -240,18 +243,18 @@ function App() {
 
     const setupBackButton = async () => {
       return await CapApp.addListener('backButton', ({ canGoBack }) => {
-        if (!canGoBack) { 
-          CapApp.exitApp(); 
-        } else { 
-          window.history.back(); 
+        if (!canGoBack) {
+          CapApp.exitApp();
+        } else {
+          window.history.back();
         }
       });
     };
     const listener = setupBackButton();
-    
-    return () => { 
+
+    return () => {
       window.removeEventListener('trigger_sync_notifications', handleTrigger);
-      listener.then(l => l.remove()); 
+      listener.then(l => l.remove());
     };
   }, [syncNotifications, location.pathname]);
 
@@ -259,11 +262,15 @@ function App() {
     <div className="app-container">
       <ScrollToTop />
       <TipOverlay />
-      
+
       <header className="main-app-header" style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', borderBottom: '1px solid #eee' }}>
-        <a 
-          href="https://www.facebook.com/profile.php?id=61571056531349" 
-          target="_blank" 
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 8, color: '#7b3157', fontWeight: 700 }}>
+          {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
+          <span>{profileName}</span>
+        </div>
+        <a
+          href="https://www.facebook.com/profile.php?id=61571056531349"
+          target="_blank"
           rel="noopener noreferrer"
           style={{ textDecoration: 'none', color: '#1877F2', fontWeight: 'bold', fontSize: '16px' }}
         >
@@ -274,7 +281,7 @@ function App() {
       <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
           <AdBanner />
       </div>
-      
+
       <header className="top-sticky-menu">
         <div className="top-cards-container">
           <Link to="/videos" className="top-card">
@@ -287,7 +294,7 @@ function App() {
           </Link>
         </div>
       </header>
-      
+
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Navigate to="/health" />} />

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Share } from '@capacitor/share'; 
-import { fetchPageData } from '../../services/adminService'; 
+import { Share } from '@capacitor/share';
+import { fetchPageData } from '../../services/adminService';
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [likes, setLikes] = useState({}); 
-  const [comments, setComments] = useState({}); 
+  const [likes, setLikes] = useState({});
+  const [comments, setComments] = useState({});
   const [newComment, setNewComment] = useState("");
   const [activeCommentId, setActiveCommentId] = useState(null);
 
-  const PAGE_NAME = "ملاذ الأمومة"; 
-  const APP_LINK = "https://raqa-1zhm.vercel.app/";
+  const PAGE_NAME = "ملاذ الأمومة";
+  const APP_LINK = "window.location.origin + '/'";
 
   useEffect(() => {
     const savedLikes = JSON.parse(localStorage.getItem('raqa_likes') || '{}');
@@ -25,13 +25,13 @@ const EleganceSection = () => {
   const getYouTubeEmbedUrl = (url) => {
     if (!url) return null;
     let videoId = null;
-    
+
     if (url.includes('youtu.be/')) {
       videoId = url.split('youtu.be/')[1]?.split('?')[0];
-    } 
+    }
     else if (url.includes('v=')) {
       videoId = url.split('v=')[1]?.split('&')[0];
-    } 
+    }
     else if (url.includes('embed/')) {
       return url;
     }
@@ -42,7 +42,7 @@ const EleganceSection = () => {
   const fetchArticles = async () => {
     try {
       const rawData = await fetchPageData(PAGE_NAME);
-      
+
       if (rawData) {
         const data = rawData.data ? rawData.data : (rawData.result ? rawData.result : rawData);
 
@@ -57,7 +57,7 @@ const EleganceSection = () => {
           const videoUrl = item.media?.videoUrl && item.media.videoUrl.trim() !== "" ? item.media.videoUrl : null;
           const imageUrl = item.media?.imageUrl && item.media.imageUrl.trim() !== "" ? item.media.imageUrl : null;
           const audioUrl = item.media?.audioUrl && item.media.audioUrl.trim() !== "" ? item.media.audioUrl : null;
-          
+
           const embeddedType = item.article?.embeddedMedia?.type;
           const embeddedUrl = item.article?.embeddedMedia?.url && item.article.embeddedMedia.url.trim() !== "" ? item.article.embeddedMedia.url : null;
           const bodyContent = item.article?.body && item.article.body.trim() !== "" ? item.article.body : "";
@@ -78,15 +78,15 @@ const EleganceSection = () => {
           return {
             id: uniqueId,
             title: { rendered: item.article?.title && item.article.title.trim() !== "" ? item.article.title : `${PAGE_NAME}` },
-            featuredImage: imageUrl, 
-            featuredVideo: finalVideoUrl, 
+            featuredImage: imageUrl,
+            featuredVideo: finalVideoUrl,
             isVideoYouTube: isYouTube,
             isMediaOnly: isMediaOnly, // نمرر هذه القيمة للتحكم في الكلاس الديناميكي
-            content: { 
+            content: {
               rendered: `
                 ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 18px;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
                 ${embeddedType === 'video' && finalEmbeddedVideoUrl ? (
-                  isEmbeddedYouTube 
+                  isEmbeddedYouTube
                   ? `<p><iframe src="${finalEmbeddedVideoUrl}" width="100%" height="315" frameborder="0" allowfullscreen style="border-radius:12px; margin-top:12px;"></iframe></p>`
                   : `<p><video src="${finalEmbeddedVideoUrl}" controls style="width:100%; border-radius:12px; margin-top:12px;"></video></p>`
                 ) : ''}
@@ -124,9 +124,9 @@ const EleganceSection = () => {
 
   const handleAddComment = (postId) => {
     if (!newComment.trim()) return;
-    const updated = { 
-      ...comments, 
-      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }] 
+    const updated = {
+      ...comments,
+      [postId]: [...(comments[postId] || []), { text: newComment, date: new Date() }]
     };
     setComments(updated);
     localStorage.setItem('raqa_comments', JSON.stringify(updated));
@@ -134,7 +134,7 @@ const EleganceSection = () => {
   };
 
   const handleShare = async (title) => {
-    const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, ""); 
+    const cleanTitle = title.replace(/<\/?[^>]+(>|$)/g, "");
     try {
       await Share.share({
         title: cleanTitle,
@@ -151,7 +151,7 @@ const EleganceSection = () => {
 
   return (
     <div className="main-wrapper" dir="rtl">
-      
+
       {/* الترحيب الثابت */}
       <div className="fixed-welcome">
         ✨ مرحبا بك في عالم الأمومة ✨
@@ -170,7 +170,7 @@ const EleganceSection = () => {
               <div key={post.id} className="article-container">
                 {/* 🎯 إضافة الكلاس الديناميكي media-only-card إذا كان الكارت يحتوي على ميديا فقط لتقليل الارتفاع تلقائياً */}
                 <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
-                  
+
                   {/* العنوان منسق ومرتب */}
                   <div className="card-header-title">
                     <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
@@ -180,12 +180,12 @@ const EleganceSection = () => {
                   {featuredVideo && (
                     <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
                       {isVideoYouTube ? (
-                        <iframe 
-                          src={featuredVideo} 
-                          width="100%" 
-                          height="320" 
-                          frameBorder="0" 
-                          allowFullScreen 
+                        <iframe
+                          src={featuredVideo}
+                          width="100%"
+                          height="320"
+                          frameBorder="0"
+                          allowFullScreen
                           style={{ display: 'block' }}
                         />
                       ) : (
@@ -200,14 +200,14 @@ const EleganceSection = () => {
                       <img src={featuredImage} alt="Elegance" />
                     </div>
                   )}
-                  
+
                   {/* المحتوى منسق وبمحاذاة واضحة */}
                   <div className="content">
-                    <div 
+                    <div
                       className="wp-html-content"
-                      dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} 
+                      dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }}
                     />
-                    
+
                     <div className="app-download-box">
                       <a href={APP_LINK} target="_blank" rel="noreferrer">
                         ✨ حملي التطبيق الآن من هنا ✨
@@ -232,9 +232,9 @@ const EleganceSection = () => {
                   {activeCommentId === post.id && (
                     <div className="comments-area">
                       <div className="comment-input-wrap">
-                        <input 
-                          type="text" 
-                          placeholder="أضيفي لمستكِ..." 
+                        <input
+                          type="text"
+                          placeholder="أضيفي لمستكِ..."
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
                         />
@@ -292,12 +292,12 @@ const EleganceSection = () => {
 
         .card {
           background: #ffffff;
-          max-width: 600px; 
+          max-width: 600px;
           width: 100%;
-          border-radius: 24px; 
+          border-radius: 24px;
           overflow: hidden;
           box-shadow: 0 10px 30px rgba(141, 110, 99, 0.05);
-          margin-bottom: 35px; 
+          margin-bottom: 35px;
           border: 1px solid #f2eae4;
           transition: transform 0.2s ease;
         }
@@ -338,25 +338,25 @@ const EleganceSection = () => {
         .main-featured-image img {
           width: 100%;
           display: block;
-          height: auto; 
+          height: auto;
           max-height: 450px;
           object-fit: cover;
         }
 
-        .content { 
-          padding: 24px 20px; 
-          text-align: right; 
+        .content {
+          padding: 24px 20px;
+          text-align: right;
         }
 
-        .wp-html-content { 
-          text-align: right; 
-          color: #4e443c; 
-          font-size: 1.12rem; 
+        .wp-html-content {
+          text-align: right;
+          color: #4e443c;
+          font-size: 1.12rem;
           font-weight: 500;
         }
-        
+
         .wp-html-content img, .wp-html-content video, .wp-html-content iframe {
-          max-width: 100% !important; 
+          max-width: 100% !important;
           border-radius: 14px;
           margin: 15px 0;
           display: block;
@@ -389,7 +389,7 @@ const EleganceSection = () => {
         .comment-input-wrap input { flex: 1; padding: 12px 18px; border-radius: 25px; border: 1px solid #e0d4cc; outline: none; font-family: 'Tajawal'; font-size: 0.95rem; background: #fff; }
         .comment-input-wrap input:focus { border-color: #b08968; }
         .comment-input-wrap button { background: #b08968; color: white; border: none; padding: 10px 22px; border-radius: 25px; cursor: pointer; font-family: 'Tajawal'; font-weight: 700; }
-        
+
         .single-comment { background: #ffffff; padding: 12px 16px; border-radius: 14px; margin-bottom: 10px; font-size: 0.95rem; border-right: 4px solid #b08968; text-align: right; box-shadow: 0 2px 6px rgba(141,110,99,0.03); color: #4e443c; }
 
         .loading-screen { height: 100vh; display: flex; justify-content: center; align-items: center; color: #b08968; font-weight: bold; font-size: 1.3rem; font-family: 'Tajawal'; background: #fdf8f5; }

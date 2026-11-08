@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CapacitorHttp } from '@capacitor/core'; 
+import { CapacitorHttp } from '@capacitor/core';
 
 // استدعاء مكون الإعلان
 import AdBanner from '../components/AdBanner';
@@ -18,7 +18,7 @@ import WellnessOasis from '../pages/SwingPage/WellnessOasis';
 
 const SwingForum = () => {
   const [activeTab, setActiveTab] = useState('Home');
-  const [isUpdating, setIsUpdating] = useState(false); 
+  const [isUpdating, setIsUpdating] = useState(false);
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1.0.2';
 
   // ترتيب الأيقونات والمسميات
@@ -58,33 +58,33 @@ const SwingForum = () => {
           --soft-bg: #fff5f7;
           --glass-white: rgba(255, 255, 255, 0.95);
         }
-        .app-container { 
-          display: flex; 
-          flex-direction: column; 
-          height: 100vh; 
-          width: 100vw; 
-          background-color: var(--soft-bg); 
-          direction: rtl; 
-          font-family: 'Tajawal', sans-serif; 
-          position: fixed; 
-          top: 0; 
-          left: 0; 
-          overflow: hidden; 
+        .app-container {
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          width: 100vw;
+          background-color: var(--soft-bg);
+          direction: rtl;
+          font-family: 'Tajawal', sans-serif;
+          position: fixed;
+          top: 0;
+          left: 0;
+          overflow: hidden;
         }
-        
+
         .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: white; border-bottom: 1px solid var(--female-pink-light); z-index: 100; }
         .back-btn { background: var(--female-pink); color: white; border: none; padding: 7px 18px; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(255, 77, 125, 0.2); }
-        
+
         .glass-header-nav { display: flex; overflow-x: auto; padding: 12px 10px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 10px; scrollbar-width: none; flex-shrink: 0; }
         .glass-header-nav::-webkit-scrollbar { display: none; }
 
         .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 8px 16px; background: white; border-radius: 16px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; min-width: 85px; }
         .section-item.active { background: var(--female-pink); transform: scale(1.05); }
         .section-item.active .s-label, .section-item.active .s-icon { color: white; }
-        
+
         .s-icon { font-size: 1.3rem; margin-bottom: 2px; }
         .s-label { font-size: 0.7rem; font-weight: bold; color: var(--female-pink); }
-        
+
         .main-display-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
 
         /* تنسيق حاوية الإعلان (تم تعديل الحواف لتناسب الأعلى) */
@@ -118,9 +118,9 @@ const SwingForum = () => {
       {/* التنقل العلوي */}
       <nav className="glass-header-nav">
         {sections.map((sec) => (
-          <div 
-            key={sec.id} 
-            className={`section-item ${activeTab === sec.id ? 'active' : ''}`} 
+          <div
+            key={sec.id}
+            className={`section-item ${activeTab === sec.id ? 'active' : ''}`}
             onClick={() => setActiveTab(sec.id)}
           >
             <span className="s-icon">{sec.icon}</span>

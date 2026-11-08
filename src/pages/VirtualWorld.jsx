@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // ✅ تم تصحيح المسار هنا (الخروج بمستوى واحد فقط للوصول لمجلد src)
-import { fetchPageData } from '../services/adminService'; 
+import { fetchPageData } from '../services/adminService';
 
 const VirtualWorld = () => {
   const [vrCategories, setVrCategories] = useState([]); // دمج البيانات القادمة من السيرفر هنا
@@ -9,7 +9,7 @@ const VirtualWorld = () => {
   const [isVRMode, setIsVRMode] = useState(true); // وضع الواقع الافتراضي مفعل تلقائياً
 
   // اسم القسم المطابق في لوحة التحكم والسيرفر الخاص بكِ
-  const PAGE_NAME = "مملكة الاسترخاء"; 
+  const PAGE_NAME = "مملكة الاسترخاء";
 
   useEffect(() => {
     fetchVideosFromServer();
@@ -19,7 +19,7 @@ const VirtualWorld = () => {
     try {
       // استيراد الفيديوهات عن طريق كود الخدمة الخاص بكِ
       const result = await fetchPageData(PAGE_NAME);
-      
+
       if (result) {
         let rawItems = [];
         if (Array.isArray(result)) {
@@ -31,7 +31,7 @@ const VirtualWorld = () => {
         // تحويل وتنسيق البيانات القادمة من السيرفر لتطابق هيكلة الـ Map في الكود الخاص بكِ
         const formattedCategories = rawItems.map((item, index) => {
           const videoUrl = item.media?.videoUrl || "";
-          
+
           // دالة داخلية ذكية لاستخراج الـ ID فقط من رابط اليوتيوب السحابي
           let videoId = "";
           if (videoUrl.includes('youtu.be/')) {
@@ -82,8 +82,8 @@ const VirtualWorld = () => {
         <h1 style={styles.title}>مملكة الاسترخاء 🌸</h1>
         <div style={styles.switchContainer}>
           <span style={styles.switchLabel}>{isVRMode ? "وضع الواقع الافتراضي" : "وضع العرض العادي"}</span>
-          <button 
-            onClick={() => setIsVRMode(!isVRMode)} 
+          <button
+            onClick={() => setIsVRMode(!isVRMode)}
             style={{...styles.toggleBtn, backgroundColor: isVRMode ? '#C8E6C9' : '#FFD1DC'}}
           >
             تبديل الوضع
@@ -96,8 +96,8 @@ const VirtualWorld = () => {
           <div style={styles.modalHeader}>
             <button onClick={() => setActiveVideo(null)} style={styles.closeBtn}>رجوع القائمة ×</button>
           </div>
-          <iframe 
-            src={getYoutubeUrl(activeVideo)} 
+          <iframe
+            src={getYoutubeUrl(activeVideo)}
             style={styles.iframe}
             frameBorder="0"
             allow="accelerometer; autoplay; encrypted-media; gyroscope; vr"

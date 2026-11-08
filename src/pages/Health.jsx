@@ -27,7 +27,7 @@ const Health = ({ onSyncReminders }) => {
   // دالة المحرك لاستلام تأكيد الحفظ وجدولة الإشعارات وتوصيلها لـ App.jsx
   const handleTriggerSync = () => {
     console.log("📥 [محرك Health] تم استقبال إشارة حفظ البيانات من الصفحة الفرعية، جاري تمريرها إلى App.jsx...");
-    
+
     // 1. إرسال الحدث العام ليتلقاه App.jsx في نظام الأندرويد
     window.dispatchEvent(new Event('trigger_sync_notifications'));
 
@@ -117,20 +117,20 @@ const Health = ({ onSyncReminders }) => {
     <div style={styles.container}>
       {sections.map((sec) => {
         const Icon = iconMap[sec.icon] || iconMap.insight;
-        
+
         // استخدام المسار النسبي للأصول لضمان عمل الصور داخل واجهة التطبيق
         const imageSource = new URL(`../assets/health/${sec.img}`, import.meta.url).href;
 
         return (
-          <div 
-            key={sec.id} 
+          <div
+            key={sec.id}
             style={{ ...styles.card, ...sec.pos }}
             onClick={() => setActiveTab(sec.id)}
           >
-            <img 
-              src={imageSource} 
-              alt={sec.title} 
-              style={styles.image} 
+            <img
+              src={imageSource}
+              alt={sec.title}
+              style={styles.image}
             />
             <div style={styles.footer}>
               <Icon size={16} color="#ad1457" />

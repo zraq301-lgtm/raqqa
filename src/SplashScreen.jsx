@@ -43,10 +43,10 @@ const SplashScreen = ({ onFinished }) => {
         style={{
           width: '100%',
           height: '100%',
-          /* تم التغيير من cover إلى contain 
+          /* تم التغيير من cover إلى contain
              لضمان ظهور محتوى الفيديو كاملاً بدون قص
           */
-          objectFit: 'contain' 
+          objectFit: 'contain'
         }}
       >
         <source src="/splash_video.mp4" type="video/mp4" />

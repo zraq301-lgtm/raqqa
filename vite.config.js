@@ -3,14 +3,14 @@ import react from '@vitejs/plugin-react';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  // تغيير base إلى './' يضمن أن المسارات نسبية وتعمل في أي مكان (Vercel, GitHub, Android)
+  // تغيير base إلى './' يضمن أن المسارات نسبية وتعمل في أي مكان (الويب وAndroid)
   // هذا سيحل مشكلة الصفحة البيضاء تماماً
   base: './', 
   
   plugins: [react()],
   
   build: {
-    // تحديد مجلد المخرجات ليتوافق مع إعدادات Capacitor و Vercel
+    // تحديد مجلد المخرجات ليتوافق مع إعدادات Capacitor و Cloudflare
     outDir: 'dist_web',
     
     // استخدام terser لتصغير الكود لضمان أداء عالي على الموبايل

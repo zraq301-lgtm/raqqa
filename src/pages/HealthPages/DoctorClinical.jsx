@@ -1,8 +1,10 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا التي وفرتها
-import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService';
+import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
 
 const DoctorClinical = () => {
   const Icon = iconMap.insight;
@@ -23,8 +25,8 @@ const DoctorClinical = () => {
   }, [savedReports]);
 
   const categories = [
-    { name: "العظام", icon: "🦴" }, { name: "العيون", icon: "👁️" }, 
-    { name: "الأسنان", icon: "🦷" }, { name: "القلب", icon: "🫀" }, 
+    { name: "العظام", icon: "🦴" }, { name: "العيون", icon: "👁️" },
+    { name: "الأسنان", icon: "🦷" }, { name: "القلب", icon: "🫀" },
     { name: "التحاليل", icon: "📝" }, { name: "الجلدية", icon: "✨" },
     { name: "الباطنة", icon: "🩺" }, { name: "الأعصاب", icon: "🧠" },
     { name: "الجراحة", icon: "🩹" }, { name: "الصيدلية", icon: "💊" }
@@ -61,7 +63,7 @@ const DoctorClinical = () => {
       window.dispatchEvent(new Event('trigger_sync_notifications'));
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
-      
+
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
     }
@@ -77,7 +79,7 @@ const DoctorClinical = () => {
         base64Image = await fetchImage();
       }
       if (base64Image) {
-        const imageUrl = await uploadToVercel(base64Image, `report_${Date.now()}.jpg`, 'image/jpeg');
+        const imageUrl = await uploadToCloudflare(base64Image, `report_${Date.now()}.jpg`, 'image/jpeg');
         await handleProcess("تحليل صورة", imageUrl);
       }
     } catch (error) {
@@ -90,23 +92,23 @@ const DoctorClinical = () => {
   const handleProcess = async (catName = "عام", imageUrl = null) => {
     setLoading(true);
     const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
-    
-    const finalPrompt = userPrompt 
+
+    const finalPrompt = userPrompt
       ? `سؤال المستخدم: ${userPrompt}. سياق البيانات: ${summary}`
       : `بيانات عيادة ${catName}: ${summary}. ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''}`;
 
     try {
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { 
-          prompt: `أنا أنثى مسلمة، بصفتك استشاري طب متخصص ومعتمد: ${finalPrompt}. يرجى تقديم تقرير طبي استشاري احترافي مفصل.` 
+        data: {
+          prompt: `أنا أنثى مسلمة، بصفتك استشاري طب متخصص ومعتمد: ${finalPrompt}. يرجى تقديم تقرير طبي استشاري احترافي مفصل.`
         }
       };
 
-      const aiRes = await CapacitorHttp.post(options);
+      const aiRes = await cloudflarePost(options);
       const responseText = aiRes.data.reply || aiRes.data.message;
-      
+
       setAiResponse(responseText);
       setIsChatOpen(true);
       setUserPrompt('');
@@ -125,11 +127,11 @@ const DoctorClinical = () => {
           // استدعاء الدالة الجديدة بدلاً من saveAndNotify
           await handleSaveAndAnalysis(responseText, finalDate);
 
-          setSavedReports(prev => [{ 
-            id: Date.now(), 
-            title: catName, 
-            text: responseText, 
-            date: new Date().toLocaleDateString() 
+          setSavedReports(prev => [{
+            id: Date.now(),
+            title: catName,
+            text: responseText,
+            date: new Date().toLocaleDateString()
           }, ...prev]);
       }
 
@@ -177,12 +179,12 @@ const DoctorClinical = () => {
       <div style={styles.gridContainer}>
         {categories.map((cat, i) => (
           <React.Fragment key={i}>
-            <div 
+            <div
               style={{
                 ...styles.categoryCard,
                 border: openIdx === i ? '2px solid #ff4d7d' : styles.categoryCard.border,
                 transform: openIdx === i ? 'scale(0.95)' : 'scale(1)'
-              }} 
+              }}
               onClick={() => setOpenIdx(openIdx === i ? null : i)}
             >
               <span style={styles.categoryIcon}>{cat.icon}</span>
@@ -195,15 +197,15 @@ const DoctorClinical = () => {
                   <strong style={{ color: '#ff4d7d' }}>{cat.icon} سجل بيانات {cat.name}</strong>
                   <button onClick={() => setOpenIdx(null)} style={{ border: 'none', background: '#fce4ec', borderRadius: '50%', width: '30px', height: '30px', color: '#ff4d7d' }}>✕</button>
                 </div>
-                
+
                 <div style={styles.inputGroup}>
                   {fields.map(f => (
                     <div key={f}>
                       <label style={styles.label}>{f}</label>
-                      <input 
+                      <input
                         type={f === "الموعد القادم" ? "date" : "text"}
-                        style={styles.inputField} 
-                        value={data[`${cat.name}_${f}`] || ''} 
+                        style={styles.inputField}
+                        value={data[`${cat.name}_${f}`] || ''}
                         onChange={e => setData({...data, [`${cat.name}_${f}`]: e.target.value})}
                       />
                     </div>
@@ -225,15 +227,15 @@ const DoctorClinical = () => {
               <span style={{ fontWeight: 'bold', color: '#ff4d7d' }}>استشاري رقة الذكي 👩‍⚕️</span>
               <button onClick={() => setIsChatOpen(false)} style={{ border: 'none', background: '#eee', borderRadius: '50%', width: '30px', height: '30px' }}>✕</button>
             </div>
-            
+
             <div style={{ fontSize: '0.9rem', background: '#f9f9f9', padding: '15px', borderRadius: '15px', marginBottom: '20px', whiteSpace: 'pre-wrap' }}>
               {aiResponse || "مرحباً بكِ في قسم الاستشارات! كيف يمكنني مساعدتك اليوم؟"}
             </div>
 
             <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
-              <input 
-                style={{ flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' }} 
-                placeholder="اسألي الاستشاري هنا..." 
+              <input
+                style={{ flex: 1, padding: '12px', borderRadius: '20px', border: '1px solid #ddd', outline: 'none' }}
+                placeholder="اسألي الاستشاري هنا..."
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
               />

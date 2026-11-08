@@ -23,7 +23,6 @@
     "@capacitor/push-notifications": "^6.0.0",
     "@capacitor/share": "^6.0.0",
     "@capawesome/capacitor-live-update": "^6.9.2",
-    "@supabase/supabase-js": "^2.43.4",
     "@vercel/blob": "^0.23.4",
     "adhan": "^4.1.4",
     "axios": "^1.6.7",

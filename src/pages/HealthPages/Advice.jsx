@@ -1,6 +1,8 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import localTips from '../../data/tips.json'; 
+import localTips from '../../data/tips.json';
 
 const HealthAdvice = () => {
   const [tip, setTip] = useState(null);
@@ -15,12 +17,12 @@ const HealthAdvice = () => {
     try {
       setLoading(true);
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: "أعطني نصيحة طبية قصيرة ومفيدة للنساء اليوم" }
       };
 
-      const response = await CapacitorHttp.post(options);
+      const response = await cloudflarePost(options);
       const aiText = response.data.reply || response.data.message;
 
       if (aiText) {
@@ -47,17 +49,17 @@ const HealthAdvice = () => {
 
     try {
       const options = {
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${currentInput}` }
       };
 
-      const response = await CapacitorHttp.post(options);
+      const response = await cloudflarePost(options);
       const reply = response.data.reply || response.data.message;
-      
+
       const aiMsg = { role: 'ai', text: reply };
       setChatMessages(prev => [...prev, aiMsg]);
-      
+
     } catch (err) {
       setChatMessages(prev => [...prev, { role: 'ai', text: "عذراً، لم أستطع الاتصال بالخادم." }]);
     }
@@ -90,7 +92,7 @@ const HealthAdvice = () => {
           </div>
           <h2 style={styles.mainTitle}>{tip?.title}</h2>
           <p style={styles.mainContent}>{tip?.content}</p>
-          
+
           <button onClick={() => setIsChatOpen(true)} style={styles.openChatBtn}>
              استشارة طبيبة رقة 👩‍⚕️
           </button>
@@ -127,8 +129,8 @@ const HealthAdvice = () => {
             </div>
 
             <div style={styles.inputRow}>
-              <input 
-                style={styles.inputField} 
+              <input
+                style={styles.inputField}
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="اكتبي سؤالك هنا..."
@@ -163,7 +165,7 @@ const styles = {
     background: 'linear-gradient(135deg, #ff85a2 0%, #ffb7c5 50%, #ff85a2 100%)',
     boxShadow: '0 20px 40px rgba(255, 133, 162, 0.4)',
     width: '100%',
-    maxWidth: '500px', 
+    maxWidth: '500px',
   },
   mainCard: {
     background: '#fff',

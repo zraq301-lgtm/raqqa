@@ -13,7 +13,7 @@ const TopHeader = () => {
         <VideoIcon className="w-6 h-6 text-purple-600" />
         <span className="text-xs mt-1">المكتبة</span>
       </button>
-      
+
       <h1 className="font-bold text-lg text-purple-800">رؤاقة</h1>
 
       <button onClick={() => navigate('/virtual-world')} className="flex flex-col items-center p-2">

@@ -1,7 +1,9 @@
+import { cloudflarePost } from '../../services/apiClient';
+import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useRef, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, fetchImage, uploadToVercel } from '../../services/MediaService'; 
+import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
 
 const LactationHub = () => {
   const Icon = iconMap.feelings;
@@ -14,7 +16,7 @@ const LactationHub = () => {
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
-  const [userQuery, setUserQuery] = useState(''); 
+  const [userQuery, setUserQuery] = useState('');
   const [history, setHistory] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('lactation_history')) || [];
@@ -22,19 +24,19 @@ const LactationHub = () => {
   });
 
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = localStorage.getItem('fcm_token');
+    const savedToken = null;
     const scheduledDate = new Date();
 
     try {
       const saveToNeonOptions = {
-        url: 'https://raqqa-hjl8.vercel.app/api/save-notifications',
+        url: apiUrl('api/notifications'),
         headers: { 'Content-Type': 'application/json' },
         data: {
           fcmToken: savedToken || undefined,
           user_id: 1,
           category: 'breastfeeding',
           title: `تقرير طبي متخصص: ${categoryTitle} 🩺`,
-          body: "تم إصدار تحليل شامل لحالة الرضاعة بناءً على المعايير الدولية.", 
+          body: "تم إصدار تحليل شامل لحالة الرضاعة بناءً على المعايير الدولية.",
           scheduled_for: scheduledDate.toISOString(),
           note: JSON.stringify({
             full_analysis: currentAnalysis,
@@ -42,11 +44,11 @@ const LactationHub = () => {
           })
         }
       };
-      await CapacitorHttp.post(saveToNeonOptions);
+      await cloudflarePost(saveToNeonOptions);
 
       if (savedToken) {
         const fcmOptions = {
-          url: 'https://raqqa-hjl8.vercel.app/api/send-fcm',
+          url: apiUrl('api/notifications/send'),
           headers: { 'Content-Type': 'application/json' },
           data: {
             token: savedToken,
@@ -55,7 +57,7 @@ const LactationHub = () => {
             data: { type: 'medical_report' }
           }
         };
-        await CapacitorHttp.post(fcmOptions);
+        await cloudflarePost(fcmOptions);
       }
     } catch (err) { console.error("خطأ في المزامنة:", err); }
   };
@@ -67,7 +69,7 @@ const LactationHub = () => {
         if (!base64Data) { setLoading(false); return; }
         const timestamp = Date.now();
         const fileName = `lactation_img_${timestamp}.png`;
-        const finalAttachmentUrl = await uploadToVercel(base64Data, fileName, 'image/png');
+        const finalAttachmentUrl = await uploadToCloudflare(base64Data, fileName, 'image/png');
         await handleSaveAndAnalyze("حللي هذه الصورة طبياً في سياق الرضاعة", finalAttachmentUrl);
     } catch (error) { alert("حدث خطأ في معالجة الوسائط."); } finally { setLoading(false); }
   };
@@ -87,7 +89,7 @@ const LactationHub = () => {
     setLoading(true);
     setShowChat(true);
     if (!customQuery) setAiResponse("جاري إعداد تقرير طبي مفصل عن حالة الرضاعة...");
-    
+
     try {
       const strictPrompt = `
       بصفتكِ استشارية رضاعة دولية معتمدة (IBCLC) وخبيرة في بروتوكولات منظمة الصحة العالمية (WHO) واليونيسيف:
@@ -103,8 +105,8 @@ const LactationHub = () => {
       5. لا تخرجي عن موضوع الرضاعة والأمومة أبداً.
       `;
 
-      const response = await CapacitorHttp.post({
-        url: 'https://raqqa-v6cd.vercel.app/api/raqqa-ai',
+      const response = await cloudflarePost({
+        url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: strictPrompt }
       });
@@ -145,17 +147,17 @@ const LactationHub = () => {
       const updatedHistory = [newEntry, ...history];
       setHistory(updatedHistory);
       localStorage.setItem('lactation_history', JSON.stringify(updatedHistory));
-      
+
       if (!customQuery) await saveAndNotify("تحليل الرضاعة الشامل", aiGeneratedReport);
-      
+
       setUserQuery('');
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري للأندرويد");
 
-    } catch (error) { 
-      setAiResponse("حدث خطأ في الاتصال بالخبير الطبي."); 
+    } catch (error) {
+      setAiResponse("حدث خطأ في الاتصال بالخبير الطبي.");
       console.error("خطأ في عملية الحفظ والجدولة:", error);
-    } finally { 
-      setLoading(false); 
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -168,10 +170,10 @@ const LactationHub = () => {
   const renderInput = (f) => (
     <div key={f} style={{ marginBottom: '10px' }}>
       <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label>
-      <input 
+      <input
         type={f.includes("تاريخ") ? "date" : f.includes("الوقت") || f.includes("ساعة") ? "time" : "text"}
-        style={styles.input} 
-        value={data[f] || ''} 
+        style={styles.input}
+        value={data[f] || ''}
         onChange={e => {
           const newData = {...data, [f]: e.target.value};
           setData(newData);
@@ -259,14 +261,14 @@ const LactationHub = () => {
             </div>
             <div style={styles.chatFooter}>
               <div style={styles.chatInputWrapper}>
-                <input 
-                  style={styles.chatInput} 
-                  placeholder="اسألي الخبيرة عن أي تفاصيل إضافية..." 
+                <input
+                  style={styles.chatInput}
+                  placeholder="اسألي الخبيرة عن أي تفاصيل إضافية..."
                   value={userQuery}
                   onChange={(e) => setUserQuery(e.target.value)}
                 />
-                <button 
-                  onClick={() => handleSaveAndAnalyze(userQuery)} 
+                <button
+                  onClick={() => handleSaveAndAnalyze(userQuery)}
                   style={styles.sendBtn}
                 >🚀</button>
               </div>
