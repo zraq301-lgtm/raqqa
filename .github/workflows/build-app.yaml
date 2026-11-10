@@ -54,6 +54,44 @@ jobs:
       - name: Sync Capacitor native projects
         run: npx cap sync android
 
+      - name: Configure Google Auth Web Client ID
+        if: env.HAS_FIREBASE_ANDROID == 'true'
+        run: |
+          WEB_CLIENT_ID=$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('android/app/google-services.json').read_text())
+          found = []
+          def walk(value):
+            if isinstance(value, dict):
+              if value.get('client_type') == 3 and isinstance(value.get('client_id'), str):
+                found.append(value['client_id'])
+              for child in value.values(): walk(child)
+            elif isinstance(value, list):
+              for child in value: walk(child)
+          walk(data)
+          if not found:
+            raise SystemExit('No OAuth Web client (client_type=3) found in google-services.json')
+          print(found[0])
+          PY
+          )
+          python3 - "$WEB_CLIENT_ID" <<'PY'
+          import html
+          import sys
+          from pathlib import Path
+          client_id = sys.argv[1]
+          if not client_id.endswith('.apps.googleusercontent.com'):
+            raise SystemExit('Invalid Google Web Client ID')
+          path = Path('android/app/src/main/res/values/google_auth.xml')
+          path.parent.mkdir(parents=True, exist_ok=True)
+          path.write_text(
+            '<?xml version="1.0" encoding="utf-8"?>\n'
+            '<resources>\n'
+            f'    <string name="server_client_id">{html.escape(client_id)}</string>\n'
+            '</resources>\n'
+          )
+          PY
+
       - name: Generate Android assets
         run: npx capacitor-assets generate --android
 
