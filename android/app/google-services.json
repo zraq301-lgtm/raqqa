@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "162488255991",
+    "project_id": "raqqa-43dc8",
+    "storage_bucket": "raqqa-43dc8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162488255991:android:e8757934cc7f58c1c61af2",
+        "android_client_info": {
+          "package_name": "com.raqqa.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162488255991-4tg6ubb9e23nah17ne5o69a47tt4e815.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162488255991-4tg6ubb9e23nah17ne5o69a47tt4e815.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:162488255991:android:73d6299f11a1b7aec61af2",
+        "android_client_info": {
+          "package_name": "com.raqqa.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "162488255991-4tg6ubb9e23nah17ne5o69a47tt4e815.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKjsgnoHnGGr3urhm6Kpu7RvxN2dp6sJQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "162488255991-4tg6ubb9e23nah17ne5o69a47tt4e815.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

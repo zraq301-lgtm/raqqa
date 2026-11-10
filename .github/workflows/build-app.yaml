@@ -39,12 +39,16 @@ jobs:
         env:
           FIREBASE_ANDROID_JSON_BASE64: ${{ secrets.FIREBASE_ANDROID_JSON_BASE64 }}
         run: |
-          TMP=$(mktemp)
-          if printf '%s' "$FIREBASE_ANDROID_JSON_BASE64" | base64 --decode > "$TMP" 2>/dev/null && grep -qE '^\s*\{' "$TMP"; then
-            mv "$TMP" android/app/google-services.json
+          if [ -s android/app/google-services.json ]; then
+            echo 'Using repository android/app/google-services.json'
           else
-            rm -f "$TMP"
-            printf '%s' "$FIREBASE_ANDROID_JSON_BASE64" | sed '/^[[:space:]]*```/d' > android/app/google-services.json
+            TMP=$(mktemp)
+            if printf '%s' "$FIREBASE_ANDROID_JSON_BASE64" | base64 --decode > "$TMP" 2>/dev/null && grep -qE '^\s*\{' "$TMP"; then
+              mv "$TMP" android/app/google-services.json
+            else
+              rm -f "$TMP"
+              printf '%s' "$FIREBASE_ANDROID_JSON_BASE64" | sed '/^[[:space:]]*```/d' > android/app/google-services.json
+            fi
           fi
           python3 -m json.tool android/app/google-services.json >/dev/null || {
             echo "::error::FIREBASE_ANDROID_JSON_BASE64 ليس google-services.json صالحًا. ضع محتوى الملف نفسه أو Base64 صحيحًا بدون Markdown fences.";
