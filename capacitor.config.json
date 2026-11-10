@@ -18,7 +18,8 @@
       "enabled": true
     },
     "GoogleAuth": {
-      "scopes": ["profile", "email", "openid"]
+      "scopes": ["profile", "email", "openid"],
+      "serverClientId": "162488255991-4tg6ubb9e23nah17ne5o69a47tt4e815.apps.googleusercontent.com"
     },
     "AdMob": {
       "initializeOnStartup": true
