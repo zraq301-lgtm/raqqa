@@ -17,6 +17,9 @@
     "CapacitorHttp": {
       "enabled": true
     },
+    "FirebaseAuthentication": {
+      "providers": ["google.com"]
+    },
     "AdMob": {
       "initializeOnStartup": true
     },
