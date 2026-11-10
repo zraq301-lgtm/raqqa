@@ -1,6 +1,5 @@
 import { GoogleAuthProvider, onAuthStateChanged, signInWithCredential, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
-import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { auth } from '../firebase-config';
 import { bootstrapProfile } from './profileApi';
 
@@ -17,6 +16,7 @@ export const bootstrapFirebaseUser = async (user) => {
 export const signInWithGoogle = async () => {
   try {
     if (Capacitor.isNativePlatform()) {
+      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
       const nativeResult = await FirebaseAuthentication.signInWithGoogle();
       const idToken = nativeResult?.credential?.idToken;
       if (!idToken) return { success: false, error: 'لم يتم استلام رمز Google من التطبيق.' };

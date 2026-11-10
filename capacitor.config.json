@@ -18,7 +18,8 @@
       "enabled": true
     },
     "FirebaseAuthentication": {
-      "providers": ["google.com"]
+      "providers": ["google.com"],
+      "skipNativeAuth": true
     },
     "AdMob": {
       "initializeOnStartup": true
