@@ -43,6 +43,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "162488255991-e1v1n9j2len0sggj376aa1hgmbbfphei.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.raqqa.app",
+            "certificate_hash": "38ee7f20c17a3ff0d0be8018b3baaf0149fc6e5c"
+          }
+        },
+        {
           "client_id": "162488255991-4tg6ubb9e23nah17ne5o69a47tt4e815.apps.googleusercontent.com",
           "client_type": 3
         }
