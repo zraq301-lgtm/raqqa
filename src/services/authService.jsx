@@ -16,9 +16,10 @@ export const bootstrapFirebaseUser = async (user) => {
 export const signInWithGoogle = async () => {
   try {
     if (Capacitor.isNativePlatform()) {
-      const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-      const nativeResult = await FirebaseAuthentication.signInWithGoogle();
-      const idToken = nativeResult?.credential?.idToken;
+      const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+      await GoogleAuth.initialize({ scopes: ['profile', 'email', 'openid'] });
+      const nativeResult = await GoogleAuth.signIn();
+      const idToken = nativeResult?.authentication?.idToken;
       if (!idToken) return { success: false, error: 'لم يتم استلام رمز Google من التطبيق.' };
       const credential = GoogleAuthProvider.credential(idToken);
       const result = await signInWithCredential(auth, credential);

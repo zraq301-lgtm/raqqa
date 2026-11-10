@@ -17,9 +17,8 @@
     "CapacitorHttp": {
       "enabled": true
     },
-    "FirebaseAuthentication": {
-      "providers": ["google.com"],
-      "skipNativeAuth": true
+    "GoogleAuth": {
+      "scopes": ["profile", "email", "openid"]
     },
     "AdMob": {
       "initializeOnStartup": true
