@@ -18,6 +18,7 @@ import intimacyImg from './assets/intimacy.jpg';
 import swingImg from './assets/swing.jpg';
 import insightImg from './assets/insight.jpg';
 import videosImg from './assets/videos.jpg';
+import virtualImg from './assets/virtual.jpg';
 
 // استيراد الصفحات
 import Health from './pages/Health';
@@ -273,6 +274,10 @@ function App({ user, onUserUpdated }) {
         <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
           <img src={videosImg} alt="" />
           <span>مكتبة الفيديوهات</span>
+        </Link>
+        <Link to="/virtual-world" className="header-library-button" aria-label="فتح عالم رقة">
+          <img src={virtualImg} alt="" />
+          <span>عالم رقة</span>
         </Link>
       </header>
 
