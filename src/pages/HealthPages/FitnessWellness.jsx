@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { uploadToCloudflare } from '../../services/MediaService';
 
 // تم إصلاح المسار هنا ليكون نسبياً (Relative Path) ليعمل الـ Build بنجاح
 import alarmSound from '../../assets/fine-alarm.mp3';
@@ -169,10 +170,11 @@ const PregnancyMonitor = () => {
     setPrompt("");
     setIsLoading(true);
     try {
+      const imageUrl = capturedImage ? await uploadToCloudflare(capturedImage, `fitness-${Date.now()}.jpg`, 'image/jpeg') : null;
       const response = await cloudflarePost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: userMsg, image: capturedImage }
+        data: { prompt: userMsg || 'حللي الصورة المرفقة صحياً', image: imageUrl }
       });
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ type: 'user', text: userMsg, img: capturedImage }, { type: 'ai', text: reply }, ...prev]);

@@ -7,7 +7,13 @@ class MediaService {
   async stopRecording() { return { value: (await VoiceRecorder.stopRecording()).value.recordDataBase64 }; }
   async takePhoto() { return (await Camera.getPhoto({ quality: 50, resultType: CameraResultType.Base64, source: CameraSource.Camera })).base64String; }
   async fetchImage() { return (await Camera.getPhoto({ quality: 50, resultType: CameraResultType.Base64, source: CameraSource.Photos })).base64String; }
-  async uploadToCloudflare(base64, fileName, mimeType = 'image/jpeg') { const result = await uploadAvatar(base64, fileName, mimeType); return result?.url || result?.avatar_url || result?.media_url; }
+  async uploadToCloudflare(base64, fileName, mimeType = 'image/jpeg') {
+    const raw = String(base64 || '').replace(/^data:[^;]+;base64,/, '');
+    const bytes = Uint8Array.from(atob(raw), (character) => character.charCodeAt(0));
+    const file = new File([bytes], fileName || `health-${Date.now()}.jpg`, { type: mimeType });
+    const result = await uploadAvatar(file);
+    return result?.photo_url || result?.profile?.photo_url || result?.url || result?.media_url;
+  }
 }
 const instance = new MediaService();
 export const requestAudioPermissions = () => instance.requestAudioPermissions();
