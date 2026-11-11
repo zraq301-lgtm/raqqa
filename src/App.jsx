@@ -18,7 +18,6 @@ import intimacyImg from './assets/intimacy.jpg';
 import swingImg from './assets/swing.jpg';
 import insightImg from './assets/insight.jpg';
 import videosImg from './assets/videos.jpg';
-import virtualImg from './assets/virtual.jpg';
 
 // استيراد الصفحات
 import Health from './pages/Health';
@@ -28,6 +27,7 @@ import Swing from './pages/Swing';
 import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
+import ProfileEditor from './components/ProfileEditor';
 
 import './App.css';
 
@@ -118,8 +118,9 @@ function TipOverlay() {
   );
 }
 
-function App({ user }) {
+function App({ user, onUserUpdated }) {
   const location = useLocation();
+  const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const profileName = user?.display_name || user?.displayName || user?.firebaseUser?.displayName || 'حسابي';
   const profilePhoto = user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL;
   useEffect(() => {
@@ -262,38 +263,22 @@ function App({ user }) {
     <div className="app-container">
       <ScrollToTop />
       <TipOverlay />
+      {profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
 
-      <header className="main-app-header" style={{ backgroundColor: '#fff', padding: '10px', textAlign: 'center', borderBottom: '1px solid #eee' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 8, color: '#7b3157', fontWeight: 700 }}>
+      <header className="main-app-header">
+        <button className="profile-summary" onClick={() => setProfileEditorOpen(true)} aria-label="تعديل ملفك الشخصي">
           {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
           <span>{profileName}</span>
-        </div>
-        <a
-          href="https://www.facebook.com/profile.php?id=61571056531349"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ textDecoration: 'none', color: '#1877F2', fontWeight: 'bold', fontSize: '16px' }}
-        >
-          تواصل معنا
-        </a>
+        </button>
+        <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
+          <img src={videosImg} alt="" />
+          <span>مكتبة الفيديوهات</span>
+        </Link>
       </header>
 
       <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
           <AdBanner />
       </div>
-
-      <header className="top-sticky-menu">
-        <div className="top-cards-container">
-          <Link to="/videos" className="top-card">
-            <img src={videosImg} alt="المكتبة" className="custom-img-icon" />
-            <div className="card-text"><span className="card-label">المكتبة</span></div>
-          </Link>
-          <Link to="/virtual-world" className="top-card">
-            <img src={virtualImg} alt="عالم رقة" className="custom-img-icon" />
-            <div className="card-text"><span className="card-label">عالم رقة</span></div>
-          </Link>
-        </div>
-      </header>
 
       <main className="main-content">
         <Routes>

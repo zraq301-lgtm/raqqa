@@ -24,5 +24,5 @@ export default function AppSwitcher() {
     });
   }, []);
   if (loading) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>جارٍ التحميل…</div>;
-  return <ErrorBoundary>{user ? <App user={user} /> : <ProfileSetup onComplete={setUser} />}</ErrorBoundary>;
+  return <ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={setUser} />}</ErrorBoundary>;
 }

@@ -178,3 +178,43 @@ body {
 .top-card:active {
   transform: scale(0.9);
 }
+
+/* ملف المستخدم والشريط العلوي الجديد */
+.main-app-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 14px; background:#fff; border-bottom:1px solid #f3dce7; min-height:54px; z-index:20; }
+.profile-summary, .header-library-button { display:flex; align-items:center; gap:8px; border:0; background:#fff; color:#7b3157; font:inherit; font-weight:700; text-decoration:none; cursor:pointer; padding:5px 8px; border-radius:16px; }
+.profile-summary:hover, .header-library-button:hover { background:#fff5f9; }
+.header-library-button { font-size:12px; }
+.header-library-button img { width:32px; height:32px; border-radius:10px; object-fit:cover; }
+.profile-editor-backdrop { position:fixed; inset:0; z-index:2000; display:grid; place-items:center; padding:20px; background:rgba(62,25,46,.38); backdrop-filter:blur(5px); }
+.profile-editor { position:relative; width:min(100%,390px); padding:25px; border-radius:26px; background:#fff; box-shadow:0 20px 70px rgba(72,22,49,.25); text-align:center; }
+.profile-editor h2 { margin:0 0 20px; color:#7b3157; }
+.profile-editor-close { position:absolute; top:10px; left:13px; border:0; background:none; color:#9b6a82; font-size:27px; cursor:pointer; }
+.profile-photo-picker { display:grid; place-items:center; gap:7px; margin:0 auto 18px; border:0; background:none; color:#7b3157; cursor:pointer; }
+.profile-photo-picker img, .profile-photo-picker span { width:96px; height:96px; border-radius:50%; object-fit:cover; display:grid; place-items:center; background:#fce7f3; color:#b12a68; font-size:38px; border:3px solid #f5c3d8; }
+.profile-field { display:grid; gap:7px; text-align:right; color:#63334b; font-weight:700; }
+.profile-field input { width:100%; box-sizing:border-box; border:1px solid #eccbdc; border-radius:13px; padding:12px; font:inherit; outline:none; }
+.profile-field input:focus { border-color:#b12a68; box-shadow:0 0 0 3px #fce7f3; }
+.profile-editor-message { color:#7b3157; font-size:13px; min-height:20px; }
+.profile-save-button { width:100%; margin-top:10px; border:0; border-radius:14px; padding:13px; background:#7b3157; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+.profile-save-button:disabled { opacity:.6; cursor:wait; }
+/* قسم صحتك: شريط بطاقات أفقي يشبه الإعلانات المتجاورة */
+.health-page { min-height:100%; padding:18px 0 24px; background:linear-gradient(180deg,#fff8fb 0%,#fff 55%); overflow:hidden; }
+.health-heading { display:flex; align-items:end; justify-content:space-between; padding:0 18px 14px; color:#a06b83; }
+.health-heading span:first-child { font-size:12px; }
+.health-heading h1 { margin:3px 0 0; color:#7b3157; font-size:27px; }
+.health-swipe-hint { font-size:11px; color:#b88ba0; }
+.health-promo-rail { display:flex; gap:12px; overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x mandatory; scrollbar-width:none; padding:0 18px 8px; touch-action:pan-x; }
+.health-promo-rail::-webkit-scrollbar { display:none; }
+.health-promo-card { position:relative; flex:0 0 min(78vw,250px); height:190px; padding:0; border:0; border-radius:22px; overflow:hidden; background:#f5dce8; box-shadow:0 10px 24px rgba(123,49,87,.14); cursor:pointer; scroll-snap-align:start; text-align:right; }
+.health-promo-card img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .5s ease; }
+.health-promo-card:hover img { transform:scale(1.05); }
+.health-promo-overlay { position:absolute; inset:0; background:linear-gradient(180deg,transparent 25%,rgba(52,17,37,.76)); }
+.health-promo-copy { position:absolute; right:15px; bottom:14px; left:15px; display:grid; grid-template-columns:auto 1fr; align-items:center; gap:6px 8px; color:#fff; }
+.health-promo-copy strong { font-size:18px; }
+.health-promo-copy small { grid-column:2; font-size:11px; opacity:.88; }
+.health-dots { display:flex; justify-content:center; gap:5px; margin-top:8px; direction:ltr; }
+.health-dots span { width:6px; height:6px; border-radius:50%; background:#e8bfd2; }
+.health-dots span.active { width:18px; border-radius:8px; background:#b12a68; }
+.health-fullscreen-page { position:fixed; inset:0; z-index:100; overflow-y:auto; background:#fff; }
+.health-back-button { position:fixed; bottom:22px; left:20px; z-index:101; border:0; border-radius:25px; padding:11px 22px; background:#ad1457; color:#fff; cursor:pointer; }
+.health-loading { text-align:center; margin-top:70px; }

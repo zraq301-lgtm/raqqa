@@ -1,7 +1,5 @@
-import React, { useState, Suspense, lazy } from 'react';
+import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { iconMap } from '../constants/iconMap';
-
-// استيراد الصفحات بنظام التحميل الكسول
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -9,138 +7,55 @@ const LactationHub = lazy(() => import('./HealthPages/LactationHub'));
 const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
 const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
-
-const Health = ({ onSyncReminders }) => {
+const sections = [
+  { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker },
+  { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice },
+  { id: 'pregnancy', title: 'الحمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor },
+  { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: Motherhood },
+  { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical },
+  { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness },
+  { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub },
+];
+export default function Health({ onSyncReminders }) {
   const [activeTab, setActiveTab] = useState(null);
-
-  // تم تحديث أسماء الصور لتطابق أسماء صور الإشعارات في المجلد العام (public)
-  const sections = [
-    { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker, pos: { gridColumn: '1', gridRow: '1' } },
-    { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice, pos: { gridColumn: '2', gridRow: '1' } },
-    { id: 'pregnancy', title: 'حمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor, pos: { gridColumn: '3', gridRow: '1' } },
-    { id: 'motherhood', title: 'الأمومة', img: 'motherhood.png', icon: 'feelings', component: Motherhood, pos: { gridColumn: '2', gridRow: '2' } },
-    { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical, pos: { gridColumn: '3', gridRow: '3' } },
-    { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness, pos: { gridColumn: '2', gridRow: '3' } },
-    { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub, pos: { gridColumn: '1', gridRow: '3' } },
-  ];
-
-  // دالة المحرك لاستلام تأكيد الحفظ وجدولة الإشعارات وتوصيلها لـ App.jsx
+  const railRef = useRef(null);
+  const pausedRef = useRef(false);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (pausedRef.current || !railRef.current) return;
+      const rail = railRef.current;
+      const card = rail.querySelector('.health-promo-card');
+      const step = (card?.getBoundingClientRect().width || 220) + 12;
+      const atEnd = rail.scrollLeft <= -(rail.scrollWidth - rail.clientWidth - 8);
+      rail.scrollTo({ left: atEnd ? 0 : rail.scrollLeft - step, behavior: 'smooth' });
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
   const handleTriggerSync = () => {
-    console.log("📥 [محرك Health] تم استقبال إشارة حفظ البيانات من الصفحة الفرعية، جاري تمريرها إلى App.jsx...");
-
-    // 1. إرسال الحدث العام ليتلقاه App.jsx في نظام الأندرويد
     window.dispatchEvent(new Event('trigger_sync_notifications'));
-
-    // 2. إذا تم تمرير دالة callback مباشرة من App.jsx نقوم بتنفيذها إضافياً لضمان الفاعلية
-    if (typeof onSyncReminders === 'function') {
-      onSyncReminders();
-    }
+    if (typeof onSyncReminders === 'function') onSyncReminders();
   };
-
-  const styles = {
-    container: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(3, 1fr)',
-      gap: '10px',
-      padding: '10px',
-      direction: 'rtl',
-      background: '#f9f9f9',
-      height: '100vh',
-      boxSizing: 'border-box'
-    },
-    fullScreenComponent: {
-      width: '100%',
-      height: '100vh',
-      background: '#fff',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      zIndex: 100,
-      overflowY: 'auto'
-    },
-    card: {
-      background: '#fff',
-      borderRadius: '15px',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      cursor: 'pointer',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      position: 'relative',
-      height: '100%'
-    },
-    image: {
-      width: '100%',
-      height: '80%',
-      objectFit: 'cover',
-    },
-    footer: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '5px',
-      padding: '5px',
-      height: '20%'
-    },
-    backButton: {
-        position: 'fixed',
-        bottom: '20px',
-        left: '20px',
-        padding: '10px 20px',
-        backgroundColor: '#ad1457',
-        color: 'white',
-        borderRadius: '25px',
-        border: 'none',
-        zIndex: 101,
-        cursor: 'pointer'
-    }
-  };
-
   if (activeTab) {
-    const activeSection = sections.find(s => s.id === activeTab);
-    return (
-      <div style={styles.fullScreenComponent}>
-        <button style={styles.backButton} onClick={() => setActiveTab(null)}>عودة</button>
-        <Suspense fallback={<p style={{textAlign: 'center', marginTop: '50px'}}>جاري التحميل...</p>}>
-          {activeSection && activeSection.component ? (
-            /* نقوم هنا بتمرير دالة التفعيل والوساطة للصفحة المفتوحة كـ prop لضمان إمكانية التخاطب المباشر */
-            <activeSection.component onNotificationSync={handleTriggerSync} />
-          ) : (
-            <div style={{padding: '20px', textAlign: 'center'}}>قريباً...</div>
-          )}
-        </Suspense>
-      </div>
-    );
+    const activeSection = sections.find((section) => section.id === activeTab);
+    return <div className="health-fullscreen-page">
+      <button className="health-back-button" onClick={() => setActiveTab(null)}>عودة</button>
+      <Suspense fallback={<p className="health-loading">جاري التحميل...</p>}>
+        {activeSection && <activeSection.component onNotificationSync={handleTriggerSync} />}
+      </Suspense>
+    </div>;
   }
-
-  return (
-    <div style={styles.container}>
-      {sections.map((sec) => {
-        const Icon = iconMap[sec.icon] || iconMap.insight;
-
-        // استخدام المسار النسبي للأصول لضمان عمل الصور داخل واجهة التطبيق
-        const imageSource = new URL(`../assets/health/${sec.img}`, import.meta.url).href;
-
-        return (
-          <div
-            key={sec.id}
-            style={{ ...styles.card, ...sec.pos }}
-            onClick={() => setActiveTab(sec.id)}
-          >
-            <img
-              src={imageSource}
-              alt={sec.title}
-              style={styles.image}
-            />
-            <div style={styles.footer}>
-              <Icon size={16} color="#ad1457" />
-              <span style={{ fontWeight: 'bold', color: '#333', fontSize: '12px' }}>{sec.title}</span>
-            </div>
-          </div>
-        );
+  return <section className="health-page" dir="rtl">
+    <div className="health-heading"><div><span>مساحتك اليومية</span><h1>صحتك</h1></div><span className="health-swipe-hint">اسحبي للتصفح</span></div>
+    <div className="health-promo-rail" ref={railRef} onPointerDown={() => { pausedRef.current = true; }} onPointerUp={() => { pausedRef.current = false; }} onPointerCancel={() => { pausedRef.current = false; }}>
+      {sections.map((section) => {
+        const Icon = iconMap[section.icon] || iconMap.insight;
+        const imageSource = new URL(`../assets/health/${section.img}`, import.meta.url).href;
+        return <button className="health-promo-card" key={section.id} onClick={() => setActiveTab(section.id)}>
+          <img src={imageSource} alt={section.title} /><span className="health-promo-overlay" />
+          <span className="health-promo-copy"><Icon size={17} /><strong>{section.title}</strong><small>اكتشفي المزيد</small></span>
+        </button>;
       })}
     </div>
-  );
-};
-
-export default Health;
+    <div className="health-dots" aria-hidden="true">{sections.map((section, index) => <span key={section.id} className={index === 0 ? 'active' : ''} />)}</div>
+  </section>;
+}

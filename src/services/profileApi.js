@@ -4,7 +4,7 @@ import { getFirebaseIdToken } from './authService';
 export const cloudflareRequest = async (path, options = {}) => {
   const token = await getFirebaseIdToken();
   const headers = new Headers(options.headers || {});
-  if (!headers.has('Content-Type') && options.body !== undefined) headers.set('Content-Type', 'application/json');
+  if (!headers.has('Content-Type') && options.body !== undefined && !(typeof FormData !== 'undefined' && options.body instanceof FormData)) headers.set('Content-Type', 'application/json');
   if (token) headers.set('Authorization', `Bearer ${token}`);
   const response = await fetch(apiUrl(path), { ...options, headers });
   if (!response.ok) {
@@ -23,9 +23,16 @@ export const postApi = (path, data, options = {}) => cloudflareRequest(path, {
 
 export const bootstrapProfile = (payload) => postApi('api/auth/bootstrap', payload);
 export const getProfile = () => cloudflareRequest('api/profile');
-export const updateProfile = (payload) => postApi('api/profile', payload, { method: 'PUT' });
+export const updateProfile = (payload) => cloudflareRequest('api/profile', {
+  method: 'PATCH',
+  body: JSON.stringify(payload),
+  headers: { 'Content-Type': 'application/json' },
+});
 
-export const uploadAvatar = async (base64, fileName = `avatar-${Date.now()}.jpg`, mimeType = 'image/jpeg') =>
-  postApi('api/profile/avatar', { base64, fileName, mimeType });
+export const uploadAvatar = async (file) => {
+  const form = new FormData();
+  form.append('file', file, file.name || `avatar-${Date.now()}.jpg`);
+  return cloudflareRequest('api/profile/avatar', { method: 'POST', body: form });
+};
 
 export const fetchAi = (payload) => postApi('api/ai', payload);
