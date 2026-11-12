@@ -167,7 +167,7 @@ function App({ user, onUserUpdated }) {
 
       if (activeReminders.length > 0) {
         const syncOptions = {
-          url: apiUrl('api/sync'),
+          url: apiUrl('api/sync/notifications'),
           headers: { 'Content-Type': 'application/json' },
           data: {
             target: 'notifications',
@@ -183,7 +183,11 @@ function App({ user, onUserUpdated }) {
 
       const perms = await LocalNotifications.checkPermissions();
       if (perms.display !== 'granted') {
-        await LocalNotifications.requestPermissions();
+        const requested = await LocalNotifications.requestPermissions();
+        if (requested.display !== 'granted') {
+          console.warn('⚠️ تم رفض إذن الإشعارات المحلية');
+          return;
+        }
       }
 
       const pending = await LocalNotifications.getPending();
@@ -211,8 +215,9 @@ function App({ user, onUserUpdated }) {
 
         const finalPath = `res://public/notifications/${iconName}`;
 
+        const stableId = [...String(rem.id || rem.scheduled_for || rem.title)].reduce((hash, char) => ((hash * 31) + char.charCodeAt(0)) >>> 0, 7) || 7;
         return {
-          id: Math.floor(Math.random() * 1000000),
+          id: stableId,
           title: rem.title,
           body: rem.body,
           schedule: { at: new Date(rem.scheduled_for) },
@@ -220,7 +225,6 @@ function App({ user, onUserUpdated }) {
           sound: 'default',
           smallIcon: 'ic_stat_name',
           largeIcon: finalPath,
-          attachments: [{ id: 'res', url: finalPath }],
           extra: { report: rem.body }
         };
       });
