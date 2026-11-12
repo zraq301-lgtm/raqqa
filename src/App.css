@@ -187,7 +187,10 @@ body {
 .header-library-button img { width:32px; height:32px; border-radius:10px; object-fit:cover; }
 .profile-editor-backdrop { position:fixed; inset:0; z-index:2000; display:grid; place-items:center; padding:20px; background:rgba(62,25,46,.38); backdrop-filter:blur(5px); }
 .profile-editor { position:relative; width:min(100%,390px); padding:25px; border-radius:26px; background:#fff; box-shadow:0 20px 70px rgba(72,22,49,.25); text-align:center; }
+.profile-editor-full { width:min(100%,760px); max-height:calc(100vh - 40px); overflow:auto; text-align:right; }
 .profile-editor h2 { margin:0 0 20px; color:#7b3157; }
+.profile-editor-heading { display:flex; justify-content:space-between; align-items:center; padding-inline:8px; }
+.profile-editor-heading p { margin:-12px 0 20px; color:#9b6a82; font-size:13px; }
 .profile-editor-close { position:absolute; top:10px; left:13px; border:0; background:none; color:#9b6a82; font-size:27px; cursor:pointer; }
 .profile-photo-picker { display:grid; place-items:center; gap:7px; margin:0 auto 18px; border:0; background:none; color:#7b3157; cursor:pointer; }
 .profile-photo-picker img, .profile-photo-picker span { width:96px; height:96px; border-radius:50%; object-fit:cover; display:grid; place-items:center; background:#fce7f3; color:#b12a68; font-size:38px; border:3px solid #f5c3d8; }
@@ -197,6 +200,14 @@ body {
 .profile-editor-message { color:#7b3157; font-size:13px; min-height:20px; }
 .profile-save-button { width:100%; margin-top:10px; border:0; border-radius:14px; padding:13px; background:#7b3157; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
 .profile-save-button:disabled { opacity:.6; cursor:wait; }
+.profile-account-card { margin-top:22px; padding:18px; border:1px solid #f1dbe6; border-radius:18px; background:#fffafd; }
+.profile-account-card h3 { margin:0 0 12px; color:#7b3157; font-size:16px; }
+.profile-account-table { display:grid; gap:8px; }
+.profile-account-table div { display:flex; justify-content:space-between; gap:18px; padding:10px 12px; border-radius:10px; background:#fff; border:1px solid #f7e9ef; }
+.profile-account-table span { color:#8c6678; font-size:13px; }
+.profile-account-table b { color:#54243d; font-size:13px; text-align:left; overflow-wrap:anywhere; }
+.profile-mono { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px !important; }
+@media (max-width:600px) { .profile-editor-full { max-height:calc(100vh - 20px); padding:20px 16px; border-radius:20px; } .profile-account-table div { align-items:flex-start; flex-direction:column; gap:4px; } .profile-account-table b { text-align:right; } }
 /* قسم صحتك: شريط بطاقات أفقي يشبه الإعلانات المتجاورة */
 .health-page { min-height:100%; padding:18px 0 24px; background:linear-gradient(180deg,#fff8fb 0%,#fff 55%); overflow:hidden; }
 .health-heading { display:flex; align-items:end; justify-content:space-between; padding:0 18px 14px; color:#a06b83; }
