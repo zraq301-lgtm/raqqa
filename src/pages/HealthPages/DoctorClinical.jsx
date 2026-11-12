@@ -102,7 +102,8 @@ const DoctorClinical = () => {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `أنا أنثى مسلمة، بصفتك استشاري طب متخصص ومعتمد: ${finalPrompt}. يرجى تقديم تقرير طبي استشاري احترافي مفصل.`
+          prompt: `أنا أنثى مسلمة، بصفتك استشاري طب متخصص ومعتمد: ${finalPrompt}. يرجى تقديم تقرير طبي استشاري احترافي مفصل.`,
+          image: imageUrl || undefined
         }
       };
 

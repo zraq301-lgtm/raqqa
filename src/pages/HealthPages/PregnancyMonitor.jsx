@@ -118,7 +118,7 @@ const PregnancyApp = () => {
       const response = await cloudflarePost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `بصفتك خبير، حلل هذه الصورة الطبية المتعلقة بالحمل: ${finalAttachmentUrl}` }
+        data: { prompt: 'بصفتك خبيرًا، حلل هذه الصورة الطبية المتعلقة بالحمل مع ذكر حدود التحليل والتنبيه لمراجعة الطبيب عند الحاجة.', image: finalAttachmentUrl }
       });
 
       if (response.status === 200) {

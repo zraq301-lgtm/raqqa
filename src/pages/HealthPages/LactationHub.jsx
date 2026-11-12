@@ -108,7 +108,7 @@ const LactationHub = () => {
       const response = await cloudflarePost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: strictPrompt }
+        data: { prompt: strictPrompt, image: imageUrl || undefined }
       });
 
       const aiGeneratedReport = response.data.reply || response.data.message || "عذراً، لم أتمكن من استلام التحليل الطبي حالياً.";

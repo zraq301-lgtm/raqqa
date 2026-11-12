@@ -123,7 +123,7 @@ const RaqqaFeelingsApp = () => {
       const options = {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: finalPrompt }
+        data: { prompt: finalPrompt, image: uploadedImageUrl || undefined }
       };
 
       const response = await cloudflarePost(options);

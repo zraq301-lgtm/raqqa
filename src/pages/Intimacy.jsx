@@ -96,7 +96,8 @@ const MarriageApp = () => {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `${MARRIAGE_EXPERT_PROMPT} ${systemPrompt}، القسم: ${pageTitle}، التفاصيل: (${summary}). ${imageUrl ? "الصورة المرفقة: " + imageUrl : ""} قدمي استشارة صريحة ومفصلة.`
+          prompt: `${MARRIAGE_EXPERT_PROMPT} ${systemPrompt}، القسم: ${pageTitle}، التفاصيل: (${summary}). قدمي استشارة صريحة ومفصلة.`,
+          image: imageUrl || undefined
         }
       };
 
