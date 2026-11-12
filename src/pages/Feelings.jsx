@@ -10,6 +10,7 @@ import {
 import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا من المسار المحدد
 import { takePhoto, fetchImage, uploadToCloudflare } from '../services/MediaService';
+import { saveHealthRecord, saveScheduledNotification } from '../services/profileApi';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -27,6 +28,7 @@ const RaqqaFeelingsApp = () => {
       // إعداد وقت الموعد (بعد 72 ساعة)
       const scheduledTime = new Date();
       scheduledTime.setHours(scheduledTime.getHours() + 72);
+      await saveHealthRecord('feelings', { category: categoryTitle, inputs, aiReport: aiGeneratedReport });
 
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
@@ -57,6 +59,7 @@ const RaqqaFeelingsApp = () => {
 
       // 4. إطلاق إشارة التفعيل لملف App.jsx
       window.dispatchEvent(new Event('trigger_sync_notifications'));
+      await saveScheduledNotification({ category: 'feelings', title: `تذكير المشاعر: ${categoryTitle}`, body: 'راجعي تسجيلك السابق واكتبي ما تشعرين به اليوم.', scheduled_for: scheduledTime.toISOString() });
 
       console.log("🚀 تم الحفظ محلياً مع إعدادات الصورة");
 

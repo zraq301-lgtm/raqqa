@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, uploadToCloudflare } from '../services/MediaService';
+import { saveHealthRecord, saveScheduledNotification } from '../services/profileApi';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -33,6 +34,7 @@ const MarriageApp = () => {
   // --- دالة الحفظ والجدولة المحلية الجديدة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
+      await saveHealthRecord('marital_intimacy', { report: aiGeneratedReport });
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
@@ -57,6 +59,7 @@ const MarriageApp = () => {
 
       // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
       window.dispatchEvent(new Event('trigger_sync_notifications'));
+      await saveScheduledNotification({ category: 'marital_intimacy', title: 'تذكير رقة الخاص', body: 'لديكِ متابعة خاصة محفوظة في حسابك.', scheduled_for: scheduledTime });
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 

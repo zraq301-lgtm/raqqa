@@ -13,6 +13,7 @@ import {
 
 // استيراد خدمات الميديا
 import { takePhoto, fetchImage, uploadToCloudflare } from '../services/MediaService';
+import { saveHealthRecord, saveScheduledNotification } from '../services/profileApi';
 
 const RaqqaApp = () => {
   const [activeCategory, setActiveCategory] = useState(null);
@@ -97,6 +98,7 @@ const RaqqaApp = () => {
       // إعداد وقت الموعد (بعد 72 ساعة من الآن)
       const scheduledTime = new Date();
       scheduledTime.setHours(scheduledTime.getHours() + 72);
+      await saveHealthRecord('fiqh', { category: categoryTitle, inputs, aiReport: aiGeneratedReport });
 
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
@@ -127,6 +129,7 @@ const RaqqaApp = () => {
 
       // 4. إطلاق إشارة التفعيل لملف App.jsx
       window.dispatchEvent(new Event('trigger_sync_notifications'));
+      await saveScheduledNotification({ category: 'fiqh', title: `مراجعة: ${categoryTitle}`, body: 'حان وقت مراجعة ما حفظته في رقة.', scheduled_for: scheduledTime.toISOString() });
 
       console.log("🚀 تم الحفظ محلياً وإرسال إشارة المزامنة");
 

@@ -5,6 +5,7 @@ import { CapacitorHttp } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { uploadToCloudflare } from '../../services/MediaService';
+import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
 
 // تم إصلاح المسار هنا ليكون نسبياً (Relative Path) ليعمل الـ Build بنجاح
 import alarmSound from '../../assets/fine-alarm.mp3';
@@ -100,6 +101,7 @@ const PregnancyMonitor = () => {
   // --- دالة الحفظ والتحليل الجديدة المستبدلة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
+      await saveHealthRecord('fitness_wellness', { data, aiReport: aiGeneratedReport });
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
@@ -124,6 +126,7 @@ const PregnancyMonitor = () => {
 
       // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
       window.dispatchEvent(new Event('trigger_sync_notifications'));
+      await saveScheduledNotification({ category: 'fitness_wellness', title: 'تذكير النشاط الصحي', body: 'حان وقت تسجيل نشاطك الصحي.', scheduled_for: scheduledTime });
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 
