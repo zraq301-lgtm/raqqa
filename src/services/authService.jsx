@@ -35,5 +35,17 @@ export const signInWithGoogle = async () => {
     return { success: false, error: error?.message || 'تعذر تسجيل الدخول بواسطة Google.' };
   }
 };
-export const signOut = () => firebaseSignOut(auth);
+export const signOut = async () => {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+        await GoogleAuth.signOut();
+      } catch (error) { console.warn('Native Google sign-out skipped:', error?.message); }
+    }
+  } finally {
+    ['raqqa_local_reminders', 'menstrual_data', 'last_prediction', 'chat_history', 'lady_lactation', 'lactation_history', 'lady_doctor', 'saved_reports', 'lady_fitness', 'roqa_alarms', 'roqa_chat_history', 'preg_ai_v3', 'saved_preg_month'].forEach((key) => localStorage.removeItem(key));
+    await firebaseSignOut(auth);
+  }
+};
 export { onAuthStateChanged };

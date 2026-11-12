@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { getProfile, updateProfile, uploadAvatar } from '../services/profileApi';
+import { signOut } from '../services/authService';
 
 export default function ProfileEditor({ user, onUpdated, onClose }) {
   const [name, setName] = useState(user?.display_name || user?.displayName || user?.firebaseUser?.displayName || '');
@@ -48,6 +49,12 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
     finally { setBusy(false); }
   };
 
+  const logout = async () => {
+    setBusy(true); setMessage('جاري تسجيل الخروج…');
+    try { await signOut(); }
+    catch (error) { setMessage(error.message || 'تعذر تسجيل الخروج.'); setBusy(false); }
+  };
+
   return <div className="profile-editor-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
     <section className="profile-editor" onClick={(event) => event.stopPropagation()} dir="rtl">
       <button className="profile-editor-close" onClick={onClose} aria-label="إغلاق">×</button>
@@ -60,6 +67,9 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
       <label className="profile-field">اسم البروفايل<input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} /></label>
       {message && <p className="profile-editor-message">{message}</p>}
       <button className="profile-save-button" onClick={save} disabled={busy}>{busy ? 'جارٍ الحفظ…' : 'حفظ التغييرات'}</button>
+      <button type="button" onClick={logout} disabled={busy} style={{ width: '100%', marginTop: 12, padding: '12px 16px', border: '1px solid #b42318', borderRadius: 14, background: '#fff1f0', color: '#b42318', fontWeight: 700, cursor: busy ? 'wait' : 'pointer' }}>
+        تسجيل الخروج وإنشاء حساب آخر
+      </button>
     </section>
   </div>;
 }
