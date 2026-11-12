@@ -12,6 +12,7 @@ import { CapacitorHttp } from '@capacitor/core';
 // استيراد الخدمات
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
 import babyIcon from '../../assets/baby.png';
+import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
 
 const PregnancyApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -62,6 +63,7 @@ const PregnancyApp = () => {
   // --- الدالة المستبدلة المطلوبة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
+      await saveHealthRecord('pregnancy', { inputs, pregnancyMonth, aiReport: aiGeneratedReport });
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
@@ -82,6 +84,7 @@ const PregnancyApp = () => {
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
 
       window.dispatchEvent(new Event('trigger_sync_notifications'));
+      await saveScheduledNotification({ category: 'pregnancy', title: 'تذكير متابعة الحمل', body: 'حان موعد متابعة الحمل المجدولة.', scheduled_for: scheduledTime, metadata: { pregnancyMonth } });
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
@@ -91,18 +94,7 @@ const PregnancyApp = () => {
   // دالة مساعدة لحفظ البيانات في قاعدة البيانات (اختياري كنسخة احتياطية)
   const saveToCloud = async (categoryTitle, currentAnalysis) => {
     try {
-      await cloudflarePost({
-        url: apiUrl('api/notifications'),
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          user_id: 1,
-          category: 'pregnancy_followup',
-          title: `تحديث طبي: ${categoryTitle}`,
-          body: currentAnalysis.substring(0, 100),
-          scheduled_for: rawDeliveryDate || new Date().toISOString(),
-          all_data: JSON.stringify(inputs)
-        }
-      });
+      await saveHealthRecord('pregnancy', { categoryTitle, analysis: currentAnalysis, inputs });
     } catch (e) { console.error("Cloud Save Error:", e); }
   };
 

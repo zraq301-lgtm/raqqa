@@ -3,6 +3,7 @@ import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import { saveHealthRecord } from '../../services/profileApi';
 
 const Motherhood = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -66,16 +67,7 @@ const Motherhood = () => {
 
   const saveDataToDB = async (selectedOnes) => {
     try {
-      await cloudflarePost({
-        url: apiUrl('api/notifications'),
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          user_id: 1,
-          category: lists[selectedIdx].title,
-          value: selectedOnes[0] || "نشاط تربوي",
-          note: `تحليل قسم ${lists[selectedIdx].title}`
-        }
-      });
+      await saveHealthRecord('motherhood', { category: lists[selectedIdx].title, selected: selectedOnes, value: selectedOnes[0] || "نشاط تربوي" });
     } catch (e) { console.error("Database Save Error:", e); }
   };
 

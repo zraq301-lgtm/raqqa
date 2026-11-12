@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
 
 const LactationHub = () => {
   const Icon = iconMap.feelings;
@@ -24,41 +25,11 @@ const LactationHub = () => {
   });
 
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const savedToken = null;
     const scheduledDate = new Date();
 
     try {
-      const saveToNeonOptions = {
-        url: apiUrl('api/notifications'),
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          fcmToken: savedToken || undefined,
-          user_id: 1,
-          category: 'breastfeeding',
-          title: `تقرير طبي متخصص: ${categoryTitle} 🩺`,
-          body: "تم إصدار تحليل شامل لحالة الرضاعة بناءً على المعايير الدولية.",
-          scheduled_for: scheduledDate.toISOString(),
-          note: JSON.stringify({
-            full_analysis: currentAnalysis,
-            full_data: data
-          })
-        }
-      };
-      await cloudflarePost(saveToNeonOptions);
-
-      if (savedToken) {
-        const fcmOptions = {
-          url: apiUrl('api/notifications/send'),
-          headers: { 'Content-Type': 'application/json' },
-          data: {
-            token: savedToken,
-            title: 'تقرير الرضاعة جاهز 🤱',
-            body: 'إليكِ تحليل ذكاء اصطناعي مفصل لحالتكِ وحالة طفلكِ.',
-            data: { type: 'medical_report' }
-          }
-        };
-        await cloudflarePost(fcmOptions);
-      }
+      await saveHealthRecord('breastfeeding', { categoryTitle, analysis: currentAnalysis, data });
+      await saveScheduledNotification({ category: 'breastfeeding', title: `تقرير الرضاعة: ${categoryTitle}`, body: 'تم حفظ التحليل داخل حسابك.', scheduled_for: scheduledDate.toISOString(), metadata: { type: 'medical_report' } });
     } catch (err) { console.error("خطأ في المزامنة:", err); }
   };
 

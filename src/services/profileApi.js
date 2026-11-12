@@ -36,3 +36,18 @@ export const uploadAvatar = async (file) => {
 };
 
 export const fetchAi = (payload) => postApi('api/ai', payload);
+
+export const saveHealthRecord = (category, data, options = {}) => postApi('api/health/records', {
+  id: options.id,
+  category,
+  data,
+  recordedAt: options.recordedAt || new Date().toISOString(),
+});
+
+export const getHealthRecords = (category) =>
+  cloudflareRequest(`api/health/records${category ? `?category=${encodeURIComponent(category)}` : ''}`);
+
+export const deleteHealthRecord = (id) =>
+  cloudflareRequest(`api/health/records?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+
+export const saveScheduledNotification = (payload) => postApi('api/notifications', payload);

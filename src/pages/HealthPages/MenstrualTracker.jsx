@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
 
 // --- مكون الساعة المطور (بناءً على التقويم القمري 29 يوماً) ---
 const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5 }) => {
@@ -95,6 +96,7 @@ const MenstrualTracker = () => {
   // --- دالة الحفظ المحلي والتحليل الذكي الجديدة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
+      await saveHealthRecord('menstrual', { ...data, aiReport: aiGeneratedReport });
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
@@ -113,6 +115,7 @@ const MenstrualTracker = () => {
       const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
       const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
+      await saveScheduledNotification({ category: 'menstrual', title: 'تذكير الدورة المتوقع', body: 'قد تبدأ دورتك حسب آخر تسجيل.', scheduled_for: scheduledTime, metadata: { prediction } });
 
       window.dispatchEvent(new Event('trigger_sync_notifications'));
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
