@@ -1,18 +1,17 @@
 import { publicAiPost } from '../services/apiClient';
 import { apiUrl } from '../config/apiConfig';
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import {
   Sparkles, Heart, Moon, BookOpen, Activity,
   ShieldCheck, Users, ShieldAlert, Wind, Gift,
   Clock, Brain, Flower2, Coins, Hourglass,
-  Camera, Mic, Image, Trash2, X, MapPin, MessageCircle, Bookmark, List,
+  Trash2, X, MapPin, MessageCircle, Bookmark, List,
   CheckCircle2, CircleOff, Star, Droplets, Bath, Smile, Sun, Utensils,
   Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus
 } from 'lucide-react';
 
-// استيراد خدمات الميديا
-import { takePhoto, fetchImage, uploadToCloudflare } from '../services/MediaService';
+import ChatMediaControls from '../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
 
 const RaqqaApp = () => {
@@ -26,6 +25,7 @@ const RaqqaApp = () => {
   const [showChat, setShowChat] = useState(false);
   const [showAnalysisModal, setShowAnalysisModal] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
+  const [chatImage, setChatImage] = useState(null);
   const [customPrompt, setCustomPrompt] = useState("");
 
   const menuData = [
@@ -138,7 +138,7 @@ const RaqqaApp = () => {
     }
   };
 
-  const handleProcess = async (directMsg = null) => {
+  const handleProcess = async (directMsg = null, imageData = null) => {
     setLoading(true);
     const contextText = customPrompt ? `[سياق إضافي: ${customPrompt}] ` : "";
     const summary = Object.entries(inputs).map(([k, v]) => `${k}: ${v === 'yes' ? 'تم بحمد الله' : 'لم يتم'}`).join(", ");
@@ -148,7 +148,7 @@ const RaqqaApp = () => {
       const options = {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: promptText }
+        data: { prompt: `${promptText}${imageData ? ' أرفقت صورة مع سؤالي.' : ''}`, image: imageData || undefined }
       };
       const response = await publicAiPost(options);
       const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
@@ -170,25 +170,14 @@ const RaqqaApp = () => {
     }
   };
 
-  const handleMediaUpload = async (type) => {
-    try {
-      setLoading(true);
-      let base64;
-      if (type === 'camera') base64 = await takePhoto();
-      else base64 = await fetchImage();
-
-      if (base64) {
-        const fileName = `raqqa_${Date.now()}.jpg`;
-        const fileUrl = await uploadToCloudflare(base64, fileName, 'image/jpeg');
-        const msg = `لقد أرسلت صورة لكِ للمساعدة في التحليل: ${fileUrl}`;
-        setHistory(prev => [{ role: 'user', text: "تم رفع صورة 📸" }, ...prev]);
-        handleProcess(msg);
-      }
-    } catch (err) {
-      alert("فشل رفع الصورة: " + err.message);
-    } finally {
-      setLoading(false);
-    }
+  const sendChatMessage = () => {
+    const text = chatMessage.trim() || (chatImage ? 'أرجو بيان الحكم أو النصيحة حول الصورة المرفقة.' : '');
+    if (!text || loading) return;
+    const image = chatImage;
+    setHistory(prev => [{ role: 'user', text, image, id: Date.now() }, ...prev]);
+    setChatImage(null);
+    setChatMessage('');
+    handleProcess(text, image);
   };
 
   const deleteSaved = (index) => {
@@ -319,6 +308,7 @@ const RaqqaApp = () => {
               <div style={styles.chatHistory}>
                 {history.map((msg, idx) => (
                   <div key={idx} style={msg.role === 'ai' ? styles.aiMsg : styles.userMsg}>
+                    {msg.image && <img src={msg.image} alt="الصورة المرفقة" style={{ display: 'block', maxWidth: 180, maxHeight: 180, objectFit: 'cover', borderRadius: 12, marginBottom: 8 }} />}
                     {msg.text}
                     {msg.role === 'ai' && <Bookmark size={14} onClick={() => setSavedReplies([...savedReplies, msg.text])} style={styles.saveIcon} />}
                   </div>
@@ -328,13 +318,12 @@ const RaqqaApp = () => {
             )}
             <div style={styles.chatFooter}>
               <div style={styles.mediaRow}>
-                <button style={styles.iconBtn} onClick={() => handleMediaUpload('camera')}><Camera size={20}/></button>
-                <button style={styles.iconBtn} onClick={() => alert("الميكروفون قيد التطوير")}><Mic size={20}/></button>
-                <button style={styles.iconBtn} onClick={() => handleMediaUpload('gallery')}><Image size={20}/></button>
+                <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                  onTranscript={(text) => setChatMessage((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#f06292" />
               </div>
               <div style={styles.inputRow}>
-                <input style={styles.chatInput} placeholder="اسألي رقة..." value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} />
-                <button style={styles.sendBtn} onClick={() => { if(!chatMessage) return; setHistory([{role:'user', text:chatMessage}, ...history]); handleProcess(chatMessage); setChatMessage(""); }}>إرسال</button>
+                <input style={styles.chatInput} placeholder="اسألي رقة..." value={chatMessage} onChange={(e) => setChatMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendChatMessage())} />
+                <button style={styles.sendBtn} onClick={sendChatMessage} disabled={loading || (!chatMessage.trim() && !chatImage)}>إرسال</button>
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا التي وفرتها
-import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 const DoctorClinical = () => {
@@ -14,7 +14,8 @@ const DoctorClinical = () => {
   const [aiResponse, setAiResponse] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [userPrompt, setUserPrompt] = useState(''); // حالة لإدخال النص اليدوي
+  const [userPrompt, setUserPrompt] = useState('');
+  const [chatImage, setChatImage] = useState(null);
   const [savedReports, setSavedReports] = useState(() => JSON.parse(localStorage.getItem('saved_reports')) || []);
 
   useEffect(() => {
@@ -72,33 +73,11 @@ const DoctorClinical = () => {
     }
   };
 
-  const handleMediaAction = async (type) => {
-    try {
-      setLoading(true);
-      let base64Image;
-      if (type === 'camera') {
-        base64Image = await takePhoto();
-      } else {
-        base64Image = await fetchImage();
-      }
-      if (base64Image) {
-        const imageUrl = await uploadToCloudflare(base64Image, `report_${Date.now()}.jpg`, 'image/jpeg');
-        await handleProcess("تحليل صورة", imageUrl);
-      }
-    } catch (error) {
-      console.error("فشل في معالجة الوسائط:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleProcess = async (catName = "عام", imageUrl = null) => {
     setLoading(true);
     const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
 
-    const finalPrompt = userPrompt
-      ? `سؤال المستخدم: ${userPrompt}. سياق البيانات: ${summary}`
-      : `بيانات عيادة ${catName}: ${summary}. ${imageUrl ? `رابط الصورة المرفقة: ${imageUrl}` : ''}`;
+    const finalPrompt = `${userPrompt ? `سؤال المستخدم: ${userPrompt}. سياق البيانات: ${summary}` : `بيانات عيادة ${catName}: ${summary}.`}${imageUrl ? ' أرفقت صورة مع السؤال؛ حلليها ضمن حدود المعلومات العامة.' : ''}`;
 
     try {
       const options = {
@@ -116,6 +95,7 @@ const DoctorClinical = () => {
       setAiResponse(responseText);
       setIsChatOpen(true);
       setUserPrompt('');
+      setChatImage(null);
 
       if (catName !== "سؤال مباشر") {
           // استخراج التاريخ المجدول من البيانات
@@ -242,13 +222,14 @@ const DoctorClinical = () => {
                 placeholder="اسألي الاستشاري هنا..."
                 value={userPrompt}
                 onChange={(e) => setUserPrompt(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleProcess('سؤال مباشر', chatImage))}
               />
-              <button onClick={() => handleProcess("سؤال مباشر")} style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px' }}>✈️</button>
+              <button onClick={() => handleProcess("سؤال مباشر", chatImage)} style={{ background: '#ff4d7d', color: 'white', border: 'none', borderRadius: '50%', width: '45px', height: '45px' }}>✈️</button>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-around', padding: '15px', background: '#fff5f7', borderRadius: '20px', marginBottom: '20px' }}>
-              <button onClick={() => handleMediaAction('camera')} style={{ background: 'white', border: '1px solid #eee', padding: '10px', borderRadius: '12px' }}>📸 كاميرا</button>
-              <button onClick={() => handleMediaAction('gallery')} style={{ background: 'white', border: '1px solid #eee', padding: '10px', borderRadius: '12px' }}>🖼️ استوديو</button>
+            <div style={{ marginBottom: '18px' }}>
+              <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                onTranscript={(text) => setUserPrompt((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#ff4d7d" />
             </div>
 
             {savedReports.map(r => (

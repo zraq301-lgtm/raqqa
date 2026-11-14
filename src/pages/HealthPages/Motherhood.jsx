@@ -2,7 +2,7 @@ import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord } from '../../services/profileApi';
 
 const Motherhood = () => {
@@ -12,6 +12,7 @@ const Motherhood = () => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputText, setInputText] = useState("");
+  const [chatImage, setChatImage] = useState(null);
   const [savedReplies, setSavedReplies] = useState([]);
   const [showSavedList, setShowSavedList] = useState(false);
 
@@ -71,7 +72,7 @@ const Motherhood = () => {
     } catch (e) { console.error("Database Save Error:", e); }
   };
 
-  const getAIAnalysis = async (customPrompt = null) => {
+  const getAIAnalysis = async (customPrompt = null, imageData = null) => {
     setIsLoading(true);
     setIsChatOpen(true);
     const currentList = lists[selectedIdx];
@@ -80,19 +81,21 @@ const Motherhood = () => {
     if (!customPrompt) saveDataToDB(selectedOnes);
     const systemExpertise = "أنت طبيب استشاري تربوي متخصص في علم نفس الأطفال. ردك يجب أن يكون مهنياً، توعوياً، ويستند إلى أفضل الممارسات التربوية الحديثة لتوجيه الأم نحو الصواب.";
     const promptMessage = customPrompt
-      ? `${systemExpertise} سؤال الأم: ${customPrompt}`
+      ? `${systemExpertise} سؤال الأم: ${customPrompt}${imageData ? ' (أرفقت صورة؛ راعيها في الإجابة عند إمكان ذلك.)' : ''}`
       : `${systemExpertise} الأم أنجزت مع طفلها: (${selectedOnes.join(", ")}) في مجال ${currentList.title}. قدم تحليلاً طبياً تربوياً.`;
 
+    if (customPrompt) setMessages(prev => [...prev, { id: Date.now(), text: customPrompt, sender: 'user', timestamp: new Date().toLocaleTimeString(), image: imageData }]);
     try {
       const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: promptMessage }
+        data: { prompt: promptMessage, image: imageData || undefined }
       });
       const responseText = response.data.reply || response.data.message || "عذراً، المستشار مشغول حالياً.";
 
       setMessages(prev => [...prev, { id: Date.now(), text: responseText, sender: 'ai', timestamp: new Date().toLocaleTimeString() }]);
 
+      setChatImage(null);
       if (!customPrompt) {
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
@@ -104,30 +107,12 @@ const Motherhood = () => {
     } finally { setIsLoading(false); }
   };
 
-  const handleMediaAction = async (type) => {
-    try {
-      let base64;
-      if (type === 'camera') { base64 = await takePhoto(); }
-      else { base64 = await fetchImage(); }
-
-      if (base64) {
-        setIsLoading(true);
-        const fileName = `child_care_${Date.now()}.png`;
-        const imageUrl = await uploadToCloudflare(base64, fileName, 'image/png');
-        setMessages(prev => [...prev, {
-          id: Date.now(),
-          text: `تم رفع صورة استشارية: ${imageUrl}`,
-          sender: 'user',
-          timestamp: new Date().toLocaleTimeString(),
-          isImage: true,
-          url: imageUrl
-        }]);
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error("Media Error:", error);
-      setIsLoading(false);
-    }
+  const sendChatQuestion = () => {
+    const question = inputText.trim() || (chatImage ? 'حللي الصورة المرفقة من فضلك.' : '');
+    if (!question || isLoading) return;
+    const image = chatImage;
+    setInputText('');
+    getAIAnalysis(question, image);
   };
 
   const deleteMessage = (id) => setMessages(prev => prev.filter(m => m.id !== id));
@@ -210,7 +195,7 @@ const Motherhood = () => {
                   {messages.map(msg => (
                     <div key={msg.id} style={msg.sender === 'ai' ? styles.aiMsgRow : styles.userMsgRow}>
                       <div style={styles.msgBubble}>
-                        {msg.isImage ? <img src={msg.url} alt="pic" style={{maxWidth:'100%', borderRadius:'10px'}} /> : <p style={styles.msgText}>{msg.text}</p>}
+                        {msg.image && <img src={msg.image} alt="الصورة المرفقة" style={{maxWidth:'100%', maxHeight:220, objectFit:'contain', borderRadius:'10px', marginBottom:8}} />}<p style={styles.msgText}>{msg.text}</p>
                         <div style={styles.msgFooter}>
                           <small>{msg.timestamp}</small>
                           <div style={{display:'flex', gap:'8px'}}>
@@ -229,12 +214,12 @@ const Motherhood = () => {
 
             <div style={styles.chatInputArea}>
               <div style={styles.mediaBar}>
-                <button style={styles.mediaBtnCol} onClick={() => handleMediaAction('camera')}><i className="fas fa-camera"></i><span>كاميرا</span></button>
-                <button style={styles.mediaBtnCol} onClick={() => handleMediaAction('gallery')}><i className="fas fa-image"></i><span>صور</span></button>
+                <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                  onTranscript={(text) => setInputText((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={isLoading} accent="#6a5acd" />
               </div>
               <div style={styles.inputRow}>
-                <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتبي استشارتك..." style={styles.input} />
-                <button onClick={() => { if(inputText.trim()){ setMessages(prev => [...prev, {id:Date.now(), text:inputText, sender:'user', timestamp:new Date().toLocaleTimeString()}]); getAIAnalysis(inputText); setInputText(""); } }} style={styles.sendBtn}>
+                <input value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder="اكتبي استشارتك..." style={styles.input} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendChatQuestion())} />
+                <button onClick={sendChatQuestion} disabled={isLoading || (!inputText.trim() && !chatImage)} style={styles.sendBtn}>
                   <i className="fas fa-paper-plane"></i>
                   <small style={{display:'block', fontSize:'0.6rem'}}>إرسال</small>
                 </button>

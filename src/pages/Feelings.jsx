@@ -9,8 +9,8 @@ import {
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا من المسار المحدد
-import { takePhoto, fetchImage, uploadToCloudflare } from '../services/MediaService';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
+import ChatMediaControls from '../components/ChatMediaControls';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -81,26 +81,6 @@ const RaqqaFeelingsApp = () => {
     { id: 10, title: "الإنجاز والعمل", icon: <Clock />, items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
   ];
 
-  const handleImageAction = async (type) => {
-    try {
-      setLoading(true);
-      let base64;
-      if (type === 'camera') base64 = await takePhoto();
-      else base64 = await fetchImage();
-
-      if (base64) {
-        const fileName = `raqqa_${Date.now()}.jpg`;
-        const url = await uploadToCloudflare(base64, fileName, 'image/jpeg');
-        setUploadedImageUrl(url);
-        alert("تم رفع الصورة بنجاح، يمكنك الآن سؤال الذكاء الاصطناعي عنها ✨");
-      }
-    } catch (err) {
-      alert("فشل في معالجة الصورة: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleProcess = async (customPrompt = null) => {
     setLoading(true);
     setShowChat(true);
@@ -119,7 +99,7 @@ const RaqqaFeelingsApp = () => {
       قدمي نصائح عملية (Somatic tracking) وتوجيهات لترميم الذات، مع ذكر آية أو حديث يربط الجانب النفسي بالإيماني.`;
 
     if (uploadedImageUrl) {
-      finalPrompt += ` \n (مرفق صورة لتحليلها: ${uploadedImageUrl})`;
+      finalPrompt += ' (أرفقت صورة مع السؤال؛ افحصيها ضمن حدود المعلومات العامة.)';
     }
 
     try {
@@ -146,6 +126,13 @@ const RaqqaFeelingsApp = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChatSend = () => {
+    const message = chatInput.trim();
+    if (!message && !uploadedImageUrl) return;
+    setChatInput('');
+    handleProcess(message || 'حللي الصورة المرفقة من فضلك.');
   };
 
   const deleteHistoryItem = (index) => {
@@ -263,20 +250,20 @@ const RaqqaFeelingsApp = () => {
                   placeholder="اسألي رقة عن أي وجع أو شعور..."
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && chatInput && handleProcess(chatInput)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleChatSend())}
                 />
                 <button
                   style={styles.sendBtn}
-                  onClick={() => { if(chatInput) { handleProcess(chatInput); setChatInput(""); } }}
+                  onClick={handleChatSend}
+                  disabled={loading}
                 >
                   <Send size={20} />
                 </button>
               </div>
 
               <div style={styles.chatToolbar}>
-                <button style={styles.toolBtnChat} onClick={() => handleImageAction('camera')} title="كاميرا"><Camera size={22}/></button>
-                <button style={styles.toolBtnChat} onClick={() => handleFeatureNotImplemented("التسجيل الصوتي")} title="تسجيل صوتي"><Mic size={22}/></button>
-                <button style={styles.toolBtnChat} onClick={() => handleImageAction('gallery')} title="إرفاق صورة"><Image size={22}/></button>
+                <ChatMediaControls imageData={uploadedImageUrl} onImageSelected={setUploadedImageUrl} onImageRemoved={() => setUploadedImageUrl(null)}
+                  onTranscript={(text) => setChatInput((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#f06292" />
                 <button style={styles.toolBtnChat} onClick={() => {setHistory([]); setAiResponse("تم مسح السجل بنجاح.");}} title="مسح السجل"><Trash2 size={22}/></button>
               </div>
             </div>

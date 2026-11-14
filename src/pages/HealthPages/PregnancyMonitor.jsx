@@ -10,7 +10,7 @@ import {
 import { CapacitorHttp } from '@capacitor/core';
 
 // استيراد الخدمات
-import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import ChatMediaControls from '../../components/ChatMediaControls';
 import babyIcon from '../../assets/baby.png';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
@@ -21,6 +21,7 @@ const PregnancyApp = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState(JSON.parse(localStorage.getItem('preg_ai_v3')) || []);
   const [promptInput, setPromptInput] = useState('');
+  const [chatImage, setChatImage] = useState(null);
 
   const [pregnancyMonth, setPregnancyMonth] = useState(localStorage.getItem('saved_preg_month') || '');
   const [deliveryDate, setDeliveryDate] = useState('');
@@ -98,43 +99,21 @@ const PregnancyApp = () => {
     } catch (e) { console.error("Cloud Save Error:", e); }
   };
 
-  const handleMediaAction = async (sourceType) => {
-    try {
-      const base64Data = sourceType === 'camera' ? await takePhoto() : await fetchImage();
-      if (!base64Data) return;
-      setIsProcessing(true);
-      setShowChat(true);
-      const fileName = `preg_img_${Date.now()}.png`;
-      const finalAttachmentUrl = await uploadToCloudflare(base64Data, fileName, 'image/png');
-
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
-        data: { prompt: 'بصفتك خبيرًا، حلل هذه الصورة الطبية المتعلقة بالحمل مع ذكر حدود التحليل والتنبيه لمراجعة الطبيب عند الحاجة.', image: finalAttachmentUrl }
-      });
-
-      if (response.status === 200) {
-        const aiReply = response.data.reply || "تم التحليل بنجاح.";
-        setChatHistory(prev => [{ id: Date.now(), query: "تحليل صورة", reply: aiReply, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
-        await handleSaveAndAnalysis(aiReply, rawDeliveryDate || new Date().toISOString());
-      }
-    } catch (error) { console.error(error); } finally { setIsProcessing(false); }
-  };
-
   const sendCustomPrompt = async () => {
-    if (!promptInput.trim()) return;
+    if (!promptInput.trim() && !chatImage) return;
     setLoading(true);
     setShowChat(true);
-    const userQuery = promptInput;
+    const userQuery = promptInput.trim() || 'حللي الصورة المرفقة المتعلقة بالحمل.';
     setPromptInput('');
     try {
       const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: userQuery }
+        data: { prompt: userQuery, image: chatImage || undefined }
       });
       const reply = response.data.reply || response.data.message;
-      setChatHistory(prev => [{ id: Date.now(), query: userQuery, reply, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
+      setChatHistory(prev => [{ id: Date.now(), query: userQuery, reply, image: chatImage, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
+      setChatImage(null);
     } catch (err) { console.error(err); }
     setLoading(false);
   };
@@ -257,7 +236,7 @@ const PregnancyApp = () => {
 
       <div className="quick-chat-bar">
         <Sparkles size={20} color="#7C3AED" />
-        <input className="quick-input" placeholder="اسألي عن أي عرض أو استشارة..." value={promptInput} onChange={(e) => setPromptInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && sendCustomPrompt()} />
+        <input className="quick-input" placeholder="اسألي عن أي عرض أو استشارة..." value={promptInput} onChange={(e) => setPromptInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), sendCustomPrompt())} />
         <button onClick={sendCustomPrompt} style={{background:'none', border:'none', color:'#7C3AED'}}><Send size={20}/></button>
       </div>
 
@@ -320,13 +299,16 @@ const PregnancyApp = () => {
               {chatHistory.map(msg => (
                 <div key={msg.id} className="msg-card">
                   <div style={{fontSize:'11px', color:'#7C3AED', fontWeight:'bold', marginBottom: 5}}>متابعة: {msg.query}</div>
-                  <p style={{fontSize:'14px', color:'#334155', lineHeight: 1.6}}>{msg.reply}</p>
+                  {msg.image && <img src={msg.image} alt="الصورة المرفقة" style={{ maxWidth: '100%', maxHeight: 220, objectFit: 'contain', borderRadius: 12, marginBottom: 8 }} />}<p style={{fontSize:'14px', color:'#334155', lineHeight: 1.6}}>{msg.reply}</p>
                 </div>
               ))}
               {loading && <div style={{textAlign:'center', padding: 10, color: '#7C3AED'}}>جاري معالجة طلبك...</div>}
             </div>
-            <div className="prompt-bar" style={{padding:'10px', display:'flex', gap:'5px', background:'white'}}>
-              <button className="ai-btn" style={{padding:'10px'}} onClick={() => handleMediaAction('camera')}><Camera size={22}/></button>
+            <div className="prompt-bar" style={{padding:'10px', display:'flex', flexWrap:'wrap', gap:'5px', background:'white'}}>
+              <div style={{ flexBasis: '100%' }}>
+                <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                  onTranscript={(text) => setPromptInput((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#7C3AED" />
+              </div>
               <input className="custom-input" style={{flex: 1}} value={promptInput} onChange={(e) => setPromptInput(e.target.value)} placeholder="اسألي عن الأعراض أو التحاليل..." />
               <button className="ai-btn" style={{padding:'10px'}} onClick={sendCustomPrompt}><Send size={22}/></button>
             </div>

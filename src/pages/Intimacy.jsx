@@ -2,12 +2,12 @@ import { publicAiPost } from '../services/apiClient';
 import { apiUrl } from '../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Heart, MessageCircle, Camera, Mic, Trash2, Save,
+  Heart, MessageCircle, Trash2, Save,
   Send, Star, ShieldCheck, Flame,
-  Moon, Flower2, Sparkles, Brain, PlusCircle, X, Paperclip, Image as ImageIcon
+  Moon, Flower2, Sparkles, Brain, PlusCircle, X
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, uploadToCloudflare } from '../services/MediaService';
+import ChatMediaControls from '../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
 
 const MarriageApp = () => {
@@ -19,7 +19,7 @@ const MarriageApp = () => {
   const [userInput, setUserInput] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [chatImage, setChatImage] = useState(null);
 
   const messagesEndRef = useRef(null);
 
@@ -136,31 +136,16 @@ const MarriageApp = () => {
     setActiveList(null);
   };
 
-  const handleManualChat = async (text) => {
-    if (!text.trim()) return;
-    setMessages(prev => [...prev, { role: 'user', text: text }]);
+  const handleManualChat = async (text = userInput, imageData = chatImage) => {
+    const question = text.trim() || (imageData ? 'أرجو تقديم إرشاد مناسب حول الصورة المرفقة.' : '');
+    if ((!question && !imageData) || loading) return;
+    setMessages(prev => [...prev, { role: 'user', text: question, image: imageData, id: Date.now() }]);
     setLoading(true);
-    setUserInput("");
-    const result = await handleProcess({ "سؤال": text }, "دردشة خاصة", null, false);
-    setMessages(prev => [...prev, { role: 'ai', text: result }]);
+    setUserInput('');
+    setChatImage(null);
+    const result = await handleProcess({ 'سؤال': question || 'الصورة المرفقة' }, 'دردشة خاصة', imageData, false);
+    setMessages(prev => [...prev, { role: 'ai', text: result, id: Date.now() }]);
     setLoading(false);
-  };
-
-  const handleImageUpload = async () => {
-    try {
-      setUploading(true);
-      const base64 = await takePhoto();
-      const fileName = `raqqa_${Date.now()}.jpg`;
-      const uploadedUrl = await uploadToCloudflare(base64, fileName, 'image/jpeg');
-
-      setMessages(prev => [...prev, { role: 'user', text: "📸 تم إرسال صورة للتحليل..." }]);
-      const result = await handleProcess({ "مرفق": "صورة" }, "تحليل بصري", uploadedUrl, false);
-      setMessages(prev => [...prev, { role: 'ai', text: result }]);
-    } catch (error) {
-      alert("تعذر رفع الصورة: " + error.message);
-    } finally {
-      setUploading(false);
-    }
   };
 
   const saveToArchive = (msg) => {
@@ -245,6 +230,7 @@ const MarriageApp = () => {
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#fff9f9' }}>
             {messages.map((m, i) => (
               <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', background: m.role === 'user' ? '#800020' : '#fff', color: m.role === 'user' ? '#fff' : '#333', padding: '12px 18px', borderRadius: '20px', marginBottom: '15px', maxWidth: '85%', marginLeft: m.role === 'user' ? 'auto' : '0', boxShadow: '0 2px 6px rgba(0,0,0,0.05)', border: m.role === 'ai' ? '1px solid #f0e0e0' : 'none', position: 'relative' }}>
+                {m.image && <img src={m.image} alt="الصورة المرفقة" style={{ display: 'block', maxWidth: 190, maxHeight: 190, objectFit: 'cover', borderRadius: 12, marginBottom: 8 }} />}
                 {m.text}
                 {m.role === 'ai' && (
                   <Save size={14} onClick={() => saveToArchive(m.text)} style={{ position: 'absolute', bottom: '-20px', left: '5px', cursor: 'pointer', color: '#800020' }} />
@@ -252,16 +238,16 @@ const MarriageApp = () => {
               </div>
             ))}
             {loading && <div style={{ color: '#800020', fontSize: '0.8rem', textAlign: 'center' }}>رقة تراجع مكتبتها... 🖋️</div>}
-            {uploading && <div style={{ color: '#d4af37', fontSize: '0.8rem', textAlign: 'center' }}>جاري رفع الصورة... 📤</div>}
             <div ref={messagesEndRef} />
           </div>
 
-          <div style={{ padding: '10px 15px 30px', background: '#fff', display: 'flex', gap: '8px', borderTop: '1px solid #eee', alignItems: 'center' }}>
-            <button onClick={handleImageUpload} style={{ background: '#f0f0f0', border: 'none', borderRadius: '50%', width: '45px', height: '45px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Camera size={20} color="#800020" />
-            </button>
-            <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, padding: '14px 20px', borderRadius: '30px', border: '1px solid #ddd', outline: 'none' }} onKeyPress={(e) => e.key === 'Enter' && handleManualChat(userInput)} />
-            <button onClick={() => handleManualChat(userInput)} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ padding: '10px 15px 30px', background: '#fff', display: 'flex', flexWrap: 'wrap', gap: '8px', borderTop: '1px solid #eee', alignItems: 'center' }}>
+            <div style={{ flexBasis: '100%' }}>
+              <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                onTranscript={(text) => setUserInput(value => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#800020" />
+            </div>
+            <input value={userInput} onChange={(e) => setUserInput(e.target.value)} placeholder="اكتبي سؤالك هنا..." style={{ flex: 1, minWidth: 0, padding: '14px 20px', borderRadius: '30px', border: '1px solid #ddd', outline: 'none' }} onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleManualChat())} />
+            <button disabled={loading || (!userInput.trim() && !chatImage)} onClick={() => handleManualChat()} style={{ background: '#d4af37', border: 'none', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: loading ? 0.6 : 1 }} aria-label="إرسال الرسالة">
               <Send size={22} color="#800020" />
             </button>
           </div>

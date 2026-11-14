@@ -3,7 +3,7 @@ import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useMemo } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 // --- مكون الساعة المطور (بناءً على التقويم القمري 29 يوماً) ---
@@ -79,6 +79,7 @@ const MenstrualTracker = () => {
   const [loading, setLoading] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const [chatImage, setChatImage] = useState(null);
   const [chatHistory, setChatHistory] = useState(() => JSON.parse(localStorage.getItem('chat_history')) || []);
   const [savedNotes, setSavedNotes] = useState(() => JSON.parse(localStorage.getItem('saved_notes')) || []);
   const [openAccordion, setOpenAccordion] = useState(1);
@@ -86,7 +87,7 @@ const MenstrualTracker = () => {
 
   useEffect(() => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
-    localStorage.setItem('chat_history', JSON.stringify(chatHistory));
+    localStorage.setItem('chat_history', JSON.stringify(chatHistory.map(({ image, ...message }) => message)));
     localStorage.setItem('saved_notes', JSON.stringify(savedNotes));
     if (prediction) {
       localStorage.setItem('last_prediction', JSON.stringify(prediction));
@@ -126,8 +127,9 @@ const MenstrualTracker = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!chatInput.trim()) return;
-    const userMsg = { id: Date.now(), role: 'user', content: chatInput, time: new Date().toLocaleTimeString('ar-EG') };
+    if (!chatInput.trim() && !chatImage) return;
+    const currentInput = chatInput.trim() || 'حللي الصورة الصحية المرفقة من فضلك.';
+    const userMsg = { id: Date.now(), role: 'user', content: currentInput, image: chatImage, time: new Date().toLocaleTimeString('ar-EG') };
     setChatHistory(prev => [...prev, userMsg]);
     setChatInput('');
     setLoading(true);
@@ -136,11 +138,12 @@ const MenstrualTracker = () => {
       const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة كامل بياناتي الصحية بما فيها العمر والوزن وبيانات الفوط الصحية: ${JSON.stringify(data)}` }
+        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة كامل بياناتي الصحية بما فيها العمر والوزن وبيانات الفوط الصحية: ${JSON.stringify(data)}`, image: chatImage || undefined }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
       const aiMsg = { id: Date.now() + 1, role: 'ai', content: responseText, time: new Date().toLocaleTimeString('ar-EG') };
       setChatHistory(prev => [...prev, aiMsg]);
+      setChatImage(null);
 
       // حفظ الاستشارة محلياً كإشعار فوري
       await handleSaveAndAnalysis(responseText, new Date(Date.now() + 2000).toISOString());
@@ -206,16 +209,6 @@ const MenstrualTracker = () => {
 
     setLoading(false);
     setShowChat(true);
-  };
-
-  const handleMedia = async (type) => {
-    try {
-      const img = type === 'camera' ? await takePhoto() : await fetchImage();
-      if (img) {
-        const url = await uploadToCloudflare(img);
-        setChatHistory(prev => [...prev, { role: 'user', content: `[تم رفع ملف]: ${url}`, type: 'image', id: Date.now() }]);
-      }
-    } catch (e) { console.error(e); }
   };
 
   const styles = {
@@ -296,10 +289,7 @@ const MenstrualTracker = () => {
           <div style={{ padding: '20px', background: '#E91E63', color: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span onClick={() => setShowChat(false)} style={{ cursor: 'pointer', fontSize: '24px' }}>✕</span>
             <span style={{ fontWeight: 'bold' }}>طبيبة رقة الذكية</span>
-            <div style={{ display: 'flex', gap: '15px' }}>
-               <span onClick={() => handleMedia('camera')}>📸</span>
-               <span onClick={() => handleMedia('gallery')}>🖼️</span>
-            </div>
+            <span style={{ fontSize: 12 }}>استشارة خاصة</span>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#FDF4F5' }}>
@@ -313,6 +303,7 @@ const MenstrualTracker = () => {
                 boxShadow: '0 4px 10px rgba(0,0,0,0.05)', whiteSpace: 'pre-wrap',
                 position: 'relative'
               }}>
+                {msg.image && <img src={msg.image} alt="الصورة المرفقة" style={{ display: 'block', maxWidth: 200, maxHeight: 200, objectFit: 'cover', borderRadius: 12, marginBottom: 8 }} />}
                 {msg.content}
                 <div style={{ display: 'flex', gap: '10px', marginTop: '10px', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '5px' }}>
                   <button onClick={() => deleteMessage(msg.id)} style={{ fontSize: '10px', color: msg.role === 'user' ? '#ffc1c1' : '#E91E63', background: 'none', border: 'none' }}>حذف 🗑️</button>
@@ -323,13 +314,17 @@ const MenstrualTracker = () => {
             {loading && <p style={{ textAlign: 'center', color: '#E91E63' }}>جاري التفكير...</p>}
           </div>
 
-          <div style={styles.chatBar}>
+          <div style={{ ...styles.chatBar, flexWrap: 'wrap' }}>
+            <div style={{ flexBasis: '100%' }}>
+              <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                onTranscript={(text) => setChatInput((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#E91E63" />
+            </div>
             <input
               style={styles.chatInput}
               placeholder="اسألي طبيبة رقة أي شيء..."
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSendMessage())}
             />
             <button onClick={handleSendMessage} style={styles.sendBtn}>🚀</button>
           </div>

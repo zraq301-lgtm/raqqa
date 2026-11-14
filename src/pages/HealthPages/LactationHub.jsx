@@ -3,7 +3,7 @@ import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useRef, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
-import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
+import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 const LactationHub = () => {
@@ -18,6 +18,7 @@ const LactationHub = () => {
   const [showChat, setShowChat] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
   const [userQuery, setUserQuery] = useState('');
+  const [chatImage, setChatImage] = useState(null);
   const [history, setHistory] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('lactation_history')) || [];
@@ -31,18 +32,6 @@ const LactationHub = () => {
       await persistAiHealthRecord('breastfeeding', { categoryTitle, analysis: currentAnalysis, data });
       await persistAiScheduledNotification({ category: 'breastfeeding', title: `تقرير الرضاعة: ${categoryTitle}`, body: 'تم حفظ التحليل داخل حسابك.', scheduled_for: scheduledDate.toISOString(), metadata: { type: 'medical_report' } });
     } catch (err) { console.error("خطأ في المزامنة:", err); }
-  };
-
-  const handleMediaAction = async (type) => {
-    try {
-        setLoading(true);
-        const base64Data = type === 'camera' ? await takePhoto() : await fetchImage();
-        if (!base64Data) { setLoading(false); return; }
-        const timestamp = Date.now();
-        const fileName = `lactation_img_${timestamp}.png`;
-        const finalAttachmentUrl = await uploadToCloudflare(base64Data, fileName, 'image/png');
-        await handleSaveAndAnalyze("حللي هذه الصورة طبياً في سياق الرضاعة", finalAttachmentUrl);
-    } catch (error) { alert("حدث خطأ في معالجة الوسائط."); } finally { setLoading(false); }
   };
 
   const sections = [
@@ -122,6 +111,7 @@ const LactationHub = () => {
       if (!customQuery) await saveAndNotify("تحليل الرضاعة الشامل", aiGeneratedReport);
 
       setUserQuery('');
+      setChatImage(null);
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري للأندرويد");
 
     } catch (error) {
@@ -130,6 +120,11 @@ const LactationHub = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleChatSend = () => {
+    if (!userQuery.trim() && !chatImage) return;
+    handleSaveAndAnalyze(userQuery.trim() || 'حللي الصورة المرفقة في سياق الرضاعة.', chatImage);
   };
 
   const deleteResponse = (id) => {
@@ -190,10 +185,6 @@ const LactationHub = () => {
         <button onClick={() => handleSaveAndAnalyze()} style={styles.analyzeBtn}>
           {loading ? 'جاري إعداد التقرير الطبي...' : 'إصدار تقرير الرضاعة الشامل'}
         </button>
-        <div style={styles.actionButtons}>
-          <button onClick={() => handleMediaAction('gallery')} style={styles.roundBtn}>📁</button>
-          <button onClick={() => handleMediaAction('camera')} style={styles.roundBtn}>📷</button>
-        </div>
 
         <div style={styles.historyBox}>
           {history.map(item => (
@@ -219,6 +210,7 @@ const LactationHub = () => {
               <button onClick={() => setShowChat(false)} style={styles.closeBtn}>✕</button>
             </div>
             <div style={styles.chatBody}>
+              {chatImage && <img src={chatImage} alt="الصورة المرفقة" style={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain', borderRadius: 12, marginBottom: 12 }} />}
               {loading ? (
                 <div style={{textAlign:'center', marginTop:'50px'}}>
                    <div style={styles.loader}></div>
@@ -231,15 +223,20 @@ const LactationHub = () => {
               )}
             </div>
             <div style={styles.chatFooter}>
+              <div style={{ marginBottom: 10 }}>
+                <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                  onTranscript={(text) => setUserQuery((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#739673" />
+              </div>
               <div style={styles.chatInputWrapper}>
                 <input
                   style={styles.chatInput}
                   placeholder="اسألي الخبيرة عن أي تفاصيل إضافية..."
                   value={userQuery}
                   onChange={(e) => setUserQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleChatSend())}
                 />
                 <button
-                  onClick={() => handleSaveAndAnalyze(userQuery)}
+                  onClick={handleChatSend}
                   style={styles.sendBtn}
                 >🚀</button>
               </div>

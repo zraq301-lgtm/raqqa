@@ -2,9 +2,8 @@ import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { Camera } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { uploadToCloudflare } from '../../services/MediaService';
+import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 // تم إصلاح المسار هنا ليكون نسبياً (Relative Path) ليعمل الـ Build بنجاح
@@ -66,7 +65,7 @@ const PregnancyMonitor = () => {
 
   useEffect(() => {
     localStorage.setItem('roqa_alarms', JSON.stringify(alarms));
-    localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory));
+    localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory.map(({ image, img, ...message }) => message)));
   }, [alarms, chatHistory]);
 
   // --- تفعيل المنبه الصوتي والإشعارات المحلية ---
@@ -173,24 +172,16 @@ const PregnancyMonitor = () => {
     setPrompt("");
     setIsLoading(true);
     try {
-      const imageUrl = capturedImage ? await uploadToCloudflare(capturedImage, `fitness-${Date.now()}.jpg`, 'image/jpeg') : null;
       const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: userMsg || 'حللي الصورة المرفقة صحياً', image: imageUrl }
+        data: { prompt: userMsg || 'حللي الصورة المرفقة صحياً', image: capturedImage || undefined }
       });
       const reply = response.data.reply || response.data.message;
-      setChatHistory(prev => [{ type: 'user', text: userMsg, img: capturedImage }, { type: 'ai', text: reply }, ...prev]);
+      setChatHistory(prev => [{ type: 'user', text: userMsg || 'صورة مرفقة للتحليل', img: capturedImage }, { type: 'ai', text: reply }, ...prev]);
       setCapturedImage(null);
     } catch (err) { console.error(err); }
     finally { setIsLoading(false); }
-  };
-
-  const pickImage = async () => {
-    try {
-      const image = await Camera.getPhoto({ quality: 90, allowEditing: false, resultType: 'base64' });
-      setCapturedImage(`data:image/jpeg;base64,${image.base64String}`);
-    } catch (e) { console.log("User cancelled photo"); }
   };
 
   return (
@@ -244,14 +235,17 @@ const PregnancyMonitor = () => {
                   <button onClick={() => setCapturedImage(null)} style={mergedStyles.removeImg}>✕</button>
                 </div>
               )}
+              <div style={{ marginBottom: 10 }}>
+                <ChatMediaControls imageData={capturedImage} onImageSelected={setCapturedImage} onImageRemoved={() => setCapturedImage(null)}
+                  onTranscript={(text) => setPrompt((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={isLoading} accent="#7b1fa2" />
+              </div>
               <div style={mergedStyles.chatInputRow}>
-                <button onClick={pickImage} style={mergedStyles.iconBtn}>📷</button>
                 <input
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="اسألي طبيبتك عن أي شيء..."
                   style={mergedStyles.chatInput}
-                  onKeyPress={(e) => e.key === 'Enter' && handleAIQuery()}
+                  onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAIQuery())}
                 />
                 <button onClick={handleAIQuery} style={mergedStyles.sendBtn} disabled={isLoading}>
                   {isLoading ? '...' : '➔'}

@@ -3,6 +3,7 @@ import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import localTips from '../../data/tips.json';
+import ChatMediaControls from '../../components/ChatMediaControls';
 
 const HealthAdvice = () => {
   const [tip, setTip] = useState(null);
@@ -10,6 +11,7 @@ const HealthAdvice = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [userInput, setUserInput] = useState("");
+  const [chatImage, setChatImage] = useState(null);
   const [savedReplies, setSavedReplies] = useState([]);
 
   // --- 1. منطق جلب النصيحة (AI أولاً ثم Local) دون نيون ---
@@ -41,17 +43,17 @@ const HealthAdvice = () => {
 
   // --- 2. منطق شات "طبيبة رقة" دون نيون ---
   const handleAiChat = async () => {
-    if (!userInput.trim()) return;
-    const userMsg = { role: 'user', text: userInput };
+    if (!userInput.trim() && !chatImage) return;
+    const currentInput = userInput.trim();
+    const userMsg = { role: 'user', text: currentInput || 'حللي الصورة المرفقة من فضلك.', image: chatImage };
     setChatMessages(prev => [...prev, userMsg]);
-    const currentInput = userInput;
     setUserInput("");
 
     try {
       const options = {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${currentInput}` }
+        data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${currentInput || 'حللي الصورة المرفقة من فضلك.'}`, image: chatImage || undefined }
       };
 
       const response = await publicAiPost(options);
@@ -59,9 +61,12 @@ const HealthAdvice = () => {
 
       const aiMsg = { role: 'ai', text: reply };
       setChatMessages(prev => [...prev, aiMsg]);
+      setChatImage(null);
 
     } catch (err) {
       setChatMessages(prev => [...prev, { role: 'ai', text: "عذراً، لم أستطع الاتصال بالخادم." }]);
+    } finally {
+      setChatImage(null);
     }
   };
 
@@ -112,6 +117,7 @@ const HealthAdvice = () => {
               {chatMessages.map((m, idx) => (
                 <div key={idx} style={m.role === 'user' ? styles.userRow : styles.aiRow}>
                   <div style={m.role === 'user' ? styles.userBubble : styles.aiBubble}>
+                    {m.image && <img src={m.image} alt="الصورة المرفقة" style={{ display: 'block', maxWidth: 180, maxHeight: 180, objectFit: 'cover', borderRadius: 12, marginBottom: 8 }} />}
                     {m.text}
                     {m.role === 'ai' && (
                       <button onClick={() => addToLibrary(m)} style={styles.saveIconBtn}>📌 حفظ في المكتبة</button>
@@ -123,9 +129,8 @@ const HealthAdvice = () => {
 
             {/* أدوات الميديا والتحكم */}
             <div style={styles.mediaRow}>
-              <button onClick={() => alert("فتح الكاميرا...")}>📷</button>
-              <button onClick={() => alert("رفع من الاستوديو...")}>🖼️</button>
-              <button onClick={() => alert("بدء التسجيل...")}>🎤</button>
+              <ChatMediaControls imageData={chatImage} onImageSelected={setChatImage} onImageRemoved={() => setChatImage(null)}
+                onTranscript={(text) => setUserInput((value) => `${value}${value ? ' ' : ''}${text}`)} disabled={loading} accent="#ad1457" />
             </div>
 
             <div style={styles.inputRow}>
@@ -134,6 +139,7 @@ const HealthAdvice = () => {
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="اكتبي سؤالك هنا..."
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAiChat())}
               />
               <button onClick={handleAiChat} style={styles.sendIconBtn}>◀</button>
             </div>
