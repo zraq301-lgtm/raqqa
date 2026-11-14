@@ -1,9 +1,9 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
-import { saveHealthRecord } from '../../services/profileApi';
+import { persistAiHealthRecord } from '../../services/profileApi';
 
 const Motherhood = () => {
   const [selectedIdx, setSelectedIdx] = useState(0);
@@ -67,7 +67,7 @@ const Motherhood = () => {
 
   const saveDataToDB = async (selectedOnes) => {
     try {
-      await saveHealthRecord('motherhood', { category: lists[selectedIdx].title, selected: selectedOnes, value: selectedOnes[0] || "نشاط تربوي" });
+      await persistAiHealthRecord('motherhood', { category: lists[selectedIdx].title, selected: selectedOnes, value: selectedOnes[0] || "نشاط تربوي" });
     } catch (e) { console.error("Database Save Error:", e); }
   };
 
@@ -84,7 +84,7 @@ const Motherhood = () => {
       : `${systemExpertise} الأم أنجزت مع طفلها: (${selectedOnes.join(", ")}) في مجال ${currentList.title}. قدم تحليلاً طبياً تربوياً.`;
 
     try {
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: promptMessage }

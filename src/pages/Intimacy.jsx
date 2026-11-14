@@ -1,4 +1,4 @@
-import { cloudflarePost } from '../services/apiClient';
+import { publicAiPost } from '../services/apiClient';
 import { apiUrl } from '../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, uploadToCloudflare } from '../services/MediaService';
-import { saveHealthRecord, saveScheduledNotification } from '../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -34,7 +34,7 @@ const MarriageApp = () => {
   // --- دالة الحفظ والجدولة المحلية الجديدة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await saveHealthRecord('marital_intimacy', { report: aiGeneratedReport });
+      await persistAiHealthRecord('marital_intimacy', { report: aiGeneratedReport });
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
@@ -59,7 +59,7 @@ const MarriageApp = () => {
 
       // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
       window.dispatchEvent(new Event('trigger_sync_notifications'));
-      await saveScheduledNotification({ category: 'marital_intimacy', title: 'تذكير رقة الخاص', body: 'لديكِ متابعة خاصة محفوظة في حسابك.', scheduled_for: scheduledTime });
+      await persistAiScheduledNotification({ category: 'marital_intimacy', title: 'تذكير رقة الخاص', body: 'لديكِ متابعة خاصة محفوظة في حسابك.', scheduled_for: scheduledTime });
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 
@@ -104,7 +104,7 @@ const MarriageApp = () => {
         }
       };
 
-      const aiResponse = await cloudflarePost(aiOptions);
+      const aiResponse = await publicAiPost(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "أنا هنا معكِ يا رفيقتي، اسألي ما تشائين في خصوصيتنا.";
 
       // إذا كان الطلب يتطلب حفظ (من القوائم)، نقوم بجدولة الإشعار بعد 48 ساعة

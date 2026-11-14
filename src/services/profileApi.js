@@ -37,6 +37,7 @@ export const uploadAvatar = async (file) => {
 
 export const fetchAi = (payload) => postApi('api/ai', payload);
 
+// Strict APIs: callers that require a signed-in user's cloud data should keep errors.
 export const saveHealthRecord = (category, data, options = {}) => postApi('api/health/records', {
   id: options.id,
   category,
@@ -51,3 +52,28 @@ export const deleteHealthRecord = (id) =>
   cloudflareRequest(`api/health/records?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
 
 export const saveScheduledNotification = (payload) => postApi('api/notifications', payload);
+
+// Optional persistence for AI flows. AI/local Android notifications must not fail
+// just because the user is signed out or the cloud is temporarily unavailable.
+const reportOptionalPersistence = (operation, error) => {
+  console.warn(`[Raqqa] ${operation} skipped; AI result remains available locally.`, error);
+  return null;
+};
+
+export const persistAiHealthRecord = async (category, data, options = {}) => {
+  if (!(await getFirebaseIdToken())) return null;
+  try {
+    return await saveHealthRecord(category, data, options);
+  } catch (error) {
+    return reportOptionalPersistence('health record persistence', error);
+  }
+};
+
+export const persistAiScheduledNotification = async (payload) => {
+  if (!(await getFirebaseIdToken())) return null;
+  try {
+    return await saveScheduledNotification(payload);
+  } catch (error) {
+    return reportOptionalPersistence('scheduled notification persistence', error);
+  }
+};

@@ -1,4 +1,4 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,7 +12,7 @@ import { CapacitorHttp } from '@capacitor/core';
 // استيراد الخدمات
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
 import babyIcon from '../../assets/baby.png';
-import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 const PregnancyApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -63,7 +63,7 @@ const PregnancyApp = () => {
   // --- الدالة المستبدلة المطلوبة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await saveHealthRecord('pregnancy', { inputs, pregnancyMonth, aiReport: aiGeneratedReport });
+      await persistAiHealthRecord('pregnancy', { inputs, pregnancyMonth, aiReport: aiGeneratedReport });
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
@@ -84,7 +84,7 @@ const PregnancyApp = () => {
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
 
       window.dispatchEvent(new Event('trigger_sync_notifications'));
-      await saveScheduledNotification({ category: 'pregnancy', title: 'تذكير متابعة الحمل', body: 'حان موعد متابعة الحمل المجدولة.', scheduled_for: scheduledTime, metadata: { pregnancyMonth } });
+      await persistAiScheduledNotification({ category: 'pregnancy', title: 'تذكير متابعة الحمل', body: 'حان موعد متابعة الحمل المجدولة.', scheduled_for: scheduledTime, metadata: { pregnancyMonth } });
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
     } catch (error) {
       console.error("خطأ في عملية الحفظ والجدولة:", error);
@@ -94,7 +94,7 @@ const PregnancyApp = () => {
   // دالة مساعدة لحفظ البيانات في قاعدة البيانات (اختياري كنسخة احتياطية)
   const saveToCloud = async (categoryTitle, currentAnalysis) => {
     try {
-      await saveHealthRecord('pregnancy', { categoryTitle, analysis: currentAnalysis, inputs });
+      await persistAiHealthRecord('pregnancy', { categoryTitle, analysis: currentAnalysis, inputs });
     } catch (e) { console.error("Cloud Save Error:", e); }
   };
 
@@ -107,7 +107,7 @@ const PregnancyApp = () => {
       const fileName = `preg_img_${Date.now()}.png`;
       const finalAttachmentUrl = await uploadToCloudflare(base64Data, fileName, 'image/png');
 
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: 'بصفتك خبيرًا، حلل هذه الصورة الطبية المتعلقة بالحمل مع ذكر حدود التحليل والتنبيه لمراجعة الطبيب عند الحاجة.', image: finalAttachmentUrl }
@@ -128,7 +128,7 @@ const PregnancyApp = () => {
     const userQuery = promptInput;
     setPromptInput('');
     try {
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: userQuery }
@@ -151,7 +151,7 @@ const PregnancyApp = () => {
     setLoading(true);
     setShowChat(true);
     try {
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `حللي بيانات ${category.title} للحامل في الشهر ${pregnancyMonth}: ${dataString}` }

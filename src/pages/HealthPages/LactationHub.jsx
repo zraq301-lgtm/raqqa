@@ -1,10 +1,10 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useRef, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
-import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 const LactationHub = () => {
   const Icon = iconMap.feelings;
@@ -28,8 +28,8 @@ const LactationHub = () => {
     const scheduledDate = new Date();
 
     try {
-      await saveHealthRecord('breastfeeding', { categoryTitle, analysis: currentAnalysis, data });
-      await saveScheduledNotification({ category: 'breastfeeding', title: `تقرير الرضاعة: ${categoryTitle}`, body: 'تم حفظ التحليل داخل حسابك.', scheduled_for: scheduledDate.toISOString(), metadata: { type: 'medical_report' } });
+      await persistAiHealthRecord('breastfeeding', { categoryTitle, analysis: currentAnalysis, data });
+      await persistAiScheduledNotification({ category: 'breastfeeding', title: `تقرير الرضاعة: ${categoryTitle}`, body: 'تم حفظ التحليل داخل حسابك.', scheduled_for: scheduledDate.toISOString(), metadata: { type: 'medical_report' } });
     } catch (err) { console.error("خطأ في المزامنة:", err); }
   };
 
@@ -76,7 +76,7 @@ const LactationHub = () => {
       5. لا تخرجي عن موضوع الرضاعة والأمومة أبداً.
       `;
 
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: strictPrompt, image: imageUrl || undefined }

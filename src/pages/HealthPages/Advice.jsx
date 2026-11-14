@@ -1,4 +1,4 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
@@ -22,7 +22,7 @@ const HealthAdvice = () => {
         data: { prompt: "أعطني نصيحة طبية قصيرة ومفيدة للنساء اليوم" }
       };
 
-      const response = await cloudflarePost(options);
+      const response = await publicAiPost(options);
       const aiText = response.data.reply || response.data.message;
 
       if (aiText) {
@@ -54,7 +54,7 @@ const HealthAdvice = () => {
         data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${currentInput}` }
       };
 
-      const response = await cloudflarePost(options);
+      const response = await publicAiPost(options);
       const reply = response.data.reply || response.data.message;
 
       const aiMsg = { role: 'ai', text: reply };

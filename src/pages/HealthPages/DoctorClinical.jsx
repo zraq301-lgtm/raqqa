@@ -1,11 +1,11 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useRef } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا التي وفرتها
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
-import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 const DoctorClinical = () => {
   const Icon = iconMap.insight;
@@ -38,7 +38,7 @@ const DoctorClinical = () => {
   // --- وظيفة الحفظ وجدولة الإشعارات المحلية الجديدة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await saveHealthRecord('doctor_appointments', { data, aiReport: aiGeneratedReport });
+      await persistAiHealthRecord('doctor_appointments', { data, aiReport: aiGeneratedReport });
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
@@ -63,7 +63,7 @@ const DoctorClinical = () => {
 
       // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
       window.dispatchEvent(new Event('trigger_sync_notifications'));
-      await saveScheduledNotification({ category: 'doctor_appointments', title: 'تذكير موعد طبي', body: 'حان موعد المتابعة الطبية المسجلة.', scheduled_for: scheduledTime });
+      await persistAiScheduledNotification({ category: 'doctor_appointments', title: 'تذكير موعد طبي', body: 'حان موعد المتابعة الطبية المسجلة.', scheduled_for: scheduledTime });
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 
@@ -110,7 +110,7 @@ const DoctorClinical = () => {
         }
       };
 
-      const aiRes = await cloudflarePost(options);
+      const aiRes = await publicAiPost(options);
       const responseText = aiRes.data.reply || aiRes.data.message;
 
       setAiResponse(responseText);

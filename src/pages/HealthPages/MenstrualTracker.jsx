@@ -1,10 +1,10 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useEffect, useMemo } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import { takePhoto, fetchImage, uploadToCloudflare } from '../../services/MediaService';
-import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 // --- مكون الساعة المطور (بناءً على التقويم القمري 29 يوماً) ---
 const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5 }) => {
@@ -96,7 +96,7 @@ const MenstrualTracker = () => {
   // --- دالة الحفظ المحلي والتحليل الذكي الجديدة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await saveHealthRecord('menstrual', { ...data, aiReport: aiGeneratedReport });
+      await persistAiHealthRecord('menstrual', { ...data, aiReport: aiGeneratedReport });
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
@@ -115,7 +115,7 @@ const MenstrualTracker = () => {
       const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
       const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
       localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
-      await saveScheduledNotification({ category: 'menstrual', title: 'تذكير الدورة المتوقع', body: 'قد تبدأ دورتك حسب آخر تسجيل.', scheduled_for: scheduledTime, metadata: { prediction } });
+      await persistAiScheduledNotification({ category: 'menstrual', title: 'تذكير الدورة المتوقع', body: 'قد تبدأ دورتك حسب آخر تسجيل.', scheduled_for: scheduledTime, metadata: { prediction } });
 
       window.dispatchEvent(new Event('trigger_sync_notifications'));
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
@@ -133,7 +133,7 @@ const MenstrualTracker = () => {
     setLoading(true);
 
     try {
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة كامل بياناتي الصحية بما فيها العمر والوزن وبيانات الفوط الصحية: ${JSON.stringify(data)}` }
@@ -189,7 +189,7 @@ const MenstrualTracker = () => {
 
     try {
       const summary = JSON.stringify(data);
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `حللي بيانات الدورة الشهرية بدقة مع التركيز الشديد على (العمر: ${data['البيانات الحيوية_العمر']} والوزن: ${data['البيانات الحيوية_الوزن']}) بالإضافة لبيانات الفوط الصحية والأعراض، وقدمي تقرير طبي متخصص يوضح أن هذه البيانات تخص توقع الدورة القادمة: ${summary}` }

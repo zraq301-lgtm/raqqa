@@ -1,4 +1,4 @@
-import { cloudflarePost } from '../services/apiClient';
+import { publicAiPost } from '../services/apiClient';
 import { apiUrl } from '../config/apiConfig';
 import React, { useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
 import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا من المسار المحدد
 import { takePhoto, fetchImage, uploadToCloudflare } from '../services/MediaService';
-import { saveHealthRecord, saveScheduledNotification } from '../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -28,7 +28,7 @@ const RaqqaFeelingsApp = () => {
       // إعداد وقت الموعد (بعد 72 ساعة)
       const scheduledTime = new Date();
       scheduledTime.setHours(scheduledTime.getHours() + 72);
-      await saveHealthRecord('feelings', { category: categoryTitle, inputs, aiReport: aiGeneratedReport });
+      await persistAiHealthRecord('feelings', { category: categoryTitle, inputs, aiReport: aiGeneratedReport });
 
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
@@ -59,7 +59,7 @@ const RaqqaFeelingsApp = () => {
 
       // 4. إطلاق إشارة التفعيل لملف App.jsx
       window.dispatchEvent(new Event('trigger_sync_notifications'));
-      await saveScheduledNotification({ category: 'feelings', title: `تذكير المشاعر: ${categoryTitle}`, body: 'راجعي تسجيلك السابق واكتبي ما تشعرين به اليوم.', scheduled_for: scheduledTime.toISOString() });
+      await persistAiScheduledNotification({ category: 'feelings', title: `تذكير المشاعر: ${categoryTitle}`, body: 'راجعي تسجيلك السابق واكتبي ما تشعرين به اليوم.', scheduled_for: scheduledTime.toISOString() });
 
       console.log("🚀 تم الحفظ محلياً مع إعدادات الصورة");
 
@@ -129,7 +129,7 @@ const RaqqaFeelingsApp = () => {
         data: { prompt: finalPrompt, image: uploadedImageUrl || undefined }
       };
 
-      const response = await cloudflarePost(options);
+      const response = await publicAiPost(options);
       const responseText = response.data.reply || response.data.message || "شكراً لمشاركتكِ مشاعركِ يا رفيقتي.";
 
       setAiResponse(responseText);

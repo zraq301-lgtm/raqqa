@@ -1,11 +1,11 @@
-import { cloudflarePost } from '../../services/apiClient';
+import { publicAiPost } from '../../services/apiClient';
 import { apiUrl } from '../../config/apiConfig';
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Camera } from '@capacitor/camera';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { uploadToCloudflare } from '../../services/MediaService';
-import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
+import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
 // تم إصلاح المسار هنا ليكون نسبياً (Relative Path) ليعمل الـ Build بنجاح
 import alarmSound from '../../assets/fine-alarm.mp3';
@@ -101,7 +101,7 @@ const PregnancyMonitor = () => {
   // --- دالة الحفظ والتحليل الجديدة المستبدلة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     try {
-      await saveHealthRecord('fitness_wellness', { data, aiReport: aiGeneratedReport });
+      await persistAiHealthRecord('fitness_wellness', { data, aiReport: aiGeneratedReport });
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
@@ -126,7 +126,7 @@ const PregnancyMonitor = () => {
 
       // 4. إطلاق إشارة التفعيل الفوري لملف App.jsx لجدولة الإشعارات في الأندرويد
       window.dispatchEvent(new Event('trigger_sync_notifications'));
-      await saveScheduledNotification({ category: 'fitness_wellness', title: 'تذكير النشاط الصحي', body: 'حان وقت تسجيل نشاطك الصحي.', scheduled_for: scheduledTime });
+      await persistAiScheduledNotification({ category: 'fitness_wellness', title: 'تذكير النشاط الصحي', body: 'حان وقت تسجيل نشاطك الصحي.', scheduled_for: scheduledTime });
 
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 
@@ -147,7 +147,7 @@ const PregnancyMonitor = () => {
     setIsLoading(true);
     const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
     try {
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: `بصفتك خبيرة، حللي بيانات ${section.title}: ${sectionData}` }
@@ -174,7 +174,7 @@ const PregnancyMonitor = () => {
     setIsLoading(true);
     try {
       const imageUrl = capturedImage ? await uploadToCloudflare(capturedImage, `fitness-${Date.now()}.jpg`, 'image/jpeg') : null;
-      const response = await cloudflarePost({
+      const response = await publicAiPost({
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: { prompt: userMsg || 'حللي الصورة المرفقة صحياً', image: imageUrl }
