@@ -1,4 +1,4 @@
-name: GitHub OTA Web Bundle - Raqqa
+name: Cloudflare Pages OTA - Raqqa
 
 on:
   push:
@@ -12,14 +12,18 @@ on:
       - 'package-lock.json'
       - 'vite.config.*'
       - 'capacitor.config.json'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   publish-ota:
     runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -36,48 +40,25 @@ jobs:
       - name: Build Web Bundle
         run: npm run build
 
-      - name: Package and checksum OTA bundle
+      - name: Package OTA files for Cloudflare Pages
         shell: bash
         run: |
           set -euo pipefail
-          VERSION="ota-${GITHUB_SHA::12}"
-          ZIP="raqqa-ota.zip"
-          (cd dist_web && zip -qr "../$ZIP" .)
-          CHECKSUM=$(sha256sum "$ZIP" | awk '{print $1}')
-          cat > raqqa-ota-manifest.json <<EOF
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID GitHub secret'; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN GitHub secret'; exit 1; }
+          mkdir -p pages_deploy/ota
+          cp -a dist_web/. pages_deploy/
+          (cd dist_web && zip -qr ../pages_deploy/ota/raqqa-ota.zip .)
+          CHECKSUM=$(sha256sum pages_deploy/ota/raqqa-ota.zip | awk '{print $1}')
+          cat > pages_deploy/ota/raqqa-ota-manifest.json <<EOF
           {
-            "bundleId": "$VERSION",
+            "bundleId": "ota-${GITHUB_SHA::12}",
             "nativeCompatibility": "1",
             "artifactType": "zip",
-            "url": "https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota.zip",
+            "url": "https://raqqa-ota.pages.dev/ota/raqqa-ota.zip",
             "checksum": "$CHECKSUM"
           }
           EOF
 
-      - name: Publish OTA bundle to GitHub Releases
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ota-main
-          name: Raqqa OTA Web Bundle
-          prerelease: false
-          make_latest: false
-          overwrite_files: true
-          files: |
-            raqqa-ota.zip
-            raqqa-ota-manifest.json
-          body: |
-            Automatically published web-only OTA bundle from commit ${{ github.sha }}.
-            Native compatibility: 1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Mirror OTA assets to production release v2024
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v2024
-          overwrite_files: true
-          files: |
-            raqqa-ota.zip
-            raqqa-ota-manifest.json
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Deploy OTA to Cloudflare Pages
+        run: npx --yes wrangler@4 pages deploy pages_deploy --project-name=raqqa-ota --branch=main --commit-hash="$GITHUB_SHA" --commit-message="$GITHUB_SHA"

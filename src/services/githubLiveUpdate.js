@@ -1,20 +1,32 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { LiveUpdate } from '@capawesome/capacitor-live-update';
 
-const MANIFEST_URL = 'https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota-manifest.json';
+const MANIFEST_URLS = [
+  'https://raqqa-ota.pages.dev/ota/raqqa-ota-manifest.json',
+  'https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota-manifest.json',
+];
 const NATIVE_COMPATIBILITY = '1';
 let updateCheckStarted = false;
 
 async function fetchManifest() {
-  const url = `${MANIFEST_URL}?t=${Date.now()}`;
-  if (Capacitor.isNativePlatform()) {
-    const response = await CapacitorHttp.get({ url, headers: { Accept: 'application/json' } });
-    if (response.status < 200 || response.status >= 300) throw new Error(`GitHub OTA manifest request failed: ${response.status}`);
-    return typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+  let lastError;
+  for (const baseUrl of MANIFEST_URLS) {
+    const url = `${baseUrl}?t=${Date.now()}`;
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const response = await CapacitorHttp.get({ url, headers: { Accept: 'application/json' } });
+        if (response.status < 200 || response.status >= 300) throw new Error(`OTA manifest request failed: ${response.status}`);
+        return typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+      }
+      const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error(`OTA manifest request failed: ${response.status}`);
+      return response.json();
+    } catch (error) {
+      lastError = error;
+      console.warn(`[OTA] Source unavailable: ${baseUrl}`, error);
+    }
   }
-  const response = await fetch(url, { cache: 'no-store', headers: { Accept: 'application/json' } });
-  if (!response.ok) throw new Error(`GitHub OTA manifest request failed: ${response.status}`);
-  return response.json();
+  throw lastError || new Error('No OTA manifest source is available');
 }
 
 async function checkAndApplyUpdate() {
