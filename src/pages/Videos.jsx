@@ -42,7 +42,9 @@ const VideoLibrary = () => {
           return {
             id: item.id || `vid_${index}`,
             title: item.article?.title || "فيديو تعليمي",
-            url: item.media?.videoUrl || "",
+            body: item.article?.body || '',
+            url: item.media?.videoUrl || (item.article?.embeddedMedia?.type === 'video' ? item.article.embeddedMedia.url : ''),
+            imageUrl: item.media?.imageUrl || (item.article?.embeddedMedia?.type === 'image' ? item.article.embeddedMedia.url : ''),
             // التأكد من جلب الفئة (category) المخزنة في السيرفر أو وضعها كـ 'all' كخيار افتراضي
             category: item.article?.category || item.category || 'all'
           };
@@ -144,19 +146,26 @@ const VideoLibrary = () => {
           {filteredVideos.map((video, index) => (
             <div key={video.id || index} className="video-card-elegant">
               <div style={videoFrameWrapper}>
-                <iframe
-                  src={formatEmbedUrl(video.url)}
-                  title={video.title}
-                  style={iframeStyle}
-                  frameBorder="0"
-                  allowFullScreen
-                ></iframe>
+                {video.url ? (
+                  <iframe
+                    src={formatEmbedUrl(video.url)}
+                    title={video.title}
+                    style={iframeStyle}
+                    frameBorder="0"
+                    allowFullScreen
+                  ></iframe>
+                ) : video.imageUrl ? (
+                  <img src={video.imageUrl} alt={video.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: '#fceaf2', color: '#a04370', fontWeight: 700 }}>📝 مقال</div>
+                )}
               </div>
               <div style={videoInfoStyle}>
                 <span style={badgeStyle}>
                   {categories.find(c => c.id === video.category)?.label.split(' ')[1] || 'عام'}
                 </span>
                 <h3 style={videoTitleStyle}>{video.title}</h3>
+                {video.body && <p style={{ margin: '8px 0 0', color: '#66545f', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{video.body}</p>}
               </div>
             </div>
           ))}

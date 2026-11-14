@@ -3,6 +3,16 @@ import { CapacitorHttp } from '@capacitor/core';
 const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev';
 const FETCH_URL = `${API_BASE}/api/content`;
 
+export const fetchRecentContentFeed = async () => {
+  const response = await CapacitorHttp.get({
+    url: `${FETCH_URL}/feed`,
+    headers: { 'Cache-Control': 'no-cache' },
+  });
+  if (response.status >= 400) throw new Error(`content_feed_http_${response.status}`);
+  const result = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+  return Array.isArray(result?.items) ? result.items : [];
+};
+
 /**
  * دالة موحدة وجاهزة لجلب بيانات أي صفحة من السيرفر السحابي لـ رقة
  * @param {string} pageName - اسم الصفحة باللغة العربية (مثال: 'أيقونة الأناقة'، 'شغف وحرف')

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 // ✅ استيراد دوال الحفظ والحذف الصحيحة والموجودة بالفعل في ملف الخدمات
-import { savePageData, deletePageDataById, uploadVideo, uploadImage } from '../services/adminService';
+import { savePageData, deletePageDataById, uploadVideo, uploadImage, listRecentContentFeed } from '../services/adminService';
 
 const UploadManager = () => {
   const [targetPage, setTargetPage] = useState('مملكة الاسترخاء'); // القسم المستهدف
@@ -17,6 +17,27 @@ const UploadManager = () => {
   // حالات التحكم الخاصة بواجهة الحذف الذكي المطور (تقبل ID أو رابط ميديا أو بصمة زمنية)
   const [deleteId, setDeleteId] = useState('');
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [recentItems, setRecentItems] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentError, setRecentError] = useState('');
+  const [recentDeleteId, setRecentDeleteId] = useState('');
+
+  const refreshRecentContent = useCallback(async () => {
+    try {
+      const items = await listRecentContentFeed();
+      setRecentItems(items);
+      setRecentError('');
+    } catch (error) {
+      console.error('Recent content load error:', error);
+      setRecentError('تعذر تحميل المنشورات النشطة. تحققي من اتصال الخدمة.');
+    } finally {
+      setRecentLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshRecentContent();
+  }, [refreshRecentContent]);
 
   const targetPages = [
     'أيقونة الأناقة', 'شغف وحرف', 'ملاذ الأمومة', 'واحة العافية', 'دروب التمكين',
@@ -34,8 +55,8 @@ const UploadManager = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
-    if (!title.trim() || (!videoFile && !videoUrl.trim())) {
-      setMessage({ type: 'error', text: 'رجاءً أدخلي العنوان واختاري فيديو أو ضعي رابطًا خارجيًا!' });
+    if (!title.trim() || (!videoFile && !videoUrl.trim() && !imageFile)) {
+      setMessage({ type: 'error', text: 'رجاءً أدخلي العنوان واختاري فيديو أو صورة أو ضعي رابط فيديو خارجيًا!' });
       return;
     }
 
@@ -83,6 +104,7 @@ const UploadManager = () => {
 
       if (result) {
         setMessage({ type: 'success', text: `✨ تم رفع ونشر المحتوى بنجاح إلى قسم (${targetPage})! 🚀` });
+        await refreshRecentContent();
         setTitle('');
         setVideoUrl('');
         setVideoFile(null);
@@ -122,6 +144,7 @@ const UploadManager = () => {
       if (response && response.success) {
         setMessage({ type: 'success', text: `🗑️ ${response.message || 'تم حذف العنصر وتحديث قاعدة البيانات السحابية بنجاح!'}` });
         setDeleteId('');
+        await refreshRecentContent();
       } else {
         setMessage({ type: 'error', text: `⚠️ ${response.message || 'لم يتم العثور على عنصر يطابق هذا الرابط أو المعرف في هذا القسم.'}` });
       }
@@ -130,6 +153,25 @@ const UploadManager = () => {
       setMessage({ type: 'error', text: '❌ فشلت عملية الحذف السحابية، يرجى مراجعة اتصال السيرفر.' });
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleRecentDelete = async (item) => {
+    const titleText = item.article?.title?.trim() || 'هذا المحتوى';
+    if (!window.confirm(`هل تريدين حذف «${titleText}» نهائيًا من قسم ${item.pageName}؟`)) return;
+    setRecentDeleteId(item.id);
+    setMessage({ type: '', text: '' });
+    try {
+      const result = await deletePageDataById(item.pageName, item.id);
+      if (!result?.success) throw new Error(result?.message || 'content_delete_failed');
+      setRecentItems((items) => items.filter((candidate) => candidate.id !== item.id || candidate.pageName !== item.pageName));
+      setMessage({ type: 'success', text: `🗑️ تم حذف «${titleText}» من قسم ${item.pageName}.` });
+      await refreshRecentContent();
+    } catch (error) {
+      console.error('Recent content delete error:', error);
+      setMessage({ type: 'error', text: 'فشل حذف المحتوى. تحققي من صلاحيات الإدارة واتصال الخدمة.' });
+    } finally {
+      setRecentDeleteId('');
     }
   };
 
@@ -295,6 +337,37 @@ const UploadManager = () => {
           </div>
         </div>
 
+        <section style={{ ...styles.deleteCard, borderColor: '#f0e5dd', boxShadow: '0 12px 35px rgba(141, 110, 99, 0.04)' }} aria-label="المنشورات النشطة">
+          <h3 style={{ ...styles.deleteTitle, color: '#8d6e63' }}>🗂️ المنشورات النشطة في التطبيق</h3>
+          <p style={styles.deleteSubtitle}>تظهر هنا الفيديوهات والمقالات المنشورة خلال آخر 72 ساعة. استخدمي زر الحذف لإزالة العنصر مباشرة من القسم والتطبيق.</p>
+          {recentLoading ? (
+            <p style={styles.recentEmpty}>جاري تحميل المحتوى المنشور...</p>
+          ) : recentError ? (
+            <p style={{ ...styles.recentEmpty, color: '#C62828' }}>{recentError}</p>
+          ) : recentItems.length === 0 ? (
+            <p style={styles.recentEmpty}>لا توجد عناصر منشورة خلال آخر 72 ساعة.</p>
+          ) : (
+            <div style={styles.recentList}>
+              {recentItems.map((item) => (
+                <article key={`${item.pageName}-${item.id}`} style={styles.recentItem}>
+                  <div style={styles.recentItemInfo}>
+                    <strong style={styles.recentItemTitle}>{item.article?.title?.trim() || 'محتوى بدون عنوان'}</strong>
+                    <span style={styles.recentItemMeta}>{item.pageName} · {item.media?.videoUrl || item.article?.embeddedMedia?.type === 'video' ? 'فيديو' : item.media?.imageUrl || item.article?.embeddedMedia?.type === 'image' ? 'صورة' : 'مقال'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRecentDelete(item)}
+                    disabled={loading || deleteLoading || Boolean(recentDeleteId)}
+                    style={{ ...styles.recentDeleteButton, opacity: recentDeleteId === item.id ? 0.65 : 1 }}
+                  >
+                    {recentDeleteId === item.id ? 'جارٍ الحذف...' : 'حذف'}
+                  </button>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
       </div>
     </div>
   );
@@ -434,7 +507,14 @@ const styles = {
     whiteSpace: 'nowrap',
     transition: 'all 0.3s ease',
     boxShadow: '0 6px 20px rgba(213, 47, 47, 0.15)'
-  }
+  },
+  recentEmpty: { margin: '12px 0 0', padding: '14px', textAlign: 'center', borderRadius: '14px', background: '#FAF6F2', color: '#7E7265', fontSize: '0.9rem' },
+  recentList: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  recentItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: '14px', border: '1px solid #F0E5DD', background: '#fffdfb' },
+  recentItemInfo: { minWidth: 0, display: 'flex', flexDirection: 'column', gap: '5px' },
+  recentItemTitle: { color: '#4A3F35', fontSize: '0.95rem', overflowWrap: 'anywhere' },
+  recentItemMeta: { color: '#8D8276', fontSize: '0.78rem' },
+  recentDeleteButton: { flex: '0 0 auto', border: 'none', borderRadius: '10px', padding: '9px 15px', color: '#fff', background: 'linear-gradient(135deg,#D32F2F 0%,#9A1B1B 100%)', fontWeight: 700, cursor: 'pointer' }
 };
 
 export default UploadManager;

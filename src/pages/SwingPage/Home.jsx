@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { Share } from '@capacitor/share';
+import { fetchPageData } from '../../services/adminService';
 
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [newContent, setNewContent] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
+  const [adminContent, setAdminContent] = useState([]);
   const [selectedSection, setSelectedSection] = useState("bouh-display-1");
   const [loading, setLoading] = useState(false);
 
@@ -14,6 +16,24 @@ const Home = () => {
   const API_SAVE = `${API_BASE}/api/posts`;
 
   useEffect(() => { fetchPosts(); }, []);
+
+  useEffect(() => {
+    let active = true;
+    const sectionNames = ['الأرجوحة', 'bouh-display-1', 'bouh-display'];
+    Promise.all(sectionNames.map(async (section) => {
+      try {
+        const result = await fetchPageData(section);
+        const items = Array.isArray(result) ? result : result ? [result] : [];
+        return items.map((item) => ({ ...item, sourceSection: section }));
+      } catch (error) {
+        console.warn(`[Swing Home] تعذر جلب محتوى ${section}:`, error?.message || error);
+        return [];
+      }
+    })).then((results) => {
+      if (active) setAdminContent(results.flat());
+    });
+    return () => { active = false; };
+  }, []);
 
   const fetchPosts = async () => {
     try {
@@ -125,6 +145,25 @@ const Home = () => {
 
   return (
     <div style={{ direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: '#fffafb', minHeight: '100vh' }}>
+
+      {adminContent.length > 0 && (
+        <section style={{ margin: '15px', padding: '15px', borderRadius: '22px', background: '#fff', border: '1px solid #ff4d7d22', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.07)' }}>
+          <h2 style={{ margin: '0 0 12px', color: '#b12a68', fontSize: '1.05rem' }}>محتوى الأرجوحة من الإدارة</h2>
+          {adminContent.map((item, index) => {
+            const article = item.article || {};
+            const media = item.media || {};
+            const mediaSource = media.videoUrl || media.imageUrl || article.embeddedMedia?.url || '';
+            return (
+              <article key={`${item.sourceSection}-${item.id || index}`} style={{ padding: '12px 0', borderTop: index ? '1px solid #f5e6ed' : 'none' }}>
+                <small style={{ color: '#9d5577', fontWeight: 700 }}>{item.sourceSection}</small>
+                <h3 style={{ margin: '5px 0', color: '#3e2635', fontSize: '1rem' }}>{article.title || 'منشور من إدارة رقة'}</h3>
+                {article.body && <p style={{ margin: '5px 0 10px', color: '#66545f', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{article.body}</p>}
+                {mediaSource && <div style={{ marginTop: '10px' }}>{renderMedia(mediaSource)}</div>}
+              </article>
+            );
+          })}
+        </section>
+      )}
 
       {/* صندوق النشر */}
       <div style={{ background: '#fff', margin: '15px', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.1)' }}>

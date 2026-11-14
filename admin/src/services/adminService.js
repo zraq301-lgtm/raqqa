@@ -3,6 +3,17 @@ import { getAuth } from 'firebase/auth';
 
 const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev';
 
+export const listRecentContentFeed = async () => {
+  const response = await fetch(`${API_BASE}/api/content/feed`, {
+    headers: { 'Cache-Control': 'no-store' },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result?.success === false) {
+    throw new Error(result?.error || `Cloudflare API returned ${response.status}`);
+  }
+  return Array.isArray(result?.items) ? result.items : [];
+};
+
 const getAuthHeaders = async (includeContentType = true) => {
   const user = getAuth().currentUser;
   if (!user) throw new Error('admin_auth_required');

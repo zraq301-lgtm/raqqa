@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
+import { useLocation } from 'react-router-dom';
 
 // استدعاء مكون الإعلان
 import AdBanner from '../components/AdBanner';
@@ -17,9 +18,17 @@ import SoulsLounge from '../pages/SwingPage/SoulsLounge';
 import WellnessOasis from '../pages/SwingPage/WellnessOasis';
 
 const SwingForum = () => {
-  const [activeTab, setActiveTab] = useState('Home');
+  const location = useLocation();
+  const validTabs = ['Home', 'EleganceIcon', 'PassionsCrafts', 'MotherhoodHaven', 'WellnessOasis', 'CulinaryArts', 'EmpowermentPaths', 'HomeCorners', 'SoulsLounge', 'LittleOnesAcademy'];
+  const initialTab = new URLSearchParams(location.search).get('section');
+  const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'Home');
   const [isUpdating, setIsUpdating] = useState(false);
   const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1.0.2';
+
+  useEffect(() => {
+    const requestedTab = new URLSearchParams(location.search).get('section');
+    setActiveTab(validTabs.includes(requestedTab) ? requestedTab : 'Home');
+  }, [location.search]);
 
   // ترتيب الأيقونات والمسميات
   const sections = [
@@ -32,6 +41,7 @@ const SwingForum = () => {
     { id: 'EmpowermentPaths', label: 'دروب التمكين', icon: '🚀' },
     { id: 'HomeCorners', label: 'زوايا المنزل', icon: '🏡' },
     { id: 'SoulsLounge', label: 'رواق الأرواح', icon: '🌙' },
+    { id: 'LittleOnesAcademy', label: 'أكاديمية الصغار', icon: '🧸' },
   ];
 
   const renderCurrentPage = () => {
@@ -45,6 +55,7 @@ const SwingForum = () => {
       case 'EmpowermentPaths': return <EmpowermentPaths />;
       case 'HomeCorners': return <HomeCorners />;
       case 'SoulsLounge': return <SoulsLounge />;
+      case 'LittleOnesAcademy': return <LittleOnesAcademy />;
       default: return <Home />;
     }
   };
