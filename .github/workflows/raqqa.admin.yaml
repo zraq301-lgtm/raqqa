@@ -42,8 +42,9 @@ jobs:
         with:
           node-version: '24'
 
-      - name: 4. Deep Clean & Install (Admin Folder)
+      - name: 4. Install Shared & Admin Dependencies
         run: |
+          npm ci --legacy-peer-deps
           cd admin
           rm -rf node_modules package-lock.json android ios dist_web
           npm config set fetch-retries 5
