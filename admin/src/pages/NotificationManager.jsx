@@ -48,8 +48,8 @@ export default function NotificationManager() {
       setMessage({ type: 'error', text: 'يرجى اختيار ملف صورة صالح.' });
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'حجم الصورة يجب ألا يتجاوز 10 ميجابايت.' });
+    if (file.size > 1_000_000) {
+      setMessage({ type: 'error', text: 'حجم صورة الإشعار يجب ألا يتجاوز 1 ميجابايت حتى تظهر على أجهزة Android.' });
       return;
     }
     setUploading(true);
