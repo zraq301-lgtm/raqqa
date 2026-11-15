@@ -13,6 +13,16 @@ on:
         required: false
         type: boolean
         default: false
+      build_aab:
+        description: 'Also build and publish an AAB'
+        required: false
+        type: boolean
+        default: false
+      allow_new_admin_signing_key:
+        description: 'Allow a fresh-install admin APK signed with the public-app production key'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -24,6 +34,8 @@ jobs:
       HAS_FIREBASE_ADMIN: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
       HAS_ADMIN_SIGNING: ${{ (secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '') || (secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '') }}
       BUILD_ADMIN_ANDROID: ${{ github.event_name == 'push' || inputs.build_android == true }}
+      BUILD_ADMIN_AAB: ${{ github.event_name == 'push' || inputs.build_aab == true }}
+      ALLOW_NEW_ADMIN_SIGNING_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_new_admin_signing_key == true }}
       VITE_RAQQA_API_BASE_URL: https://raqqa-backend.raqqa-api.workers.dev
 
     steps:
@@ -107,7 +119,9 @@ jobs:
           chmod +x gradlew
           ./gradlew clean
           ./gradlew assembleRelease
-          ./gradlew bundleRelease
+          if [ "$BUILD_ADMIN_AAB" = 'true' ]; then
+            ./gradlew bundleRelease
+          fi
 
       - name: 9. Sign Admin APK & AAB
         id: sign_admin
@@ -130,15 +144,24 @@ jobs:
           STORE_PASSWORD=""
           KEY_ALIAS=""
           KEY_PASSWORD=""
-          if [ -n "$ADMIN_KEYSTORE_BASE64" ] && printf '%s' "$ADMIN_KEYSTORE_BASE64" | base64 --decode > "$KS_PATH" 2>/dev/null && keytool -list -keystore "$KS_PATH" -storepass "$ADMIN_KEYSTORE_PASSWORD" -alias "$ADMIN_KEY_ALIAS" >/dev/null 2>&1; then
+          SIGNING_KEY_SOURCE=""
+          if [ "$ALLOW_NEW_ADMIN_SIGNING_KEY" = 'true' ] && [ -n "$ANDROID_KEYSTORE_BASE64" ] && printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KS_PATH" 2>/dev/null && keytool -list -keystore "$KS_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1; then
+            STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
+            KEY_ALIAS="$ANDROID_KEY_ALIAS"
+            KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+            SIGNING_KEY_SOURCE="public-app-production"
+            echo "Using the existing public-app production key for the explicitly approved fresh-install admin APK."
+          elif [ -n "$ADMIN_KEYSTORE_BASE64" ] && printf '%s' "$ADMIN_KEYSTORE_BASE64" | base64 --decode > "$KS_PATH" 2>/dev/null && keytool -list -keystore "$KS_PATH" -storepass "$ADMIN_KEYSTORE_PASSWORD" -alias "$ADMIN_KEY_ALIAS" >/dev/null 2>&1; then
             STORE_PASSWORD="$ADMIN_KEYSTORE_PASSWORD"
             KEY_ALIAS="$ADMIN_KEY_ALIAS"
             KEY_PASSWORD="$ADMIN_KEY_PASSWORD"
+            SIGNING_KEY_SOURCE="admin"
             echo "Using the configured admin signing key."
           elif [ -n "$ANDROID_KEYSTORE_BASE64" ] && printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KS_PATH" 2>/dev/null && keytool -list -keystore "$KS_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1; then
             STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
             KEY_ALIAS="$ANDROID_KEY_ALIAS"
             KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+            SIGNING_KEY_SOURCE="public-app-production"
             echo "Admin key unavailable; checking the existing production signing key against the previous admin APK."
           else
             echo "::error::No valid configured admin or production signing key is available."
@@ -154,8 +177,12 @@ jobs:
           KEY_FINGERPRINT=$(keytool -list -v -keystore "$KS_PATH" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" | awk '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')
           ADMIN_FINGERPRINT=$("$APKSIGNER" verify --print-certs "$REF_APK" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')
           if [ -z "$KEY_FINGERPRINT" ] || [ -z "$ADMIN_FINGERPRINT" ] || [ "$KEY_FINGERPRINT" != "$ADMIN_FINGERPRINT" ]; then
-            echo "::error::Signing certificate does not match the previous admin APK; refusing to publish an incompatible update."
-            exit 1
+            if [ "$ALLOW_NEW_ADMIN_SIGNING_KEY" = 'true' ] && [ "$SIGNING_KEY_SOURCE" = 'public-app-production' ]; then
+              echo "::warning::The APK is signed with the public-app production key and will be a fresh install, not an update to the prior admin app."
+            else
+              echo "::error::Signing certificate does not match the previous admin APK; refusing to publish an incompatible update."
+              exit 1
+            fi
           fi
 
           APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
@@ -164,11 +191,12 @@ jobs:
             --key-pass pass:"$KEY_PASSWORD" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
           "$APKSIGNER" verify --verbose Roqa-EXCLUSIVE-ADMIN.apk
 
-          # توقيع الـ AAB وتسميته باسم حصري
-          AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore "$KS_PATH" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" "$AAB_PATH" "$KEY_ALIAS"
-          jarsigner -verify "$AAB_PATH"
-          cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
+          if [ "$BUILD_ADMIN_AAB" = 'true' ]; then
+            AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
+            jarsigner -keystore "$KS_PATH" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" "$AAB_PATH" "$KEY_ALIAS"
+            jarsigner -verify "$AAB_PATH"
+            cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
+          fi
 
       - name: 10. Publish Admin OTA to GitHub Releases
         run: |
@@ -204,18 +232,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # --- رفع الملفات الموقعة فقط كملفات قابلة للتثبيت ---
-      - name: 11. Upload Signed Admin Artifacts
+      - name: 11. Upload Signed Admin APK
         if: env.BUILD_ADMIN_ANDROID == 'true' && steps.sign_admin.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Roqa-Admin-Only-Package
-          path: |
-            Roqa-EXCLUSIVE-ADMIN.apk
-            Roqa-EXCLUSIVE-ADMIN.aab
+          name: Roqa-Admin-APK
+          path: Roqa-EXCLUSIVE-ADMIN.apk
 
-      # --- نشر صفحة ريليس حصرية للأدمن بعيداً عن ريليس الواجهة الحالي ---
-      - name: 12. Publish Admin Release
-        if: env.BUILD_ADMIN_ANDROID == 'true' && steps.sign_admin.outcome == 'success'
+      - name: 11b. Upload Signed Admin AAB
+        if: env.BUILD_ADMIN_ANDROID == 'true' && env.BUILD_ADMIN_AAB == 'true' && steps.sign_admin.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Roqa-Admin-AAB
+          path: Roqa-EXCLUSIVE-ADMIN.aab
+
+      # --- نشر صفحة إصدار منفصلة للأدمن ضمن صفحة Releases نفسها ---
+      - name: 12. Publish Admin Release with AAB
+        if: env.BUILD_ADMIN_ANDROID == 'true' && env.BUILD_ADMIN_AAB == 'true' && steps.sign_admin.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: admin-only-v${{ github.run_number }}
@@ -223,5 +256,20 @@ jobs:
           files: |
             Roqa-EXCLUSIVE-ADMIN.apk
             Roqa-EXCLUSIVE-ADMIN.aab
+          body: |
+            Admin-only Android release. This package is separate from the public app.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 12b. Publish Admin APK-only Release
+        if: env.BUILD_ADMIN_ANDROID == 'true' && env.BUILD_ADMIN_AAB != 'true' && steps.sign_admin.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: admin-only-v${{ github.run_number }}
+          name: "Roqa EXCLUSIVE ADMIN PANEL Build v${{ github.run_number }}"
+          files: Roqa-EXCLUSIVE-ADMIN.apk
+          body: |
+            Admin-only APK release. Signed with the public-app production key as explicitly approved.
+            This is a fresh-install package, not an update to admin APKs signed with the previous admin certificate.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
