@@ -2,6 +2,18 @@ import { CapacitorHttp } from '@capacitor/core';
 
 const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev';
 
+export const getAdminApiToken = () => {
+  try { return window.sessionStorage.getItem('raqqa_admin_api_token') || ''; } catch { return ''; }
+};
+
+export const setAdminApiToken = (value) => {
+  try {
+    const token = String(value || '').trim();
+    if (token) window.sessionStorage.setItem('raqqa_admin_api_token', token);
+    else window.sessionStorage.removeItem('raqqa_admin_api_token');
+  } catch { /* Session storage may be unavailable in restricted webviews. */ }
+};
+
 export const listRecentContentFeed = async () => {
   const response = await fetch(`${API_BASE}/api/content/feed`, {
     headers: { 'Cache-Control': 'no-store' },
@@ -17,6 +29,11 @@ const getRequestHeaders = (includeContentType = true) => (
   includeContentType ? { 'Content-Type': 'application/json' } : {}
 );
 
+const getAdminTokenHeaders = () => {
+  const token = getAdminApiToken();
+  return token ? { 'X-Admin-Token': token } : {};
+};
+
 const parseResponse = async (response) => {
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result?.success === false) {
@@ -29,16 +46,31 @@ const uploadMedia = async (file, pageName, endpoint) => {
   if (!file) throw new Error('media_file_required');
   const form = new FormData();
   form.append('file', file, file.name || 'raqqa-media');
-  form.append('page', pageName);
+  if (endpoint === '/api/media/public') {
+    form.append('kind', file.type.startsWith('image/') ? 'image' : 'link');
+    form.append('section', pageName);
+  } else {
+    form.append('page', pageName);
+  }
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
     body: form,
   });
-  return parseResponse(response);
+  const result = await parseResponse(response);
+  return { ...result, url: result.url || result.publicUrl || result.data?.url || result.media?.url || '' };
 };
 
 export const uploadVideo = (file, pageName) => uploadMedia(file, pageName, '/api/media/upload');
 export const uploadImage = (file, pageName) => uploadMedia(file, pageName, '/api/media/public');
+
+export const broadcastNotification = async ({ title, body, imageUrl = '' }) => {
+  const response = await fetch(`${API_BASE}/api/notifications/broadcast`, {
+    method: 'POST',
+    headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
+    body: JSON.stringify({ title, body, imageUrl }),
+  });
+  return parseResponse(response);
+};
 
 export const savePageData = async (pageName, updatedContent) => {
   const cleanPageName = pageName.replace(/[\'\"]/g, '').trim();
@@ -47,7 +79,7 @@ export const savePageData = async (pageName, updatedContent) => {
     : updatedContent;
   const response = await CapacitorHttp.post({
     url: `${API_BASE}/api/content`,
-    headers: getRequestHeaders(),
+    headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
     data: { page: cleanPageName, content: formattedContent },
   });
   return parseResponse({ ok: response.status < 400, status: response.status, json: async () => (
