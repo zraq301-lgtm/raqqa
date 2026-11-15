@@ -22,7 +22,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       HAS_FIREBASE_ADMIN: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
-      HAS_ADMIN_SIGNING: ${{ secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '' }}
+      HAS_ADMIN_SIGNING: ${{ (secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '') || (secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '') }}
       BUILD_ADMIN_ANDROID: ${{ github.event_name == 'push' || inputs.build_android == true }}
       VITE_RAQQA_API_BASE_URL: https://raqqa-backend.raqqa-api.workers.dev
 
@@ -112,31 +112,61 @@ jobs:
       - name: 9. Sign Admin APK & AAB
         id: sign_admin
         if: env.BUILD_ADMIN_ANDROID == 'true' && env.HAS_ADMIN_SIGNING == 'true'
+        env:
+          ADMIN_KEYSTORE_BASE64: ${{ secrets.ADMIN_KEYSTORE_BASE64 }}
+          ADMIN_KEYSTORE_PASSWORD: ${{ secrets.ADMIN_KEYSTORE_PASSWORD }}
+          ADMIN_KEY_ALIAS: ${{ secrets.ADMIN_KEY_ALIAS }}
+          ADMIN_KEY_PASSWORD: ${{ secrets.ADMIN_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          # استخدام مفتاح الأدمن القديم فقط، مع فحصه قبل التوقيع.
-          if ! printf '%s' "${{ secrets.ADMIN_KEYSTORE_BASE64 }}" | base64 --decode > admin_release.jks; then
-            echo "::error::ADMIN_KEYSTORE_BASE64 ليس Base64 صالحًا."
+          KS_PATH="/dev/shm/raqqa-admin-signing-${GITHUB_RUN_ID}.jks"
+          REF_APK="${RUNNER_TEMP}/raqqa-admin-reference.apk"
+          trap 'rm -f "$KS_PATH" "$REF_APK"' EXIT
+
+          STORE_PASSWORD=""
+          KEY_ALIAS=""
+          KEY_PASSWORD=""
+          if [ -n "$ADMIN_KEYSTORE_BASE64" ] && printf '%s' "$ADMIN_KEYSTORE_BASE64" | base64 --decode > "$KS_PATH" 2>/dev/null && keytool -list -keystore "$KS_PATH" -storepass "$ADMIN_KEYSTORE_PASSWORD" -alias "$ADMIN_KEY_ALIAS" >/dev/null 2>&1; then
+            STORE_PASSWORD="$ADMIN_KEYSTORE_PASSWORD"
+            KEY_ALIAS="$ADMIN_KEY_ALIAS"
+            KEY_PASSWORD="$ADMIN_KEY_PASSWORD"
+            echo "Using the configured admin signing key."
+          elif [ -n "$ANDROID_KEYSTORE_BASE64" ] && printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$KS_PATH" 2>/dev/null && keytool -list -keystore "$KS_PATH" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null 2>&1; then
+            STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD"
+            KEY_ALIAS="$ANDROID_KEY_ALIAS"
+            KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
+            echo "Admin key unavailable; checking the existing production signing key against the previous admin APK."
+          else
+            echo "::error::No valid configured admin or production signing key is available."
             exit 1
           fi
-          echo "Decoded keystore size: $(wc -c < admin_release.jks) bytes"
-          keytool -list -keystore admin_release.jks \
-            -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" \
-            -alias "${{ secrets.ADMIN_KEY_ALIAS }}" >/dev/null
 
-          # توقيع الـ APK وتسميته باسم حصري للأدمن تمامًا لحل تداخل الإنتاج
-          APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
           SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           APKSIGNER=$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)
           test -x "$APKSIGNER"
-          "$APKSIGNER" sign --ks admin_release.jks \
-            --ks-key-alias "${{ secrets.ADMIN_KEY_ALIAS }}" --ks-pass pass:"${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" \
-            --key-pass pass:"${{ secrets.ADMIN_KEY_PASSWORD }}" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
+          curl --fail --silent --show-error --location \
+            "https://github.com/zraq301-lgtm/raqqa/releases/download/admin-only-v37/Roqa-EXCLUSIVE-ADMIN.apk" \
+            --output "$REF_APK"
+          KEY_FINGERPRINT=$(keytool -list -v -keystore "$KS_PATH" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" | awk '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          ADMIN_FINGERPRINT=$("$APKSIGNER" verify --print-certs "$REF_APK" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          if [ -z "$KEY_FINGERPRINT" ] || [ -z "$ADMIN_FINGERPRINT" ] || [ "$KEY_FINGERPRINT" != "$ADMIN_FINGERPRINT" ]; then
+            echo "::error::Signing certificate does not match the previous admin APK; refusing to publish an incompatible update."
+            exit 1
+          fi
+
+          APK_PATH=$(find admin/android/app/build/outputs/apk/release/ -name "*.apk" | head -n 1)
+          "$APKSIGNER" sign --ks "$KS_PATH" \
+            --ks-key-alias "$KEY_ALIAS" --ks-pass pass:"$STORE_PASSWORD" \
+            --key-pass pass:"$KEY_PASSWORD" --out Roqa-EXCLUSIVE-ADMIN.apk "$APK_PATH"
           "$APKSIGNER" verify --verbose Roqa-EXCLUSIVE-ADMIN.apk
 
           # توقيع الـ AAB وتسميته باسم حصري
           AAB_PATH=$(find admin/android/app/build/outputs/bundle/release/ -name "*.aab" | head -n 1)
-          jarsigner -keystore admin_release.jks -storepass "${{ secrets.ADMIN_KEYSTORE_PASSWORD }}" -keypass "${{ secrets.ADMIN_KEY_PASSWORD }}" "$AAB_PATH" "${{ secrets.ADMIN_KEY_ALIAS }}"
+          jarsigner -keystore "$KS_PATH" -storepass "$STORE_PASSWORD" -keypass "$KEY_PASSWORD" "$AAB_PATH" "$KEY_ALIAS"
           jarsigner -verify "$AAB_PATH"
           cp "$AAB_PATH" Roqa-EXCLUSIVE-ADMIN.aab
 
