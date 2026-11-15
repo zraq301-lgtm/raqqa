@@ -1,24 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './App.css';
-import { onAuthStateChanged } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { FCM } from '@capacitor-community/fcm';
 import { initializeGithubLiveUpdate } from './services/githubLiveUpdate';
-import { auth } from '../../src/firebase-config.js';
 
 const Main = () => {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, setUser);
-    return unsubscribe;
-  }, []);
-
   const handleTokenLocally = (tokenValue) => {
     if (tokenValue) localStorage.setItem('fcm_token', tokenValue);
   };
@@ -47,12 +38,7 @@ const Main = () => {
     return undefined;
   }, []);
 
-  return (
-    <>
-      {!user && <div className="admin-session-hint" role="status">الجلسة الإدارية غير متاحة على هذا الجهاز. افتح التطبيق بعد تفعيل جلسة Firebase الإدارية.</div>}
-      <BrowserRouter><App /></BrowserRouter>
-    </>
-  );
+  return <BrowserRouter><App /></BrowserRouter>;
 };
 
 const rootElement = document.getElementById('root');

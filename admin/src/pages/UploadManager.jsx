@@ -115,11 +115,7 @@ const UploadManager = () => {
       }
     } catch (error) {
       console.error("Upload handler error:", error);
-      const errorText = error.message === 'admin_not_authorized'
-        ? 'هذا الحساب مسجّل الدخول لكنه غير مصرح له بإدارة المحتوى.'
-        : error.message === 'admin_auth_required'
-          ? 'انتهت جلسة الدخول. سجّلي الدخول مجدداً للمتابعة.'
-          : 'حدث خطأ غير متوقع أثناء عملية الاتصال بالخدمة.';
+      const errorText = 'حدث خطأ غير متوقع أثناء عملية الاتصال بالخدمة.';
       setMessage({ type: 'error', text: errorText });
     } finally {
       setLoading(false);
