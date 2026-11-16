@@ -1,226 +1,223 @@
-import React, { useState, useEffect } from 'react';
-import { CapacitorHttp } from '@capacitor/core';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
-import { fetchPageData } from '../../services/adminService';
+import { MessageCircle, Send, Share2, ImagePlus, RefreshCw, Heart, Star, Link2, X } from 'lucide-react';
+import { getFirebaseIdToken } from '../../services/authService';
+import PublishedPageContent from '../../components/PublishedPageContent';
 
-const Home = () => {
+const API_BASE = (import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev').replace(/\/$/, '');
+const SECTION = 'bouh-display-1';
+const api = (path) => `${API_BASE}${path}`;
+
+const getMediaType = (url = '', explicit = '') => {
+  if (explicit) return explicit;
+  const normalized = String(url).toLowerCase().split('?')[0];
+  if (/youtube\.com|youtu\.be/.test(url)) return 'video';
+  if (/\.(mp4|webm|ogg|mov|m4v)$/.test(normalized)) return 'video';
+  if (/\.(png|jpe?g|gif|webp|bmp|avif)$/.test(normalized)) return 'image';
+  return url ? 'link' : '';
+};
+
+const getMediaUrl = (post) => post?.media_url || post?.external_link || post?.media?.url || '';
+const getAuthor = (post) => post?.author_name || post?.display_name || post?.user_name || post?.author?.display_name || post?.author?.name || 'عضوة في رِقّة';
+const getTime = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat('ar', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+};
+const responseJson = async (response) => {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data?.success === false) throw new Error(data?.error || `تعذر إكمال الطلب (${response.status})`);
+  return data;
+};
+
+function MediaView({ url, type }) {
+  if (!url) return null;
+  const mediaType = getMediaType(url, type);
+  let youtubeId = '';
+  if (mediaType === 'video' && /youtube\.com|youtu\.be/.test(url)) {
+    try {
+      const parsed = new URL(url);
+      youtubeId = parsed.hostname.includes('youtu.be') ? parsed.pathname.slice(1) : (parsed.searchParams.get('v') || parsed.pathname.split('/').filter(Boolean).pop() || '');
+    } catch { youtubeId = ''; }
+  }
+  if (youtubeId) return <div className="swing-media-frame"><iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`} title="فيديو من يوتيوب" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>;
+  if (mediaType === 'image') return <img className="swing-post-image" src={url} alt="مرفق المنشور" loading="lazy" />;
+  if (mediaType === 'video') return <video className="swing-post-video" src={url} controls playsInline preload="metadata" />;
+  return <a className="swing-link-card" href={url} target="_blank" rel="noreferrer"><Link2 size={18} /><span dir="ltr">{url}</span></a>;
+}
+
+export default function Home({ user }) {
   const [posts, setPosts] = useState([]);
-  const [newContent, setNewContent] = useState("");
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [adminContent, setAdminContent] = useState([]);
-  const [selectedSection, setSelectedSection] = useState("bouh-display-1");
-  const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState('');
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaType, setMediaType] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState({});
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
+  const [commentsByPost, setCommentsByPost] = useState({});
+  const [expandedComments, setExpandedComments] = useState({});
+  const [commentDrafts, setCommentDrafts] = useState({});
+  const fileRef = useRef(null);
+  const userName = useMemo(() => user?.display_name || user?.displayName || user?.firebaseUser?.displayName || user?.name || user?.email?.split('@')[0] || 'عضوة', [user]);
 
-  const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || "https://raqqa-backend.raqqa-api.workers.dev";
-  const API_GET = `${API_BASE}/api/posts?section=${encodeURIComponent(selectedSection)}`;
-  const API_SAVE = `${API_BASE}/api/posts`;
-
-  useEffect(() => { fetchPosts(); }, []);
-
-  useEffect(() => {
-    let active = true;
-    const sectionNames = ['الأرجوحة', 'bouh-display-1', 'bouh-display'];
-    Promise.all(sectionNames.map(async (section) => {
-      try {
-        const result = await fetchPageData(section);
-        const items = Array.isArray(result) ? result : result ? [result] : [];
-        return items.map((item) => ({ ...item, sourceSection: section }));
-      } catch (error) {
-        console.warn(`[Swing Home] تعذر جلب محتوى ${section}:`, error?.message || error);
-        return [];
-      }
-    })).then((results) => {
-      if (active) setAdminContent(results.flat());
-    });
-    return () => { active = false; };
+  const loadPosts = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await responseJson(await fetch(api(`/api/posts?section=${encodeURIComponent(SECTION)}`), { cache: 'no-store' }));
+      setPosts(Array.isArray(data.posts) ? data.posts : []);
+    } catch (err) {
+      setError(err.message || 'تعذر تحميل المنشورات.');
+    } finally { setLoading(false); }
   }, []);
 
-  const fetchPosts = async () => {
+  useEffect(() => { loadPosts(); }, [loadPosts]);
+  useEffect(() => {
+    const postId = new URLSearchParams(window.location.search).get('communityPost');
+    if (!postId || !posts.some((post) => String(post.id) === postId)) return;
+    requestAnimationFrame(() => document.getElementById(`post-${postId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+  }, [posts]);
+
+  const authenticatedRequest = async (path, options = {}) => {
+    const token = await getFirebaseIdToken();
+    if (!token) throw new Error('يلزم تسجيل الدخول أولًا للمتابعة.');
+    const headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` };
+    if (options.body && !(options.body instanceof FormData)) headers['Content-Type'] = 'application/json';
+    return responseJson(await fetch(api(path), { ...options, headers }));
+  };
+
+  const handleUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setError(''); setNotice('');
+    if (!user) { setError('سجّلي الدخول لرفع الصور أو الفيديوهات.'); return; }
+    if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) { setError('يمكن رفع صورة أو فيديو فقط.'); return; }
+    setUploading(true);
     try {
-      const response = await CapacitorHttp.get({ url: API_GET });
-      if (response.data && response.data.posts) setPosts(response.data.posts);
-    } catch (error) { console.error("Fetch Error:", error); }
+      const form = new FormData();
+      form.append('file', file, file.name);
+      const result = await authenticatedRequest('/api/community/media', { method: 'POST', body: form });
+      const url = result.url || result.media_url || result.public_url || result.publicUrl || result.data?.url || result.media?.url;
+      if (!url || !/^https:\/\//i.test(url)) throw new Error('لم يُعِد الخادم رابط HTTPS صالحًا للوسيط.');
+      setMediaUrl(url);
+      setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
+      setNotice('تم رفع الملف وتحويله إلى رابط آمن.');
+    } catch (err) {
+      setError(err.message || 'فشل رفع الملف؛ تحققي من الاتصال ثم حاولي مجددًا.');
+    } finally { setUploading(false); }
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setMediaUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const parsePostData = (post) => {
-    let content = post.content || "";
-    let media = post.media_url || post.external_link || "";
-
-    if (typeof content === 'string' && content.includes('{')) {
-      try {
-        // تعديل الـ Regex ليشمل روابط الـ http وأيضاً بيانات الـ data:image (الصور المرفوعة)
-        const urlRegex = /"(?:external_link|media_url)":"((?:https?:\/\/|data:image)[^"]+)"/;
-        const match = content.match(urlRegex);
-        if (match) media = match[1];
-
-        const contentRegex = /"content":"([^"]*)"/;
-        const contentMatch = content.match(contentRegex);
-        if (contentMatch) content = contentMatch[1];
-      } catch (e) { console.error("Parsing error", e); }
-    }
-    return { cleanContent: content, cleanMedia: media };
-  };
-
-  const renderMedia = (url) => {
-    if (!url) return null;
-    const cleanUrl = url.trim();
-
-    // 1. دعم روابط YouTube
-    if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
-      const videoId = cleanUrl.includes('v=')
-        ? cleanUrl.split('v=')[1].split('&')[0]
-        : cleanUrl.split('/').pop().split('?')[0];
-
-      return (
-        <div style={{ width: '100%', aspectRatio: '16/9', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
-          <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${videoId}`} frameBorder="0" allowFullScreen></iframe>
-        </div>
-      );
-    }
-
-    // 2. عرض الصور (سواء روابط مباشره أو Base64 مرفوع من الجهاز)
-    // نعتبرها صورة إذا بدأت بـ data:image أو انتهت بصيغة صورة معروفة أو احتوت على ibb
-    const isImageData = cleanUrl.startsWith('data:image');
-    const isImageLink = cleanUrl.match(/\.(jpeg|jpg|gif|png|webp|bmp)$/i) || cleanUrl.includes('ibb.co');
-
-    if (isImageData || isImageLink) {
-      return (
-        <img
-          src={cleanUrl}
-          style={{ width: '100%', borderRadius: '15px', display: 'block', maxHeight: '500px', objectFit: 'cover' }}
-          alt="مرفق"
-          onError={(e) => { e.target.style.display = 'none'; }}
-        />
-      );
-    }
-
-    // 3. دعم روابط الفيديو المباشرة
-    const isDirectVideo = cleanUrl.match(/\.(mp4|webm|ogg)$/i) || cleanUrl.startsWith('data:video');
-    if (isDirectVideo) {
-      return (
-        <div style={{ width: '100%', borderRadius: '15px', overflow: 'hidden', background: '#000' }}>
-          <video controls playsInline style={{ width: '100%', maxHeight: '400px' }}>
-            <source src={cleanUrl} />
-          </video>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
-  const handlePublish = async () => {
-    if (!newContent.trim() && !mediaUrl) return;
-    setLoading(true);
+  const publish = async (event) => {
+    event.preventDefault();
+    setError(''); setNotice('');
+    if (!user) { setError('سجّلي الدخول لنشر مشاركة في غرفة الأرجوحة.'); return; }
+    if (!content.trim() && !mediaUrl.trim()) { setError('اكتبي شيئًا أو أضيفي رابطًا قبل النشر.'); return; }
+    if (mediaUrl.trim() && !/^https:\/\//i.test(mediaUrl.trim())) { setError('يجب أن يكون رابط الوسيط بصيغة HTTPS.'); return; }
+    setPublishing(true);
     try {
-      const payload = {
-        content: newContent,
-        section: selectedSection,
-        type: mediaUrl ? "ميديا" : "نصي",
-        external_link: mediaUrl
-      };
+      await authenticatedRequest('/api/posts', { method: 'POST', body: JSON.stringify({ content: content.trim(), media_url: mediaUrl.trim(), media_type: mediaUrl ? getMediaType(mediaUrl, mediaType) : '', section: SECTION }) });
+      setContent(''); setMediaUrl(''); setMediaType('');
+      setNotice('نُشرت مشاركتك في الغرفة.');
+      await loadPosts();
+    } catch (err) { setError(err.message || 'تعذر نشر المشاركة.'); }
+    finally { setPublishing(false); }
+  };
 
-      const response = await fetch(API_SAVE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+  const updateReaction = async (postId, type) => {
+    if (!user) { setError('سجّلي الدخول لإضافة تفاعل.'); return; }
+    const key = `post-${postId}-${type}`;
+    setBusy((value) => ({ ...value, [key]: true })); setError('');
+    try {
+      await authenticatedRequest(`/api/posts/${encodeURIComponent(postId)}/reactions`, { method: 'POST', body: JSON.stringify({ reaction_type: type }) });
+      await loadPosts();
+    } catch (err) { setError(err.message || 'تعذر تسجيل التفاعل.'); }
+    finally { setBusy((value) => ({ ...value, [key]: false })); }
+  };
 
-      if (response.ok) {
-        setNewContent(""); setMediaUrl(""); fetchPosts();
-      }
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+  const loadComments = async (postId) => {
+    try {
+      const data = await responseJson(await fetch(api(`/api/posts/${encodeURIComponent(postId)}/comments`), { cache: 'no-store' }));
+      setCommentsByPost((current) => ({ ...current, [postId]: Array.isArray(data.comments) ? data.comments : [] }));
+    } catch (err) { setError(err.message || 'تعذر تحميل التعليقات.'); }
+  };
+  const toggleComments = async (postId) => {
+    const opening = !expandedComments[postId];
+    setExpandedComments((current) => ({ ...current, [postId]: opening }));
+    if (opening && !Object.prototype.hasOwnProperty.call(commentsByPost, postId)) await loadComments(postId);
+  };
+  const addComment = async (event, postId) => {
+    event.preventDefault();
+    if (!user) { setError('سجّلي الدخول لإضافة تعليق.'); return; }
+    const body = (commentDrafts[postId] || '').trim();
+    if (!body) return;
+    const key = `comment-${postId}`;
+    setBusy((value) => ({ ...value, [key]: true })); setError('');
+    try {
+      await authenticatedRequest(`/api/posts/${encodeURIComponent(postId)}/comments`, { method: 'POST', body: JSON.stringify({ body }) });
+      setCommentDrafts((current) => ({ ...current, [postId]: '' }));
+      await Promise.all([loadComments(postId), loadPosts()]);
+    } catch (err) { setError(err.message || 'تعذر نشر التعليق.'); }
+    finally { setBusy((value) => ({ ...value, [key]: false })); }
+  };
+  const reactToComment = async (commentId) => {
+    if (!user) { setError('سجّلي الدخول لإضافة تفاعل.'); return; }
+    try {
+      await authenticatedRequest(`/api/comments/${encodeURIComponent(commentId)}/reactions`, { method: 'POST', body: JSON.stringify({ reaction_type: 'heart' }) });
+      const parent = Object.entries(commentsByPost).find(([, list]) => list.some((comment) => String(comment.id) === String(commentId)))?.[0];
+      if (parent) await loadComments(parent);
+    } catch (err) { setError(err.message || 'تعذر تسجيل تفاعل التعليق.'); }
+  };
+  const sharePost = async (post) => {
+    const url = `${window.location.origin}/swing-forum?section=Home&communityPost=${encodeURIComponent(post.id)}#post-${encodeURIComponent(post.id)}`;
+    try {
+      if (Capacitor.isNativePlatform()) await Share.share({ title: 'مشاركة من غرفة الأرجوحة', text: post.content || 'مشاركة من رِقّة', url });
+      else if (navigator.share) await navigator.share({ title: 'مشاركة من غرفة الأرجوحة', text: post.content || '', url });
+      else if (navigator.clipboard) { await navigator.clipboard.writeText(url); setNotice('نُسخ رابط المشاركة.'); }
+      else { window.prompt('انسخي رابط المشاركة:', url); }
+    } catch (err) { if (err?.name !== 'AbortError') setError('تعذرت المشاركة؛ حاولي نسخ الرابط يدويًا.'); }
   };
 
   return (
-    <div style={{ direction: 'rtl', fontFamily: 'Tajawal, sans-serif', background: '#fffafb', minHeight: '100vh' }}>
-
-      {adminContent.length > 0 && (
-        <section style={{ margin: '15px', padding: '15px', borderRadius: '22px', background: '#fff', border: '1px solid #ff4d7d22', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.07)' }}>
-          <h2 style={{ margin: '0 0 12px', color: '#b12a68', fontSize: '1.05rem' }}>محتوى الأرجوحة من الإدارة</h2>
-          {adminContent.map((item, index) => {
-            const article = item.article || {};
-            const media = item.media || {};
-            const mediaSource = media.videoUrl || media.imageUrl || article.embeddedMedia?.url || '';
-            return (
-              <article key={`${item.sourceSection}-${item.id || index}`} style={{ padding: '12px 0', borderTop: index ? '1px solid #f5e6ed' : 'none' }}>
-                <small style={{ color: '#9d5577', fontWeight: 700 }}>{item.sourceSection}</small>
-                <h3 style={{ margin: '5px 0', color: '#3e2635', fontSize: '1rem' }}>{article.title || 'منشور من إدارة رقة'}</h3>
-                {article.body && <p style={{ margin: '5px 0 10px', color: '#66545f', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{article.body}</p>}
-                {mediaSource && <div style={{ marginTop: '10px' }}>{renderMedia(mediaSource)}</div>}
-              </article>
-            );
-          })}
-        </section>
-      )}
-
-      {/* صندوق النشر */}
-      <div style={{ background: '#fff', margin: '15px', padding: '15px', borderRadius: '25px', boxShadow: '0 4px 15px rgba(255, 77, 125, 0.1)' }}>
-        <textarea
-          placeholder="ماذا يدور في خاطركِ؟"
-          value={newContent}
-          onChange={(e) => setNewContent(e.target.value)}
-          style={{ width: '100%', border: 'none', outline: 'none', minHeight: '60px', fontSize: '1rem', resize: 'none' }}
-        />
-
-        <div style={{ marginTop: '10px' }}>
-          <input
-            placeholder="ضعي رابط (صورة، فيديو، أو يوتيوب)..."
-            value={mediaUrl}
-            onChange={(e) => setMediaUrl(e.target.value)}
-            style={{ width: '100%', padding: '10px', background: '#fcfcfc', border: '1px solid #eee', borderRadius: '12px', marginBottom: '10px' }}
-          />
-
-          <label style={{ display: 'block', padding: '10px', background: '#f0f0f0', borderRadius: '12px', textAlign: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#666' }}>
-            📁 رفع ميديا من الجهاز
-            <input type="file" accept="image/*,video/*" onChange={handleFileUpload} style={{ display: 'none' }} />
-          </label>
-        </div>
-
-        {mediaUrl && (
-          <div style={{ marginTop: '10px', position: 'relative', border: '1px solid #eee', borderRadius: '15px', padding: '5px' }}>
-             <button onClick={() => setMediaUrl("")} style={{ position: 'absolute', top: '10px', right: '10px', background: 'rgba(255, 77, 125, 0.8)', color: '#fff', border: 'none', borderRadius: '50%', width: '25px', height: '25px', zIndex: 10 }}>×</button>
-             {renderMedia(mediaUrl)}
-          </div>
-        )}
-
-        <button onClick={handlePublish} disabled={loading} style={{ background: '#ff4d7d', color: '#fff', border: 'none', width: '100%', padding: '12px', borderRadius: '15px', fontWeight: 'bold', marginTop: '15px' }}>
-          {loading ? "جاري النشر..." : "نشر الآن"}
-        </button>
-      </div>
-
-      {/* قائمة المنشورات */}
-      <div style={{ paddingBottom: '50px' }}>
-        {posts.map(post => {
-          const { cleanContent, cleanMedia } = parsePostData(post);
-
-          return (
-            <div key={post.id} style={{ background: '#fff', margin: '15px', borderRadius: '25px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)', border: '1px solid #ff4d7d11' }}>
-              <div style={{ padding: '20px' }}>
-                <span style={{ fontSize: '0.7rem', color: '#ff4d7d', background: '#fff0f3', padding: '3px 10px', borderRadius: '8px' }}>رقة - الناشر الأصلي</span>
-                <p style={{ marginTop: '12px', color: '#333', lineHeight: '1.6' }}>{cleanContent || "منشور رقة"}</p>
-              </div>
-
-              <div style={{ padding: '0 15px 15px' }}>
-                {renderMedia(cleanMedia)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="community-room" dir="rtl">
+      <style>{`
+        .community-room{--room-pink:#d94f7b;--room-deep:#9c3d61;--room-ink:#3e3037;max-width:850px;margin:0 auto;padding:6px 0 38px;color:var(--room-ink);font-family:'Tajawal',sans-serif}
+        .room-banner{position:relative;overflow:hidden;padding:22px 24px;border-radius:24px;background:linear-gradient(125deg,#fff0f5,#fff 56%,#f9e6ee);border:1px solid #f4dce5;box-shadow:0 12px 30px #a44c6712;margin-bottom:16px}
+        .room-banner:after{content:'♡';position:absolute;left:16px;top:-27px;font-size:116px;color:#e599b122;line-height:1}.room-eyebrow{font-size:12px;font-weight:800;color:var(--room-deep);letter-spacing:.04em}.room-banner h1{font-size:26px;margin:4px 0;color:#563b47}.room-banner p{margin:0;color:#806c75;line-height:1.7;font-size:14px}
+        .composer,.post-card{background:#fff;border:1px solid #f1dfe6;border-radius:20px;box-shadow:0 7px 24px #7f394b0d;margin-bottom:14px}.composer{padding:17px}.composer-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}.room-avatar{width:42px;height:42px;border-radius:15px;background:#fae5ed;color:#b13e68;display:grid;place-items:center;font-weight:800;font-size:19px;flex:none}.composer-head strong{display:block}.composer-head small{color:#998891}.composer textarea{display:block;width:100%;min-height:82px;resize:vertical;border:0;border-radius:12px;background:#fffafd;padding:12px;outline:none;line-height:1.7;color:var(--room-ink)}.composer textarea:focus,.room-link-input:focus{box-shadow:0 0 0 2px #ed9eb7}.room-link-input{width:100%;margin-top:9px;border:1px solid #f0e1e7;border-radius:11px;padding:11px;background:#fff}.composer-tools{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}.upload-label,.room-action,.publish-button,.refresh-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:12px;font-weight:700;padding:10px 13px;cursor:pointer}.upload-label{background:#fff0f5;color:#a83e65}.publish-button{margin-right:auto;background:linear-gradient(135deg,#e66d91,#c8426e);color:#fff;min-width:108px}.publish-button:disabled,.upload-label:has(input:disabled){opacity:.55;cursor:wait}.room-action{background:#fff8fa;color:#786771;padding:8px 11px;font-size:13px}.refresh-button{background:#fff;color:#a83e65;border:1px solid #f0dce4;padding:8px 11px}.room-message{padding:10px 13px;border-radius:12px;margin:10px 0;font-size:14px}.room-message.error{background:#fff0f0;color:#a73347}.room-message.success{background:#eef9f2;color:#28744a}.media-preview{position:relative;margin-top:10px;padding:8px;border:1px solid #f0e0e7;border-radius:14px}.media-remove{position:absolute;z-index:2;left:12px;top:12px;border:0;border-radius:50%;background:#fff;color:#80324c;width:30px;height:30px;display:grid;place-items:center;box-shadow:0 2px 8px #0002}.post-card{overflow:hidden}.post-header{padding:15px 17px 7px;display:flex;align-items:center;gap:10px}.post-avatar{width:41px;height:41px;border-radius:50%;object-fit:cover;background:#fae5ed;display:grid;place-items:center;color:#af4266;font-weight:800}.post-author{flex:1;min-width:0}.post-author strong{display:block;font-size:15px}.post-author time{font-size:12px;color:#9c8c93}.post-content{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;margin:7px 17px 12px;font-size:15px}.post-media{margin:0 12px 12px}.swing-post-image,.swing-post-video{display:block;width:100%;max-height:540px;object-fit:contain;border-radius:14px;background:#171316}.swing-media-frame{width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#171316}.swing-media-frame iframe{width:100%;height:100%;border:0}.swing-link-card{display:flex;align-items:center;gap:9px;background:#fff6f9;padding:13px;border-radius:12px;color:#9d3a61;text-decoration:none;overflow-wrap:anywhere}.post-actions{border-top:1px solid #f6edf0;padding:9px 13px;display:flex;gap:7px;flex-wrap:wrap}.post-actions .room-action{flex:1}.reaction-heart{color:#c53a5c}.reaction-star{color:#a46d10}.comment-area{border-top:1px solid #f6edf0;background:#fffafb;padding:12px 14px}.comment-item{display:flex;align-items:flex-start;gap:9px;padding:8px 0}.comment-bubble{flex:1;background:#fff;border-radius:12px;padding:9px 11px;font-size:13px}.comment-bubble strong{display:block;color:#765363;margin-bottom:3px}.comment-bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}.comment-meta{display:flex;justify-content:space-between;align-items:center;color:#9b8b92;font-size:11px;margin-top:5px}.comment-form{display:flex;gap:8px;margin-top:9px}.comment-form input{flex:1;min-width:0;border:1px solid #f0e1e7;border-radius:12px;padding:10px;background:#fff}.comment-form button{border:0;border-radius:12px;background:#d9537d;color:#fff;width:42px;display:grid;place-items:center}.room-empty{text-align:center;padding:26px 14px;color:#907f87;background:#fff;border:1px dashed #ecd4dd;border-radius:18px}.feed-title{display:flex;align-items:center;justify-content:space-between;margin:19px 2px 12px}.feed-title h2{font-size:17px;margin:0;color:#553f49}.feed-title span{font-size:12px;color:#9b8b92}@media(max-width:520px){.room-banner{padding:18px}.room-banner h1{font-size:23px}.composer{padding:14px}.post-header{padding:13px 13px 7px}.post-content{margin-right:14px;margin-left:14px}.post-actions .room-action{font-size:12px;padding:8px 5px}}
+      `}</style>
+      <header className="room-banner"><span className="room-eyebrow">مساحة آمنة للحوار والتواصل</span><h1>غرفة الأرجوحة</h1><p>شاركي فكرة أو لحظة جميلة، وتبادلي الودّ مع مجتمع رِقّة.</p></header>
+      <PublishedPageContent pageNames={['الأرجوحة', 'bouh-display-1', 'bouh-display']} title="منشورات الأرجوحة من الإدارة" />
+      <form className="composer" onSubmit={publish}>
+        <div className="composer-head"><span className="room-avatar">{userName.slice(0, 1)}</span><div><strong>{user ? userName : 'زائرة رِقّة'}</strong><small>{user ? 'اكتبي ما تحبين مشاركته' : 'التصفح متاح للجميع، والنشر والتفاعل يتطلبان تسجيل الدخول'}</small></div></div>
+        <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="ماذا يدور في خاطركِ؟" maxLength={5000} />
+        <input className="room-link-input" type="url" inputMode="url" dir="ltr" placeholder="رابط HTTPS جاهز لصورة أو فيديو أو YouTube (اختياري)" value={mediaUrl} onChange={(event) => { setMediaUrl(event.target.value); setMediaType(''); }} />
+        {mediaUrl && <div className="media-preview"><button className="media-remove" type="button" onClick={() => { setMediaUrl(''); setMediaType(''); }} aria-label="إزالة المرفق"><X size={17} /></button><MediaView url={mediaUrl} type={getMediaType(mediaUrl, mediaType)} /></div>}
+        <div className="composer-tools"><label className="upload-label"><ImagePlus size={17} />{uploading ? 'جارٍ رفع الملف…' : 'رفع صورة أو فيديو'}<input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleUpload} disabled={uploading} hidden /></label><button className="publish-button" type="submit" disabled={publishing || uploading}>{publishing ? 'جارٍ النشر…' : 'نشر المشاركة'}</button></div>
+        {!user && <div className="room-message error" role="status">سجّلي الدخول للنشر، أو للتفاعل وإضافة التعليقات.</div>}
+      </form>
+      {error && <div className="room-message error" role="alert">{error}</div>}{notice && <div className="room-message success" role="status">{notice}</div>}
+      <div className="feed-title"><h2>حديث المجتمع</h2><button className="refresh-button" type="button" onClick={loadPosts}><RefreshCw size={15} /> تحديث</button></div>
+      {loading ? <div className="room-empty">جارٍ تحميل المشاركات…</div> : posts.length === 0 ? <div className="room-empty">لا توجد مشاركات بعد. كوني أول من يبدأ الحديث.</div> : posts.map((post) => {
+        const media = getMediaUrl(post);
+        const reactions = post.reactions || {};
+        const heartCount = post.heart_count ?? post.hearts_count ?? reactions.heart ?? (Array.isArray(post.reactions) ? post.reactions.filter((item) => item.reaction_type === 'heart').length : 0);
+        const starCount = post.star_count ?? post.stars_count ?? reactions.star ?? (Array.isArray(post.reactions) ? post.reactions.filter((item) => item.reaction_type === 'star').length : 0);
+        const comments = commentsByPost[post.id] || [];
+        return <article className="post-card" id={`post-${post.id}`} key={post.id}>
+          <div className="post-header"><span className="post-avatar">{post.author_photo_url || post.photo_url ? <img className="post-avatar" src={post.author_photo_url || post.photo_url} alt="" /> : getAuthor(post).slice(0, 1)}</span><div className="post-author"><strong>{getAuthor(post)}</strong><time>{getTime(post.created_at || post.createdAt || post.published_at)}</time></div></div>
+          {post.content && <p className="post-content">{post.content}</p>}
+          {media && <div className="post-media"><MediaView url={media} type={post.media_type} /></div>}
+          <div className="post-actions"><button type="button" className="room-action reaction-heart" onClick={() => updateReaction(post.id, 'heart')} disabled={busy[`post-${post.id}-heart`]}><Heart size={17} /> أحببت {heartCount ? `(${heartCount})` : ''}</button><button type="button" className="room-action reaction-star" onClick={() => updateReaction(post.id, 'star')} disabled={busy[`post-${post.id}-star`]}><Star size={17} /> مميزة {starCount ? `(${starCount})` : ''}</button><button type="button" className="room-action" onClick={() => toggleComments(post.id)}><MessageCircle size={17} /> التعليقات {post.comment_count ? `(${post.comment_count})` : ''}</button><button type="button" className="room-action" onClick={() => sharePost(post)}><Share2 size={17} /> مشاركة</button></div>
+          {expandedComments[post.id] && <section className="comment-area" aria-label="تعليقات المنشور">{comments.length ? comments.map((comment) => <div className="comment-item" key={comment.id}><span className="room-avatar" style={{ width: 32, height: 32, borderRadius: 11, fontSize: 14 }}>{(comment.author_name || comment.display_name || comment.user_name || 'ر').slice(0, 1)}</span><div className="comment-bubble"><strong>{comment.author_name || comment.display_name || comment.user_name || 'عضوة في رِقّة'}</strong><p>{comment.content || comment.body}</p><div className="comment-meta"><time>{getTime(comment.created_at || comment.createdAt)}</time><button type="button" className="room-action reaction-heart" onClick={() => reactToComment(comment.id)}><Heart size={14} /> {comment.heart_count || comment.reactions_count || ''}</button></div></div></div>) : <div className="subtle">لا توجد تعليقات بعد.</div>}
+            <form className="comment-form" onSubmit={(event) => addComment(event, post.id)}><input value={commentDrafts[post.id] || ''} onChange={(event) => setCommentDrafts((current) => ({ ...current, [post.id]: event.target.value }))} placeholder={user ? 'أضيفي تعليقًا لطيفًا…' : 'سجّلي الدخول لإضافة تعليق'} maxLength={2000} /><button type="submit" aria-label="إرسال التعليق" disabled={busy[`comment-${post.id}`]}><Send size={16} /></button></form>
+          </section>}
+        </article>;
+      })}
     </div>
   );
-};
-
-export default Home;
+}

@@ -18,7 +18,7 @@ import PassionsCrafts from '../pages/SwingPage/PassionsCrafts';
 import SoulsLounge from '../pages/SwingPage/SoulsLounge';
 import WellnessOasis from '../pages/SwingPage/WellnessOasis';
 
-const SwingForum = () => {
+const SwingForum = ({ user }) => {
   const location = useLocation();
   const appTheme = useAppTheme();
   const validTabs = ['Home', 'EleganceIcon', 'PassionsCrafts', 'MotherhoodHaven', 'WellnessOasis', 'CulinaryArts', 'EmpowermentPaths', 'HomeCorners', 'SoulsLounge', 'LittleOnesAcademy'];
@@ -51,7 +51,7 @@ const SwingForum = () => {
 
   const renderCurrentPage = () => {
     switch (activeTab) {
-      case 'Home': return <Home />;
+      case 'Home': return <Home user={user} />;
       case 'EleganceIcon': return <EleganceIcon />;
       case 'PassionsCrafts': return <PassionsCrafts />;
       case 'MotherhoodHaven': return <MotherhoodHaven />;
@@ -61,7 +61,7 @@ const SwingForum = () => {
       case 'HomeCorners': return <HomeCorners />;
       case 'SoulsLounge': return <SoulsLounge />;
       case 'LittleOnesAcademy': return <LittleOnesAcademy />;
-      default: return <Home />;
+      default: return <Home user={user} />;
     }
   };
 

@@ -51,6 +51,28 @@ const parseResponse = async (response) => {
   return result;
 };
 
+const communityRequest = async (path, { method = 'GET', body } = {}) => {
+  const response = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: { ...(body !== undefined ? getRequestHeaders() : {}), ...getAdminTokenHeaders(), 'Cache-Control': 'no-store' },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+  return parseResponse(response);
+};
+
+export const listCommunityPosts = async () => {
+  const result = await communityRequest('/api/admin/community/posts');
+  return Array.isArray(result.posts) ? result.posts : [];
+};
+export const listCommunityComments = async () => {
+  const result = await communityRequest('/api/admin/community/comments');
+  return Array.isArray(result.comments) ? result.comments : [];
+};
+export const updateCommunityPost = (id, changes) => communityRequest(`/api/admin/community/posts/${encodeURIComponent(id)}`, { method: 'PATCH', body: changes });
+export const deleteCommunityPost = (id) => communityRequest(`/api/admin/community/posts/${encodeURIComponent(id)}`, { method: 'DELETE' });
+export const updateCommunityComment = (id, changes) => communityRequest(`/api/admin/community/comments/${encodeURIComponent(id)}`, { method: 'PATCH', body: changes });
+export const deleteCommunityComment = (id) => communityRequest(`/api/admin/community/comments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+
 const uploadMedia = async (file, pageName, endpoint) => {
   if (!file) throw new Error('media_file_required');
   const form = new FormData();

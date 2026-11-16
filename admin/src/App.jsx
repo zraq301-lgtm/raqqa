@@ -1,19 +1,23 @@
 import React, { useState } from 'react';
-import { Bell, Images, Palette } from 'lucide-react';
+import { Bell, Images, Palette, MessageSquare } from 'lucide-react';
 import UploadManager from './pages/UploadManager';
 import NotificationManager from './pages/NotificationManager';
 import ThemeManager from './pages/ThemeManager';
+import CommunityModeration from './pages/CommunityModeration';
 import './App.css';
 
 const pages = [
   { id: 'upload', label: 'إدارة المحتوى', Icon: Images },
   { id: 'theme', label: 'المظهر والاحتفالات', Icon: Palette },
   { id: 'notifications', label: 'الإشعارات', Icon: Bell },
+  { id: 'community', label: 'إشراف المجتمع', Icon: MessageSquare },
 ];
 
 export default function App() {
   const [activePage, setActivePage] = useState('upload');
-  const page = activePage === 'theme'
+  const page = activePage === 'community'
+    ? <CommunityModeration />
+    : activePage === 'theme'
     ? <ThemeManager />
     : activePage === 'notifications'
       ? <NotificationManager />
