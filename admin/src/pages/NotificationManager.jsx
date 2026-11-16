@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   broadcastNotification,
   getAdminApiToken,
-  setAdminApiToken,
   uploadImage,
 } from '../services/adminService';
+import AdminTokenField from '../components/AdminTokenField';
 
 const notificationErrors = {
   admin_api_token_not_configured: 'رمز الإدارة غير مضبوط في Worker. لا يمكن إرسال الإشعار الآن.',
@@ -23,24 +23,9 @@ export default function NotificationManager() {
   const [body, setBody] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState(null);
-  const [adminToken, setAdminToken] = useState(() => getAdminApiToken());
-  const [tokenSaved, setTokenSaved] = useState(() => Boolean(getAdminApiToken()));
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
-
-  const saveToken = () => {
-    const token = adminToken.trim();
-    if (!token) {
-      setAdminApiToken('');
-      setTokenSaved(false);
-      setMessage({ type: 'error', text: 'أدخلي رمز الإدارة أولًا.' });
-      return;
-    }
-    setAdminApiToken(token);
-    setTokenSaved(true);
-    setMessage({ type: 'success', text: 'تم حفظ الرمز لهذا التبويب فقط.' });
-  };
 
   const uploadSelectedImage = async (file) => {
     setImageFile(file || null);
@@ -107,26 +92,8 @@ export default function NotificationManager() {
         <h2>إرسال إشعار</h2>
         <p>أرسلي رسالة إلى جميع الأجهزة المشتركة في التطبيق، مع صورة اختيارية.</p>
       </div>
+      <AdminTokenField title="رمز إدارة الإشعارات" />
       {message && <div className={`notice ${message.type}`} role="status">{message.text}</div>}
-
-      <details className="advanced-tools" open={!tokenSaved}>
-        <summary>رمز الإدارة للإرسال الآمن</summary>
-        <p className="subtle">أدخلي القيمة المسجلة في Cloudflare Worker باسم <code>ADMIN_API_TOKEN</code>. يُحفظ الرمز في جلسة هذا التبويب فقط، ويُرسل إلى Worker عبر HTTPS.</p>
-        <div className="admin-form">
-          <div className="field">
-            <label htmlFor="admin-api-token">رمز الإدارة</label>
-            <input
-              id="admin-api-token"
-              type="password"
-              autoComplete="off"
-              value={adminToken}
-              onChange={(event) => { setAdminToken(event.target.value); setTokenSaved(false); }}
-              placeholder="أدخلي رمز الإدارة"
-            />
-          </div>
-          <button className="secondary-button" type="button" onClick={saveToken}>حفظ الرمز في هذه الجلسة</button>
-        </div>
-      </details>
 
       <section className="admin-card">
         <h3>إشعار لجميع المستخدمين</h3>
