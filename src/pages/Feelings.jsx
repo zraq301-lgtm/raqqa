@@ -11,6 +11,7 @@ import { CapacitorHttp } from '@capacitor/core';
 // استيراد خدمات الميديا من المسار المحدد
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
 import ChatMediaControls from '../components/ChatMediaControls';
+import PublishedPageContent from '../components/PublishedPageContent';
 
 const RaqqaFeelingsApp = () => {
   const [activeTab, setActiveTab] = useState(null);
@@ -158,6 +159,8 @@ const RaqqaFeelingsApp = () => {
           <Stethoscope size={20} /> تحدثي مع طبيب المشاعر الذكي
         </button>
       </header>
+
+      <PublishedPageContent pageNames={['المشاعر']} title="محتوى المشاعر المنشور" />
 
       {!activeTab && (
         <div style={styles.grid}>

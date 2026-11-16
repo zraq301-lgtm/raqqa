@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { createApi } from 'unsplash-js';
 import styled, { keyframes } from 'styled-components';
 import { Share2, Download, RefreshCcw, X, Heart, MessageCircle, Send } from 'lucide-react';
+import PublishedPageContent from '../../components/PublishedPageContent';
 
 // استيراد Capacitor Share للمشاركة الأصلية على الأندرويد
 import { Share } from '@capacitor/share';
@@ -275,6 +276,8 @@ const RaqqaLuxuryGallery = () => {
           </ImageCard>
         ))}
       </GalleryGrid>
+
+      <PublishedPageContent pageNames={['زوايا المنزل']} title="محتوى زوايا المنزل المنشور" />
 
       <FloatingRefresh
         onClick={fetchPhotos}

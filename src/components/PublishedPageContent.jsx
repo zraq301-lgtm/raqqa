@@ -1,0 +1,76 @@
+import React, { useEffect, useState } from 'react';
+import { fetchPageData } from '../services/adminService';
+
+const getItems = (result) => {
+  if (Array.isArray(result)) return result;
+  if (Array.isArray(result?.items)) return result.items;
+  return result && typeof result === 'object' ? [result] : [];
+};
+
+const getYoutubeId = (url = '') => {
+  const match = String(url).match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:embed\/|shorts\/|watch\?v=))([\w-]{11})/i);
+  return match?.[1] || '';
+};
+
+function ContentMedia({ item }) {
+  const media = item.media || {};
+  const embedded = item.article?.embeddedMedia || {};
+  const imageUrl = media.imageUrl || (embedded.type === 'image' ? embedded.url : '');
+  const videoUrl = media.videoUrl || (embedded.type === 'video' ? embedded.url : '');
+  const youtubeId = getYoutubeId(videoUrl);
+
+  if (imageUrl) return <img className="published-content-media" src={imageUrl} alt={item.article?.title || 'صورة المحتوى'} loading="lazy" />;
+  if (youtubeId) return <div className="published-content-video"><iframe src={`https://www.youtube-nocookie.com/embed/${youtubeId}`} title={item.article?.title || 'فيديو من رقة'} loading="lazy" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>;
+  if (videoUrl) return <video className="published-content-media" src={videoUrl} controls preload="metadata" />;
+  return null;
+}
+
+export default function PublishedPageContent({ pageNames = [], title = 'منشورات هذه الصفحة' }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      const results = await Promise.all(pageNames.map(async (pageName) => {
+        try {
+          return (await fetchPageData(pageName)) || [];
+        } catch (error) {
+          console.warn(`[PublishedPageContent] تعذر تحميل ${pageName}:`, error?.message || error);
+          return [];
+        }
+      }));
+      if (!active) return;
+      const merged = results.flatMap(getItems).filter(Boolean);
+      merged.sort((a, b) => new Date(b.lastUpdated || b.publishedAt || 0) - new Date(a.lastUpdated || a.publishedAt || 0));
+      setItems(merged);
+      setLoading(false);
+    };
+    load();
+    return () => { active = false; };
+  }, [pageNames.join('|')]);
+
+  if (loading) return <section className="published-content-section" aria-live="polite"><p className="published-content-status">جارٍ تحميل منشورات الصفحة…</p></section>;
+  if (!items.length) return null;
+
+  return (
+    <section className="published-content-section" dir="rtl" aria-label={title}>
+      <div className="published-content-heading"><span>محتوى محفوظ في هذا القسم</span><h2>{title}</h2></div>
+      <div className="published-content-list">
+        {items.map((item, index) => {
+          const headline = item.article?.title?.trim() || 'محتوى من رقة';
+          const body = item.article?.body?.trim() || '';
+          return (
+            <article className="published-content-card" key={`${item.pageName || pageNames[0]}-${item.id || index}`}>
+              <ContentMedia item={item} />
+              <div className="published-content-copy">
+                {headline && <h3>{headline}</h3>}
+                {body && <p>{body}</p>}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}

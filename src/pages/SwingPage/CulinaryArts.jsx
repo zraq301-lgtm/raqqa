@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import styled, { keyframes } from 'styled-components';
 import { Search, Play, Star, Coffee, Fish, Beef, Pizza, IceCream, Utensils, Loader2 } from 'lucide-react';
+import PublishedPageContent from '../../components/PublishedPageContent';
 
 const API_BASE = "https://www.themealdb.com/api/json/v1/1";
 
@@ -119,6 +120,7 @@ const RaqqaArabicKitchen = () => {
           ))}
         </RecipesGrid>
       )}
+      <PublishedPageContent pageNames={['فنون الطهي']} title="محتوى فنون الطهي المنشور" />
     </PageContainer>
   );
 };

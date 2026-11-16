@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { iconMap } from '../constants/iconMap';
 import { useAppTheme } from '../components/AppThemeProvider';
+import PublishedPageContent from '../components/PublishedPageContent';
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -27,7 +28,7 @@ export default function Health({ onSyncReminders }) {
   const pausedRef = useRef(false);
   const themedSections = sections.map((section) => {
     const page = appTheme.pages?.[`health.${section.id}`];
-    return { ...section, title: page?.label?.trim() || section.title, customIcon: page?.icon || '' };
+    return { ...section, pageName: section.title, title: page?.label?.trim() || section.title, customIcon: page?.icon || '' };
   });
   useEffect(() => {
     const requested = new URLSearchParams(location.search).get('section');
@@ -54,6 +55,7 @@ export default function Health({ onSyncReminders }) {
       <button className="health-back-button" onClick={() => { setActiveTab(null); navigate('/health', { replace: true }); }}>عودة</button>
       <Suspense fallback={<p className="health-loading">جاري التحميل...</p>}>
         {activeSection && <activeSection.component onNotificationSync={handleTriggerSync} />}
+        {activeSection && <PublishedPageContent pageNames={[activeSection.pageName]} title={`محتوى ${activeSection.title}`} />}
       </Suspense>
     </div>;
   }
@@ -70,5 +72,6 @@ export default function Health({ onSyncReminders }) {
       })}
     </div>
     <div className="health-dots" aria-hidden="true">{sections.map((section, index) => <span key={section.id} className={index === 0 ? 'active' : ''} />)}</div>
+    <div style={{ padding: '0 18px' }}><PublishedPageContent pageNames={['صحتك']} title="محتوى صحتك المنشور" /></div>
   </section>;
 }

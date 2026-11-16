@@ -22,7 +22,10 @@ import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 import ProfileEditor from './components/ProfileEditor';
 import RecentContentFeed from './components/RecentContentFeed';
+import TopPageCarousel from './components/TopPageCarousel';
 import { useAppTheme } from './components/AppThemeProvider';
+import videosImg from './assets/videos.jpg';
+import virtualImg from './assets/virtual.jpg';
 
 import './App.css';
 
@@ -120,7 +123,6 @@ function App({ user, onUserUpdated }) {
   const profileName = user?.display_name || user?.displayName || user?.firebaseUser?.displayName || 'حسابي';
   const profilePhoto = user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL;
   const pageLabel = (key, fallback) => appTheme.pages?.[key]?.label?.trim() || fallback;
-  const pageIcon = (key, fallback) => appTheme.pages?.[key]?.icon || fallback;
   useEffect(() => {
     document.title = profileName && profileName !== 'حسابي' ? `رقة — ${profileName}` : 'رقة';
   }, [profileName]);
@@ -273,11 +275,11 @@ function App({ user, onUserUpdated }) {
           <span>{profileName}</span>
         </button>
         <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
-          <span className="dynamic-page-icon" aria-hidden="true">{pageIcon('videos', '🎬')}</span>
+          <img src={videosImg} alt="" />
           <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
         </Link>
         <Link to="/virtual-world" className="header-library-button" aria-label="فتح عالم رقة">
-          <span className="dynamic-page-icon" aria-hidden="true">{pageIcon('virtualWorld', '🌌')}</span>
+          <img src={virtualImg} alt="" />
           <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
         </Link>
       </header>
@@ -285,6 +287,7 @@ function App({ user, onUserUpdated }) {
       <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
           <AdBanner />
       </div>
+      <TopPageCarousel />
 
       <main className="main-content">
         <RecentContentFeed />
@@ -299,33 +302,6 @@ function App({ user, onUserUpdated }) {
           <Route path="/virtual-world" element={<VirtualWorld />} />
         </Routes>
       </main>
-
-      <nav className="bottom-sticky-menu">
-        <div className="nav-grid">
-          <Link to="/feelings" className="nav-item">
-            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('feelings', '🌸')}</span>
-            <span className="nav-label">{pageLabel('feelings', 'المشاعر')}</span>
-          </Link>
-          <Link to="/intimacy" className="nav-item">
-            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('intimacy', '💗')}</span>
-            <span className="nav-label">{pageLabel('intimacy', 'الحميمية')}</span>
-          </Link>
-          <Link to="/health" className="nav-item center-action">
-            <div className="center-circle">
-              <span className="dynamic-health-icon" aria-hidden="true">{pageIcon('health', '🩺')}</span>
-            </div>
-            <span className="nav-label bold">{pageLabel('health', 'صحتك')}</span>
-          </Link>
-          <Link to="/swing-forum" className="nav-item">
-            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('swing', '🌿')}</span>
-            <span className="nav-label">{pageLabel('swing', 'الأرجوحة')}</span>
-          </Link>
-          <Link to="/insight" className="nav-item">
-            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('insight', '💡')}</span>
-            <span className="nav-label">{pageLabel('insight', 'الإشراقة')}</span>
-          </Link>
-        </div>
-      </nav>
     </div>
   );
 }

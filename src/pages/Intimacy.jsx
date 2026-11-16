@@ -9,6 +9,7 @@ import {
 import { CapacitorHttp } from '@capacitor/core';
 import ChatMediaControls from '../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
+import PublishedPageContent from '../components/PublishedPageContent';
 
 const MarriageApp = () => {
   const [activeList, setActiveList] = useState(null);
@@ -161,6 +162,8 @@ const MarriageApp = () => {
       <header style={{ background: '#800020', color: '#d4af37', padding: '15px', textAlign: 'center', position: 'sticky', top: 0, zIndex: 500 }}>
         <h1 style={{ margin: 0, fontSize: '1.2rem' }}>مستشارة رقة للسعادة الزوجية</h1>
       </header>
+
+      <PublishedPageContent pageNames={['الحميمية']} title="محتوى العلاقات الزوجية المنشور" />
 
       <button onClick={() => setShowChat(true)} style={{ position: 'fixed', bottom: '25px', left: '25px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '60px', height: '60px', zIndex: 100, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
         <Sparkles color="#800020" size={30} />

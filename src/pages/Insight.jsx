@@ -13,6 +13,7 @@ import {
 
 import ChatMediaControls from '../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
+import PublishedPageContent from '../components/PublishedPageContent';
 
 const RaqqaApp = () => {
   const [activeCategory, setActiveCategory] = useState(null);
@@ -202,6 +203,8 @@ const RaqqaApp = () => {
           </a>
         </div>
       </header>
+
+      <PublishedPageContent pageNames={['الإشراقة', 'نصيحة اليوم']} title="محتوى الفقه المنشور" />
 
       {!activeCategory && (
         <div style={styles.grid}>
