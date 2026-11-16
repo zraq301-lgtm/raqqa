@@ -25,11 +25,20 @@ export const listRecentContentFeed = async () => {
   return Array.isArray(result?.items) ? result.items : [];
 };
 
+export const listAllAdminContent = async () => {
+  const response = await fetch(`${API_BASE}/api/admin/content`, {
+    headers: { 'Cache-Control': 'no-store', ...getAdminTokenHeaders() },
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || result?.success === false) throw new Error(result?.error || `Cloudflare API returned ${response.status}`);
+  return Array.isArray(result?.items) ? result.items : [];
+};
+
 const getRequestHeaders = (includeContentType = true) => (
   includeContentType ? { 'Content-Type': 'application/json' } : {}
 );
 
-const getAdminTokenHeaders = () => {
+export const getAdminTokenHeaders = () => {
   const token = getAdminApiToken();
   return token ? { 'X-Admin-Token': token } : {};
 };
@@ -54,6 +63,7 @@ const uploadMedia = async (file, pageName, endpoint) => {
   }
   const response = await fetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
+    headers: getAdminTokenHeaders(),
     body: form,
   });
   const result = await parseResponse(response);
@@ -92,10 +102,26 @@ export const deletePageDataById = async (pageName, itemId) => {
   const cleanItemId = String(itemId).trim();
   const response = await CapacitorHttp.delete({
     url: `${API_BASE}/api/content`,
-    headers: getRequestHeaders(),
+    headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
     data: { page: cleanPageName, id: cleanItemId },
   });
   return parseResponse({ ok: response.status < 400, status: response.status, json: async () => (
     typeof response.data === 'string' ? JSON.parse(response.data) : response.data
   ) });
+};
+
+export const getAppTheme = async () => {
+  const response = await fetch(`${API_BASE}/api/settings/theme`, { cache: 'no-store' });
+  const result = await parseResponse(response);
+  return result.settings || {};
+};
+
+export const saveAppTheme = async (settings) => {
+  const response = await fetch(`${API_BASE}/api/settings/theme`, {
+    method: 'POST',
+    headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
+    body: JSON.stringify({ settings }),
+  });
+  const result = await parseResponse(response);
+  return result.settings || settings;
 };

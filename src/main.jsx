@@ -27,6 +27,7 @@ if (!getApps().length) {
 
 const Main = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [foregroundPush, setForegroundPush] = useState(null);
 
   const handleTokenLocally = (tokenValue) => {
     if (!tokenValue) return;
@@ -55,6 +56,11 @@ const Main = () => {
 
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log("📩 إشعار Push جديد:", notification.title);
+            const data = notification?.data || {};
+            const image = notification?.image || data.image_url || data.imageUrl || '';
+            const id = Date.now();
+            setForegroundPush({ id, title: notification?.title || data.notification_title || 'إشعار من رقة', body: notification?.body || data.notification_body || '', image: /^https:\/\//i.test(image) ? image : '' });
+            window.setTimeout(() => setForegroundPush((current) => current?.id === id ? null : current), 12000);
           });
 
           await PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
@@ -105,6 +111,13 @@ const Main = () => {
         <SplashScreen onFinished={() => setShowSplash(false)} />
       ) : (
         <AppSwitcher />
+      )}
+      {!showSplash && foregroundPush && (
+        <aside className="foreground-push-card" role="status" aria-live="polite">
+          {foregroundPush.image && <img src={foregroundPush.image} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
+          <div className="foreground-push-copy"><strong>{foregroundPush.title}</strong>{foregroundPush.body && <span>{foregroundPush.body}</span>}</div>
+          <button type="button" aria-label="إغلاق الإشعار" onClick={() => setForegroundPush(null)}>×</button>
+        </aside>
       )}
     </BrowserRouter>
   );

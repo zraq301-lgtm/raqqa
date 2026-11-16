@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { useLocation } from 'react-router-dom';
+import { useAppTheme } from '../components/AppThemeProvider';
 
 // استدعاء مكون الإعلان
 import AdBanner from '../components/AdBanner';
@@ -19,6 +20,7 @@ import WellnessOasis from '../pages/SwingPage/WellnessOasis';
 
 const SwingForum = () => {
   const location = useLocation();
+  const appTheme = useAppTheme();
   const validTabs = ['Home', 'EleganceIcon', 'PassionsCrafts', 'MotherhoodHaven', 'WellnessOasis', 'CulinaryArts', 'EmpowermentPaths', 'HomeCorners', 'SoulsLounge', 'LittleOnesAcademy'];
   const initialTab = new URLSearchParams(location.search).get('section');
   const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'Home');
@@ -42,7 +44,10 @@ const SwingForum = () => {
     { id: 'HomeCorners', label: 'زوايا المنزل', icon: '🏡' },
     { id: 'SoulsLounge', label: 'رواق الأرواح', icon: '🌙' },
     { id: 'LittleOnesAcademy', label: 'أكاديمية الصغار', icon: '🧸' },
-  ];
+  ].map((section) => {
+    const page = appTheme.pages?.[`swing.${section.id}`];
+    return { ...section, label: page?.label?.trim() || section.label, icon: page?.icon || section.icon };
+  });
 
   const renderCurrentPage = () => {
     switch (activeTab) {

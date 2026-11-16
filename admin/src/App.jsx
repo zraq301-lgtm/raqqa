@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
-import { Bell, Images, Waves } from 'lucide-react';
-import SwingManagement from './pages/SwingManagement';
+import { Bell, Images, Palette } from 'lucide-react';
 import UploadManager from './pages/UploadManager';
 import NotificationManager from './pages/NotificationManager';
+import ThemeManager from './pages/ThemeManager';
 import './App.css';
 
 const pages = [
   { id: 'upload', label: 'إدارة المحتوى', Icon: Images },
-  { id: 'swing', label: 'إدارة الأرجوحة', Icon: Waves },
+  { id: 'theme', label: 'المظهر والاحتفالات', Icon: Palette },
   { id: 'notifications', label: 'الإشعارات', Icon: Bell },
 ];
 
 export default function App() {
   const [activePage, setActivePage] = useState('upload');
-  const page = activePage === 'swing'
-    ? <SwingManagement />
+  const page = activePage === 'theme'
+    ? <ThemeManager />
     : activePage === 'notifications'
       ? <NotificationManager />
       : <UploadManager />;

@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { deletePageDataById, listRecentContentFeed, savePageData, uploadImage, uploadVideo } from '../services/adminService';
+import { deletePageDataById, listAllAdminContent, savePageData, uploadImage, uploadVideo } from '../services/adminService';
+import AdminTokenField from '../components/AdminTokenField';
 
-const sections = ['أيقونة الأناقة', 'شغف وحرف', 'ملاذ الأمومة', 'واحة العافية', 'دروب التمكين', 'رواق الأرواح', 'الأرجوحة', 'أكاديمية الصغار', 'مملكة الاسترخاء', 'مكتبة رقة', 'bouh-display-1', 'bouh-display'];
+const sections = ['صحتك', 'الحيض', 'نصيحة طبيب', 'الحمل', 'الأمومة', 'الطبيب', 'الرشاقة', 'الرضاعة', 'المشاعر', 'الحميمية', 'الإشراقة', 'نصيحة اليوم', 'أيقونة الأناقة', 'شغف وحرف', 'ملاذ الأمومة', 'واحة العافية', 'دروب التمكين', 'رواق الأرواح', 'الأرجوحة', 'أكاديمية الصغار', 'فنون الطهي', 'زوايا المنزل', 'مملكة الاسترخاء', 'مكتبة رقة', 'bouh-display-1', 'bouh-display'];
 
 export default function UploadManager() {
   const [targetPage, setTargetPage] = useState(sections[0]);
@@ -23,11 +24,16 @@ export default function UploadManager() {
   const [deletingId, setDeletingId] = useState('');
 
   const refresh = useCallback(async () => {
-    try { setItems(await listRecentContentFeed()); setListError(''); }
-    catch (error) { console.error('Content list error:', error); setListError('تعذر تحميل المحتوى المنشور.'); }
+    try { setItems(await listAllAdminContent()); setListError(''); }
+    catch (error) { console.error('Content list error:', error); setListError(error.message === 'admin_authorization_required' ? 'أدخلي رمز الإدارة واحفظيه لعرض المحتوى وإدارته.' : 'تعذر تحميل المحتوى المنشور.'); }
     finally { setListLoading(false); }
   }, []);
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const reload = () => refresh();
+    window.addEventListener('raqqa-admin-token-saved', reload);
+    return () => window.removeEventListener('raqqa-admin-token-saved', reload);
+  }, [refresh]);
 
   const handlePublish = async (event) => {
     event.preventDefault();
@@ -68,9 +74,11 @@ export default function UploadManager() {
           ? ' لكن لم يُرسل الإشعار: احفظي رمز الإدارة في تبويب الإشعارات أولًا.'
           : result.notification?.reason === 'fcm_not_configured'
             ? ' لكن لم يُرسل الإشعار: اعتماد Firebase غير مضبوط في Worker بعد.'
-            : result.notification?.reason === 'fcm_credentials_invalid'
-              ? ' لكن لم يُرسل الإشعار: اعتماد Firebase في Worker غير صالح.'
-              : ' لكن لم يتم تأكيد إرسال الإشعار.';
+        : result.notification?.reason === 'fcm_credentials_invalid'
+          ? ' لكن لم يُرسل الإشعار: اعتماد Firebase في Worker غير صالح.'
+          : result.notification?.reason === 'notification_image_rejected'
+            ? ' لكن رفض Firebase صورة الإشعار؛ تأكدي من أن الرابط عام وصورة الإشعار أقل من 1 ميغابايت.'
+          : ' لكن لم يتم تأكيد إرسال الإشعار.';
       setMessage({ type: 'success', text: `تم نشر المحتوى بنجاح في «${targetPage}».${notificationMessage}` });
       setTitle(''); setDescription(''); setMediaFile(null); setCoverImageFile(null); setVideoUrl('');
       const fileInput = document.getElementById('content-media-file'); if (fileInput) fileInput.value = '';
@@ -105,10 +113,11 @@ export default function UploadManager() {
 
   const mediaType = (item) => item.media?.videoUrl || item.article?.embeddedMedia?.type === 'video' ? 'فيديو' : item.media?.imageUrl || item.article?.embeddedMedia?.type === 'image' ? 'صورة' : 'مقال';
   return <div className="admin-page">
-    <div className="admin-intro"><h2>إدارة المحتوى</h2><p>انشري محتوى جديدًا وتابعي المنشورات النشطة من مكان واحد.</p></div>
+      <div className="admin-intro"><h2>إدارة المحتوى</h2><p>انشري محتوى جديدًا وتابعي المنشورات النشطة من مكان واحد.</p></div>
+    <AdminTokenField />
     {message && <div className={`notice ${message.type}`} role="status">{message.text}</div>}
     <section className="admin-card">
-      <h3>نشر محتوى جديد</h3><p className="card-description">اختاري القسم والنوع، ثم أضيفي العنوان والتفاصيل. لإرسال إشعار تلقائي، احفظي رمز الإدارة في تبويب الإشعارات.</p>
+      <h3>نشر محتوى جديد</h3><p className="card-description">اختاري أي صفحة أو قسم من التطبيق. المحتوى الحديث يظهر في خلاصة رقة لمدة 72 ساعة، ثم يختفي تلقائيًا.</p>
       <form className="admin-form" onSubmit={handlePublish}>
         <div className="form-grid">
           <div className="field"><label htmlFor="content-section">القسم</label><select id="content-section" value={targetPage} onChange={(e) => setTargetPage(e.target.value)}>{sections.map((section) => <option key={section}>{section}</option>)}</select></div>
@@ -123,7 +132,7 @@ export default function UploadManager() {
         <button className="primary-button" type="submit" disabled={loading}>{loading ? 'جارٍ النشر…' : 'نشر المحتوى'}</button>
       </form>
     </section>
-    <section className="admin-card"><h3>المحتوى النشط</h3><p className="card-description">احذفي المنشور مباشرة من القائمة عند الحاجة.</p>
+    <section className="admin-card"><h3>كل المحتوى المنشور</h3><p className="card-description">تظهر هنا المنشورات من جميع الصفحات، بما فيها القديمة، ويمكن حذف أي عنصر مباشرة.</p>
       {listLoading ? <div className="empty-state">جارٍ تحميل المحتوى…</div> : listError ? <div className="notice error">{listError}</div> : items.length === 0 ? <div className="empty-state">لا يوجد محتوى نشط حاليًا.</div> : <div className="active-list">{items.map((item) => <article className="active-item" key={`${item.pageName}-${item.id}`}><div className="active-item-main"><strong>{item.article?.title?.trim() || 'محتوى بدون عنوان'}</strong><small>{item.pageName} · {mediaType(item)}</small></div><button className="danger-button" type="button" onClick={() => deleteItem(item)} disabled={Boolean(deletingId)}>{deletingId === item.id ? 'جارٍ الحذف…' : 'حذف'}</button></article>)}</div>}
     </section>
     <details className="advanced-tools"><summary>خيارات متقدمة: الحذف بمعرّف أو رابط</summary><p className="subtle">يُحذف العنصر من القسم المحدد أعلاه باستخدام المعرّف أو الرابط.</p><form className="admin-form" onSubmit={deleteManual}><div className="field"><label htmlFor="manual-delete-id">المعرّف أو الرابط</label><input id="manual-delete-id" value={manualId} onChange={(e) => setManualId(e.target.value)} placeholder="معرّف المحتوى أو رابطه" /></div><button className="danger-button" type="submit" disabled={manualLoading || !manualId.trim()}>{manualLoading ? 'جارٍ الحذف…' : 'حذف يدوي'}</button></form></details>

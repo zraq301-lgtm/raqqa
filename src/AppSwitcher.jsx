@@ -4,6 +4,7 @@ import ProfileSetup from './pages/ProfileSetup';
 import { initializeNotificationsSyncListener } from './services/PendingNotificationsSync';
 import { auth } from './firebase-config';
 import { bootstrapFirebaseUser, onAuthStateChanged } from './services/authService';
+import AppThemeProvider from './components/AppThemeProvider';
 
 class ErrorBoundary extends Component {
   state = { hasError: false, error: null };
@@ -24,5 +25,5 @@ export default function AppSwitcher() {
     });
   }, []);
   if (loading) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>جارٍ التحميل…</div>;
-  return <ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={setUser} />}</ErrorBoundary>;
+  return <AppThemeProvider><ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={setUser} />}</ErrorBoundary></AppThemeProvider>;
 }

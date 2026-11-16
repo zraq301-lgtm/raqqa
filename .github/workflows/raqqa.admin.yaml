@@ -33,8 +33,8 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       HAS_FIREBASE_ADMIN: ${{ secrets.FIREBASE_ADMIN_JSON_BASE64 != '' }}
       HAS_ADMIN_SIGNING: ${{ (secrets.ADMIN_KEYSTORE_BASE64 != '' && secrets.ADMIN_KEYSTORE_PASSWORD != '' && secrets.ADMIN_KEY_ALIAS != '' && secrets.ADMIN_KEY_PASSWORD != '') || (secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '') }}
-      BUILD_ADMIN_ANDROID: ${{ github.event_name == 'push' || inputs.build_android == true }}
-      BUILD_ADMIN_AAB: ${{ github.event_name == 'push' || inputs.build_aab == true }}
+      BUILD_ADMIN_ANDROID: ${{ github.event_name == 'workflow_dispatch' && inputs.build_android == true }}
+      BUILD_ADMIN_AAB: ${{ github.event_name == 'workflow_dispatch' && inputs.build_aab == true }}
       ALLOW_NEW_ADMIN_SIGNING_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_new_admin_signing_key == true }}
       VITE_RAQQA_API_BASE_URL: https://raqqa-backend.raqqa-api.workers.dev
 

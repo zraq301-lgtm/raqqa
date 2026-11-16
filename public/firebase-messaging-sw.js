@@ -1,28 +1,40 @@
-// public/firebase-messaging-sw.js
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-// استبدل هذه الإعدادات ببيانات مشروعك من Firebase Console
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: 'AIzaSyCT2wRZgzPv1Xg3M41ZhN7-_RGze_HrZkk',
+  authDomain: 'raqqa-43dc8.firebaseapp.com',
+  projectId: 'raqqa-43dc8',
+  storageBucket: 'raqqa-43dc8.firebasestorage.app',
+  messagingSenderId: '162488255991',
+  appId: '1:162488255991:web:74fe1680fc6cb5bbc61af2',
 };
 
-const app = firebase.initializeApp(firebaseConfig);
+firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// هذه الدالة تتعامل مع الإشعار عندما يكون التطبيق مغلقاً
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] استلمت إشعار في الخلفية:', payload);
-  const notificationTitle = payload.notification.title;
-  const notificationOptions = {
-    body: payload.notification.body,
-    icon: '/logo.png' // تأكد من وجود أيقونة بهذا الاسم في مجلد public
+  const notification = payload?.notification || {};
+  const data = payload?.data || {};
+  const title = notification.title || data.notification_title || 'إشعار من رقة';
+  const body = notification.body || data.notification_body || '';
+  const image = notification.image || data.image_url || '';
+  const options = {
+    body,
+    icon: '/icon-192.png',
+    badge: '/icon-192.png',
+    ...( /^https:\/\//i.test(image) ? { image } : {}),
+    data: { url: data.link || 'https://raqqa-ota.pages.dev/' },
   };
+  self.registration.showNotification(title, options);
+});
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = event.notification.data?.url || 'https://raqqa-ota.pages.dev/';
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const existing = clients.find((client) => client.url.startsWith('https://raqqa-ota.pages.dev/'));
+    if (existing) return existing.focus();
+    return self.clients.openWindow(target);
+  }));
 });

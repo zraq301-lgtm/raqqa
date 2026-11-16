@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { iconMap } from '../constants/iconMap';
-import RecentContentFeed from '../components/RecentContentFeed';
+import { useAppTheme } from '../components/AppThemeProvider';
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -18,9 +19,20 @@ const sections = [
   { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub },
 ];
 export default function Health({ onSyncReminders }) {
-  const [activeTab, setActiveTab] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const appTheme = useAppTheme();
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('section'));
   const railRef = useRef(null);
   const pausedRef = useRef(false);
+  const themedSections = sections.map((section) => {
+    const page = appTheme.pages?.[`health.${section.id}`];
+    return { ...section, title: page?.label?.trim() || section.title, customIcon: page?.icon || '' };
+  });
+  useEffect(() => {
+    const requested = new URLSearchParams(location.search).get('section');
+    setActiveTab(themedSections.some((section) => section.id === requested) ? requested : null);
+  }, [location.search]);
   useEffect(() => {
     const timer = setInterval(() => {
       if (pausedRef.current || !railRef.current) return;
@@ -37,9 +49,9 @@ export default function Health({ onSyncReminders }) {
     if (typeof onSyncReminders === 'function') onSyncReminders();
   };
   if (activeTab) {
-    const activeSection = sections.find((section) => section.id === activeTab);
+    const activeSection = themedSections.find((section) => section.id === activeTab);
     return <div className="health-fullscreen-page">
-      <button className="health-back-button" onClick={() => setActiveTab(null)}>عودة</button>
+      <button className="health-back-button" onClick={() => { setActiveTab(null); navigate('/health', { replace: true }); }}>عودة</button>
       <Suspense fallback={<p className="health-loading">جاري التحميل...</p>}>
         {activeSection && <activeSection.component onNotificationSync={handleTriggerSync} />}
       </Suspense>
@@ -48,16 +60,15 @@ export default function Health({ onSyncReminders }) {
   return <section className="health-page" dir="rtl">
     <div className="health-heading"><div><span>مساحتك اليومية</span><h1>صحتك</h1></div><span className="health-swipe-hint">اسحبي للتصفح</span></div>
     <div className="health-promo-rail" ref={railRef} onPointerDown={() => { pausedRef.current = true; }} onPointerUp={() => { pausedRef.current = false; }} onPointerCancel={() => { pausedRef.current = false; }}>
-      {sections.map((section) => {
+      {themedSections.map((section) => {
         const Icon = iconMap[section.icon] || iconMap.insight;
         const imageSource = new URL(`../assets/health/${section.img}`, import.meta.url).href;
-        return <button className="health-promo-card" key={section.id} onClick={() => setActiveTab(section.id)}>
+        return <button className="health-promo-card" key={section.id} onClick={() => { setActiveTab(section.id); navigate(`/health?section=${encodeURIComponent(section.id)}`); }}>
           <img src={imageSource} alt={section.title} /><span className="health-promo-overlay" />
-          <span className="health-promo-copy"><Icon size={17} /><strong>{section.title}</strong><small>اكتشفي المزيد</small></span>
+          <span className="health-promo-copy">{section.customIcon ? <span className="health-custom-icon">{section.customIcon}</span> : <Icon size={17} />}<strong>{section.title}</strong><small>اكتشفي المزيد</small></span>
         </button>;
       })}
     </div>
     <div className="health-dots" aria-hidden="true">{sections.map((section, index) => <span key={section.id} className={index === 0 ? 'active' : ''} />)}</div>
-    <RecentContentFeed />
   </section>;
 }

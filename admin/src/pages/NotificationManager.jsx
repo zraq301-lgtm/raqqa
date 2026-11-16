@@ -14,6 +14,7 @@ const notificationErrors = {
   fcm_project_id_mismatch: 'معرّف مشروع Firebase لا يطابق اعتماد الإرسال.',
   notification_fields_required: 'أدخلي عنوان الإشعار ونص الرسالة.',
   notification_image_url_invalid: 'رابط صورة الإشعار يجب أن يبدأ بـ HTTPS.',
+  notification_image_rejected: 'رفض Firebase صورة الإشعار؛ استخدمي رفع الصورة من الجهاز بحجم أقل من 1 ميغابايت أو رابطًا عامًا مباشرًا لصورة صغيرة.',
   fcm_send_failed: 'تعذر إرسال الإشعار إلى Firebase. حاولي لاحقًا.',
 };
 
@@ -148,6 +149,7 @@ export default function NotificationManager() {
           <div className="field">
             <label htmlFor="notification-image-url">أو رابط الصورة</label>
             <input id="notification-image-url" type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://…" />
+            <small className="subtle">يجب أن يكون الرابط عامًا ومباشرًا عبر HTTPS؛ الحد الموصى به لصورة الإشعار 1 ميغابايت. الرفع من الجهاز يجهّز الصورة تلقائيًا.</small>
           </div>
           {imageUrl.trim() && (
             <div className="field">

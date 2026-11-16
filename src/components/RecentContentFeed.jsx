@@ -10,14 +10,29 @@ const SWING_TABS = {
   'دروب التمكين': 'EmpowermentPaths',
   'رواق الأرواح': 'SoulsLounge',
   'أكاديمية الصغار': 'LittleOnesAcademy',
+  'فنون الطهي': 'CulinaryArts',
+  'زوايا المنزل': 'HomeCorners',
   'الأرجوحة': 'Home',
   'bouh-display-1': 'Home',
   'bouh-display': 'Home',
+};
+const APP_ROUTES = {
+  'صحتك': '/health',
+  'المشاعر': '/feelings',
+  'الحميمية': '/intimacy',
+  'الإشراقة': '/insight',
+  'نصيحة اليوم': '/insight',
+};
+const HEALTH_TABS = {
+  'الحيض': 'menstrual', 'نصيحة طبيب': 'advice', 'الحمل': 'pregnancy',
+  'الأمومة': 'motherhood', 'الطبيب': 'doctor', 'الرشاقة': 'fitness', 'الرضاعة': 'lactation',
 };
 
 const getTargetPath = (item) => {
   if (item.pageName === 'مكتبة رقة') return '/videos';
   if (item.pageName === 'مملكة الاسترخاء') return '/virtual-world';
+  if (HEALTH_TABS[item.pageName]) return `/health?section=${encodeURIComponent(HEALTH_TABS[item.pageName])}`;
+  if (APP_ROUTES[item.pageName]) return APP_ROUTES[item.pageName];
   const tab = SWING_TABS[item.pageName];
   if (tab) return `/swing-forum?section=${encodeURIComponent(tab)}`;
   return '/health';

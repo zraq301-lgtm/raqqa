@@ -4,21 +4,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { App as CapApp } from '@capacitor/app';
 import { CapacitorHttp } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { apiUrl } from './config/apiConfig';
 
 // استيراد مكون الإعلان الجديد
 import AdBanner from './components/AdBanner';
 
 // استيراد خاصية فيربيس
 import { applyRemoteSettings } from "./firebase-config";
-
-// استيراد الأصول (Assets)
-import healthImg from './assets/health.jpg';
-import feelingsImg from './assets/feelings.jpg';
-import intimacyImg from './assets/intimacy.jpg';
-import swingImg from './assets/swing.jpg';
-import insightImg from './assets/insight.jpg';
-import videosImg from './assets/videos.jpg';
-import virtualImg from './assets/virtual.jpg';
 
 // استيراد الصفحات
 import Health from './pages/Health';
@@ -29,6 +21,8 @@ import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 import ProfileEditor from './components/ProfileEditor';
+import RecentContentFeed from './components/RecentContentFeed';
+import { useAppTheme } from './components/AppThemeProvider';
 
 import './App.css';
 
@@ -121,9 +115,12 @@ function TipOverlay() {
 
 function App({ user, onUserUpdated }) {
   const location = useLocation();
+  const appTheme = useAppTheme();
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const profileName = user?.display_name || user?.displayName || user?.firebaseUser?.displayName || 'حسابي';
   const profilePhoto = user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL;
+  const pageLabel = (key, fallback) => appTheme.pages?.[key]?.label?.trim() || fallback;
+  const pageIcon = (key, fallback) => appTheme.pages?.[key]?.icon || fallback;
   useEffect(() => {
     document.title = profileName && profileName !== 'حسابي' ? `رقة — ${profileName}` : 'رقة';
   }, [profileName]);
@@ -276,12 +273,12 @@ function App({ user, onUserUpdated }) {
           <span>{profileName}</span>
         </button>
         <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
-          <img src={videosImg} alt="" />
-          <span>مكتبة الفيديوهات</span>
+          <span className="dynamic-page-icon" aria-hidden="true">{pageIcon('videos', '🎬')}</span>
+          <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
         </Link>
         <Link to="/virtual-world" className="header-library-button" aria-label="فتح عالم رقة">
-          <img src={virtualImg} alt="" />
-          <span>عالم رقة</span>
+          <span className="dynamic-page-icon" aria-hidden="true">{pageIcon('virtualWorld', '🌌')}</span>
+          <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
         </Link>
       </header>
 
@@ -290,6 +287,7 @@ function App({ user, onUserUpdated }) {
       </div>
 
       <main className="main-content">
+        <RecentContentFeed />
         <Routes>
           <Route path="/" element={<Navigate to="/health" />} />
           <Route path="/health" element={<Health />} />
@@ -305,26 +303,26 @@ function App({ user, onUserUpdated }) {
       <nav className="bottom-sticky-menu">
         <div className="nav-grid">
           <Link to="/feelings" className="nav-item">
-            <img src={feelingsImg} alt="المشاعر" className="custom-img-icon-nav" />
-            <span className="nav-label">المشاعر</span>
+            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('feelings', '🌸')}</span>
+            <span className="nav-label">{pageLabel('feelings', 'المشاعر')}</span>
           </Link>
           <Link to="/intimacy" className="nav-item">
-            <img src={intimacyImg} alt="الحميمية" className="custom-img-icon-nav" />
-            <span className="nav-label">الحميمية</span>
+            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('intimacy', '💗')}</span>
+            <span className="nav-label">{pageLabel('intimacy', 'الحميمية')}</span>
           </Link>
           <Link to="/health" className="nav-item center-action">
             <div className="center-circle">
-              <img src={healthImg} alt="صحتك" className="custom-img-icon-main" />
+              <span className="dynamic-health-icon" aria-hidden="true">{pageIcon('health', '🩺')}</span>
             </div>
-            <span className="nav-label bold">صحتك</span>
+            <span className="nav-label bold">{pageLabel('health', 'صحتك')}</span>
           </Link>
           <Link to="/swing-forum" className="nav-item">
-            <img src={swingImg} alt="الأرجوحة" className="custom-img-icon-nav" />
-            <span className="nav-label">الأرجوحة</span>
+            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('swing', '🌿')}</span>
+            <span className="nav-label">{pageLabel('swing', 'الأرجوحة')}</span>
           </Link>
           <Link to="/insight" className="nav-item">
-            <img src={insightImg} alt="القفقة" className="custom-img-icon-nav" />
-            <span className="nav-label">القفقة</span>
+            <span className="custom-img-icon-nav dynamic-nav-icon" aria-hidden="true">{pageIcon('insight', '💡')}</span>
+            <span className="nav-label">{pageLabel('insight', 'الإشراقة')}</span>
           </Link>
         </div>
       </nav>
