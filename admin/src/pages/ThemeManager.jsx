@@ -50,7 +50,7 @@ const swingPages = [
   ['swing.EmpowermentPaths', 'دروب التمكين'], ['swing.HomeCorners', 'زوايا المنزل'], ['swing.SoulsLounge', 'رواق الأرواح'],
   ['swing.LittleOnesAcademy', 'أكاديمية الصغار'],
 ];
-const fontOptions = ['Tajawal', 'Cairo', 'Almarai', 'Noto Naskh Arabic', 'Changa'];
+const fontOptions = ['Tajawal', 'Cairo', 'Almarai', 'Noto Naskh Arabic', 'Changa', 'IBM Plex Sans Arabic'];
 const iconOptions = ['🌷', '♡', '♥', '🌸', '✨', '⭐', '🌙', '🌿', '🍼', '🎨', '🚀', '🧸', '🍳', '🏡', '🏠', '🎬', '🌌', '💡', '💗', '🪷', '📚', '🩺', '💬', '🧘'];
 const celebrationOptions = [
   ['none', 'بدون مؤثرات'], ['hearts', 'قلوب متطايرة'], ['stars', 'نجوم لامعة'],
@@ -144,6 +144,14 @@ export default function ThemeManager() {
               {iconOptions.map((icon) => <option key={icon} value={icon}>{icon}</option>)}
             </select>
           </label>
+          <div className="theme-page-customization">
+            <label className="field"><span>لون الأيقونة والعناصر</span><input type="color" value={settings.pages[key]?.accentColor || settings.accentColor} onChange={(event) => updatePage(key, 'accentColor', event.target.value)} /></label>
+            <label className="field"><span>لون الكلمات</span><input type="color" value={settings.pages[key]?.textColor || '#3e3037'} onChange={(event) => updatePage(key, 'textColor', event.target.value)} /></label>
+            <label className="field"><span>لون الخلفية</span><input type="color" value={settings.pages[key]?.backgroundColor || settings.backgroundColor} onChange={(event) => updatePage(key, 'backgroundColor', event.target.value)} /></label>
+            <label className="field"><span>خط الصفحة</span><select value={settings.pages[key]?.fontFamily || settings.fontFamily} onChange={(event) => updatePage(key, 'fontFamily', event.target.value)}>{fontOptions.map((font) => <option key={font} value={font}>{font}</option>)}</select></label>
+            <label className="field"><span>صورة خلفية HTTPS (اختياري)</span><input type="url" dir="ltr" value={settings.pages[key]?.backgroundImageUrl || ''} onChange={(event) => updatePage(key, 'backgroundImageUrl', event.target.value)} placeholder="https://…" /></label>
+            <label className="field"><span>صورة أيقونة HTTPS (اختياري)</span><input type="url" dir="ltr" value={settings.pages[key]?.iconImageUrl || ''} onChange={(event) => updatePage(key, 'iconImageUrl', event.target.value)} placeholder="https://…" /></label>
+          </div>
         </div>
       ))}
     </div>

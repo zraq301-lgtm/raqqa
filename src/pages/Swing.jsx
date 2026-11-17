@@ -46,8 +46,18 @@ const SwingForum = ({ user }) => {
     { id: 'LittleOnesAcademy', label: 'أكاديمية الصغار', icon: '🧸' },
   ].map((section) => {
     const page = appTheme.pages?.[`swing.${section.id}`];
-    return { ...section, label: page?.label?.trim() || section.label, icon: page?.icon || section.icon };
+    return { ...section, label: page?.label?.trim() || section.label, icon: page?.icon || section.icon, iconImageUrl: page?.iconImageUrl || '' };
   });
+  const activePageTheme = appTheme.pages?.[`swing.${activeTab}`] || {};
+  const pageStyle = {
+    '--female-pink': activePageTheme.accentColor || appTheme.primaryColor,
+    '--pink-dark': activePageTheme.accentColor || appTheme.accentColor,
+    '--soft-bg': activePageTheme.backgroundColor || appTheme.backgroundColor,
+    '--main-theme-color': activePageTheme.backgroundColor || appTheme.backgroundColor,
+    '--page-text-color': activePageTheme.textColor || '#352d31',
+    '--app-font-family': `'${activePageTheme.fontFamily || appTheme.fontFamily}', sans-serif`,
+    '--swing-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none',
+  };
 
   const renderCurrentPage = () => {
     switch (activeTab) {
@@ -66,7 +76,7 @@ const SwingForum = ({ user }) => {
   };
 
   return (
-    <div className="app-container">
+    <div className="app-container swing-theme-scope" style={{ ...pageStyle, color: activePageTheme.textColor || undefined, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', fontFamily: pageStyle['--app-font-family'] }}>
       <style>{`
         :root {
           --female-pink: #ff4d7d;
@@ -81,7 +91,7 @@ const SwingForum = ({ user }) => {
           width: 100vw;
           background-color: var(--soft-bg);
           direction: rtl;
-          font-family: 'Tajawal', sans-serif;
+          font-family: var(--app-font-family, 'Tajawal', sans-serif);
           position: fixed;
           top: 0;
           left: 0;
@@ -99,6 +109,7 @@ const SwingForum = ({ user }) => {
         .section-item.active .s-label, .section-item.active .s-icon { color: white; }
 
         .s-icon { font-size: 1.3rem; margin-bottom: 2px; }
+        .s-icon-image { width: 26px; height: 26px; object-fit: cover; border-radius: 8px; }
         .s-label { font-size: 0.7rem; font-weight: bold; color: var(--female-pink); }
 
         .main-display-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
@@ -139,7 +150,7 @@ const SwingForum = ({ user }) => {
             className={`section-item ${activeTab === sec.id ? 'active' : ''}`}
             onClick={() => setActiveTab(sec.id)}
           >
-            <span className="s-icon">{sec.icon}</span>
+            {sec.iconImageUrl ? <img className="s-icon s-icon-image" src={sec.iconImageUrl} alt="" /> : <span className="s-icon">{sec.icon}</span>}
             <span className="s-label">{sec.label}</span>
           </div>
         ))}

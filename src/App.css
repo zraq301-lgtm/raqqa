@@ -267,3 +267,6 @@ body {
 .published-content-copy h3{margin:0 0 6px;font-size:16px;font-weight:900}
 .published-content-copy p{margin:0;white-space:pre-wrap;line-height:1.8;color:#715766;font-size:14px}
 .published-content-status{margin:8px 0;color:#977387;text-align:center;font-size:12px}
+.main-page-theme{font-family:var(--page-font-family,var(--app-font-family,'Tajawal',sans-serif));color:var(--page-text-color,#352d31)}.main-page-theme .main-content{color:var(--page-text-color,#352d31);font-family:var(--page-font-family,var(--app-font-family,'Tajawal',sans-serif))}.main-page-theme .top-page-card.active{border-color:var(--page-accent-color,var(--pink-dark,#b12a68))}.top-page-card-custom-icon-image{position:absolute;top:7px;right:8px;width:30px;height:30px;object-fit:cover;border-radius:50%;border:1px solid #ffffffaa;box-shadow:0 1px 4px #0004}
+.top-page-card-custom-icon{background:var(--page-accent-color,#b12a68)}.header-library-button img{object-fit:cover}.swing-theme-scope .main-display-area{background:transparent}.swing-theme-scope .community-room{--room-pink:var(--female-pink);--room-deep:var(--pink-dark);--room-ink:var(--page-text-color);background-image:var(--swing-background-image);background-size:cover;background-attachment:fixed}
+.health-custom-icon-image{width:28px;height:28px;object-fit:cover;border-radius:50%;vertical-align:middle}

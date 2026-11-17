@@ -28,7 +28,7 @@ export default function Health({ onSyncReminders }) {
   const pausedRef = useRef(false);
   const themedSections = sections.map((section) => {
     const page = appTheme.pages?.[`health.${section.id}`];
-    return { ...section, pageName: section.title, title: page?.label?.trim() || section.title, customIcon: page?.icon || '' };
+    return { ...section, pageName: section.title, title: page?.label?.trim() || section.title, customIcon: page?.icon || '', customIconImage: page?.iconImageUrl || '' };
   });
   useEffect(() => {
     const requested = new URLSearchParams(location.search).get('section');
@@ -67,7 +67,7 @@ export default function Health({ onSyncReminders }) {
         const imageSource = new URL(`../assets/health/${section.img}`, import.meta.url).href;
         return <button className="health-promo-card" key={section.id} onClick={() => { setActiveTab(section.id); navigate(`/health?section=${encodeURIComponent(section.id)}`); }}>
           <img src={imageSource} alt={section.title} /><span className="health-promo-overlay" />
-          <span className="health-promo-copy">{section.customIcon ? <span className="health-custom-icon">{section.customIcon}</span> : <Icon size={17} />}<strong>{section.title}</strong><small>اكتشفي المزيد</small></span>
+          <span className="health-promo-copy">{section.customIconImage ? <img className="health-custom-icon health-custom-icon-image" src={section.customIconImage} alt="" /> : section.customIcon ? <span className="health-custom-icon">{section.customIcon}</span> : <Icon size={17} />}<strong>{section.title}</strong><small>اكتشفي المزيد</small></span>
         </button>;
       })}
     </div>

@@ -83,6 +83,7 @@ export default function TopPageCarousel() {
         {pages.map((page, index) => {
           const label = appTheme.pages?.[page.key]?.label?.trim() || page.label;
           const customIcon = appTheme.pages?.[page.key]?.icon;
+          const customIconImage = appTheme.pages?.[page.key]?.iconImageUrl;
           const isActive = pathname === page.path;
           return (
             <Link
@@ -95,7 +96,7 @@ export default function TopPageCarousel() {
             >
               <img src={page.image} alt={page.alt} loading="eager" draggable="false" />
               <span className="top-page-card-shade" />
-              {customIcon && <span className="top-page-card-custom-icon" aria-hidden="true">{customIcon}</span>}
+              {customIconImage ? <img className="top-page-card-custom-icon-image" src={customIconImage} alt="" /> : customIcon && <span className="top-page-card-custom-icon" aria-hidden="true">{customIcon}</span>}
               <span className="top-page-card-label">{label}</span>
             </Link>
           );

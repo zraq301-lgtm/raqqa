@@ -123,6 +123,11 @@ function App({ user, onUserUpdated }) {
   const profileName = user?.display_name || user?.displayName || user?.firebaseUser?.displayName || 'حسابي';
   const profilePhoto = user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL;
   const pageLabel = (key, fallback) => appTheme.pages?.[key]?.label?.trim() || fallback;
+  const healthSection = new URLSearchParams(location.search).get('section');
+  const activePageKey = location.pathname === '/health' && healthSection ? `health.${healthSection}` : ({ '/health': 'health', '/feelings': 'feelings', '/intimacy': 'intimacy', '/swing-forum': 'swing', '/insight': 'insight', '/videos': 'videos', '/virtual-world': 'virtualWorld' }[location.pathname] || 'health');
+  const activePageTheme = appTheme.pages?.[activePageKey] || {};
+  const activeBackground = activePageTheme.backgroundColor || appTheme.backgroundColor;
+  const activeFont = activePageTheme.fontFamily || appTheme.fontFamily;
   useEffect(() => {
     document.title = profileName && profileName !== 'حسابي' ? `رقة — ${profileName}` : 'رقة';
   }, [profileName]);
@@ -264,7 +269,7 @@ function App({ user, onUserUpdated }) {
   }, [syncNotifications, location.pathname]);
 
   return (
-    <div className="app-container">
+    <div className="app-container main-page-theme" style={{ '--main-theme-color': activeBackground, '--page-accent-color': activePageTheme.accentColor || appTheme.accentColor, '--page-text-color': activePageTheme.textColor || '#352d31', '--page-font-family': `'${activeFont}', sans-serif`, '--page-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none' }}>
       <ScrollToTop />
       <TipOverlay />
       {profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
@@ -275,11 +280,11 @@ function App({ user, onUserUpdated }) {
           <span>{profileName}</span>
         </button>
         <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
-          <img src={videosImg} alt="" />
+          <img src={appTheme.pages?.videos?.iconImageUrl || videosImg} alt="" />
           <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
         </Link>
         <Link to="/virtual-world" className="header-library-button" aria-label="فتح عالم رقة">
-          <img src={virtualImg} alt="" />
+          <img src={appTheme.pages?.virtualWorld?.iconImageUrl || virtualImg} alt="" />
           <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
         </Link>
       </header>
@@ -289,7 +294,7 @@ function App({ user, onUserUpdated }) {
       </div>
       <TopPageCarousel />
 
-      <main className="main-content">
+      <main className="main-content" style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>
         <RecentContentFeed />
         <Routes>
           <Route path="/" element={<Navigate to="/health" />} />
