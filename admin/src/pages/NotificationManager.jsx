@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   broadcastNotification,
   getAdminApiToken,
-  uploadImage,
 } from '../services/adminService';
 import AdminTokenField from '../components/AdminTokenField';
 
@@ -62,16 +61,11 @@ export default function NotificationManager() {
     setLoading(true);
     setMessage(null);
     try {
-      let finalImageUrl = imageUrl.trim();
-      if (imageFile) {
-        const uploaded = await uploadImage(imageFile, 'notifications');
-        finalImageUrl = uploaded.url || uploaded.publicUrl || uploaded.data?.url || uploaded.media?.url || '';
-        if (!finalImageUrl) throw new Error('تعذر الحصول على رابط الصورة بعد رفعها.');
-      }
       const result = await broadcastNotification({
         title: title.trim(),
         body: body.trim(),
-        imageUrl: finalImageUrl,
+        imageUrl: imageUrl.trim(),
+        imageFile,
       });
       setMessage({ type: 'success', text: result?.message || 'تم إرسال الإشعار إلى الأجهزة.' });
       setTitle('');
@@ -117,7 +111,7 @@ export default function NotificationManager() {
           <div className="field">
             <label htmlFor="notification-image-url">أو رابط الصورة</label>
             <input id="notification-image-url" type="url" value={imageUrl} onChange={(event) => { const value = event.target.value; setImageUrl(value); if (value.trim()) { setImageFile(null); const fileInput = document.getElementById('notification-image-file'); if (fileInput) fileInput.value = ''; } }} placeholder="https://…" />
-            <small className="subtle">تُرفع الصورة بنفس مسار صور المحتوى الناجح ثم يُرسل رابطها إلى Firebase. أو استخدمي رابط HTTPS عامًا مباشرًا.</small>
+            <small className="subtle">العنوان والنص وملف الصورة يُرسلون معًا في طلب واحد، وتُرفع الصورة بنفس مسار صور المحتوى ثم تُرسل إلى Firebase.</small>
           </div>
           {imageUrl.trim() && (
             <div className="field">
