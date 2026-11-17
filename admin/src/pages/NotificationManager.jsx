@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   broadcastNotification,
   getAdminApiToken,
-  uploadImage,
 } from '../services/adminService';
 import AdminTokenField from '../components/AdminTokenField';
 
@@ -14,6 +13,10 @@ const notificationErrors = {
   fcm_project_id_mismatch: 'معرّف مشروع Firebase لا يطابق اعتماد الإرسال.',
   notification_fields_required: 'أدخلي عنوان الإشعار ونص الرسالة.',
   notification_image_url_invalid: 'رابط صورة الإشعار يجب أن يبدأ بـ HTTPS.',
+  notification_image_file_required: 'اختاري ملف صورة صالحًا.',
+  notification_image_too_large: 'حجم صورة الإشعار يجب ألا يتجاوز 1 ميجابايت.',
+  unsupported_image_type: 'الملف المختار ليس صورة مدعومة.',
+  cloudinary_credentials_not_configured: 'إعدادات Cloudinary غير مضبوطة في Worker.',
   notification_image_rejected: 'رفض Firebase صورة الإشعار؛ استخدمي رفع الصورة من الجهاز بحجم أقل من 1 ميغابايت أو رابطًا عامًا مباشرًا لصورة صغيرة.',
   fcm_send_failed: 'تعذر إرسال الإشعار إلى Firebase. حاولي لاحقًا.',
 };
@@ -24,33 +27,23 @@ export default function NotificationManager() {
   const [imageUrl, setImageUrl] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState(null);
 
-  const uploadSelectedImage = async (file) => {
+  const selectImage = (file) => {
     setImageFile(file || null);
     if (!file) return;
     if (!file.type.startsWith('image/')) {
+      setImageFile(null);
       setMessage({ type: 'error', text: 'يرجى اختيار ملف صورة صالح.' });
       return;
     }
     if (file.size > 1_000_000) {
+      setImageFile(null);
       setMessage({ type: 'error', text: 'حجم صورة الإشعار يجب ألا يتجاوز 1 ميجابايت حتى تظهر على أجهزة Android.' });
       return;
     }
-    setUploading(true);
+    setImageUrl('');
     setMessage(null);
-    try {
-      const result = await uploadImage(file, 'all_users');
-      const url = result.url || result.publicUrl || result.data?.url || '';
-      if (!url) throw new Error('تعذر الحصول على رابط الصورة.');
-      setImageUrl(url);
-      setMessage({ type: 'success', text: 'تم رفع الصورة وتجهيزها للإشعار.' });
-    } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'تعذر رفع الصورة.' });
-    } finally {
-      setUploading(false);
-    }
   };
 
   const sendNotification = async (event) => {
@@ -70,6 +63,7 @@ export default function NotificationManager() {
         title: title.trim(),
         body: body.trim(),
         imageUrl: imageUrl.trim(),
+        imageFile,
       });
       setMessage({ type: 'success', text: result?.message || 'تم إرسال الإشعار إلى الأجهزة.' });
       setTitle('');
@@ -109,14 +103,13 @@ export default function NotificationManager() {
           </div>
           <div className="field">
             <label htmlFor="notification-image-file">صورة من الجهاز (اختياري)</label>
-            <input id="notification-image-file" type="file" accept="image/*" onChange={(event) => uploadSelectedImage(event.target.files?.[0] || null)} />
-            {uploading && <small className="subtle">جارٍ رفع الصورة…</small>}
+            <input id="notification-image-file" type="file" accept="image/*" onChange={(event) => selectImage(event.target.files?.[0] || null)} />
             {imageFile && <small className="subtle">{imageFile.name}</small>}
           </div>
           <div className="field">
             <label htmlFor="notification-image-url">أو رابط الصورة</label>
-            <input id="notification-image-url" type="url" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://…" />
-            <small className="subtle">يجب أن يكون الرابط عامًا ومباشرًا عبر HTTPS؛ الحد الموصى به لصورة الإشعار 1 ميغابايت. الرفع من الجهاز يجهّز الصورة تلقائيًا.</small>
+            <input id="notification-image-url" type="url" value={imageUrl} onChange={(event) => { const value = event.target.value; setImageUrl(value); if (value.trim()) { setImageFile(null); const fileInput = document.getElementById('notification-image-file'); if (fileInput) fileInput.value = ''; } }} placeholder="https://…" />
+            <small className="subtle">اختاري ملفًا من الجهاز لإرساله مع نفس طلب الإشعار، أو استخدمي رابط HTTPS عامًا مباشرًا. لا تجمعي بين الملف والرابط.</small>
           </div>
           {imageUrl.trim() && (
             <div className="field">
@@ -124,7 +117,7 @@ export default function NotificationManager() {
               <img className="preview-image" src={imageUrl} alt="معاينة صورة الإشعار" onError={(event) => { event.currentTarget.style.display = 'none'; }} onLoad={(event) => { event.currentTarget.style.display = 'block'; }} />
             </div>
           )}
-          <button className="primary-button" type="submit" disabled={loading || uploading}>
+          <button className="primary-button" type="submit" disabled={loading}>
             {loading ? 'جارٍ الإرسال…' : 'إرسال إلى جميع الأجهزة'}
           </button>
         </form>

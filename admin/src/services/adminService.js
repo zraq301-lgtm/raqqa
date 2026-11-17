@@ -99,11 +99,18 @@ const uploadMedia = async (file, pageName, endpoint) => {
 export const uploadVideo = (file, pageName) => uploadMedia(file, pageName, '/api/media/upload');
 export const uploadImage = (file, pageName) => uploadMedia(file, pageName, '/api/media/public');
 
-export const broadcastNotification = async ({ title, body, imageUrl = '' }) => {
+export const broadcastNotification = async ({ title, body, imageUrl = '', imageFile = null }) => {
+  const hasFile = imageFile && typeof imageFile.stream === 'function';
+  const form = hasFile ? new FormData() : null;
+  if (form) {
+    form.append('title', title);
+    form.append('body', body);
+    form.append('file', imageFile, imageFile.name || 'notification-image');
+  }
   const response = await fetch(`${API_BASE}/api/notifications/broadcast`, {
     method: 'POST',
-    headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
-    body: JSON.stringify({ title, body, imageUrl }),
+    headers: { ...(hasFile ? {} : getRequestHeaders()), ...getAdminTokenHeaders() },
+    body: form || JSON.stringify({ title, body, imageUrl }),
   });
   return parseResponse(response);
 };
