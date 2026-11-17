@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { iconMap } from '../constants/iconMap';
 import { useAppTheme } from '../components/AppThemeProvider';
 import PublishedPageContent from '../components/PublishedPageContent';
+import RecentContentFeed from '../components/RecentContentFeed';
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -72,6 +73,7 @@ export default function Health({ onSyncReminders }) {
       })}
     </div>
     <div className="health-dots" aria-hidden="true">{sections.map((section, index) => <span key={section.id} className={index === 0 ? 'active' : ''} />)}</div>
+    <RecentContentFeed />
     <div style={{ padding: '0 18px' }}><PublishedPageContent pageNames={['صحتك']} title="محتوى صحتك المنشور" /></div>
   </section>;
 }

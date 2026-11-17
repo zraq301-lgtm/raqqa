@@ -21,7 +21,6 @@ import Insight from './pages/Insight';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 import ProfileEditor from './components/ProfileEditor';
-import RecentContentFeed from './components/RecentContentFeed';
 import TopPageCarousel from './components/TopPageCarousel';
 import { useAppTheme } from './components/AppThemeProvider';
 import videosImg from './assets/videos.jpg';
@@ -295,7 +294,6 @@ function App({ user, onUserUpdated }) {
       <TopPageCarousel />
 
       <main className="main-content" style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>
-        <RecentContentFeed />
         <Routes>
           <Route path="/" element={<Navigate to="/health" />} />
           <Route path="/health" element={<Health />} />
