@@ -48,7 +48,9 @@ export const getAdminTokenHeaders = () => {
 const parseResponse = async (response) => {
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result?.success === false) {
-    throw new Error(result?.error || `Cloudflare API returned ${response.status}`);
+    const message = [result?.error, result?.detail].filter(Boolean).join(': ')
+      || `Cloudflare API returned ${response.status}`;
+    throw new Error(message);
   }
   return result;
 };
