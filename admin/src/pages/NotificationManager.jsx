@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   broadcastNotification,
   getAdminApiToken,
+  uploadImage,
 } from '../services/adminService';
 import AdminTokenField from '../components/AdminTokenField';
 
@@ -17,6 +18,8 @@ const notificationErrors = {
   notification_image_too_large: 'حجم صورة الإشعار يجب ألا يتجاوز 1 ميجابايت.',
   unsupported_image_type: 'الملف المختار ليس صورة مدعومة.',
   cloudinary_credentials_not_configured: 'إعدادات Cloudinary غير مضبوطة في Worker.',
+  media_file_required: 'اختاري صورة الإشعار أولًا.',
+  public_media_db_not_configured: 'تخزين الوسائط العامة غير مضبوط في Worker.',
   notification_image_rejected: 'رفض Firebase صورة الإشعار؛ استخدمي رفع الصورة من الجهاز بحجم أقل من 1 ميغابايت أو رابطًا عامًا مباشرًا لصورة صغيرة.',
   fcm_send_failed: 'تعذر إرسال الإشعار إلى Firebase. حاولي لاحقًا.',
 };
@@ -59,11 +62,16 @@ export default function NotificationManager() {
     setLoading(true);
     setMessage(null);
     try {
+      let finalImageUrl = imageUrl.trim();
+      if (imageFile) {
+        const uploaded = await uploadImage(imageFile, 'notifications');
+        finalImageUrl = uploaded.url || uploaded.publicUrl || uploaded.data?.url || uploaded.media?.url || '';
+        if (!finalImageUrl) throw new Error('تعذر الحصول على رابط الصورة بعد رفعها.');
+      }
       const result = await broadcastNotification({
         title: title.trim(),
         body: body.trim(),
-        imageUrl: imageUrl.trim(),
-        imageFile,
+        imageUrl: finalImageUrl,
       });
       setMessage({ type: 'success', text: result?.message || 'تم إرسال الإشعار إلى الأجهزة.' });
       setTitle('');
@@ -109,7 +117,7 @@ export default function NotificationManager() {
           <div className="field">
             <label htmlFor="notification-image-url">أو رابط الصورة</label>
             <input id="notification-image-url" type="url" value={imageUrl} onChange={(event) => { const value = event.target.value; setImageUrl(value); if (value.trim()) { setImageFile(null); const fileInput = document.getElementById('notification-image-file'); if (fileInput) fileInput.value = ''; } }} placeholder="https://…" />
-            <small className="subtle">اختاري ملفًا من الجهاز لإرساله مع نفس طلب الإشعار، أو استخدمي رابط HTTPS عامًا مباشرًا. لا تجمعي بين الملف والرابط.</small>
+            <small className="subtle">تُرفع الصورة بنفس مسار صور المحتوى الناجح ثم يُرسل رابطها إلى Firebase. أو استخدمي رابط HTTPS عامًا مباشرًا.</small>
           </div>
           {imageUrl.trim() && (
             <div className="field">
