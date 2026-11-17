@@ -16,6 +16,8 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const notification = payload?.notification || {};
   const data = payload?.data || {};
+  // رسائل notification يعرضها FCM تلقائيًا في الخلفية؛ عدم عرضها مرة ثانية يدويًا.
+  if (Object.keys(notification).length > 0) return;
   const title = notification.title || data.notification_title || 'إشعار من رقة';
   const body = notification.body || data.notification_body || '';
   const image = notification.image || data.image_url || '';
@@ -23,6 +25,8 @@ messaging.onBackgroundMessage((payload) => {
     body,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
+    tag: data.notification_id || payload?.messageId || 'raqqa-broadcast',
+    renotify: false,
     ...( /^https:\/\//i.test(image) ? { image } : {}),
     data: { url: data.link || 'https://raqqa-ota.pages.dev/' },
   };
