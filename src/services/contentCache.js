@@ -4,9 +4,11 @@ import { Preferences } from '@capacitor/preferences';
 import { hydrateOfflineMedia } from './offlineMediaCache';
 
 const CACHE_VERSION = 'v2';
+const RECENT_CACHE_VERSION = 'v3';
 export const CONTENT_CACHE_TTL_MS = 15 * 60 * 1000;
 
 const keyFor = (kind, value = '') => `raqqa_${CACHE_VERSION}_content_${kind}_${encodeURIComponent(value)}`;
+const recentKey = () => `raqqa_${RECENT_CACHE_VERSION}_content_recent_`;
 
 const readStorageFallback = (key) => {
   try {
@@ -45,12 +47,12 @@ const writeEntry = async (key, value) => {
 };
 
 const isAndroid = () => Capacitor.getPlatform() === 'android';
-const persistentFilePath = (kind, value = '') => `raqqa-offline/content/${kind}-${encodeURIComponent(value || 'recent')}.json`;
+const persistentFilePath = (kind, value = '', version = '') => `raqqa-offline/content/${version ? `${version}-` : ''}${kind}-${encodeURIComponent(value || 'recent')}.json`;
 
-const readPersistentEntry = async (kind, value = '') => {
+const readPersistentEntry = async (kind, value = '', version = '') => {
   if (!isAndroid()) return null;
   try {
-    const result = await Filesystem.readFile({ path: persistentFilePath(kind, value), directory: Directory.Data, encoding: Encoding.UTF8 });
+    const result = await Filesystem.readFile({ path: persistentFilePath(kind, value, version), directory: Directory.Data, encoding: Encoding.UTF8 });
     const serialized = typeof result.data === 'string' ? result.data : await result.data.text();
     return JSON.parse(serialized);
   } catch {
@@ -58,11 +60,11 @@ const readPersistentEntry = async (kind, value = '') => {
   }
 };
 
-const writePersistentEntry = async (kind, value, entry) => {
+const writePersistentEntry = async (kind, value, entry, version = '') => {
   if (!isAndroid()) return false;
   try {
     await Filesystem.writeFile({
-      path: persistentFilePath(kind, value),
+      path: persistentFilePath(kind, value, version),
       directory: Directory.Data,
       encoding: Encoding.UTF8,
       data: JSON.stringify(entry),
@@ -87,15 +89,15 @@ export const writePageCache = async (pageName, items) => {
 };
 
 export const readRecentCache = async () => {
-  const entry = await readPersistentEntry('recent') || await readEntry(keyFor('recent'));
+  const entry = await readPersistentEntry('recent', '', RECENT_CACHE_VERSION) || await readEntry(recentKey());
   if (!entry || !Array.isArray(entry.items)) return null;
   return { items: await hydrateOfflineMedia(entry.items), savedAt: Number(entry.savedAt) || 0 };
 };
 
 export const writeRecentCache = async (items) => {
   const entry = { items: Array.isArray(items) ? items : [], savedAt: Date.now() };
-  if (await writePersistentEntry('recent', '', entry)) return;
-  await writeEntry(keyFor('recent'), entry);
+  if (await writePersistentEntry('recent', '', entry, RECENT_CACHE_VERSION)) return;
+  await writeEntry(recentKey(), entry);
 };
 
 export const isCacheFresh = (entry) => Boolean(entry?.savedAt && Date.now() - entry.savedAt < CONTENT_CACHE_TTL_MS);

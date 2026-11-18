@@ -52,7 +52,9 @@ const getCardMedia = (item) => {
   const video = media.videoUrl || (embedded.type === 'video' ? embedded.url : '');
   const youtubeId = getYoutubeId(video);
   if (youtubeId) return { kind: 'image', url: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`, video: true };
-  return video ? { kind: 'video' } : { kind: 'article' };
+  if (video) return { kind: 'video' };
+  const audio = media.audioUrl || (embedded.type === 'audio' ? embedded.url : '');
+  return audio ? { kind: 'audio' } : { kind: 'article' };
 };
 
 const formatRemaining = (expiresAt, now) => {
@@ -106,8 +108,9 @@ export default function RecentContentFeed() {
     <section dir="rtl" aria-label="أحدث المنشورات" style={styles.section}>
       <div style={styles.heading}>
         <div>
-          <span style={styles.eyebrow}>جديد رقة</span>
-          <h2 style={styles.title}>أحدث المنشورات</h2>
+          <span style={styles.eyebrow}>محتوى D1</span>
+          <h2 style={styles.title}>منشورات ومقالات رقة</h2>
+          <span style={styles.subtitle}>تظهر هنا لمدة 72 يومًا بعد النشر</span>
         </div>
         <span style={styles.count}>{visibleItems.length} منشور</span>
       </div>
@@ -116,7 +119,7 @@ export default function RecentContentFeed() {
           const title = item.article?.title?.trim() || 'محتوى جديد';
           const body = item.article?.body?.trim() || '';
           const media = getCardMedia(item);
-          const mediaType = media.video ? 'فيديو' : media.kind === 'image' ? 'صورة' : media.kind === 'video' ? 'فيديو' : 'مقال';
+          const mediaType = media.video ? 'فيديو' : media.kind === 'image' ? 'صورة' : media.kind === 'video' ? 'فيديو' : media.kind === 'audio' ? 'صوت' : 'مقال';
           return (
             <button
               type="button"
@@ -129,7 +132,7 @@ export default function RecentContentFeed() {
                 {media.kind === 'image' && <img src={media.url} alt="" loading="lazy" style={styles.coverImage} />}
                 {media.kind !== 'image' && (
                   <span style={styles.placeholder} aria-hidden="true">
-                    <span style={styles.placeholderIcon}>{media.kind === 'video' ? '▶' : '▤'}</span>
+                  <span style={styles.placeholderIcon}>{media.kind === 'video' ? '▶' : media.kind === 'audio' ? '♫' : '▤'}</span>
                     <span>{mediaType}</span>
                   </span>
                 )}
@@ -157,6 +160,7 @@ const styles = {
   heading: { display: 'flex', alignItems: 'end', justifyContent: 'space-between', gap: 8, marginBottom: 12 },
   eyebrow: { color: '#b12a68', fontSize: 11, fontWeight: 800 },
   title: { color: '#442235', fontSize: 19, fontWeight: 900, margin: '2px 0 0' },
+  subtitle: { display: 'block', marginTop: 3, color: '#8f6178', fontSize: 10, fontWeight: 600 },
   count: { color: '#8f6178', background: '#fceaf2', borderRadius: 999, padding: '5px 9px', fontSize: 10, whiteSpace: 'nowrap' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, alignItems: 'stretch' },
   card: { display: 'flex', flexDirection: 'column', minWidth: 0, padding: 0, textAlign: 'right', color: 'inherit', background: '#fff', border: '1px solid #f3dce7', borderRadius: 16, boxShadow: '0 5px 16px rgba(123,49,87,.08)', overflow: 'hidden', cursor: 'pointer', font: 'inherit', transition: 'transform .18s ease, box-shadow .18s ease' },
