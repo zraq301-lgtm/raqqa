@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPageData } from '../services/adminService';
+import { isCacheFresh, readPageCache, writePageCache } from '../services/contentCache';
 
 const getItems = (result) => {
   if (Array.isArray(result)) return result;
@@ -31,19 +32,36 @@ export default function PublishedPageContent({ pageNames = [], title = 'منشو
 
   useEffect(() => {
     let active = true;
+    const applyItems = (results) => {
+      const merged = results.flatMap(getItems).filter(Boolean);
+      merged.sort((a, b) => new Date(b.lastUpdated || b.publishedAt || 0) - new Date(a.lastUpdated || a.publishedAt || 0));
+      return merged;
+    };
     const load = async () => {
+      const cached = await Promise.all(pageNames.map((pageName) => readPageCache(pageName)));
+      const cachedResults = cached.map((entry) => entry?.items || []);
+      const hasCachedItems = cachedResults.some((entry) => entry.length > 0);
+      if (active && hasCachedItems) {
+        setItems(applyItems(cachedResults));
+        setLoading(false);
+      }
+      if (cached.length === pageNames.length && cached.every((entry) => isCacheFresh(entry))) {
+        if (active && !hasCachedItems) setLoading(false);
+        return;
+      }
+
       const results = await Promise.all(pageNames.map(async (pageName) => {
         try {
-          return (await fetchPageData(pageName)) || [];
+          const result = (await fetchPageData(pageName)) || [];
+          await writePageCache(pageName, getItems(result));
+          return result;
         } catch (error) {
           console.warn(`[PublishedPageContent] تعذر تحميل ${pageName}:`, error?.message || error);
           return [];
         }
       }));
       if (!active) return;
-      const merged = results.flatMap(getItems).filter(Boolean);
-      merged.sort((a, b) => new Date(b.lastUpdated || b.publishedAt || 0) - new Date(a.lastUpdated || a.publishedAt || 0));
-      setItems(merged);
+      setItems(applyItems(results));
       setLoading(false);
     };
     load();

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchRecentContentFeed } from '../services/adminService';
+import { isCacheFresh, readRecentCache, writeRecentCache } from '../services/contentCache';
 
 const SWING_TABS = {
   'أيقونة الأناقة': 'EleganceIcon',
@@ -68,15 +69,20 @@ export default function RecentContentFeed() {
   useEffect(() => {
     let active = true;
     const load = async () => {
+      const cached = await readRecentCache();
+      if (active && cached?.items?.length) setItems(cached.items);
+      if (isCacheFresh(cached)) return;
       try {
         const recentItems = await fetchRecentContentFeed();
-        if (active) setItems(Array.isArray(recentItems) ? recentItems : []);
+        const nextItems = Array.isArray(recentItems) ? recentItems : [];
+        await writeRecentCache(nextItems);
+        if (active) setItems(nextItems);
       } catch (error) {
         console.warn('[RecentContentFeed] تعذر جلب المحتوى الحديث:', error?.message || error);
       }
     };
     load();
-    const refreshTimer = window.setInterval(load, 60000);
+    const refreshTimer = window.setInterval(load, 15 * 60 * 1000);
     const clockTimer = window.setInterval(() => setNow(Date.now()), 60000);
     return () => {
       active = false;

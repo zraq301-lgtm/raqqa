@@ -107,11 +107,8 @@ const Main = () => {
 
   return (
     <BrowserRouter>
-      {showSplash ? (
-        <SplashScreen onFinished={() => setShowSplash(false)} />
-      ) : (
-        <AppSwitcher />
-      )}
+      <AppSwitcher />
+      {showSplash && <SplashScreen onFinished={() => setShowSplash(false)} />}
       {!showSplash && foregroundPush && (
         <aside className="foreground-push-card" role="status" aria-live="polite">
           {foregroundPush.image && <img src={foregroundPush.image} alt="" onError={(event) => { event.currentTarget.style.display = 'none'; }} />}
