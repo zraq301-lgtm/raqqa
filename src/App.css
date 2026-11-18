@@ -276,6 +276,7 @@ body {
 .top-page-carousel-heading,.top-page-carousel-dots{display:none}
 .top-page-carousel-rail{justify-content:space-around;gap:5px;padding:3px 10px;overflow-x:auto;overscroll-behavior-x:contain}
 .top-page-card{flex:0 1 clamp(56px,15vw,108px);height:clamp(44px,11vw,62px);border-radius:13px}
+.top-page-card--health{flex:0 0 clamp(62px,16.5vw,116px);height:clamp(48px,12vw,66px);z-index:1}
 .top-page-card-label{right:4px;left:4px;bottom:5px;text-align:center;font-size:clamp(8px,2.3vw,11px)}
 .main-content{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 .main-content--swing{padding-bottom:24px}

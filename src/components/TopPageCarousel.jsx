@@ -8,9 +8,9 @@ import intimacyImg from '../assets/intimacy.jpg';
 import swingImg from '../assets/swing.jpg';
 
 const pages = [
-  { path: '/health', key: 'health', label: 'الصحة', alt: 'الصحة', image: healthImg },
   { path: '/insight', key: 'insight', label: 'الفقه', alt: 'الفقه', image: insightImg },
   { path: '/feelings', key: 'feelings', label: 'المشاعر', alt: 'المشاعر', image: feelingsImg },
+  { path: '/health', key: 'health', label: 'الصحة', alt: 'الصحة', image: healthImg },
   { path: '/intimacy', key: 'intimacy', label: 'العلاقات الزوجية', alt: 'العلاقات الزوجية', image: intimacyImg },
   { path: '/swing-forum', key: 'swing', label: 'الأرجوحة', alt: 'الأرجوحة', image: swingImg },
 ];
@@ -88,7 +88,7 @@ export default function TopPageCarousel() {
           return (
             <Link
               to={page.path}
-              className={`top-page-card${isActive ? ' active' : ''}`}
+              className={`top-page-card${page.key === 'health' ? ' top-page-card--health' : ''}${isActive ? ' active' : ''}`}
               key={page.path}
               aria-current={isActive ? 'page' : undefined}
               aria-label={`فتح صفحة ${label}`}
