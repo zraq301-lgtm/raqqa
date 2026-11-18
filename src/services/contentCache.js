@@ -1,6 +1,9 @@
+import { Capacitor } from '@capacitor/core';
+import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
+import { hydrateOfflineMedia } from './offlineMediaCache';
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 export const CONTENT_CACHE_TTL_MS = 15 * 60 * 1000;
 
 const keyFor = (kind, value = '') => `raqqa_${CACHE_VERSION}_content_${kind}_${encodeURIComponent(value)}`;
@@ -41,26 +44,58 @@ const writeEntry = async (key, value) => {
   }
 };
 
-export const readPageCache = async (pageName) => {
-  const entry = await readEntry(keyFor('page', pageName));
-  if (!entry || !Array.isArray(entry.items)) return null;
-  return { items: entry.items, savedAt: Number(entry.savedAt) || 0 };
+const isAndroid = () => Capacitor.getPlatform() === 'android';
+const persistentFilePath = (kind, value = '') => `raqqa-offline/content/${kind}-${encodeURIComponent(value || 'recent')}.json`;
+
+const readPersistentEntry = async (kind, value = '') => {
+  if (!isAndroid()) return null;
+  try {
+    const result = await Filesystem.readFile({ path: persistentFilePath(kind, value), directory: Directory.Data, encoding: Encoding.UTF8 });
+    const serialized = typeof result.data === 'string' ? result.data : await result.data.text();
+    return JSON.parse(serialized);
+  } catch {
+    return null;
+  }
 };
 
-export const writePageCache = (pageName, items) => writeEntry(keyFor('page', pageName), {
-  items: Array.isArray(items) ? items : [],
-  savedAt: Date.now(),
-});
+const writePersistentEntry = async (kind, value, entry) => {
+  if (!isAndroid()) return false;
+  try {
+    await Filesystem.writeFile({
+      path: persistentFilePath(kind, value),
+      directory: Directory.Data,
+      encoding: Encoding.UTF8,
+      data: JSON.stringify(entry),
+      recursive: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+export const readPageCache = async (pageName) => {
+  const entry = await readPersistentEntry('page', pageName) || await readEntry(keyFor('page', pageName));
+  if (!entry || !Array.isArray(entry.items)) return null;
+  return { items: await hydrateOfflineMedia(entry.items), savedAt: Number(entry.savedAt) || 0 };
+};
+
+export const writePageCache = async (pageName, items) => {
+  const entry = { items: Array.isArray(items) ? items : [], savedAt: Date.now() };
+  if (await writePersistentEntry('page', pageName, entry)) return;
+  await writeEntry(keyFor('page', pageName), entry);
+};
 
 export const readRecentCache = async () => {
-  const entry = await readEntry(keyFor('recent'));
+  const entry = await readPersistentEntry('recent') || await readEntry(keyFor('recent'));
   if (!entry || !Array.isArray(entry.items)) return null;
-  return { items: entry.items, savedAt: Number(entry.savedAt) || 0 };
+  return { items: await hydrateOfflineMedia(entry.items), savedAt: Number(entry.savedAt) || 0 };
 };
 
-export const writeRecentCache = (items) => writeEntry(keyFor('recent'), {
-  items: Array.isArray(items) ? items : [],
-  savedAt: Date.now(),
-});
+export const writeRecentCache = async (items) => {
+  const entry = { items: Array.isArray(items) ? items : [], savedAt: Date.now() };
+  if (await writePersistentEntry('recent', '', entry)) return;
+  await writeEntry(keyFor('recent'), entry);
+};
 
 export const isCacheFresh = (entry) => Boolean(entry?.savedAt && Date.now() - entry.savedAt < CONTENT_CACHE_TTL_MS);
