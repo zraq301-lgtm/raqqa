@@ -8,9 +8,9 @@ import intimacyImg from '../assets/intimacy.jpg';
 import swingImg from '../assets/swing.jpg';
 
 const pages = [
-  { path: '/insight', key: 'insight', label: 'الفقه', alt: 'الفقه', image: insightImg },
-  { path: '/feelings', key: 'feelings', label: 'المشاعر', alt: 'المشاعر', image: feelingsImg },
   { path: '/health', key: 'health', label: 'الصحة', alt: 'الصحة', image: healthImg },
+  { path: '/insight', key: 'insight', label: 'كوني ملكة', alt: 'كوني ملكة', image: insightImg },
+  { path: '/feelings', key: 'feelings', label: 'المشاعر', alt: 'المشاعر', image: feelingsImg },
   { path: '/intimacy', key: 'intimacy', label: 'العلاقات الزوجية', alt: 'العلاقات الزوجية', image: intimacyImg },
   { path: '/swing-forum', key: 'swing', label: 'الأرجوحة', alt: 'الأرجوحة', image: swingImg },
 ];
@@ -47,15 +47,11 @@ export default function TopPageCarousel() {
     setActiveIndex((previous) => previous === closestIndex ? previous : closestIndex);
   };
 
-  useEffect(() => {
-    scrollToIndex(pageIndex, 'smooth');
-  }, [pageIndex]);
-
+  useEffect(() => { scrollToIndex(pageIndex, 'smooth'); }, [pageIndex]);
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (Date.now() < pauseUntilRef.current) return;
-      const next = (currentIndexRef.current + 1) % pages.length;
-      scrollToIndex(next);
+      scrollToIndex((currentIndexRef.current + 1) % pages.length);
     }, 4500);
     return () => window.clearInterval(timer);
   }, []);
@@ -65,46 +61,22 @@ export default function TopPageCarousel() {
 
   return (
     <nav className="top-page-carousel" aria-label="الصفحات الرئيسية">
-      <div className="top-page-carousel-heading">
-        <strong>تصفحي رِقّة</strong>
-        <span>اسحبي للتنقل بين الصفحات</span>
-      </div>
-      <div
-        className="top-page-carousel-rail"
-        ref={railRef}
-        onScroll={syncIndexFromScroll}
-        onPointerDown={pauseForManualMove}
-        onPointerUp={resumeAfterManualMove}
-        onPointerCancel={resumeAfterManualMove}
-        onWheel={pauseForManualMove}
-        onTouchStart={pauseForManualMove}
-        onTouchEnd={resumeAfterManualMove}
-      >
+      <div className="top-page-carousel-heading"><strong>تصفحي رِقّة</strong><span>اسحبي للتنقل بين الصفحات</span></div>
+      <div className="top-page-carousel-rail" ref={railRef} onScroll={syncIndexFromScroll} onPointerDown={pauseForManualMove} onPointerUp={resumeAfterManualMove} onPointerCancel={resumeAfterManualMove} onWheel={pauseForManualMove} onTouchStart={pauseForManualMove} onTouchEnd={resumeAfterManualMove}>
         {pages.map((page, index) => {
-          const label = appTheme.pages?.[page.key]?.label?.trim() || page.label;
+          const label = page.key === 'insight' ? 'كوني ملكة' : (appTheme.pages?.[page.key]?.label?.trim() || page.label);
           const customIcon = appTheme.pages?.[page.key]?.icon;
           const customIconImage = appTheme.pages?.[page.key]?.iconImageUrl;
           const isActive = pathname === page.path;
-          return (
-            <Link
-              to={page.path}
-              className={`top-page-card${page.key === 'health' ? ' top-page-card--health' : ''}${isActive ? ' active' : ''}`}
-              key={page.path}
-              aria-current={isActive ? 'page' : undefined}
-              aria-label={`فتح صفحة ${label}`}
-              onClick={() => { currentIndexRef.current = index; setActiveIndex(index); pauseForManualMove(); }}
-            >
-              <img src={page.image} alt={page.alt} loading="eager" draggable="false" />
-              <span className="top-page-card-shade" />
-              {customIconImage ? <img className="top-page-card-custom-icon-image" src={customIconImage} alt="" /> : customIcon && <span className="top-page-card-custom-icon" aria-hidden="true">{customIcon}</span>}
-              <span className="top-page-card-label">{label}</span>
-            </Link>
-          );
+          return <Link to={page.path} className={`top-page-card${isActive ? ' active' : ''}`} key={page.path} aria-current={isActive ? 'page' : undefined} aria-label={`فتح صفحة ${label}`} onClick={() => { currentIndexRef.current = index; setActiveIndex(index); pauseForManualMove(); }}>
+            <img src={page.image} alt={page.alt} loading="eager" draggable="false" />
+            <span className="top-page-card-shade" />
+            {customIconImage ? <img className="top-page-card-custom-icon-image" src={customIconImage} alt="" /> : customIcon && <span className="top-page-card-custom-icon" aria-hidden="true">{customIcon}</span>}
+            <span className="top-page-card-label">{label}</span>
+          </Link>;
         })}
       </div>
-      <div className="top-page-carousel-dots" aria-hidden="true">
-        {pages.map((page, index) => <span key={page.path} className={activeIndex === index ? 'active' : ''} />)}
-      </div>
+      <div className="top-page-carousel-dots" aria-hidden="true">{pages.map((page, index) => <span key={page.path} className={activeIndex === index ? 'active' : ''} />)}</div>
     </nav>
   );
 }

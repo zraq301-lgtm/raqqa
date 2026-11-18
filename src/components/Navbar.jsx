@@ -7,7 +7,7 @@ const Navbar = () => {
   const navItems = [
     { path: '/feelings', label: 'المشاعر', icon: iconMap.feelings },
     { path: '/health', label: 'الصحة', icon: iconMap.health }, // القسم الرئيسي
-    { path: '/insight', label: 'تبصر', icon: iconMap.insight },
+    { path: '/insight', label: 'كوني ملكة', icon: iconMap.insight },
     { path: '/intimacy', label: 'علاقات', icon: iconMap.intimacy },
   ];
 

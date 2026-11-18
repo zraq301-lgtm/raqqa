@@ -1,6 +1,7 @@
 import { publicAiPost } from '../services/apiClient';
 import { apiUrl } from '../config/apiConfig';
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
 import {
   Sparkles, Heart, Moon, BookOpen, Activity,
@@ -204,7 +205,12 @@ const RaqqaApp = () => {
         </div>
       </header>
 
-      <PublishedPageContent pageNames={['الإشراقة', 'نصيحة اليوم']} title="محتوى الفقه المنشور" />
+      <PublishedPageContent pageNames={['كوني ملكة', 'الإشراقة', 'نصيحة اليوم']} title="محتوى كوني ملكة المنشور" />
+
+      <section style={styles.worshipTools} aria-label="الذكر والقرآن">
+        <Link to="/queen/adhkar" style={styles.worshipButton}>أذكار الصباح والمساء <span>مقروءة ومسموعة</span></Link>
+        <Link to="/queen/quran" style={styles.worshipButton}>القرآن الكريم <span>قراءة واستماع دون اتصال بعد التنزيل</span></Link>
+      </section>
 
       {!activeCategory && (
         <div style={styles.grid}>
@@ -338,6 +344,8 @@ const RaqqaApp = () => {
 
 const styles = {
   appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
+  worshipTools: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '12px', maxWidth: '900px', margin: '0 auto 24px' },
+  worshipButton: { display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', borderRadius: '18px', background: 'linear-gradient(135deg,#fff0f6,#fff8ed)', border: '1px solid #f3d4e0', color: '#914567', textDecoration: 'none', fontWeight: '800', textAlign: 'right', boxShadow: '0 5px 15px rgba(150,70,110,.08)' },
   header: { textAlign: 'center', marginBottom: '30px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
   subtitle: { color: '#888', fontStyle: 'italic' },

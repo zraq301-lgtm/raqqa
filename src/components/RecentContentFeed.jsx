@@ -22,6 +22,7 @@ const APP_ROUTES = {
   'المشاعر': '/feelings',
   'الحميمية': '/intimacy',
   'الإشراقة': '/insight',
+  'كوني ملكة': '/insight',
   'نصيحة اليوم': '/insight',
 };
 const HEALTH_TABS = {

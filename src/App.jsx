@@ -18,6 +18,7 @@ import Feelings from './pages/Feelings';
 import Intimacy from './pages/Intimacy';
 import Swing from './pages/Swing';
 import Insight from './pages/Insight';
+import QueenPage from './pages/QueenPage';
 import Videos from './pages/Videos';
 import VirtualWorld from './pages/VirtualWorld';
 import ProfileEditor from './components/ProfileEditor';
@@ -105,7 +106,7 @@ function TipOverlay() {
     <div className="tip-card-overlay" onClick={() => setIsVisible(false)}>
       <div className="tip-card-content" onClick={(e) => e.stopPropagation()}>
         <div className="tip-header">
-          <span className="tip-icon">💡 إشراقة رقة</span>
+          <span className="tip-icon">💡 كوني ملكة</span>
           <button className="tip-close-btn" onClick={() => setIsVisible(false)}>×</button>
         </div>
         <div className="tip-body">{renderContent()}</div>
@@ -302,6 +303,8 @@ function App({ user, onUserUpdated }) {
           <Route path="/intimacy" element={<Intimacy />} />
           <Route path="/swing-forum" element={<Swing user={user} />} />
           <Route path="/insight" element={<Insight />} />
+          <Route path="/queen/adhkar" element={<QueenPage mode="adhkar" />} />
+          <Route path="/queen/quran" element={<QueenPage mode="quran" />} />
           <Route path="/videos" element={<Videos />} />
           <Route path="/virtual-world" element={<VirtualWorld />} />
         </Routes>
