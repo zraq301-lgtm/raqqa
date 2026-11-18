@@ -5,6 +5,7 @@ import { signOut } from '../services/authService';
 export default function ProfileEditor({ user, onUpdated, onClose }) {
   const [profile, setProfile] = useState(user || {});
   const [name, setName] = useState(user?.display_name || user?.displayName || user?.firebaseUser?.displayName || '');
+  const [username, setUsername] = useState(user?.username_slug || '');
   const [photo, setPhoto] = useState(user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL || '');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -16,6 +17,7 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
       if (cancelled || !result?.profile) return;
       setProfile((current) => ({ ...current, ...result.profile }));
       setName(result.profile.display_name || '');
+      setUsername(result.profile.username_slug || '');
       setPhoto(result.profile.photo_url || '');
     }).catch(() => {});
     return () => { cancelled = true; };
@@ -42,11 +44,15 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
 
   const save = async () => {
     if (!name.trim()) { setMessage('اكتبي اسم البروفايل أولاً.'); return; }
+    if (username.trim() && !/^[a-z0-9][a-z0-9-]{1,31}$/.test(username.trim().toLowerCase())) {
+      setMessage('اسم المستخدم يجب أن يحتوي على حروف إنجليزية وأرقام وشرطة فقط.'); return;
+    }
     setBusy(true); setMessage('جاري الحفظ…');
     try {
-      const result = await updateProfile({ display_name: name.trim() });
+      const result = await updateProfile({ display_name: name.trim(), ...(username.trim() ? { username_slug: username.trim().toLowerCase() } : {}) });
       const next = { ...user, ...result.profile, display_name: result.profile?.display_name || name.trim(), photo_url: result.profile?.photo_url || photo };
       setProfile((current) => ({ ...current, ...result.profile, display_name: name.trim() }));
+      setUsername(result.profile?.username_slug || username.trim().toLowerCase());
       onUpdated?.(next); setMessage('تم تحديث البروفايل.');
     } catch (error) { setMessage(error.message || 'تعذر تحديث الاسم.'); }
     finally { setBusy(false); }
@@ -61,20 +67,21 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
   return <div className="profile-editor-backdrop" role="dialog" aria-modal="true" onClick={onClose}>
     <section className="profile-editor profile-editor-full" onClick={(event) => event.stopPropagation()} dir="rtl">
       <button className="profile-editor-close" onClick={onClose} aria-label="إغلاق">×</button>
-      <div className="profile-editor-heading"><div><h2>ملفك الشخصي</h2><p>إدارة بياناتك وصورتك وحسابك بأمان</p></div></div>
+      <div className="profile-editor-heading"><div><h2>ملفك الشخصي</h2><p>بياناتك الشخصية وصورتك كما تظهر داخل تطبيق رِقّة</p></div></div>
       <button className="profile-photo-picker" onClick={() => fileRef.current?.click()} disabled={busy} aria-label="رفع صورة البروفايل">
         {photo ? <img src={photo} alt="صورة البروفايل" /> : <span>♡</span>}
         <b>تغيير الصورة</b>
       </button>
       <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={choosePhoto} />
       <label className="profile-field">اسم البروفايل<input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} /></label>
+      <label className="profile-field">اسم المستخدم<input value={username} onChange={(event) => setUsername(event.target.value.replace(/[^a-zA-Z0-9-]/g, '').slice(0, 32))} placeholder="مثال: raqqa_user" maxLength={32} dir="ltr" /></label>
       <div className="profile-account-card">
-        <h3>بيانات الحساب وSchema المستخدم</h3>
+        <h3>بياناتك الشخصية</h3>
         <div className="profile-account-table">
           <div><span>البريد الإلكتروني</span><b>{profile.email || user?.firebaseUser?.email || '—'}</b></div>
-          <div><span>Firebase UID</span><b className="profile-mono">{profile.firebase_uid || user?.firebaseUser?.uid || '—'}</b></div>
-          <div><span>Schema Neon الخاص بك</span><b className="profile-mono">{profile.schema_name || 'يتم إنشاؤه عند أول تسجيل دخول'}</b></div>
-          <div><span>حالة الصورة</span><b>{photo ? 'محفوظة عبر Cloudinary' : 'لم يتم رفع صورة بعد'}</b></div>
+          <div><span>اسم المستخدم</span><b dir="ltr">{username || 'لم تتم إضافته بعد'}</b></div>
+          <div><span>تاريخ الانضمام</span><b>{profile.created_at ? new Date(profile.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}</b></div>
+          <div><span>صورة البروفايل</span><b>{photo ? 'تم رفعها وحفظها' : 'لم تتم إضافة صورة بعد'}</b></div>
         </div>
       </div>
       {message && <p className="profile-editor-message">{message}</p>}
