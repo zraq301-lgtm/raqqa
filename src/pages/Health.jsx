@@ -11,8 +11,9 @@ const LactationHub = lazy(() => import('./HealthPages/LactationHub'));
 const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
 const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
-const FemaleWhispers = lazy(() => import('./HealthPages/FemaleWhispers'));
+  const FemaleWhispers = lazy(() => import('./HealthPages/FemaleWhispers'));
 const sections = [
+  { id: 'whispers', title: 'همسات أنثى', img: 'female-whispers.png', icon: 'feelings', component: FemaleWhispers },
   { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker },
   { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice },
   { id: 'pregnancy', title: 'الحمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor },
@@ -20,7 +21,6 @@ const sections = [
   { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical },
   { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness },
   { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub },
-  { id: 'whispers', title: 'همسات أنثى', img: 'motherhood.png', icon: 'feelings', component: FemaleWhispers },
 ];
 export default function Health({ onSyncReminders }) {
   const location = useLocation();
