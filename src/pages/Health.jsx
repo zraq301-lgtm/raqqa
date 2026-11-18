@@ -11,6 +11,7 @@ const LactationHub = lazy(() => import('./HealthPages/LactationHub'));
 const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
 const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
+const FemaleWhispers = lazy(() => import('./HealthPages/FemaleWhispers'));
 const sections = [
   { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker },
   { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice },
@@ -19,6 +20,7 @@ const sections = [
   { id: 'doctor', title: 'الطبيب', img: 'doctor.png', icon: 'insight', component: DoctorClinical },
   { id: 'fitness', title: 'الرشاقة', img: 'fitness.png', icon: 'health', component: FitnessWellness },
   { id: 'lactation', title: 'الرضاعة', img: 'lactation.png', icon: 'feelings', component: LactationHub },
+  { id: 'whispers', title: 'همسات أنثى', img: 'motherhood.png', icon: 'feelings', component: FemaleWhispers },
 ];
 export default function Health({ onSyncReminders }) {
   const location = useLocation();
@@ -56,7 +58,7 @@ export default function Health({ onSyncReminders }) {
       <button className="health-back-button" onClick={() => { setActiveTab(null); navigate('/health', { replace: true }); }}>عودة</button>
       <Suspense fallback={<p className="health-loading">جاري التحميل...</p>}>
         {activeSection && <activeSection.component onNotificationSync={handleTriggerSync} />}
-        {activeSection && <PublishedPageContent pageNames={[activeSection.pageName]} title={`محتوى ${activeSection.title}`} />}
+        {activeSection?.id !== 'whispers' && activeSection && <PublishedPageContent pageNames={[activeSection.pageName]} title={`محتوى ${activeSection.title}`} />}
       </Suspense>
     </div>;
   }
