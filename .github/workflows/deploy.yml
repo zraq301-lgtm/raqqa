@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish-ota:
@@ -40,24 +40,35 @@ jobs:
       - name: Build Web Bundle
         run: npm run build
 
-      - name: Package OTA files for Cloudflare Pages
+      - name: Package OTA bundle and manifest
         shell: bash
         run: |
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN GitHub secret'; exit 1; }
-          mkdir -p pages_deploy/ota
+          mkdir -p pages_deploy/ota ota_artifacts
           cp -a dist_web/. pages_deploy/
-          (cd dist_web && zip -qr ../pages_deploy/ota/raqqa-ota.zip .)
-          CHECKSUM=$(sha256sum pages_deploy/ota/raqqa-ota.zip | awk '{print $1}')
+          (cd dist_web && zip -qr ../ota_artifacts/raqqa-ota.zip .)
+          CHECKSUM=$(sha256sum ota_artifacts/raqqa-ota.zip | awk '{print $1}')
           cat > pages_deploy/ota/raqqa-ota-manifest.json <<EOF
           {
             "bundleId": "ota-${GITHUB_SHA::12}",
             "nativeCompatibility": "1",
             "artifactType": "zip",
-            "url": "https://raqqa-ota.pages.dev/ota/raqqa-ota.zip",
+            "url": "https://github.com/${GITHUB_REPOSITORY}/releases/download/ota-main/raqqa-ota.zip",
             "checksum": "$CHECKSUM"
           }
           EOF
+
+      - name: Publish OTA bundle to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view ota-main --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload ota-main ota_artifacts/raqqa-ota.zip pages_deploy/ota/raqqa-ota-manifest.json --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create ota-main ota_artifacts/raqqa-ota.zip pages_deploy/ota/raqqa-ota-manifest.json --target "$GITHUB_SHA" --title "Raqqa App OTA" --notes "Latest web bundle for Raqqa's mobile application." --repo "$GITHUB_REPOSITORY"
+          fi
 
       - name: Deploy OTA to Cloudflare Pages
         run: npx --yes wrangler@4 pages deploy pages_deploy --project-name=raqqa-ota --branch=main --commit-hash="$GITHUB_SHA" --commit-message="$GITHUB_SHA"

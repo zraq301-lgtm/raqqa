@@ -1,15 +1,15 @@
 # تحديث التطبيق هوائيًا من GitHub
 
-يستخدم التطبيق الرئيسي وAdmin حزمة `@capawesome/capacitor-live-update` مع GitHub Releases كمخزن للحزم. لا يستخدم هذا المسار Capgo Cloud أو `CAPGO_TOKEN`.
+يستخدم التطبيق الرئيسي وAdmin حزمة `@capawesome/capacitor-live-update`. حزمة ZIP تُخزّن في GitHub Releases، بينما يُنشر Manifest الحالي على Cloudflare Pages. لا يستخدم هذا المسار Capgo Cloud أو `CAPGO_TOKEN`.
 
 ## آلية العمل
 
 1. عند كل تغيير في واجهة التطبيق على فرع `main`، يبني Workflow الواجهة من جديد.
 2. يضغط محتوى `dist_web` في ملف ZIP ويحسب SHA-256.
-3. ينشر الملف وملف Manifest في Release ثابت:
+3. ينشر ZIP ونسخة Manifest في Release ثابت، ثم ينشر Manifest على Cloudflare Pages:
    - التطبيق الرئيسي: `ota-main`
    - Admin: `ota-admin`
-4. عند تشغيل التطبيق على Android أو iOS، ينادي `LiveUpdate.ready()` ثم يقرأ Manifest من GitHub.
+4. عند تشغيل التطبيق على Android أو iOS، ينادي `LiveUpdate.ready()` ثم يقرأ Manifest من Pages مع مصدر GitHub احتياطيًا.
 5. إذا كان `bundleId` مختلفًا، ينزل ZIP ويحدد الحزمة التالية ثم يعيد تحميل WebView.
 6. إذا فشلت الحزمة الجديدة في الإقلاع خلال 10 ثوانٍ، يعيد plugin التطبيق إلى الحزمة الأصلية.
 
@@ -18,6 +18,7 @@
 ```text
 https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota-manifest.json
 https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota.zip
+https://raqqa-ota.pages.dev/ota/raqqa-ota-manifest.json
 
 https://github.com/zraq301-lgtm/raqqa/releases/download/ota-admin/raqqa-admin-ota-manifest.json
 https://github.com/zraq301-lgtm/raqqa/releases/download/ota-admin/raqqa-admin-ota.zip

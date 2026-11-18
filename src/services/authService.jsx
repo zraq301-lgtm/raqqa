@@ -36,16 +36,21 @@ export const signInWithGoogle = async () => {
   }
 };
 export const signOut = async () => {
+  const nativeSignOut = (async () => {
+    if (!Capacitor.isNativePlatform()) return;
+    try {
+      const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+      await GoogleAuth.initialize({ scopes: ['profile', 'email', 'openid'] });
+      await GoogleAuth.signOut();
+    } catch (error) { console.warn('Native Google sign-out skipped:', error?.message); }
+  })();
+  const firebaseResult = await Promise.allSettled([firebaseSignOut(auth), nativeSignOut]);
   try {
-    if (Capacitor.isNativePlatform()) {
-      try {
-        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-        await GoogleAuth.signOut();
-      } catch (error) { console.warn('Native Google sign-out skipped:', error?.message); }
-    }
-  } finally {
-    ['raqqa_local_reminders', 'menstrual_data', 'last_prediction', 'chat_history', 'lady_lactation', 'lactation_history', 'lady_doctor', 'saved_reports', 'lady_fitness', 'roqa_alarms', 'roqa_chat_history', 'preg_ai_v3', 'saved_preg_month'].forEach((key) => localStorage.removeItem(key));
-    await firebaseSignOut(auth);
-  }
+    const storage = globalThis.localStorage;
+    ['raqqa_local_reminders', 'menstrual_data', 'last_prediction', 'chat_history', 'lady_lactation', 'lactation_history', 'lady_doctor', 'saved_reports', 'lady_fitness', 'roqa_alarms', 'roqa_chat_history', 'preg_ai_v3', 'saved_preg_month'].forEach((key) => {
+      try { storage?.removeItem(key); } catch (error) { console.warn(`Local data cleanup skipped for ${key}:`, error?.message); }
+    });
+  } catch (error) { console.warn('Local data cleanup skipped:', error?.message); }
+  if (firebaseResult[0].status === 'rejected') throw firebaseResult[0].reason;
 };
 export { onAuthStateChanged };

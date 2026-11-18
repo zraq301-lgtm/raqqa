@@ -18,11 +18,26 @@ export default function AppSwitcher() {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     initializeNotificationsSyncListener();
-    return onAuthStateChanged(auth, async (firebaseUser) => {
+    let disposed = false;
+    let authEventId = 0;
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (disposed) return;
+      const currentEventId = ++authEventId;
       if (!firebaseUser) { setUser(null); setLoading(false); return; }
-      try { setUser(await bootstrapFirebaseUser(firebaseUser)); } catch (error) { console.error('Profile bootstrap failed:', error); setUser({ firebaseUser, display_name: firebaseUser.displayName || '' }); }
-      setLoading(false);
+      setLoading(true);
+      const applyIfCurrent = (nextUser) => {
+        if (disposed || currentEventId !== authEventId || auth.currentUser?.uid !== firebaseUser.uid) return;
+        setUser(nextUser);
+        setLoading(false);
+      };
+      bootstrapFirebaseUser(firebaseUser)
+        .then(applyIfCurrent)
+        .catch((error) => {
+          console.error('Profile bootstrap failed:', error);
+          applyIfCurrent({ firebaseUser, display_name: firebaseUser.displayName || '' });
+        });
     });
+    return () => { disposed = true; unsubscribe(); };
   }, []);
   if (loading) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>جارٍ التحميل…</div>;
   return <AppThemeProvider><ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={setUser} />}</ErrorBoundary></AppThemeProvider>;
