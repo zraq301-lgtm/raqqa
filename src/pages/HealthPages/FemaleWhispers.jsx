@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../../firebase-config';
 import {
   deleteFemaleWhisper,
   listFemaleWhispers,
@@ -25,18 +27,41 @@ export default function FemaleWhispers() {
   const [message, setMessage] = useState('');
   const fileRef = useRef(null);
 
-  const loadEntries = async () => {
-    try {
-      const result = await listFemaleWhispers();
-      setEntries(Array.isArray(result?.entries) ? result.entries : []);
-    } catch (error) {
-      setMessage(error.message || 'تعذر تحميل مفكرتك الخاصة.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    let active = true;
+    let requestVersion = 0;
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      const currentVersion = ++requestVersion;
+      if (!user) {
+        setEntries([]);
+        setLoading(false);
+        return;
+      }
 
-  useEffect(() => { loadEntries(); }, []);
+      setLoading(true);
+      setMessage('');
+      listFemaleWhispers()
+        .then((result) => {
+          if (active && currentVersion === requestVersion) {
+            setEntries(Array.isArray(result?.entries) ? result.entries : []);
+          }
+        })
+        .catch((error) => {
+          if (active && currentVersion === requestVersion) {
+            setMessage(error.message || 'تعذر تحميل مفكرتك الخاصة.');
+          }
+        })
+        .finally(() => {
+          if (active && currentVersion === requestVersion) setLoading(false);
+        });
+    });
+
+    return () => {
+      active = false;
+      requestVersion += 1;
+      unsubscribe();
+    };
+  }, []);
 
   const chooseMedia = async (event) => {
     const file = event.target.files?.[0];
@@ -70,7 +95,8 @@ export default function FemaleWhispers() {
         body: body.trim(),
         mediaUrl: media?.url || '',
       });
-      if (result?.entry) setEntries((current) => [result.entry, ...current]);
+      if (!result?.entry?.id) throw new Error('لم يصل تأكيد حفظ المذكرة من الخادم.');
+      setEntries((current) => [result.entry, ...current]);
       setTitle(''); setBody(''); setMedia(null); setMessage('تم حفظ مذكرتك الخاصة.');
     } catch (error) {
       setMessage(error.message || 'تعذر حفظ المذكرة.');
