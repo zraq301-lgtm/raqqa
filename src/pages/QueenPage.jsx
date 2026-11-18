@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiUrl } from '../config/apiConfig';
-import { ArrowRight, BookOpen, Check, ChevronDown, Download, Headphones, Pause, Play, RefreshCw, Sun, Volume2 } from 'lucide-react';
+import { ArrowRight, BookOpen, Check, ChevronDown, Headphones, Pause, Play, RefreshCw, Sun, Volume2 } from 'lucide-react';
 
 const QURAN_API = apiUrl('api/queen/quran');
 const AUDIO_URL = (reciter, surah, ayah) => apiUrl(`api/queen/quran/audio?reciter=${reciter}&surah=${surah}&ayah=${ayah}`);
@@ -64,7 +64,7 @@ async function openCachedAudio(url) {
   const stored = await cache.match(url);
   if (stored) return URL.createObjectURL(await stored.blob());
   const response = await fetch(url);
-  if (!response.ok) throw new Error('تعذر تنزيل المقطع الصوتي.');
+  if (!response.ok) throw new Error('تعذر تجهيز المقطع الصوتي.');
   await cache.put(url, response.clone());
   return URL.createObjectURL(await response.blob());
 }
@@ -74,17 +74,16 @@ async function cacheAudio(url) {
   const cache = await caches.open(audioCacheName);
   if (await cache.match(url)) return;
   const response = await fetch(url);
-  if (!response.ok) throw new Error('تعذر تنزيل أحد المقاطع الصوتية.');
+  if (!response.ok) throw new Error('تعذر تجهيز أحد المقاطع الصوتية.');
   await cache.put(url, response);
 }
 
-function AudioVersePlayer({ verses, reciter, surahNumber, offlineOnly = false }) {
+function AudioVersePlayer({ verses, reciter, surahNumber }) {
   const audioRef = useRef(null);
   const objectUrlRef = useRef('');
   const [index, setIndex] = useState(0);
   const [source, setSource] = useState('');
   const [busy, setBusy] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState(0);
   const [error, setError] = useState('');
   const autoplayRef = useRef(false);
   const currentUrl = AUDIO_URL(reciter, surahNumber, verses[index]?.numberInSurah || 1);
@@ -100,24 +99,15 @@ function AudioVersePlayer({ verses, reciter, surahNumber, offlineOnly = false })
       objectUrlRef.current = nextSource.startsWith('blob:') ? nextSource : '';
       autoplayRef.current = play;
       setSource(nextSource);
+      if (index < verses.length - 1) {
+        void cacheAudio(AUDIO_URL(reciter, surahNumber, verses[index + 1].numberInSurah)).catch(() => {});
+      }
       if (!play && nextSource === source) {
         audioRef.current?.play().catch(() => setError('اضغطي تشغيل مرة أخرى للسماح بتشغيل الصوت داخل التطبيق.'));
       }
     } catch (loadError) {
-      setError(offlineOnly ? 'هذا المقطع غير محفوظ. اضغطي تنزيل السورة أثناء الاتصال بالإنترنت.' : loadError.message);
+      setError('تعذر تشغيل هذا المقطع. شغّلي السورة مرة واحدة مع الإنترنت ليُحفظ الصوت داخل التطبيق.');
     } finally { setBusy(false); }
-  };
-
-  const downloadSurah = async () => {
-    setBusy(true); setError(''); setDownloadProgress(0);
-    try {
-      for (let verseIndex = 0; verseIndex < verses.length; verseIndex += 1) {
-        const url = AUDIO_URL(reciter, surahNumber, verses[verseIndex].numberInSurah);
-        await cacheAudio(url);
-        setDownloadProgress(Math.round(((verseIndex + 1) / verses.length) * 100));
-      }
-    } catch (downloadError) { setError(downloadError.message); }
-    finally { setBusy(false); }
   };
 
   useEffect(() => {
@@ -139,11 +129,8 @@ function AudioVersePlayer({ verses, reciter, surahNumber, offlineOnly = false })
       <div style={styles.audioMeta}><Headphones size={18} /> {AUDIO_RECITERS[reciter].label} — الآية {index + 1} من {verses.length}</div>
       <audio ref={audioRef} src={source} controls preload="metadata" onEnded={() => { if (index < verses.length - 1) setIndex((value) => value + 1); }} />
       <button type="button" style={styles.primaryButton} onClick={() => loadCurrent(true)} disabled={busy}>
-        {busy ? <RefreshCw size={17} className="spin" /> : source ? <Play size={17} /> : <Download size={17} />}
-        {busy ? 'جارٍ التجهيز…' : source ? 'تشغيل الآية' : 'تنزيل وتشغيل'}
-      </button>
-      <button type="button" style={styles.secondaryButton} onClick={downloadSurah} disabled={busy}>
-        <Download size={17} /> {busy && downloadProgress ? `تنزيل السورة ${downloadProgress}%` : 'تنزيل السورة كاملة دون إنترنت'}
+        {busy ? <RefreshCw size={17} className="spin" /> : <Play size={17} />}
+        {busy ? 'جارٍ تجهيز الصوت…' : 'تشغيل الآية'}
       </button>
       {error && <small style={styles.error}>{error}</small>}
     </div>
@@ -161,23 +148,23 @@ function DhikrPage() {
   const loadAdhkarAudio = async () => {
     setAudioBusy(true); setAudioError('');
     try { setAudioSource(await openCachedAudio(audioUrl)); }
-    catch (error) { setAudioError('تعذر تشغيل الأذكار. اضغطي تنزيل وتشغيل أثناء الاتصال بالإنترنت.'); }
+    catch (error) { setAudioError('تعذر تشغيل الأذكار. شغّليها مرة واحدة مع الإنترنت ليُحفظ الصوت داخل التطبيق.'); }
     finally { setAudioBusy(false); }
   };
   useEffect(() => { setAudioSource(''); setAudioError(''); }, [kind, reciter]);
   return <div style={styles.page} dir="rtl">
     <PageBack title="الأذكار" />
-    <div style={styles.hero}><Sun size={30} /><h1>أذكار الصباح والمساء</h1><p>{data.intro} النص والصوت يحفظان داخل التطبيق بعد التنزيل.</p></div>
+    <div style={styles.hero}><Sun size={30} /><h1>أذكار الصباح والمساء</h1><p>{data.intro} عند أول تشغيل مع الإنترنت يُحفظ الصوت تلقائيًا ليعمل لاحقًا دون اتصال.</p></div>
     <div style={styles.tabs}><button type="button" onClick={() => setKind('morning')} style={kind === 'morning' ? styles.activeTab : styles.tab}>أذكار الصباح</button><button type="button" onClick={() => setKind('evening')} style={kind === 'evening' ? styles.activeTab : styles.tab}>أذكار المساء</button></div>
     <label style={styles.selectLabel}>القارئ الصوتي<select value={reciter} onChange={(event) => setReciter(event.target.value)}><option value="alafasy">مشاري العفاسي</option><option value="fares">فارس عباد</option><option value="jibril">محمد جبريل</option></select></label>
     <div style={styles.audioBox}>
       <div style={styles.audioMeta}><Headphones size={18} /> {data.title} — {reciter === 'alafasy' ? 'مشاري العفاسي' : reciter === 'fares' ? 'فارس عباد' : 'محمد جبريل'}</div>
       {audioSource && <audio src={audioSource} controls preload="metadata" style={{ width: '100%' }} />}
-      <button type="button" style={styles.primaryButton} onClick={loadAdhkarAudio} disabled={audioBusy}><Download size={17} /> {audioBusy ? 'جارٍ تنزيل الصوت…' : audioSource ? 'تشغيل الأذكار داخل التطبيق' : 'تنزيل وتشغيل الأذكار'}</button>
+      <button type="button" style={styles.primaryButton} onClick={loadAdhkarAudio} disabled={audioBusy}><Play size={17} /> {audioBusy ? 'جارٍ تجهيز الصوت…' : 'تشغيل الأذكار'}</button>
       {audioError && <small style={styles.error}>{audioError}</small>}
     </div>
     <div style={styles.cards}>{data.items.map((item, index) => <article key={`${kind}-${index}`} style={styles.dhikrCard}><span style={styles.count}>{item.count}×</span><p>{item.text}</p></article>)}</div>
-    <small style={styles.note}>بعد الضغط على «تنزيل وتشغيل» يمكن تشغيل الصوت من داخل التطبيق دون إنترنت.</small>
+    <small style={styles.note}>يتم حفظ الصوت تلقائيًا أثناء أول تشغيل مع الإنترنت، ثم يُشغّل من داخل التطبيق دون إنترنت.</small>
   </div>;
 }
 function QuranPage() {
@@ -187,7 +174,6 @@ function QuranPage() {
   const [reciter, setReciter] = useState('maher');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [offlineOnly, setOfflineOnly] = useState(false);
   const selected = useMemo(() => surahs.find((item) => item.number === Number(surahNumber)), [surahs, surahNumber]);
 
   useEffect(() => { cachedJson(SURAHS_KEY, `${QURAN_API}/surahs`).then((result) => setSurahs(result.data || [])).catch((e) => setError(e.message)); }, []);
@@ -199,20 +185,19 @@ function QuranPage() {
 
   return <div style={styles.page} dir="rtl">
     <PageBack title="القرآن الكريم" />
-    <div style={styles.hero}><BookOpen size={30} /><h1>قراءة القرآن والاستماع إليه</h1><p>اختاري السورة والقارئ. يمكنك تنزيل المقاطع لتشغيلها لاحقًا دون إنترنت.</p></div>
+    <div style={styles.hero}><BookOpen size={30} /><h1>قراءة القرآن والاستماع إليه</h1><p>اختاري السورة والقارئ واضغطي تشغيل؛ سيُحفظ الصوت تلقائيًا للتشغيل لاحقًا دون إنترنت.</p></div>
     <div style={styles.controls}>
       <label style={styles.selectLabel}>السورة<select value={surahNumber} onChange={(event) => setSurahNumber(Number(event.target.value))}>{surahs.map((item) => <option key={item.number} value={item.number}>{item.number}. {item.name}</option>)}</select></label>
       <label style={styles.selectLabel}>القارئ<select value={reciter} onChange={(event) => setReciter(event.target.value)}>{Object.entries(AUDIO_RECITERS).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}</select></label>
     </div>
-    <label style={styles.offlineToggle}><input type="checkbox" checked={offlineOnly} onChange={(event) => setOfflineOnly(event.target.checked)} /> تشغيل المقاطع المحفوظة فقط دون اتصال</label>
     {loading && <p style={styles.loading}>جارٍ تحميل السورة…</p>}
     {error && <p style={styles.error}>{error}</p>}
     {!loading && surah && <>
       <section style={styles.surahHeader}><h2>{surah.name}</h2><span>{surah.numberOfAyahs} آية</span></section>
-      <AudioVersePlayer verses={surah.ayahs || []} reciter={reciter} surahNumber={surah.number} offlineOnly={offlineOnly} />
+      <AudioVersePlayer verses={surah.ayahs || []} reciter={reciter} surahNumber={surah.number} />
       <div style={styles.ayahs}>{(surah.ayahs || []).map((ayah) => <p key={ayah.number} style={styles.ayah}><span style={styles.ayahNumber}>{ayah.numberInSurah}</span>{ayah.text}</p>)}</div>
     </>}
-    {selected && <small style={styles.note}>النص يحفظ تلقائيًا على الجهاز بعد أول فتح للسورة. الصوت يحفظ عند الضغط على «تنزيل وتشغيل» لكل آية.</small>}
+    {selected && <small style={styles.note}>النص والصوت يُحفظان تلقائيًا أثناء التشغيل الأول مع الإنترنت، ثم يعملان لاحقًا دون اتصال.</small>}
   </div>;
 }
 
@@ -244,13 +229,11 @@ const styles = {
   controls: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 10, marginBottom: 12 },
   selectLabel: { display: 'grid', gap: 7, color: '#795b66', fontWeight: 700 },
   select: { border: '1px solid #e8cbd6', borderRadius: 12, padding: 11, background: '#fff', color: '#48363e', fontFamily: 'inherit' },
-  offlineToggle: { display: 'flex', gap: 8, alignItems: 'center', color: '#795b66', margin: '8px 0 15px' },
   surahHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: 14, background: '#f8efe7', color: '#89563e' },
   'surahHeader h2': { margin: 0 },
   audioBox: { display: 'grid', gap: 10, margin: '14px 0', padding: 14, borderRadius: 18, background: '#f5f2fb', border: '1px solid #e7def1' },
   audioMeta: { display: 'flex', gap: 7, alignItems: 'center', color: '#69537e', fontWeight: 700 },
   'audioBox audio': { width: '100%' },
-  secondaryButton: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: '1px solid #d9bfd0', borderRadius: 12, padding: '10px 14px', background: '#fff', color: '#8a5573', fontWeight: 700 },
   primaryButton: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, border: 0, borderRadius: 12, padding: '10px 14px', background: '#9a5877', color: '#fff', fontWeight: 700 },
   ayahs: { display: 'grid', gap: 9 },
   ayah: { margin: 0, padding: '16px 12px', borderRadius: 15, background: '#fff', border: '1px solid #eaded7', lineHeight: 2.2, fontSize: '1.2rem', fontFamily: 'Amiri, serif' },
