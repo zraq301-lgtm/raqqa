@@ -33,7 +33,10 @@ export const listAllAdminContent = async () => {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok || result?.success === false) throw new Error(result?.error || `Cloudflare API returned ${response.status}`);
-  return Array.isArray(result?.items) ? result.items : [];
+  return {
+    items: Array.isArray(result?.items) ? result.items : [],
+    partialStores: Array.isArray(result?.partialStores) ? result.partialStores : [],
+  };
 };
 
 const getRequestHeaders = (includeContentType = true) => (

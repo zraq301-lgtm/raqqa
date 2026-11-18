@@ -54,10 +54,16 @@ export default function UploadManager() {
   const [items, setItems] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState('');
+  const [partialStores, setPartialStores] = useState([]);
   const [deletingId, setDeletingId] = useState('');
 
   const refresh = useCallback(async () => {
-    try { setItems(await listAllAdminContent()); setListError(''); }
+    try {
+      const result = await listAllAdminContent();
+      setItems(result.items);
+      setPartialStores(result.partialStores);
+      setListError('');
+    }
     catch (error) { console.error('Content list error:', error); setListError(error.message === 'admin_authorization_required' ? 'أدخلي رمز الإدارة واحفظيه لعرض المحتوى وإدارته.' : 'تعذر تحميل المحتوى المنشور.'); }
     finally { setListLoading(false); }
   }, []);
@@ -112,7 +118,8 @@ export default function UploadManager() {
           : result.notification?.reason === 'notification_image_rejected'
             ? ' لكن رفض Firebase صورة الإشعار؛ تأكدي من أن الرابط عام وصورة الإشعار أقل من 1 ميغابايت.'
           : ' لكن لم يتم تأكيد إرسال الإشعار.';
-      setMessage({ type: 'success', text: `تم نشر المحتوى بنجاح في «${pageLabelByName[targetPage] || targetPage}».${notificationMessage}` });
+      const storageLabel = result.storage === 'D1' ? 'D1 — مستقل عن Neon' : 'Neon — المخطط الخاص';
+      setMessage({ type: 'success', text: `تم نشر المحتوى في «${pageLabelByName[targetPage] || targetPage}» وحُفظ في ${storageLabel}.${notificationMessage}` });
       setTitle(''); setDescription(''); setMediaFile(null); setCoverImageFile(null); setVideoUrl('');
       const fileInput = document.getElementById('content-media-file'); if (fileInput) fileInput.value = '';
       const coverInput = document.getElementById('content-cover-file'); if (coverInput) coverInput.value = '';
@@ -146,12 +153,13 @@ export default function UploadManager() {
 
   const mediaType = (item) => item.media?.videoUrl || item.article?.embeddedMedia?.type === 'video' ? 'فيديو' : item.media?.imageUrl || item.article?.embeddedMedia?.type === 'image' ? 'صورة' : 'مقال';
   const itemCategory = (item) => item.pageName === 'مكتبة رقة' ? ` · ${videoCategories.find((categoryOption) => categoryOption.value === (item.article?.category || item.category || 'all'))?.label || 'عام — كل التخصصات'}` : '';
+  const storageLabel = (item) => item.storage === 'D1' ? 'D1' : item.storage === 'Neon' ? 'Neon' : '—';
   return <div className="admin-page">
       <div className="admin-intro"><h2>إدارة المحتوى</h2><p>انشري محتوى جديدًا وتابعي المنشورات النشطة من مكان واحد.</p></div>
     <AdminTokenField />
     {message && <div className={`notice ${message.type}`} role="status">{message.text}</div>}
     <section className="admin-card">
-      <h3>نشر محتوى جديد</h3><p className="card-description">اختاري أي صفحة أو قسم من التطبيق. المحتوى الحديث يظهر في خلاصة رقة لمدة 72 ساعة، ثم يختفي تلقائيًا.</p>
+      <h3>نشر محتوى جديد</h3><p className="card-description">الأرجوحة ومكتبة رقة وعالم رقة وبقية الصفحات العامة تُحفظ في D1، منفصلة عن Neon. صحتك والفقه والمشاعر والعلاقات الزوجية وأقسامها الخاصة تبقى في Neon. المحتوى الحديث يظهر في الخلاصة لمدة 72 ساعة، ويظل محفوظًا في صفحته.</p>
       <form className="admin-form" onSubmit={handlePublish}>
         <div className="form-grid">
           <div className="field"><label htmlFor="content-section">الصفحة أو القسم</label><select id="content-section" value={targetPage} onChange={(e) => { setTargetPage(e.target.value); setCategory('all'); }}>{contentPageGroups.map((group) => <optgroup key={group.label} label={group.label}>{group.options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</optgroup>)}</select></div>
@@ -166,8 +174,9 @@ export default function UploadManager() {
         <button className="primary-button" type="submit" disabled={loading}>{loading ? 'جارٍ النشر…' : 'نشر المحتوى'}</button>
       </form>
     </section>
-    <section className="admin-card"><h3>كل المحتوى المنشور</h3><p className="card-description">تظهر هنا المنشورات من جميع الصفحات، بما فيها القديمة، ويمكن حذف أي عنصر مباشرة.</p>
-      {listLoading ? <div className="empty-state">جارٍ تحميل المحتوى…</div> : listError ? <div className="notice error">{listError}</div> : items.length === 0 ? <div className="empty-state">لا يوجد محتوى نشط حاليًا.</div> : <div className="active-list">{items.map((item) => <article className="active-item" key={`${item.pageName}-${item.id}`}><div className="active-item-main"><strong>{item.article?.title?.trim() || 'محتوى بدون عنوان'}</strong><small>{pageLabelByName[item.pageName] || item.pageName} · {mediaType(item)}{itemCategory(item)}</small></div><button className="danger-button" type="button" onClick={() => deleteItem(item)} disabled={Boolean(deletingId)}>{deletingId === item.id ? 'جارٍ الحذف…' : 'حذف'}</button></article>)}</div>}
+    <section className="admin-card"><h3>كل المحتوى المنشور</h3><p className="card-description">تظهر هنا عناصر Neon وD1؛ مصدر التخزين مكتوب بجانب كل عنصر.</p>
+      {partialStores.length > 0 && <div className="notice error">تعذر الاتصال بـ {partialStores.join(' و ')}؛ القائمة الحالية جزئية.</div>}
+      {listLoading ? <div className="empty-state">جارٍ تحميل المحتوى…</div> : listError ? <div className="notice error">{listError}</div> : items.length === 0 ? <div className="empty-state">لا يوجد محتوى نشط حاليًا.</div> : <div className="active-list">{items.map((item) => <article className="active-item" key={`${item.pageName}-${item.id}`}><div className="active-item-main"><strong>{item.article?.title?.trim() || 'محتوى بدون عنوان'}</strong><small>{pageLabelByName[item.pageName] || item.pageName} · {mediaType(item)}{itemCategory(item)} · التخزين: {storageLabel(item)}</small></div><button className="danger-button" type="button" onClick={() => deleteItem(item)} disabled={Boolean(deletingId)}>{deletingId === item.id ? 'جارٍ الحذف…' : 'حذف'}</button></article>)}</div>}
     </section>
     <details className="advanced-tools"><summary>خيارات متقدمة: الحذف بمعرّف أو رابط</summary><p className="subtle">يُحذف العنصر من القسم المحدد أعلاه باستخدام المعرّف أو الرابط.</p><form className="admin-form" onSubmit={deleteManual}><div className="field"><label htmlFor="manual-delete-id">المعرّف أو الرابط</label><input id="manual-delete-id" value={manualId} onChange={(e) => setManualId(e.target.value)} placeholder="معرّف المحتوى أو رابطه" /></div><button className="danger-button" type="submit" disabled={manualLoading || !manualId.trim()}>{manualLoading ? 'جارٍ الحذف…' : 'حذف يدوي'}</button></form></details>
   </div>;
