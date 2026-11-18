@@ -108,8 +108,10 @@ export default function FemaleWhispers() {
   const remove = async (entry) => {
     if (!window.confirm('هل تريدين حذف هذه المذكرة؟')) return;
     try {
-      await deleteFemaleWhisper(entry.id);
+      const result = await deleteFemaleWhisper(entry.id);
+      if (!result?.success || !result?.deleted) throw new Error('لم يصل تأكيد حذف المذكرة من الخادم.');
       setEntries((current) => current.filter((item) => item.id !== entry.id));
+      setMessage('تم حذف المذكرة.');
     } catch (error) { setMessage(error.message || 'تعذر حذف المذكرة.'); }
   };
 

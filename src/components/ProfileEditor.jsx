@@ -10,17 +10,25 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const fileRef = useRef(null);
+  const profileReadVersion = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    const requestVersion = ++profileReadVersion.current;
     getProfile().then((result) => {
-      if (cancelled || !result?.profile) return;
-      setProfile((current) => ({ ...current, ...result.profile }));
+      if (cancelled || requestVersion !== profileReadVersion.current || !result?.profile) return;
+      const nextProfile = {
+        ...user,
+        ...result.profile,
+        photo_url: result.profile.photo_url || user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL || '',
+      };
+      setProfile((current) => ({ ...current, ...nextProfile }));
       setName(result.profile.display_name || '');
       setUsername(result.profile.username_slug || '');
-      setPhoto(result.profile.photo_url || '');
+      setPhoto(nextProfile.photo_url);
+      onUpdated?.(nextProfile);
     }).catch(() => {});
-    return () => { cancelled = true; };
+    return () => { cancelled = true; profileReadVersion.current += 1; };
   }, []);
 
   const choosePhoto = async (event) => {
@@ -36,7 +44,12 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
     try {
       const result = await uploadAvatar(file);
       const nextPhoto = result?.profile?.photo_url || result?.photo_url;
-      if (nextPhoto) { setPhoto(nextPhoto); setProfile((current) => ({ ...current, ...result.profile })); onUpdated?.({ ...user, ...result.profile, photo_url: nextPhoto }); }
+      if (nextPhoto) {
+        profileReadVersion.current += 1;
+        setPhoto(nextPhoto);
+        setProfile((current) => ({ ...current, ...result.profile }));
+        onUpdated?.({ ...user, ...result.profile, photo_url: nextPhoto });
+      }
       setMessage('تم حفظ صورة البروفايل.');
     } catch (error) { setMessage(error.message || 'تعذر رفع الصورة.'); }
     finally { setBusy(false); }
