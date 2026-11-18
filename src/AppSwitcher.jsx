@@ -25,6 +25,12 @@ export default function AppSwitcher() {
     let profileRefreshId = 0;
     let lastProfileRefreshAt = 0;
     let appStateListener = null;
+    const authFallbackTimer = window.setTimeout(() => {
+      if (!disposed) {
+        console.warn('Firebase auth initialization is taking too long; showing the app shell.');
+        setLoading(false);
+      }
+    }, 6000);
     const refreshProfileOnResume = async () => {
       const firebaseUser = auth.currentUser;
       if (disposed || !firebaseUser || Date.now() - lastProfileRefreshAt < 2000) return;
@@ -62,9 +68,17 @@ export default function AppSwitcher() {
     }).catch((error) => console.warn('App resume listener unavailable:', error?.message || error));
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (disposed) return;
+      window.clearTimeout(authFallbackTimer);
       const currentEventId = ++authEventId;
       if (!firebaseUser) { setUser(null); setLoading(false); return; }
-      setLoading(true);
+      // لا ننتظر طلب الملف السحابي قبل عرض التطبيق؛ الملف الشخصي يُحدّث في الخلفية.
+      setUser((currentUser) => ({
+        ...currentUser,
+        firebaseUser,
+        display_name: currentUser?.display_name || firebaseUser.displayName || '',
+        photo_url: currentUser?.photo_url || firebaseUser.photoURL || '',
+      }));
+      setLoading(false);
       const applyIfCurrent = (nextUser) => {
         if (disposed || currentEventId !== authEventId || auth.currentUser?.uid !== firebaseUser.uid) return;
         setUser(nextUser);
@@ -79,6 +93,7 @@ export default function AppSwitcher() {
     });
     return () => {
       disposed = true;
+      window.clearTimeout(authFallbackTimer);
       profileRefreshId += 1;
       unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
