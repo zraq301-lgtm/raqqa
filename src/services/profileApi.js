@@ -9,7 +9,13 @@ export const cloudflareRequest = async (path, options = {}) => {
   const response = await fetch(apiUrl(path), { ...options, headers });
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
-    throw new Error(detail || `Cloudflare API request failed (${response.status})`);
+    try {
+      const payload = JSON.parse(detail);
+      throw new Error(payload.detail || payload.error || `Cloudflare API request failed (${response.status})`);
+    } catch (error) {
+      if (error instanceof SyntaxError) throw new Error(detail || `Cloudflare API request failed (${response.status})`);
+      throw error;
+    }
   }
   const contentType = response.headers.get('content-type') || '';
   return contentType.includes('application/json') ? response.json() : response.text();
