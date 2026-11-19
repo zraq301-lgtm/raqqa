@@ -2,9 +2,9 @@ import { publicAiPost } from '../services/apiClient';
 import { apiUrl } from '../config/apiConfig';
 import React, { useState } from 'react';
 import {
-  Sparkles, Heart, Moon, BookOpen, Activity,
+  Sparkles, Heart, Moon, BookOpen, Activity, Cloud, CloudRain, Flame, BatteryLow,
   ShieldCheck, Users, ShieldAlert, Wind, Gift,
-  Clock, Brain, Flower2, Coins, Hourglass,
+  Clock, Brain, Flower2, Coins, Hourglass, Sun,
   Camera, Mic, Image, Trash2, X, MapPin, Smile, Send, Stethoscope
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
@@ -22,6 +22,8 @@ const RaqqaFeelingsApp = () => {
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [uploadedImageUrl, setUploadedImageUrl] = useState(null);
+  const [showMoodPicker, setShowMoodPicker] = useState(false);
+  const [activeMood, setActiveMood] = useState(null);
 
   // --- الدالة المحدثة لجدولة الإشعارات المحلية مع دعم الصور ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, categoryTitle) => {
@@ -82,11 +84,41 @@ const RaqqaFeelingsApp = () => {
     { id: 10, title: "الإنجاز والعمل", icon: <Clock />, items: ["بركة الوقت ⏳", "إتقان العمل 🎯", "فرحة الإنجاز 🏆", "نفع الناس 🤝"] }
   ];
 
-  const handleProcess = async (customPrompt = null) => {
+  const moodGroups = [
+    {
+      id: 'support',
+      title: 'مشاعر تحتاج إلى رفق',
+      hint: 'اختاري الشعور الأقرب لما تمرّين به الآن',
+      moods: [
+        { id: 'anxiety', name: 'قلق', icon: <Cloud size={24} /> },
+        { id: 'sadness', name: 'حزن', icon: <CloudRain size={24} /> },
+        { id: 'anger', name: 'غضب', icon: <Flame size={24} /> },
+        { id: 'tension', name: 'توتر', icon: <Wind size={24} /> },
+        { id: 'loneliness', name: 'وحدة', icon: <Moon size={24} /> },
+        { id: 'exhaustion', name: 'إرهاق', icon: <BatteryLow size={24} /> },
+      ],
+    },
+    {
+      id: 'nurture',
+      title: 'مشاعر جميلة نحب تعزيزها',
+      hint: 'اختاري شعورًا جميلًا لنساعدكِ على تنميته',
+      moods: [
+        { id: 'joy', name: 'فرح', icon: <Sun size={24} /> },
+        { id: 'calm', name: 'طمأنينة', icon: <Flower2 size={24} /> },
+        { id: 'gratitude', name: 'امتنان', icon: <Sparkles size={24} /> },
+        { id: 'love', name: 'محبة', icon: <Heart size={24} /> },
+        { id: 'hope', name: 'أمل', icon: <Smile size={24} /> },
+        { id: 'confidence', name: 'ثقة', icon: <ShieldCheck size={24} /> },
+      ],
+    },
+  ];
+
+  const handleProcess = async (customPrompt = null, imageOverride = undefined) => {
     setLoading(true);
     setShowChat(true);
 
     const isFromInputs = !customPrompt;
+    const imageToAnalyze = imageOverride === undefined ? uploadedImageUrl : imageOverride;
 
     const summary = Object.entries(inputs)
       .filter(([k, v]) => v)
@@ -99,7 +131,7 @@ const RaqqaFeelingsApp = () => {
       حللي مشاعري بأسلوب يجمع بين "طب المشاعر" والعمق النفسي التحليلي.
       قدمي نصائح عملية (Somatic tracking) وتوجيهات لترميم الذات، مع ذكر آية أو حديث يربط الجانب النفسي بالإيماني.`;
 
-    if (uploadedImageUrl) {
+    if (imageToAnalyze) {
       finalPrompt += ' (أرفقت صورة مع السؤال؛ افحصيها ضمن حدود المعلومات العامة.)';
     }
 
@@ -107,7 +139,7 @@ const RaqqaFeelingsApp = () => {
       const options = {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
-        data: { prompt: finalPrompt, image: uploadedImageUrl || undefined }
+        data: { prompt: finalPrompt, image: imageToAnalyze || undefined }
       };
 
       const response = await publicAiPost(options);
@@ -127,6 +159,20 @@ const RaqqaFeelingsApp = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleMoodSelection = (mood, groupId) => {
+    setActiveMood(mood);
+    setShowMoodPicker(false);
+    setActiveTab(null);
+    setInputs({});
+    setChatInput('');
+    setUploadedImageUrl(null);
+    const goal = groupId === 'support'
+      ? 'قدمي احتواءً لطيفًا وخطوة عملية واحدة صغيرة تساعدني على تهدئة هذا الشعور أو التعامل معه الآن.'
+      : 'قدمي اقتراحًا بسيطًا يساعدني على تنمية هذا الشعور الجميل والاحتفاظ به في يومي.';
+    const prompt = `أشعر الآن بـ"${mood.name}". ${goal} أجيبي بالعربية وبصيغة مخاطبة مؤنثة، في نصيحة قصيرة لا تتجاوز ثلاث جمل. كوني رحيمة وعملية، ولا تقدمي تشخيصًا طبيًا أو وعودًا قاطعة.`;
+    handleProcess(prompt, null);
   };
 
   const handleChatSend = () => {
@@ -154,13 +200,52 @@ const RaqqaFeelingsApp = () => {
 
         <button
           style={styles.doctorBtn}
-          onClick={() => { setShowChat(true); setAiResponse("أهلاً بكِ في عيادة رقة النفسية.. كيف تشعرين اليوم؟"); }}
+          onClick={() => { setActiveMood(null); setShowChat(true); setAiResponse("أهلاً بكِ في عيادة رقة النفسية.. كيف تشعرين اليوم؟"); }}
         >
           <Stethoscope size={20} /> تحدثي مع طبيب المشاعر الذكي
+        </button>
+        <button type="button" style={styles.moodPickerBtn} onClick={() => setShowMoodPicker(true)}>
+          <Heart size={20} /> اختاري شعورك الآن
         </button>
       </header>
 
       <PublishedPageContent pageNames={['المشاعر']} title="محتوى المشاعر المنشور" />
+
+      {showMoodPicker && !showChat && (
+        <div style={styles.moodOverlay} role="dialog" aria-modal="true" aria-labelledby="mood-picker-title">
+          <div style={styles.moodPanel}>
+            <div style={styles.moodHeader}>
+              <div>
+                <h2 id="mood-picker-title" style={styles.moodTitle}>ما الشعور الأقرب إليكِ؟</h2>
+                <p style={styles.moodIntro}>اختاريه، وسنشارككِ نصيحة قصيرة تناسبه.</p>
+              </div>
+              <button type="button" style={styles.closeMoodPicker} onClick={() => setShowMoodPicker(false)} aria-label="إغلاق اختيار المشاعر">
+                <X size={22} />
+              </button>
+            </div>
+            {moodGroups.map((group) => (
+              <section key={group.id} style={styles.moodGroup}>
+                <h3 style={styles.moodGroupTitle}>{group.title}</h3>
+                <p style={styles.moodGroupHint}>{group.hint}</p>
+                <div style={styles.moodGrid}>
+                  {group.moods.map((mood) => (
+                    <button
+                      key={mood.id}
+                      type="button"
+                      style={styles.moodCard}
+                      onClick={() => handleMoodSelection(mood, group.id)}
+                      aria-label={`اختيار شعور ${mood.name}`}
+                    >
+                      <span style={styles.moodIcon}>{mood.icon}</span>
+                      <span style={styles.moodName}>{mood.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
 
       {!activeTab && (
         <div style={styles.grid}>
@@ -212,7 +297,7 @@ const RaqqaFeelingsApp = () => {
             <div style={styles.chatHeader}>
               <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                 <Sparkles color="#f06292" size={20} />
-                <h3 style={{margin: 0, color: '#f06292', fontSize: '1.1rem'}}>محراب رقة للدردشة</h3>
+                <h3 style={{margin: 0, color: '#f06292', fontSize: '1.1rem'}}>{activeMood ? `نصيحة لشعور ${activeMood.name}` : 'محراب رقة للدردشة'}</h3>
               </div>
               <X style={{cursor: 'pointer'}} onClick={() => setShowChat(false)} />
             </div>
@@ -291,6 +376,20 @@ const styles = {
   iconCard: { background: 'white', padding: '20px', borderRadius: '20px', textAlign: 'center', cursor: 'pointer', boxShadow: '0 5px 15px rgba(240,98,146,0.1)', transition: '0.3s' },
   iconLarge: { fontSize: '1.8rem', color: '#f06292', marginBottom: '10px' },
   iconTitle: { fontWeight: 'bold', color: '#444', fontSize: '0.9rem' },
+  moodPickerBtn: { marginTop: '12px', background: '#fff', color: '#d74781', border: '1px solid #f4c6d5', padding: '10px 20px', borderRadius: '50px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(240,98,146,0.12)' },
+  moodOverlay: { position: 'fixed', inset: 0, background: 'rgba(61,29,44,0.48)', zIndex: 180, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', direction: 'rtl' },
+  moodPanel: { width: '100%', maxWidth: '720px', maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: '26px', padding: '24px', boxShadow: '0 24px 60px rgba(80,30,54,0.2)' },
+  moodHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '22px' },
+  moodTitle: { margin: '0 0 6px', color: '#713b55', fontSize: '1.35rem' },
+  moodIntro: { margin: 0, color: '#8b7781', fontSize: '0.95rem' },
+  closeMoodPicker: { width: '40px', height: '40px', flexShrink: 0, border: 'none', borderRadius: '50%', background: '#fff2f7', color: '#c64e7b', cursor: 'pointer', display: 'grid', placeItems: 'center' },
+  moodGroup: { marginTop: '20px' },
+  moodGroupTitle: { margin: '0 0 5px', color: '#713b55', fontSize: '1rem' },
+  moodGroupHint: { margin: '0 0 12px', color: '#9b8991', fontSize: '0.82rem' },
+  moodGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: '10px' },
+  moodCard: { minHeight: '104px', border: '1px solid #f6e2ea', borderRadius: '18px', background: 'linear-gradient(160deg, #fff 0%, #fff8fb 100%)', color: '#59434e', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '8px', fontFamily: 'inherit', transition: 'transform 0.18s ease, box-shadow 0.18s ease' },
+  moodIcon: { width: '48px', height: '48px', borderRadius: '50%', background: '#ffedf4', color: '#d85888', display: 'grid', placeItems: 'center' },
+  moodName: { fontSize: '0.9rem', fontWeight: 'bold' },
   fullOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.4)', zIndex: 100, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '15px' },
   activeContent: { width: '100%', maxWidth: '500px', maxHeight: '90vh', background: 'white', borderRadius: '25px', padding: '25px', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' },
