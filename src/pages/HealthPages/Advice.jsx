@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useEffect } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import localTips from '../../data/tips.json';
@@ -19,12 +18,11 @@ const HealthAdvice = () => {
     try {
       setLoading(true);
       const options = {
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+        specialtyTopic: 'advice',
         data: { prompt: "أعطني نصيحة طبية قصيرة ومفيدة للنساء اليوم" }
       };
 
-      const response = await publicAiPost(options);
+      const response = await privateAiPost(options);
       const aiText = response.data.reply || response.data.message;
 
       if (aiText) {
@@ -51,12 +49,11 @@ const HealthAdvice = () => {
 
     try {
       const options = {
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+        specialtyTopic: 'advice',
         data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${currentInput || 'حللي الصورة المرفقة من فضلك.'}`, image: chatImage || undefined }
       };
 
-      const response = await publicAiPost(options);
+      const response = await privateAiPost(options);
       const reply = response.data.reply || response.data.message;
 
       const aiMsg = { role: 'ai', text: reply };

@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useEffect, useRef } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import ChatMediaControls from '../../components/ChatMediaControls';
@@ -86,9 +85,8 @@ const Motherhood = () => {
 
     if (customPrompt) setMessages(prev => [...prev, { id: Date.now(), text: customPrompt, sender: 'user', timestamp: new Date().toLocaleTimeString(), image: imageData }]);
     try {
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'motherhood',
         data: { prompt: promptMessage, image: imageData || undefined }
       });
       const responseText = response.data.reply || response.data.message || "عذراً، المستشار مشغول حالياً.";

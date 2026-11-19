@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useEffect, useRef } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
@@ -81,15 +80,14 @@ const DoctorClinical = () => {
 
     try {
       const options = {
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+        specialtyTopic: 'doctor',
         data: {
-          prompt: `أنا أنثى مسلمة، بصفتك استشاري طب متخصص ومعتمد: ${finalPrompt}. يرجى تقديم تقرير طبي استشاري احترافي مفصل.`,
+          prompt: `أنا أطلب معلومات تثقيفية عامة عن صحة المرأة. اشرحي المعطيات بحذر، من دون تشخيص أو وصف علاج، واذكري متى ينبغي مراجعة طبيبة: ${finalPrompt}`,
           image: imageUrl || undefined
         }
       };
 
-      const aiRes = await publicAiPost(options);
+      const aiRes = await privateAiPost(options);
       const responseText = aiRes.data.reply || aiRes.data.message;
 
       setAiResponse(responseText);

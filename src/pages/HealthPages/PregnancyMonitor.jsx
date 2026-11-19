@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -106,9 +105,8 @@ const PregnancyApp = () => {
     const userQuery = promptInput.trim() || 'حللي الصورة المرفقة المتعلقة بالحمل.';
     setPromptInput('');
     try {
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'pregnancy',
         data: { prompt: userQuery, image: chatImage || undefined }
       });
       const reply = response.data.reply || response.data.message;
@@ -130,9 +128,8 @@ const PregnancyApp = () => {
     setLoading(true);
     setShowChat(true);
     try {
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'pregnancy',
         data: { prompt: `حللي بيانات ${category.title} للحامل في الشهر ${pregnancyMonth}: ${dataString}` }
       });
       const reply = response.data.reply || response.data.message;

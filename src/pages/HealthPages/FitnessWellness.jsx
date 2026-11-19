@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -146,9 +145,8 @@ const PregnancyMonitor = () => {
     setIsLoading(true);
     const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
     try {
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'fitness',
         data: { prompt: `بصفتك خبيرة، حللي بيانات ${section.title}: ${sectionData}` }
       });
       const reply = response.data.reply || response.data.message;
@@ -172,9 +170,8 @@ const PregnancyMonitor = () => {
     setPrompt("");
     setIsLoading(true);
     try {
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'fitness',
         data: { prompt: userMsg || 'حللي الصورة المرفقة صحياً', image: capturedImage || undefined }
       });
       const reply = response.data.reply || response.data.message;

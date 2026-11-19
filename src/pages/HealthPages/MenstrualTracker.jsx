@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useEffect, useMemo } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
@@ -135,9 +134,8 @@ const MenstrualTracker = () => {
     setLoading(true);
 
     try {
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'cycle',
         data: { prompt: `أنا أنثى مسلمة، سؤالي هو: ${userMsg.content}. مع مراعاة كامل بياناتي الصحية بما فيها العمر والوزن وبيانات الفوط الصحية: ${JSON.stringify(data)}`, image: chatImage || undefined }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
@@ -192,9 +190,8 @@ const MenstrualTracker = () => {
 
     try {
       const summary = JSON.stringify(data);
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'cycle',
         data: { prompt: `حللي بيانات الدورة الشهرية بدقة مع التركيز الشديد على (العمر: ${data['البيانات الحيوية_العمر']} والوزن: ${data['البيانات الحيوية_الوزن']}) بالإضافة لبيانات الفوط الصحية والأعراض، وقدمي تقرير طبي متخصص يوضح أن هذه البيانات تخص توقع الدورة القادمة: ${summary}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;

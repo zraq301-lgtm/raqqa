@@ -1,5 +1,4 @@
-import { publicAiPost } from '../services/apiClient';
-import { apiUrl } from '../config/apiConfig';
+import { privateAiPost } from '../services/apiClient';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CapacitorHttp } from '@capacitor/core';
@@ -148,11 +147,10 @@ const RaqqaApp = () => {
 
     try {
       const options = {
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+        specialtyTopic: 'fiqh',
         data: { prompt: `${promptText}${imageData ? ' أرفقت صورة مع سؤالي.' : ''}`, image: imageData || undefined }
       };
-      const response = await publicAiPost(options);
+      const response = await privateAiPost(options);
       const responseText = response.data.reply || response.data.message || "عذراً رفيقتي، لم أتمكن من الرد الآن.";
 
       setAiResponse(responseText);

@@ -1,5 +1,4 @@
-import { publicAiPost } from '../../services/apiClient';
-import { apiUrl } from '../../config/apiConfig';
+import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useRef, useEffect } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
@@ -52,22 +51,21 @@ const LactationHub = () => {
 
     try {
       const strictPrompt = `
-      بصفتكِ استشارية رضاعة دولية معتمدة (IBCLC) وخبيرة في بروتوكولات منظمة الصحة العالمية (WHO) واليونيسيف:
+      أنتِ مساعدة تثقيفية في الرضاعة ولستِ طبيبة أو بديلة عن المختصات:
       1. قومي بتحليل هذه البيانات بدقة شديدة: ${customQuery || JSON.stringify(data)}.
       2. التقرير يجب أن يكون طويلاً ومفصلاً باللغة العربية بأسلوب طبي ودود.
       3. الهيكل المطلوب للرد:
           - **تحليل المدخلات:** شرح لكل معلومة قدمتها الأم وماذا تعني طبياً.
           - **الصواب والخطأ:** تقييم ممارسات الأم الحالية (حددي ما هو صحيح وما يحتاج تعديل).
           - **خطة زيادة إدرار الحليب:** نصائح عملية غذائية وتقنية لزيادة كمية الحليب.
-          - **توصيات طبية:** بناءً على أحدث الأبحاث (مثل بروتوكولات الأكاديمية الأمريكية لطب الأطفال).
+          - **توصيات عامة:** لا تنسبي المعلومة إلى بحث أو بروتوكول حديث ما لم يوجد مرجع موثوق ضمن المصادر المحلية المرفقة.
           - **تنبيهات هامة:** متى يجب استشارة الطبيب فوراً؟
-      4. إذا تم إرفاق صورة (${imageUrl || 'لا يوجد'})، حلليها في سياق صحة الثدي أو الرضاعة.
+      4. إذا أُرفقت صورة، اذكري ما يمكن ملاحظته منها بحذر دون تشخيص أو تكرار أي بيانات تعريفية.
       5. لا تخرجي عن موضوع الرضاعة والأمومة أبداً.
       `;
 
-      const response = await publicAiPost({
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+      const response = await privateAiPost({
+        specialtyTopic: 'breastfeeding',
         data: { prompt: strictPrompt, image: imageUrl || undefined }
       });
 

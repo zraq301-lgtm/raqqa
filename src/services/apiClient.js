@@ -1,5 +1,6 @@
 import { apiUrl } from '../config/apiConfig';
 import { getFirebaseIdToken } from './authService';
+import { askPrivateAssistant } from './privateAssistant';
 
 export const cloudflarePost = async (optionsOrPath, data) => {
   const options = typeof optionsOrPath === 'string' ? { url: apiUrl(optionsOrPath), data } : optionsOrPath;
@@ -14,10 +15,18 @@ export const cloudflarePost = async (optionsOrPath, data) => {
   return { status: response.status, data: responseData };
 };
 
-// The AI gateway is public; authenticated persistence continues to use cloudflarePost.
+// Public calls are for demo-only content and must never receive private health data.
 export const publicAiPost = (optionsOrPath, data) => {
   const options = typeof optionsOrPath === 'string'
     ? { url: apiUrl(optionsOrPath), data }
     : optionsOrPath;
   return cloudflarePost({ ...options, skipAuth: true });
+};
+
+export const privateAiPost = (optionsOrPath, data) => {
+  const options = typeof optionsOrPath === 'string' ? { url: apiUrl(optionsOrPath), data } : optionsOrPath;
+  const topic = options?.specialtyTopic || options?.data?.topic;
+  const question = options?.data?.prompt || options?.data?.text || options?.data?.input || '';
+  const image = options?.data?.image || options?.data?.imageUrl || undefined;
+  return askPrivateAssistant({ topic, question, image });
 };

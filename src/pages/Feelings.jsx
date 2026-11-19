@@ -1,5 +1,4 @@
-import { publicAiPost } from '../services/apiClient';
-import { apiUrl } from '../config/apiConfig';
+import { privateAiPost } from '../services/apiClient';
 import React, { useState } from 'react';
 import {
   Sparkles, Heart, Moon, BookOpen, Activity, Cloud, CloudRain, Flame, BatteryLow,
@@ -137,12 +136,11 @@ const RaqqaFeelingsApp = () => {
 
     try {
       const options = {
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+        specialtyTopic: 'emotions',
         data: { prompt: finalPrompt, image: imageToAnalyze || undefined }
       };
 
-      const response = await publicAiPost(options);
+      const response = await privateAiPost(options);
       const responseText = response.data.reply || response.data.message || "شكراً لمشاركتكِ مشاعركِ يا رفيقتي.";
 
       setAiResponse(responseText);

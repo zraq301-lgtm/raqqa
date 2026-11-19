@@ -1,5 +1,4 @@
-import { publicAiPost } from '../services/apiClient';
-import { apiUrl } from '../config/apiConfig';
+import { privateAiPost } from '../services/apiClient';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Heart, MessageCircle, Trash2, Save,
@@ -96,15 +95,14 @@ const MarriageApp = () => {
 
     try {
       const aiOptions = {
-        url: apiUrl('api/ai'),
-        headers: { 'Content-Type': 'application/json' },
+        specialtyTopic: 'relationships',
         data: {
           prompt: `${MARRIAGE_EXPERT_PROMPT}، القسم: ${pageTitle}، التفاصيل: (${summary}). قدمي استشارة صريحة ومفصلة.`,
           image: imageUrl || undefined
         }
       };
 
-      const aiResponse = await publicAiPost(aiOptions);
+      const aiResponse = await privateAiPost(aiOptions);
       const responseText = aiResponse.data.reply || aiResponse.data.message || "أنا هنا معكِ يا رفيقتي، اسألي ما تشائين في خصوصيتنا.";
 
       // إذا كان الطلب يتطلب حفظ (من القوائم)، نقوم بجدولة الإشعار بعد 48 ساعة
