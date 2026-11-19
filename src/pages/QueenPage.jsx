@@ -88,72 +88,68 @@ function AudioVersePlayer({ verses, reciter, surahNumber }) {
   const audioRef = useRef(null);
   const objectUrlRef = useRef('');
   const [index, setIndex] = useState(0);
-  const [source, setSource] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const autoplayRef = useRef(false);
-  const currentUrl = AUDIO_URL(reciter, surahNumber, verses[index]?.numberInSurah || 1);
 
   useEffect(() => () => { if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current); }, []);
-  useEffect(() => { setIndex(0); setSource(''); setError(''); }, [surahNumber, reciter]);
+  useEffect(() => {
+    setIndex(0); setBusy(false); setError('');
+    audioRef.current?.pause();
+    audioRef.current?.removeAttribute('src');
+    audioRef.current?.load();
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = '';
+    }
+  }, [surahNumber, reciter]);
 
-  const loadCurrent = async (play = false) => {
+  const loadVerse = async (verseIndex) => {
     setBusy(true); setError('');
+    const verse = verses[verseIndex];
+    if (!verse) { setBusy(false); return; }
+    const verseUrl = AUDIO_URL(reciter, surahNumber, verse.numberInSurah);
     try {
-      const nextSource = play && navigator.onLine ? currentUrl : await openCachedAudio(currentUrl);
-      if (!navigator.onLine && nextSource === currentUrl) {
+      const nextSource = navigator.onLine ? verseUrl : await openCachedAudio(verseUrl);
+      if (!navigator.onLine && nextSource === verseUrl) {
         setError('هذه الآية غير محفوظة على الجهاز بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.');
         return;
       }
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = nextSource.startsWith('blob:') ? nextSource : '';
-      autoplayRef.current = play && nextSource !== currentUrl;
-      setSource(nextSource);
-      if (play && nextSource === currentUrl && audioRef.current) {
-        audioRef.current.src = nextSource;
-        audioRef.current.load();
-        audioRef.current.play().catch(() => setError('اضغطي زر التشغيل في مشغل الصوت لبدء الاستماع.'));
+      setIndex(verseIndex);
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.src = nextSource;
+      audio.load();
+      try {
+        await audio.play();
+        void cacheAudio(verseUrl).catch(() => {});
+        if (verseIndex < verses.length - 1) {
+          const nextUrl = AUDIO_URL(reciter, surahNumber, verses[verseIndex + 1].numberInSurah);
+          void cacheAudio(nextUrl).catch(() => {});
+        }
+      } catch {
+        setError('إذا لم يبدأ الصوت تلقائيًا، اضغطي تشغيل مرة واحدة؛ وستتابع الآيات بعدها تلقائيًا.');
       }
-      if (index < verses.length - 1) {
-        void cacheAudio(AUDIO_URL(reciter, surahNumber, verses[index + 1].numberInSurah)).catch(() => {});
-      }
-      if (!play && nextSource === source) {
-        audioRef.current?.play().catch(() => setError('اضغطي تشغيل مرة أخرى للسماح بتشغيل الصوت داخل التطبيق.'));
-      }
-    } catch (loadError) {
+    } catch {
       setError('تعذر فتح مشغل التلاوة. تحققي من اتصال الإنترنت وحاولي مجددًا.');
     } finally { setBusy(false); }
   };
 
-  useEffect(() => {
-    if (!source || !audioRef.current) return;
-    audioRef.current.load();
-    if (autoplayRef.current) {
-      const playPromise = audioRef.current.play();
-      if (playPromise?.catch) playPromise.catch(() => setError('اضغطي زر التشغيل مرة أخرى إذا منع الهاتف التشغيل التلقائي.'));
-    }
-  }, [source]);
-  useEffect(() => {
-    if (index > 0) void loadCurrent(true);
-    // loadCurrent intentionally follows the selected ayah and reciter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
   if (!verses.length) return null;
   return (
     <div style={styles.audioBox}>
       <div style={styles.audioMeta}><Headphones size={18} /> {AUDIO_RECITERS[reciter].label} — الآية {index + 1} من {verses.length}</div>
       <audio
         ref={audioRef}
-        src={source}
         controls
         preload="metadata"
-        onCanPlay={() => { void cacheAudio(currentUrl).catch(() => {}); }}
         onError={() => setError(navigator.onLine ? 'تعذر تشغيل هذه الآية الآن. حاولي مرة أخرى.' : 'هذه الآية غير متاحة دون اتصال بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.')}
-        onEnded={() => { if (index < verses.length - 1) setIndex((value) => value + 1); }}
+        onEnded={() => { if (index < verses.length - 1) void loadVerse(index + 1); }}
       />
-      <button type="button" style={styles.primaryButton} onClick={() => loadCurrent(true)} disabled={busy}>
+      <button type="button" style={styles.primaryButton} onClick={() => loadVerse(index)} disabled={busy}>
         {busy ? <RefreshCw size={17} className="spin" /> : <Play size={17} />}
-        {busy ? 'جارٍ تجهيز الصوت…' : 'تشغيل الآية'}
+        {busy ? 'جارٍ تجهيز الصوت…' : index > 0 ? 'إعادة تشغيل الآية' : 'تشغيل التلاوة'}
       </button>
       {error && <small style={styles.error}>{error}</small>}
     </div>
