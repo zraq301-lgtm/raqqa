@@ -9,7 +9,7 @@ export const fetchRecentContentFeed = async () => {
   const cached = await readRecentCache();
   try {
     const response = await CapacitorHttp.get({
-      url: `${FETCH_URL}/feed?source=d1`,
+      url: `${FETCH_URL}/feed`,
       headers: { 'Cache-Control': 'no-cache' },
     });
     if (response.status >= 400) throw new Error(`content_feed_http_${response.status}`);

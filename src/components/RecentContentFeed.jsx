@@ -58,8 +58,17 @@ const getCardMedia = (item) => {
   return audio ? { kind: 'audio' } : { kind: 'article' };
 };
 
+const FEED_RETENTION_MS = 72 * 60 * 60 * 1000;
+const getExpiryTimestamp = (item) => {
+  const publishedAt = item.lastUpdated || item.publishedAt;
+  const publishedTimestamp = publishedAt ? new Date(publishedAt).getTime() : Number.NaN;
+  if (Number.isFinite(publishedTimestamp)) return publishedTimestamp + FEED_RETENTION_MS;
+  const serverExpiry = new Date(item.expiresAt).getTime();
+  return Number.isFinite(serverExpiry) ? serverExpiry : 0;
+};
+
 const formatRemaining = (expiresAt, now) => {
-  const remainingHours = Math.max(1, Math.ceil((new Date(expiresAt).getTime() - now) / 3600000));
+  const remainingHours = Math.max(1, Math.ceil((expiresAt - now) / 3600000));
   if (remainingHours >= 24) return `متبقي ${Math.ceil(remainingHours / 24)} يوم`;
   return `متبقي ${remainingHours} ساعة`;
 };
@@ -94,11 +103,11 @@ export default function RecentContentFeed() {
     };
   }, []);
 
-  const visibleItems = items.filter((item) => new Date(item.expiresAt).getTime() > now);
+  const visibleItems = items.filter((item) => getExpiryTimestamp(item) > now);
 
   useEffect(() => {
     if (!visibleItems.length) return undefined;
-    const nextExpiry = Math.min(...visibleItems.map((item) => new Date(item.expiresAt).getTime()));
+    const nextExpiry = Math.min(...visibleItems.map(getExpiryTimestamp));
     const timer = window.setTimeout(() => setNow(Date.now()), Math.max(0, nextExpiry - Date.now() + 10));
     return () => window.clearTimeout(timer);
   }, [items, now]);
@@ -109,9 +118,9 @@ export default function RecentContentFeed() {
     <section dir="rtl" aria-label="أحدث المنشورات" style={styles.section}>
       <div style={styles.heading}>
         <div>
-          <span style={styles.eyebrow}>محتوى D1</span>
+          <span style={styles.eyebrow}>أحدث المحتوى</span>
           <h2 style={styles.title}>منشورات ومقالات رقة</h2>
-          <span style={styles.subtitle}>تظهر هنا لمدة 72 يومًا بعد النشر</span>
+          <span style={styles.subtitle}>تختفي البطاقة بعد 72 ساعة من آخر نشر</span>
         </div>
         <span style={styles.count}>{visibleItems.length} منشور</span>
       </div>
@@ -145,7 +154,7 @@ export default function RecentContentFeed() {
                 {body && <span style={styles.body}>{body}</span>}
                 <span style={styles.cardFooter}>
                   <span>فتح الصفحة ←</span>
-                  <span style={styles.expiry}>{formatRemaining(item.expiresAt, now)}</span>
+                  <span style={styles.expiry}>{formatRemaining(getExpiryTimestamp(item), now)}</span>
                 </span>
               </span>
             </button>
