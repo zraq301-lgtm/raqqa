@@ -52,30 +52,36 @@ async function cachedJson(key, url) {
     if (cached) return JSON.parse(cached);
   } catch { /* ignore invalid local cache */ }
   const response = await fetch(url);
-  if (!response.ok) throw new Error('تعذر تحميل البيانات. افتحي الصفحة مرة واحدة مع الإنترنت لحفظها على الجهاز.');
+  if (!response.ok) throw new Error('تعذر تحميل البيانات الآن. تحققي من اتصال الإنترنت ثم حاولي مجددًا.');
   const data = await response.json();
   try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* storage may be full */ }
   return data;
 }
 
 async function openCachedAudio(url) {
-  if (!('caches' in window)) return url;
-  const cache = await caches.open(audioCacheName);
-  const stored = await cache.match(url);
-  if (stored) return URL.createObjectURL(await stored.blob());
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('تعذر تجهيز المقطع الصوتي.');
-  await cache.put(url, response.clone());
-  return URL.createObjectURL(await response.blob());
+  try {
+    if ('caches' in window) {
+      const cache = await caches.open(audioCacheName);
+      const stored = await cache.match(url);
+      if (stored) return URL.createObjectURL(await stored.blob());
+    }
+  } catch { /* use the online stream if local cache is unavailable */ }
+  return url;
 }
 
+const audioCacheTasks = new Map();
 async function cacheAudio(url) {
-  if (!('caches' in window)) throw new Error('التخزين الصوتي غير مدعوم في هذا الجهاز.');
-  const cache = await caches.open(audioCacheName);
-  if (await cache.match(url)) return;
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('تعذر تجهيز أحد المقاطع الصوتية.');
-  await cache.put(url, response);
+  if (!('caches' in window)) return;
+  if (audioCacheTasks.has(url)) return audioCacheTasks.get(url);
+  const task = (async () => {
+    const cache = await caches.open(audioCacheName);
+    if (await cache.match(url)) return;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('audio_cache_unavailable');
+    await cache.put(url, response);
+  })();
+  audioCacheTasks.set(url, task);
+  try { await task; } finally { audioCacheTasks.delete(url); }
 }
 
 function AudioVersePlayer({ verses, reciter, surahNumber }) {
@@ -94,11 +100,20 @@ function AudioVersePlayer({ verses, reciter, surahNumber }) {
   const loadCurrent = async (play = false) => {
     setBusy(true); setError('');
     try {
-      const nextSource = await openCachedAudio(currentUrl);
+      const nextSource = play && navigator.onLine ? currentUrl : await openCachedAudio(currentUrl);
+      if (!navigator.onLine && nextSource === currentUrl) {
+        setError('هذه الآية غير محفوظة على الجهاز بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.');
+        return;
+      }
       if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
       objectUrlRef.current = nextSource.startsWith('blob:') ? nextSource : '';
-      autoplayRef.current = play;
+      autoplayRef.current = play && nextSource !== currentUrl;
       setSource(nextSource);
+      if (play && nextSource === currentUrl && audioRef.current) {
+        audioRef.current.src = nextSource;
+        audioRef.current.load();
+        audioRef.current.play().catch(() => setError('اضغطي زر التشغيل في مشغل الصوت لبدء الاستماع.'));
+      }
       if (index < verses.length - 1) {
         void cacheAudio(AUDIO_URL(reciter, surahNumber, verses[index + 1].numberInSurah)).catch(() => {});
       }
@@ -106,7 +121,7 @@ function AudioVersePlayer({ verses, reciter, surahNumber }) {
         audioRef.current?.play().catch(() => setError('اضغطي تشغيل مرة أخرى للسماح بتشغيل الصوت داخل التطبيق.'));
       }
     } catch (loadError) {
-      setError('تعذر تشغيل هذا المقطع. شغّلي السورة مرة واحدة مع الإنترنت ليُحفظ الصوت داخل التطبيق.');
+      setError('تعذر فتح مشغل التلاوة. تحققي من اتصال الإنترنت وحاولي مجددًا.');
     } finally { setBusy(false); }
   };
 
@@ -127,7 +142,15 @@ function AudioVersePlayer({ verses, reciter, surahNumber }) {
   return (
     <div style={styles.audioBox}>
       <div style={styles.audioMeta}><Headphones size={18} /> {AUDIO_RECITERS[reciter].label} — الآية {index + 1} من {verses.length}</div>
-      <audio ref={audioRef} src={source} controls preload="metadata" onEnded={() => { if (index < verses.length - 1) setIndex((value) => value + 1); }} />
+      <audio
+        ref={audioRef}
+        src={source}
+        controls
+        preload="metadata"
+        onCanPlay={() => { void cacheAudio(currentUrl).catch(() => {}); }}
+        onError={() => setError(navigator.onLine ? 'تعذر تشغيل هذه الآية الآن. حاولي مرة أخرى.' : 'هذه الآية غير متاحة دون اتصال بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.')}
+        onEnded={() => { if (index < verses.length - 1) setIndex((value) => value + 1); }}
+      />
       <button type="button" style={styles.primaryButton} onClick={() => loadCurrent(true)} disabled={busy}>
         {busy ? <RefreshCw size={17} className="spin" /> : <Play size={17} />}
         {busy ? 'جارٍ تجهيز الصوت…' : 'تشغيل الآية'}
@@ -143,28 +166,59 @@ function DhikrPage() {
   const [audioSource, setAudioSource] = useState('');
   const [audioBusy, setAudioBusy] = useState(false);
   const [audioError, setAudioError] = useState('');
+  const [shouldPlay, setShouldPlay] = useState(false);
+  const audioRef = useRef(null);
   const data = adhkar[kind];
   const audioUrl = apiUrl(`api/queen/adhkar/audio?period=${kind}&reciter=${reciter}`);
   const loadAdhkarAudio = async () => {
     setAudioBusy(true); setAudioError('');
-    try { setAudioSource(await openCachedAudio(audioUrl)); }
-    catch (error) { setAudioError('تعذر تشغيل الأذكار. شغّليها مرة واحدة مع الإنترنت ليُحفظ الصوت داخل التطبيق.'); }
+    try {
+      if (navigator.onLine) {
+        setAudioSource(audioUrl);
+        setShouldPlay(false);
+        if (audioRef.current) {
+          audioRef.current.src = audioUrl;
+          audioRef.current.load();
+          audioRef.current.play().catch(() => setAudioError('اضغطي زر التشغيل في مشغل الصوت لبدء الاستماع.'));
+        }
+        return;
+      }
+      const cachedSource = await openCachedAudio(audioUrl);
+      if (cachedSource === audioUrl) {
+        setAudioError('هذا الصوت غير محفوظ على الجهاز بعد؛ اتصلي بالإنترنت لتشغيله وسيُحفظ تلقائيًا.');
+        return;
+      }
+      setAudioSource(cachedSource);
+      setShouldPlay(true);
+    }
+    catch (error) { setAudioError('تعذر فتح مشغل الأذكار. تحققي من اتصال الإنترنت وحاولي مجددًا.'); }
     finally { setAudioBusy(false); }
   };
-  useEffect(() => { setAudioSource(''); setAudioError(''); }, [kind, reciter]);
+  useEffect(() => {
+    setAudioSource(''); setAudioError(''); setShouldPlay(false);
+    audioRef.current?.pause();
+    audioRef.current?.removeAttribute('src');
+  }, [kind, reciter]);
+  useEffect(() => {
+    if (!audioSource || !shouldPlay || !audioRef.current) return;
+    audioRef.current.load();
+    audioRef.current.play().catch(() => setAudioError('اضغطي زر التشغيل في مشغل الصوت لبدء الاستماع.'));
+    setShouldPlay(false);
+  }, [audioSource, shouldPlay]);
+  useEffect(() => () => { if (audioSource.startsWith('blob:')) URL.revokeObjectURL(audioSource); }, [audioSource]);
   return <div style={styles.page} dir="rtl">
     <PageBack title="الأذكار" />
-    <div style={styles.hero}><Sun size={30} /><h1>أذكار الصباح والمساء</h1><p>{data.intro} عند أول تشغيل مع الإنترنت يُحفظ الصوت تلقائيًا ليعمل لاحقًا دون اتصال.</p></div>
+    <div style={styles.hero}><Sun size={30} /><h1>أذكار الصباح والمساء</h1><p>{data.intro} يبدأ الاستماع مباشرة، وتُحفظ المقاطع تلقائيًا أثناء التشغيل لإعادة الاستماع دون اتصال.</p></div>
     <div style={styles.tabs}><button type="button" onClick={() => setKind('morning')} style={kind === 'morning' ? styles.activeTab : styles.tab}>أذكار الصباح</button><button type="button" onClick={() => setKind('evening')} style={kind === 'evening' ? styles.activeTab : styles.tab}>أذكار المساء</button></div>
     <label style={styles.selectLabel}>القارئ الصوتي<select value={reciter} onChange={(event) => setReciter(event.target.value)}><option value="alafasy">مشاري العفاسي</option><option value="fares">فارس عباد</option><option value="jibril">محمد جبريل</option></select></label>
     <div style={styles.audioBox}>
       <div style={styles.audioMeta}><Headphones size={18} /> {data.title} — {reciter === 'alafasy' ? 'مشاري العفاسي' : reciter === 'fares' ? 'فارس عباد' : 'محمد جبريل'}</div>
-      {audioSource && <audio src={audioSource} controls preload="metadata" style={{ width: '100%' }} />}
-      <button type="button" style={styles.primaryButton} onClick={loadAdhkarAudio} disabled={audioBusy}><Play size={17} /> {audioBusy ? 'جارٍ تجهيز الصوت…' : 'تشغيل الأذكار'}</button>
+      <audio ref={audioRef} src={audioSource || undefined} controls preload="metadata" style={{ width: '100%', display: audioSource ? 'block' : 'none' }} onCanPlay={() => { void cacheAudio(audioUrl).catch(() => {}); }} onError={() => setAudioError(navigator.onLine ? 'تعذر تشغيل الأذكار الآن. حاولي مرة أخرى.' : 'الأذكار غير محفوظة على هذا الجهاز بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.')} />
+      <button type="button" style={styles.primaryButton} onClick={loadAdhkarAudio} disabled={audioBusy}><Play size={17} /> {audioBusy ? 'جارٍ فتح المشغل…' : 'استمعي للأذكار'}</button>
       {audioError && <small style={styles.error}>{audioError}</small>}
     </div>
     <div style={styles.cards}>{data.items.map((item, index) => <article key={`${kind}-${index}`} style={styles.dhikrCard}><span style={styles.count}>{item.count}×</span><p>{item.text}</p></article>)}</div>
-    <small style={styles.note}>يتم حفظ الصوت تلقائيًا أثناء أول تشغيل مع الإنترنت، ثم يُشغّل من داخل التطبيق دون إنترنت.</small>
+    <small style={styles.note}>تُشغّل الأذكار مباشرة عند الاتصال، ويُحفظ الصوت تلقائيًا أثناء الاستماع لإعادة تشغيله دون اتصال.</small>
   </div>;
 }
 function QuranPage() {
@@ -185,7 +239,7 @@ function QuranPage() {
 
   return <div style={styles.page} dir="rtl">
     <PageBack title="القرآن الكريم" />
-    <div style={styles.hero}><BookOpen size={30} /><h1>قراءة القرآن والاستماع إليه</h1><p>اختاري السورة والقارئ واضغطي تشغيل؛ سيُحفظ الصوت تلقائيًا للتشغيل لاحقًا دون إنترنت.</p></div>
+    <div style={styles.hero}><BookOpen size={30} /><h1>قراءة القرآن والاستماع إليه</h1><p>تبدأ التلاوة مباشرة عند الاتصال، وتُحفظ الآيات التي تستمعين إليها تلقائيًا لإعادة تشغيلها دون اتصال.</p></div>
     <div style={styles.controls}>
       <label style={styles.selectLabel}>السورة<select value={surahNumber} onChange={(event) => setSurahNumber(Number(event.target.value))}>{surahs.map((item) => <option key={item.number} value={item.number}>{item.number}. {item.name}</option>)}</select></label>
       <label style={styles.selectLabel}>القارئ<select value={reciter} onChange={(event) => setReciter(event.target.value)}>{Object.entries(AUDIO_RECITERS).map(([key, item]) => <option key={key} value={key}>{item.label}</option>)}</select></label>
@@ -197,7 +251,7 @@ function QuranPage() {
       <AudioVersePlayer verses={surah.ayahs || []} reciter={reciter} surahNumber={surah.number} />
       <div style={styles.ayahs}>{(surah.ayahs || []).map((ayah) => <p key={ayah.number} style={styles.ayah}><span style={styles.ayahNumber}>{ayah.numberInSurah}</span>{ayah.text}</p>)}</div>
     </>}
-    {selected && <small style={styles.note}>النص والصوت يُحفظان تلقائيًا أثناء التشغيل الأول مع الإنترنت، ثم يعملان لاحقًا دون اتصال.</small>}
+    {selected && <small style={styles.note}>النص متاح محليًا بعد فتح السورة، وتُحفظ الآيات تلقائيًا أثناء الاستماع لإعادة تشغيلها دون اتصال.</small>}
   </div>;
 }
 

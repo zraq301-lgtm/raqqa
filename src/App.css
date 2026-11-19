@@ -280,3 +280,7 @@ body {
 .top-page-card-label{right:4px;left:4px;bottom:5px;text-align:center;font-size:clamp(8px,2.3vw,11px)}
 .main-content{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 .main-content--swing{padding-bottom:24px}
+
+.queen-worship-button:hover,.queen-worship-button:focus-visible{transform:translateY(-2px);box-shadow:0 13px 30px rgba(123,49,87,.14),inset 0 1px 0 #fff;outline:none}
+.queen-worship-button:focus-visible{outline:3px solid #d99ab5;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){.queen-worship-button{transition:none!important}}

@@ -9,7 +9,7 @@ import {
   Clock, Brain, Flower2, Coins, Hourglass,
   Trash2, X, MapPin, MessageCircle, Bookmark, List,
   CheckCircle2, CircleOff, Star, Droplets, Bath, Smile, Sun, Utensils,
-  Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus
+  Baby, GraduationCap, Zap, Coffee, Shield, Check, Minus, ChevronLeft
 } from 'lucide-react';
 
 import ChatMediaControls from '../components/ChatMediaControls';
@@ -208,8 +208,16 @@ const RaqqaApp = () => {
       <PublishedPageContent pageNames={['كوني ملكة', 'الإشراقة', 'نصيحة اليوم']} title="محتوى كوني ملكة المنشور" />
 
       <section style={styles.worshipTools} aria-label="الذكر والقرآن">
-        <Link to="/queen/adhkar" style={styles.worshipButton}>أذكار الصباح والمساء <span>مقروءة ومسموعة</span></Link>
-        <Link to="/queen/quran" style={styles.worshipButton}>القرآن الكريم <span>قراءة واستماع دون اتصال بعد التنزيل</span></Link>
+        <Link to="/queen/adhkar" className="queen-worship-button" style={styles.worshipButton} aria-label="فتح أذكار الصباح والمساء">
+          <span style={{ ...styles.worshipIcon, ...styles.adhkarIcon }}><Sun size={24} /></span>
+          <span style={styles.worshipCopy}><strong style={styles.worshipTitle}>أذكار الصباح والمساء</strong><small style={styles.worshipSubtitle}>قراءة واستماع، مع حفظ تلقائي للتشغيل دون اتصال</small></span>
+          <span style={styles.worshipArrow}><ChevronLeft size={20} /></span>
+        </Link>
+        <Link to="/queen/quran" className="queen-worship-button" style={styles.worshipButton} aria-label="فتح القرآن الكريم للقراءة والاستماع">
+          <span style={{ ...styles.worshipIcon, ...styles.quranIcon }}><BookOpen size={24} /></span>
+          <span style={styles.worshipCopy}><strong style={styles.worshipTitle}>القرآن الكريم</strong><small style={styles.worshipSubtitle}>تلاوة مباشرة، والمقاطع تُحفظ تلقائيًا لإعادة الاستماع</small></span>
+          <span style={styles.worshipArrow}><ChevronLeft size={20} /></span>
+        </Link>
       </section>
 
       {!activeCategory && (
@@ -344,8 +352,15 @@ const RaqqaApp = () => {
 
 const styles = {
   appContainer: { minHeight: '100vh', background: '#fdfcfb', padding: '20px', direction: 'rtl', fontFamily: 'Tajawal, sans-serif' },
-  worshipTools: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '12px', maxWidth: '900px', margin: '0 auto 24px' },
-  worshipButton: { display: 'flex', flexDirection: 'column', gap: '6px', padding: '16px', borderRadius: '18px', background: 'linear-gradient(135deg,#fff0f6,#fff8ed)', border: '1px solid #f3d4e0', color: '#914567', textDecoration: 'none', fontWeight: '800', textAlign: 'right', boxShadow: '0 5px 15px rgba(150,70,110,.08)' },
+  worshipTools: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,300px),1fr))', gap: '13px', maxWidth: '900px', margin: '0 auto 24px' },
+  worshipButton: { display: 'flex', alignItems: 'center', gap: '13px', minHeight: '88px', boxSizing: 'border-box', padding: '14px 16px', borderRadius: '22px', background: 'linear-gradient(145deg,#fff 0%,#fff7fa 62%,#fffaf3 100%)', border: '1px solid #f0d8e4', color: '#713450', textDecoration: 'none', textAlign: 'right', boxShadow: '0 9px 24px rgba(123,49,87,.09), inset 0 1px 0 #fff', transition: 'transform .18s ease, box-shadow .18s ease' },
+  worshipIcon: { width: '50px', height: '50px', flex: '0 0 50px', display: 'grid', placeItems: 'center', borderRadius: '17px' },
+  adhkarIcon: { background: 'linear-gradient(145deg,#fff0cc,#ffdfad)', color: '#a66a22' },
+  quranIcon: { background: 'linear-gradient(145deg,#f0e8ff,#dfd5ff)', color: '#7055a5' },
+  worshipCopy: { display: 'grid', gap: '5px', flex: 1, minWidth: 0 },
+  worshipTitle: { fontSize: '15px', fontWeight: '900' },
+  worshipSubtitle: { color: '#927888', fontSize: '11px', lineHeight: 1.5, fontWeight: '600' },
+  worshipArrow: { display: 'grid', placeItems: 'center', width: '30px', height: '30px', flex: '0 0 30px', borderRadius: '50%', background: '#fff', color: '#a65f7c', boxShadow: '0 2px 8px rgba(123,49,87,.08)' },
   header: { textAlign: 'center', marginBottom: '30px' },
   title: { color: '#f06292', fontSize: '2.5rem', marginBottom: '5px' },
   subtitle: { color: '#888', fontStyle: 'italic' },
