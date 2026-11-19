@@ -9,10 +9,10 @@ import { getProfile } from './services/profileApi';
 import AppThemeProvider from './components/AppThemeProvider';
 
 class ErrorBoundary extends Component {
-  state = { hasError: false, error: null };
-  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
   componentDidCatch(error, info) { console.error('Raqqa UI error:', error, info); }
-  render() { return this.state.hasError ? <div dir="rtl" style={{ padding: 32, textAlign: 'center' }}>حدث خطأ داخلي. <button onClick={() => window.location.reload()}>إعادة التحميل</button><pre>{this.state.error?.toString()}</pre></div> : this.props.children; }
+  render() { return this.state.hasError ? <div dir="rtl" style={{ padding: 32, textAlign: 'center' }}>تعذر عرض الصفحة الآن. حاولي إعادة تحميلها.<br /><button onClick={() => window.location.reload()}>إعادة التحميل</button></div> : this.props.children; }
 }
 
 export default function AppSwitcher() {

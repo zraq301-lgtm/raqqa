@@ -158,9 +158,7 @@ const LittleOnesAcademy = () => {
               <div key={post.id} className="article-container">
                 <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
 
-                  {/* ترويسة تعرض رقم الـ ID الحقيقي المستلم من قاعدة البيانات لسهولة التحكم */}
                   <div className="card-header-title">
-                    <span className="post-id-badge">ID: #{post.id}</span>
                     <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                   </div>
 

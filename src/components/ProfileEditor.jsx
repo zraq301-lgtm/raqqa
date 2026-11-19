@@ -51,7 +51,7 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
         onUpdated?.({ ...user, ...result.profile, photo_url: nextPhoto });
       }
       setMessage('تم حفظ صورة البروفايل.');
-    } catch (error) { setMessage(error.message || 'تعذر رفع الصورة.'); }
+    } catch (error) { setMessage('تعذر رفع الصورة. تحققي من اتصالك ثم حاولي مرة أخرى.'); }
     finally { setBusy(false); }
   };
 
@@ -67,14 +67,14 @@ export default function ProfileEditor({ user, onUpdated, onClose }) {
       setProfile((current) => ({ ...current, ...result.profile, display_name: name.trim() }));
       setUsername(result.profile?.username_slug || username.trim().toLowerCase());
       onUpdated?.(next); setMessage('تم تحديث البروفايل.');
-    } catch (error) { setMessage(error.message || 'تعذر تحديث الاسم.'); }
+    } catch (error) { setMessage('تعذر تحديث اسمكِ. حاولي مرة أخرى.'); }
     finally { setBusy(false); }
   };
 
   const logout = async () => {
     setBusy(true); setMessage('جاري تسجيل الخروج…');
     try { await signOut(); }
-    catch (error) { setMessage(error.message || 'تعذر تسجيل الخروج.'); setBusy(false); }
+    catch (error) { setMessage('تعذر تسجيل الخروج. حاولي مرة أخرى.'); setBusy(false); }
   };
 
   return <div className="profile-editor-backdrop" role="dialog" aria-modal="true" onClick={onClose}>

@@ -123,7 +123,7 @@ const RaqqaFeelingsApp = () => {
 
     } catch (err) {
       console.error("فشل الاتصال:", err);
-      setAiResponse("حدث خطأ في الشبكة، تأكدي من الاتصال بالإنترنت يا رفيقتي 🌸");
+      setAiResponse("تعذر تقديم الإجابة الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى يا رفيقتي 🌸");
     } finally {
       setLoading(false);
     }
@@ -143,7 +143,7 @@ const RaqqaFeelingsApp = () => {
   };
 
   const handleFeatureNotImplemented = (feature) => {
-    alert(`خاصية ${feature} ستكون متاحة قريباً في التحديث القادم بإذن الله ✨`);
+    alert(`خاصية ${feature} ستكون متاحة قريبًا بإذن الله ✨`);
   };
 
   return (

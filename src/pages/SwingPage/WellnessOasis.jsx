@@ -160,9 +160,7 @@ const WellnessOasis = () => {
               <div key={post.id} className="article-container">
                 <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
 
-                  {/* شارة المعرّف الحقيقي لسهولة تتبع وإدارة المنشور */}
                   <div className="card-header-title">
-                    <span className="post-id-badge">ID: #{post.id}</span>
                     <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                   </div>
 

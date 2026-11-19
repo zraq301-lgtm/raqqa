@@ -38,7 +38,7 @@ const Motherhood = () => {
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
-        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        body: "تم تحليل بياناتك وحفظ التقرير، وسنذكّرك في الموعد المحدد.",
         scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
       };
 
@@ -103,7 +103,7 @@ const Motherhood = () => {
       }
 
     } catch (err) {
-      setMessages(prev => [...prev, { id: Date.now(), text: "خطأ في الاتصال بالذكاء الاصطناعي.", sender: 'ai' }]);
+      setMessages(prev => [...prev, { id: Date.now(), text: "تعذر إعداد الإجابة الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى.", sender: 'ai' }]);
     } finally { setIsLoading(false); }
   };
 

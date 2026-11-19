@@ -25,7 +25,6 @@ const SwingForum = ({ user }) => {
   const initialTab = new URLSearchParams(location.search).get('section');
   const [activeTab, setActiveTab] = useState(validTabs.includes(initialTab) ? initialTab : 'Home');
   const [isUpdating, setIsUpdating] = useState(false);
-  const currentBuildVersion = localStorage.getItem('raqqa_version_build') || '1.0.2';
 
   useEffect(() => {
     const requestedTab = new URLSearchParams(location.search).get('section');
@@ -163,7 +162,6 @@ const SwingForum = ({ user }) => {
 
       {/* الفوتر */}
       <footer className="update-footer">
-        <span>نسخة رقة: {currentBuildVersion}</span>
         <span>صنع بكل حب لـ رقة ✨</span>
       </footer>
     </div>

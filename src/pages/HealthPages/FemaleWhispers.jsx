@@ -48,7 +48,7 @@ export default function FemaleWhispers() {
         })
         .catch((error) => {
           if (active && currentVersion === requestVersion) {
-            setMessage(error.message || 'تعذر تحميل مفكرتك الخاصة.');
+            setMessage('تعذر تحميل مفكرتك الخاصة. حاولي مرة أخرى.');
           }
         })
         .finally(() => {
@@ -72,14 +72,14 @@ export default function FemaleWhispers() {
     if (!isImage && !isVideo) { setMessage('اختاري صورة أو فيديو فقط.'); return; }
     const limit = isImage ? 10 * 1024 * 1024 : 80 * 1024 * 1024;
     if (file.size > limit) { setMessage(isImage ? 'حجم الصورة يجب ألا يتجاوز 10 ميجابايت.' : 'حجم الفيديو يجب ألا يتجاوز 80 ميجابايت.'); return; }
-    setBusy(true); setMessage('جاري رفع الملف إلى Cloudinary…');
+    setBusy(true); setMessage('جارٍ رفع الملف…');
     try {
       const result = await uploadFemaleWhisperMedia(file);
-      if (!result?.url) throw new Error('لم يتم استلام رابط الملف.');
+      if (!result?.url) throw new Error('تعذر رفع الملف. حاولي مرة أخرى.');
       setMedia({ url: result.url, type: result.media_type || (isVideo ? 'video' : 'image'), name: file.name });
       setMessage('تم رفع الملف. اضغطي حفظ لإضافته إلى مفكرتك.');
     } catch (error) {
-      setMessage(error.message || 'تعذر رفع الملف.');
+      setMessage('تعذر رفع الملف. تحققي من اتصالك ثم حاولي مرة أخرى.');
     } finally {
       setBusy(false);
     }
@@ -95,11 +95,11 @@ export default function FemaleWhispers() {
         body: body.trim(),
         mediaUrl: media?.url || '',
       });
-      if (!result?.entry?.id) throw new Error('لم يصل تأكيد حفظ المذكرة من الخادم.');
+      if (!result?.entry?.id) throw new Error('تعذر حفظ المذكرة. حاولي مرة أخرى.');
       setEntries((current) => [result.entry, ...current]);
       setTitle(''); setBody(''); setMedia(null); setMessage('تم حفظ مذكرتك الخاصة.');
     } catch (error) {
-      setMessage(error.message || 'تعذر حفظ المذكرة.');
+      setMessage('تعذر حفظ المذكرة. تحققي من اتصالك ثم حاولي مرة أخرى.');
     } finally {
       setBusy(false);
     }
@@ -109,10 +109,10 @@ export default function FemaleWhispers() {
     if (!window.confirm('هل تريدين حذف هذه المذكرة؟')) return;
     try {
       const result = await deleteFemaleWhisper(entry.id);
-      if (!result?.success || !result?.deleted) throw new Error('لم يصل تأكيد حذف المذكرة من الخادم.');
+      if (!result?.success || !result?.deleted) throw new Error('تعذر حذف المذكرة. حاولي مرة أخرى.');
       setEntries((current) => current.filter((item) => item.id !== entry.id));
       setMessage('تم حذف المذكرة.');
-    } catch (error) { setMessage(error.message || 'تعذر حذف المذكرة.'); }
+    } catch (error) { setMessage('تعذر حذف المذكرة. تحققي من اتصالك ثم حاولي مرة أخرى.'); }
   };
 
   return (

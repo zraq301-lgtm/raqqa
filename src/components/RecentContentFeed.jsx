@@ -67,12 +67,6 @@ const getExpiryTimestamp = (item) => {
   return Number.isFinite(serverExpiry) ? serverExpiry : 0;
 };
 
-const formatRemaining = (expiresAt, now) => {
-  const remainingHours = Math.max(1, Math.ceil((expiresAt - now) / 3600000));
-  if (remainingHours >= 24) return `متبقي ${Math.ceil(remainingHours / 24)} يوم`;
-  return `متبقي ${remainingHours} ساعة`;
-};
-
 export default function RecentContentFeed() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
@@ -95,11 +89,9 @@ export default function RecentContentFeed() {
     };
     load();
     const refreshTimer = window.setInterval(load, 15 * 60 * 1000);
-    const clockTimer = window.setInterval(() => setNow(Date.now()), 60000);
     return () => {
       active = false;
       window.clearInterval(refreshTimer);
-      window.clearInterval(clockTimer);
     };
   }, []);
 
@@ -120,7 +112,6 @@ export default function RecentContentFeed() {
         <div>
           <span style={styles.eyebrow}>أحدث المحتوى</span>
           <h2 style={styles.title}>منشورات ومقالات رقة</h2>
-          <span style={styles.subtitle}>تختفي البطاقة بعد 72 ساعة من آخر نشر</span>
         </div>
         <span style={styles.count}>{visibleItems.length} منشور</span>
       </div>
@@ -154,7 +145,6 @@ export default function RecentContentFeed() {
                 {body && <span style={styles.body}>{body}</span>}
                 <span style={styles.cardFooter}>
                   <span>فتح الصفحة ←</span>
-                  <span style={styles.expiry}>{formatRemaining(getExpiryTimestamp(item), now)}</span>
                 </span>
               </span>
             </button>

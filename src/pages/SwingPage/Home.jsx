@@ -27,7 +27,7 @@ const getTime = (value) => {
 };
 const responseJson = async (response) => {
   const data = await response.json().catch(() => ({}));
-  if (!response.ok || data?.success === false) throw new Error(data?.error || `تعذر إكمال الطلب (${response.status})`);
+  if (!response.ok || data?.success === false) throw new Error('تعذر إكمال الطلب. حاولي مرة أخرى.');
   return data;
 };
 
@@ -44,7 +44,7 @@ function MediaView({ url, type }) {
   if (youtubeId) return <div className="swing-media-frame"><iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`} title="فيديو من يوتيوب" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>;
   if (mediaType === 'image') return <img className="swing-post-image" src={url} alt="مرفق المنشور" loading="lazy" />;
   if (mediaType === 'video') return <video className="swing-post-video" src={url} controls playsInline preload="metadata" />;
-  return <a className="swing-link-card" href={url} target="_blank" rel="noreferrer"><Link2 size={18} /><span dir="ltr">{url}</span></a>;
+  return <a className="swing-link-card" href={url} target="_blank" rel="noreferrer"><Link2 size={18} /><span>فتح المرفق</span></a>;
 }
 
 export default function Home({ user }) {
@@ -71,7 +71,7 @@ export default function Home({ user }) {
       const data = await responseJson(await fetch(api(`/api/posts?section=${encodeURIComponent(SECTION)}`), { cache: 'no-store' }));
       setPosts(Array.isArray(data.posts) ? data.posts : []);
     } catch (err) {
-      setError(err.message || 'تعذر تحميل المنشورات.');
+      setError('تعذر تحميل المنشورات. حاولي مرة أخرى.');
     } finally { setLoading(false); }
   }, []);
 
@@ -103,12 +103,12 @@ export default function Home({ user }) {
       form.append('file', file, file.name);
       const result = await authenticatedRequest('/api/community/media', { method: 'POST', body: form });
       const url = result.url || result.media_url || result.public_url || result.publicUrl || result.data?.url || result.media?.url;
-      if (!url || !/^https:\/\//i.test(url)) throw new Error('لم يُعِد الخادم رابط HTTPS صالحًا للوسيط.');
+      if (!url || !/^https:\/\//i.test(url)) throw new Error('تعذر تجهيز المرفق. حاولي رفعه مرة أخرى.');
       setMediaUrl(url);
       setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
-      setNotice('تم رفع الملف وتحويله إلى رابط آمن.');
+      setNotice('تم رفع الملف بنجاح.');
     } catch (err) {
-      setError(err.message || 'فشل رفع الملف؛ تحققي من الاتصال ثم حاولي مجددًا.');
+      setError('تعذر رفع الملف. تحققي من اتصالك ثم حاولي مرة أخرى.');
     } finally { setUploading(false); }
   };
 
@@ -117,14 +117,14 @@ export default function Home({ user }) {
     setError(''); setNotice('');
     if (!user) { setError('سجّلي الدخول لنشر مشاركة في غرفة الأرجوحة.'); return; }
     if (!content.trim() && !mediaUrl.trim()) { setError('اكتبي شيئًا أو أضيفي رابطًا قبل النشر.'); return; }
-    if (mediaUrl.trim() && !/^https:\/\//i.test(mediaUrl.trim())) { setError('يجب أن يكون رابط الوسيط بصيغة HTTPS.'); return; }
+    if (mediaUrl.trim() && !/^https:\/\//i.test(mediaUrl.trim())) { setError('أضيفي رابطًا صالحًا للمشاركة.'); return; }
     setPublishing(true);
     try {
       await authenticatedRequest('/api/posts', { method: 'POST', body: JSON.stringify({ content: content.trim(), media_url: mediaUrl.trim(), media_type: mediaUrl ? getMediaType(mediaUrl, mediaType) : '', section: SECTION }) });
       setContent(''); setMediaUrl(''); setMediaType('');
       setNotice('نُشرت مشاركتك في الغرفة.');
       await loadPosts();
-    } catch (err) { setError(err.message || 'تعذر نشر المشاركة.'); }
+    } catch (err) { setError('تعذر نشر المشاركة. حاولي مرة أخرى.'); }
     finally { setPublishing(false); }
   };
 
@@ -135,7 +135,7 @@ export default function Home({ user }) {
     try {
       await authenticatedRequest(`/api/posts/${encodeURIComponent(postId)}/reactions`, { method: 'POST', body: JSON.stringify({ reaction_type: type }) });
       await loadPosts();
-    } catch (err) { setError(err.message || 'تعذر تسجيل التفاعل.'); }
+    } catch (err) { setError('تعذر تسجيل التفاعل. حاولي مرة أخرى.'); }
     finally { setBusy((value) => ({ ...value, [key]: false })); }
   };
 
@@ -143,7 +143,7 @@ export default function Home({ user }) {
     try {
       const data = await responseJson(await fetch(api(`/api/posts/${encodeURIComponent(postId)}/comments`), { cache: 'no-store' }));
       setCommentsByPost((current) => ({ ...current, [postId]: Array.isArray(data.comments) ? data.comments : [] }));
-    } catch (err) { setError(err.message || 'تعذر تحميل التعليقات.'); }
+    } catch (err) { setError('تعذر تحميل التعليقات. حاولي مرة أخرى.'); }
   };
   const toggleComments = async (postId) => {
     const opening = !expandedComments[postId];
@@ -161,7 +161,7 @@ export default function Home({ user }) {
       await authenticatedRequest(`/api/posts/${encodeURIComponent(postId)}/comments`, { method: 'POST', body: JSON.stringify({ body }) });
       setCommentDrafts((current) => ({ ...current, [postId]: '' }));
       await Promise.all([loadComments(postId), loadPosts()]);
-    } catch (err) { setError(err.message || 'تعذر نشر التعليق.'); }
+    } catch (err) { setError('تعذر نشر التعليق. حاولي مرة أخرى.'); }
     finally { setBusy((value) => ({ ...value, [key]: false })); }
   };
   const reactToComment = async (commentId) => {
@@ -170,7 +170,7 @@ export default function Home({ user }) {
       await authenticatedRequest(`/api/comments/${encodeURIComponent(commentId)}/reactions`, { method: 'POST', body: JSON.stringify({ reaction_type: 'heart' }) });
       const parent = Object.entries(commentsByPost).find(([, list]) => list.some((comment) => String(comment.id) === String(commentId)))?.[0];
       if (parent) await loadComments(parent);
-    } catch (err) { setError(err.message || 'تعذر تسجيل تفاعل التعليق.'); }
+    } catch (err) { setError('تعذر تسجيل تفاعل التعليق. حاولي مرة أخرى.'); }
   };
   const sharePost = async (post) => {
     const url = `${window.location.origin}/swing-forum?section=Home&communityPost=${encodeURIComponent(post.id)}#post-${encodeURIComponent(post.id)}`;
@@ -195,7 +195,7 @@ export default function Home({ user }) {
       <form className="composer" onSubmit={publish}>
         <div className="composer-head"><span className="room-avatar">{userName.slice(0, 1)}</span><div><strong>{user ? userName : 'زائرة رِقّة'}</strong><small>{user ? 'اكتبي ما تحبين مشاركته' : 'التصفح متاح للجميع، والنشر والتفاعل يتطلبان تسجيل الدخول'}</small></div></div>
         <textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="ماذا يدور في خاطركِ؟" maxLength={5000} />
-        <input className="room-link-input" type="url" inputMode="url" dir="ltr" placeholder="رابط HTTPS جاهز لصورة أو فيديو أو YouTube (اختياري)" value={mediaUrl} onChange={(event) => { setMediaUrl(event.target.value); setMediaType(''); }} />
+        <input className="room-link-input" type="url" inputMode="url" dir="ltr" placeholder="رابط صورة أو فيديو أو YouTube (اختياري)" value={mediaUrl} onChange={(event) => { setMediaUrl(event.target.value); setMediaType(''); }} />
         {mediaUrl && <div className="media-preview"><button className="media-remove" type="button" onClick={() => { setMediaUrl(''); setMediaType(''); }} aria-label="إزالة المرفق"><X size={17} /></button><MediaView url={mediaUrl} type={getMediaType(mediaUrl, mediaType)} /></div>}
         <div className="composer-tools"><label className="upload-label"><ImagePlus size={17} />{uploading ? 'جارٍ رفع الملف…' : 'رفع صورة أو فيديو'}<input ref={fileRef} type="file" accept="image/*,video/*" onChange={handleUpload} disabled={uploading} hidden /></label><button className="publish-button" type="submit" disabled={publishing || uploading}>{publishing ? 'جارٍ النشر…' : 'نشر المشاركة'}</button></div>
         {!user && <div className="room-message error" role="status">سجّلي الدخول للنشر، أو للتفاعل وإضافة التعليقات.</div>}

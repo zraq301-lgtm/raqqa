@@ -230,11 +230,11 @@ function QuranPage() {
   const [error, setError] = useState('');
   const selected = useMemo(() => surahs.find((item) => item.number === Number(surahNumber)), [surahs, surahNumber]);
 
-  useEffect(() => { cachedJson(SURAHS_KEY, `${QURAN_API}/surahs`).then((result) => setSurahs(result.data || [])).catch((e) => setError(e.message)); }, []);
+  useEffect(() => { cachedJson(SURAHS_KEY, `${QURAN_API}/surahs`).then((result) => setSurahs(result.data || [])).catch(() => setError('تعذر تحميل قائمة السور الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى.')); }, []);
   useEffect(() => {
     setLoading(true); setError('');
     cachedJson(SURAH_CACHE_KEY(surahNumber), `${QURAN_API}/surah/${surahNumber}`)
-      .then((result) => setSurah(result.data)).catch((e) => setError(e.message)).finally(() => setLoading(false));
+      .then((result) => setSurah(result.data)).catch(() => setError('تعذر تحميل السورة الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى.')).finally(() => setLoading(false));
   }, [surahNumber]);
 
   return <div style={styles.page} dir="rtl">

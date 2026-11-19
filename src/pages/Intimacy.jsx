@@ -18,7 +18,6 @@ const MarriageApp = () => {
   const [messages, setMessages] = useState([]);
   const [savedResponses, setSavedResponses] = useState([]);
   const [userInput, setUserInput] = useState("");
-  const [systemPrompt, setSystemPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [chatImage, setChatImage] = useState(null);
 
@@ -40,7 +39,7 @@ const MarriageApp = () => {
       const instantConfirm = {
         id: Math.floor(Math.random() * 10000),
         title: "✅ تم حفظ بياناتك بشكل آمن",
-        body: "لقد تم تحليل مدخلاتك وحفظ التقرير في ذاكرة التطبيق، سنقوم بتذكيرك في الموعد المحدد.",
+        body: "تم تحليل بياناتك وحفظ التقرير، وسنذكّرك في الموعد المحدد.",
         scheduled_for: new Date(Date.now() + 500).toISOString(), // يظهر فوراً بعد نصف ثانية
       };
 
@@ -100,7 +99,7 @@ const MarriageApp = () => {
         url: apiUrl('api/ai'),
         headers: { 'Content-Type': 'application/json' },
         data: {
-          prompt: `${MARRIAGE_EXPERT_PROMPT} ${systemPrompt}، القسم: ${pageTitle}، التفاصيل: (${summary}). قدمي استشارة صريحة ومفصلة.`,
+          prompt: `${MARRIAGE_EXPERT_PROMPT}، القسم: ${pageTitle}، التفاصيل: (${summary}). قدمي استشارة صريحة ومفصلة.`,
           image: imageUrl || undefined
         }
       };
@@ -118,7 +117,7 @@ const MarriageApp = () => {
       return responseText;
     } catch (err) {
       console.error("فشل الاتصال:", err);
-      return "حدث خطأ، تأكدي من الاتصال بالإنترنت.";
+      return "تعذر الحصول على الإجابة الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى.";
     }
   };
 
@@ -219,15 +218,6 @@ const MarriageApp = () => {
           <div style={{ background: '#800020', color: '#d4af37', padding: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontWeight: 'bold' }}>✨ مستشارة رقة الذكية</span>
             <X onClick={() => setShowChat(false)} style={{ cursor: 'pointer' }} />
-          </div>
-
-          <div style={{ background: '#f0e0e0', padding: '10px' }}>
-            <input
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              placeholder="برومبت توجيه الذكاء (اختياري)..."
-              style={{ width: '100%', padding: '8px', borderRadius: '10px', border: '1px solid #ccc', fontSize: '0.8rem' }}
-            />
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '15px', background: '#fff9f9' }}>

@@ -64,7 +64,7 @@ const HealthAdvice = () => {
       setChatImage(null);
 
     } catch (err) {
-      setChatMessages(prev => [...prev, { role: 'ai', text: "عذراً، لم أستطع الاتصال بالخادم." }]);
+      setChatMessages(prev => [...prev, { role: 'ai', text: "تعذر الحصول على الإجابة الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى." }]);
     } finally {
       setChatImage(null);
     }
