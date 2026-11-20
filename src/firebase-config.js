@@ -2,9 +2,9 @@ import { initializeApp } from "firebase/app";
 import { getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
-import { getAnalytics } from "firebase/analytics"; 
+import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
-import { getRemoteConfig, fetchAndActivate, getString, getBoolean } from "firebase/remote-config";
+import { getRemoteConfig, fetchAndActivate, getString } from "firebase/remote-config";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCT2wRZgzPv1Xg3M41ZhN7-_RGze_HrZkk",
@@ -13,72 +13,38 @@ const firebaseConfig = {
   storageBucket: "raqqa-43dc8.firebasestorage.app",
   messagingSenderId: "162488255991",
   appId: "1:162488255991:web:74fe1680fc6cb5bbc61af2",
-  measurementId: "G-QLKV71T66E" 
+  measurementId: "G-QLKV71T66E"
 };
 
-// تهيئة تطبيق فيربيس
-// تجنّب تهيئة Firebase مرتين (يحدث ذلك لأن main.jsx يهيئ التطبيق للموبايل).
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-
-// Firebase Web API keys وبيانات المشروع ليست أسراراً؛ لا تضع هنا Admin SDK
-// credentials أو مفاتيح خاصة. التحقق من الـ ID token يتم في الخادم/Cloudflare.
 export const auth = getAuth(app);
-
-// التصدير للاستخدام في المشروع
-export const db = getFirestore(app); 
-export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null; 
-
-// --- إعداد Remote Config ---
+export const db = getFirestore(app);
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 export const remoteConfig = typeof window !== "undefined" ? getRemoteConfig(app) : null;
 
 if (remoteConfig) {
-  // تم ضبط القيمة على 0 لرؤية النتائج فوراً عند تغييرها من لوحة التحكم
   remoteConfig.settings.minimumFetchIntervalMillis = 0;
-  
-  // وضع قيم افتراضية للتطبيق في حال لم يتوفر إنترنت
   remoteConfig.defaultConfig = {
-    "app_name": "رقة",
-    "theme_color": "#FFC0CB",
-    "enable_ads": false, // مفتاح الأمان للإعلانات
-    "admob_banner_id": "ca-app-pub-8025494804759906/6335462769",
-    "admob_interstitial_id": "ca-app-pub-8025494804759906/4391825704"
+    app_name: "رقة",
+    theme_color: "#FFC0CB"
   };
 }
 
-// دالة جلب الإعدادات عن بعد وتطبيقها على واجهة التطبيق
 export const applyRemoteSettings = async () => {
-  if (!remoteConfig) return { enableAds: false };
+  if (!remoteConfig) return {};
   try {
-    // جلب القيم من السحابة وتفعيلها
     await fetchAndActivate(remoteConfig);
-    
     const appName = getString(remoteConfig, "app_name");
     const themeColor = getString(remoteConfig, "theme_color");
-    
-    // جلب قيم الإعلانات الجديدة
-    const enableAds = getBoolean(remoteConfig, "enable_ads");
-    const bannerId = getString(remoteConfig, "admob_banner_id");
-    const interstitialId = getString(remoteConfig, "admob_interstitial_id");
-
-    // تغيير عنوان التبويب في المتصفح تلقائياً
     if (appName) document.title = appName;
-
-    // تطبيق اللون المختار على متغير CSS ليتغير شكل التطبيق بالكامل
-    if (themeColor) {
-      document.documentElement.style.setProperty('--main-theme-color', themeColor);
-      console.log("تم تحديث لون الثيم إلى:", themeColor);
-    }
-
-    // إرجاع قيم الإعلانات لاستخدامها في App.jsx
-    return { enableAds, bannerId, interstitialId };
-
+    if (themeColor) document.documentElement.style.setProperty('--main-theme-color', themeColor);
+    return { appName, themeColor };
   } catch (err) {
     console.error("خطأ في جلب إعدادات Remote Config:", err);
-    return { enableAds: false };
+    return {};
   }
 };
 
-// --- إعدادات الإشعارات (Firebase Messaging) ---
 const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
 
 export const requestForToken = async () => {
@@ -86,14 +52,8 @@ export const requestForToken = async () => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
-      const currentToken = await getToken(messaging, { 
-        vapidKey: "USA0sr7ibILdXx1IdNyUIZGNAZxosK9trp5z96f45Nk" 
-      });
-      
-      if (currentToken) {
-        console.log("تم توليد التوكن بنجاح:", currentToken);
-        return currentToken;
-      }
+      const currentToken = await getToken(messaging, { vapidKey: "USA0sr7ibILdXx1IdNyUIZGNAZxosK9trp5z96af45Nk" });
+      if (currentToken) return currentToken;
     }
   } catch (err) {
     console.error("خطأ في جلب توكن الإشعارات:", err);
@@ -101,14 +61,9 @@ export const requestForToken = async () => {
   return null;
 };
 
-// الاستماع للإشعارات أثناء فتح التطبيق
-export const onMessageListener = () =>
-  new Promise((resolve) => {
-    if (!messaging) return;
-    onMessage(messaging, (payload) => {
-      console.log("وصل إشعار جديد:", payload);
-      resolve(payload);
-    });
-  });
+export const onMessageListener = () => new Promise((resolve) => {
+  if (!messaging) return;
+  onMessage(messaging, (payload) => resolve(payload));
+});
 
 export default app;
