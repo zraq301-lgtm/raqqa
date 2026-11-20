@@ -211,7 +211,7 @@ const PregnancyMonitor = () => {
       <div style={mergedStyles.clockSection}>
         <AnalogClock />
         <button style={mergedStyles.miniClockBtn} onClick={() => setShowClockSettings(!showClockSettings)}>
-          {showClockSettings ? "إغلاق الضبط" : "ضبط المواعيد ⏰"}
+          {showClockSettings ? "إغلاق الضبط" : "ضبط مواعيد التنبيه ⏰"}
         </button>
         {showClockSettings && (
           <div style={mergedStyles.alarmList}>

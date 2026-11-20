@@ -180,9 +180,9 @@ const LactationHub = () => {
           <div style={styles.circle}>🤱</div>
           <div style={styles.circle}><Icon size={18} /></div>
         </div>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={styles.title}>مستشار الرضاعة الذكي</h2>
-          <div style={styles.subtitle}>التحليل الطبي المعتمد دولياً</div>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={styles.title}>مستشار الرضاعة الذكي</h2>
+            <div style={styles.subtitle}>اختاري بعلامة صح — والوقت والتاريخ كما هما</div>
         </div>
       </div>
 
