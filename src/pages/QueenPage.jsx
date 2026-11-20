@@ -136,6 +136,28 @@ function AudioVersePlayer({ verses, reciter, surahNumber }) {
     } finally { setBusy(false); }
   };
 
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !('mediaSession' in navigator)) return undefined;
+    if (typeof MediaMetadata !== 'undefined') navigator.mediaSession.metadata = new MediaMetadata({
+      title: `الآية ${index + 1}`,
+      artist: AUDIO_RECITERS[reciter].label,
+      album: `القرآن الكريم — سورة ${surahNumber}`,
+    });
+    const setAction = (action, handler) => { try { navigator.mediaSession.setActionHandler(action, handler); } catch { /* الأمر غير متاح في هذا الجهاز */ } };
+    setAction('play', () => { void audio.play(); });
+    setAction('pause', () => audio.pause());
+    setAction('seekbackward', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+    setAction('seekforward', () => { audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + 10); });
+    setAction('previoustrack', () => { if (index > 0) void loadVerse(index - 1); });
+    setAction('nexttrack', () => { if (index < verses.length - 1) void loadVerse(index + 1); });
+    return () => {
+      ['play', 'pause', 'seekbackward', 'seekforward', 'previoustrack', 'nexttrack'].forEach((action) => {
+        try { navigator.mediaSession.setActionHandler(action, null); } catch { /* بعض WebViews لا تدعم إزالة الأمر */ }
+      });
+    };
+  }, [index, reciter, surahNumber, verses.length]);
+
   if (!verses.length) return null;
   return (
     <div style={styles.audioBox}>
@@ -143,8 +165,11 @@ function AudioVersePlayer({ verses, reciter, surahNumber }) {
       <audio
         ref={audioRef}
         controls
-        preload="metadata"
-        onError={() => setError(navigator.onLine ? 'تعذر تشغيل هذه الآية الآن. حاولي مرة أخرى.' : 'هذه الآية غير متاحة دون اتصال بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.')}
+        preload="auto"
+        playsInline
+        onPlay={() => { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'playing'; }}
+        onPause={() => { if ('mediaSession' in navigator) navigator.mediaSession.playbackState = 'paused'; }}
+        onError={() => setError(navigator.onLine ? 'تعذر تشغيل هذه الآية الآن. حاولي مرة أخرى.' : 'هذه الآية غير متاحة على الجهاز بعد؛ شغّليها عند توفر الإنترنت لتُحفظ تلقائيًا.')}
         onEnded={() => { if (index < verses.length - 1) void loadVerse(index + 1); }}
       />
       <button type="button" style={styles.primaryButton} onClick={() => loadVerse(index)} disabled={busy}>
