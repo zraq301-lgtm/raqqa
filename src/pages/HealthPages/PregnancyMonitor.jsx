@@ -112,7 +112,10 @@ const PregnancyApp = () => {
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ id: Date.now(), query: userQuery, reply, image: chatImage, time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
       setChatImage(null);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      setChatHistory(prev => [{ id: Date.now(), query: userQuery, reply: err?.message || 'تعذر تشغيل التحليل الآن. تأكدي من تسجيل الدخول واتصال الإنترنت ثم حاولي مرة أخرى.', time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
+    }
     setLoading(false);
   };
 
@@ -140,7 +143,10 @@ const PregnancyApp = () => {
       // اختياري: المزامنة مع السحاب
       await saveToCloud(category.title, reply);
 
-    } catch (err) { console.error("فشل التحليل:", err); }
+    } catch (err) {
+      console.error("فشل التحليل:", err);
+      setChatHistory(prev => [{ id: Date.now(), query: category.title, reply: err?.message || 'تعذر تشغيل التحليل الآن. تأكدي من تسجيل الدخول واتصال الإنترنت ثم حاولي مرة أخرى.', time: new Date().toLocaleTimeString('ar-SA') }, ...prev]);
+    }
     setLoading(false);
   };
 

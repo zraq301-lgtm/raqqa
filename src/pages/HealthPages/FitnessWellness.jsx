@@ -143,6 +143,8 @@ const PregnancyMonitor = () => {
 
   const handleSectionAction = async (section) => {
     setIsLoading(true);
+    setIsChatOpen(true);
+    setChatHistory(prev => [{ type: 'ai', text: 'جاري تجهيز التحليل الآمن…' }, ...prev]);
     const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
     try {
       const response = await privateAiPost({
@@ -160,7 +162,10 @@ const PregnancyMonitor = () => {
       await handleSaveAndAnalysis(reply, futureDate.toISOString());
 
       setIsChatOpen(true);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      setChatHistory(prev => [{ type: 'ai', text: err?.message || 'تعذر تشغيل التحليل الآن. تأكدي من تسجيل الدخول واتصال الإنترنت ثم حاولي مرة أخرى.' }, ...prev]);
+    }
     finally { setIsLoading(false); }
   };
 
@@ -169,6 +174,7 @@ const PregnancyMonitor = () => {
     const userMsg = prompt;
     setPrompt("");
     setIsLoading(true);
+    setIsChatOpen(true);
     try {
       const response = await privateAiPost({
         specialtyTopic: 'fitness',
@@ -177,7 +183,10 @@ const PregnancyMonitor = () => {
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ type: 'user', text: userMsg || 'صورة مرفقة للتحليل', img: capturedImage }, { type: 'ai', text: reply }, ...prev]);
       setCapturedImage(null);
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+      setChatHistory(prev => [{ type: 'ai', text: err?.message || 'تعذر تشغيل التحليل الآن. تأكدي من تسجيل الدخول واتصال الإنترنت ثم حاولي مرة أخرى.' }, ...prev]);
+    }
     finally { setIsLoading(false); }
   };
 

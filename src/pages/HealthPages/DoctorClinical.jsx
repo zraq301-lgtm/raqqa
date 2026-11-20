@@ -74,6 +74,8 @@ const DoctorClinical = () => {
 
   const handleProcess = async (catName = "عام", imageUrl = null) => {
     setLoading(true);
+    setIsChatOpen(true);
+    setAiResponse('جاري تجهيز التحليل الطبي الآمن…');
     const summary = fields.map(f => `${f}: ${data[`${catName}_${f}`] || 'غير متوفر'}`).join('، ');
 
     const finalPrompt = `${userPrompt ? `سؤال المستخدم: ${userPrompt}. سياق البيانات: ${summary}` : `بيانات عيادة ${catName}: ${summary}.`}${imageUrl ? ' أرفقت صورة مع السؤال؛ حلليها ضمن حدود المعلومات العامة.' : ''}`;
@@ -91,7 +93,6 @@ const DoctorClinical = () => {
       const responseText = aiRes.data.reply || aiRes.data.message;
 
       setAiResponse(responseText);
-      setIsChatOpen(true);
       setUserPrompt('');
       setChatImage(null);
 
@@ -119,8 +120,7 @@ const DoctorClinical = () => {
 
     } catch (err) {
       console.error("فشل الاتصال:", err);
-      setAiResponse("حدث خطأ في الشبكة.");
-      setIsChatOpen(true);
+      setAiResponse(err?.message || "تعذر تشغيل التحليل الآن. تأكدي من تسجيل الدخول واتصال الإنترنت ثم حاولي مرة أخرى.");
     } finally {
       setLoading(false);
     }

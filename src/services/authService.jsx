@@ -3,7 +3,22 @@ import { Capacitor } from '@capacitor/core';
 import { auth } from '../firebase-config';
 import { bootstrapProfile } from './profileApi';
 
-export const getFirebaseIdToken = async (forceRefresh = false) => auth.currentUser ? auth.currentUser.getIdToken(forceRefresh) : null;
+export const getFirebaseIdToken = async (forceRefresh = false) => {
+  if (auth.currentUser) return auth.currentUser.getIdToken(forceRefresh);
+  return new Promise((resolve) => {
+    let settled = false;
+    let unsubscribe = () => {};
+    const finish = (user) => {
+      if (settled) return;
+      settled = true;
+      unsubscribe();
+      clearTimeout(timeout);
+      Promise.resolve(user ? user.getIdToken(forceRefresh) : null).then(resolve).catch(() => resolve(null));
+    };
+    const timeout = setTimeout(() => finish(auth.currentUser), 8000);
+    unsubscribe = onAuthStateChanged(auth, finish);
+  });
+};
 export const getCloudflareAuthHeaders = async (headers = {}) => { const token = await getFirebaseIdToken(); return { ...headers, ...(token ? { Authorization: `Bearer ${token}` } : {}) }; };
 export const fetchWithCloudflareAuth = async (input, init = {}) => fetch(input, { ...init, headers: await getCloudflareAuthHeaders(init.headers || {}) });
 
