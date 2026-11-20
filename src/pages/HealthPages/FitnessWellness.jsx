@@ -1,7 +1,6 @@
 import { privateAiPost } from '../../services/apiClient';
 import React, { useState, useCallback, useEffect, useRef, memo } from 'react';
 import { CapacitorHttp } from '@capacitor/core';
-import { LocalNotifications } from '@capacitor/local-notifications';
 import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
 
@@ -67,6 +66,30 @@ const PregnancyMonitor = () => {
     localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory.map(({ image, img, ...message }) => message)));
   }, [alarms, chatHistory]);
 
+  const nextAlarmDate = (time) => {
+    if (!time) return null;
+    const [hours, minutes] = time.split(':').map(Number);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    const target = new Date();
+    target.setHours(hours, minutes, 0, 0);
+    if (target <= new Date()) target.setDate(target.getDate() + 1);
+    return target;
+  };
+
+  const syncFitnessAlarmReminders = async (nextAlarms) => {
+    const existing = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+    const withoutFitness = existing.filter((item) => !String(item.id).startsWith('fitness-alarm-'));
+    const reminders = Object.entries(nextAlarms).map(([id, time]) => {
+      const scheduled = nextAlarmDate(time);
+      const section = sections.find((item) => item.id === id);
+      if (!scheduled || !section) return null;
+      return { id: `fitness-alarm-${id}`, title: `⏰ ${section.title}`, body: `حان وقت تسجيل ${section.title}.`, scheduled_for: scheduled.toISOString(), extra: { type: 'fitness_alarm', sectionId: id } };
+    }).filter(Boolean);
+    localStorage.setItem('raqqa_local_reminders', JSON.stringify([...withoutFitness, ...reminders]));
+    window.dispatchEvent(new Event('trigger_sync_notifications'));
+    await Promise.all(reminders.map((reminder) => persistAiScheduledNotification({ category: 'fitness_wellness', title: reminder.title, body: reminder.body, scheduled_for: reminder.scheduled_for, metadata: reminder.extra }).catch(() => null)));
+  };
+
   // --- تفعيل المنبه الصوتي والإشعارات المحلية ---
   useEffect(() => {
     const checkAlarms = setInterval(() => {
@@ -78,22 +101,15 @@ const PregnancyMonitor = () => {
           audioRef.current.play().catch(e => console.log("Audio deferred"));
 
           const section = sections.find(s => s.id === id);
-          LocalNotifications.schedule({
-            notifications: [
-              {
-                title: `تنبيه رقة ⏰ - ${section?.title}`,
-                body: `عزيزتي، حان وقت تسجيل بيانات ${section?.title} المحددة.`,
-                id: Math.floor(Math.random() * 10000),
-                sound: 'fine_alarm.mp3',
-                actionTypeId: '',
-                extra: null
-              }
-            ]
-          });
+          // الجدولة الأساسية تتم عبر raqqa_local_reminders حتى تعمل والتطبيق مغلق.
         }
       });
     }, 1000);
     return () => clearInterval(checkAlarms);
+  }, [alarms]);
+
+  useEffect(() => {
+    syncFitnessAlarmReminders(alarms);
   }, [alarms]);
 
   // --- دالة الحفظ والتحليل الجديدة المستبدلة ---
@@ -275,12 +291,12 @@ const PregnancyMonitor = () => {
             </div>
             {openIdx === i && (
               <div style={mergedStyles.verticalList}>
-                {sec.fields.map((f) => (
-                  <div key={`${sec.id}-${f}`} style={mergedStyles.inputGroup}>
-                    <label style={mergedStyles.label}>{f}</label>
-                    <input type="text" style={mergedStyles.input} value={data[`${sec.id}-${f}`] || ''} onChange={(e) => updateData(`${sec.id}-${f}`, e.target.value)} />
-                  </div>
-                ))}
+                {sec.fields.map((f) => {
+                  const key = `${sec.id}-${f}`;
+                  const checked = Boolean(data[key]);
+                  if (f === 'وقت التمرين') return <div key={key} style={mergedStyles.inputGroup}><label style={mergedStyles.label}>{f}</label><input aria-label={f} type="time" style={mergedStyles.input} value={data[key] || ''} onChange={(e) => updateData(key, e.target.value)} /></div>;
+                  return <button type="button" key={key} aria-pressed={checked} onClick={() => updateData(key, checked ? '' : 'تم التأكيد')} style={{ ...mergedStyles.checkInput, ...(checked ? mergedStyles.checkInputChecked : {}) }}><span>{f}</span><span style={{ ...mergedStyles.checkMark, ...(checked ? mergedStyles.checkMarkChecked : {}) }}>✓</span></button>;
+                })}
                 <button style={mergedStyles.saveSectionBtn} onClick={() => handleSectionAction(sec)} disabled={isLoading}>
                     {isLoading ? "جاري التحليل..." : "حفظ وتحليل البيانات 💾"}
                 </button>
@@ -337,6 +353,10 @@ const mergedStyles = {
   inputGroup: { display: 'flex', flexDirection: 'column', gap: '5px' },
   label: { fontSize: '13px', color: '#7b1fa2', fontWeight: '600' },
   input: { padding: '12px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '16px' },
+  checkInput: { minHeight: '50px', padding: '10px 11px', borderRadius: '13px', border: '1px solid #eadcf2', background: '#fff', color: '#5b2679', font: 'inherit', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', textAlign: 'right', cursor: 'pointer', transition: 'transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease' },
+  checkInputChecked: { background: '#f3e5f5', borderColor: '#7b1fa2', boxShadow: '0 5px 14px rgba(123,31,162,.14)' },
+  checkMark: { width: '23px', height: '23px', flex: '0 0 23px', borderRadius: '7px', border: '2px solid #d8c1e3', color: 'transparent', display: 'grid', placeItems: 'center', transition: 'all .18s ease' },
+  checkMarkChecked: { background: '#7b1fa2', borderColor: '#7b1fa2', color: '#fff', fontWeight: '900' },
   saveSectionBtn: { background: '#4a148c', color: 'white', border: 'none', padding: '15px', borderRadius: '15px', fontWeight: 'bold', fontSize: '15px' }
 };
 

@@ -4,6 +4,7 @@ import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import ChatMediaControls from '../../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
+import { Check } from 'lucide-react';
 
 const LactationHub = () => {
   const Icon = iconMap.feelings;
@@ -25,12 +26,40 @@ const LactationHub = () => {
   });
 
   const saveAndNotify = async (categoryTitle, currentAnalysis) => {
-    const scheduledDate = new Date();
-
     try {
       await persistAiHealthRecord('breastfeeding', { categoryTitle, analysis: currentAnalysis, data });
-      await persistAiScheduledNotification({ category: 'breastfeeding', title: `تقرير الرضاعة: ${categoryTitle}`, body: 'تم حفظ التحليل داخل حسابك.', scheduled_for: scheduledDate.toISOString(), metadata: { type: 'medical_report' } });
     } catch (err) { console.error("خطأ في المزامنة:", err); }
+  };
+
+  const nextOccurrence = (timeValue, dateValue = '') => {
+    if (!timeValue) return null;
+    const [hours, minutes] = timeValue.split(':').map(Number);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    const target = dateValue ? new Date(`${dateValue}T${timeValue}`) : new Date();
+    if (!dateValue) target.setHours(hours, minutes, 0, 0);
+    if (Number.isNaN(target.getTime())) return null;
+    if (target <= new Date()) target.setDate(target.getDate() + 1);
+    return target;
+  };
+
+  const scheduleFeedingRoutine = async () => {
+    const routineFields = [
+      ['الرضاعة الطبيعية-الوقت', 'تنبيه الرضاعة الطبيعية'],
+      ['الرضاعة الطبيعية-بداية الرضعة', 'بداية رضعة طبيعية'],
+      ['الرضاعة الصناعية-وقت التحضير', 'تحضير الرضعة الصناعية'],
+      ['الشفط والتخزين-ساعة الشفط', 'موعد شفط الحليب'],
+    ];
+    const currentReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+    const withoutOldRoutine = currentReminders.filter((item) => !String(item.id).startsWith('lactation-routine-'));
+    const routineReminders = routineFields.map(([key, label]) => {
+      const dateKey = key.startsWith('الشفط') ? 'الشفط والتخزين-تاريخ التخزين' : '';
+      const when = nextOccurrence(data[key], data[dateKey]);
+      if (!when) return null;
+      return { id: `lactation-routine-${key}`, title: `🤱 ${label}`, body: 'حان موعد تسجيل روتين الرضاعة.', scheduled_for: when.toISOString(), extra: { type: 'lactation_routine', field: key } };
+    }).filter(Boolean);
+    localStorage.setItem('raqqa_local_reminders', JSON.stringify([...withoutOldRoutine, ...routineReminders]));
+    window.dispatchEvent(new Event('trigger_sync_notifications'));
+    await Promise.all(routineReminders.map((reminder) => persistAiScheduledNotification({ category: 'breastfeeding', title: reminder.title, body: reminder.body, scheduled_for: reminder.scheduled_for, metadata: reminder.extra }).catch(() => null)));
   };
 
   const sections = [
@@ -74,6 +103,7 @@ const LactationHub = () => {
 
       // --- منطق الحفظ والجدولة الجديد للأندرويد ---
       const scheduledTime = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // جدولة بعد ساعة كمثال
+      await scheduleFeedingRoutine();
 
       // 1. إعداد نص الإشعار الفوري للتأكيد
       const instantConfirm = {
@@ -131,24 +161,19 @@ const LactationHub = () => {
     localStorage.setItem('lactation_history', JSON.stringify(filtered));
   };
 
-  const renderInput = (f) => (
-    <div key={f} style={{ marginBottom: '10px' }}>
-      <label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label>
-      <input
-        type={f.includes("تاريخ") ? "date" : f.includes("الوقت") || f.includes("ساعة") ? "time" : "text"}
-        style={styles.input}
-        value={data[f] || ''}
-        onChange={e => {
-          const newData = {...data, [f]: e.target.value};
-          setData(newData);
-          localStorage.setItem('lady_lactation', JSON.stringify(newData));
-        }}
-      />
-    </div>
-  );
+  const renderInput = (f, sectionTitle) => {
+    const key = `${sectionTitle}-${f}`;
+    const isDate = f.includes('تاريخ');
+    const isTime = f.includes('الوقت') || f.includes('ساعة') || f.includes('بداية الرضعة') || f.includes('نهاية الرضعة');
+    const value = data[key] || '';
+    if (isDate || isTime) return <div key={f} style={{ marginBottom: '10px' }}><label style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px', color: '#eee' }}>{f}</label><input aria-label={f} type={isDate ? 'date' : 'time'} style={styles.input} value={value} onChange={e => { const newData = {...data, [key]: e.target.value}; setData(newData); localStorage.setItem('lady_lactation', JSON.stringify(newData)); }} /></div>;
+    const checked = Boolean(value);
+    return <button type="button" key={f} className={`lactation-check${checked ? ' is-checked' : ''}`} aria-pressed={checked} onClick={() => { const newData = {...data, [key]: checked ? '' : 'تم التأكيد'}; setData(newData); localStorage.setItem('lady_lactation', JSON.stringify(newData)); }}><span>{f}</span><span className="lactation-check-mark"><Check size={15} strokeWidth={3} /></span></button>;
+  };
 
   return (
     <div style={styles.mainContainer}>
+      <style>{`.lactation-check{min-height:46px;padding:9px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:.75rem;display:flex;align-items:center;justify-content:space-between;gap:7px;text-align:right;cursor:pointer;transition:transform .18s ease,background .18s ease,border-color .18s ease}.lactation-check:active{transform:scale(.97)}.lactation-check.is-checked{background:rgba(255,255,255,.3);border-color:#fff}.lactation-check-mark{width:23px;height:23px;flex:0 0 23px;border-radius:7px;border:2px solid rgba(255,255,255,.65);display:grid;place-items:center;color:transparent;background:rgba(255,255,255,.12);transition:all .18s ease}.lactation-check.is-checked .lactation-check-mark{background:#fff;border-color:#fff;color:#739673}`}</style>
       <div style={styles.header}>
         <div style={styles.statsRow}>
           <button onClick={() => setShowChat(true)} style={{...styles.circle, border:'none', cursor:'pointer', background:'#fff', color:'#739673'}}>💬</button>
@@ -173,7 +198,7 @@ const LactationHub = () => {
               <span style={styles.plusIcon}>{openIdx === i ? '✕' : '＋'}</span>
             </div>
             {openIdx === i && (
-              <div style={styles.fieldsGrid}>{sec.fields.map(f => renderInput(f))}</div>
+                  <div style={styles.fieldsGrid}>{sec.fields.map(f => renderInput(f, sec.title))}</div>
             )}
           </div>
         ))}
