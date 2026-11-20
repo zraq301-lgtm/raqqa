@@ -83,7 +83,6 @@ const MenstrualTracker = () => {
   const [savedNotes, setSavedNotes] = useState(() => JSON.parse(localStorage.getItem('saved_notes')) || []);
   const [openAccordion, setOpenAccordion] = useState(1);
   const [showSavedList, setShowSavedList] = useState(false);
-  const [saveStatus, setSaveStatus] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
@@ -119,8 +118,8 @@ const MenstrualTracker = () => {
     const confirmationTime = new Date(Date.now() + 2500).toISOString();
     const confirmationReminder = {
       id: `menstrual-saved-${Date.now()}`,
-      title: '✅ تم حفظ بيانات الدورة',
-      body: 'تم حفظ اختياراتك في مكتبة رقة وسيتم تذكيرك بموعد الدورة المتوقع.',
+      title: 'تم حفظ بيانات الدورة بأمان',
+      body: 'تم حفظ بياناتك، وسيصلك تنبيه عند الموعد المحدد.',
       scheduled_for: confirmationTime,
       extra: { type: 'menstrual_saved', schemaVersion: 2 },
     };
@@ -131,10 +130,8 @@ const MenstrualTracker = () => {
     try {
       await saveHealthRecord('menstrual', record, { recordedAt: savedAt });
       await saveScheduledNotification({ category: 'menstrual', title: confirmationReminder.title, body: confirmationReminder.body, scheduled_for: confirmationTime, metadata: record });
-      setSaveStatus({ type: 'success', text: 'تم الحفظ في الجهاز والـBackend، وسيظهر إشعار تأكيد.' });
     } catch (error) {
       console.error('Menstrual cloud save failed:', error);
-      setSaveStatus({ type: 'warning', text: 'تم الحفظ على الجهاز، لكن تعذر تأكيد الحفظ في الـBackend. تحققي من تسجيل الدخول والاتصال.' });
     }
   };
 
@@ -305,7 +302,6 @@ const MenstrualTracker = () => {
         <button onClick={handleSaveAndAnalyze} style={styles.btnPrimary} disabled={loading}>
           {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل طبي شامل ✨"}
         </button>
-        {saveStatus && <div role="status" style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: saveStatus.type === 'success' ? '#EAF8EF' : '#FFF7E6', color: saveStatus.type === 'success' ? '#237A3B' : '#9A6500', fontSize: 12 }}>{saveStatus.type === 'success' ? '✅ ' : '⚠️ '}{saveStatus.text}</div>}
       </div>
 
       {showSavedList && (
