@@ -95,29 +95,21 @@ const MenstrualTracker = () => {
 
   // --- دالة الحفظ المحلي والتحليل الذكي الجديدة ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
+    const reminderId = `menstrual-${scheduledTime}`;
+    const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+    const activeReminders = existingReminders.filter((item) => item.id !== reminderId);
+    const periodReminder = {
+      id: reminderId,
+      title: "✨ تذكير موعد الدورة المتوقع",
+      body: `قد تبدأ الدورة في ${new Date(scheduledTime).toLocaleDateString('ar-EG')}.`,
+      scheduled_for: scheduledTime,
+      extra: { report: aiGeneratedReport, type: 'menstrual_prediction' }
+    };
+    localStorage.setItem('raqqa_local_reminders', JSON.stringify([...activeReminders, periodReminder]));
+    window.dispatchEvent(new Event('trigger_sync_notifications'));
     try {
       await persistAiHealthRecord('menstrual', { ...data, aiReport: aiGeneratedReport });
-      const instantConfirm = {
-        id: Math.floor(Math.random() * 10000),
-        title: "✅ تم حفظ بياناتك بشكل آمن",
-        body: "تم تحليل بياناتك وحفظ التقرير، وسنذكّرك في الموعد المحدد.",
-        scheduled_for: new Date(Date.now() + 500).toISOString(),
-      };
-
-      const aiReportNotification = {
-        id: Math.floor(Math.random() * 10000),
-        title: "✨ تقرير رقة الذكي",
-        body: aiGeneratedReport,
-        scheduled_for: scheduledTime,
-        extra: { report: aiGeneratedReport }
-      };
-
-      const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
-      const updatedReminders = [...existingReminders, instantConfirm, aiReportNotification];
-      localStorage.setItem('raqqa_local_reminders', JSON.stringify(updatedReminders));
       await persistAiScheduledNotification({ category: 'menstrual', title: 'تذكير الدورة المتوقع', body: 'قد تبدأ دورتك حسب آخر تسجيل.', scheduled_for: scheduledTime, metadata: { prediction } });
-
-      window.dispatchEvent(new Event('trigger_sync_notifications'));
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 
     } catch (error) {

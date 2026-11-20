@@ -173,6 +173,6 @@ export async function askPrivateAssistant({ topic, question, image }) {
   const sourceText = localSourceText || medicalSourceText
     ? `\n\n${[localSourceText, medicalSourceText].filter(Boolean).join('\n')}`
     : '\n\nلم يعثر البحث على مادة منشورة مرتبطة مباشرة بالسؤال.';
-  const reply = `${String(result.reply || 'تعذر إنشاء الرد الآن.').trim()}${sourceText}`;
+  const reply = `${String(result.reply || result.message || result.content || 'تعذر إنشاء الرد الآن.').trim()}${sourceText}`;
   return { data: { reply, message: reply, citations, imageDescription } };
 }

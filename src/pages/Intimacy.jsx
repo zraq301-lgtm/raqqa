@@ -5,7 +5,6 @@ import {
   Send, Star, ShieldCheck, Flame,
   Moon, Flower2, Sparkles, Brain, PlusCircle, X
 } from 'lucide-react';
-import { CapacitorHttp } from '@capacitor/core';
 import ChatMediaControls from '../components/ChatMediaControls';
 import { persistAiHealthRecord, persistAiScheduledNotification } from '../services/profileApi';
 import PublishedPageContent from '../components/PublishedPageContent';
@@ -82,8 +81,8 @@ const MarriageApp = () => {
 
   const handleProcess = async (userInputs, pageTitle, imageUrl = null, shouldSave = false) => {
     const summary = Object.entries(userInputs)
-      .filter(([key, value]) => value && value.length > 0)
-      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(" - ") : value}`)
+      .filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== '')
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(" - ") : String(value)}`)
       .join(", ");
 
     const MARRIAGE_EXPERT_PROMPT = `
@@ -103,7 +102,8 @@ const MarriageApp = () => {
       };
 
       const aiResponse = await privateAiPost(aiOptions);
-      const responseText = aiResponse.data.reply || aiResponse.data.message || "أنا هنا معكِ يا رفيقتي، اسألي ما تشائين في خصوصيتنا.";
+      const responseText = String(aiResponse?.data?.reply || aiResponse?.data?.message || '').trim();
+      if (!responseText) throw new Error('empty_ai_response');
 
       // إذا كان الطلب يتطلب حفظ (من القوائم)، نقوم بجدولة الإشعار بعد 48 ساعة
       if (shouldSave) {
@@ -115,6 +115,9 @@ const MarriageApp = () => {
       return responseText;
     } catch (err) {
       console.error("فشل الاتصال:", err);
+      if (err?.message === 'empty_ai_response') return 'لم تصل إجابة من خدمة التحليل. حاولي إرسال المدخلات مرة أخرى.';
+      if (err?.message?.includes('سجّلي الدخول')) return 'يجب تسجيل الدخول أولاً حتى أتمكن من تحليل مدخلاتك بشكل خاص وآمن.';
+      if (err?.message?.includes('الموافقة')) return 'لم يتم إرسال المدخلات لأن موافقة معالجة الشات لم تُمنح.';
       return "تعذر الحصول على الإجابة الآن. تحققي من اتصالك بالإنترنت وحاولي مرة أخرى.";
     }
   };
@@ -162,7 +165,7 @@ const MarriageApp = () => {
 
       <PublishedPageContent pageNames={['الحميمية']} title="محتوى العلاقات الزوجية المنشور" />
 
-      <button onClick={() => setShowChat(true)} style={{ position: 'fixed', bottom: '25px', left: '25px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '60px', height: '60px', zIndex: 100, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
+      <button onClick={() => setShowChat(true)} style={{ position: 'fixed', bottom: '105px', left: '25px', background: '#d4af37', border: 'none', borderRadius: '50%', width: '60px', height: '60px', zIndex: 120, boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
         <Sparkles color="#800020" size={30} />
       </button>
 

@@ -270,7 +270,7 @@ const PregnancyApp = () => {
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                   <div className="inputs-container">
                     {cat.fields.map((field, idx) => (
-                      <input key={idx} className="custom-input" placeholder={field} value={inputs[cat.id][idx]} onChange={(e) => handleUpdateInput(cat.id, idx, e.target.value)} />
+                      <input key={idx} className="custom-input" placeholder={field} type={field.includes('تاريخ') || field.includes('المراجعة') ? 'date' : 'text'} value={inputs[cat.id][idx]} onChange={(e) => handleUpdateInput(cat.id, idx, e.target.value)} />
                     ))}
                     <button
                       className="analyze-full-btn"

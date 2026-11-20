@@ -162,7 +162,7 @@ body {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
-  padding-bottom: 24px;
+  padding-bottom: calc(112px + env(safe-area-inset-bottom));
 }
 
 /* ستايل الزجاج (Glassmorphism) المرتبط بفيربيس */

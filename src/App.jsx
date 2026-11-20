@@ -40,6 +40,22 @@ function ScrollToTop() {
   return null;
 }
 
+function DatePickerEnhancer() {
+  useEffect(() => {
+    const openDatePicker = (event) => {
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement) || input.type !== 'date' || input.disabled) return;
+      input.focus({ preventScroll: true });
+      if (typeof input.showPicker === 'function') {
+        try { input.showPicker(); } catch { /* بعض المتصفحات لا تسمح بالفتح البرمجي */ }
+      }
+    };
+    document.addEventListener('click', openDatePicker, true);
+    return () => document.removeEventListener('click', openDatePicker, true);
+  }, []);
+  return null;
+}
+
 /**
  * مكون النصيحة الذكية (TipOverlay)
  */
@@ -272,6 +288,7 @@ function App({ user, onUserUpdated }) {
   return (
     <div className="app-container main-page-theme" style={{ '--main-theme-color': activeBackground, '--page-accent-color': activePageTheme.accentColor || appTheme.accentColor, '--page-text-color': activePageTheme.textColor || '#352d31', '--page-font-family': `'${activeFont}', sans-serif`, '--page-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none' }}>
       <ScrollToTop />
+      <DatePickerEnhancer />
       <TipOverlay />
       {profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
 
