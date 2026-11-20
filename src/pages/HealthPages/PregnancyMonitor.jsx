@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, Activity, ClipboardList, Pill, ShoppingBag, Calendar,
   Send, Trash2, Camera, ChevronRight, MessageSquare,
-  Sparkles, Stethoscope
+  Sparkles, Stethoscope, Check
 } from 'lucide-react';
 import { CapacitorHttp } from '@capacitor/core';
 
@@ -56,8 +56,8 @@ const PregnancyApp = () => {
     }
   }, [pregnancyMonth]);
 
-  const handleUpdateInput = (catId, idx, val) => {
-    setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? val : v) }));
+  const toggleInput = (catId, idx) => {
+    setInputs(prev => ({ ...prev, [catId]: prev[catId].map((v, i) => i === idx ? (v ? '' : 'تم التأكيد') : v) }));
   };
 
   // --- الدالة المستبدلة المطلوبة ---
@@ -121,7 +121,7 @@ const PregnancyApp = () => {
 
   const runAiAnalysis = async (catIdx) => {
     const category = categories[catIdx];
-    const dataString = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: ${v}` : '').filter(v => v).join(' | ');
+    const dataString = inputs[category.id].map((v, i) => v ? `${category.fields[i]}: تم التأكيد` : '').filter(v => v).join(' | ');
 
     if (!dataString) {
       alert("الرجاء إدخال بعض البيانات أولاً للتحليل");
@@ -178,6 +178,11 @@ const PregnancyApp = () => {
         .category-header { width: 100%; display: flex; justify-content: space-between; padding: 18px 20px; border: none; background: none; align-items: center; cursor: pointer; }
         .inputs-container { padding: 0 15px 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .custom-input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #F1F5F9; font-size: 13px; background: #F8FAFC; }
+        .check-input { min-height: 54px; width: 100%; padding: 10px 11px; border-radius: 14px; border: 1px solid #E9D5FF; background: #FAF7FF; color: #5B21B6; font: inherit; font-size: 12px; line-height: 1.35; display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: right; cursor: pointer; transition: transform .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease; }
+        .check-input:active { transform: scale(.98); }
+        .check-input.is-checked { background: #F3E8FF; border-color: #7C3AED; box-shadow: 0 5px 14px rgba(124, 58, 237, .14); color: #4C1D95; }
+        .check-input-mark { width: 24px; height: 24px; flex: 0 0 24px; border-radius: 8px; border: 2px solid #C4B5FD; background: white; color: transparent; display: grid; place-items: center; transition: all .18s ease; }
+        .check-input.is-checked .check-input-mark { background: #7C3AED; border-color: #7C3AED; color: white; }
         .analyze-full-btn { grid-column: span 2; background: #7C3AED; color: white; border: none; padding: 14px; border-radius: 15px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px; }
         .chat-overlay { position: fixed; inset: 0; background: white; z-index: 1000; display: flex; flex-direction: column; }
         .chat-header { background: #7C3AED; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -269,9 +274,23 @@ const PregnancyApp = () => {
               {activeTab === index && (
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                   <div className="inputs-container">
-                    {cat.fields.map((field, idx) => (
-                      <input key={idx} className="custom-input" placeholder={field} type={field.includes('تاريخ') || field.includes('المراجعة') ? 'date' : 'text'} value={inputs[cat.id][idx]} onChange={(e) => handleUpdateInput(cat.id, idx, e.target.value)} />
-                    ))}
+                    {cat.fields.map((field, idx) => {
+                      const isChecked = Boolean(inputs[cat.id][idx]);
+                      return (
+                        <motion.button
+                          key={idx}
+                          type="button"
+                          className={`check-input${isChecked ? ' is-checked' : ''}`}
+                          aria-pressed={isChecked}
+                          onClick={() => toggleInput(cat.id, idx)}
+                          whileTap={{ scale: 0.97 }}
+                          transition={{ type: 'spring', stiffness: 450, damping: 24 }}
+                        >
+                          <span>{field}</span>
+                          <span className="check-input-mark" aria-hidden="true"><Check size={16} strokeWidth={3} /></span>
+                        </motion.button>
+                      );
+                    })}
                     <button
                       className="analyze-full-btn"
                       onClick={(e) => {
