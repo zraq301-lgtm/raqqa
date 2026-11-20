@@ -143,6 +143,7 @@ function App({ user, onUserUpdated }) {
   const activePageKey = location.pathname === '/health' && healthSection ? `health.${healthSection}` : ({ '/health': 'health', '/feelings': 'feelings', '/intimacy': 'intimacy', '/swing-forum': 'swing', '/insight': 'insight', '/videos': 'videos', '/virtual-world': 'virtualWorld' }[location.pathname] || 'health');
   const activePageTheme = appTheme.pages?.[activePageKey] || {};
   const isSwingPage = location.pathname === '/swing-forum';
+  const isHealthSubpage = location.pathname === '/health' && Boolean(healthSection);
   const activeBackground = activePageTheme.backgroundColor || appTheme.backgroundColor;
   const activeFont = activePageTheme.fontFamily || appTheme.fontFamily;
   useEffect(() => {
@@ -310,7 +311,7 @@ function App({ user, onUserUpdated }) {
       <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
           <AdBanner />
       </div>
-      {!isSwingPage && <TopPageCarousel />}
+      {!isSwingPage && !isHealthSubpage && <TopPageCarousel />}
 
       <main className={`main-content${isSwingPage ? ' main-content--swing' : ''}`} style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>
         <Routes>
