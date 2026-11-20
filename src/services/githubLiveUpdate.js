@@ -1,4 +1,5 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { LiveUpdate } from '@capawesome/capacitor-live-update';
 
 const MANIFEST_URLS = [
@@ -62,4 +63,8 @@ export async function initializeGithubLiveUpdate() {
   };
   // ننتظر تحميل WebView قليلًا حتى لا يتسابق OTA مع شاشة البداية.
   setTimeout(run, 1200);
+  // إذا كان التطبيق مفتوحًا وقت نشر OTA، افحص النسخة عند عودته للواجهة.
+  await App.addListener('appStateChange', ({ isActive }) => {
+    if (isActive) run();
+  });
 }

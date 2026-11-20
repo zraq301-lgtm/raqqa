@@ -2,14 +2,6 @@ name: Raqqa iOS Build
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'ios/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'capacitor.config.json'
 
 jobs:
   ios:
