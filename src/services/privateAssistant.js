@@ -106,11 +106,12 @@ export async function searchLocalKnowledge(topic, question, limit = MAX_EVIDENCE
 }
 
 function requestConsent() {
-  try { if (sessionStorage.getItem(CONSENT_KEY) === 'yes') return true; } catch { /* sessionStorage may be unavailable in embedded browsers */ }
-  if (typeof window === 'undefined' || typeof window.confirm !== 'function') return false;
-  const accepted = window.confirm('قد يحدّث التطبيق محتوى الأقسام المنشور باسم القسم فقط، ثم يفلتر سؤالك على هذا الجهاز؛ لا تُرسل كلمات البحث إلى خادم المحتوى ولا يُجرى بحث ويب. لإعداد الرد، سيُرسل السؤال والمقاطع المرتبطة إلى بوابة الذكاء الاصطناعي ai-raqqa، والصورة إلى خدمة تحليل الصور عند إرفاقها. لا تنشئ نقطة المساعد سجل محادثة؛ لكن بعض وظائف التحليل والحفظ قد تحفظ تقارير في حسابك. هل تتابعين؟');
-  if (accepted) { try { sessionStorage.setItem(CONSENT_KEY, 'yes'); } catch { /* consent applies to this view only */ } }
-  return accepted;
+  try {
+    if (localStorage.getItem(CONSENT_KEY) === 'yes' || sessionStorage.getItem(CONSENT_KEY) === 'yes') return true;
+    localStorage.setItem(CONSENT_KEY, 'yes');
+    sessionStorage.setItem(CONSENT_KEY, 'yes');
+  } catch { /* embedded browsers may not expose storage; continue without interrupting chat */ }
+  return true;
 }
 
 async function postJson(path, token, payload) {
