@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Bell, Images, Palette, MessageSquare } from 'lucide-react';
+import { Bell, Images, Palette, MessageSquare, Megaphone } from 'lucide-react';
+import AdManagement from './pages/AdManagement';
 import UploadManager from './pages/UploadManager';
 import NotificationManager from './pages/NotificationManager';
 import ThemeManager from './pages/ThemeManager';
@@ -8,6 +9,7 @@ import './App.css';
 
 const pages = [
   { id: 'upload', label: 'إدارة المحتوى', Icon: Images },
+  { id: 'ads', label: 'الإعلانات', Icon: Megaphone },
   { id: 'theme', label: 'المظهر والاحتفالات', Icon: Palette },
   { id: 'notifications', label: 'الإشعارات', Icon: Bell },
   { id: 'community', label: 'إشراف المجتمع', Icon: MessageSquare },
@@ -15,7 +17,9 @@ const pages = [
 
 export default function App() {
   const [activePage, setActivePage] = useState('upload');
-  const page = activePage === 'community'
+  const page = activePage === 'ads'
+    ? <AdManagement />
+    : activePage === 'community'
     ? <CommunityModeration />
     : activePage === 'theme'
     ? <ThemeManager />
