@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { iconMap } from '../../constants/iconMap';
 import { CapacitorHttp } from '@capacitor/core';
 import ChatMediaControls from '../../components/ChatMediaControls';
-import { persistAiHealthRecord, persistAiScheduledNotification } from '../../services/profileApi';
+import { saveHealthRecord, saveScheduledNotification } from '../../services/profileApi';
 
 // --- مكون الساعة المطور (بناءً على التقويم القمري 29 يوماً) ---
 const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5 }) => {
@@ -83,6 +83,7 @@ const MenstrualTracker = () => {
   const [savedNotes, setSavedNotes] = useState(() => JSON.parse(localStorage.getItem('saved_notes')) || []);
   const [openAccordion, setOpenAccordion] = useState(1);
   const [showSavedList, setShowSavedList] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('menstrual_data', JSON.stringify(data));
@@ -93,7 +94,51 @@ const MenstrualTracker = () => {
     }
   }, [data, chatHistory, savedNotes, prediction]);
 
-  // --- دالة الحفظ المحلي والتحليل الذكي الجديدة ---
+  const toggleChoice = (key, option, single = false) => {
+    setData((previous) => {
+      const current = Array.isArray(previous[key]) ? previous[key] : (previous[key] ? [previous[key]] : []);
+      const next = current.includes(option) ? current.filter((item) => item !== option) : (single ? [option] : [...current, option]);
+      return { ...previous, [key]: next };
+    });
+  };
+
+  const displayValue = (value) => Array.isArray(value) ? value.join('، ') : (value || '');
+
+  const saveMenstrualSelection = async (selectedData, nextPrediction) => {
+    const savedAt = new Date().toISOString();
+    const record = {
+      schemaVersion: 2,
+      category: 'menstrual',
+      data: selectedData,
+      prediction: nextPrediction,
+      savedAt,
+    };
+    const localRecords = JSON.parse(localStorage.getItem('menstrual_records') || '[]');
+    localStorage.setItem('menstrual_records', JSON.stringify([{ id: `menstrual-${Date.now()}`, ...record }, ...localRecords].slice(0, 50)));
+
+    const confirmationTime = new Date(Date.now() + 2500).toISOString();
+    const confirmationReminder = {
+      id: `menstrual-saved-${Date.now()}`,
+      title: '✅ تم حفظ بيانات الدورة',
+      body: 'تم حفظ اختياراتك في مكتبة رقة وسيتم تذكيرك بموعد الدورة المتوقع.',
+      scheduled_for: confirmationTime,
+      extra: { type: 'menstrual_saved', schemaVersion: 2 },
+    };
+    const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+    localStorage.setItem('raqqa_local_reminders', JSON.stringify([...existingReminders.filter((item) => item.id !== confirmationReminder.id), confirmationReminder]));
+    window.dispatchEvent(new Event('trigger_sync_notifications'));
+
+    try {
+      await saveHealthRecord('menstrual', record, { recordedAt: savedAt });
+      await saveScheduledNotification({ category: 'menstrual', title: confirmationReminder.title, body: confirmationReminder.body, scheduled_for: confirmationTime, metadata: record });
+      setSaveStatus({ type: 'success', text: 'تم الحفظ في الجهاز والـBackend، وسيظهر إشعار تأكيد.' });
+    } catch (error) {
+      console.error('Menstrual cloud save failed:', error);
+      setSaveStatus({ type: 'warning', text: 'تم الحفظ على الجهاز، لكن تعذر تأكيد الحفظ في الـBackend. تحققي من تسجيل الدخول والاتصال.' });
+    }
+  };
+
+  // --- دالة الحفظ المحلي والتحليل الذكي ---
   const handleSaveAndAnalysis = async (aiGeneratedReport, scheduledTime) => {
     const reminderId = `menstrual-${scheduledTime}`;
     const existingReminders = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
@@ -108,8 +153,9 @@ const MenstrualTracker = () => {
     localStorage.setItem('raqqa_local_reminders', JSON.stringify([...activeReminders, periodReminder]));
     window.dispatchEvent(new Event('trigger_sync_notifications'));
     try {
-      await persistAiHealthRecord('menstrual', { ...data, aiReport: aiGeneratedReport });
-      await persistAiScheduledNotification({ category: 'menstrual', title: 'تذكير الدورة المتوقع', body: 'قد تبدأ دورتك حسب آخر تسجيل.', scheduled_for: scheduledTime, metadata: { prediction } });
+      await saveHealthRecord('menstrual', { schemaVersion: 2, data, prediction, aiReport: aiGeneratedReport }, { recordedAt: new Date().toISOString() });
+      const scheduledPayload = { category: 'menstrual', title: 'تذكير الدورة المتوقع', body: 'قد تبدأ دورتك حسب آخر تسجيل.', scheduled_for: scheduledTime, metadata: { schemaVersion: 2, data, prediction } };
+      await saveScheduledNotification(scheduledPayload);
       console.log("🚀 تم الحفظ، التحليل، وإرسال إشارة الإشعار الفوري");
 
     } catch (error) {
@@ -179,12 +225,13 @@ const MenstrualTracker = () => {
       fertility: `${fertStart.toLocaleDateString('ar-EG')} - ${ovulation.toLocaleDateString('ar-EG')}`
     };
     setPrediction(calc);
+    await saveMenstrualSelection(data, calc);
 
     try {
       const summary = JSON.stringify(data);
       const response = await privateAiPost({
         specialtyTopic: 'cycle',
-        data: { prompt: `حللي بيانات الدورة الشهرية بدقة مع التركيز الشديد على (العمر: ${data['البيانات الحيوية_العمر']} والوزن: ${data['البيانات الحيوية_الوزن']}) بالإضافة لبيانات الفوط الصحية والأعراض، وقدمي تقرير طبي متخصص يوضح أن هذه البيانات تخص توقع الدورة القادمة: ${summary}` }
+        data: { prompt: `حللي بيانات الدورة الشهرية المختارة بعلامات الصح، مع التركيز على التواريخ والمدة والأعراض والمزاج والنزف والعناية الصحية، وقدمي تقريرًا تثقيفيًا حذرًا يوضح توقع الدورة القادمة دون تشخيص: ${summary}` }
       });
       const responseText = response.data.reply || response.data.content || response.data.message;
 
@@ -211,11 +258,34 @@ const MenstrualTracker = () => {
   };
 
   const sections = [
-    { id: 1, title: "سجل التواريخ", emoji: "📅", fields: ["تاريخ البدء", "تاريخ الانتهاء", "مدة الدورة", "مدة الحيض"] },
-    { id: 2, title: "البيانات الحيوية", emoji: "⚖️", fields: ["العمر", "الوزن"] },
-    { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: ["تشنجات", "انتفاخ", "صداع"] },
-    { id: 4, title: "الحالة المزاجية", emoji: "😰", fields: ["قلق", "عصبية", "هدوء"] },
-    { id: 5, title: "الفوطة الصحية", emoji: "🧼", fields: ["عدد تغيير الفوطة", "انواع الفوط الصحية", "كثافة الدم", "النظافة", "ملحوظات"] },
+    { id: 1, title: "سجل التواريخ", emoji: "📅", fields: [
+      { name: "تاريخ البدء", type: "date" }, { name: "تاريخ الانتهاء", type: "date" },
+      { name: "مدة الدورة", single: true, options: ["21 يومًا", "24 يومًا", "26 يومًا", "28 يومًا", "29 يومًا", "30 يومًا", "32 يومًا", "35 يومًا"] },
+      { name: "مدة الحيض", single: true, options: ["يوم واحد", "يومان", "3 أيام", "4 أيام", "5 أيام", "6 أيام", "7 أيام", "أكثر من 7 أيام"] },
+    ] },
+    { id: 2, title: "البيانات الأساسية", emoji: "⚖️", fields: [
+      { name: "الفئة العمرية", options: ["أقل من 18", "18–24", "25–34", "35–44", "45 فأكثر"] },
+      { name: "الفئة الوزنية", options: ["أقل من 50 كجم", "50–59 كجم", "60–69 كجم", "70–79 كجم", "80 كجم فأكثر", "لا أرغب بالإجابة"] },
+      { name: "حالة صحية مرتبطة", options: ["لا توجد", "تكيس المبايض", "بطانة الرحم المهاجرة", "اضطراب الغدة", "فقر الدم", "لا أعلم"] },
+      { name: "وسيلة منع الحمل", options: ["لا أستخدم", "حبوب", "لولب نحاسي", "لولب هرموني", "وسيلة أخرى"] },
+    ] },
+    { id: 3, title: "الأعراض الجسدية", emoji: "😖", fields: [
+      { name: "أعراض اليوم", options: ["لا توجد أعراض", "تقلصات أسفل البطن", "ألم أسفل الظهر", "صداع أو شقيقة", "انتفاخ", "ألم الثدي", "غثيان", "دوخة", "تعب شديد", "إمساك أو إسهال", "حبوب أو تغير البشرة", "تغير الشهية"] },
+      { name: "درجة الألم", options: ["لا يوجد", "خفيف", "متوسط", "شديد", "يمنعني من نشاطي"] },
+      { name: "أعراض تستدعي الانتباه", options: ["نزف شديد جدًا", "ألم مفاجئ أو غير معتاد", "حرارة", "إغماء", "لا توجد"] },
+    ] },
+    { id: 4, title: "الحالة المزاجية والنوم", emoji: "😰", fields: [
+      { name: "المشاعر الحالية", options: ["هادئة", "قلقة", "عصبية", "حزينة", "حساسة عاطفيًا", "متقلبة المزاج", "لا تغيير"] },
+      { name: "النوم والطاقة", options: ["نوم جيد", "أرق", "نعاس زائد", "طاقة منخفضة", "طاقة طبيعية"] },
+      { name: "الرغبة في الدعم", options: ["أحتاج نصيحة", "أحتاج متابعة الأعراض", "أحتاج تذكيرًا", "لا أحتاج حاليًا"] },
+    ] },
+    { id: 5, title: "النزف والعناية الصحية", emoji: "🩸", fields: [
+      { name: "كثافة الدم", options: ["خفيف", "متوسط", "غزير", "متقطع", "تبقيع فقط"] },
+      { name: "التجلطات", options: ["لا توجد", "صغيرة", "كبيرة أو متكررة"] },
+      { name: "عدد تغيير الفوطة", options: ["1–2 يوميًا", "3–4 يوميًا", "5–6 يوميًا", "أكثر من 6 يوميًا", "أستخدم وسيلة أخرى"] },
+      { name: "نوع وسيلة الحماية", options: ["فوط صحية", "سدادة قطنية", "كوب الحيض", "ملابس داخلية للدورة", "أكثر من وسيلة"] },
+      { name: "العناية والنشاط", options: ["شرب ماء كافٍ", "راحة", "مشي خفيف", "كمادة دافئة", "تناولت مسكنًا بعد استشارة", "لم أقم بأي إجراء"] },
+    ] },
   ];
 
   return (
@@ -235,6 +305,7 @@ const MenstrualTracker = () => {
         <button onClick={handleSaveAndAnalyze} style={styles.btnPrimary} disabled={loading}>
           {loading ? "جاري الحفظ والتحليل..." : "حفظ وتحليل طبي شامل ✨"}
         </button>
+        {saveStatus && <div role="status" style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: saveStatus.type === 'success' ? '#EAF8EF' : '#FFF7E6', color: saveStatus.type === 'success' ? '#237A3B' : '#9A6500', fontSize: 12 }}>{saveStatus.type === 'success' ? '✅ ' : '⚠️ '}{saveStatus.text}</div>}
       </div>
 
       {showSavedList && (
@@ -257,17 +328,31 @@ const MenstrualTracker = () => {
           </div>
           {openAccordion === sec.id && (
             <div style={{ padding: '15px 0 0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              {sec.fields.map(field => (
-                <div key={field}>
-                  <label style={{ fontSize: '11px', color: '#999' }}>{field}</label>
-                  <input
-                    type={field.includes('تاريخ') ? 'date' : 'text'}
-                    style={styles.input}
-                    value={data[`${sec.title}_${field}`] || ''}
-                    onChange={(e) => setData({...data, [`${sec.title}_${field}`]: e.target.value})}
-                  />
-                </div>
-              ))}
+              {sec.fields.map((field) => {
+                const key = `${sec.title}_${field.name}`;
+                const value = data[key];
+                if (field.type === 'date') return (
+                  <div key={field.name}>
+                    <label style={{ fontSize: '11px', color: '#999' }}>{field.name}</label>
+                    <input type="date" style={styles.input} value={value || ''} onChange={(e) => setData({ ...data, [key]: e.target.value })} />
+                  </div>
+                );
+                return (
+                  <fieldset key={field.name} style={{ gridColumn: '1 / -1', border: '1px solid #FFE0E8', borderRadius: 14, padding: '10px 12px', margin: 0 }}>
+                    <legend style={{ padding: '0 5px', fontSize: '12px', color: '#880E4F', fontWeight: 'bold' }}>{field.name}</legend>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: 8 }}>
+                      {field.options.map((option) => {
+                        const selected = Array.isArray(value) ? value.includes(option) : value === option;
+                        return <label key={option} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '8px 9px', borderRadius: 10, background: selected ? '#FFF0F3' : '#FAFAFA', border: `1px solid ${selected ? '#E91E63' : '#EEE'}`, color: selected ? '#880E4F' : '#555', fontSize: 12, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={selected} onChange={() => toggleChoice(key, option, field.single)} style={{ accentColor: '#E91E63', width: 17, height: 17 }} />
+                          <span>{option}</span>
+                        </label>;
+                      })}
+                    </div>
+                    {value && <div style={{ marginTop: 7, color: '#777', fontSize: 11 }}>المحدد: {displayValue(value)}</div>}
+                  </fieldset>
+                );
+              })}
             </div>
           )}
         </div>
