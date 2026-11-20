@@ -1,4 +1,4 @@
-import { privateAiPost } from '../services/apiClient';
+import { askRelationshipAssistant } from '../services/privateAssistant';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Heart, MessageCircle, Trash2, Save,
@@ -87,21 +87,16 @@ const MarriageApp = () => {
 
     const MARRIAGE_EXPERT_PROMPT = `
       أنتِ "رقة"، مستشارة علاقات زوجية خبيرة ومتخصصة جداً.
-      مهمتكِ: تقديم نصائح دقيقة، علمية، وصريحة حول العلاقات الحميمة والأوضاع الجنسية لتعزيز السعادة الزوجية.
+      مهمتكِ: تقديم إرشاد تثقيفي دقيق ومحترم حول العلاقة الزوجية والحميمية لتعزيز الحوار والرضا والسلامة.
       القيود: لا تجيبي على أي سؤال خارج نطاق العلاقات الزوجية.
-      الأسلوب: استخدمي لغة دافئة وأنثوية، وكوني مبدعة في اقتراح أوضاع حميمة وحلول لكسر الروتين، مع الاستناد إلى ثقافة المتخصصين في هذا المجال.
+      الأسلوب: استخدمي لغة دافئة وأنثوية، وتجنبي الوصف الفاضح أو الإباحي، وقدمي خطوات عملية مناسبة للمتزوجات.
     `;
 
     try {
-      const aiOptions = {
-        specialtyTopic: 'relationships',
-        data: {
-          prompt: `${MARRIAGE_EXPERT_PROMPT}، القسم: ${pageTitle}، التفاصيل: (${summary}). قدمي استشارة صريحة ومفصلة.`,
-          image: imageUrl || undefined
-        }
-      };
-
-      const aiResponse = await privateAiPost(aiOptions);
+      const aiResponse = await askRelationshipAssistant({
+        question: `${MARRIAGE_EXPERT_PROMPT}\nالقسم: ${pageTitle}\nالمدخلات المختارة: ${summary || 'لا توجد اختيارات؛ أجيبي عن السؤال المرسل.'}\nقدمي إرشادًا تثقيفيًا واضحًا ومفصلًا مع مراعاة الخصوصية والرضا والسلامة.`,
+        image: imageUrl || undefined,
+      });
       const responseText = String(aiResponse?.data?.reply || aiResponse?.data?.message || '').trim();
       if (!responseText) throw new Error('empty_ai_response');
 

@@ -176,3 +176,32 @@ export async function askPrivateAssistant({ topic, question, image }) {
   const reply = `${String(result.reply || result.message || result.content || 'تعذر إنشاء الرد الآن.').trim()}${sourceText}`;
   return { data: { reply, message: reply, citations, imageDescription } };
 }
+
+export async function askRelationshipAssistant({ question, image }) {
+  const text = String(question || '').trim() || (image ? 'قدمي إرشادًا عامًا وآمنًا حول الصورة المرفقة.' : '');
+  if (!text) throw new Error('اكتبي سؤالًا قبل الإرسال.');
+  const token = await getFirebaseIdToken();
+  if (!token) throw new Error('سجّلي الدخول أولًا لاستخدام المساعد الخاص وحماية بياناتك.');
+  if (!requestConsent()) throw new Error('لم يتم إرسال السؤال؛ لم تُمنح الموافقة على المعالجة لدى بوابة ai-raqqa.');
+
+  let imageText = '';
+  if (image) {
+    const vision = await postJson('/api/ai/vision', token, {
+      image,
+      prompt: 'حللي الصورة ضمن معلومات عامة وآمنة مرتبطة بالصحة والعلاقات الزوجية، ولا تقدمي تشخيصًا أو حكمًا قاطعًا.',
+    });
+    imageText = `\nوصف الصورة المرفقة ضمن حدود المعلومات العامة: ${String(vision.response || '').slice(0, 2_000)}`;
+  }
+
+  const result = await postJson('/api/chat', token, {
+    provider: 'raqa',
+    messages: [
+      { role: 'system', content: 'أنتِ رِقّة، مستشارة تثقيفية للعلاقات الزوجية. أجيبي بالعربية وبصيغة مخاطبة مؤنثة، وركزي على الحوار والرضا والرحمة والسلامة والخصوصية والضوابط الشرعية. لا تذكري أنك نظام أو بوابة، ولا تجيبي خارج سياق العلاقات الزوجية. قدّمي جوابًا واضحًا ومباشرًا حتى لو كانت البيانات عبارة عن اختيارات مختصرة.' },
+      { role: 'user', content: text.slice(0, 12_000) + imageText },
+    ],
+    temperature: 0.4,
+  });
+  const reply = String(result.reply || result.message || result.content || '').trim();
+  if (!reply) throw new Error('لم تُرجع خدمة العلاقات الزوجية ردًا.');
+  return { data: { reply, message: reply } };
+}
