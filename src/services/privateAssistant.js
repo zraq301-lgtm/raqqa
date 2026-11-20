@@ -32,6 +32,7 @@ const TOPIC_INSTRUCTIONS = {
   relationships: 'أنتِ مستشارة تثقيفية للعلاقات الزوجية باحترام وخصوصية. ركزي على الرضا والرحمة والسلامة والضوابط الشرعية، ولا تجيبي خارج هذا السياق.',
   community: 'أنتِ مساعدة عامة لمحتوى مجتمع رِقّة. أجيبي بلطف وبما يناسب المادة المحلية المتاحة.',
 };
+const MEDICAL_SEARCH_TOPICS = new Set(['cycle', 'breastfeeding', 'motherhood', 'pregnancy', 'doctor', 'fitness', 'advice', 'emotions']);
 const ARABIC_STOP_WORDS = new Set('من في على عن إلى الى هل ما ماذا كيف لماذا متى اين أي اي مع هذا هذه ذلك التي الذي هو هي كان تكون تم انا أنا انت انتِ انتي لي لك لنا به بها و أو ثم يا قد كل بعض عند بعد قبل كما لا ما'.split(' '));
 
 const normalize = (value = '') => String(value)
@@ -132,6 +133,13 @@ export async function askPrivateAssistant({ topic, question, image }) {
   if (!requestConsent()) throw new Error('لم يتم إرسال السؤال؛ لم تُمنح الموافقة على المعالجة لدى بوابة ai-raqqa.');
 
   const evidence = await searchLocalKnowledge(topic, text);
+  let medicalResults = [];
+  if (MEDICAL_SEARCH_TOPICS.has(topic)) {
+    try {
+      const search = await postJson('/api/medical/search', token, { query: text.slice(0, 240), topic, limit: 8 });
+      medicalResults = Array.isArray(search.results) ? search.results : [];
+    } catch { /* the assistant can still answer from local evidence when search is unavailable */ }
+  }
   let imageDescription = '';
   if (image) {
     const vision = await postJson('/api/ai/vision', token, {
@@ -143,19 +151,28 @@ export async function askPrivateAssistant({ topic, question, image }) {
   const evidenceText = evidence.length
     ? `\n\nمقتطفات محلية قد تساعد، لا تعتبرها بديلًا عن المختص:\n${evidence.map((item) => `- ${item.title} (${item.pageName}): ${item.text}`).join('\n')}`
     : '';
+  const medicalText = medicalResults.length
+    ? `\n\nنتائج بحث حديثة من مصادر طبية رسمية، استخدميها للتثقيف فقط واذكري روابطها عند الاستناد إليها:\n${medicalResults.map((item) => `- ${item.source}: ${item.title}\n  ${item.snippet}\n  ${item.url}`).join('\n')}`
+    : '';
   const imageText = imageDescription ? `\n\nوصف الصورة الآلي: ${imageDescription}` : '';
   const result = await postJson('/api/chat', token, {
     provider: 'raqa',
     messages: [
-      { role: 'system', content: `${TOPIC_INSTRUCTIONS[topic]} أجيبي بالعربية وبصيغة مخاطبة مؤنثة. لا تذكري أنك نظام أو بوابة. إذا كانت المعلومة غير مؤكدة فقولي ذلك بوضوح.${evidenceText}` },
+      { role: 'system', content: `${TOPIC_INSTRUCTIONS[topic]} أجيبي بالعربية وبصيغة مخاطبة مؤنثة. لا تذكري أنك نظام أو بوابة. إذا كانت المعلومة غير مؤكدة فقولي ذلك بوضوح.${evidenceText}${medicalText}` },
       { role: 'user', content: text.slice(0, 12_000) + imageText },
     ],
     temperature: 0.4,
   });
   const citations = Array.isArray(result.citations) ? result.citations : [];
-  const sourceText = citations.length
-    ? `\n\nمراجع محلية من مكتبة رِقّة:\n${citations.map((source) => `• ${source.id}: ${source.title} — قسم ${source.pageName}${source.url ? ` — ${source.url}` : ''}`).join('\n')}`
-    : '\n\nلم يعثر البحث المحلي على مادة منشورة مرتبطة مباشرة بالسؤال؛ لم يُجرَ بحث على الويب.';
+  const localSourceText = citations.length
+    ? `مراجع محلية من مكتبة رِقّة:\n${citations.map((source) => `• ${source.id}: ${source.title} — قسم ${source.pageName}${source.url ? ` — ${source.url}` : ''}`).join('\n')}`
+    : '';
+  const medicalSourceText = medicalResults.length
+    ? `مصادر طبية رسمية جرى البحث فيها:\n${medicalResults.map((item) => `• ${item.source}: ${item.title} — ${item.url}`).join('\n')}`
+    : '';
+  const sourceText = localSourceText || medicalSourceText
+    ? `\n\n${[localSourceText, medicalSourceText].filter(Boolean).join('\n')}`
+    : '\n\nلم يعثر البحث على مادة منشورة مرتبطة مباشرة بالسؤال.';
   const reply = `${String(result.reply || 'تعذر إنشاء الرد الآن.').trim()}${sourceText}`;
   return { data: { reply, message: reply, citations, imageDescription } };
 }
