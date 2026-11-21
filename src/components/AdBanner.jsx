@@ -1,47 +1,62 @@
-import React, { useEffect, useState } from 'react';
-import { fetchAdsConfig, getAdsProviderUnit, isPlacementEnabled } from '../services/adsConfig';
+import React, { useEffect, useRef, useState } from 'react';
+import { fetchAdsConfig, isPlacementEnabled } from '../services/adsConfig';
+import {
+  getAdMobMode,
+  hideNativeBanner,
+  isNativeAdMobPlatform,
+  showNativeBanner,
+} from '../services/admob';
 
-const getPlatform = () => {
-  if (/android/i.test(navigator.userAgent)) return 'android';
-  if (/iphone|ipad|ipod/i.test(navigator.userAgent)) return 'ios';
-  return 'web';
-};
-
-const AdBanner = ({ slotId = 'div-gpt-ad-main', placement = 'banner' }) => {
+const AdBanner = ({ placement = 'banner' }) => {
   const [adConfig, setAdConfig] = useState(null);
+  const startedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     fetchAdsConfig({
-      platform: getPlatform(),
+      platform: /android/i.test(navigator.userAgent) ? 'android' : /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : 'web',
       appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
-      userState: 'guest'
-    }).then((config) => {
-      if (!cancelled) setAdConfig(config);
-    }).catch((error) => console.warn('Dynamic ads config unavailable:', error));
+      userState: 'guest',
+    })
+      .then((config) => {
+        if (!cancelled) setAdConfig(config);
+      })
+      .catch((error) => console.warn('Dynamic ads config unavailable:', error));
     return () => { cancelled = true; };
   }, [placement]);
 
   useEffect(() => {
-    if (!isPlacementEnabled(adConfig, placement)) return;
-    const unitId = getAdsProviderUnit(adConfig, placement);
-    if (!unitId || !window.googletag) return;
-    window.googletag.cmd.push(() => {
-      const container = document.getElementById(slotId);
-      if (!container) return;
-      container.innerHTML = '';
-      window.googletag.defineSlot(unitId, [320, 50], slotId)?.addService(window.googletag.pubads());
-      window.googletag.enableServices();
-      window.googletag.display(slotId);
-    });
-  }, [adConfig, placement, slotId]);
+    if (!isNativeAdMobPlatform()) return undefined;
+    // A missing remote config is allowed during local/native setup. If a config is
+    // returned, its placement switch remains authoritative.
+    if (adConfig && !isPlacementEnabled(adConfig, placement)) return undefined;
 
-  if (!isPlacementEnabled(adConfig, placement)) return null;
+    let cancelled = false;
+    showNativeBanner()
+      .then(() => {
+        if (!cancelled) startedRef.current = true;
+      })
+      .catch((error) => console.warn('AdMob banner unavailable:', error));
+
+    return () => {
+      cancelled = true;
+      if (startedRef.current) {
+        startedRef.current = false;
+        hideNativeBanner().catch((error) => console.warn('AdMob banner hide failed:', error));
+      }
+    };
+  }, [adConfig, placement]);
+
+  if (!isNativeAdMobPlatform()) return null;
+  if (adConfig && !isPlacementEnabled(adConfig, placement)) return null;
 
   return (
-    <div className="global-ad-wrapper" style={{ display: 'flex', justifyContent: 'center', margin: '10px 0', width: '100%', minHeight: '50px' }}>
-      <div id={slotId} style={{ width: '320px', height: '50px', backgroundColor: 'transparent', border: 'none' }} />
-    </div>
+    <div
+      className="native-admob-banner-slot"
+      aria-label="إعلان"
+      data-admob-mode={getAdMobMode()}
+      style={{ minHeight: '50px', width: '100%' }}
+    />
   );
 };
 

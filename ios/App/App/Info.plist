@@ -28,6 +28,20 @@
 	<string>تحتاج رقة إلى الصور لاختيار صورة لإرفاقها بالتقرير.</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>تستخدم رقة الإشعارات للتذكيرات الصحية والمحتوى المخصص.</string>
+	<!-- Google official test App ID; replace before production release. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<key>GADIsAdManagerApp</key>
+	<false/>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>يُستخدم معرّف التتبع لعرض إعلانات أكثر ملاءمة داخل رقة.</string>
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
