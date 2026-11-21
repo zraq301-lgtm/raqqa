@@ -21,9 +21,14 @@ import {
 } from '../services/adsAdminService';
 
 const PLACEMENTS = [
-  { id: 'banner', label: 'إعلان بانر', description: 'مساحة ثابتة تظهر ضمن واجهة التطبيق.' },
-  { id: 'interstitial', label: 'إعلان بيني', description: 'إعلان ملء الشاشة بين خطوات الاستخدام.' },
-  { id: 'rewarded', label: 'إعلان بمكافأة', description: 'إعلان اختياري مقابل مكافأة للمستخدم.' },
+  { id: 'app_header_banner', label: 'بانر رأس التطبيق', description: 'مساحة بانر في رأس واجهة التطبيق.' },
+  { id: 'app_wide_promo', label: 'مساحة ترويجية عريضة', description: 'مساحة ترويجية عريضة داخل التطبيق.' },
+  { id: 'assistant_after_help', label: 'بعد المساعدة في المساعد', description: 'موضع بعد اكتمال رد المساعد.' },
+  { id: 'published_content_inline', label: 'داخل المحتوى المنشور', description: 'موضع مضمّن ضمن المحتوى المنشور.' },
+  { id: 'rewarded_bonus', label: 'مكافأة مقابل المشاهدة', description: 'إعلان اختياري مرتبط بمكافأة للمستخدم.' },
+  { id: 'video_between_items', label: 'بين عناصر الفيديو', description: 'موضع إعلاني بين عناصر قائمة الفيديو.' },
+  { id: 'video_library_banner', label: 'بانر مكتبة الفيديو', description: 'مساحة بانر ضمن مكتبة الفيديو.' },
+  { id: 'video_transition_interstitial', label: 'إعلان انتقالي للفيديو', description: 'إعلان بيني عند الانتقال بين مقاطع الفيديو.' },
 ];
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -49,7 +54,17 @@ export default function AdManagement() {
   const providers = draft?.defaults?.providers || {};
   const providerNames = useMemo(() => Object.keys(providers), [providers]);
   const currentProvider = providers[editingProvider] || { enabled: false, placements: {} };
-  const enabledPlacementCount = PLACEMENTS.filter(({ id }) => currentProvider.placements?.[id]?.enabled).length;
+  const placementDefinitions = useMemo(() => {
+    const definitions = new Map(PLACEMENTS.map((placement) => [placement.id, placement]));
+    Object.keys(currentProvider.placements || {}).forEach((id) => {
+      if (!definitions.has(id)) {
+        const label = id.replace(/[_-]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+        definitions.set(id, { id, label, description: 'مساحة إعلانية إضافية يعرّفها Worker.' });
+      }
+    });
+    return [...definitions.values()];
+  }, [currentProvider.placements]);
+  const enabledPlacementCount = placementDefinitions.filter(({ id }) => currentProvider.placements?.[id]?.enabled).length;
   const adsEnabled = Boolean(draft?.defaults?.ads_enabled);
 
   const updateDefaults = (changes) => {
@@ -237,7 +252,7 @@ export default function AdManagement() {
         <>
           <div className="ads-metrics-grid">
             <div className="ads-metric-card"><span>الحالة العامة</span><strong>{draft.defaults.ads_enabled ? 'مفعّلة' : 'متوقفة'}</strong><small>{draft.defaults.active_provider === 'none' ? 'لم يُحدد مزود نشط' : `المزود النشط: ${draft.defaults.active_provider}`}</small></div>
-            <div className="ads-metric-card"><span>مواضع {editingProvider}</span><strong>{enabledPlacementCount} / {PLACEMENTS.length}</strong><small>الموضع النشط حسب المزود المحدد للتعديل</small></div>
+            <div className="ads-metric-card"><span>مواضع {editingProvider}</span><strong>{enabledPlacementCount} / {placementDefinitions.length}</strong><small>الموضع النشط حسب المزود المحدد للتعديل</small></div>
             <div className="ads-metric-card"><span>آخر تحديث</span><strong className="ads-date-value">{prettyDate(config?.updated_at || draft.updated_at)}</strong><small>مدة التخزين المؤقت: {draft.defaults.cache_ttl_seconds || 60} ثانية</small></div>
           </div>
 
@@ -270,7 +285,7 @@ export default function AdManagement() {
               <label className={`ads-toggle-row ads-provider-toggle ${currentProvider.enabled ? 'selected' : ''}`}><span className="ads-toggle-copy"><strong>تفعيل هذا المزود</strong><small>يجب أن يكون المزود نشطًا حتى تعمل وحداته.</small></span><input type="checkbox" checked={Boolean(currentProvider.enabled)} onChange={(event) => updateProvider({ enabled: event.target.checked })} /></label>
             </div>
             <div className="ads-placement-grid">
-              {PLACEMENTS.map(({ id, label, description }) => {
+              {placementDefinitions.map(({ id, label, description }) => {
                 const placement = currentProvider.placements?.[id] || { enabled: false, ad_unit_id: '', cooldown_seconds: 0 };
                 return (
                   <section className="ads-placement-card" key={id}>

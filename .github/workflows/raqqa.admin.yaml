@@ -37,6 +37,7 @@ jobs:
       BUILD_ADMIN_AAB: ${{ github.event_name == 'workflow_dispatch' && inputs.build_aab == true }}
       ALLOW_NEW_ADMIN_SIGNING_KEY: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_new_admin_signing_key == true }}
       VITE_RAQQA_API_BASE_URL: https://raqqa-backend.raqqa-api.workers.dev
+      VITE_ADS_API_BASE_URL: https://raqqa-ad-controller.raqqa-api.workers.dev
 
     steps:
       - name: 1. Checkout Code
