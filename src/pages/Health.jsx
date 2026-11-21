@@ -4,6 +4,7 @@ import { iconMap } from '../constants/iconMap';
 import { useAppTheme } from '../components/AppThemeProvider';
 import PublishedPageContent from '../components/PublishedPageContent';
 import RecentContentFeed from '../components/RecentContentFeed';
+import { healthImages } from '../config/assetUrls';
 const MenstrualTracker = lazy(() => import('./HealthPages/MenstrualTracker'));
 const Advice = lazy(() => import('./HealthPages/Advice'));
 const PregnancyMonitor = lazy(() => import('./HealthPages/PregnancyMonitor'));
@@ -69,7 +70,7 @@ export default function Health({ onSyncReminders }) {
     <div className="health-promo-rail" ref={railRef} onPointerDown={() => { pausedRef.current = true; }} onPointerUp={() => { pausedRef.current = false; }} onPointerCancel={() => { pausedRef.current = false; }}>
       {themedSections.map((section) => {
         const Icon = iconMap[section.icon] || iconMap.insight;
-        const imageSource = new URL(`../assets/health/${section.img}`, import.meta.url).href;
+        const imageSource = healthImages[section.img] || section.img;
         return <button className="health-promo-card" key={section.id} onClick={() => { setActiveTab(section.id); navigate(`/health?section=${encodeURIComponent(section.id)}`); }}>
           <img src={imageSource} alt={section.title} /><span className="health-promo-overlay" />
           <span className="health-promo-copy">{section.customIconImage ? <img className="health-custom-icon health-custom-icon-image" src={section.customIconImage} alt="" /> : section.customIcon ? <span className="health-custom-icon">{section.customIcon}</span> : <Icon size={17} />}<strong>{section.title}</strong><small>اكتشفي المزيد</small></span>

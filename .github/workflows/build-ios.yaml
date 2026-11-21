@@ -23,6 +23,9 @@ jobs:
           npm ci --legacy-peer-deps
           npm run build
 
+      - name: Keep large presentation images outside native app bundle
+        run: rm -rf dist_web/cdn
+
       - name: Restore Firebase iOS configuration
         if: env.HAS_FIREBASE_IOS == 'true'
         env:

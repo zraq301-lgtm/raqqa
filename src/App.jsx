@@ -24,8 +24,7 @@ import VirtualWorld from './pages/VirtualWorld';
 import ProfileEditor from './components/ProfileEditor';
 import TopPageCarousel from './components/TopPageCarousel';
 import { useAppTheme } from './components/AppThemeProvider';
-import videosImg from './assets/videos.jpg';
-import virtualImg from './assets/virtual.jpg';
+import { pageImages } from './config/assetUrls';
 
 import './App.css';
 
@@ -299,11 +298,11 @@ function App({ user, onUserUpdated }) {
           <span>{profileName}</span>
         </button>
         <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
-          <img src={appTheme.pages?.videos?.iconImageUrl || videosImg} alt="" />
+          <img src={appTheme.pages?.videos?.iconImageUrl || pageImages.videos} alt="" />
           <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
         </Link>
         <Link to="/virtual-world" className="header-library-button" aria-label="فتح عالم رقة">
-          <img src={appTheme.pages?.virtualWorld?.iconImageUrl || virtualImg} alt="" />
+          <img src={appTheme.pages?.virtualWorld?.iconImageUrl || pageImages.virtual} alt="" />
           <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
         </Link>
       </header>

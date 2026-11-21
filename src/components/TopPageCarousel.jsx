@@ -1,18 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppTheme } from './AppThemeProvider';
-import healthImg from '../assets/health.jpg';
-import insightImg from '../assets/insight.jpg';
-import feelingsImg from '../assets/feelings.jpg';
-import intimacyImg from '../assets/intimacy.jpg';
-import swingImg from '../assets/swing.jpg';
+import { pageImages } from '../config/assetUrls';
 
 const pages = [
-  { path: '/health', key: 'health', label: 'الصحة', alt: 'الصحة', image: healthImg },
-  { path: '/insight', key: 'insight', label: 'كوني ملكة', alt: 'كوني ملكة', image: insightImg },
-  { path: '/feelings', key: 'feelings', label: 'المشاعر', alt: 'المشاعر', image: feelingsImg },
-  { path: '/intimacy', key: 'intimacy', label: 'العلاقات الزوجية', alt: 'العلاقات الزوجية', image: intimacyImg },
-  { path: '/swing-forum', key: 'swing', label: 'الأرجوحة', alt: 'الأرجوحة', image: swingImg },
+  { path: '/health', key: 'health', label: 'الصحة', alt: 'الصحة', image: pageImages.health },
+  { path: '/insight', key: 'insight', label: 'كوني ملكة', alt: 'كوني ملكة', image: pageImages.insight },
+  { path: '/feelings', key: 'feelings', label: 'المشاعر', alt: 'المشاعر', image: pageImages.feelings },
+  { path: '/intimacy', key: 'intimacy', label: 'العلاقات الزوجية', alt: 'العلاقات الزوجية', image: pageImages.intimacy },
+  { path: '/swing-forum', key: 'swing', label: 'الأرجوحة', alt: 'الأرجوحة', image: pageImages.swing },
 ];
 
 export default function TopPageCarousel() {
