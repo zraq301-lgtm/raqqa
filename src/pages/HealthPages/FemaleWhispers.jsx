@@ -7,6 +7,12 @@ import {
   saveFemaleWhisper,
   uploadFemaleWhisperMedia,
 } from '../../services/femaleWhispersApi';
+import { cacheFemaleWhispersMedia, hydrateFemaleWhispers } from '../../services/offlineMediaCache';
+import {
+  isFemaleWhispersCacheFresh,
+  readFemaleWhispersCache,
+  writeFemaleWhispersCache,
+} from '../../services/femaleWhispersCache';
 import '../../styles/female-whispers.css';
 
 const formatDate = (value) => {
@@ -38,22 +44,36 @@ export default function FemaleWhispers() {
         return;
       }
 
-      setLoading(true);
+      const load = async () => {
+        const cached = await readFemaleWhispersCache(user.uid);
+        if (!active || currentVersion !== requestVersion) return;
+        if (Array.isArray(cached?.entries)) {
+          setEntries(await hydrateFemaleWhispers(cached.entries));
+          setLoading(false);
+        }
+        if (isFemaleWhispersCacheFresh(cached)) return;
+
+        setLoading((current) => current && !Array.isArray(cached?.entries));
+        try {
+          const result = await listFemaleWhispers();
+          const freshEntries = Array.isArray(result?.entries) ? result.entries : [];
+          await writeFemaleWhispersCache(user.uid, freshEntries);
+          if (active && currentVersion === requestVersion) {
+            setEntries(await hydrateFemaleWhispers(freshEntries));
+            setLoading(false);
+          }
+          // لا نعيد تنزيل الوسائط إذا كانت موجودة؛ التنزيل الأول يتم في الخلفية.
+          void cacheFemaleWhispersMedia(freshEntries).catch((error) => console.warn('[FemaleWhispers] تعذر حفظ الوسائط دون اتصال:', error?.message || error));
+        } catch (error) {
+          if (active && currentVersion === requestVersion) {
+            setMessage(Array.isArray(cached?.entries) ? 'تم عرض آخر نسخة محفوظة من مفكرتك.' : 'تعذر تحميل مفكرتك الخاصة. حاولي مرة أخرى.');
+            setLoading(false);
+          }
+        }
+      };
+
       setMessage('');
-      listFemaleWhispers()
-        .then((result) => {
-          if (active && currentVersion === requestVersion) {
-            setEntries(Array.isArray(result?.entries) ? result.entries : []);
-          }
-        })
-        .catch((error) => {
-          if (active && currentVersion === requestVersion) {
-            setMessage('تعذر تحميل مفكرتك الخاصة. حاولي مرة أخرى.');
-          }
-        })
-        .finally(() => {
-          if (active && currentVersion === requestVersion) setLoading(false);
-        });
+      void load();
     });
 
     return () => {
@@ -97,6 +117,12 @@ export default function FemaleWhispers() {
       });
       if (!result?.entry?.id) throw new Error('تعذر حفظ المذكرة. حاولي مرة أخرى.');
       setEntries((current) => [result.entry, ...current]);
+      const user = auth.currentUser;
+      if (user) {
+        const nextEntries = [result.entry, ...entries];
+        await writeFemaleWhispersCache(user.uid, nextEntries);
+        void cacheFemaleWhispersMedia([result.entry]).catch(() => {});
+      }
       setTitle(''); setBody(''); setMedia(null); setMessage('تم حفظ مذكرتك الخاصة.');
     } catch (error) {
       setMessage('تعذر حفظ المذكرة. تحققي من اتصالك ثم حاولي مرة أخرى.');
@@ -110,7 +136,10 @@ export default function FemaleWhispers() {
     try {
       const result = await deleteFemaleWhisper(entry.id);
       if (!result?.success || !result?.deleted) throw new Error('تعذر حذف المذكرة. حاولي مرة أخرى.');
-      setEntries((current) => current.filter((item) => item.id !== entry.id));
+      const nextEntries = entries.filter((item) => item.id !== entry.id);
+      setEntries(nextEntries);
+      const user = auth.currentUser;
+      if (user) await writeFemaleWhispersCache(user.uid, nextEntries);
       setMessage('تم حذف المذكرة.');
     } catch (error) { setMessage('تعذر حذف المذكرة. تحققي من اتصالك ثم حاولي مرة أخرى.'); }
   };

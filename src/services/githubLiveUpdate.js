@@ -1,18 +1,22 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { LiveUpdate } from '@capawesome/capacitor-live-update';
+import { Preferences } from '@capacitor/preferences';
 
 const MANIFEST_URLS = [
   'https://raqqa-ota.pages.dev/ota/raqqa-ota-manifest.json',
   'https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota-manifest.json',
 ];
 const NATIVE_COMPATIBILITY = '1';
+const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const LAST_UPDATE_CHECK_KEY = 'raqqa_ota_last_checked_at_v2';
 let updateCheckStarted = false;
+let updateCheckPromise = null;
 
 async function fetchManifest() {
   let lastError;
   for (const baseUrl of MANIFEST_URLS) {
-    const url = `${baseUrl}?t=${Date.now()}`;
+    const url = `${baseUrl}?client=v2`;
     try {
       if (Capacitor.isNativePlatform()) {
         const response = await CapacitorHttp.get({ url, headers: { Accept: 'application/json' } });
@@ -31,20 +35,34 @@ async function fetchManifest() {
 }
 
 async function checkAndApplyUpdate() {
-  await LiveUpdate.ready();
-  const [current, manifest] = await Promise.all([LiveUpdate.getCurrentBundle(), fetchManifest()]);
-  const currentBundleId = current?.bundleId || null;
-  if (!manifest?.bundleId || !manifest?.url || manifest.nativeCompatibility !== NATIVE_COMPATIBILITY) return false;
-  if (currentBundleId === manifest.bundleId) return false;
-  await LiveUpdate.downloadBundle({
-    artifactType: 'zip',
-    bundleId: manifest.bundleId,
-    checksum: manifest.checksum,
-    url: manifest.url,
-  });
-  await LiveUpdate.setNextBundle({ bundleId: manifest.bundleId });
-  await LiveUpdate.reload();
-  return true;
+  if (updateCheckPromise) return updateCheckPromise;
+  updateCheckPromise = (async () => {
+    let lastCheckedAt = 0;
+    try { lastCheckedAt = Number((await Preferences.get({ key: LAST_UPDATE_CHECK_KEY })).value || 0); } catch { /* first run */ }
+    if (lastCheckedAt && Date.now() - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS) return false;
+
+    // سجّل وقت الفحص قبل التنزيل حتى لا تتكرر طلبات الشبكة عند إعادة فتح التطبيق سريعًا.
+    try { await Preferences.set({ key: LAST_UPDATE_CHECK_KEY, value: String(Date.now()) }); } catch { /* optional */ }
+    await LiveUpdate.ready();
+    const [current, manifest] = await Promise.all([LiveUpdate.getCurrentBundle(), fetchManifest()]);
+    const currentBundleId = current?.bundleId || null;
+    if (!manifest?.bundleId || !manifest?.url || manifest.nativeCompatibility !== NATIVE_COMPATIBILITY) return false;
+    if (currentBundleId === manifest.bundleId) return false;
+    await LiveUpdate.downloadBundle({
+      artifactType: 'zip',
+      bundleId: manifest.bundleId,
+      checksum: manifest.checksum,
+      url: manifest.url,
+    });
+    await LiveUpdate.setNextBundle({ bundleId: manifest.bundleId });
+    await LiveUpdate.reload();
+    return true;
+  })();
+  try {
+    return await updateCheckPromise;
+  } finally {
+    updateCheckPromise = null;
+  }
 }
 
 export async function initializeGithubLiveUpdate() {

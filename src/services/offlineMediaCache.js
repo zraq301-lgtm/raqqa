@@ -217,3 +217,53 @@ export async function cacheOfflineMedia(pageName, items) {
   }
   console.info(`[OfflineMediaCache] تمت مزامنة وسائط ${pageName}: ${candidates.length} ملفًا مرشحًا.`);
 }
+
+function whisperMediaType(entry) {
+  if (entry?.media_type === 'video') return 'video';
+  if (entry?.media_type === 'audio') return 'audio';
+  return 'image';
+}
+
+function collectWhisperMedia(entries) {
+  const byUrl = new Map();
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const url = entry?.media_url;
+    const kind = whisperMediaType(entry);
+    if (typeof url === 'string' && url && isDownloadable(url, kind) && !byUrl.has(url)) byUrl.set(url, { url, kind });
+  }
+  return [...byUrl.values()].slice(0, MAX_MEDIA_PER_PAGE);
+}
+
+export async function hydrateFemaleWhispers(entries) {
+  if (!isAndroid() || !Array.isArray(entries) || !entries.length) return entries;
+  const index = await readIndex();
+  const hydrated = [];
+  const touched = [];
+  for (const original of entries) {
+    const entry = { ...original };
+    const url = entry.media_url;
+    if (typeof url === 'string' && url) {
+      const local = await localUri(url, index);
+      if (local) {
+        entry.media_url = local;
+        touched.push(await hashUrl(url));
+      }
+    }
+    hydrated.push(entry);
+  }
+  if (touched.length) {
+    await updateIndex(async (current) => {
+      for (const key of touched) if (current.files[key]) current.files[key].lastUsed = Date.now();
+    }).catch(() => undefined);
+  }
+  return hydrated;
+}
+
+export async function cacheFemaleWhispersMedia(entries) {
+  if (!isAndroid()) return;
+  const candidates = collectWhisperMedia(entries);
+  for (let index = 0; index < candidates.length; index += DOWNLOAD_CONCURRENCY) {
+    await Promise.all(candidates.slice(index, index + DOWNLOAD_CONCURRENCY).map(downloadOne));
+  }
+  console.info(`[OfflineMediaCache] تمت مزامنة وسائط همسات أنثى: ${candidates.length} ملفًا مرشحًا.`);
+}
