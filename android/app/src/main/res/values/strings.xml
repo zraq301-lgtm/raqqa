@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">رقة</string>
     <string name="title_activity_main">رقة</string>
+    <string name="admob_app_id">ca-app-pub-8025494804759906~6405154378</string>
     <string name="package_name">com.raqqa.app</string>
     <string name="custom_url_scheme">com.raqqa.app</string>
 </resources>

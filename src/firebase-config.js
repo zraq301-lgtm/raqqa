@@ -39,7 +39,7 @@ if (remoteConfig) {
   remoteConfig.defaultConfig = {
     "app_name": "رقة",
     "theme_color": "#FFC0CB",
-    "enable_ads": false, // مفتاح الأمان للإعلانات
+    "enable_ads": true,
     "admob_banner_id": "ca-app-pub-8025494804759906/6335462769",
     "admob_interstitial_id": "ca-app-pub-8025494804759906/4391825704"
   };
