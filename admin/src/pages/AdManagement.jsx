@@ -21,9 +21,11 @@ import {
 } from '../services/adsAdminService';
 
 const PLACEMENTS = [
-  { id: 'banner', label: 'إعلان بانر', description: 'مساحة ثابتة تظهر ضمن واجهة التطبيق.' },
-  { id: 'interstitial', label: 'إعلان بيني', description: 'إعلان ملء الشاشة بين خطوات الاستخدام.' },
-  { id: 'rewarded', label: 'إعلان بمكافأة', description: 'إعلان اختياري مقابل مكافأة للمستخدم.' },
+  { id: 'banner', label: 'إعلان بانر', description: 'مساحة ثابتة تظهر ضمن واجهة التطبيق.', defaultAdUnitId: 'ca-app-pub-8025494804759906/1052136793' },
+  { id: 'interstitial', label: 'إعلان بيني', description: 'إعلان ملء الشاشة بين خطوات الاستخدام.', defaultAdUnitId: 'ca-app-pub-8025494804759906/3762060617' },
+  { id: 'rewarded', label: 'إعلان بمكافأة', description: 'إعلان اختياري مقابل مكافأة للمستخدم.', defaultAdUnitId: 'ca-app-pub-8025494804759906/6399385137' },
+  { id: 'rewarded_interstitial', label: 'بيني بمكافأة', description: 'إعلان ملء الشاشة مع مكافأة بعد المشاهدة.', defaultAdUnitId: 'ca-app-pub-8025494804759906/6096132800' },
+  { id: 'native', label: 'إعلان أصلي Native', description: 'إعلان مدمج داخل تصميم المحتوى، يحتاج مكوّن Native خاصًا للعرض.', defaultAdUnitId: 'ca-app-pub-8025494804759906/3215265709' },
 ];
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
@@ -94,6 +96,16 @@ export default function AdManagement() {
       const loaded = result?.config || result;
       if (!loaded?.defaults || typeof loaded.defaults !== 'object') throw new Error('استجابة الإعدادات لا تطابق مخطط متحكم الإعلانات.');
       const safeConfig = clone(loaded);
+      const admob = safeConfig.defaults.providers?.admob;
+      if (admob) {
+        const seededPlacements = Object.fromEntries(PLACEMENTS.map(({ id, defaultAdUnitId }) => [id, {
+          enabled: false,
+          ad_unit_id: defaultAdUnitId || '',
+          cooldown_seconds: id === 'banner' ? 0 : 60,
+          ...(admob.placements?.[id] || {}),
+        }]));
+        safeConfig.defaults.providers.admob = { ...admob, placements: seededPlacements };
+      }
       setConfig(safeConfig);
       setDraft(clone(safeConfig));
       setFallbackItemsText(JSON.stringify(safeConfig.defaults.fallback?.items || [], null, 2));
@@ -172,9 +184,9 @@ export default function AdManagement() {
       setNotice({ type: 'error', text: 'هذا المزود موجود بالفعل؛ تم اختياره للتعديل.' });
       return;
     }
-    const placements = Object.fromEntries(PLACEMENTS.map(({ id }) => [id, {
+    const placements = Object.fromEntries(PLACEMENTS.map(({ id, defaultAdUnitId }) => [id, {
       enabled: false,
-      ad_unit_id: '',
+      ad_unit_id: defaultAdUnitId || '',
       cooldown_seconds: id === 'banner' ? 0 : 60,
     }]));
     setDraft((current) => ({
@@ -270,8 +282,8 @@ export default function AdManagement() {
               <label className={`ads-toggle-row ads-provider-toggle ${currentProvider.enabled ? 'selected' : ''}`}><span className="ads-toggle-copy"><strong>تفعيل هذا المزود</strong><small>يجب أن يكون المزود نشطًا حتى تعمل وحداته.</small></span><input type="checkbox" checked={Boolean(currentProvider.enabled)} onChange={(event) => updateProvider({ enabled: event.target.checked })} /></label>
             </div>
             <div className="ads-placement-grid">
-              {PLACEMENTS.map(({ id, label, description }) => {
-                const placement = currentProvider.placements?.[id] || { enabled: false, ad_unit_id: '', cooldown_seconds: 0 };
+              {PLACEMENTS.map(({ id, label, description, defaultAdUnitId }) => {
+                const placement = currentProvider.placements?.[id] || { enabled: false, ad_unit_id: defaultAdUnitId || '', cooldown_seconds: 0 };
                 return (
                   <section className="ads-placement-card" key={id}>
                     <div className="ads-placement-top"><div><h4>{label}</h4><p>{description}</p></div><label className="ads-switch" aria-label={`تفعيل ${label}`}><input type="checkbox" checked={Boolean(placement.enabled)} onChange={(event) => updatePlacement(id, { enabled: event.target.checked })} /><span /></label></div>

@@ -11,9 +11,25 @@ const TEST_IDS = {
 };
 
 const PRODUCTION_IDS = {
-  android: 'ca-app-pub-8025494804759906/8190290599',
+  android: 'ca-app-pub-8025494804759906/1052136793',
   ios: '',
 };
+
+// Android units supplied for the Raqqa AdMob app.
+export const ANDROID_AD_UNIT_IDS = Object.freeze({
+  banner: 'ca-app-pub-8025494804759906/1052136793',
+  interstitial: 'ca-app-pub-8025494804759906/3762060617',
+  native: 'ca-app-pub-8025494804759906/3215265709',
+  rewarded: 'ca-app-pub-8025494804759906/6399385137',
+  rewarded_interstitial: 'ca-app-pub-8025494804759906/6096132800',
+});
+
+const IOS_TEST_AD_UNIT_IDS = Object.freeze({
+  banner: 'ca-app-pub-3940256099942544/2934735716',
+  interstitial: 'ca-app-pub-3940256099942544/4411468910',
+  rewarded: 'ca-app-pub-3940256099942544/1712485313',
+  rewarded_interstitial: 'ca-app-pub-3940256099942544/6978759866',
+});
 
 let initialized = false;
 let visibleConsumers = 0;
@@ -39,6 +55,13 @@ function isTestingPlatform(platform) {
 
 export function isNativeAdMobPlatform() {
   return Boolean(nativePlatform());
+}
+
+export function getAdMobUnitId(type = 'banner') {
+  const platform = nativePlatform();
+  if (platform === 'android') return ANDROID_AD_UNIT_IDS[type] || ANDROID_AD_UNIT_IDS.banner;
+  if (platform === 'ios') return IOS_TEST_AD_UNIT_IDS[type] || IOS_TEST_AD_UNIT_IDS.banner;
+  return '';
 }
 
 export async function initializeAdMob() {
@@ -72,6 +95,51 @@ export async function hideNativeBanner() {
   if (!nativePlatform()) return;
   visibleConsumers = Math.max(0, visibleConsumers - 1);
   if (visibleConsumers === 0) await AdMob.hideBanner();
+}
+
+export async function prepareInterstitial() {
+  const platform = nativePlatform();
+  if (!platform) return;
+  await initializeAdMob();
+  return AdMob.prepareInterstitial({
+    adId: getAdMobUnitId('interstitial'),
+    isTesting: isTestingPlatform(platform),
+  });
+}
+
+export async function showInterstitial() {
+  if (!nativePlatform()) return;
+  await AdMob.showInterstitial();
+}
+
+export async function prepareRewarded() {
+  const platform = nativePlatform();
+  if (!platform) return;
+  await initializeAdMob();
+  return AdMob.prepareRewardVideoAd({
+    adId: getAdMobUnitId('rewarded'),
+    isTesting: isTestingPlatform(platform),
+  });
+}
+
+export async function showRewarded() {
+  if (!nativePlatform()) return null;
+  return AdMob.showRewardVideoAd();
+}
+
+export async function prepareRewardedInterstitial() {
+  const platform = nativePlatform();
+  if (!platform) return;
+  await initializeAdMob();
+  return AdMob.prepareRewardInterstitialAd({
+    adId: getAdMobUnitId('rewarded_interstitial'),
+    isTesting: isTestingPlatform(platform),
+  });
+}
+
+export async function showRewardedInterstitial() {
+  if (!nativePlatform()) return null;
+  return AdMob.showRewardInterstitialAd();
 }
 
 export function getAdMobMode() {
