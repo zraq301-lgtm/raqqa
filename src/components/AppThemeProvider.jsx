@@ -6,7 +6,7 @@ const defaultSettings = {
   accentColor: '#c93764',
   backgroundColor: '#fff8fa',
   fontFamily: 'Tajawal',
-  branding: { name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '24px', fontWeight: '800', letterSpacing: '0px' },
+  branding: { enabled: true, name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '32px', fontWeight: '800', letterSpacing: '0px' },
   pages: {},
   celebration: { type: 'none', endAt: null },
 };
@@ -14,11 +14,14 @@ const AppThemeContext = createContext(defaultSettings);
 
 function safeSettings(payload) {
   const settings = payload?.settings || payload || {};
+  const branding = settings.branding && typeof settings.branding === 'object' ? { ...defaultSettings.branding, ...settings.branding } : { ...defaultSettings.branding };
+  if (!settings.branding?.fontSize || settings.branding.fontSize === '24px') branding.fontSize = defaultSettings.branding.fontSize;
+  if (typeof settings.branding?.enabled !== 'boolean') branding.enabled = defaultSettings.branding.enabled;
   return {
     ...defaultSettings,
     ...settings,
     pages: settings.pages && typeof settings.pages === 'object' ? settings.pages : {},
-    branding: settings.branding && typeof settings.branding === 'object' ? { ...defaultSettings.branding, ...settings.branding } : defaultSettings.branding,
+    branding,
     celebration: settings.celebration && typeof settings.celebration === 'object' ? settings.celebration : defaultSettings.celebration,
   };
 }

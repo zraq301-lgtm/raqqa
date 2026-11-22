@@ -7,7 +7,7 @@ const defaults = {
   accentColor: '#c93764',
   backgroundColor: '#fff8fa',
   fontFamily: 'Tajawal',
-  branding: { name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '24px', fontWeight: '800', letterSpacing: '0px' },
+  branding: { enabled: true, name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '32px', fontWeight: '800', letterSpacing: '0px' },
   pages: {
     health: { label: 'صحتك', icon: '🩺' },
     feelings: { label: 'المشاعر', icon: '🌸' },
@@ -59,12 +59,15 @@ const celebrationOptions = [
 ];
 
 function mergeSettings(remote) {
+  const branding = { ...defaults.branding, ...(remote?.branding || {}) };
+  if (!remote?.branding?.fontSize || remote.branding.fontSize === '24px') branding.fontSize = defaults.branding.fontSize;
+  if (typeof remote?.branding?.enabled !== 'boolean') branding.enabled = defaults.branding.enabled;
   return {
     ...defaults,
     ...(remote || {}),
     pages: Object.fromEntries(Object.entries(defaults.pages).map(([key, page]) => [key, { ...page, ...(remote?.pages?.[key] || {}) }])),
     celebration: { ...defaults.celebration, ...(remote?.celebration || {}) },
-    branding: { ...defaults.branding, ...(remote?.branding || {}) },
+    branding,
   };
 }
 
@@ -170,10 +173,10 @@ export default function ThemeManager() {
       {loading ? <div className="empty-state">جارٍ تحميل إعدادات التطبيق…</div> : (
         <>
           <section className="admin-card">
-            <h3>اسم رِقّة في أعلى التطبيق</h3>
-            <p className="card-description">غيّري الكلمة التي تظهر أعلى الواجهة، مع الخط واللون والحجم والوزن.</p>
-            <div className="form-grid"><label className="field"><span>اسم العلامة</span><input maxLength={24} value={settings.branding.name} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, name: event.target.value } }))} /></label><label className="field"><span>خط الاسم</span><select value={settings.branding.fontFamily} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontFamily: event.target.value } }))}>{fontOptions.map((font) => <option key={font}>{font}</option>)}</select></label><label className="field"><span>لون الاسم</span><input type="color" value={settings.branding.color} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, color: event.target.value } }))} /></label><label className="field"><span>حجم الاسم</span><input type="text" value={settings.branding.fontSize} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontSize: event.target.value } }))} placeholder="24px" /></label><label className="field"><span>وزن الاسم</span><select value={settings.branding.fontWeight} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontWeight: event.target.value } }))}><option value="400">عادي</option><option value="500">متوسط</option><option value="700">عريض</option><option value="800">عريض جدًا</option></select></label><label className="field"><span>تباعد الحروف</span><input type="text" value={settings.branding.letterSpacing} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, letterSpacing: event.target.value } }))} placeholder="0px" /></label></div>
-            <div className="brand-preview" style={{ color: settings.branding.color, fontFamily: `'${settings.branding.fontFamily}', sans-serif`, fontSize: settings.branding.fontSize, fontWeight: settings.branding.fontWeight, letterSpacing: settings.branding.letterSpacing }}>{settings.branding.name || 'رِقّة'}</div>
+            <h3>كلمة رِقّة فوق زر مكتبة الفيديوهات</h3>
+            <p className="card-description">تظهر الكلمة فوق زر المكتبة. يمكنكِ تشغيلها أو إخفاؤها وتغيير لونها وخطها وحجمها.</p>
+            <div className="form-grid"><label className="field" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><input type="checkbox" role="switch" checked={settings.branding.enabled !== false} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, enabled: event.target.checked } }))} /><span>إظهار كلمة رِقّة</span></label><label className="field"><span>اسم العلامة</span><input maxLength={24} value={settings.branding.name} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, name: event.target.value } }))} /></label><label className="field"><span>خط الاسم</span><select value={settings.branding.fontFamily} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontFamily: event.target.value } }))}>{fontOptions.map((font) => <option key={font}>{font}</option>)}</select></label><label className="field"><span>لون الاسم</span><input type="color" value={settings.branding.color} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, color: event.target.value } }))} /></label><label className="field"><span>حجم الاسم: {settings.branding.fontSize}</span><input type="range" min="30" max="48" step="1" value={Number.parseFloat(settings.branding.fontSize) || 32} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontSize: `${event.target.value}px` } }))} /></label><label className="field"><span>وزن الاسم</span><select value={settings.branding.fontWeight} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontWeight: event.target.value } }))}><option value="400">عادي</option><option value="500">متوسط</option><option value="700">عريض</option><option value="800">عريض جدًا</option></select></label><label className="field"><span>تباعد الحروف</span><input type="text" value={settings.branding.letterSpacing} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, letterSpacing: event.target.value } }))} placeholder="0px" /></label></div>
+            <div className="brand-preview" style={{ color: settings.branding.color, fontFamily: `'${settings.branding.fontFamily}', sans-serif`, fontSize: settings.branding.fontSize, fontWeight: settings.branding.fontWeight, letterSpacing: settings.branding.letterSpacing, transform: 'scaleX(1.12)', opacity: settings.branding.enabled === false ? 0.45 : 1 }}>{settings.branding.name || 'رِقّة'}</div>
           </section>
           <section className="admin-card">
             <h3>ألوان التطبيق والخط</h3>

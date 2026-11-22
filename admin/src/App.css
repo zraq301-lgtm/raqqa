@@ -17,3 +17,6 @@
 @media(max-width:600px){.bottom-nav .nav-item span{white-space:normal;line-height:1.15;text-align:center}}
 
 .content-design-panel,.training-editor{padding:15px;border:1px solid #f1e1e7;border-radius:16px;background:#fffafb}.content-design-panel h4,.training-editor h4{margin:0 0 8px;color:#7b3157}.training-editor-card{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:13px;border:1px solid #f0e0e6;border-radius:14px;background:#fff}.training-editor-card>strong{color:#b12a68}.brand-preview{margin-top:16px;padding:18px;border-radius:16px;background:linear-gradient(135deg,#fff4f8,#fff);text-align:center;min-height:32px}.field input[type=color]{padding:5px}.theme-page-row .field input[type=color]{height:46px}
+
+.field input[type="checkbox"]{width:20px;height:20px;min-height:20px;padding:0;accent-color:var(--pink-dark);cursor:pointer}
+.field input[type="range"]{min-height:26px;padding:0;border:0;background:transparent;accent-color:var(--pink-dark);cursor:pointer}
