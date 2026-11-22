@@ -30,7 +30,12 @@ let preloadPromise;
 export const preloadAppResources = () => {
   if (preloadPromise) return preloadPromise;
 
-  const imageUrls = [...Object.values(pageImages), ...Object.values(healthImages)];
+  const imageUrls = [
+    ...Object.entries(pageImages)
+      .filter(([key]) => !['videos', 'virtual'].includes(key))
+      .map(([, url]) => url),
+    ...Object.values(healthImages),
+  ];
   preloadPromise = Promise.allSettled([
     preloadVideo('/splash_video.mp4'),
     ...imageUrls.map(preloadImage),

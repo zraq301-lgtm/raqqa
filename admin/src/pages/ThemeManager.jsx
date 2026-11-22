@@ -155,7 +155,7 @@ export default function ThemeManager() {
             <label className="field"><span>لون الخلفية</span><input type="color" value={settings.pages[key]?.backgroundColor || settings.backgroundColor} onChange={(event) => updatePage(key, 'backgroundColor', event.target.value)} /></label>
             <label className="field"><span>خط الصفحة</span><select value={settings.pages[key]?.fontFamily || settings.fontFamily} onChange={(event) => updatePage(key, 'fontFamily', event.target.value)}>{fontOptions.map((font) => <option key={font} value={font}>{font}</option>)}</select></label>
             <label className="field"><span>صورة خلفية HTTPS (اختياري)</span><input type="url" dir="ltr" value={settings.pages[key]?.backgroundImageUrl || ''} onChange={(event) => updatePage(key, 'backgroundImageUrl', event.target.value)} placeholder="https://…" /></label>
-            <label className="field"><span>صورة أيقونة HTTPS (اختياري)</span><input type="url" dir="ltr" value={settings.pages[key]?.iconImageUrl || ''} onChange={(event) => updatePage(key, 'iconImageUrl', event.target.value)} placeholder="https://…" /></label>
+            <label className="field"><span>{key === 'videos' || key === 'virtualWorld' ? 'رابط أيقونة الإدارة HTTPS' : 'صورة أيقونة HTTPS (اختياري)'}</span><input type="url" dir="ltr" value={settings.pages[key]?.iconImageUrl || ''} onChange={(event) => updatePage(key, 'iconImageUrl', event.target.value)} placeholder="https://…" /></label>
           </div>
         </div>
       ))}

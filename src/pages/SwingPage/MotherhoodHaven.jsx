@@ -207,12 +207,6 @@ const EleganceSection = () => {
                       className="wp-html-content"
                       dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }}
                     />
-
-                    <div className="app-download-box">
-                      <a href={APP_LINK} target="_blank" rel="noreferrer">
-                        ✨ حملي التطبيق الآن من هنا ✨
-                      </a>
-                    </div>
                   </div>
 
                   {/* أزرار التفاعل منسقة ومرتبة بشكل ممتاز */}
@@ -312,10 +306,6 @@ const EleganceSection = () => {
         .card.media-only-card .content {
           padding: 12px 20px 16px;
         }
-        .card.media-only-card .app-download-box {
-          margin-top: 15px;
-          padding: 12px;
-        }
 
         .card-header-title {
           padding: 24px 20px;
@@ -364,13 +354,6 @@ const EleganceSection = () => {
         }
 
         .wp-html-content p { line-height: 1.85; margin: 0 0 15px 0; }
-
-        .app-download-box {
-          margin-top: 30px; padding: 18px;
-          background: #fffbf9; border: 1px dashed #d7ccc8; border-radius: 16px;
-          text-align: center;
-        }
-        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 1.02rem; }
 
         .interaction-buttons {
           display: flex; justify-content: space-around;

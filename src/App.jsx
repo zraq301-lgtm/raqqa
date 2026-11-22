@@ -24,7 +24,6 @@ import VirtualWorld from './pages/VirtualWorld';
 import ProfileEditor from './components/ProfileEditor';
 import TopPageCarousel from './components/TopPageCarousel';
 import { useAppTheme } from './components/AppThemeProvider';
-import { pageImages } from './config/assetUrls';
 
 import './App.css';
 
@@ -308,11 +307,15 @@ function App({ user, onUserUpdated }) {
         )}
         <nav className="header-quick-links" aria-label="اختصارات التطبيق">
           <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
-            <img src={appTheme.pages?.videos?.iconImageUrl || pageImages.videos} alt="" />
+            {appTheme.pages?.videos?.iconImageUrl
+              ? <img src={appTheme.pages.videos.iconImageUrl} alt="" />
+              : <span className="header-fallback-icon" aria-hidden="true">{appTheme.pages?.videos?.icon || '🎬'}</span>}
             <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
           </Link>
           <Link to="/virtual-world" className="header-library-button header-world-button" aria-label="فتح عالم رقة">
-            <img src={appTheme.pages?.virtualWorld?.iconImageUrl || pageImages.virtual} alt="" />
+            {appTheme.pages?.virtualWorld?.iconImageUrl
+              ? <img src={appTheme.pages.virtualWorld.iconImageUrl} alt="" />
+              : <span className="header-fallback-icon" aria-hidden="true">{appTheme.pages?.virtualWorld?.icon || '🌌'}</span>}
             <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
           </Link>
         </nav>

@@ -238,6 +238,7 @@ body {
 .profile-summary:hover, .header-library-button:hover { background: #fff5f9; }
 .header-library-button { font-size: 12px; white-space: nowrap; }
 .header-library-button img { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; }
+.header-fallback-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #fff0f5; font-size: 21px; line-height: 1; }
 .app-brand-identity { grid-area: brand; justify-self: center; min-width: 0; max-width: min(42vw, 320px); z-index: 1; }
 .app-brand-plate {
   position: relative;

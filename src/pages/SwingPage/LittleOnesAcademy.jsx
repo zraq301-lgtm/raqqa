@@ -186,9 +186,6 @@ const LittleOnesAcademy = () => {
                   <TrainingCards cards={post.interactiveCards} accent="#b08968" variant={post.cardStyle} />
                   <div className="content" style={{ fontFamily: post.textStyle.fontFamily ? `'${post.textStyle.fontFamily}', sans-serif` : undefined, fontSize: post.textStyle.fontSize, fontWeight: post.textStyle.fontWeight, color: post.textStyle.color }}>
                     <div className="wp-html-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
-                    <div className="app-download-box">
-                      <a href={APP_LINK} target="_blank" rel="noreferrer">✨ حملي التطبيق الآن من هنا ✨</a>
-                    </div>
                   </div>
 
                   <div className="interaction-buttons">
@@ -246,7 +243,6 @@ const LittleOnesAcademy = () => {
         .card.media-only-card { margin-bottom: 22px; }
         .card.media-only-card .card-header-title { padding: 14px 15px 10px; }
         .card.media-only-card .content { padding: 10px 15px 14px; }
-        .card.media-only-card .app-download-box { margin-top: 12px; padding: 10px; }
 
         .card-header-title { padding: 24px 15px 16px; text-align: center; position: relative; }
         .card-header-title h2 { color: #8d6e63; margin: 0; font-size: 1.35rem; padding-top: 8px; }
@@ -258,9 +254,6 @@ const LittleOnesAcademy = () => {
         .content { padding: 20px; text-align: center; }
         .wp-html-content { text-align: right; color: #4a3f35; font-size: 1.1rem; }
         .wp-html-content img, .wp-html-content video, .wp-html-content iframe { max-width: 100% !important; height: auto !important; border-radius: 10px; margin: 10px 0; display: block; }
-
-        .app-download-box { margin-top: 25px; padding: 15px; background: #fdfaf8; border: 1px dashed #b08968; border-radius: 15px; }
-        .app-download-box a { color: #8d6e63; text-decoration: none; font-weight: 700; font-size: 1rem; }
 
         .interaction-buttons { display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #fcf6f2; background: #fffcfb; }
         .interaction-buttons button { background: none; border: none; cursor: pointer; font-family: 'Tajawal'; color: #8d6e63; font-size: 1rem; font-weight: 500; }
