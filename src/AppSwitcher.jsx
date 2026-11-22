@@ -15,7 +15,7 @@ class ErrorBoundary extends Component {
   render() { return this.state.hasError ? <div dir="rtl" style={{ padding: 32, textAlign: 'center' }}>تعذر عرض الصفحة الآن. حاولي إعادة تحميلها.<br /><button onClick={() => window.location.reload()}>إعادة التحميل</button></div> : this.props.children; }
 }
 
-export default function AppSwitcher() {
+export default function AppSwitcher({ onAuthenticated }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -71,6 +71,7 @@ export default function AppSwitcher() {
       window.clearTimeout(authFallbackTimer);
       const currentEventId = ++authEventId;
       if (!firebaseUser) { setUser(null); setLoading(false); return; }
+      onAuthenticated?.();
       // لا ننتظر طلب الملف السحابي قبل عرض التطبيق؛ الملف الشخصي يُحدّث في الخلفية.
       setUser((currentUser) => ({
         ...currentUser,
@@ -100,7 +101,7 @@ export default function AppSwitcher() {
       window.removeEventListener('pageshow', refreshProfileOnResume);
       if (appStateListener) void appStateListener.remove();
     };
-  }, []);
+  }, [onAuthenticated]);
   if (loading) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>جارٍ التحميل…</div>;
-  return <AppThemeProvider><ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={setUser} />}</ErrorBoundary></AppThemeProvider>;
+  return <AppThemeProvider><ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={(profile) => { setUser(profile); onAuthenticated?.(); }} />}</ErrorBoundary></AppThemeProvider>;
 }

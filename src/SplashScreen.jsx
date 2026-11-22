@@ -1,56 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 const SplashScreen = ({ onFinished }) => {
   const [fadeOut, setFadeOut] = useState(false);
+  const finishedRef = useRef(false);
 
-  useEffect(() => {
-    // الفيديو مدته 3 ثوانٍ تقريباً، سنبدأ تأثير الاختفاء عند الثانية 2.5
-    const timer = setTimeout(() => {
-      setFadeOut(true);
-    }, 2500);
-
-    // إنهاء المكون تماماً عند الثانية 3 وإرسال إشارة الانتهاء
-    const finishTimer = setTimeout(() => {
-      onFinished();
-    }, 3000);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(finishTimer);
-    };
+  const finish = useCallback(() => {
+    if (finishedRef.current) return;
+    finishedRef.current = true;
+    setFadeOut(true);
+    window.setTimeout(() => onFinished?.(), 450);
   }, [onFinished]);
 
+  useEffect(() => {
+    // احتياط في حال منع المتصفح التشغيل التلقائي أو تعذر تحميل الفيديو.
+    const fallbackTimer = window.setTimeout(finish, 7500);
+    return () => window.clearTimeout(fallbackTimer);
+  }, [finish]);
+
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100%',
-      height: '100vh',
-      backgroundColor: '#000', // الخلفية سوداء لسد أي فراغات تظهر بسبب التناسب
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 9999,
-      opacity: fadeOut ? 0 : 1,
-      transition: 'opacity 0.5s ease-in-out',
-      pointerEvents: 'none'
-    }}>
+    <div
+      className={`raqqa-splash-screen${fadeOut ? ' raqqa-splash-screen--fade-out' : ''}`}
+      role="status"
+      aria-label="جاري تجهيز تطبيق رِقّة"
+    >
       <video
         autoPlay
         muted
         playsInline
-        style={{
-          width: '100%',
-          height: '100%',
-          /* تم التغيير من cover إلى contain
-             لضمان ظهور محتوى الفيديو كاملاً بدون قص
-          */
-          objectFit: 'contain'
-        }}
+        preload="auto"
+        onEnded={finish}
+        onError={finish}
+        className="raqqa-splash-video"
       >
         <source src="/splash_video.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
       </video>
     </div>
   );

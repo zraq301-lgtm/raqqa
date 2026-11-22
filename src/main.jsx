@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import AppSwitcher from './AppSwitcher';
@@ -10,6 +10,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { FCM } from '@capacitor-community/fcm';
 import { initializeGithubLiveUpdate } from './services/githubLiveUpdate';
+import { preloadAppResources } from './services/preloadService';
 
 // --- إعدادات Firebase (مشروع Roqa) ---
 const firebaseConfig = {
@@ -26,7 +27,7 @@ if (!getApps().length) {
 }
 
 const Main = () => {
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
   const [foregroundPush, setForegroundPush] = useState(null);
 
   const handleTokenLocally = (tokenValue) => {
@@ -34,6 +35,12 @@ const Main = () => {
     console.log("📍 FCM Token Saved:", tokenValue); // طباعة التوكن للتأكد
 
   };
+
+  const handleAuthenticated = useCallback(() => {
+    // يبدأ التحميل المسبق قبل إظهار الفيديو حتى تعمل الموارد خلف شاشة البداية.
+    void preloadAppResources();
+    setShowSplash(true);
+  }, []);
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -107,7 +114,7 @@ const Main = () => {
 
   return (
     <BrowserRouter>
-      <AppSwitcher />
+      <AppSwitcher onAuthenticated={handleAuthenticated} />
       {showSplash && <SplashScreen onFinished={() => setShowSplash(false)} />}
       {!showSplash && foregroundPush && (
         <aside className="foreground-push-card" role="status" aria-live="polite">

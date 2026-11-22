@@ -19,6 +19,32 @@ body {
   direction: rtl;
 }
 
+.raqqa-splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #270914;
+  opacity: 1;
+  transition: opacity .45s ease;
+  pointer-events: auto;
+}
+
+.raqqa-splash-screen--fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.raqqa-splash-video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: #270914;
+}
+
 /* حاوية التطبيق الرئيسية - تم ربطها بخاصية فيربيس */
 .app-container {
   display: flex;
