@@ -179,19 +179,66 @@ body {
   transform: scale(0.9);
 }
 
-/* ملف المستخدم والشريط العلوي الجديد */
-.main-app-header { position:relative; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 14px; background:#fff; border-bottom:1px solid #f3dce7; min-height:54px; z-index:20; }
-.header-library-stack { display:flex; flex:0 0 auto; flex-direction:column; align-items:center; justify-content:center; gap:3px; min-width:0; }
-.app-brand-wordmark{position:static; display:inline-block; max-width:100%; transform:scaleX(1.12); transform-origin:center; white-space:nowrap; line-height:1.05; pointer-events:none;text-shadow:0 2px 10px rgba(177,42,104,.12)}
-.profile-summary, .header-library-button { display:flex; align-items:center; gap:8px; border:0; background:#fff; color:#7b3157; font:inherit; font-weight:700; text-decoration:none; cursor:pointer; padding:5px 8px; border-radius:16px; }
-.profile-summary:hover, .header-library-button:hover { background:#fff5f9; }
-.header-library-button { font-size:12px; }
-.header-library-button img { width:32px; height:32px; border-radius:10px; object-fit:cover; }
-@media (max-width: 480px) {
-  .main-app-header { flex-wrap:wrap; gap:6px 8px; padding:7px 12px; }
-  .profile-summary { order:1; }
-  .header-world-button { order:2; }
-  .header-library-stack { order:3; flex:0 0 100%; }
+/* شعار رِقّة في مركز رأس التطبيق، بعيدًا عن اختصارات الصفحات */
+.main-app-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "profile brand shortcuts";
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #fff;
+  border-bottom: 1px solid #f3dce7;
+  min-height: 58px;
+  z-index: 20;
+}
+.profile-summary, .header-library-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: #fff;
+  color: #7b3157;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 16px;
+}
+.profile-summary { grid-area: profile; justify-self: start; min-width: 0; }
+.profile-summary > span:last-child { max-width: clamp(48px, 16vw, 130px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-quick-links { grid-area: shortcuts; justify-self: end; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.profile-summary:hover, .header-library-button:hover { background: #fff5f9; }
+.header-library-button { font-size: 12px; white-space: nowrap; }
+.header-library-button img { width: 32px; height: 32px; border-radius: 10px; object-fit: cover; }
+.app-brand-identity { grid-area: brand; justify-self: center; min-width: 0; max-width: min(42vw, 320px); z-index: 1; }
+.app-brand-plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 48px;
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 1px 20px;
+  border: 1px solid #f0c7d8;
+  border-radius: 20px 20px 15px 15px;
+  background: linear-gradient(135deg, #fff8fb 0%, #fce8f1 100%);
+  box-shadow: 0 4px 14px rgba(123, 49, 87, .12), inset 0 1px 0 #fff;
+}
+.app-brand-plate::after { content: ''; position: absolute; inset-inline: 22%; bottom: -2px; height: 3px; border-radius: 3px; background: #b12a68; opacity: .72; }
+.app-brand-wordmark { display: block; max-width: calc(min(42vw, 320px) - 42px); overflow: hidden; text-overflow: ellipsis; transform: scaleX(1.12); transform-origin: center; white-space: nowrap; line-height: 1.05; pointer-events: none; text-shadow: 0 2px 10px rgba(177, 42, 104, .12); }
+@media (max-width: 560px) {
+  .main-app-header { display: flex; flex-wrap: wrap; gap: 6px 8px; padding: 8px 10px; }
+  .app-brand-identity { order: 0; flex: 0 0 100%; max-width: min(90vw, 320px); }
+  .app-brand-wordmark { max-width: calc(min(90vw, 320px) - 42px); }
+  .profile-summary { order: 1; flex: 0 1 36%; max-width: 36%; gap: 5px; padding: 5px 4px; }
+  .profile-summary > span:last-child { max-width: clamp(30px, 10vw, 64px); }
+  .header-quick-links { order: 2; flex: 1 1 58%; justify-content: flex-end; gap: 2px; }
+  .header-library-button { gap: 5px; padding: 5px 4px; }
+  .header-library-button { font-size: clamp(10px, 2.8vw, 12px); }
+  .header-library-button img { width: 30px; height: 30px; }
+  .header-library-button span { max-width: clamp(40px, 15vw, 80px); overflow: hidden; text-overflow: ellipsis; }
 }
 .profile-editor-backdrop { position:fixed; inset:0; z-index:2000; display:grid; place-items:center; padding:20px; background:rgba(62,25,46,.38); backdrop-filter:blur(5px); }
 .profile-editor { position:relative; width:min(100%,390px); padding:25px; border-radius:26px; background:#fff; box-shadow:0 20px 70px rgba(72,22,49,.25); text-align:center; }

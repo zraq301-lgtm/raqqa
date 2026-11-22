@@ -299,17 +299,23 @@ function App({ user, onUserUpdated }) {
           {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
           <span>{profileName}</span>
         </button>
-        <div className="header-library-stack">
+        {branding.enabled !== false && (
+          <div className="app-brand-identity" aria-label={`شعار ${brandName}`}>
+            <div className="app-brand-plate">
+              <span className="app-brand-wordmark" style={{ color: branding.color, fontFamily: `'${branding.fontFamily || appTheme.fontFamily}', sans-serif`, fontSize: branding.fontSize || '32px', fontWeight: branding.fontWeight, letterSpacing: branding.letterSpacing }}>{brandName}</span>
+            </div>
+          </div>
+        )}
+        <nav className="header-quick-links" aria-label="اختصارات التطبيق">
           <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
             <img src={appTheme.pages?.videos?.iconImageUrl || pageImages.videos} alt="" />
             <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
           </Link>
-          {branding.enabled !== false && <div className="app-brand-wordmark" style={{ color: branding.color, fontFamily: `'${branding.fontFamily || appTheme.fontFamily}', sans-serif`, fontSize: branding.fontSize || '32px', fontWeight: branding.fontWeight, letterSpacing: branding.letterSpacing }} aria-label={brandName}>{brandName}</div>}
-        </div>
-        <Link to="/virtual-world" className="header-library-button header-world-button" aria-label="فتح عالم رقة">
-          <img src={appTheme.pages?.virtualWorld?.iconImageUrl || pageImages.virtual} alt="" />
-          <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
-        </Link>
+          <Link to="/virtual-world" className="header-library-button header-world-button" aria-label="فتح عالم رقة">
+            <img src={appTheme.pages?.virtualWorld?.iconImageUrl || pageImages.virtual} alt="" />
+            <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
+          </Link>
+        </nav>
       </header>
 
       <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
