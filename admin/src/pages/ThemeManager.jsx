@@ -7,6 +7,7 @@ const defaults = {
   accentColor: '#c93764',
   backgroundColor: '#fff8fa',
   fontFamily: 'Tajawal',
+  branding: { name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '24px', fontWeight: '800', letterSpacing: '0px' },
   pages: {
     health: { label: 'صحتك', icon: '🩺' },
     feelings: { label: 'المشاعر', icon: '🌸' },
@@ -63,6 +64,7 @@ function mergeSettings(remote) {
     ...(remote || {}),
     pages: Object.fromEntries(Object.entries(defaults.pages).map(([key, page]) => [key, { ...page, ...(remote?.pages?.[key] || {}) }])),
     celebration: { ...defaults.celebration, ...(remote?.celebration || {}) },
+    branding: { ...defaults.branding, ...(remote?.branding || {}) },
   };
 }
 
@@ -167,6 +169,12 @@ export default function ThemeManager() {
       <AdminTokenField />
       {loading ? <div className="empty-state">جارٍ تحميل إعدادات التطبيق…</div> : (
         <>
+          <section className="admin-card">
+            <h3>اسم رِقّة في أعلى التطبيق</h3>
+            <p className="card-description">غيّري الكلمة التي تظهر أعلى الواجهة، مع الخط واللون والحجم والوزن.</p>
+            <div className="form-grid"><label className="field"><span>اسم العلامة</span><input maxLength={24} value={settings.branding.name} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, name: event.target.value } }))} /></label><label className="field"><span>خط الاسم</span><select value={settings.branding.fontFamily} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontFamily: event.target.value } }))}>{fontOptions.map((font) => <option key={font}>{font}</option>)}</select></label><label className="field"><span>لون الاسم</span><input type="color" value={settings.branding.color} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, color: event.target.value } }))} /></label><label className="field"><span>حجم الاسم</span><input type="text" value={settings.branding.fontSize} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontSize: event.target.value } }))} placeholder="24px" /></label><label className="field"><span>وزن الاسم</span><select value={settings.branding.fontWeight} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, fontWeight: event.target.value } }))}><option value="400">عادي</option><option value="500">متوسط</option><option value="700">عريض</option><option value="800">عريض جدًا</option></select></label><label className="field"><span>تباعد الحروف</span><input type="text" value={settings.branding.letterSpacing} onChange={(event) => setSettings((current) => ({ ...current, branding: { ...current.branding, letterSpacing: event.target.value } }))} placeholder="0px" /></label></div>
+            <div className="brand-preview" style={{ color: settings.branding.color, fontFamily: `'${settings.branding.fontFamily}', sans-serif`, fontSize: settings.branding.fontSize, fontWeight: settings.branding.fontWeight, letterSpacing: settings.branding.letterSpacing }}>{settings.branding.name || 'رِقّة'}</div>
+          </section>
           <section className="admin-card">
             <h3>ألوان التطبيق والخط</h3>
             <p className="card-description">تُطبّق التغييرات على التطبيق العام بعد الحفظ ومزامنة OTA أو إعادة فتح التطبيق.</p>

@@ -6,6 +6,7 @@ const defaultSettings = {
   accentColor: '#c93764',
   backgroundColor: '#fff8fa',
   fontFamily: 'Tajawal',
+  branding: { name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '24px', fontWeight: '800', letterSpacing: '0px' },
   pages: {},
   celebration: { type: 'none', endAt: null },
 };
@@ -17,6 +18,7 @@ function safeSettings(payload) {
     ...defaultSettings,
     ...settings,
     pages: settings.pages && typeof settings.pages === 'object' ? settings.pages : {},
+    branding: settings.branding && typeof settings.branding === 'object' ? { ...defaultSettings.branding, ...settings.branding } : defaultSettings.branding,
     celebration: settings.celebration && typeof settings.celebration === 'object' ? settings.celebration : defaultSettings.celebration,
   };
 }

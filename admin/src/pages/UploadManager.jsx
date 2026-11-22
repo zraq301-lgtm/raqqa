@@ -47,6 +47,13 @@ export default function UploadManager() {
   const [coverImageFile, setCoverImageFile] = useState(null);
   const [category, setCategory] = useState('all');
   const [bgColor, setBgColor] = useState('#F5F5F5');
+  const [bodyFontFamily, setBodyFontFamily] = useState('Tajawal');
+  const [bodyFontSize, setBodyFontSize] = useState('18');
+  const [bodyFontWeight, setBodyFontWeight] = useState('500');
+  const [bodyTextColor, setBodyTextColor] = useState('#4a3f35');
+  const [cardStyle, setCardStyle] = useState('soft');
+  const [trainingCards, setTrainingCards] = useState(() => Array.from({ length: 4 }, () => ({ question: '', choices: ['', ''], answer: '', explanation: '', points: 1 })));
+  const trainingPages = ['دروب التمكين', 'شغف وحرف', 'أكاديمية الصغار'];
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [manualId, setManualId] = useState('');
@@ -74,6 +81,9 @@ export default function UploadManager() {
     return () => window.removeEventListener('raqqa-admin-token-saved', reload);
   }, [refresh]);
 
+  const updateTrainingCard = (index, field, value) => setTrainingCards((current) => current.map((card, cardIndex) => cardIndex === index ? { ...card, [field]: value } : card));
+  const updateTrainingChoice = (cardIndex, choiceIndex, value) => setTrainingCards((current) => current.map((card, index) => index === cardIndex ? { ...card, choices: card.choices.map((choice, index2) => index2 === choiceIndex ? value : choice) } : card));
+
   const handlePublish = async (event) => {
     event.preventDefault();
     if (!title.trim()) return setMessage({ type: 'error', text: 'يرجى إدخال عنوان للمحتوى.' });
@@ -81,7 +91,7 @@ export default function UploadManager() {
     if (contentType === 'image' && !mediaFile) return setMessage({ type: 'error', text: 'اختاري ملف الصورة.' });
     setLoading(true); setMessage(null);
     try {
-      const item = { id: `item_${Date.now()}`, article: { title: title.trim(), body: description.trim(), category: targetPage === 'مكتبة رقة' ? category : undefined }, media: { videoUrl: '', imageUrl: '' }, design: { backgroundColor: targetPage === 'مملكة الاسترخاء' ? bgColor : undefined }, lastUpdated: new Date().toISOString() };
+      const item = { id: `item_${Date.now()}`, article: { title: title.trim(), body: description.trim(), category: targetPage === 'مكتبة رقة' ? category : undefined, interactiveCards: trainingPages.includes(targetPage) ? trainingCards.filter((card) => card.question.trim()).map((card) => ({ ...card, choices: card.choices.filter(Boolean), points: Number(card.points) || 0 })) : [] }, media: { videoUrl: '', imageUrl: '' }, design: { backgroundColor: targetPage === 'مملكة الاسترخاء' ? bgColor : undefined, textStyle: { fontFamily: bodyFontFamily, fontSize: `${bodyFontSize}px`, fontWeight: bodyFontWeight, color: bodyTextColor, cardStyle } }, lastUpdated: new Date().toISOString() };
       if (contentType === 'video') {
         item.media.videoUrl = videoUrl.trim();
         if (mediaFile) {
@@ -120,7 +130,7 @@ export default function UploadManager() {
           : ' لكن لم يتم تأكيد إرسال الإشعار.';
       const storageLabel = result.storage === 'D1' ? 'D1 — مستقل عن Neon' : 'Neon — المخطط الخاص';
       setMessage({ type: 'success', text: `تم نشر المحتوى في «${pageLabelByName[targetPage] || targetPage}» وحُفظ في ${storageLabel}.${notificationMessage}` });
-      setTitle(''); setDescription(''); setMediaFile(null); setCoverImageFile(null); setVideoUrl('');
+      setTitle(''); setDescription(''); setMediaFile(null); setCoverImageFile(null); setVideoUrl(''); setTrainingCards(Array.from({ length: 4 }, () => ({ question: '', choices: ['', ''], answer: '', explanation: '', points: 1 })));
       const fileInput = document.getElementById('content-media-file'); if (fileInput) fileInput.value = '';
       const coverInput = document.getElementById('content-cover-file'); if (coverInput) coverInput.value = '';
       await refresh();
@@ -167,8 +177,10 @@ export default function UploadManager() {
         </div>
         <div className="field"><label htmlFor="content-title">العنوان</label><input id="content-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="عنوان المحتوى" required /></div>
         <div className="field"><label htmlFor="content-description">الوصف أو نص المقال</label><textarea id="content-description" rows="4" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="اكتبي وصفًا أو نص المقال هنا" /></div>
+        <section className="content-design-panel"><h4>تنسيق النص والكروت</h4><div className="form-grid"><div className="field"><label htmlFor="content-font">خط المحتوى</label><select id="content-font" value={bodyFontFamily} onChange={(e) => setBodyFontFamily(e.target.value)}><option>Tajawal</option><option>Cairo</option><option>Almarai</option><option>Noto Naskh Arabic</option><option>Changa</option></select></div><div className="field"><label htmlFor="content-size">حجم الخط</label><input id="content-size" type="number" min="12" max="36" value={bodyFontSize} onChange={(e) => setBodyFontSize(e.target.value)} /></div><div className="field"><label htmlFor="content-weight">وزن الخط</label><select id="content-weight" value={bodyFontWeight} onChange={(e) => setBodyFontWeight(e.target.value)}><option value="400">عادي</option><option value="500">متوسط</option><option value="700">عريض</option></select></div><div className="field"><label htmlFor="content-color">لون النص</label><input id="content-color" type="color" value={bodyTextColor} onChange={(e) => setBodyTextColor(e.target.value)} /></div></div></section>
         {contentType === 'video' && <><div className="field"><label htmlFor="content-media-file">ملف الفيديو (اختياري)</label><input id="content-media-file" type="file" accept="video/*" onChange={(e) => setMediaFile(e.target.files?.[0] || null)} />{mediaFile && <small className="subtle">{mediaFile.name}</small>}</div><div className="field"><label htmlFor="video-url">أو رابط فيديو</label><input id="video-url" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder="https://…" /></div><div className="field"><label htmlFor="content-cover-file">صورة مصغّرة للفيديو (اختياري)</label><input id="content-cover-file" type="file" accept="image/*" onChange={(e) => setCoverImageFile(e.target.files?.[0] || null)} />{coverImageFile && <small className="subtle">{coverImageFile.name}</small>}</div></>}
         {contentType === 'image' && <div className="field"><label htmlFor="content-media-file">ملف الصورة</label><input id="content-media-file" type="file" accept="image/*" onChange={(e) => setMediaFile(e.target.files?.[0] || null)} />{mediaFile && <small className="subtle">{mediaFile.name}</small>}</div>}
+        {trainingPages.includes(targetPage) && <section className="training-editor"><h4>كروت الأسئلة التدريبية (حتى 4 كروت)</h4><p className="subtle">تظهر أسفل الفيديو بالتتابع. لا يظهر السؤال التالي إلا بعد تأكيد الإجابة.</p>{trainingCards.map((card, index) => <div className="training-editor-card" key={index}><strong>الكارت {index + 1}</strong><div className="field"><label>السؤال</label><textarea rows="2" value={card.question} onChange={(e) => updateTrainingCard(index, 'question', e.target.value)} placeholder="اكتبي سؤال التدريب" /></div><div className="form-grid"><div className="field"><label>اختيار أول</label><input value={card.choices[0]} onChange={(e) => updateTrainingChoice(index, 0, e.target.value)} /></div><div className="field"><label>اختيار ثانٍ</label><input value={card.choices[1]} onChange={(e) => updateTrainingChoice(index, 1, e.target.value)} /></div><div className="field"><label>الإجابة الصحيحة</label><input value={card.answer} onChange={(e) => updateTrainingCard(index, 'answer', e.target.value)} placeholder="يجب أن تطابق أحد الاختيارات" /></div><div className="field"><label>النقاط</label><input type="number" min="0" max="100" value={card.points} onChange={(e) => updateTrainingCard(index, 'points', e.target.value)} /></div></div><div className="field"><label>شرح مختصر بعد الإجابة</label><input value={card.explanation} onChange={(e) => updateTrainingCard(index, 'explanation', e.target.value)} /></div></div>)}</section>}
         {targetPage === 'مكتبة رقة' && <div className="field"><label htmlFor="content-category">تخصص مكتبة الفيديوهات</label><select id="content-category" value={category} onChange={(e) => setCategory(e.target.value)}>{videoCategories.map((videoCategory) => <option key={videoCategory.value} value={videoCategory.value}>{videoCategory.label}</option>)}</select><small className="subtle">يُحفظ التخصص كتصنيف متوافق مع فلاتر مكتبة الفيديوهات داخل التطبيق.</small></div>}
         {targetPage === 'مملكة الاسترخاء' && <div className="field"><label htmlFor="bg-color">لون خلفية القسم</label><input id="bg-color" type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} /></div>}
         <button className="primary-button" type="submit" disabled={loading}>{loading ? 'جارٍ النشر…' : 'نشر المحتوى'}</button>

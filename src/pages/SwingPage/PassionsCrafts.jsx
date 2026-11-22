@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Share } from '@capacitor/share';
 // استيراد الخدمة الموحدة النظيفة لجلب البيانات من السيرفر السحابي
 import { fetchPageData } from '../../services/adminService';
+import TrainingCards from '../../components/TrainingCards';
 
 const PassionsCrafts = () => {
   const [articles, setArticles] = useState([]);
@@ -56,6 +57,7 @@ const PassionsCrafts = () => {
           const imageUrl = item.media?.imageUrl && item.media.imageUrl.trim() !== "" ? item.media.imageUrl : null;
           const audioUrl = item.media?.audioUrl && item.media.audioUrl.trim() !== "" ? item.media.audioUrl : null;
           const bodyContent = item.article?.body && item.article.body.trim() !== "" ? item.article.body : "";
+          const interactiveCards = Array.isArray(item.article?.interactiveCards) ? item.article.interactiveCards : [];
 
           const isYouTube = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
           const finalVideoUrl = isYouTube ? getYouTubeEmbedUrl(videoUrl) : videoUrl;
@@ -75,6 +77,9 @@ const PassionsCrafts = () => {
             featuredVideo: finalVideoUrl,
             isVideoYouTube: isYouTube,
             isMediaOnly: isMediaOnly,
+            interactiveCards,
+            textStyle: item.design?.textStyle || {},
+            cardStyle: item.design?.textStyle?.cardStyle || 'soft',
             content: {
               rendered: `
                 ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 15px; line-height: 1.7;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
@@ -180,7 +185,8 @@ const PassionsCrafts = () => {
                     </div>
                   )}
 
-                  <div className="content">
+                  <TrainingCards cards={post.interactiveCards} accent="#b08968" variant={post.cardStyle} />
+                  <div className="content" style={{ fontFamily: post.textStyle.fontFamily ? `'${post.textStyle.fontFamily}', sans-serif` : undefined, fontSize: post.textStyle.fontSize, fontWeight: post.textStyle.fontWeight, color: post.textStyle.color }}>
                     <div className="wp-html-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
                     <div className="app-download-box">
                       <a href={APP_LINK} target="_blank" rel="noreferrer">✨ حملي التطبيق الآن من هنا ✨</a>

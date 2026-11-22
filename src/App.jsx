@@ -137,6 +137,8 @@ function App({ user, onUserUpdated }) {
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const profileName = user?.display_name || user?.displayName || user?.firebaseUser?.displayName || 'حسابي';
   const profilePhoto = user?.photo_url || user?.photoURL || user?.firebaseUser?.photoURL;
+  const branding = appTheme.branding || {};
+  const brandName = branding.name?.trim() || 'رِقّة';
   const pageLabel = (key, fallback) => appTheme.pages?.[key]?.label?.trim() || fallback;
   const healthSection = new URLSearchParams(location.search).get('section');
   const activePageKey = location.pathname === '/health' && healthSection ? `health.${healthSection}` : ({ '/health': 'health', '/feelings': 'feelings', '/intimacy': 'intimacy', '/swing-forum': 'swing', '/insight': 'insight', '/videos': 'videos', '/virtual-world': 'virtualWorld' }[location.pathname] || 'health');
@@ -293,8 +295,9 @@ function App({ user, onUserUpdated }) {
       {profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
 
       <header className="main-app-header">
+        <div className="app-brand-wordmark" style={{ color: branding.color, fontFamily: `'${branding.fontFamily || appTheme.fontFamily}', sans-serif`, fontSize: branding.fontSize, fontWeight: branding.fontWeight, letterSpacing: branding.letterSpacing }} aria-label={brandName}>{brandName}</div>
         <button className="profile-summary" onClick={() => setProfileEditorOpen(true)} aria-label="تعديل ملفك الشخصي">
-          {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
+          {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
           <span>{profileName}</span>
         </button>
         <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
