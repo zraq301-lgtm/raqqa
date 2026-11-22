@@ -300,11 +300,11 @@ function App({ user, onUserUpdated }) {
           <span>{profileName}</span>
         </button>
         <div className="header-library-stack">
-          {branding.enabled !== false && <div className="app-brand-wordmark" style={{ color: branding.color, fontFamily: `'${branding.fontFamily || appTheme.fontFamily}', sans-serif`, fontSize: branding.fontSize || '32px', fontWeight: branding.fontWeight, letterSpacing: branding.letterSpacing }} aria-label={brandName}>{brandName}</div>}
           <Link to="/videos" className="header-library-button" aria-label="فتح مكتبة الفيديوهات">
             <img src={appTheme.pages?.videos?.iconImageUrl || pageImages.videos} alt="" />
             <span>{pageLabel('videos', 'مكتبة الفيديوهات')}</span>
           </Link>
+          {branding.enabled !== false && <div className="app-brand-wordmark" style={{ color: branding.color, fontFamily: `'${branding.fontFamily || appTheme.fontFamily}', sans-serif`, fontSize: branding.fontSize || '32px', fontWeight: branding.fontWeight, letterSpacing: branding.letterSpacing }} aria-label={brandName}>{brandName}</div>}
         </div>
         <Link to="/virtual-world" className="header-library-button header-world-button" aria-label="فتح عالم رقة">
           <img src={appTheme.pages?.virtualWorld?.iconImageUrl || pageImages.virtual} alt="" />
