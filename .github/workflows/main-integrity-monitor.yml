@@ -1,0 +1,123 @@
+name: Main Integrity Monitor
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrity:
+    name: Verify main integrity and production builds
+    runs-on: ubuntu-latest
+    env:
+      REPOSITORY: ${{ github.repository }}
+      MAIN_BRANCH: main
+      # صفحات/مسارات أزيلت ويجب ألا تعود في المصدر أو bundle الإنتاج.
+      FORBIDDEN_MARKERS: 'MedicalSearch|medical-search|البحث الطبي الآمن|MEDICAL_SEARCH_API_URL'
+
+    steps:
+      - name: Checkout main only
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Verify repository branch policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          default_branch=$(gh api "repos/${REPOSITORY}" --jq '.default_branch')
+          test "$default_branch" = "$MAIN_BRANCH" || {
+            echo "::error::Default branch is $default_branch, expected $MAIN_BRANCH"
+            exit 1
+          }
+
+          mapfile -t branches < <(gh api "repos/${REPOSITORY}/branches?per_page=100" --paginate --jq '.[].name')
+          unexpected=()
+          for branch in "${branches[@]}"; do
+            if [ "$branch" != "$MAIN_BRANCH" ]; then
+              unexpected+=("$branch")
+            fi
+          done
+          if [ "${#unexpected[@]}" -gt 0 ]; then
+            printf '::error::Unexpected branches exist: %s\n' "${unexpected[*]}"
+            exit 1
+          fi
+
+          remote_main=$(git ls-remote origin "refs/heads/${MAIN_BRANCH}" | awk '{print $1}')
+          test "$remote_main" = "$GITHUB_SHA" || {
+            echo "::error::Checked-out main does not match the scheduled commit: remote=$remote_main workflow=$GITHUB_SHA"
+            exit 1
+          }
+          echo "main branch policy is valid at $remote_main"
+
+      - name: Verify deleted pages stay absent
+        shell: bash
+        run: |
+          set -euo pipefail
+          forbidden_paths=(
+            'src/pages/HealthPages/MedicalSearch.jsx'
+            'src/styles/medical-search.css'
+          )
+          for path in "${forbidden_paths[@]}"; do
+            test ! -e "$path" || {
+              echo "::error::Deleted path returned: $path"
+              exit 1
+            }
+          done
+
+          if grep -RIn --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=dist_web \
+            -E "$FORBIDDEN_MARKERS" src; then
+            echo '::error::A forbidden deleted-page marker returned to src/'
+            exit 1
+          fi
+          echo 'Deleted-page paths and markers are absent from source.'
+
+      - name: Install and build main application
+        run: |
+          npm ci --legacy-peer-deps --no-audit --no-fund
+          npm run build
+
+      - name: Verify deleted pages stay absent from main bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RIl --include='*.js' --include='*.css' -E "$FORBIDDEN_MARKERS" dist_web; then
+            echo '::error::A forbidden deleted-page marker returned to dist_web/'
+            exit 1
+          fi
+          echo 'Deleted-page markers are absent from the main production bundle.'
+
+      - name: Install and build admin application
+        working-directory: admin
+        run: |
+          # admin/package-lock.json كان غير متزامن؛ npm install يتحقق من البناء دون كسر المراقبة.
+          npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+          npm run build
+
+      - name: Build AI gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --prefix gateway --ignore-scripts --no-audit --no-fund
+          ./gateway/node_modules/.bin/esbuild gateway/src/index.ts \
+            --bundle --format=esm --target=es2022 --minify \
+            --legal-comments=none --outfile=/tmp/raqqa-gateway-worker.js
+          node --check /tmp/raqqa-gateway-worker.js
+
+      - name: Publish monitor summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Main integrity monitor"
+            echo "- Commit: \\`${GITHUB_SHA}\\`"
+            echo "- Branch: \\`${GITHUB_REF_NAME}\\`"
+            echo "- Deleted-page guard: source and bundle checked"
+            echo "- Main, admin, and gateway builds: completed unless an earlier step failed"
+          } >> "$GITHUB_STEP_SUMMARY"
