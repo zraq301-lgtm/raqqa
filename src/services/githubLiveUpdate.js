@@ -1,15 +1,12 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { LiveUpdate } from '@capawesome/capacitor-live-update';
-import { Preferences } from '@capacitor/preferences';
 
 const MANIFEST_URLS = [
   'https://raqqa-ota.pages.dev/ota/raqqa-ota-manifest.json',
   'https://github.com/zraq301-lgtm/raqqa/releases/download/ota-main/raqqa-ota-manifest.json',
 ];
 const NATIVE_COMPATIBILITY = '1';
-const UPDATE_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
-const LAST_UPDATE_CHECK_KEY = 'raqqa_ota_last_checked_at_v2';
 let updateCheckStarted = false;
 let updateCheckPromise = null;
 
@@ -37,12 +34,7 @@ async function fetchManifest() {
 async function checkAndApplyUpdate() {
   if (updateCheckPromise) return updateCheckPromise;
   updateCheckPromise = (async () => {
-    let lastCheckedAt = 0;
-    try { lastCheckedAt = Number((await Preferences.get({ key: LAST_UPDATE_CHECK_KEY })).value || 0); } catch { /* first run */ }
-    if (lastCheckedAt && Date.now() - lastCheckedAt < UPDATE_CHECK_INTERVAL_MS) return false;
-
-    // سجّل وقت الفحص قبل التنزيل حتى لا تتكرر طلبات الشبكة عند إعادة فتح التطبيق سريعًا.
-    try { await Preferences.set({ key: LAST_UPDATE_CHECK_KEY, value: String(Date.now()) }); } catch { /* optional */ }
+    // يفحص الـmanifest عند كل تشغيل وعودة للتطبيق، ويحمّل فقط bundleId الجديد.
     await LiveUpdate.ready();
     const [current, manifest] = await Promise.all([LiveUpdate.getCurrentBundle(), fetchManifest()]);
     const currentBundleId = current?.bundleId || null;
