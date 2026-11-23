@@ -11,6 +11,7 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - 'vite.config.*'
+      - 'gateway/**'
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
@@ -38,6 +39,28 @@ jobs:
 
       - name: Build Web Bundle
         run: npm run build
+
+      - name: Build and update AI gateway code only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN GitHub secret'; exit 1; }
+          npm ci --prefix gateway
+          ./gateway/node_modules/.bin/esbuild gateway/src/index.ts --bundle --format=esm --target=es2022 --minify --legal-comments=none --outfile=gateway/dist/worker.js
+          curl --fail-with-body --silent --show-error \
+            -X PUT "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/ai-chat-gateway/content" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            -F 'metadata={"main_module":"worker.js"};type=application/json' \
+            -F 'worker.js=@gateway/dist/worker.js;type=application/javascript+module' \
+            -o /tmp/worker-upload.json
+          jq -e '.success == true' /tmp/worker-upload.json >/dev/null
+          curl --retry 5 --retry-delay 2 --fail --silent --show-error https://ai-chat-gateway.raqqa-api.workers.dev/health | jq -e '.status == "ok"' >/dev/null
+          status=$(curl --silent --show-error -o /tmp/transcribe-invalid.json -w '%{http_code}' \
+            -X POST -H 'Content-Type: application/json' \
+            --data '{"url":"file:///etc/passwd"}' \
+            https://ai-chat-gateway.raqqa-api.workers.dev/api/ai/transcribe)
+          test "$status" = '400'
+          jq -e '.error' /tmp/transcribe-invalid.json >/dev/null
 
       - name: Package OTA bundle and manifest
         shell: bash

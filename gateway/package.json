@@ -1,0 +1,11 @@
+{
+  "name": "raqqa-ai-gateway-deployment",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.21.5"
+  }
+}

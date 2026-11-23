@@ -4,6 +4,7 @@ import { Share } from '@capacitor/share';
 // استيراد الخدمة الموحدة النظيفة لجلب البيانات من السيرفر السحابي
 import { fetchPageData } from '../../services/adminService';
 import TrainingCards from '../../components/TrainingCards';
+import AiContentTraining from '../../components/AiContentTraining';
 
 const PassionsCrafts = () => {
   const [articles, setArticles] = useState([]);
@@ -78,6 +79,9 @@ const PassionsCrafts = () => {
             isVideoYouTube: isYouTube,
             isMediaOnly: isMediaOnly,
             interactiveCards,
+            trainingQuestions: interactiveCards,
+            mediaUrls: [videoUrl, imageUrl, audioUrl, item.article?.sourceUrl, item.article?.source_url, item.article?.referenceUrl, item.sourceUrl, item.source_url].filter(Boolean),
+            transcriptionUrl: videoUrl || audioUrl || '',
             textStyle: item.design?.textStyle || {},
             cardStyle: item.design?.textStyle?.cardStyle || 'soft',
             content: {
@@ -189,6 +193,7 @@ const PassionsCrafts = () => {
                   <div className="content" style={{ fontFamily: post.textStyle.fontFamily ? `'${post.textStyle.fontFamily}', sans-serif` : undefined, fontSize: post.textStyle.fontSize, fontWeight: post.textStyle.fontWeight, color: post.textStyle.color }}>
                     <div className="wp-html-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
                   </div>
+                  <AiContentTraining pageName={PAGE_NAME} title={post.title.rendered.replace(/<[^>]+>/g, '')} contentHtml={post.content.rendered} questions={post.trainingQuestions} mediaUrls={post.mediaUrls} videoUrl={post.transcriptionUrl} accent="#b08968" />
 
                   <div className="interaction-buttons">
                     <button onClick={() => handleLike(post.id)} className="btn-like">
