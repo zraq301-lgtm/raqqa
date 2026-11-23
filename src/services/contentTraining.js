@@ -42,6 +42,18 @@ function parseCards(reply) {
   }
   throw new Error('لم يصل تنسيق بطاقات التدريب بشكل صحيح. حاولي مرة أخرى.');
 }
+async function transcribeMediaUrl(url, token) {
+  const response = await fetch(`${AI_GATEWAY_BASE}/api/ai/transcribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ url }),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result?.detail || result?.error || `تعذر تفريغ محتوى الرابط (${response.status}).`);
+  const transcript = String(result.text || '').trim();
+  if (!transcript) throw new Error('لم يرجع محتوى نصيًا من الرابط.');
+  return transcript;
+}
 
 export async function createContentTraining({ pageName, title, contentHtml, questions = [], mediaUrls = [], videoUrl = '' }) {
   const body = stripHtml(contentHtml).slice(0, 10_000);
@@ -54,8 +66,9 @@ export async function createContentTraining({ pageName, title, contentHtml, ques
 
   const token = await getFirebaseIdToken();
   if (!token) throw new Error('سجّلي الدخول أولًا لاستخدام التدريب الذكي.');
+  const transcript = videoUrl ? await transcribeMediaUrl(videoUrl, token) : '';
   const videoReference = videoUrl ? { title: String(title || '').trim(), url: videoUrl } : null;
-  if (!body && !links.length && !existingQuestions.length && !videoReference) {
+  if (!body && !links.length && !existingQuestions.length && !transcript && !videoReference) {
     throw new Error('لا يوجد نص أو أسئلة أو رابط يمكن بناء التدريب عليه في هذا المنشور.');
   }
 
@@ -68,11 +81,11 @@ export async function createContentTraining({ pageName, title, contentHtml, ques
       messages: [
         {
           role: 'system',
-          content: 'أنتِ مصممة تعلم عربية. أنشئي بالضبط خمسة أسئلة تدريبية متنوعة، قصيرة وواضحة، تستهدف المهارة التي يعلّمها المحتوى. استخدمي نص المنشور والأسئلة المرفقة ومرجع الفيديو (عنوانه ورابطه) فقط. لا تدّعي مشاهدة محتوى الرابط أو اختلاق تفاصيل غير موجودة؛ إذا لم يتوفر شرح كافٍ فاجعلي الأسئلة تطبيقية ومبنية على النص المتاح. أعيدي JSON صالحًا فقط بالشكل: {"cards":[{"skill":"اسم المهارة","question":"سؤال تطبيقي","choices":["خيار 1","خيار 2","خيار 3","خيار 4"],"answer":"نص الخيار الصحيح حرفيًا","explanation":"تغذية راجعة موجزة تشرح الإجابة"}]}. اجعلي لكل بطاقة أربعة خيارات مختلفة وإجابة صحيحة واحدة، ووزعي الإجابة الصحيحة بين الخيارات. لا تضيفي Markdown أو أي نص خارج JSON.'
+          content: 'أنتِ مصممة تعلم عربية. أنشئي بالضبط خمسة أسئلة تدريبية متنوعة، قصيرة وواضحة، تستهدف مهارة قابلة للاكتساب من محتوى الفيديو. استخدمي نص المنشور، وتفريغ الفيديو، والأسئلة المرفقة، ومرجع الفيديو (عنوانه ورابطه) فقط. استخرجي من التفريغ خطوات عملية ومهارات قابلة للتطبيق، ولا تختلقي تفاصيل غير موجودة. أعيدي JSON صالحًا فقط بالشكل: {"cards":[{"skill":"اسم المهارة","question":"سؤال تطبيقي","choices":["خيار 1","خيار 2","خيار 3","خيار 4"],"answer":"نص الخيار الصحيح حرفيًا","explanation":"تغذية راجعة موجزة تشرح الإجابة وكيفية اكتساب المهارة"}]}. اجعلي لكل بطاقة أربعة خيارات مختلفة وإجابة صحيحة واحدة، ووزعي الإجابة الصحيحة بين الخيارات. لا تضيفي Markdown أو أي نص خارج JSON.'
         },
         {
           role: 'user',
-          content: JSON.stringify({ page: pageName, title, articleText: body, videoReference, questions: existingQuestions, relatedLinks: links }, null, 2).slice(0, 24_000)
+          content: JSON.stringify({ page: pageName, title, articleText: body, videoTranscript: transcript, videoReference, questions: existingQuestions, relatedLinks: links }, null, 2).slice(0, 24_000)
         }
       ]
     })
@@ -94,5 +107,5 @@ export async function createContentTraining({ pageName, title, contentHtml, ques
     };
   }).filter(Boolean);
   if (cards.length !== 5) throw new Error('لم يتم إنشاء خمس بطاقات مكتملة؛ حاولي مرة أخرى.');
-  return { cards, transcript: '' };
+  return { cards, transcript };
 }

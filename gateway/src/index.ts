@@ -77,6 +77,79 @@ function validateTranscriptionUrl(value: unknown): string | null {
     return url.href;
   } catch { return null; }
 }
+function youtubeVideoId(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.hostname === 'youtu.be' || url.hostname.endsWith('.youtu.be')) return url.pathname.slice(1).split('/')[0] || null;
+    if (url.hostname === 'youtube.com' || url.hostname.endsWith('.youtube.com')) {
+      if (url.pathname === '/watch') return url.searchParams.get('v');
+      const match = url.pathname.match(/^\/(?:embed|shorts|live)\/([^/?]+)/);
+      return match?.[1] || null;
+    }
+  } catch { /* not a YouTube URL */ }
+  return null;
+}
+function jsonArrayAfter(source: string, marker: string): unknown[] | null {
+  const markerIndex = source.indexOf(marker);
+  if (markerIndex < 0) return null;
+  const start = source.indexOf('[', markerIndex + marker.length);
+  if (start < 0) return null;
+  let depth = 0; let quoted = false; let escaped = false;
+  for (let index = start; index < source.length; index += 1) {
+    const character = source[index];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (character === '\\') escaped = true;
+      else if (character === '"') quoted = false;
+      continue;
+    }
+    if (character === '"') { quoted = true; continue; }
+    if (character === '[') depth += 1;
+    if (character === ']') {
+      depth -= 1;
+      if (depth === 0) {
+        try { return JSON.parse(source.slice(start, index + 1)) as unknown[]; } catch { return null; }
+      }
+    }
+  }
+  return null;
+}
+function decodeCaptionXml(value: string): string {
+  return value.replace(/<text[^>]*>([\s\S]*?)<\/text>/gi, '$1')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+async function youtubeTranscript(url: string): Promise<string | null> {
+  const videoId = youtubeVideoId(url);
+  if (!videoId) return null;
+  const page = await fetch(`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'text/html' } });
+  if (!page.ok) return null;
+  const html = await page.text();
+  const tracks = jsonArrayAfter(html, '"captionTracks":');
+  if (!tracks?.length) return null;
+  const ranked = [...tracks].sort((left, right) => {
+    const a = isRecord(left) ? String(left.languageCode || '') : '';
+    const b = isRecord(right) ? String(right.languageCode || '') : '';
+    return Number(b === 'ar') - Number(a === 'ar') || Number(b.startsWith('en')) - Number(a.startsWith('en'));
+  });
+  const track = ranked.find((item) => isRecord(item) && typeof item.baseUrl === 'string') as Record<string, unknown> | undefined;
+  if (!track) return null;
+  const captionUrl = new URL(String(track.baseUrl));
+  captionUrl.searchParams.set('fmt', 'json3');
+  const captionResponse = await fetch(captionUrl.href, { headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json,text/plain' } });
+  if (!captionResponse.ok) return null;
+  const captionBody = await captionResponse.text();
+  try {
+    const data: unknown = JSON.parse(captionBody);
+    if (isRecord(data) && Array.isArray(data.events)) {
+      const text = data.events.flatMap((event) => isRecord(event) && Array.isArray(event.segs) ? event.segs.map((segment) => isRecord(segment) ? String(segment.utf8 || '') : '') : []).join(' ').replace(/\s+/g, ' ').trim();
+      if (text) return text.slice(0, 30_000);
+    }
+  } catch { /* fall back to XML captions */ }
+  const xmlText = decodeCaptionXml(captionBody);
+  return xmlText ? xmlText.slice(0, 30_000) : null;
+}
 async function resolveTranscriptionUrl(value: string): Promise<string> {
   let current = value;
   const visited = new Set<string>();
@@ -165,12 +238,18 @@ app.options('/api/medical/search', (c) => c.body(null, 204));
 app.get('/health', (c) => c.json({ status: 'ok' }));
 app.get('/chat-test', (c) => c.html(chatTestPage));
 app.post('/api/ai/transcribe', async (c) => {
-  if (!c.env?.GROQ_API_KEY) return jsonError(c, 503, 'Groq transcription is not configured.', 'Set GROQ_API_KEY as a Worker secret.');
   let body: unknown; try { body = await c.req.json(); } catch { return jsonError(c, 400, 'Invalid JSON body.'); }
   if (!isRecord(body)) return jsonError(c, 400, 'Request body must be a JSON object.');
   const mediaUrl = validateTranscriptionUrl(body.url);
   if (!mediaUrl) return jsonError(c, 400, "'url' must be a public HTTPS media link.");
 
+  try {
+    const youtubeText = await youtubeTranscript(mediaUrl);
+    if (youtubeText) return c.json({ text: youtubeText, language: 'ar', duration: null, segments: [], model: 'youtube-captions' });
+  } catch (error) {
+    console.warn('YouTube caption extraction failed:', error instanceof Error ? error.message : error);
+  }
+  if (!c.env?.GROQ_API_KEY) return jsonError(c, 503, 'Groq transcription is not configured.', 'Set GROQ_API_KEY as a Worker secret.');
   const form = new FormData();
   form.set('model', 'whisper-large-v3-turbo');
   form.set('language', 'ar');
