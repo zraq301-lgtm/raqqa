@@ -27,7 +27,7 @@ const APP_ROUTES = {
 };
 const HEALTH_TABS = {
   'الحيض': 'menstrual', 'نصيحة طبيب': 'advice', 'الحمل': 'pregnancy',
-  'الأمومة': 'motherhood', 'الطبيب': 'doctor', 'الرشاقة': 'fitness', 'الرضاعة': 'lactation', 'همسات أنثى': 'whispers', 'البحث الطبي الآمن': 'medical-search',
+  'الأمومة': 'motherhood', 'الطبيب': 'doctor', 'الرشاقة': 'fitness', 'الرضاعة': 'lactation', 'همسات أنثى': 'whispers',
 };
 
 const getTargetPath = (item) => {

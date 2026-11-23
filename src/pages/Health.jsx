@@ -13,10 +13,8 @@ const DoctorClinical = lazy(() => import('./HealthPages/DoctorClinical'));
 const FitnessWellness = lazy(() => import('./HealthPages/FitnessWellness'));
 const Motherhood = lazy(() => import('./HealthPages/Motherhood'));
 const FemaleWhispers = lazy(() => import('./HealthPages/FemaleWhispers'));
-const MedicalSearch = lazy(() => import('./HealthPages/MedicalSearch'));
 const sections = [
   { id: 'whispers', title: 'همسات أنثى', img: 'female-whispers.png', icon: 'feelings', component: FemaleWhispers },
-  { id: 'medical-search', title: 'البحث الطبي الآمن', img: 'doctor.png', icon: 'insight', component: MedicalSearch },
   { id: 'menstrual', title: 'الحيض', img: 'menstrual.png', icon: 'health', component: MenstrualTracker },
   { id: 'advice', title: 'نصيحة طبيب', img: 'advice.png', icon: 'chat', component: Advice },
   { id: 'pregnancy', title: 'الحمل', img: 'pregnancy.png', icon: 'intimacy', component: PregnancyMonitor },
@@ -61,7 +59,7 @@ export default function Health({ onSyncReminders }) {
       <button className="health-back-button" onClick={() => { setActiveTab(null); navigate('/health', { replace: true }); }}>عودة</button>
       <Suspense fallback={<p className="health-loading">جاري التحميل...</p>}>
         {activeSection && <activeSection.component onNotificationSync={handleTriggerSync} />}
-        {!['whispers', 'medical-search'].includes(activeSection?.id) && activeSection && <PublishedPageContent pageNames={[activeSection.pageName]} title={`محتوى ${activeSection.title}`} />}
+        {!['whispers'].includes(activeSection?.id) && activeSection && <PublishedPageContent pageNames={[activeSection.pageName]} title={`محتوى ${activeSection.title}`} />}
       </Suspense>
     </div>;
   }
