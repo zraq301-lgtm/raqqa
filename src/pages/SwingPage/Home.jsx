@@ -199,13 +199,13 @@ export default function Home({ user }) {
       <div className="swing-welcome-heading"><strong>مساحاتكِ الجديدة</strong><span>ابدئي من هنا</span></div>
       <div className="swing-welcome-cards" aria-label="كروت ترحيب الأرجوحة">
         <button type="button" className="swing-welcome-card" onClick={() => navigate('/swing-forum?section=PassionsCrafts')} aria-label="فتح حملة ترحيب في تدريب شغف وحرف">
-          <img src="/swing-welcome-passions.png" alt="حملة ترحيب في تدريب شغف وحرف" loading="eager" /><span className="swing-welcome-card-label">شغف وحرف ←</span>
+          <img src="/swing-welcome-passions.webp" alt="حملة ترحيب في تدريب شغف وحرف" loading="eager" /><span className="swing-welcome-card-label">شغف وحرف ←</span>
         </button>
         <button type="button" className="swing-welcome-card" onClick={() => navigate('/swing-forum?section=EmpowermentPaths')} aria-label="فتح نفس الأحلام — دروب التمكين">
-          <img src="/swing-welcome-empowerment.png" alt="نفس الأحلام — دروب التمكين" loading="eager" /><span className="swing-welcome-card-label">دروب التمكين ←</span>
+          <img src="/swing-welcome-empowerment.webp" alt="نفس الأحلام — دروب التمكين" loading="eager" /><span className="swing-welcome-card-label">دروب التمكين ←</span>
         </button>
         <button type="button" className="swing-welcome-card" onClick={() => navigate('/swing-forum?section=LittleOnesAcademy')} aria-label="فتح أكاديمية الصغار">
-          <img src="/swing-welcome-little-ones.png" alt="أكاديمية الصغار" loading="eager" /><span className="swing-welcome-card-label">أكاديمية الصغار ←</span>
+          <img src="/swing-welcome-little-ones.webp" alt="أكاديمية الصغار" loading="eager" /><span className="swing-welcome-card-label">أكاديمية الصغار ←</span>
         </button>
       </div>
       <PrivateAssistantWidget topic="community" title="استشيري مساعد رِقّة" />

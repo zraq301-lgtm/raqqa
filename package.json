@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build --outDir dist_web",
+    "build": "vite build --outDir dist_web && node scripts/prune-legacy-public-assets.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
