@@ -76,6 +76,18 @@ export default function AppThemeProvider({ children }) {
     document.body.style.fontFamily = `'${settings.fontFamily}', sans-serif`;
   }, [settings]);
 
+  useEffect(() => {
+    const endAt = Date.parse(settings.celebration?.endAt || '');
+    if (!Number.isFinite(endAt) || endAt <= Date.now()) return undefined;
+    const timer = window.setTimeout(() => {
+      setSettings((current) => ({
+        ...current,
+        celebration: { ...current.celebration, type: 'none' },
+      }));
+    }, endAt - Date.now() + 50);
+    return () => window.clearTimeout(timer);
+  }, [settings.celebration?.endAt]);
+
   const celebrationActive = settings.celebration?.type !== 'none'
     && settings.celebration?.endAt
     && Date.parse(settings.celebration.endAt) > Date.now();

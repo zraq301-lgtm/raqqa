@@ -10,6 +10,7 @@ const defaults = {
   branding: { enabled: true, name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '32px', fontWeight: '800', letterSpacing: '0px' },
   pages: {
     health: { label: 'صحتك', icon: '🩺' },
+    'health.whispers': { label: 'همسات أنثى', icon: '🌷' },
     feelings: { label: 'المشاعر', icon: '🌸' },
     intimacy: { label: 'الحميمية', icon: '💗' },
     swing: { label: 'الأرجوحة', icon: '🌿' },
@@ -42,7 +43,7 @@ const mainPages = [
   ['insight', 'الإشراقة'], ['videos', 'مكتبة الفيديوهات'], ['virtualWorld', 'عالم رقة'],
 ];
 const healthPages = [
-  ['health.menstrual', 'الحيض'], ['health.advice', 'نصيحة طبيب'], ['health.pregnancy', 'الحمل'],
+  ['health.whispers', 'همسات أنثى'], ['health.menstrual', 'الحيض'], ['health.advice', 'نصيحة طبيب'], ['health.pregnancy', 'الحمل'],
   ['health.motherhood', 'الأمومة'], ['health.doctor', 'الطبيب'], ['health.fitness', 'الرشاقة'], ['health.lactation', 'الرضاعة'],
 ];
 const swingPages = [
