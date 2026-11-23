@@ -77,6 +77,31 @@ function validateTranscriptionUrl(value: unknown): string | null {
     return url.href;
   } catch { return null; }
 }
+async function resolveTranscriptionUrl(value: string): Promise<string> {
+  let current = value;
+  const visited = new Set<string>();
+  for (let hop = 0; hop < 6; hop += 1) {
+    if (visited.has(current)) throw new Error('The media link contains a redirect loop.');
+    visited.add(current);
+    const response = await fetch(current, {
+      headers: { Range: 'bytes=0-0' },
+      redirect: 'manual',
+    });
+    const followedByFetch = Boolean(response.url && response.url !== current && !(response.status >= 300 && response.status < 400));
+    let next = response.url || current;
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (!location) throw new Error('The media link redirected without a destination.');
+      next = new URL(location, next).href;
+    }
+    try { await response.body?.cancel(); } catch { /* the redirect probe body is intentionally discarded */ }
+    const validated = validateTranscriptionUrl(next);
+    if (!validated) throw new Error('The media link redirects to a non-public HTTPS address.');
+    if (validated === current || followedByFetch) return validated;
+    current = validated;
+  }
+  throw new Error('The media link redirected too many times.');
+}
 const MEDICAL_SOURCES = [
   { id: 'who', name: 'منظمة الصحة العالمية', domain: 'who.int' },
   { id: 'moh', name: 'وزارة الصحة السعودية', domain: 'moh.gov.sa' },
@@ -147,20 +172,28 @@ app.post('/api/ai/transcribe', async (c) => {
   if (!mediaUrl) return jsonError(c, 400, "'url' must be a public HTTPS media link.");
 
   const form = new FormData();
-  form.set('url', mediaUrl);
   form.set('model', 'whisper-large-v3-turbo');
   form.set('language', 'ar');
   form.set('response_format', 'verbose_json');
   form.set('temperature', '0');
   form.set('prompt', 'فرّغ الكلام المنطوق باللغة العربية. حافظ على الأسماء والمصطلحات العربية كما وردت.');
   try {
+    const resolvedMediaUrl = await resolveTranscriptionUrl(mediaUrl);
+    form.set('url', resolvedMediaUrl);
     const upstream = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${c.env.GROQ_API_KEY}` },
       body: form,
     });
     const text = await upstream.text();
-    if (!upstream.ok) return c.json({ error: 'Groq transcription request failed.', status: upstream.status, detail: text.slice(0, 1000) }, upstream.status === 429 ? 429 : 502);
+    if (!upstream.ok) {
+      let detail = text.slice(0, 1000);
+      try {
+        const errorBody: unknown = JSON.parse(text);
+        if (isRecord(errorBody) && isRecord(errorBody.error) && typeof errorBody.error.message === 'string') detail = errorBody.error.message;
+      } catch { /* retain the provider response text when it is not JSON */ }
+      return c.json({ error: 'Groq transcription request failed.', status: upstream.status, detail }, upstream.status === 429 ? 429 : 502);
+    }
     let result: unknown;
     try { result = JSON.parse(text); } catch { return c.json({ error: 'Groq returned invalid transcription JSON.' }, 502); }
     if (!isRecord(result) || typeof result.text !== 'string' || !result.text.trim()) return c.json({ error: 'Groq returned an empty transcript.' }, 502);
