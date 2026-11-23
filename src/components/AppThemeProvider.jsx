@@ -14,9 +14,16 @@ const AppThemeContext = createContext(defaultSettings);
 
 function safeSettings(payload) {
   const settings = payload?.settings || payload || {};
-  const branding = settings.branding && typeof settings.branding === 'object' ? { ...defaultSettings.branding, ...settings.branding } : { ...defaultSettings.branding };
-  if (!settings.branding?.fontSize || settings.branding.fontSize === '24px') branding.fontSize = defaultSettings.branding.fontSize;
-  if (typeof settings.branding?.enabled !== 'boolean') branding.enabled = defaultSettings.branding.enabled;
+  // The current API preserves page settings but may omit the top-level branding key.
+  // Keep the admin-controlled logo working through the supported pages container.
+  const remoteBranding = settings.branding && typeof settings.branding === 'object'
+    ? settings.branding
+    : settings.pages?.__branding;
+  const branding = remoteBranding && typeof remoteBranding === 'object'
+    ? { ...defaultSettings.branding, ...remoteBranding }
+    : { ...defaultSettings.branding };
+  if (!remoteBranding?.fontSize || remoteBranding.fontSize === '24px') branding.fontSize = defaultSettings.branding.fontSize;
+  if (typeof remoteBranding?.enabled !== 'boolean') branding.enabled = defaultSettings.branding.enabled;
   return {
     ...defaultSettings,
     ...settings,

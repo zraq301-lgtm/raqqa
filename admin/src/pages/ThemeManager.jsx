@@ -60,9 +60,12 @@ const celebrationOptions = [
 ];
 
 function mergeSettings(remote) {
-  const branding = { ...defaults.branding, ...(remote?.branding || {}) };
-  if (!remote?.branding?.fontSize || remote.branding.fontSize === '24px') branding.fontSize = defaults.branding.fontSize;
-  if (typeof remote?.branding?.enabled !== 'boolean') branding.enabled = defaults.branding.enabled;
+  const remoteBranding = remote?.branding && typeof remote.branding === 'object'
+    ? remote.branding
+    : remote?.pages?.__branding;
+  const branding = { ...defaults.branding, ...(remoteBranding || {}) };
+  if (!remoteBranding?.fontSize || remoteBranding.fontSize === '24px') branding.fontSize = defaults.branding.fontSize;
+  if (typeof remoteBranding?.enabled !== 'boolean') branding.enabled = defaults.branding.enabled;
   return {
     ...defaults,
     ...(remote || {}),

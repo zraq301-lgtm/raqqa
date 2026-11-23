@@ -153,11 +153,17 @@ export const getAppTheme = async () => {
 };
 
 export const saveAppTheme = async (settings) => {
+  // The API keeps the pages object but older deployments omit top-level branding.
+  // Store a namespaced copy there so the admin-controlled logo survives round trips.
+  const payloadSettings = {
+    ...settings,
+    pages: { ...(settings.pages || {}), __branding: settings.branding },
+  };
   const response = await fetch(`${API_BASE}/api/settings/theme`, {
     method: 'POST',
     headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
-    body: JSON.stringify({ settings }),
+    body: JSON.stringify({ settings: payloadSettings }),
   });
   const result = await parseResponse(response);
-  return result.settings || settings;
+  return result.settings || payloadSettings;
 };
