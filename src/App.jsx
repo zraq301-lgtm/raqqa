@@ -287,13 +287,13 @@ function App({ user, onUserUpdated }) {
   }, [syncNotifications, location.pathname]);
 
   return (
-    <div className="app-container main-page-theme" style={{ '--main-theme-color': activeBackground, '--page-accent-color': activePageTheme.accentColor || appTheme.accentColor, '--page-text-color': activePageTheme.textColor || '#352d31', '--page-font-family': `'${activeFont}', sans-serif`, '--page-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none' }}>
+    <div className={`app-container main-page-theme${isSwingPage ? ' app-container--swing-mode' : ''}`} style={{ '--main-theme-color': activeBackground, '--page-accent-color': activePageTheme.accentColor || appTheme.accentColor, '--page-text-color': activePageTheme.textColor || '#352d31', '--page-font-family': `'${activeFont}', sans-serif`, '--page-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none' }}>
       <ScrollToTop />
       <DatePickerEnhancer />
-      <TipOverlay />
-      {profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
+      {!isSwingPage && <TipOverlay />}
+      {!isSwingPage && profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
 
-      <header className="main-app-header">
+      {!isSwingPage && <header className="main-app-header">
         <button className="profile-summary" onClick={() => setProfileEditorOpen(true)} aria-label="تعديل ملفك الشخصي">
           {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
           <span>{profileName}</span>
@@ -319,11 +319,11 @@ function App({ user, onUserUpdated }) {
             <span>{pageLabel('virtualWorld', 'عالم رقة')}</span>
           </Link>
         </nav>
-      </header>
+      </header>}
 
-      <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+      {!isSwingPage && <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
           <AdBanner />
-      </div>
+      </div>}
       {!isSwingPage && !isHealthSubpage && <TopPageCarousel />}
 
       <main className={`main-content${isSwingPage ? ' main-content--swing' : ''}`} style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>

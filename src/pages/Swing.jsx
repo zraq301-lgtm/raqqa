@@ -3,9 +3,6 @@ import { CapacitorHttp } from '@capacitor/core';
 import { useLocation } from 'react-router-dom';
 import { useAppTheme } from '../components/AppThemeProvider';
 
-// استدعاء مكون الإعلان
-import AdBanner from '../components/AdBanner';
-
 // استدعاء الصفحات بناءً على القائمة الموجودة
 import Home from '../pages/SwingPage/Home';
 import CulinaryArts from '../pages/SwingPage/CulinaryArts';
@@ -127,20 +124,6 @@ const SwingForum = ({ user }) => {
         .update-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: white; border-top: 1px solid #eee; font-size: 10px; color: #888; flex-shrink: 0; }
       `}</style>
 
-      {/* شريط علوي */}
-      <header className="top-bar">
-        <button className="back-btn" onClick={() => window.location.href = "/"}>
-          <span>🔙</span> خروج
-        </button>
-        <span style={{ fontWeight: '900', color: '#ff4d7d', fontSize: '1.2rem' }}>رقة</span>
-        <div style={{ width: '40px' }}></div>
-      </header>
-
-      {/* مساحة إعلانية بالأعلى (تم نقلها هنا) */}
-      <div className="ad-wrapper">
-        <AdBanner />
-      </div>
-
       {/* التنقل العلوي */}
       <nav className="glass-header-nav">
         {sections.map((sec) => (
@@ -160,10 +143,6 @@ const SwingForum = ({ user }) => {
         {renderCurrentPage()}
       </div>
 
-      {/* الفوتر */}
-      <footer className="update-footer">
-        <span>صنع بكل حب لـ رقة ✨</span>
-      </footer>
     </div>
   );
 };
