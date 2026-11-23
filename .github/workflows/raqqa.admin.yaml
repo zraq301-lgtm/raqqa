@@ -41,6 +41,8 @@ jobs:
     steps:
       - name: 1. Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: 2. Setup Java 17
         if: env.BUILD_ADMIN_ANDROID == 'true'
