@@ -4,10 +4,9 @@ import React, { useMemo, useState } from 'react';
  * كروت تدريب اختيارية محفوظة داخل article.interactiveCards.
  * يظهر كارت واحد فقط، ولا يُفتح التالي إلا بعد اختيار إجابة.
  */
-export default function TrainingCards({ cards = [], accent = '#b08968', variant = 'soft' }) {
+export default function TrainingCards({ cards = [], accent = '#b08968', variant = 'soft', onComplete = () => {} }) {
   const normalized = useMemo(() => cards
     .filter((card) => card && (card.question || card.prompt))
-    .slice(0, 4)
     .map((card, index) => ({
       id: card.id || `training-card-${index}`,
       question: String(card.question || card.prompt || '').trim(),
@@ -16,23 +15,40 @@ export default function TrainingCards({ cards = [], accent = '#b08968', variant 
         : [],
       answer: String(card.answer || card.correctAnswer || '').trim(),
       explanation: String(card.explanation || '').trim(),
-      points: Number(card.points) || 0,
+      points: Number(card.points) || 1,
     }))
     .filter((card) => card.question), [cards]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selected, setSelected] = useState('');
   const [revealed, setRevealed] = useState(false);
   const [score, setScore] = useState(0);
+  const [attempts, setAttempts] = useState({});
 
   if (!normalized.length) return null;
   const current = normalized[currentIndex];
   const isCorrect = current.answer && selected && selected === current.answer;
   const submitAnswer = () => {
     if (!selected || revealed) return;
+    setAttempts((currentAttempts) => ({
+      ...currentAttempts,
+      [current.id]: { selected, answer: current.answer, correct: Boolean(isCorrect), points: current.points },
+    }));
     setRevealed(true);
     if (isCorrect) setScore((value) => value + current.points);
   };
   const nextCard = () => {
+    if (currentIndex === normalized.length - 1) {
+      const completedAttempts = {
+        ...attempts,
+        [current.id]: { selected, answer: current.answer, correct: Boolean(isCorrect), points: current.points },
+      };
+      onComplete({
+        score: Object.values(completedAttempts).reduce((sum, item) => sum + (item.correct ? item.points : 0), 0),
+        total: normalized.length,
+        cards: normalized,
+        attempts: completedAttempts,
+      });
+    }
     setCurrentIndex((value) => value + 1);
     setSelected('');
     setRevealed(false);
