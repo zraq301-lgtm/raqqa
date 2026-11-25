@@ -14,6 +14,7 @@ import {
   writeFemaleWhispersCache,
 } from '../../services/femaleWhispersCache';
 import '../../styles/female-whispers.css';
+import VideoPlayer from '../../components/VideoTools';
 
 const formatDate = (value) => {
   try {
@@ -158,7 +159,7 @@ export default function FemaleWhispers() {
         <textarea className="female-whispers-textarea" value={body} onChange={(event) => setBody(event.target.value)} placeholder="اكتبي هنا ما تريدين الاحتفاظ به…" maxLength={100000} rows={7} />
         {media && (
           <div className="female-whispers-uploaded">
-            {media.type === 'video' ? <video src={media.url} controls preload="metadata" /> : <img src={media.url} alt="المرفق الجديد" />}
+            {media.type === 'video' ? <VideoPlayer url={media.url} title={title || 'فيديو من همسات أنثى'} /> : <img src={media.url} alt="المرفق الجديد" />}
             <button type="button" onClick={() => setMedia(null)} disabled={busy}>إزالة المرفق</button>
           </div>
         )}
@@ -179,7 +180,7 @@ export default function FemaleWhispers() {
             <div className="female-whispers-entry-top"><time>{formatDate(entry.created_at)}</time><button type="button" onClick={() => remove(entry)} aria-label="حذف المذكرة">حذف</button></div>
             {entry.title && <h3>{entry.title}</h3>}
             {entry.body && <p>{entry.body}</p>}
-            {entry.media_url && (entry.media_type === 'video' ? <video src={entry.media_url} controls preload="metadata" /> : <img src={entry.media_url} alt={entry.title || 'صورة من مفكرتي'} loading="lazy" />)}
+            {entry.media_url && (entry.media_type === 'video' ? <VideoPlayer url={entry.media_url} title={entry.title || 'فيديو من مفكرتي'} /> : <img src={entry.media_url} alt={entry.title || 'صورة من مفكرتي'} loading="lazy" />)}
           </article>
         ))}
       </section>

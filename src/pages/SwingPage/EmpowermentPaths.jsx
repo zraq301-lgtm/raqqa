@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Share } from '@capacitor/share';
 // استيراد الخدمة الموحدة النظيفة لجلب البيانات من السيرفر
 import { fetchPageData } from '../../services/adminService';
+import VideoPlayer from '../../components/VideoTools';
 import TrainingExperience from '../../components/TrainingExperience';
 
 const EmpowermentPaths = () => {
@@ -172,11 +173,7 @@ const EmpowermentPaths = () => {
 
                   {featuredVideo && (
                     <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
-                      {isVideoYouTube ? (
-                        <iframe src={featuredVideo} width="100%" height="280" frameBorder="0" allowFullScreen style={{ display: 'block' }} />
-                      ) : (
-                        <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
-                      )}
+                      <VideoPlayer url={featuredVideo} title={post.title.rendered.replace(/<[^>]+>/g, '')} />
                     </div>
                   )}
 

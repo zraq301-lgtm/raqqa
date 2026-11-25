@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchPageData } from '../services/adminService';
 import { isCacheFresh, readPageCache, writePageCache } from '../services/contentCache';
+import VideoPlayer from './VideoTools';
 
 const getItems = (result) => {
   if (Array.isArray(result)) return result;
@@ -21,8 +22,7 @@ function ContentMedia({ item }) {
   const youtubeId = getYoutubeId(videoUrl);
 
   if (imageUrl) return <img className="published-content-media" src={imageUrl} alt={item.article?.title || 'صورة المحتوى'} loading="lazy" />;
-  if (youtubeId) return <div className="published-content-video"><iframe src={`https://www.youtube-nocookie.com/embed/${youtubeId}`} title={item.article?.title || 'فيديو من رقة'} loading="lazy" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>;
-  if (videoUrl) return <video className="published-content-media" src={videoUrl} controls preload="metadata" />;
+  if (youtubeId || videoUrl) return <VideoPlayer url={videoUrl} title={item.article?.title || 'فيديو من رقة'} className="published-content-video" />;
   return null;
 }
 

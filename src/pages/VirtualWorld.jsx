@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // ✅ تم تصحيح المسار هنا (الخروج بمستوى واحد فقط للوصول لمجلد src)
 import { fetchPageData } from '../services/adminService';
+import VideoPlayer from '../components/VideoTools';
 
 const VirtualWorld = () => {
   const [vrCategories, setVrCategories] = useState([]); // دمج البيانات القادمة من السيرفر هنا
@@ -96,13 +97,7 @@ const VirtualWorld = () => {
           <div style={styles.modalHeader}>
             <button onClick={() => setActiveVideo(null)} style={styles.closeBtn}>رجوع القائمة ×</button>
           </div>
-          <iframe
-            src={getYoutubeUrl(activeVideo)}
-            style={styles.iframe}
-            frameBorder="0"
-            allow="accelerometer; autoplay; encrypted-media; gyroscope; vr"
-            allowFullScreen
-          />
+          <VideoPlayer url={getYoutubeUrl(activeVideo)} title="جولة افتراضية من مملكة الاسترخاء" />
         </div>
       )}
 

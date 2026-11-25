@@ -6,6 +6,7 @@ import { MessageCircle, Send, Share2, ImagePlus, RefreshCw, Heart, Star, Link2, 
 import { getFirebaseIdToken } from '../../services/authService';
 import PublishedPageContent from '../../components/PublishedPageContent';
 import PrivateAssistantWidget from '../../components/PrivateAssistantWidget';
+import VideoPlayer from '../../components/VideoTools';
 
 const API_BASE = (import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev').replace(/\/$/, '');
 const SECTION = 'bouh-display-1';
@@ -43,9 +44,9 @@ function MediaView({ url, type }) {
       youtubeId = parsed.hostname.includes('youtu.be') ? parsed.pathname.slice(1) : (parsed.searchParams.get('v') || parsed.pathname.split('/').filter(Boolean).pop() || '');
     } catch { youtubeId = ''; }
   }
-  if (youtubeId) return <div className="swing-media-frame"><iframe src={`https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}`} title="فيديو من يوتيوب" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowFullScreen /></div>;
+  if (youtubeId) return <VideoPlayer url={url} title="فيديو من يوتيوب" className="swing-media-frame" />;
   if (mediaType === 'image') return <img className="swing-post-image" src={url} alt="مرفق المنشور" loading="lazy" />;
-  if (mediaType === 'video') return <video className="swing-post-video" src={url} controls playsInline preload="metadata" />;
+  if (mediaType === 'video') return <VideoPlayer url={url} title="فيديو من منشور الأرجوحة" className="swing-post-video" />;
   return <a className="swing-link-card" href={url} target="_blank" rel="noreferrer"><Link2 size={18} /><span>فتح المرفق</span></a>;
 }
 

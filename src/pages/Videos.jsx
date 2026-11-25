@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // ✅ استخدام كود الخدمة الموحد وبالمسار الصحيح المكتشف سابقاً لإلغاء الاعتماد على فيربيس المباشر
 import { fetchPageData } from '../services/adminService';
+import VideoPlayer from '../components/VideoTools';
 
 const VideoLibrary = () => {
   const [allVideos, setAllVideos] = useState([]);
@@ -80,6 +81,10 @@ const VideoLibrary = () => {
     const videoId = (match && match[2].length === 11) ? match[2] : null;
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
+  const focusVideo = (index) => {
+    const target = filteredVideos[index];
+    if (target) document.getElementById(`video-card-${target.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   if (loading) return (
     <div style={fullScreenLoaderStyle}>
@@ -144,22 +149,10 @@ const VideoLibrary = () => {
       <main style={scrollContentStyle}>
         <div style={videoGridStyle}>
           {filteredVideos.map((video, index) => (
-            <div key={video.id || index} className="video-card-elegant">
-              <div style={videoFrameWrapper}>
-                {video.url ? (
-                  <iframe
-                    src={formatEmbedUrl(video.url)}
-                    title={video.title}
-                    style={iframeStyle}
-                    frameBorder="0"
-                    allowFullScreen
-                  ></iframe>
-                ) : video.imageUrl ? (
-                  <img src={video.imageUrl} alt={video.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: '#fceaf2', color: '#a04370', fontWeight: 700 }}>📝 مقال</div>
-                )}
-              </div>
+            <div key={video.id || index} id={`video-card-${video.id || index}`} className="video-card-elegant">
+              {video.url ? <VideoPlayer url={video.url} title={video.title} showAd={false} previousUrl={filteredVideos[index - 1]?.url} nextUrl={filteredVideos[index + 1]?.url} onPrevious={() => focusVideo(index - 1)} onNext={() => focusVideo(index + 1)} /> : <div style={videoFrameWrapper}>
+                {video.imageUrl ? <img src={video.imageUrl} alt={video.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: '#fceaf2', color: '#a04370', fontWeight: 700 }}>📝 مقال</div>}
+              </div>}
               <div style={videoInfoStyle}>
                 <span style={badgeStyle}>
                   {categories.find(c => c.id === video.category)?.label.split(' ')[1] || 'عام'}

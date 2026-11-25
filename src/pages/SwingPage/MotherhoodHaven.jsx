@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Share } from '@capacitor/share';
 import { fetchPageData } from '../../services/adminService';
+import VideoPlayer from '../../components/VideoTools';
 
 const EleganceSection = () => {
   const [articles, setArticles] = useState([]);
@@ -179,18 +180,7 @@ const EleganceSection = () => {
                   {/* عرض الفيديو البارز الأساسي بكامل العرض وبأبعاد ممتازة */}
                   {featuredVideo && (
                     <div className="main-featured-video" style={{ width: '100%', padding: '0' }}>
-                      {isVideoYouTube ? (
-                        <iframe
-                          src={featuredVideo}
-                          width="100%"
-                          height="320"
-                          frameBorder="0"
-                          allowFullScreen
-                          style={{ display: 'block' }}
-                        />
-                      ) : (
-                        <video src={featuredVideo} controls style={{ width: '100%', display: 'block', height: 'auto' }} />
-                      )}
+                      <VideoPlayer url={featuredVideo} title={post.title.rendered.replace(/<[^>]+>/g, '')} />
                     </div>
                   )}
 
