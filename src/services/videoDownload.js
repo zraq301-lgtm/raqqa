@@ -44,6 +44,11 @@ export async function downloadVideoToDevice(url, title = 'raqqa-video') {
     anchor.remove();
     return { mode: 'browser', filename };
   }
+  await Filesystem.mkdir({
+    path: 'Raqqa/Downloads',
+    directory: Directory.Documents,
+    recursive: true,
+  });
   const result = await Filesystem.downloadFile({
     url,
     path: `Raqqa/Downloads/${filename}`,

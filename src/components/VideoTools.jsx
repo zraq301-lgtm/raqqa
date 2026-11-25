@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ExternalLink, Film, ChevronRight, ChevronLeft, Download, Megaphone } from 'lucide-react';
+import { ExternalLink, Film, ChevronRight, ChevronLeft, Download } from 'lucide-react';
 import { downloadVideoToDevice, isDirectVideoUrl, isYoutubeUrl } from '../services/videoDownload';
+import AdBanner from './AdBanner';
 
 function youtubeEmbedUrl(url) {
   if (String(url).includes('/embed/')) return url;
@@ -11,8 +12,8 @@ function youtubeEmbedUrl(url) {
   } catch { return url; }
 }
 
-export function VideoAdSlot({ label = 'مساحة إعلانية' }) {
-  return <div className="video-ad-slot" role="complementary" aria-label={label}><Megaphone size={15} /><span>{label}</span></div>;
+export function VideoAdSlot() {
+  return <div className="video-ad-slot" role="complementary" aria-label="إعلان"><AdBanner placement="banner" /></div>;
 }
 
 export function VideoActions({ url, title = 'فيديو من رقة', previousUrl, nextUrl, onPrevious, onNext, showAd = true }) {
@@ -41,7 +42,7 @@ export function VideoActions({ url, title = 'فيديو من رقة', previousUr
     </div>
     {status && <p className="video-action-status" role="status">{status}</p>}
     {showAd && <VideoAdSlot />}
-    <style>{`.video-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 5px}.video-action-button,.video-navigation button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:9px 11px;font:inherit;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer}.video-download-button{background:#b12a68;color:#fff}.video-open-button{background:#fceaf2;color:#9f245d}.video-action-button:disabled,.video-navigation button:disabled{opacity:.4;cursor:not-allowed}.video-navigation{display:flex;align-items:center;gap:5px;width:100%;justify-content:space-between;margin-top:3px}.video-navigation button{background:#fff;border:1px solid #edd6e2;color:#9f245d}.video-navigation span{display:inline-flex;align-items:center;gap:4px;color:#8f6178;font-size:10px;font-weight:700}.video-action-status{margin:5px 0;color:#6c5361;font-size:11px;line-height:1.6}.video-ad-slot{display:flex;align-items:center;justify-content:center;gap:7px;min-height:42px;margin:10px 0;padding:8px;border:1px dashed #e6bdcf;border-radius:13px;background:linear-gradient(90deg,#fff8fb,#fff);color:#a36b87;font-size:10px;font-weight:700}`}</style>
+    <style>{`.video-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0 5px}.video-action-button,.video-navigation button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;padding:9px 11px;font:inherit;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer}.video-download-button{background:#b12a68;color:#fff}.video-open-button{background:#fceaf2;color:#9f245d}.video-action-button:disabled,.video-navigation button:disabled{opacity:.4;cursor:not-allowed}.video-navigation{display:flex;align-items:center;gap:5px;width:100%;justify-content:space-between;margin-top:3px}.video-navigation button{background:#fff;border:1px solid #edd6e2;color:#9f245d}.video-navigation span{display:inline-flex;align-items:center;gap:4px;color:#8f6178;font-size:10px;font-weight:700}.video-action-status{margin:5px 0;color:#6c5361;font-size:11px;line-height:1.6}.video-ad-slot{display:flex;justify-content:center;min-height:0;margin:10px 0}`}</style>
   </>;
 }
 
