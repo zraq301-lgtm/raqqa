@@ -20,3 +20,13 @@
 
 .field input[type="checkbox"]{width:20px;height:20px;min-height:20px;padding:0;accent-color:var(--pink-dark);cursor:pointer}
 .field input[type="range"]{min-height:26px;padding:0;border:0;background:transparent;accent-color:var(--pink-dark);cursor:pointer}
+
+/* Responsive admin navigation grid */
+.admin-nav-grid{width:min(100% - 32px,980px);margin:12px auto 24px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;order:3}
+.admin-nav-grid .nav-item{min-width:0;min-height:78px;flex:none;width:100%;padding:12px 8px;border:1px solid var(--line);background:#fff;color:#897d83;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px;border-radius:18px;font-size:13px;font-weight:700;box-shadow:0 6px 18px rgba(116,45,69,.05);transition:transform .18s ease,background .18s ease,color .18s ease,border-color .18s ease}
+.admin-nav-grid .nav-item:hover{transform:translateY(-2px);border-color:#edabc0;background:#fff8fb;color:var(--pink-dark)}
+.admin-nav-grid .nav-item.active{color:var(--pink-dark);background:var(--pink-soft);border-color:#f0a6bb;box-shadow:0 8px 20px rgba(233,77,123,.12)}
+.admin-nav-grid .nav-item:focus-visible{outline:2px solid var(--pink);outline-offset:3px}
+.page-content{padding-bottom:18px}
+@media(max-width:600px){.admin-nav-grid{width:calc(100% - 24px);grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:8px}.admin-nav-grid .nav-item{min-height:70px;padding:10px 6px;font-size:11px}.page-content{padding-bottom:12px}}
+@media(min-width:900px){.admin-nav-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}

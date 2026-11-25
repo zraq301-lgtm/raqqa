@@ -39,7 +39,7 @@ export default function App() {
         <span className="header-chip">إدارة التطبيق</span>
       </header>
       <main className="page-content">{page}</main>
-      <nav className="bottom-nav" aria-label="التنقل في لوحة الإدارة">
+      <nav className="admin-nav-grid" aria-label="التنقل في لوحة الإدارة">
         {pages.map(({ id, label, Icon }) => (
           <button key={id} type="button" onClick={() => setActivePage(id)} className={`nav-item ${activePage === id ? 'active' : ''}`} aria-current={activePage === id ? 'page' : undefined}>
             <Icon size={21} strokeWidth={activePage === id ? 2.5 : 2} />
