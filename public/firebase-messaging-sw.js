@@ -18,7 +18,7 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload?.data || {};
   const title = notification.title || data.notification_title || 'إشعار من رقة';
   const body = notification.body || data.notification_body || '';
-  const image = notification.image || data.image_url || '';
+  const image = notification.image || notification.imageUrl || notification.image_url || data.image_url || data.imageUrl || data.imageURL || data.image || '';
   const options = {
     body,
     icon: '/icon-192.png',
