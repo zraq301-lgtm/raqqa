@@ -189,7 +189,7 @@ const PassionsCrafts = () => {
 
                   <TrainingExperience pageName={PAGE_NAME} title={post.title.rendered.replace(/<[^>]+>/g, '')} cards={post.interactiveCards} accent="#b08968" variant={post.cardStyle} />
                   <div className="content" style={{ fontFamily: post.textStyle.fontFamily ? `'${post.textStyle.fontFamily}', sans-serif` : undefined, fontSize: post.textStyle.fontSize, fontWeight: post.textStyle.fontWeight, color: post.textStyle.color }}>
-                    <div className="wp-html-content" dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
+                    <div className="wp-html-content" style={{ fontFamily: post.textStyle.fontFamily ? `'${post.textStyle.fontFamily}', sans-serif` : undefined, fontSize: post.textStyle.fontSize, fontWeight: post.textStyle.fontWeight, color: post.textStyle.color }} dangerouslySetInnerHTML={{ __html: cleanPostContent(post.content.rendered) }} />
                   </div>
 
                   <div className="interaction-buttons">
