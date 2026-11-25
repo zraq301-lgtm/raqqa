@@ -78,12 +78,19 @@ export default function PublishedPageContent({ pageNames = [], title = 'منشو
         {items.map((item, index) => {
           const headline = item.article?.title?.trim() || 'محتوى من رقة';
           const body = item.article?.body?.trim() || '';
+          const textStyle = item.design?.textStyle || {};
+          const contentStyle = {
+            fontFamily: textStyle.fontFamily ? `'${textStyle.fontFamily}', sans-serif` : undefined,
+            fontSize: textStyle.fontSize || undefined,
+            fontWeight: textStyle.fontWeight || undefined,
+            color: textStyle.color || undefined,
+          };
           return (
             <article className="published-content-card" key={`${item.pageName || pageNames[0]}-${item.id || index}`}>
               <ContentMedia item={item} />
-              <div className="published-content-copy">
-                {headline && <h3>{headline}</h3>}
-                {body && <p>{body}</p>}
+              <div className="published-content-copy" style={contentStyle}>
+                {headline && <h3 style={contentStyle}>{headline}</h3>}
+                {body && <p style={contentStyle}>{body}</p>}
               </div>
             </article>
           );

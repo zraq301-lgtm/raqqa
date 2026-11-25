@@ -3,7 +3,7 @@ import { Directory, Encoding, Filesystem } from '@capacitor/filesystem';
 import { Preferences } from '@capacitor/preferences';
 import { hydrateOfflineMedia } from './offlineMediaCache';
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const RECENT_CACHE_VERSION = 'v3';
 export const CONTENT_CACHE_TTL_MS = 15 * 60 * 1000;
 

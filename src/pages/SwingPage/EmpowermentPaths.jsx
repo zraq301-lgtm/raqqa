@@ -170,7 +170,7 @@ const EmpowermentPaths = () => {
                 <div className={`card ${post.isMediaOnly ? 'media-only-card' : ''}`}>
 
                   <div className="card-header-title">
-                    <h2 dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
+                    <h2 style={{ fontFamily: post.textStyle.fontFamily ? `'${post.textStyle.fontFamily}', sans-serif` : undefined, color: post.textStyle.color, fontSize: post.textStyle.fontSize, fontWeight: post.textStyle.fontWeight }} dangerouslySetInnerHTML={{ __html: post.title.rendered }} />
                   </div>
 
                   {featuredVideo && (
