@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Bell, Images, Palette, MessageSquare, Megaphone } from 'lucide-react';
+import { Bell, Images, Palette, MessageSquare, Megaphone, GraduationCap } from 'lucide-react';
 import AdManagement from './pages/AdManagement';
 import UploadManager from './pages/UploadManager';
 import NotificationManager from './pages/NotificationManager';
 import ThemeManager from './pages/ThemeManager';
 import CommunityModeration from './pages/CommunityModeration';
+import TrainingManager from './pages/TrainingManager';
 import './App.css';
 
 const pages = [
   { id: 'upload', label: 'إدارة المحتوى', Icon: Images },
+  { id: 'trainings', label: 'التدريبات', Icon: GraduationCap },
   { id: 'ads', label: 'الإعلانات', Icon: Megaphone },
   { id: 'theme', label: 'المظهر والاحتفالات', Icon: Palette },
   { id: 'notifications', label: 'الإشعارات', Icon: Bell },
@@ -25,6 +27,8 @@ export default function App() {
     ? <ThemeManager />
     : activePage === 'notifications'
       ? <NotificationManager />
+      : activePage === 'trainings'
+        ? <TrainingManager />
       : <UploadManager />;
 
   return (

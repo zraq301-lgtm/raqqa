@@ -146,6 +146,25 @@ export const deletePageDataById = async (pageName, itemId) => {
   ) });
 };
 
+export const listAdminTrainings = async () => {
+  const response = await fetch(`${API_BASE}/api/admin/trainings`, { headers: { 'Cache-Control': 'no-store', ...getAdminTokenHeaders() } });
+  const result = await parseResponse(response);
+  return Array.isArray(result.items) ? result.items : [];
+};
+
+export const saveAdminTraining = async (training) => {
+  const method = training.id ? 'PATCH' : 'POST';
+  const endpoint = training.id ? `/api/admin/trainings/${encodeURIComponent(training.id)}` : '/api/admin/trainings';
+  const response = await fetch(`${API_BASE}${endpoint}`, { method, headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() }, body: JSON.stringify(training) });
+  const result = await parseResponse(response);
+  return result.item;
+};
+
+export const deleteAdminTraining = async (id) => {
+  const response = await fetch(`${API_BASE}/api/admin/trainings/${encodeURIComponent(id)}`, { method: 'DELETE', headers: getAdminTokenHeaders() });
+  return parseResponse(response);
+};
+
 export const getAppTheme = async () => {
   const response = await fetch(`${API_BASE}/api/settings/theme`, { cache: 'no-store' });
   const result = await parseResponse(response);

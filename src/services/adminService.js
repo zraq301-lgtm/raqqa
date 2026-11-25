@@ -4,6 +4,19 @@ import { readPageCache, readRecentCache, writePageCache, writeRecentCache } from
 
 const API_BASE = import.meta.env.VITE_RAQQA_API_BASE_URL || 'https://raqqa-backend.raqqa-api.workers.dev';
 const FETCH_URL = `${API_BASE}/api/content`;
+const TRAININGS_URL = `${API_BASE}/api/trainings`;
+
+export const fetchTrainings = async (section) => {
+  const cleanSection = String(section || '').replace(/['"]/g, '').trim();
+  if (!cleanSection) return [];
+  const response = await CapacitorHttp.get({
+    url: `${TRAININGS_URL}?section=${encodeURIComponent(cleanSection)}`,
+    headers: { 'Cache-Control': 'no-cache' },
+  });
+  if (response.status >= 400) throw new Error(`trainings_http_${response.status}`);
+  const result = typeof response.data === 'string' ? JSON.parse(response.data) : response.data;
+  return Array.isArray(result) ? result : Array.isArray(result?.items) ? result.items : [];
+};
 
 export const fetchRecentContentFeed = async () => {
   const cached = await readRecentCache();

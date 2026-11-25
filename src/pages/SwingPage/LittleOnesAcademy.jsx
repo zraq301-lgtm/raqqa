@@ -5,6 +5,7 @@ import { Share } from '@capacitor/share';
 import { fetchPageData } from '../../services/adminService';
 import VideoPlayer from '../../components/VideoTools';
 import TrainingExperience from '../../components/TrainingExperience';
+import TrainingLinksSection from '../../components/TrainingLinksSection';
 
 const LittleOnesAcademy = () => {
   const [articles, setArticles] = useState([]);
@@ -155,6 +156,7 @@ const LittleOnesAcademy = () => {
       </div>
 
       <div className="container">
+        <TrainingLinksSection section={PAGE_NAME} />
         {articles.length === 0 ? (
           <div style={{ textAlign: 'center', color: '#8d6e63', marginTop: '50px', fontFamily: 'Tajawal' }}>لا توجد منشورات حالياً في هذا القسم</div>
         ) : (
