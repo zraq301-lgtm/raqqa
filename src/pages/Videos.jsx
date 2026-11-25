@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 // ✅ استخدام كود الخدمة الموحد وبالمسار الصحيح المكتشف سابقاً لإلغاء الاعتماد على فيربيس المباشر
 import { fetchPageData } from '../services/adminService';
 import VideoPlayer from '../components/VideoTools';
+import MiniCourseTraining from '../components/MiniCourseTraining';
 
 const VideoLibrary = () => {
   const [allVideos, setAllVideos] = useState([]);
@@ -147,6 +148,7 @@ const VideoLibrary = () => {
 
       {/* المحتوى القابل للتمرير */}
       <main style={scrollContentStyle}>
+        <MiniCourseTraining />
         <div style={videoGridStyle}>
           {filteredVideos.map((video, index) => (
             <div key={video.id || index} id={`video-card-${video.id || index}`} className="video-card-elegant">
