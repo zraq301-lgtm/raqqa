@@ -86,7 +86,8 @@ export async function showNativeBanner() {
     adId: configuredAdUnitId(platform),
     adSize: BannerAdSize.ADAPTIVE_BANNER,
     position: BannerAdPosition.BOTTOM_CENTER,
-    margin: 0,
+    // اترك مساحة شريط الأيقونات السفلي ظاهرًا فوق الإعلان.
+    margin: 80,
     isTesting: isTestingPlatform(platform),
   });
 }
