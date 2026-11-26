@@ -362,7 +362,8 @@ body {
 .top-page-card-label{right:4px;left:4px;bottom:5px;text-align:center;font-size:clamp(8px,2.3vw,11px)}
 .main-content{padding-bottom:calc(138px + env(safe-area-inset-bottom))}
 .main-content--swing{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
-.global-ad-container{position:fixed;right:0;bottom:calc(80px + env(safe-area-inset-bottom));left:0;z-index:100;display:flex;justify-content:center;min-height:50px;padding:0;background:rgba(255,255,255,.96);border-top:1px solid #f0dce4;box-shadow:0 -5px 18px rgba(123,49,87,.08);pointer-events:none}.global-ad-container>*{pointer-events:auto}
+/* حاوية غير مرئية بصريًا: تبقى المساحة محجوزة ويظل إعلان AdMob الأصلي يعمل خارج WebView. */
+.global-ad-container{position:fixed;right:0;bottom:calc(80px + env(safe-area-inset-bottom));left:0;z-index:100;display:flex;justify-content:center;min-height:50px;padding:0;background:transparent;border:0;box-shadow:none;pointer-events:none}.global-ad-container>*{pointer-events:auto;background:transparent}
 .app-loading-screen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:8px;overflow:hidden;background:radial-gradient(circle at 50% 42%,#fff 0,#fff7fb 27%,#fce7f1 67%,#f7d6e5 100%);color:#7d3157;font-family:'Tajawal',sans-serif;text-align:center}
 .app-loading-screen::before,.app-loading-screen::after{content:'';position:absolute;border-radius:50%;pointer-events:none;filter:blur(1px);opacity:.7}
 .app-loading-screen::before{width:240px;height:240px;top:12%;right:-95px;background:#efb7d0}
