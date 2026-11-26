@@ -19,6 +19,7 @@ import {
   requestAdsAdmin,
   saveAdsAdminConnection,
 } from '../services/adsAdminService';
+import { getAppTheme, saveAppTheme } from '../services/adminService';
 
 const PLACEMENTS = [
   { id: 'banner', label: 'إعلان بانر', description: 'مساحة ثابتة تظهر ضمن واجهة التطبيق.', defaultAdUnitId: 'ca-app-pub-8025494804759906/1052136793' },
@@ -29,6 +30,14 @@ const PLACEMENTS = [
 ];
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+const DEFAULT_HEALTH_AD = {
+  enabled: true,
+  badge: 'مساحة إعلانية',
+  title: 'أعلني عن علامتكِ داخل رِقّة',
+  description: 'مساحة أنيقة مخصصة للشركات والمشروعات الخاصة.',
+  imageUrl: '/health-sponsored-card.png',
+  linkUrl: '',
+};
 const prettyDate = (value) => {
   if (!value) return 'لم يُسجّل بعد';
   const date = new Date(value);
@@ -45,6 +54,7 @@ export default function AdManagement() {
   const [newProviderName, setNewProviderName] = useState('');
   const [fallbackItemsText, setFallbackItemsText] = useState('[]');
   const [targetingText, setTargetingText] = useState('[]');
+  const [healthAdDraft, setHealthAdDraft] = useState(DEFAULT_HEALTH_AD);
   const [busy, setBusy] = useState('');
   const [notice, setNotice] = useState(null);
 
@@ -96,6 +106,7 @@ export default function AdManagement() {
       const loaded = result?.config || result;
       if (!loaded?.defaults || typeof loaded.defaults !== 'object') throw new Error('استجابة الإعدادات لا تطابق مخطط متحكم الإعلانات.');
       const safeConfig = clone(loaded);
+      const theme = await getAppTheme().catch(() => null);
       const admob = safeConfig.defaults.providers?.admob;
       if (admob) {
         const seededPlacements = Object.fromEntries(PLACEMENTS.map(({ id, defaultAdUnitId }) => [id, {
@@ -110,6 +121,7 @@ export default function AdManagement() {
       setDraft(clone(safeConfig));
       setFallbackItemsText(JSON.stringify(safeConfig.defaults.fallback?.items || [], null, 2));
       setTargetingText(JSON.stringify(Array.isArray(safeConfig.targeting) ? safeConfig.targeting : [], null, 2));
+      setHealthAdDraft({ ...DEFAULT_HEALTH_AD, ...(theme?.healthAdCard || {}) });
       const firstProvider = Object.keys(safeConfig.defaults.providers || {})[0] || 'admob';
       setEditingProvider((current) => safeConfig.defaults.providers?.[current] ? current : firstProvider);
       setNotice({ type: 'success', text: 'تم الاتصال وتحميل إعدادات الإعلانات بنجاح.' });
@@ -149,6 +161,22 @@ export default function AdManagement() {
       setNotice({ type: 'success', text: 'تم حفظ إعدادات الإعلانات.' });
     } catch (error) {
       setNotice({ type: 'error', text: error instanceof SyntaxError ? 'صيغة JSON لعناصر الإعلانات البديلة غير صحيحة.' : (error.message || 'تعذر حفظ الإعدادات.') });
+    } finally {
+      setBusy('');
+    }
+  };
+
+  const updateHealthAd = (changes) => setHealthAdDraft((current) => ({ ...current, ...changes }));
+
+  const saveHealthAd = async () => {
+    setBusy('health-ad');
+    setNotice(null);
+    try {
+      const theme = await getAppTheme();
+      await saveAppTheme({ ...theme, healthAdCard: { ...DEFAULT_HEALTH_AD, ...healthAdDraft } });
+      setNotice({ type: 'success', text: 'تم حفظ بطاقة الإعلان داخل صفحة الصحة.' });
+    } catch (error) {
+      setNotice({ type: 'error', text: error.message || 'تعذر حفظ بطاقة إعلان الصحة.' });
     } finally {
       setBusy('');
     }
@@ -273,6 +301,19 @@ export default function AdManagement() {
                 <small className="subtle">الحد الأدنى لدى الخدمة 5 ثوانٍ.</small>
               </div>
             </div>
+          </article>
+
+          <article className="admin-card ads-health-card-editor">
+            <div className="ads-card-heading"><div className="ads-heading-icon"><Megaphone size={19} /></div><div><h3>بطاقة الإعلان داخل صفحة الصحة</h3><p className="card-description">تظهر هذه البطاقة أولًا قبل «همسات أنثى»، ويمكن استخدامها كمساحة إعلانية للشركات الخاصة.</p></div></div>
+            <div className="ads-general-grid">
+              <label className={`ads-toggle-row ${healthAdDraft.enabled ? 'selected' : ''}`}><span className="ads-toggle-copy"><strong>إظهار بطاقة الصحة</strong><small>إخفاؤها لا يؤثر على إعلانات AdMob الأخرى.</small></span><input type="checkbox" checked={Boolean(healthAdDraft.enabled)} onChange={(event) => updateHealthAd({ enabled: event.target.checked })} /></label>
+              <div className="field"><label htmlFor="health-ad-badge">الشارة</label><input id="health-ad-badge" value={healthAdDraft.badge} onChange={(event) => updateHealthAd({ badge: event.target.value })} placeholder="مساحة إعلانية" /></div>
+              <div className="field"><label htmlFor="health-ad-title">عنوان البطاقة</label><input id="health-ad-title" value={healthAdDraft.title} onChange={(event) => updateHealthAd({ title: event.target.value })} placeholder="أعلني عن علامتكِ داخل رِقّة" /></div>
+              <div className="field"><label htmlFor="health-ad-description">الوصف المختصر</label><input id="health-ad-description" value={healthAdDraft.description} onChange={(event) => updateHealthAd({ description: event.target.value })} placeholder="وصف الإعلان" /></div>
+              <div className="field"><label htmlFor="health-ad-image">رابط الصورة</label><input id="health-ad-image" dir="ltr" type="url" value={healthAdDraft.imageUrl} onChange={(event) => updateHealthAd({ imageUrl: event.target.value })} placeholder="https://… أو /health-sponsored-card.png" /></div>
+              <div className="field"><label htmlFor="health-ad-link">رابط عند الضغط</label><input id="health-ad-link" dir="ltr" type="url" value={healthAdDraft.linkUrl} onChange={(event) => updateHealthAd({ linkUrl: event.target.value })} placeholder="https://…" /></div>
+            </div>
+            <div className="ads-targeting-actions"><button className="primary-button" type="button" onClick={saveHealthAd} disabled={Boolean(busy)}><Save size={16} />{busy === 'health-ad' ? 'جارٍ الحفظ…' : 'حفظ بطاقة إعلان الصحة'}</button></div>
           </article>
 
           <article className="admin-card">

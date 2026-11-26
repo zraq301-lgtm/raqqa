@@ -9,6 +9,14 @@ const defaultSettings = {
   branding: { enabled: true, name: 'رِقّة', color: '#b12a68', fontFamily: 'Tajawal', fontSize: '32px', fontWeight: '800', letterSpacing: '0px' },
   pages: {},
   celebration: { type: 'none', endAt: null },
+  healthAdCard: {
+    enabled: true,
+    badge: 'مساحة إعلانية',
+    title: 'أعلني عن علامتكِ داخل رِقّة',
+    description: 'مساحة أنيقة مخصصة للشركات والمشروعات الخاصة.',
+    imageUrl: '/health-sponsored-card.png',
+    linkUrl: '',
+  },
 };
 const AppThemeContext = createContext(defaultSettings);
 
@@ -30,6 +38,9 @@ function safeSettings(payload) {
     pages: settings.pages && typeof settings.pages === 'object' ? settings.pages : {},
     branding,
     celebration: settings.celebration && typeof settings.celebration === 'object' ? settings.celebration : defaultSettings.celebration,
+    healthAdCard: settings.healthAdCard && typeof settings.healthAdCard === 'object'
+      ? { ...defaultSettings.healthAdCard, ...settings.healthAdCard }
+      : { ...defaultSettings.healthAdCard },
   };
 }
 

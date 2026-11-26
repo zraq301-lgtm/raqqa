@@ -34,6 +34,11 @@ export default function Health({ onSyncReminders }) {
     const page = appTheme.pages?.[`health.${section.id}`];
     return { ...section, pageName: section.title, title: page?.label?.trim() || section.title, customIcon: page?.icon || '', customIconImage: page?.iconImageUrl || '' };
   });
+  const healthAdCard = appTheme.healthAdCard;
+  const openHealthAd = () => {
+    const url = String(healthAdCard?.linkUrl || '').trim();
+    if (url) window.open(url, '_blank', 'noopener,noreferrer');
+  };
   useEffect(() => {
     const requested = new URLSearchParams(location.search).get('section');
     setActiveTab(themedSections.some((section) => section.id === requested) ? requested : null);
@@ -66,6 +71,10 @@ export default function Health({ onSyncReminders }) {
   return <section className="health-page" dir="rtl">
     <div className="health-heading"><div><span>مساحتك اليومية</span><h1>صحتك</h1></div><span className="health-swipe-hint">اسحبي للتصفح</span></div>
     <div className="health-promo-rail" ref={railRef} onPointerDown={() => { pausedRef.current = true; }} onPointerUp={() => { pausedRef.current = false; }} onPointerCancel={() => { pausedRef.current = false; }}>
+      {healthAdCard?.enabled !== false && <button type="button" className="health-promo-card health-sponsored-card" onClick={openHealthAd} aria-label={healthAdCard?.title || 'مساحة إعلانية'}>
+        <img src={healthAdCard?.imageUrl || '/health-sponsored-card.png'} alt="" /><span className="health-promo-overlay health-sponsored-overlay" />
+        <span className="health-promo-copy health-sponsored-copy"><span className="health-sponsored-badge">{healthAdCard?.badge || 'مساحة إعلانية'}</span><strong>{healthAdCard?.title || 'أعلني عن علامتكِ داخل رِقّة'}</strong><small>{healthAdCard?.description || 'مساحة أنيقة للشركات والمشروعات الخاصة'}</small></span>
+      </button>}
       {themedSections.map((section) => {
         const Icon = iconMap[section.icon] || iconMap.insight;
         const imageSource = healthImages[section.img] || section.img;
