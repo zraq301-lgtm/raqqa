@@ -97,18 +97,18 @@ const SwingForum = ({ user }) => {
         .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: white; border-bottom: 1px solid var(--female-pink-light); z-index: 100; }
         .back-btn { background: var(--female-pink); color: white; border: none; padding: 7px 18px; border-radius: 12px; font-size: 13px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 8px rgba(255, 77, 125, 0.2); }
 
-        .glass-header-nav { display: flex; overflow-x: auto; padding: 12px 10px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 10px; scrollbar-width: none; flex-shrink: 0; }
+        .glass-header-nav { display: flex; overflow-x: auto; padding: 7px 8px; background: var(--glass-white); backdrop-filter: blur(15px); border-bottom: 1px solid var(--female-pink-light); gap: 9px; scrollbar-width: none; flex-shrink: 0; }
         .glass-header-nav::-webkit-scrollbar { display: none; }
 
-        .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 8px 16px; background: white; border-radius: 16px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; min-width: 85px; }
+        .section-item { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; padding: 9px 15px; background: white; border-radius: 16px; border: 1px solid var(--female-pink-light); cursor: pointer; transition: 0.3s; min-width: 96px; }
         .section-item.active { background: var(--female-pink); transform: scale(1.05); }
         .section-item.active .s-label, .section-item.active .s-icon { color: white; }
 
-        .s-icon { font-size: 1.3rem; margin-bottom: 2px; }
-        .s-icon-image { width: 26px; height: 26px; object-fit: cover; border-radius: 8px; }
-        .s-label { font-size: 0.7rem; font-weight: bold; color: var(--female-pink); }
+        .s-icon { font-size: 1.65rem; line-height: 1.1; margin-bottom: 4px; }
+        .s-icon-image { width: 34px; height: 34px; object-fit: cover; border-radius: 10px; }
+        .s-label { font-size: 0.78rem; line-height: 1.25; font-weight: bold; color: var(--female-pink); }
 
-        .main-display-area { flex: 1; overflow-y: auto; padding: 15px 15px calc(78px + env(safe-area-inset-bottom)); position: relative; }
+        .main-display-area { flex: 1; overflow-y: auto; padding: 8px 12px calc(78px + env(safe-area-inset-bottom)); position: relative; }
 
         /* مساحة الإعلان السفلية تُدار من App وتظل الصفحة قابلة للتمرير فوقها */
         .ad-wrapper {
