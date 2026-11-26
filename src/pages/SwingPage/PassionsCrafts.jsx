@@ -7,6 +7,19 @@ import VideoPlayer from '../../components/VideoTools';
 import TrainingExperience from '../../components/TrainingExperience';
 import TrainingLinksSection from '../../components/TrainingLinksSection';
 
+
+const normalizeTextStyle = (rawStyle) => {
+  const style = rawStyle && typeof rawStyle === 'object' ? rawStyle : {};
+  const size = Number.parseFloat(style.fontSize);
+  return {
+    fontFamily: typeof style.fontFamily === 'string' && style.fontFamily.trim() ? style.fontFamily.trim() : 'Tajawal',
+    fontSize: `${Number.isFinite(size) ? Math.max(12, Math.min(36, size)) : 18}px`,
+    fontWeight: ['400', '500', '600', '700', '800'].includes(String(style.fontWeight)) ? String(style.fontWeight) : '500',
+    color: /^#[0-9a-f]{6}$/i.test(String(style.color || '')) ? String(style.color).toLowerCase() : '#4a3f35',
+    cardStyle: ['soft', 'flat', 'elevated'].includes(style.cardStyle) ? style.cardStyle : 'soft',
+  };
+};
+
 const PassionsCrafts = () => {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,8 +96,8 @@ const PassionsCrafts = () => {
             trainingQuestions: interactiveCards,
             mediaUrls: [videoUrl, imageUrl, audioUrl, item.article?.sourceUrl, item.article?.source_url, item.article?.referenceUrl, item.sourceUrl, item.source_url].filter(Boolean),
             transcriptionUrl: videoUrl || audioUrl || '',
-            textStyle: item.design?.textStyle || {},
-            cardStyle: item.design?.textStyle?.cardStyle || 'soft',
+            textStyle: normalizeTextStyle(item.design?.textStyle),
+            cardStyle: normalizeTextStyle(item.design?.textStyle).cardStyle,
             content: {
               rendered: `
                 ${bodyContent.trim() !== "" ? `<p style="margin-bottom: 15px; line-height: 1.7;">${bodyContent.replace(/\n/g, '<br />')}</p>` : ''}
@@ -252,7 +265,8 @@ const PassionsCrafts = () => {
 
         .main-featured-image img { width: 100%; display: block; height: auto; }
         .content { padding: 20px; text-align: center; }
-        .wp-html-content { text-align: right; color: #4a3f35; font-size: 1.1rem; }
+        .wp-html-content { text-align: right; font-size: 1.1rem; }
+        .wp-html-content * { color: inherit !important; }
         .wp-html-content img, .wp-html-content video, .wp-html-content iframe { max-width: 100% !important; height: auto !important; border-radius: 10px; margin: 10px 0; display: block; }
 
         .interaction-buttons { display: flex; justify-content: space-around; padding: 15px; border-top: 1px solid #fcf6f2; background: #fffcfb; }

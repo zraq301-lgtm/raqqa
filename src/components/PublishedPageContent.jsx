@@ -3,6 +3,18 @@ import { fetchPageData } from '../services/adminService';
 import { isCacheFresh, readPageCache, writePageCache } from '../services/contentCache';
 import VideoPlayer from './VideoTools';
 
+
+const normalizeTextStyle = (rawStyle) => {
+  const style = rawStyle && typeof rawStyle === 'object' ? rawStyle : {};
+  const size = Number.parseFloat(style.fontSize);
+  return {
+    fontFamily: typeof style.fontFamily === 'string' && style.fontFamily.trim() ? style.fontFamily.trim() : 'Tajawal',
+    fontSize: `${Number.isFinite(size) ? Math.max(12, Math.min(36, size)) : 18}px`,
+    fontWeight: ['400', '500', '600', '700', '800'].includes(String(style.fontWeight)) ? String(style.fontWeight) : '500',
+    color: /^#[0-9a-f]{6}$/i.test(String(style.color || '')) ? String(style.color).toLowerCase() : '#4a3f35',
+  };
+};
+
 const getItems = (result) => {
   if (Array.isArray(result)) return result;
   if (Array.isArray(result?.items)) return result.items;
@@ -78,7 +90,7 @@ export default function PublishedPageContent({ pageNames = [], title = 'منشو
         {items.map((item, index) => {
           const headline = item.article?.title?.trim() || 'محتوى من رقة';
           const body = item.article?.body?.trim() || '';
-          const textStyle = item.design?.textStyle || {};
+          const textStyle = normalizeTextStyle(item.design?.textStyle);
           const contentStyle = {
             fontFamily: textStyle.fontFamily ? `'${textStyle.fontFamily}', sans-serif` : undefined,
             fontSize: textStyle.fontSize || undefined,
