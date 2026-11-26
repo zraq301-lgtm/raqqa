@@ -363,6 +363,17 @@ body {
 .main-content{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 .main-content--swing{padding-bottom:calc(78px + env(safe-area-inset-bottom))}
 .global-ad-container{position:fixed;right:0;bottom:0;left:0;z-index:1200;display:flex;justify-content:center;min-height:50px;padding:0 0 env(safe-area-inset-bottom);background:rgba(255,255,255,.96);border-top:1px solid #f0dce4;box-shadow:0 -5px 18px rgba(123,49,87,.08);pointer-events:none}.global-ad-container>*{pointer-events:auto}
+.app-loading-screen{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;align-content:center;gap:8px;overflow:hidden;background:radial-gradient(circle at 50% 42%,#fff 0,#fff7fb 27%,#fce7f1 67%,#f7d6e5 100%);color:#7d3157;font-family:'Tajawal',sans-serif;text-align:center}
+.app-loading-screen::before,.app-loading-screen::after{content:'';position:absolute;border-radius:50%;pointer-events:none;filter:blur(1px);opacity:.7}
+.app-loading-screen::before{width:240px;height:240px;top:12%;right:-95px;background:#efb7d0}
+.app-loading-screen::after{width:210px;height:210px;bottom:9%;left:-85px;background:#e8bfdc}
+.app-loading-orbit{position:relative;z-index:1;width:76px;height:76px;border:3px solid #f2bed3;border-top-color:#b12a68;border-right-color:#d94f7b;border-radius:50%;display:grid;place-items:center;animation:app-loading-spin 1.15s linear infinite;box-shadow:0 8px 28px rgba(177,42,104,.16),inset 0 0 0 7px rgba(255,255,255,.48)}
+.app-loading-orbit span{display:block;color:#b12a68;font-size:29px;line-height:1;animation:app-loading-heart 1.15s ease-in-out infinite}
+.app-loading-screen p{position:relative;z-index:1;margin:4px 0 0;font-size:24px;font-weight:700;letter-spacing:.1px}
+.app-loading-screen small{position:relative;z-index:1;color:#a05b7b;font-size:12px;font-weight:600}
+@keyframes app-loading-spin{to{transform:rotate(360deg)}}
+@keyframes app-loading-heart{0%,100%{transform:scale(.9)}50%{transform:scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.app-loading-orbit,.app-loading-orbit span{animation-duration:2.5s}}
 
 .queen-worship-button:hover,.queen-worship-button:focus-visible{transform:translateY(-2px);box-shadow:0 13px 30px rgba(123,49,87,.14),inset 0 1px 0 #fff;outline:none}
 .queen-worship-button:focus-visible{outline:3px solid #d99ab5;outline-offset:3px}

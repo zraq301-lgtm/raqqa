@@ -102,6 +102,12 @@ export default function AppSwitcher({ onAuthenticated }) {
       if (appStateListener) void appStateListener.remove();
     };
   }, [onAuthenticated]);
-  if (loading) return <div style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>جارٍ التحميل…</div>;
+  if (loading) return (
+    <div className="app-loading-screen" dir="rtl" role="status" aria-live="polite">
+      <div className="app-loading-orbit" aria-hidden="true"><span>♡</span></div>
+      <p>جارٍ التحميل…</p>
+      <small>لحظات ونكون معكِ</small>
+    </div>
+  );
   return <AppThemeProvider><ErrorBoundary>{user ? <App user={user} onUserUpdated={setUser} /> : <ProfileSetup onComplete={(profile) => { setUser(profile); onAuthenticated?.(); }} />}</ErrorBoundary></AppThemeProvider>;
 }
