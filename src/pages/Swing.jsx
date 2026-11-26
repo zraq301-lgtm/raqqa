@@ -108,9 +108,9 @@ const SwingForum = ({ user }) => {
         .s-icon-image { width: 26px; height: 26px; object-fit: cover; border-radius: 8px; }
         .s-label { font-size: 0.7rem; font-weight: bold; color: var(--female-pink); }
 
-        .main-display-area { flex: 1; overflow-y: auto; padding: 15px; position: relative; }
+        .main-display-area { flex: 1; overflow-y: auto; padding: 15px 15px calc(78px + env(safe-area-inset-bottom)); position: relative; }
 
-        /* تنسيق حاوية الإعلان (تم تعديل الحواف لتناسب الأعلى) */
+        /* مساحة الإعلان السفلية تُدار من App وتظل الصفحة قابلة للتمرير فوقها */
         .ad-wrapper {
           width: 100%;
           background: white;

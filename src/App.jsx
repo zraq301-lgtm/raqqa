@@ -321,9 +321,6 @@ function App({ user, onUserUpdated }) {
         </nav>
       </header>}
 
-      {!isSwingPage && <div className="global-ad-container" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0', backgroundColor: '#fff', borderBottom: '1px solid #f0f0f0' }}>
-          <AdBanner />
-      </div>}
       {!isSwingPage && !isHealthSubpage && <TopPageCarousel />}
 
       <main className={`main-content${isSwingPage ? ' main-content--swing' : ''}`} style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>
@@ -340,6 +337,10 @@ function App({ user, onUserUpdated }) {
           <Route path="/virtual-world" element={<VirtualWorld />} />
         </Routes>
       </main>
+
+      <div className="global-ad-container" aria-label="مساحة الإعلان السفلية">
+        <AdBanner placement="banner" />
+      </div>
     </div>
   );
 }
