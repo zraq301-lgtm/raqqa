@@ -18,12 +18,21 @@ buildscript {
 
 apply from: "variables.gradle"
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
+	allprojects {
+	    repositories {
+	        google()
+	        mavenCentral()
+	    }
+
+	    // Keep transitive Kotlin runtime artifacts aligned with the 1.9.24 compiler.
+	    configurations.configureEach {
+	        resolutionStrategy {
+	            force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.24'
+	            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24'
+	            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24'
+	        }
+	    }
+	}
 
 task clean(type: Delete) {
     delete rootProject.buildDir
