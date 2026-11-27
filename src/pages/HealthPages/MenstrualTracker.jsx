@@ -40,19 +40,6 @@ const PeriodClock = ({ prediction, startDate, cycleDuration = 29, periodDays = 5
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '20px', padding: '20px', background: 'rgba(255,255,255,0.7)', borderRadius: '35px', backdropFilter: 'blur(10px)' }}>
 
-      {prediction && (
-        <div style={{ width: '100%', marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ background: '#FFF0F3', padding: '10px', borderRadius: '15px', border: '1px solid #FFD1DF', textAlign: 'center' }}>
-            <span style={{ fontSize: '12px', color: '#E91E63', fontWeight: 'bold' }}>موعد الدورة القادمة: </span>
-            <span style={{ fontSize: '14px', color: '#880E4F', fontWeight: '900' }}>{prediction.nextDate}</span>
-          </div>
-          <div style={{ background: '#F0FFF4', padding: '10px', borderRadius: '15px', border: '1px solid #C6F6D5', textAlign: 'center' }}>
-            <span style={{ fontSize: '12px', color: '#38A169', fontWeight: 'bold' }}>فترة الخصوبة: </span>
-            <span style={{ fontSize: '13px', color: '#22543D', fontWeight: '900' }}>{prediction.fertility}</span>
-          </div>
-        </div>
-      )}
-
       <div style={{ display: 'flex', gap: '15px', marginBottom: '15px', fontSize: '11px', fontWeight: 'bold' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '10px', height: '10px', background: '#ff4d4d', borderRadius: '2px' }}></div> أيام الحيض</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><div style={{ width: '10px', height: '10px', background: '#4CAF50', borderRadius: '2px' }}></div> أيام الخصوبة</div>
@@ -287,6 +274,21 @@ const MenstrualTracker = () => {
 
   return (
     <div style={styles.container}>
+      {prediction && (
+        <div style={{ ...styles.card, padding: '14px', marginBottom: '12px' }} aria-label="ملخص الدورة والخصوبة">
+          <div style={{ fontSize: '13px', fontWeight: '900', color: '#7A1746', marginBottom: '10px' }}>ملخص توقعاتك القادمة</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(145px, 1fr))', gap: '10px' }}>
+            <div style={{ background: '#FFF0F3', padding: '12px', borderRadius: '15px', border: '1px solid #FFD1DF' }}>
+              <div style={{ color: '#D81B60', fontSize: '12px', fontWeight: '800' }}>● الحيض القادم</div>
+              <strong style={{ display: 'block', color: '#880E4F', fontSize: '15px', marginTop: '4px' }}>{prediction.nextDate}</strong>
+            </div>
+            <div style={{ background: '#F0FFF4', padding: '12px', borderRadius: '15px', border: '1px solid #C6F6D5' }}>
+              <div style={{ color: '#2F855A', fontSize: '12px', fontWeight: '800' }}>● فترة الخصوبة</div>
+              <strong style={{ display: 'block', color: '#22543D', fontSize: '14px', marginTop: '4px' }}>{prediction.fertility}</strong>
+            </div>
+          </div>
+        </div>
+      )}
       <PeriodClock
         startDate={data['سجل التواريخ_تاريخ البدء']}
         cycleDuration={data['سجل التواريخ_مدة الدورة']}

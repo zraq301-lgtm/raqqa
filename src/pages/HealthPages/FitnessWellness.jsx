@@ -58,13 +58,55 @@ const PregnancyMonitor = () => {
   const [capturedImage, setCapturedImage] = useState(null);
   const [data, setData] = useState(() => JSON.parse(localStorage.getItem('lady_fitness')) || {});
   const [alarms, setAlarms] = useState(() => JSON.parse(localStorage.getItem('roqa_alarms')) || {});
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const defaultDailyEntry = { weight: '', height: '', waist: '', steps: '', exerciseMinutes: '', exerciseType: '', water: '', sleep: '', meals: '', mood: '', notes: '' };
+  const [dailyLogs, setDailyLogs] = useState(() => JSON.parse(localStorage.getItem('fitness_daily_logs')) || []);
+  const [dailyEntry, setDailyEntry] = useState(() => ({ ...defaultDailyEntry, ...(JSON.parse(localStorage.getItem('fitness_daily_logs')) || []).find((item) => item.date === new Date().toISOString().slice(0, 10)) }));
+  const [fitnessGoals, setFitnessGoals] = useState(() => ({ steps: 7000, exerciseMinutes: 30, water: 2000, sleep: 7, ...(JSON.parse(localStorage.getItem('fitness_goals')) || {}) }));
+  const [trackingReminders, setTrackingReminders] = useState(() => ({ weight: '08:00', walk: '17:00', water: '12:00', meals: '14:00', daily: '20:00', ...(JSON.parse(localStorage.getItem('fitness_tracking_reminders')) || {}) }));
+  const [showTracking, setShowTracking] = useState(true);
 
   const audioRef = useRef(new Audio(alarmSound));
 
   useEffect(() => {
     localStorage.setItem('roqa_alarms', JSON.stringify(alarms));
     localStorage.setItem('roqa_chat_history', JSON.stringify(chatHistory.map(({ image, img, ...message }) => message)));
-  }, [alarms, chatHistory]);
+    localStorage.setItem('fitness_daily_logs', JSON.stringify(dailyLogs.slice(-120)));
+    localStorage.setItem('fitness_goals', JSON.stringify(fitnessGoals));
+    localStorage.setItem('fitness_tracking_reminders', JSON.stringify(trackingReminders));
+  }, [alarms, chatHistory, dailyLogs, fitnessGoals, trackingReminders]);
+
+  useEffect(() => {
+    const savedToday = dailyLogs.find((item) => item.date === todayKey);
+    if (savedToday) setDailyEntry({ ...defaultDailyEntry, ...savedToday });
+  }, [todayKey]);
+
+  const updateDailyEntry = (key, value) => setDailyEntry((previous) => ({ ...previous, [key]: value }));
+  const saveDailyEntry = () => {
+    const entry = { ...dailyEntry, date: todayKey, savedAt: new Date().toISOString() };
+    setDailyLogs((previous) => [...previous.filter((item) => item.date !== todayKey), entry].sort((a, b) => a.date.localeCompare(b.date)));
+    updateData('lastDailyEntry', todayKey);
+  };
+  const numeric = (value) => Number.parseFloat(value) || 0;
+  const previousWeight = [...dailyLogs].filter((item) => item.date !== todayKey && numeric(item.weight) > 0).pop();
+  const heightMeters = numeric(dailyEntry.height || data['الطول']) / 100;
+  const bmi = heightMeters > 0 && numeric(dailyEntry.weight) > 0 ? (numeric(dailyEntry.weight) / (heightMeters * heightMeters)).toFixed(1) : null;
+  const averageSteps = dailyLogs.length ? Math.round(dailyLogs.reduce((sum, item) => sum + numeric(item.steps), 0) / dailyLogs.length) : 0;
+
+  const syncTrackingReminders = async (nextReminders) => {
+    const existing = JSON.parse(localStorage.getItem('raqqa_local_reminders') || '[]');
+    const withoutTracking = existing.filter((item) => !String(item.id).startsWith('fitness-tracking-'));
+    const labels = { weight: ['⚖️ متابعة الوزن', 'سجلي وزنك ومحيط خصرك اليوم.'], walk: ['🚶‍♀️ وقت المشي', 'حان وقت المشي أو الحركة الخفيفة.'], water: ['💧 تذكير الماء', 'اشربي كوبًا من الماء الآن.'], meals: ['🥗 متابعة الوجبات', 'سجلي وجبتك واختاري مصدر بروتين وخضار.'], daily: ['✅ المتابعة اليومية', 'أكملي سجل الرشاقة اليومي.'] };
+    const reminders = Object.entries(nextReminders).map(([key, time]) => {
+      const scheduled = nextAlarmDate(time); const [title, body] = labels[key] || [];
+      return scheduled && title ? { id: `fitness-tracking-${key}`, title, body, scheduled_for: scheduled.toISOString(), extra: { type: 'fitness_tracking', tracker: key } } : null;
+    }).filter(Boolean);
+    localStorage.setItem('raqqa_local_reminders', JSON.stringify([...withoutTracking, ...reminders]));
+    window.dispatchEvent(new Event('trigger_sync_notifications'));
+    await Promise.all(reminders.map((reminder) => persistAiScheduledNotification({ category: 'fitness_tracking', title: reminder.title, body: reminder.body, scheduled_for: reminder.scheduled_for, metadata: reminder.extra }).catch(() => null)));
+  };
+
+  useEffect(() => { syncTrackingReminders(trackingReminders); }, [trackingReminders]);
 
   const nextAlarmDate = (time) => {
     if (!time) return null;
@@ -162,10 +204,11 @@ const PregnancyMonitor = () => {
     setIsChatOpen(true);
     setChatHistory(prev => [{ type: 'ai', text: 'جاري تجهيز التحليل الآمن…' }, ...prev]);
     const sectionData = section.fields.map(f => `${f}: ${data[`${section.id}-${f}`] || 'N/A'}`).join(", ");
+    const trackingContext = `المتابعة اليومية: ${JSON.stringify(dailyEntry)}، الأهداف: ${JSON.stringify(fitnessGoals)}، متوسط الخطوات: ${averageSteps}، BMI: ${bmi || 'غير متاح'}`;
     try {
       const response = await privateAiPost({
         specialtyTopic: 'fitness',
-        data: { prompt: `بصفتك خبيرة، حللي بيانات ${section.title}: ${sectionData}` }
+        data: { prompt: `بصفتك خبيرة صحة ورشاقة، حللي بيانات ${section.title}: ${sectionData}. ${trackingContext}. قدمي ملاحظات عملية قابلة للقياس، واذكري متى يلزم استشارة مختص، دون تشخيص أو وعود بنتائج.` }
       });
       const reply = response.data.reply || response.data.message;
       setChatHistory(prev => [{ type: 'ai', text: `(تحليل تلقائي لـ ${section.title}): ${reply}` }, ...prev]);
@@ -224,6 +267,46 @@ const PregnancyMonitor = () => {
           </div>
         )}
       </div>
+
+      <section style={mergedStyles.trackingCard} aria-labelledby="fitness-tracking-title">
+        <button type="button" style={mergedStyles.trackingTitle} onClick={() => setShowTracking(!showTracking)}>
+          <span id="fitness-tracking-title">📊 المتابعة اليومية الحقيقية</span><span>{showTracking ? '▲' : '▼'}</span>
+        </button>
+        {showTracking && <>
+          <p style={mergedStyles.trackingHint}>سجلي أرقام اليوم بدل الاكتفاء بالتعليم، وسيُحفظ السجل تلقائيًا لمقارنة تقدمك مع الوقت.</p>
+          <div style={mergedStyles.metricGrid}>
+            {[
+              ['weight', 'الوزن (كجم)', 'number', '0.1'], ['height', 'الطول (سم)', 'number', '0.1'], ['waist', 'الخصر (سم)', 'number', '0.1'], ['steps', 'الخطوات', 'number', '1'],
+              ['exerciseMinutes', 'مدة الرياضة (دقيقة)', 'number', '1'], ['water', 'الماء (مل)', 'number', '100'], ['sleep', 'النوم (ساعة)', 'number', '0.5']
+            ].map(([key, label, type, step]) => <label key={key} style={mergedStyles.metricInput}><span>{label}</span><input type={type} min="0" step={step} value={dailyEntry[key]} onChange={(e) => updateDailyEntry(key, e.target.value)} /></label>)}
+          </div>
+          <div style={mergedStyles.metricGrid}>
+            <label style={mergedStyles.metricInput}><span>نوع الرياضة</span><select value={dailyEntry.exerciseType} onChange={(e) => updateDailyEntry('exerciseType', e.target.value)}><option value="">اختاري النوع</option><option>مشي</option><option>تمارين مقاومة</option><option>كارديو</option><option>يوغا أو إطالة</option><option>راحة</option></select></label>
+            <label style={mergedStyles.metricInput}><span>الوجبات المتوازنة</span><select value={dailyEntry.meals} onChange={(e) => updateDailyEntry('meals', e.target.value)}><option value="">اختاري التقييم</option><option>وجبات منتظمة</option><option>بروتين وخضار في أغلب الوجبات</option><option>أكل عاطفي أو غير منتظم</option><option>أحتاج دعمًا</option></select></label>
+            <label style={mergedStyles.metricInput}><span>المزاج والطاقة</span><select value={dailyEntry.mood} onChange={(e) => updateDailyEntry('mood', e.target.value)}><option value="">اختاري الحالة</option><option>ممتازة</option><option>جيدة</option><option>متوسطة</option><option>منخفضة</option></select></label>
+          </div>
+          <label style={mergedStyles.metricInput}><span>ملاحظات اليوم</span><textarea rows="2" value={dailyEntry.notes} onChange={(e) => updateDailyEntry('notes', e.target.value)} placeholder="اكتبي ما أكلتِه، الألم، أو أي ملاحظة تساعدك على فهم تقدمك" /></label>
+          <button type="button" style={mergedStyles.saveTrackingBtn} onClick={saveDailyEntry}>حفظ متابعة اليوم ✓</button>
+          <div style={mergedStyles.insightRow}>
+            <span>الـ BMI: <b>{bmi || 'أضيفي الطول والوزن'}</b></span>
+            <span>التغير: <b>{previousWeight && numeric(dailyEntry.weight) ? `${(numeric(dailyEntry.weight) - numeric(previousWeight.weight)).toFixed(1)} كجم` : 'لا توجد مقارنة'}</b></span>
+            <span>متوسط الخطوات: <b>{averageSteps || '—'}</b></span>
+          </div>
+          <div style={mergedStyles.goalsBox}>
+            <strong>أهدافك اليومية</strong>
+            <div style={mergedStyles.metricGrid}>
+              {[["steps", "خطوة"], ["exerciseMinutes", "دقيقة رياضة"], ["water", "مل ماء"], ["sleep", "ساعة نوم"]].map(([key, label]) => <label key={key} style={mergedStyles.goalInput}><span>{label}</span><input type="number" min="0" value={fitnessGoals[key]} onChange={(e) => setFitnessGoals((previous) => ({ ...previous, [key]: e.target.value }))} /></label>)}
+            </div>
+          </div>
+          <div style={mergedStyles.historyBox}><strong>آخر السجلات</strong>{dailyLogs.slice(-5).reverse().map((item) => <div key={item.date} style={mergedStyles.historyRow}><span>{item.date}</span><span>{item.weight || '—'} كجم</span><span>{item.steps || '—'} خطوة</span><span>{item.exerciseMinutes || '—'} د</span></div>)}</div>
+        </>}
+      </section>
+
+      <section style={mergedStyles.trackingCard} aria-labelledby="fitness-reminders-title">
+        <div style={mergedStyles.trackingTitle} id="fitness-reminders-title"><span>🔔 جدولة المتابعة والإشعارات</span></div>
+        <p style={mergedStyles.trackingHint}>تذكيرات مستقرة للوزن والمشي والماء والوجبات والسجل اليومي، ويمكن تعديل وقت كل منها.</p>
+        <div style={mergedStyles.reminderGrid}>{[["weight", "الوزن"], ["walk", "المشي"], ["water", "الماء"], ["meals", "الوجبات"], ["daily", "السجل اليومي"]].map(([key, label]) => <label key={key} style={mergedStyles.reminderItem}><span>{label}</span><input type="time" value={trackingReminders[key]} onChange={(e) => setTrackingReminders((previous) => ({ ...previous, [key]: e.target.value }))} /></label>)}</div>
+      </section>
 
       <button style={mergedStyles.openChatBtn} onClick={() => setIsChatOpen(true)}>
         💬 تحدث مع طبيبة رقة الذكية
@@ -347,6 +430,20 @@ const mergedStyles = {
   removeImg: { position: 'absolute', top: '-5px', right: '-5px', background: 'red', color: 'white', border: 'none', borderRadius: '50%', width: '20px', height: '20px', fontSize: '12px' },
   chatActions: { display: 'flex', justifyContent: 'space-between', marginTop: '10px' },
   actionBtnText: { background: 'none', border: 'none', color: '#7b1fa2', fontSize: '13px' },
+  trackingCard: { background: 'linear-gradient(180deg, #fff, #fff8fc)', borderRadius: '22px', marginBottom: '16px', padding: '17px', border: '1px solid #eadcf2', boxShadow: '0 4px 14px rgba(123,31,162,.06)' },
+  trackingTitle: { width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 0, color: '#4a148c', font: 'inherit', fontWeight: '900', fontSize: '16px', padding: 0, cursor: 'pointer', textAlign: 'right' },
+  trackingHint: { color: '#765d80', fontSize: '12px', lineHeight: 1.7, margin: '10px 0 14px' },
+  metricGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(125px, 1fr))', gap: '10px', marginBottom: '11px' },
+  metricInput: { display: 'flex', flexDirection: 'column', gap: '5px', color: '#633275', fontSize: '12px', fontWeight: '700' },
+  goalInput: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '5px', color: '#633275', fontSize: '11px' },
+  metricInputInput: { padding: '10px', borderRadius: '10px', border: '1px solid #e4d5ea', background: '#fff', font: 'inherit', minWidth: 0 },
+  saveTrackingBtn: { width: '100%', padding: '13px', borderRadius: '13px', border: 0, background: '#7b1fa2', color: '#fff', fontWeight: '900', cursor: 'pointer' },
+  insightRow: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' },
+  goalsBox: { marginTop: '14px', padding: '12px', borderRadius: '14px', background: '#f8effb', color: '#4a148c' },
+  historyBox: { marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #eadcf2', color: '#4a148c', fontSize: '12px' },
+  historyRow: { display: 'grid', gridTemplateColumns: '1.2fr repeat(3, 1fr)', gap: '5px', padding: '7px 0', color: '#6d5b74', borderBottom: '1px solid #f0e8f3' },
+  reminderGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '9px' },
+  reminderItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', background: '#fff8fc', border: '1px solid #eadcf2', borderRadius: '11px', padding: '9px', color: '#633275', fontSize: '12px', fontWeight: '700' },
   sectionCard: { background: '#fff', borderRadius: '20px', marginBottom: '15px', border: '1px solid #f3e5f5', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
   sectionHeader: { padding: '18px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#4a148c' },
   verticalList: { padding: '20px', background: '#fffafb', display: 'flex', flexDirection: 'column', gap: '15px' },
