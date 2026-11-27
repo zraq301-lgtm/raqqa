@@ -1,5 +1,6 @@
 ext {
-    minSdkVersion = 22
+    // Unity Ads AdMob mediation adapter 4.21.0.0 requires API 24+.
+    minSdkVersion = 24
     compileSdkVersion = 34
     targetSdkVersion = 34
     androidxActivityVersion = '1.8.0'
