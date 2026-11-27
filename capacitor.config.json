@@ -4,7 +4,7 @@
   "webDir": "dist_web",
   "server": {
     "androidScheme": "https",
-    "cleartext": true
+    "cleartext": false
   },
   "plugins": {
     "PushNotifications": {
@@ -31,7 +31,7 @@
     }
   },
   "android": {
-    "allowMixedContent": true,
+    "allowMixedContent": false,
     "buildOptions": {
       "releaseType": "APK"
     }
