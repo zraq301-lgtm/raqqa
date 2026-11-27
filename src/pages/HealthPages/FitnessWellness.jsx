@@ -38,14 +38,14 @@ const AnalogClock = memo(() => {
 });
 
 const sections = [
-  { id: "bio", title: "القياسات الحيوية", emoji: "📏", fields: ["الوزن الحالي", "نسبة الدهون", "محيط الخصر", "محيط الورك", "BMI", "نسبة العضلات"] },
-  { id: "fit", title: "النشاط البدني", emoji: "🏃‍♀️", fields: ["نوع التمرين", "مدة التمرين", "عدد الخطوات", "السعرات", "مستوى الشدة", "وقت التمرين"] },
-  { id: "food", title: "التغذية الصحية", emoji: "🥗", fields: ["السعرات", "البروتين", "الألياف", "الدهون الصحية", "الكربوهيدرات", "جودة الأكل"] },
-  { id: "water", title: "الهيدرات والماء", emoji: "💧", fields: ["كمية الماء", "مواعيد الشرب", "أعشاب", "ديتوكس", "الترطيب", "تجنب السكر"] },
-  { id: "sleep", title: "جودة النوم", emoji: "😴", fields: ["ساعات النوم", "الاستيقاظ", "الجودة", "الاسترخاء", "الكافيين", "القيلولة"] },
-  { id: "mind", title: "الصحة النفسية", emoji: "🧠", fields: ["التوتر", "التنفس", "المزاج", "الدافعية", "التأمل", "عادات إيجابية"] },
-  { id: "beauty", title: "المكملات والجمال", emoji: "✨", fields: ["فيتامينات", "جلد", "شعر", "كولاجين", "حرق", "أوميجا 3"] },
-  { id: "cycle", title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة", "الاحتباس", "تغير الوزن", "الرياضة", "ألم الجسم"] }
+  { id: "bio", title: "القياسات الحيوية", emoji: "📏", fields: ["الوزن الحالي", "الطول", "نسبة الدهون", "محيط الخصر", "محيط الورك", "BMI", "نسبة العضلات", "تسجيل القياس الصباحي"] },
+  { id: "fit", title: "النشاط البدني", emoji: "🏃‍♀️", fields: ["نوع التمرين", "مدة التمرين", "عدد الخطوات", "السعرات", "مستوى الشدة", "وقت التمرين", "تمرين الإحماء", "تمرين الإطالة", "راحة بين التمارين"] },
+  { id: "food", title: "التغذية الصحية", emoji: "🥗", fields: ["السعرات", "البروتين", "الألياف", "الدهون الصحية", "الكربوهيدرات", "جودة الأكل", "وجبة إفطار", "خضار أو فاكهة", "وجبة خفيفة مناسبة", "تسجيل الوجبات"] },
+  { id: "water", title: "الهيدرات والماء", emoji: "💧", fields: ["كمية الماء", "مواعيد الشرب", "أعشاب", "ديتوكس", "الترطيب", "تجنب السكر", "زجاجة ماء قريبة", "تسجيل آخر كوب"] },
+  { id: "sleep", title: "جودة النوم", emoji: "😴", fields: ["ساعات النوم", "الاستيقاظ", "الجودة", "الاسترخاء", "الكافيين", "القيلولة", "موعد نوم ثابت", "إبعاد الهاتف قبل النوم"] },
+  { id: "mind", title: "الصحة النفسية", emoji: "🧠", fields: ["التوتر", "التنفس", "المزاج", "الدافعية", "التأمل", "عادات إيجابية", "وقت للراحة", "طلب الدعم عند الحاجة"] },
+  { id: "beauty", title: "المكملات والجمال", emoji: "✨", fields: ["فيتامينات", "جلد", "شعر", "كولاجين", "حرق", "أوميجا 3", "العناية بالبشرة", "العناية بالشعر", "مراجعة المكملات"] },
+  { id: "cycle", title: "الهرمونات والدورة", emoji: "🩸", fields: ["يوم الدورة", "الرغبة", "الاحتباس", "تغير الوزن", "الرياضة", "ألم الجسم", "النوم أثناء الدورة", "تسجيل الأعراض"] }
 ];
 
 const PregnancyMonitor = () => {
@@ -366,10 +366,10 @@ const PregnancyMonitor = () => {
       )}
 
       <div style={mergedStyles.accordion}>
-        {sections.map((sec, i) => (
-          <div key={sec.id} style={mergedStyles.sectionCard}>
-            <div style={mergedStyles.sectionHeader} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
-              <span style={{fontSize:'1.1rem'}}>{sec.emoji} {sec.title}</span>
+            {sections.map((sec, i) => (
+              <div key={sec.id} style={mergedStyles.sectionCard}>
+                <div style={mergedStyles.sectionHeader} onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+              <span style={{fontSize:'1.1rem'}}>{sec.emoji} {sec.title} <small style={mergedStyles.sectionProgress}>{sec.fields.filter((field) => Boolean(data[`${sec.id}-${field}`])).length}/{sec.fields.length}</small></span>
               <span>{openIdx === i ? '▲' : '▼'}</span>
             </div>
             {openIdx === i && (
@@ -377,8 +377,7 @@ const PregnancyMonitor = () => {
                 {sec.fields.map((f) => {
                   const key = `${sec.id}-${f}`;
                   const checked = Boolean(data[key]);
-                  if (f === 'وقت التمرين') return <div key={key} style={mergedStyles.inputGroup}><label style={mergedStyles.label}>{f}</label><input aria-label={f} type="time" style={mergedStyles.input} value={data[key] || ''} onChange={(e) => updateData(key, e.target.value)} /></div>;
-                  return <button type="button" key={key} aria-pressed={checked} onClick={() => updateData(key, checked ? '' : 'تم التأكيد')} style={{ ...mergedStyles.checkInput, ...(checked ? mergedStyles.checkInputChecked : {}) }}><span>{f}</span><span style={{ ...mergedStyles.checkMark, ...(checked ? mergedStyles.checkMarkChecked : {}) }}>✓</span></button>;
+                  return <label key={key} style={{ ...mergedStyles.checkInput, ...(checked ? mergedStyles.checkInputChecked : {}) }}><span>{f}</span><input type="checkbox" aria-label={f} checked={checked} onChange={() => updateData(key, checked ? '' : 'تم الإنجاز')} style={mergedStyles.hiddenCheckbox} /><span style={{ ...mergedStyles.checkMark, ...(checked ? mergedStyles.checkMarkChecked : {}) }}>✓</span></label>;
                 })}
                 <button style={mergedStyles.saveSectionBtn} onClick={() => handleSectionAction(sec)} disabled={isLoading}>
                     {isLoading ? "جاري التحليل..." : "حفظ وتحليل البيانات 💾"}
@@ -444,6 +443,8 @@ const mergedStyles = {
   historyRow: { display: 'grid', gridTemplateColumns: '1.2fr repeat(3, 1fr)', gap: '5px', padding: '7px 0', color: '#6d5b74', borderBottom: '1px solid #f0e8f3' },
   reminderGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '9px' },
   reminderItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', background: '#fff8fc', border: '1px solid #eadcf2', borderRadius: '11px', padding: '9px', color: '#633275', fontSize: '12px', fontWeight: '700' },
+  sectionProgress: { marginRight: '7px', color: '#8a63a0', fontSize: '11px', fontWeight: '700' },
+  hiddenCheckbox: { position: 'absolute', opacity: 0, width: 1, height: 1, pointerEvents: 'none' },
   sectionCard: { background: '#fff', borderRadius: '20px', marginBottom: '15px', border: '1px solid #f3e5f5', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
   sectionHeader: { padding: '18px 20px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', color: '#4a148c' },
   verticalList: { padding: '20px', background: '#fffafb', display: 'flex', flexDirection: 'column', gap: '15px' },
