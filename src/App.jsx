@@ -143,6 +143,7 @@ function App({ user, onUserUpdated }) {
   const activePageKey = location.pathname === '/health' && healthSection ? `health.${healthSection}` : ({ '/health': 'health', '/feelings': 'feelings', '/intimacy': 'intimacy', '/swing-forum': 'swing', '/insight': 'insight', '/videos': 'videos', '/virtual-world': 'virtualWorld' }[location.pathname] || 'health');
   const activePageTheme = appTheme.pages?.[activePageKey] || {};
   const isSwingPage = location.pathname === '/swing-forum';
+  const isImmersivePage = ['/feelings', '/intimacy', '/queen/adhkar', '/queen/quran'].includes(location.pathname);
   const isHealthSubpage = location.pathname === '/health' && Boolean(healthSection);
   const activeBackground = activePageTheme.backgroundColor || appTheme.backgroundColor;
   const activeFont = activePageTheme.fontFamily || appTheme.fontFamily;
@@ -287,13 +288,13 @@ function App({ user, onUserUpdated }) {
   }, [syncNotifications, location.pathname]);
 
   return (
-    <div className={`app-container main-page-theme${isSwingPage ? ' app-container--swing-mode' : ''}`} style={{ '--main-theme-color': activeBackground, '--page-accent-color': activePageTheme.accentColor || appTheme.accentColor, '--page-text-color': activePageTheme.textColor || '#352d31', '--page-font-family': `'${activeFont}', sans-serif`, '--page-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none' }}>
+    <div className={`app-container main-page-theme${isSwingPage ? ' app-container--swing-mode' : ''}${isImmersivePage ? ' app-container--immersive-mode' : ''}`} style={{ '--main-theme-color': activeBackground, '--page-accent-color': activePageTheme.accentColor || appTheme.accentColor, '--page-text-color': activePageTheme.textColor || '#352d31', '--page-font-family': `'${activeFont}', sans-serif`, '--page-background-image': activePageTheme.backgroundImageUrl ? `url("${activePageTheme.backgroundImageUrl}")` : 'none' }}>
       <ScrollToTop />
       <DatePickerEnhancer />
-      {!isSwingPage && <TipOverlay />}
-      {!isSwingPage && profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
+      {!isSwingPage && !isImmersivePage && <TipOverlay />}
+      {!isSwingPage && !isImmersivePage && profileEditorOpen && <ProfileEditor user={user} onUpdated={onUserUpdated} onClose={() => setProfileEditorOpen(false)} />}
 
-      {!isSwingPage && <header className="main-app-header">
+      {!isSwingPage && !isImmersivePage && <header className="main-app-header">
         <button className="profile-summary" onClick={() => setProfileEditorOpen(true)} aria-label="تعديل ملفك الشخصي">
           {profilePhoto ? <img src={profilePhoto} alt={profileName} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 48, height: 48, borderRadius: '50%', display: 'grid', placeItems: 'center', background: '#fce7f3' }}>♡</span>}
           <span>{profileName}</span>
@@ -321,9 +322,9 @@ function App({ user, onUserUpdated }) {
         </nav>
       </header>}
 
-      {!isSwingPage && !isHealthSubpage && <TopPageCarousel />}
+      {!isSwingPage && !isImmersivePage && !isHealthSubpage && <TopPageCarousel />}
 
-      <main className={`main-content${isSwingPage ? ' main-content--swing' : ''}`} style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>
+      <main className={`main-content${isSwingPage ? ' main-content--swing' : ''}${isImmersivePage ? ' main-content--immersive' : ''}`} style={{ backgroundColor: activeBackground, backgroundImage: activePageTheme.backgroundImageUrl ? `linear-gradient(rgba(255,255,255,.86),rgba(255,255,255,.86)),url("${activePageTheme.backgroundImageUrl}")` : undefined, backgroundSize: 'cover', color: activePageTheme.textColor || undefined, fontFamily: `'${activeFont}', sans-serif` }}>
         <Routes>
           <Route path="/" element={<Navigate to="/health" />} />
           <Route path="/health" element={<Health />} />
@@ -338,9 +339,9 @@ function App({ user, onUserUpdated }) {
         </Routes>
       </main>
 
-      <div className="global-ad-container" aria-label="مساحة الإعلان السفلية">
+      {!isImmersivePage && <div className="global-ad-container" aria-label="مساحة الإعلان السفلية">
         <AdBanner placement="banner" />
-      </div>
+      </div>}
     </div>
   );
 }
