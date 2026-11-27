@@ -143,7 +143,7 @@ function App({ user, onUserUpdated }) {
   const activePageKey = location.pathname === '/health' && healthSection ? `health.${healthSection}` : ({ '/health': 'health', '/feelings': 'feelings', '/intimacy': 'intimacy', '/swing-forum': 'swing', '/insight': 'insight', '/videos': 'videos', '/virtual-world': 'virtualWorld' }[location.pathname] || 'health');
   const activePageTheme = appTheme.pages?.[activePageKey] || {};
   const isSwingPage = location.pathname === '/swing-forum';
-  const isImmersivePage = ['/feelings', '/intimacy', '/queen/adhkar', '/queen/quran'].includes(location.pathname);
+  const isImmersivePage = ['/insight', '/feelings', '/intimacy', '/queen/adhkar', '/queen/quran'].includes(location.pathname);
   const isHealthSubpage = location.pathname === '/health' && Boolean(healthSection);
   const activeBackground = activePageTheme.backgroundColor || appTheme.backgroundColor;
   const activeFont = activePageTheme.fontFamily || appTheme.fontFamily;
