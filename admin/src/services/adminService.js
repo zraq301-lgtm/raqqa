@@ -113,12 +113,12 @@ export const broadcastNotification = async ({ title, body, imageUrl = '', imageF
   const response = await fetch(`${API_BASE}/api/notifications/broadcast`, {
     method: 'POST',
     headers: { ...(hasFile ? {} : getRequestHeaders()), ...getAdminTokenHeaders() },
-    body: form || JSON.stringify({ title, body, imageUrl }),
+    body: form || JSON.stringify({ title, body, imageUrl, image_url: imageUrl }),
   });
   return parseResponse(response);
 };
 
-export const savePageData = async (pageName, updatedContent) => {
+export const savePageData = async (pageName, updatedContent, notificationImageUrl = '') => {
   const cleanPageName = pageName.replace(/[\'\"]/g, '').trim();
   const formattedContent = typeof updatedContent === 'object'
     ? JSON.stringify(updatedContent)
@@ -126,7 +126,13 @@ export const savePageData = async (pageName, updatedContent) => {
   const response = await CapacitorHttp.post({
     url: `${API_BASE}/api/content`,
     headers: { ...getRequestHeaders(), ...getAdminTokenHeaders() },
-    data: { page: cleanPageName, content: formattedContent },
+    data: {
+      page: cleanPageName,
+      content: formattedContent,
+      imageUrl: notificationImageUrl || '',
+      image_url: notificationImageUrl || '',
+      notification_image_url: notificationImageUrl || '',
+    },
   });
   return parseResponse({ ok: response.status < 400, status: response.status, json: async () => (
     typeof response.data === 'string' ? JSON.parse(response.data) : response.data

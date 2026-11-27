@@ -64,7 +64,9 @@ const Main = () => {
           await PushNotifications.addListener('pushNotificationReceived', (notification) => {
             console.log("📩 إشعار Push جديد:", notification.title);
             const data = notification?.data || {};
-            const image = notification?.image || notification?.imageUrl || notification?.image_url || data.image_url || data.imageUrl || data.imageURL || data.image || '';
+            const image = notification?.image || notification?.imageUrl || notification?.image_url
+              || data.notification_image_url || data.notification_image || data.image_url
+              || data.imageUrl || data.imageURL || data.image || notification?.data?.image || '';
             const id = Date.now();
             setForegroundPush({ id, title: notification?.title || data.notification_title || 'إشعار من رقة', body: notification?.body || data.notification_body || '', image: /^https:\/\//i.test(image) ? image : '' });
             window.setTimeout(() => setForegroundPush((current) => current?.id === id ? null : current), 12000);

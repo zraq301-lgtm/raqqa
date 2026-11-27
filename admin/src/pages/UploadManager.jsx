@@ -115,7 +115,8 @@ export default function UploadManager() {
         item.media.imageUrl = result.url || result.publicUrl || result.data?.url || '';
         if (!item.media.imageUrl) throw new Error('تعذر الحصول على رابط الصورة بعد رفعها.');
       }
-      const result = await savePageData(targetPage, item);
+      const notificationImageUrl = item.media.imageUrl || '';
+      const result = await savePageData(targetPage, item, notificationImageUrl);
       if (!result) throw new Error('لم يتم نشر المحتوى.');
       const notificationMessage = result.notification?.sent
         ? ' وتم إرسال الإشعار إلى الأجهزة المشتركة.'

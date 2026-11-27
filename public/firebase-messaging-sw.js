@@ -18,7 +18,11 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload?.data || {};
   const title = notification.title || data.notification_title || 'إشعار من رقة';
   const body = notification.body || data.notification_body || '';
-  const image = notification.image || notification.imageUrl || notification.image_url || data.image_url || data.imageUrl || data.imageURL || data.image || '';
+  // FCM may deliver the image in several locations depending on the sender
+  // (notification payload, data payload, or fcmOptions). Normalize all of them.
+  const image = notification.image || notification.imageUrl || notification.image_url
+    || data.notification_image_url || data.notification_image || data.image_url
+    || data.imageUrl || data.imageURL || data.image || payload?.fcmOptions?.image || '';
   const options = {
     body,
     icon: '/icon-192.png',
